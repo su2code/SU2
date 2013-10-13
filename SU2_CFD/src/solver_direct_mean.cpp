@@ -3416,8 +3416,8 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  double Pressure, *Normal = NULL, dist[3], *Coord, *Origin, Face_Area, PressInviscid,
-  factor, NFPressOF, RefVel2, RefDensity, RefPressure, Gas_Constant, Mach2Vel, Mach_Motion;
+  double Pressure, *Normal = NULL, MomentDist[3], *Coord, *Origin, Area,
+  factor, NFPressOF, RefVel2, RefDensity, RefPressure, Gas_Constant, Mach2Vel, Mach_Motion, UnitNormal[3], Force[3];
   string Marker_Tag, Monitoring_Tag;
   
   bool grid_movement      = config->GetGrid_Movement();
@@ -3476,6 +3476,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Boundary   = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
     /*--- Obtain the origin for the moment computation ---*/
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -3491,15 +3492,16 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
       
       /*--- Forces initialization at each Marker ---*/
-      CDrag_Inv[iMarker] = 0.0; CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;  CEff_Inv[iMarker] = 0.0;
-      CMx_Inv[iMarker] = 0.0;   CMy_Inv[iMarker] = 0.0;   CMz_Inv[iMarker] = 0.0;
-      CFx_Inv[iMarker] = 0.0;   CFy_Inv[iMarker] = 0.0;   CFz_Inv[iMarker] = 0.0;
-      CT_Inv[iMarker] = 0.0;    CQ_Inv[iMarker] = 0.0;    CMerit_Inv[iMarker] = 0.0;
+      
+      CDrag_Inv[iMarker] = 0.0;         CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;  CEff_Inv[iMarker] = 0.0;
+      CMx_Inv[iMarker] = 0.0;           CMy_Inv[iMarker] = 0.0;   CMz_Inv[iMarker] = 0.0;
+      CFx_Inv[iMarker] = 0.0;           CFy_Inv[iMarker] = 0.0;   CFz_Inv[iMarker] = 0.0;
+      CT_Inv[iMarker] = 0.0;            CQ_Inv[iMarker] = 0.0;    CMerit_Inv[iMarker] = 0.0;
       CNearFieldOF_Inv[iMarker] = 0.0;
       
       for (iDim = 0; iDim < nDim; iDim++) ForceInviscid[iDim] = 0.0;
       MomentInviscid[0] = 0.0; MomentInviscid[1] = 0.0; MomentInviscid[2] = 0.0;
-      NFPressOF = 0.0; PressInviscid = 0.0;
+      NFPressOF = 0.0;
       
       /*--- Loop over the vertices to compute the forces ---*/
       
@@ -3507,9 +3509,9 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
-        if (compressible) Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
+        if (compressible)   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
         if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
-        if (freesurface) Pressure = node[iPoint]->GetPressure(FREESURFACE);
+        if (freesurface)    Pressure = node[iPoint]->GetPressure(FREESURFACE);
         
         CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
         
@@ -3518,48 +3520,48 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         
         if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
           
-          /*--- Outward normal ---*/
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->node[iPoint]->GetCoord();
           
-          /*--- Quadratic objective function for the near field.
+          /*--- Quadratic objective function for the near-field.
            This uses the infinity pressure regardless of Mach number. ---*/
           
           NFPressOF += 0.5*(Pressure - Pressure_Inf)*(Pressure - Pressure_Inf)*Normal[nDim-1];
           
-          Face_Area = 0.0;
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) {
-            
-            /*--- Total force, distance computation, and face area
-             Note that we have subtracted the Pressure at the infinity, this is important when dealing with
-             non-closed surfaces---*/
-            
-            ForceInviscid[iDim] -= (Pressure - Pressure_Inf)*Normal[iDim]*factor;
-            dist[iDim] = Coord[iDim] - Origin[iDim];
-            Face_Area += Normal[iDim]*Normal[iDim];
+            UnitNormal[iDim] = Normal[iDim]/Area;
+            MomentDist[iDim] = Coord[iDim] - Origin[iDim];
           }
-          Face_Area = sqrt(Face_Area);
-          PressInviscid += CPressure[iMarker][iVertex]*Face_Area;
+          
+          /*--- Force computation, note the minus sign due to the 
+           orientation of the normal (outward) ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim]*factor;
+            ForceInviscid[iDim] += Force[iDim];
+          }
           
           /*--- Moment with respect to the reference axis ---*/
           
           if (iDim == 3) {
-            MomentInviscid[0] += (Pressure - Pressure_Inf)*(Normal[2]*dist[1]-Normal[1]*dist[2])*factor/RefLengthMoment;
-            MomentInviscid[1] += (Pressure - Pressure_Inf)*(Normal[0]*dist[2]-Normal[2]*dist[0])*factor/RefLengthMoment;
+            MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
+            MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
           }
-          MomentInviscid[2]   += (Pressure - Pressure_Inf)*(Normal[1]*dist[0]-Normal[0]*dist[1])*factor/RefLengthMoment;
+          MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
           
         }
+        
       }
       
-      /*--- Transform ForceInviscid and MomentInviscid into non-dimensional coefficient ---*/
+      /*--- Project forces and store the non-dimensional coefficients ---*/
       
       if  (Monitoring == YES) {
         if (nDim == 2) {
           if (Boundary != NEARFIELD_BOUNDARY) {
             CDrag_Inv[iMarker]  =  ForceInviscid[0]*cos(Alpha) + ForceInviscid[1]*sin(Alpha);
             CLift_Inv[iMarker]  = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[1]*cos(Alpha);
-            CEff_Inv[iMarker]   = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+            CEff_Inv[iMarker]   = CLift_Inv[iMarker] / (CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
             CMz_Inv[iMarker]    = MomentInviscid[2];
             CFx_Inv[iMarker]    = ForceInviscid[0];
             CFy_Inv[iMarker]    = ForceInviscid[1];
@@ -3574,7 +3576,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
             CDrag_Inv[iMarker]      =  ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta);
             CLift_Inv[iMarker]      = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha);
             CSideForce_Inv[iMarker] = -ForceInviscid[0]*sin(Beta)*cos(Alpha) + ForceInviscid[1]*cos(Beta) - ForceInviscid[2]*sin(Beta)*sin(Alpha);
-            CEff_Inv[iMarker]       = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+            CEff_Inv[iMarker]       = CLift_Inv[iMarker] / (CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
             CMx_Inv[iMarker]        = MomentInviscid[0];
             CMy_Inv[iMarker]        = MomentInviscid[1];
             CMz_Inv[iMarker]        = MomentInviscid[2];
@@ -3583,7 +3585,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
             CFz_Inv[iMarker]        = ForceInviscid[2];
             CT_Inv[iMarker]         = -CFz_Inv[iMarker];
             CQ_Inv[iMarker]         = -CMz_Inv[iMarker];
-            CMerit_Inv[iMarker]     = CT_Inv[iMarker]/CQ_Inv[iMarker];
+            CMerit_Inv[iMarker]     = CT_Inv[iMarker] / CQ_Inv[iMarker];
           }
           else { CNearFieldOF_Inv[iMarker] = NFPressOF; }
         }
@@ -3601,7 +3603,11 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         AllBound_CQ_Inv           += CQ_Inv[iMarker];
         AllBound_CNearFieldOF_Inv += CNearFieldOF_Inv[iMarker];
         
+        AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
+        AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+        
         /*--- Compute the coefficients per surface ---*/
+        
         for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
           Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
           Marker_Tag = config->GetMarker_All_Tag(iMarker);
@@ -3612,9 +3618,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         }
         
       }
-      
-      AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
-      AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+
       
     }
   }
@@ -3654,8 +3658,10 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI::DOUBLE, MPI::SUM);
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
+  
   double *MySurface_CLift_Inv = NULL;
   double *MySurface_CMz_Inv = NULL;
+  
   MySurface_CLift_Inv = new double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Inv   = new double[config->GetnMarker_Monitoring()];
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -3666,6 +3672,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   }
   MPI::COMM_WORLD.Allreduce(MySurface_CLift_Inv, Surface_CLift_Inv, config->GetnMarker_Monitoring(), MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI::DOUBLE, MPI::SUM);
+  
   delete [] MySurface_CLift_Inv;
   delete [] MySurface_CMz_Inv;
   
@@ -7667,19 +7674,19 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   double Delta, Viscosity, **Grad_PrimVar, div_vel, *Normal, MomentDist[3], WallDist[3],
   *Coord, *Coord_Normal, *Origin, Area, WallShearStress, TauNormal, factor, RefVel2,
   RefDensity, GradTemperature, Density, Vel[3], VelNormal, VelTangMod, WallDistMod, FrictionVel, VelTang[3],
-  Mach2Vel, Mach_Motion, *Velocity_Inf, UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3];
+  Mach2Vel, Mach_Motion, *Velocity_Inf, UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3], Force[3];
   string Marker_Tag, Monitoring_Tag;
   
-  double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
-  double Beta         = config->GetAoS()*PI_NUMBER/180.0;
-  double RefAreaCoeff = config->GetRefAreaCoeff();
-  double RefLengthMoment = config->GetRefLengthMoment();
-  double Gas_Constant = config->GetGas_ConstantND();
-  double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  bool grid_movement  = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  double Beta             = config->GetAoS()*PI_NUMBER/180.0;
+  double RefAreaCoeff     = config->GetRefAreaCoeff();
+  double RefLengthMoment  = config->GetRefLengthMoment();
+  double Gas_Constant     = config->GetGas_ConstantND();
+  double Cp               = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  bool grid_movement      = config->GetGrid_Movement();
+  bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface        = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values,
@@ -7693,7 +7700,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     Velocity_Inf = config->GetVelocity_FreeStreamND();
     RefVel2 = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
-    RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   }
   
   RefDensity  = config->GetDensity_FreeStreamND();
@@ -7723,7 +7730,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_Tag(iMarker);
         if (Marker_Tag == Monitoring_Tag)
-        Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+          Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
     }
     
@@ -7748,8 +7755,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
         Coord = geometry->node[iPoint]->GetCoord();
         Coord_Normal = geometry->node[iPointNormal]->GetCoord();
-        
-        /*--- Outward normal ---*/
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Grad_PrimVar = node[iPoint]->GetGradient_Primitive();
@@ -7778,7 +7783,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           }
           TauElem[iDim] = 0.0;
           for (jDim = 0; jDim < nDim; jDim++)
-          TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+            TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
         }
         
         /*--- Compute wall shear stress (using the stress tensor) ---*/
@@ -7788,11 +7793,10 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
         WallShearStress = sqrt(WallShearStress);
         
-        /*--- Compute wall shear stress (using mu(delta u/delta y) ---*/
         for (iDim = 0; iDim < nDim; iDim++) {
-          if (compressible) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, COMPRESSIBLE);
+          if (compressible)   Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, COMPRESSIBLE);
           if (incompressible) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, INCOMPRESSIBLE);
-          if (freesurface) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, FREESURFACE);
+          if (freesurface)    Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, FREESURFACE);
         }
         
         VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitNormal[iDim];
@@ -7800,7 +7804,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
-        //				WallShearStress = Viscosity*VelTangMod/WallDistMod;
         
         /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
@@ -7816,31 +7819,36 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         GradTemperature = 0.0;
         if (compressible) {
           for (iDim = 0; iDim < nDim; iDim++)
-          GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
+            GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
         }
         CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
         Q_Visc[iMarker] += CHeatTransfer[iMarker][iVertex];
         
         if ((CHeatTransfer[iMarker][iVertex]/Area) > Maxq_Visc[iMarker])
-        Maxq_Visc[iMarker] = (CHeatTransfer[iMarker][iVertex]/Area);
+          Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
         
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
         
         if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
           
+          /*--- Force computation ---*/
+          
           for (iDim = 0; iDim < nDim; iDim++) {
-            ForceViscous[iDim] += TauElem[iDim]*Area*factor;
-            //						ForceViscous[iDim] += WallShearStress*(VelTang[iDim]/VelTangMod)*Area*factor;
+            Force[iDim] = TauElem[iDim]*Area*factor;
+            ForceViscous[iDim] += Force[iDim];
           }
+          
+          /*--- Moment with respect to the reference axis ---*/
           
           if (iDim == 3) {
-            MomentViscous[0] -= (TauElem[2]*MomentDist[1] - TauElem[1]*MomentDist[2])*Area*factor/RefLengthMoment;
-            MomentViscous[1] -= (TauElem[0]*MomentDist[2] - TauElem[2]*MomentDist[0])*Area*factor/RefLengthMoment;
+            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLengthMoment;
+            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLengthMoment;
           }
-          MomentViscous[2] -= (TauElem[1]*MomentDist[0] - TauElem[0]*MomentDist[1])*Area*factor/RefLengthMoment;
+          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLengthMoment;
           
         }
+        
       }
       
       /*--- Transform ForceViscous and MomentViscous into non-dimensional coefficient ---*/
