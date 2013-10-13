@@ -564,35 +564,46 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   delete precond;
   
 	/*--- Update solution (system written in terms of increments) ---*/
-	switch (config->GetKind_Turb_Model()){
-    case SA:
-      if (!adjoint) {
-        for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-      }
-      break;
-    case SST:
-      if (!adjoint) {
+  
+  if (!adjoint) {
+    
+    /*--- Update and clip trubulent solution ---*/
+
+    switch (config->GetKind_Turb_Model()) {
+        
+      case SA:
+        
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*min(max(LinSysSol[iPoint*nVar], lowerlimit[0]),upperlimit[0]));
+        }
+        
+        break;
+        
+      case SST:
+        
         for (iPoint = 0; iPoint < nPointDomain; iPoint++){
           density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
           density     = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
           
-          for (iVar = 0; iVar < nVar; iVar++)
+          for (iVar = 0; iVar < nVar; iVar++) {
             node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar],
                                                   density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+          }
+          
         }
-      }
-      break;
-	}
-  
+        
+        break;
+        
+    }
+  }
 
   
-  
   /*--- MPI solution ---*/
+  
   Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
+  
   SetResidual_RMS(geometry, config);
   
 }
