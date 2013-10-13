@@ -3625,52 +3625,6 @@ public:
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
-/*! 
- * \class CAvgGrad_TurbSST
- * \brief Class for computing viscous term using average of gradients (Menter SST Turbulence model).
- * \ingroup ViscDiscr
- * \author A. Bueno.
- * \version 2.0.8
- */
-class CAvgGrad_TurbSST : public CNumerics {
-private:
-	double **Mean_GradTurbVar;
-	double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge;
-	double *Edge_Vector;
-	bool implicit, incompressible;
-	double sigma;
-	double diff_i, diff_j, diff_e;   // viscous diffusivity
-	double dist_ij_2;
-	double proj_vector_ij;
-	unsigned short iVar, iDim;
-	double nu_hat_i;
-	double nu_hat_j;
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGrad_TurbSST(void);
-
-	/*!
-	 * \brief Compute the viscous turbulence terms residual using an average of gradients.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
-};
-
 /*!
  * \class CAvgGrad_AdjFlow
  * \brief Class for computing the adjoint viscous terms.
@@ -3923,6 +3877,68 @@ public:
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
+/*!
+ * \class CAvgGrad_TurbSST
+ * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ * \version 2.0.8
+ */
+class CAvgGrad_TurbSST : public CNumerics {
+private:
+	double sigma_k1,                     /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
+	sigma_k2,
+	sigma_om1,
+	sigma_om2;
+  
+	double diff_kine,                     /*!< \brief Diffusivity for viscous terms of tke eq */
+	diff_omega;                           /*!< \brief Diffusivity for viscous terms of omega eq */
+  
+	double *Edge_Vector,                  /*!< \brief Vector from node i to node j. */
+	dist_ij_2,                            /*!< \brief |Edge_Vector|^2 */
+	proj_vector_ij;                       /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  
+	double **Mean_GradTurbVar,            /*!< \brief Average of gradients at cell face */
+	*Proj_Mean_GradTurbVar_Normal,        /*!< \brief Mean_gradTurbVar DOT normal */
+	*Proj_Mean_GradTurbVar_Edge,          /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
+	*Proj_Mean_GradTurbVar_Corrected;
+  
+	double F1_i, F1_j;                    /*!< \brief Menter's first blending function */
+  
+	bool implicit, incompressible;
+	unsigned short iVar, iDim;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGrad_TurbSST(unsigned short val_nDim, unsigned short val_nVar, double* constants, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGrad_TurbSST(void);
+  
+	/*!
+	 * \brief Sets value of first blending function.
+	 */
+	void SetF1blending(double val_F1_i, double val_F1_j) { F1_i = val_F1_i; F1_j = val_F1_j;}
+  
+	/*!
+	 * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
+  
+};
+
 /*! 
  * \class CAvgGradCorrected_TurbSST
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
@@ -3982,6 +3998,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
+  
 };
 
 /*!
