@@ -3768,13 +3768,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   X2coord_Nose.resize(n_Nose+1);
   boundary->SetSpline(Ycoord_Nose, Xcoord_Nose, n_Nose, xp1, xpn, X2coord_Nose);
   
-//    for (iVar = 0; iVar < Xcoord_Nose.size(); iVar++) {
-//     cout << Xcoord_Nose[iVar] <<" " << Ycoord_Nose[iVar] <<" " << endl;
-//  
-//    }
-//  
-//  cout << boundary->GetSpline(Ycoord_Nose, Xcoord_Nose, X2coord_Nose, n_Nose, 0.0) << endl;
-//  
+  NewXCoord = 0.0;
+  NewYCoord = 0.0;
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
@@ -3795,9 +3790,6 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
           VarCoord[0] = NewXCoord - Coord[0];
           VarCoord[1] = 0.0;
         }
-        
-          
-
         
 			}
 			boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);

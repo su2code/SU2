@@ -191,6 +191,16 @@ public:
 	 */
 	void AddSolution(unsigned short val_var, double val_solution);
 
+  /*!
+	 * \brief Add a value to the solution, clipping the values.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_solution - Value of the solution change.
+   * \param[in] lowerlimit - Lower value.
+   * \param[in] upperlimit - Upper value.
+	 */
+	void AddClippedSolution(unsigned short val_var, double val_solution,
+                          double lowerlimit, double upperlimit);
+  
 	/*!
 	 * \brief Update the variables using a conservative format.
 	 * \param[in] val_var - Index of the variable.

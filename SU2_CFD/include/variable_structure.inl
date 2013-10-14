@@ -25,6 +25,10 @@
 
 inline void CVariable::SetVelocityInc2(void) { }
 
+inline void CVariable::SetVelSolutionOldDVector(void) { }
+
+inline void CVariable::SetVelSolutionDVector(void) { }
+
 inline void CVariable::SetPressureValue(double val_pressure) { }
 
 inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
@@ -82,8 +86,6 @@ inline double CVariable::GetAuxVar(void) { return AuxVar; }
 inline double *CVariable::GetUndivided_Laplacian(void) { return Undivided_Laplacian; }
 
 inline double CVariable::GetUndivided_Laplacian(unsigned short val_var) { return Undivided_Laplacian[val_var]; }
-
-inline void CVariable::AddSolution(unsigned short val_var, double val_solution) {Solution[val_var] = Solution_Old[val_var] + val_solution; }
 
 inline double CVariable::GetSolution(unsigned short val_var) { return Solution[val_var]; }
 
