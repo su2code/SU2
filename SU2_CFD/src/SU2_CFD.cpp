@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
   }
   
   if (rank == MASTER_NODE)
-  cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
+    cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
   
   /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
    based data structure is constructed, i.e. node and cell neighbors are
@@ -178,7 +178,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   if (rank == MASTER_NODE)
-  cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
+    cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -191,12 +191,12 @@ int main(int argc, char *argv[]) {
     
     solver_container[iZone] = new CSolver** [config_container[iZone]->GetMGLevels()+1];
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++)
-    solver_container[iZone][iMesh] = NULL;
+      solver_container[iZone][iMesh] = NULL;
     
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
       solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
-      solver_container[iZone][iMesh][iSol] = NULL;
+        solver_container[iZone][iMesh][iSol] = NULL;
     }
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
 #endif
     
     if (rank == MASTER_NODE)
-    cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
+      cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
     
     /*--- Definition of the integration class: integration_container[#ZONES][#EQ_SYSTEMS].
      The integration class orchestrates the execution of the spatial integration
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
     
     if ( (config_container[iZone]->GetKind_Solver() == RANS)     ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS)    )
-    geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+      geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
      the calculation of force coefficient (non-dimensionalization). ---*/
@@ -264,14 +264,14 @@ int main(int argc, char *argv[]) {
     
     if (config_container[iZone]->GetGrid_Movement()) {
       if (rank == MASTER_NODE)
-      cout << "Setting dynamic mesh structure." << endl;
+        cout << "Setting dynamic mesh structure." << endl;
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][MESH_0]);
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-      SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
-                       FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);
+        SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone],
+                         FFDBox[iZone], solver_container[iZone], config_container[iZone], iZone, 0);
     }
     
   }
@@ -279,13 +279,13 @@ int main(int argc, char *argv[]) {
   /*--- For the time-spectral solver, set the grid node velocities. ---*/
   
   if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-  SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
+    SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
   
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
   
   if (nZone == 2) {
     if (rank == MASTER_NODE)
-    cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
+      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
     geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
                                                   config_container[ZONE_1], ZONE_0, nZone);
     geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
@@ -302,16 +302,16 @@ int main(int argc, char *argv[]) {
   /*--- Open the convergence history file ---*/
   
   if (rank == MASTER_NODE)
-  output->SetHistory_Header(&ConvHist_file, config_container[ZONE_0]);
+    output->SetHistory_Header(&ConvHist_file, config_container[ZONE_0]);
   
   /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
-  ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
+    ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
   
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
   if (rank == MASTER_NODE)
-  cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
+    cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
   
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
@@ -328,74 +328,74 @@ int main(int argc, char *argv[]) {
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
     switch (config_container[ZONE_0]->GetKind_Solver()) {
-      
+        
       case EULER: case NAVIER_STOKES: case RANS:
-      MeanFlowIteration(output, integration_container, geometry_container,
+        MeanFlowIteration(output, integration_container, geometry_container,
+                          solver_container, numerics_container, config_container,
+                          surface_movement, grid_movement, FFDBox);
+        break;
+        
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        TNE2Iteration(output, integration_container,
+                      geometry_container, solver_container,
+                      numerics_container, config_container,
+                      surface_movement, grid_movement, FFDBox);
+        break;
+        
+      case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
+        PlasmaIteration(output, integration_container, geometry_container,
                         solver_container, numerics_container, config_container,
                         surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-      TNE2Iteration(output, integration_container,
-                    geometry_container, solver_container,
-                    numerics_container, config_container,
-                    surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
-      PlasmaIteration(output, integration_container, geometry_container,
+        break;
+        
+      case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
+        FluidStructureIteration(output, integration_container, geometry_container,
+                                solver_container, numerics_container, config_container,
+                                surface_movement, grid_movement, FFDBox);
+        break;
+        
+      case WAVE_EQUATION:
+        WaveIteration(output, integration_container, geometry_container,
                       solver_container, numerics_container, config_container,
                       surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
-      FluidStructureIteration(output, integration_container, geometry_container,
-                              solver_container, numerics_container, config_container,
-                              surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case WAVE_EQUATION:
-      WaveIteration(output, integration_container, geometry_container,
-                    solver_container, numerics_container, config_container,
-                    surface_movement, grid_movement, FFDBox);
-      break;
-      
+        break;
+        
       case HEAT_EQUATION:
-      HeatIteration(output, integration_container, geometry_container,
-                    solver_container, numerics_container, config_container,
-                    surface_movement, grid_movement, FFDBox);
-      break;
-      
+        HeatIteration(output, integration_container, geometry_container,
+                      solver_container, numerics_container, config_container,
+                      surface_movement, grid_movement, FFDBox);
+        break;
+        
       case POISSON_EQUATION:
-      PoissonIteration(output, integration_container, geometry_container,
-                       solver_container, numerics_container, config_container,
-                       surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case LINEAR_ELASTICITY:
-      FEAIteration(output, integration_container, geometry_container,
-                   solver_container, numerics_container, config_container,
-                   surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      AdjMeanFlowIteration(output, integration_container, geometry_container,
-                           solver_container, numerics_container, config_container,
-                           surface_movement, grid_movement, FFDBox);
-      break;
-      
-      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-      AdjTNE2Iteration(output, integration_container, geometry_container,
-                       solver_container, numerics_container, config_container,
-                       surface_movement, grid_movement, FFDBox);
-      
-      
-      case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
-      AdjPlasmaIteration(output, integration_container, geometry_container,
+        PoissonIteration(output, integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox);
-      break;
-      
+        break;
+        
+      case LINEAR_ELASTICITY:
+        FEAIteration(output, integration_container, geometry_container,
+                     solver_container, numerics_container, config_container,
+                     surface_movement, grid_movement, FFDBox);
+        break;
+        
+      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+        AdjMeanFlowIteration(output, integration_container, geometry_container,
+                             solver_container, numerics_container, config_container,
+                             surface_movement, grid_movement, FFDBox);
+        break;
+        
+      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+        AdjTNE2Iteration(output, integration_container, geometry_container,
+                         solver_container, numerics_container, config_container,
+                         surface_movement, grid_movement, FFDBox);
+        
+        
+      case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
+        AdjPlasmaIteration(output, integration_container, geometry_container,
+                           solver_container, numerics_container, config_container,
+                           surface_movement, grid_movement, FFDBox);
+        break;
+        
     }
     
     
@@ -425,19 +425,19 @@ int main(int argc, char *argv[]) {
     
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
-      StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
       case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][PLASMA_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][PLASMA_SOL]->GetConvergence(); break;
       case WAVE_EQUATION:
-      StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
-      StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
       case LINEAR_ELASTICITY:
-      StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
       case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
-      StopCalc = integration_container[ZONE_0][ADJPLASMA_SOL]->GetConvergence(); break;
+        StopCalc = integration_container[ZONE_0][ADJPLASMA_SOL]->GetConvergence(); break;
     }
     
     /*--- Solution output. Determine whether a solution needs to be written
@@ -535,7 +535,7 @@ int main(int argc, char *argv[]) {
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
-  cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
+    cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
   
   return EXIT_SUCCESS;
 }
