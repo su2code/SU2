@@ -7631,6 +7631,18 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
     
+    if (iPoint == 0) {
+      unsigned short iVar, jVar;
+      cout << "Jacobian_i: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          cout << Jacobian_i[iVar][jVar] << "\t";
+        }
+        cout << endl;
+      }
+      cin.get();
+    }
+    
     /*--- Implicit part ---*/
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);

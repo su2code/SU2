@@ -6442,6 +6442,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*Length_Reynolds);
 			Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
+
 		} else {
 			/*--- For inviscid flow, density is calculated from the specified
 			 total temperature and pressure using the gas law. ---*/

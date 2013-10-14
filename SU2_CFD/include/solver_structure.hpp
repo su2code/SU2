@@ -6405,8 +6405,7 @@ class CTNE2EulerSolver : public CSolver {
 protected:
 
   unsigned short
-  nSpecies,	                /*!< \brief Number of species in the gas mixture. */
-  nPrimVar;                 /*!< \brief Number of primitive variables. */
+  nSpecies;	                /*!< \brief Number of species in the gas mixture. */
   
   double
   Gamma,                    /*!< \brief Mixture Cp/Cv. */

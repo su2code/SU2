@@ -3862,7 +3862,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
         case TNE2_EULER : case TNE2_NAVIER_STOKES:
             ConvHist_file[0] << begin << flow_coeff;
             if (isothermal) ConvHist_file[0] << heat_coeff;
-            for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
+            for (iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
               ConvHist_file[0] << ",\"Residual[" << iSpecies << "]\"";
             ConvHist_file[0] << end;
             break;
