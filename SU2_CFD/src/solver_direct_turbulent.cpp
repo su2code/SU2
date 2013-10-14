@@ -574,7 +574,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
       case SA:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*min(max(LinSysSol[iPoint*nVar], lowerlimit[0]),upperlimit[0]));
+          node[iPoint]->AddClippedSolution(0, config->GetLinear_Solver_Relax()*LinSysSol[iPoint],
+                                           lowerlimit[0], upperlimit[0]);
         }
         
         break;
@@ -2793,11 +2794,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		/*--- Restart the solution from file information ---*/
 		ifstream restart_file;
 		string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT, U[5];
-    double Temperature, Temperature_Dim, Pressure;
-    double Temperature_Ref = config->GetTemperature_Ref();
-    double Viscosity_Ref   = config->GetViscosity_Ref();
-    double Gas_Constant    = config->GetGas_ConstantND();
     
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
