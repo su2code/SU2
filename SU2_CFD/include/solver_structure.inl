@@ -96,6 +96,12 @@ inline double CSolver::GetCDrag_Inv(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetSurface_CLift(unsigned short val_marker) { return 0; }
 
+inline double CSolver::GetSurface_CDrag(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CMx(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CMy(unsigned short val_marker) { return 0; }
+
 inline double CSolver::GetSurface_CMz(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetFanFace_MassFlow(unsigned short val_marker) { return 0; }
@@ -500,6 +506,12 @@ inline double CEulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_I
 inline double CEulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
 
 inline double CEulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CDrag(unsigned short val_marker) { return Surface_CDrag[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CMx(unsigned short val_marker) { return Surface_CMx[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CMy(unsigned short val_marker) { return Surface_CMy[val_marker]; }
 
 inline double CEulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 

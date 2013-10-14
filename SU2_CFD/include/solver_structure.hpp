@@ -997,6 +997,27 @@ public:
     /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CDrag(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CMx(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CMy(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
 	 */
 	virtual double GetSurface_CMz(unsigned short val_marker);
@@ -1690,9 +1711,10 @@ public:
      * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
 	 * \param[in] config - Definition of the particular problem.
      * \param[in] iter - Sudo time iteration number.
+     * \param[in] val_Marker - Surface that is being monitored.
      * \param[in] displacements - solution of typical section wing model.
 	 */
-    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]);
+    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short val_Marker, double (&displacements)[4]);
 
 };
 
@@ -1778,6 +1800,9 @@ protected:
 	*CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
 	*CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
     *Surface_CLift_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CDrag_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
     *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
 	*CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
 	*CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
@@ -1835,6 +1860,9 @@ protected:
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
     Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
     double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
+    *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
+    *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
+    *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
     *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
@@ -2364,6 +2392,27 @@ public:
 	double GetSurface_CLift(unsigned short val_marker);
     
     /*!
+	 * \brief Provide the non dimensional drag coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CDrag(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the non dimensional x moment coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CMx(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the non dimensional y moment coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CMy(unsigned short val_marker);
+    
+    /*!
 	 * \brief Provide the non dimensional z moment coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
@@ -2685,6 +2734,9 @@ private:
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
     *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
     *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
