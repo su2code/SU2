@@ -48,14 +48,16 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
     /*--- Apply a Wind Gust ---*/
     
-    if (config_container[ZONE_0]->GetWind_Gust())
+    if (config_container[ZONE_0]->GetWind_Gust()){
       SetWind_GustField(config_container[iZone],geometry_container[iZone],solver_container[iZone]);
+    }
     
 		/*--- Dynamic mesh update ---*/
     
-		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) != AEROELASTIC))
+		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) != AEROELASTIC)){
 			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],
                        config_container[iZone], iZone, ExtIter);
+    }
 	}
   
 	for (iZone = 0; iZone < nZone; iZone++) {
