@@ -1025,12 +1025,6 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     /*--- Initialize the residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
     
-    /*--- Clipping SA model ---*/
-    
-    if ((node[iPoint]->GetSolution(0) < 1.0e-10) || (node[iPoint]->GetSolution(0) > 1.0)) {
-      node[iPoint]->SetSolution(0, node[iPoint]->GetSolution_Old(0));
-    }
-    
   }
   
   /*--- Initialize the jacobian matrices ---*/
@@ -2897,15 +2891,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     /*--- Initialize the residual vector ---*/
 
 		LinSysRes.SetBlock_Zero(iPoint);
-    
-    /*--- Clipping SST model ---*/
-    
-    if ((node[iPoint]->GetSolution(0) < 1.0e-10) || (node[iPoint]->GetSolution(0) > 1.0e10)) {
-      node[iPoint]->SetSolution(0, node[iPoint]->GetSolution_Old(0));
-    }
-    if ((node[iPoint]->GetSolution(1) < 1.0e-4) || (node[iPoint]->GetSolution(1) > 1.0e15)) {
-      node[iPoint]->SetSolution(1, node[iPoint]->GetSolution_Old(1));
-    }
     
 	}
   
