@@ -1587,7 +1587,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
     if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
         Aeroelastic_pitch = new double[nMarker_Monitoring];
-        Aeroelastic_plunge = new double(nMarker_Monitoring);
+        Aeroelastic_plunge = new double[nMarker_Monitoring];
         for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
             Aeroelastic_pitch[iMarker] = 0.0;
             Aeroelastic_plunge[iMarker] = 0.0;
