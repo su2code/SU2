@@ -1297,8 +1297,10 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
                 Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
                 Marker_Tag = config->GetMarker_All_Tag(iMarker);
                 if (Marker_Tag == Monitoring_Tag) {
+                    
                     Cl = GetSurface_CLift(iMarker_Monitoring);
                     Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
+
                     /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
                     SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, iMarker_Monitoring, structural_solution);
                 }
