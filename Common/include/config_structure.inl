@@ -990,13 +990,13 @@ inline double* CConfig::GetAeroelastic_n1(void) {return Aeroelastic_n1; }
 
 inline void CConfig::SetAeroelastic_np1(unsigned short val_index, double val) {Aeroelastic_np1[val_index] = val;}
 
-inline double CConfig::GetAeroelastic_plunge(void) {return Aeroelastic_plunge;}
+inline double CConfig::GetAeroelastic_plunge(unsigned short val_marker) {return Aeroelastic_plunge[val_marker];}
 
-inline double CConfig::GetAeroelastic_pitch(void) {return Aeroelastic_pitch;}
+inline double CConfig::GetAeroelastic_pitch(unsigned short val_marker) {return Aeroelastic_pitch[val_marker];}
 
-inline void CConfig::SetAeroelastic_plunge(double val) {Aeroelastic_plunge = val;}
+inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, double val) {Aeroelastic_plunge[val_marker] = val;}
 
-inline void CConfig::SetAeroelastic_pitch(double val) {Aeroelastic_pitch = val;}
+inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, double val) {Aeroelastic_pitch[val_marker] = val;}
 
 inline void CConfig::SetAeroelastic_n1(void) {
     for (unsigned short i=0; i<4; i++)
