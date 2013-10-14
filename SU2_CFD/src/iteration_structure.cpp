@@ -32,7 +32,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   
 	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	if (time_spectral) nZone = config_container[ZONE_0]->GetnTimeInstances();
+	if (time_spectral){
+    nZone = config_container[ZONE_0]->GetnTimeInstances();
+  }
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
