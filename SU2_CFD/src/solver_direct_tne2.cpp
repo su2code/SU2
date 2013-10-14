@@ -1971,9 +1971,9 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
     /*--- Subtract Residual (and Jacobian) ---*/
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    if (implicit)
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//    LinSysRes.SubtractBlock(iPoint, Residual);
+//    if (implicit)
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
   }
   // Deallocate
 //  delete[] Res_new;
@@ -3342,14 +3342,55 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   
 }
 
-void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config,
+                                    unsigned short val_marker) {
+//  bool implicit;
+//  unsigned short iDim;
+//  unsigned long iPoint, iVertex;
+//  double *Normal, *UnitNormal, Area;
+//  
+//  /*--- Allocate arrays ---*/
+//  UnitNormal = new double[3];
+//  
+//  /*--- Set booleans based on configuration settings ---*/
+//  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 
   /*--- Call the Euler wall routine ---*/
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  
+//  /*--- Compute the viscous contribution (if any) ---*/
+//	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      /*--- Calculate parameters from the geometry ---*/
+//      // Note: The vertex normal points out of the geometry by convention,
+//      //       so to calculate the influence from the boundary condition
+//      //       to the domain, we negate this vector
+//      Area   = 0.0;
+//			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//			for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//			Area = sqrt (Area);
+//			for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//      
+//    }
+//  }
+//
+//  
+//  delete [] UnitNormal;
+  
 }
 
-void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solution_container, CConfig *config,
-                                              unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry,
+                                            CSolver **solution_container,
+                                            CConfig *config,
+                                            unsigned short iRKStep,
+                                            unsigned short iMesh,
+                                            unsigned short RunTime_EqSystem) {
 	unsigned short iVar, jVar;
 	unsigned long iPoint;
 	double *U_time_nM1, *U_time_n, *U_time_nP1;
@@ -4376,12 +4417,25 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
     
+//    if (iPoint == 0) {
+//    unsigned short iVar, jVar;
+//    cout << "Jacobian_i: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[iVar][jVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
+//    }
+    
+    
     /*--- Implicit part ---*/
     if (implicit) {
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     }
   }
   

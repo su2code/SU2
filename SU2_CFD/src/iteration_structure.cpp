@@ -428,7 +428,7 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
 		/*--- Solve the inviscid or viscous two-temperature flow equations (one iteration) ---*/
 		integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container,
                                                                 numerics_container, config_container,
-                                                                RUNTIME_FLOW_SYS, IntIter, iZone);
+                                                                RUNTIME_TNE2_SYS, IntIter, iZone);
 	}
   
 }

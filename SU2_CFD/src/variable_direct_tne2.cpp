@@ -388,7 +388,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   double evs, eels;
   double Ru, sqvel, rhoCvtr, rhoCvve;
-  double Cvvs, Cves, Tve, Tve2;
+  double Cvvs, Cves, Tve, Tve2, Tve_o;
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;
@@ -438,8 +438,9 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Cannot write an expression explicitly in terms of Tve
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
-  Tve  = Primitive[TVE_INDEX];
-  Tve2 = Primitive[TVE_INDEX];
+  Tve   = Primitive[TVE_INDEX];
+  Tve2  = Primitive[TVE_INDEX];
+  Tve_o = Primitive[TVE_INDEX];
   
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
@@ -500,7 +501,14 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     if (fabs(Tve2-Tve) < tol) break;
     if (iIter == maxIter-1) {
       cout << "WARNING!!! Tve convergence not reached!" << endl;
-      Tve2 = Primitive[TVE_INDEX];
+      cout << "rhoE: " << rhoE << endl;
+      cout << "rhoEve: " << rhoEve << endl;
+      cout << "T: " << Primitive[T_INDEX] << endl;
+      cout << "Tve2: " << Tve2 << endl;
+      cout << "Tve_o: " << Tve_o << endl;
+      cin.get();
+      Tve2 = Tve_o;
+      break;
     }
     Tve = Tve2;
     
@@ -512,7 +520,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   /*--- Assign Gas Properties ---*/
   Primitive[RHOCVTR_INDEX] = rhoCvtr;
-  Primitive[RHOCVVE_INDEX] = rhoCvve;
+//  Primitive[RHOCVVE_INDEX] = rhoCvve;
+  Primitive[RHOCVVE_INDEX] = 0.2;
   
   /*--- Check that the solution is physical ---*/
   if ((Primitive[T_INDEX] > 0.0) && (Primitive[TVE_INDEX])) return false;
@@ -936,6 +945,9 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    DiffusionCoeff[iSpecies] = 0.0;
 }
 
 
@@ -1171,7 +1183,7 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
     
     RightVol = false;
   }
-  
+
   SetEnthalpy();                            // Requires density & pressure computation.
   SetDiffusionCoeff(config);
   SetLaminarViscosity(config);                    // Requires temperature computation.

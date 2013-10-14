@@ -52,6 +52,7 @@ protected:
 	double Gas_Constant;		 		/*!< \brief Gas constant. */
 	double *Gas_Constant_MultipleSpecies;
 	double *Vector_Gamma;
+  double *Vector; /*!< \brief Auxiliary vector. */
   double *Enthalpy_formation;
 	unsigned short nDiatomics, nMonatomics;
 
@@ -6297,6 +6298,65 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CAvgGrad_TNE2(void);
+  
+	/*!
+	 * \brief Compute the viscous flow residual using an average of gradients.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual,
+                       double **val_Jacobian_i,
+                       double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+
+/*!
+ * \class CAvgGrad_Flow
+ * \brief Class for computing viscous term using the average of gradients.
+ * \ingroup ViscDiscr
+ * \author S. R. Copeland
+ * \version 2.0.8
+ */
+class CAvgGradCorrected_TNE2 : public CNumerics {
+private:
+	unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;		/*!< \brief Iterators in dimension an variable. */
+	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
+	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
+	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
+  *Edge_Vector,
+  *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
+	*Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
+  Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  
+	*Proj_flux_tensor,	/*!< \brief Projection of the viscous fluxes. */
+	dist_ij;						/*!< \brief Length of the edge and face. */
+	bool implicit; /*!< \brief Implicit calculus. */
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimension of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of variables in the primitive variable gradient.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGradCorrected_TNE2(unsigned short val_nDim,
+                unsigned short val_nVar,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
+                CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGradCorrected_TNE2(void);
   
 	/*!
 	 * \brief Compute the viscous flow residual using an average of gradients.

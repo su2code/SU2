@@ -75,6 +75,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *
     Diffusion_Coeff_i = new double[nSpecies];
     Diffusion_Coeff_j = new double[nSpecies];
   }
+  
+  Vector = new double[nDim];
 }
 /* Class overloaded to include multiple fluid equations for plasma */
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, CConfig *config) {
@@ -227,6 +229,7 @@ CNumerics::~CNumerics(void) {
 	delete [] Theta_v;
   if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
+  if (Vector != NULL) delete [] Vector;
 
 	if (Laminar_Viscosity_MultipleSpecies_i        != NULL) delete [] Laminar_Viscosity_MultipleSpecies_i;
 	if (Laminar_Viscosity_MultipleSpecies_j        != NULL) delete [] Laminar_Viscosity_MultipleSpecies_j;
@@ -2650,10 +2653,11 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    CConfig *config) {
   
   bool ionization;
-	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
-	double *Ds, mu, ktr, kve, div_vel, *sumY, Ys, rho;
-  
-  sumY = new double[nDim];
+	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, iEl, nEl;
+  unsigned short *nElStates;
+	double *Ds, mu, ktr, kve, div_vel;
+  double *xi, *Ms, *thetav, **thetae, **g, *Tref, *hf, Ru;
+  double Ys, rho, T, Tve, Ev, Ee, eve, hs, num, denom;
   
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -2670,6 +2674,19 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   ktr = val_therm_conductivity;
   kve = val_therm_conductivity_ve;
   rho = val_primvar[RHO_INDEX];
+  T   = val_primvar[T_INDEX];
+  Tve = val_primvar[TVE_INDEX];
+  Ru  = UNIVERSAL_GAS_CONSTANT;
+  
+  /*--- Load variables from the config class --*/
+  xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  Ms        = config->GetMolar_Mass();         // Species molar mass
+  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+  g         = config->GetElDegeneracy();       // Degeneracy of electron states
+  nElStates = config->GetnElStates();          // Number of electron states
+  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
   
   /*--- Calculate the velocity divergence ---*/
 	div_vel = 0.0;
@@ -2678,9 +2695,9 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
-    sumY[iDim] = 0.0;
+    Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      sumY[iDim] += rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim];
+      Vector[iDim] += rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim];
     }
   }
   
@@ -2693,30 +2710,55 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   
 	/*--- Populate entries in the viscous flux vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
+    /*--- Species diffusion velocity ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Ys = val_primvar[RHOS_INDEX+iSpecies]/rho;
       Flux_Tensor[iSpecies][iDim] = -rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim]
-                                  + Ys*sumY[iDim];
+                                  + Ys*Vector[iDim];
     }
     if (ionization) {
       cout << "GetViscProjFlux -- NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!" << endl;
       exit(1);
     }
+    /*--- Shear stress related terms ---*/
     Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++) {
 			Flux_Tensor[nSpecies+jDim][iDim]  = tau[iDim][jDim];
 			Flux_Tensor[nSpecies+nDim][iDim] += tau[iDim][jDim]*val_primvar[VEL_INDEX+jDim];
 		}
-		Flux_Tensor[nSpecies+nDim][iDim] += ktr*val_gradprimvar[T_INDEX][iDim] +
-                                        kve*val_gradprimvar[TVE_INDEX][iDim];
-    Flux_Tensor[nSpecies+nDim+1][iDim] = kve*val_gradprimvar[TVE_INDEX][iDim];
+    
+    /*--- Diffusion terms ---*/
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      if (thetav[iSpecies] != 0.0)
+        Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+      else
+        Ev = 0.0;
+      num = 0.0;
+      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      }
+      Ee = Ru/Ms[iSpecies] * (num/denom);
+      eve = Ev + Ee;
+      
+      hs = Ru/Ms[iSpecies]*T + (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies] + hf[iSpecies] + eve;
+      
+      Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs;
+      Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve;
+    }
+    
+    /*--- Heat transfer terms ---*/
+		Flux_Tensor[nSpecies+nDim][iDim]   += ktr*val_gradprimvar[T_INDEX][iDim] +
+                                          kve*val_gradprimvar[TVE_INDEX][iDim];
+    Flux_Tensor[nSpecies+nDim+1][iDim] += kve*val_gradprimvar[TVE_INDEX][iDim];
 	}
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (iDim = 0; iDim < nDim; iDim++)
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
-  
-  delete [] sumY;
+    }
+  }
 }
 
 
@@ -2848,6 +2890,15 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 		double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz   + val_Mean_PrimVar[3]*etay;
 		double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay + val_Mean_PrimVar[3]*etax;
 		double piz = val_Mean_PrimVar[1]*etay   + val_Mean_PrimVar[2]*etax   + val_Mean_PrimVar[3]*thetaz;
+    
+    cout << "mu: " << val_laminar_viscosity << endl;
+    cout << "val_dS: " << val_dS << endl;
+    cout << "Density: " << Density << endl;
+    cout << "dij: " << val_dist_ij << endl;
+    cout << "pix: " << pix << endl;
+    cout << "piy: " << piy << endl;
+    cout << "piz: " << piz << endl;
+    cin.get();
 
 		val_Proj_Jac_Tensor_i[0][0] = 0.0;
 		val_Proj_Jac_Tensor_i[0][1] = 0.0;
@@ -2880,6 +2931,13 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
+    cout << "Jac[en][rho]: " << val_Proj_Jac_Tensor_j[4][0] << endl;
+    cout << "Momen: " << -factor*(pix*val_Mean_PrimVar[1] + piy*val_Mean_PrimVar[2] + piz*val_Mean_PrimVar[3])
+         << endl;
+    cout << "Temp: " << -factor*(rhoovisc*theta*(phi_rho+phi*phi_p)) << endl;
+    
+    cin.get();
+    
 		factor = 0.5/Density;
 		val_Proj_Jac_Tensor_i[4][0] += factor*proj_viscousflux_vel;
 		val_Proj_Jac_Tensor_j[4][0] += factor*proj_viscousflux_vel;
@@ -2909,7 +2967,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   // NOTE: Jacobian i & j should have the dVdU terms wrt i & j, but instead calculated using the mean
   
   bool ionization;
-  unsigned short iDim, iEl, iSpecies, jSpecies, iVar, jVar, nHeavy, nEl;
+  unsigned short iDim, iEl, iSpecies, jSpecies, iVar, jVar, nHeavy, nEl, kVar;
   unsigned short *nElStates;
   double rho, u, v, w, T, Tve, rhoCvtr, rhoCvve, v2, ef, Cvtrs;
   double evibs, eels, num, denom;
@@ -2918,8 +2976,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   double etax, etay, etaz;
   double pix, piy, piz;
   double *dTdrs, *dTvedrs;
-  double *Ys, *Tref, *Ms, *hf, *xi, *thv, **the, **g;
-  double **dFdYj, **dFdYi;
+  double *Ys, *Tref, *Ms, *hf, *xi, *thv, **the, **g, *eve, *hs, sumY;
+  double **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
 
   if (nDim == 2) {
     cout << "Viscous Proj Jacobian not available in 2D!!!" << endl;
@@ -2938,12 +2996,18 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   Ys      = new double[nSpecies];
   dTdrs   = new double[nSpecies];
   dTvedrs = new double[nSpecies];
+  hs      = new double[nSpecies];
+  eve     = new double[nSpecies];
   dFdYi   = new double*[nSpecies];
   dFdYj   = new double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dFdYi[iSpecies] = new double[nSpecies];
     dFdYj[iSpecies] = new double[nSpecies];
   }
+  sumdFdYih   = new double[nSpecies];
+  sumdFdYjh   = new double[nSpecies];
+  sumdFdYieve = new double[nSpecies];
+  sumdFdYjeve = new double[nSpecies];
   
   /*--- Assign booleans from CConfig ---*/
   ionization = config->GetIonization();
@@ -2984,7 +3048,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
     Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-    evibs = Ru/Ms[iSpecies] * thv[iSpecies] / (exp(thv[iSpecies]/Tve) - 1.0);
+    if (thv[iSpecies]!= 0.0)
+      evibs = Ru/Ms[iSpecies] * thv[iSpecies] / (exp(thv[iSpecies]/Tve) - 1.0);
+    else
+      evibs = 0.0;
     num   = 0.0;
     denom = g[iSpecies][0] * exp(the[iSpecies][0]/Tve);
     for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
@@ -2992,27 +3059,17 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
       denom += g[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
     }
     eels = Ru/Ms[iSpecies] * (num/denom);
+    eve[iSpecies]     = evibs + eels;
+    hs[iSpecies]      = Ru/Ms[iSpecies]*T + (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies]
+                      + hf[iSpecies] + eve[iSpecies];
     dTdrs[iSpecies]   = (-ef + 0.5*v2 + Cvtrs*(Tref[iSpecies]-T)) / rhoCvtr;
     dTvedrs[iSpecies] = -(evibs+eels)/rhoCvve;
-    Ys[iSpecies] = val_Mean_PrimVar[RHOS_INDEX+iSpecies]/rho;
+    Ys[iSpecies]      = val_Mean_PrimVar[RHOS_INDEX+iSpecies]/rho;
   }
   if (ionization) {
     cout <<  "GetViscousProjJacs: Need to implement dT & dTve for electrons!!" << endl;
     exit(1);
   }
-  
-  /*--- Calculate derivatives of Fv w.r.t. mass fractions ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    sumY = 0.0;
-    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      dFdYi[iSpecies][jSpecies] = -Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
-      dFdYj[iSpecies][jSpecies] = Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
-      sumY += rho*Ds[jSpecies]*theta/dij*(V_j[RHOS_INDEX+jSpecies] -
-                                          V_i[RHOS_INDEX+jSpecies])/rho;
-    }
-    dFdYj[iSpecies][iSpecies] += -rho*Ds[iSpecies]*theta/dij
-  }
-  
   
   /*--- Calculate geometrical parameters ---*/
   theta = 0.0;
@@ -3029,47 +3086,84 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   piy    = mu/dij * (etaz*u   + thetay*v + etax*w);
   piz    = mu/dij * (etay*u   + etax*v   + thetaz*w);
   
-  /*--- Populate the viscous Jacobian matrix ---*/
-  // species continuity
+  /*--- Calculate derivatives of Fv w.r.t. mass fractions ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    sumY = 0.0;
+    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+      dFdYi[iSpecies][jSpecies] = -Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
+      dFdYj[iSpecies][jSpecies] = Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
+      sumY += rho*Ds[jSpecies]*theta/dij*(V_j[RHOS_INDEX+jSpecies] -
+                                          V_i[RHOS_INDEX+jSpecies])/rho;
+    }
+    dFdYj[iSpecies][iSpecies] += -rho*Ds[iSpecies]*theta/dij + 0.5*sumY;
+    dFdYi[iSpecies][iSpecies] += rho*Ds[iSpecies]*theta/dij + 0.5*sumY;
 
+    sumdFdYih[iSpecies]   = 0.0;
+    sumdFdYjh[iSpecies]   = 0.0;
+    sumdFdYieve[iSpecies] = 0.0;
+    sumdFdYjeve[iSpecies] = 0.0;
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      sumdFdYih[iSpecies]   += dFdYi[jSpecies][iSpecies]*hs[jSpecies];
+      sumdFdYjh[iSpecies]   += dFdYj[jSpecies][iSpecies]*hs[jSpecies];
+      sumdFdYieve[iSpecies] += dFdYi[jSpecies][iSpecies]*eve[jSpecies];
+      sumdFdYjeve[iSpecies] += dFdYj[jSpecies][iSpecies]*eve[jSpecies];
+    }
+  }
+  
+//  cout << "mu: " << mu << endl;
+//  cout << "val_dS: " << val_dS << endl;
+//  cout << "Density: " << rho << endl;
+//  cout << "dij: " << dij << endl;
+//  cout << "pix: " << pix << endl;
+//  cout << "piy: " << piy << endl;
+//  cout << "piz: " << piz << endl;
+//  cin.get();
+  
+  /*--- Populate the viscous Jacobian matrix (more terms follow) ---*/
   // x-momentum
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    val_Jac_j[nSpecies][iSpecies] = -pix/rho;
+    val_Jac_j[nSpecies][iSpecies] = -pix/rho * val_dS;
   }
-  val_Jac_j[nSpecies][nSpecies]     = mu*thetax/ (dij*rho);
-  val_Jac_j[nSpecies][nSpecies+1]   = mu*etaz  / (dij*rho);
-  val_Jac_j[nSpecies][nSpecies+2]   = mu*etay  / (dij*rho);
+  val_Jac_j[nSpecies][nSpecies]     = mu*thetax/ (dij*rho) * val_dS;
+  val_Jac_j[nSpecies][nSpecies+1]   = mu*etaz  / (dij*rho) * val_dS;
+  val_Jac_j[nSpecies][nSpecies+2]   = mu*etay  / (dij*rho) * val_dS;
   // y-momentum
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    val_Jac_j[nSpecies+1][iSpecies] = -piy/rho;
+    val_Jac_j[nSpecies+1][iSpecies] = -piy/rho * val_dS;
   }
-  val_Jac_j[nSpecies+1][nSpecies]   = mu*etaz  / (dij*rho);
-  val_Jac_j[nSpecies+1][nSpecies+1] = mu*thetay/ (dij*rho);
-  val_Jac_j[nSpecies+1][nSpecies+2] = mu*etax  / (dij*rho);
+  val_Jac_j[nSpecies+1][nSpecies]   = mu*etaz  / (dij*rho) * val_dS;
+  val_Jac_j[nSpecies+1][nSpecies+1] = mu*thetay/ (dij*rho) * val_dS;
+  val_Jac_j[nSpecies+1][nSpecies+2] = mu*etax  / (dij*rho) * val_dS;
   // z-momentum
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    val_Jac_j[nSpecies+2][iSpecies] = -piz/rho;
+    val_Jac_j[nSpecies+2][iSpecies] = -piz/rho * val_dS;
   }
-  val_Jac_j[nSpecies+2][nSpecies]   = mu*etay  / (dij*rho);
-  val_Jac_j[nSpecies+2][nSpecies+1] = mu*etax  / (dij*rho);
-  val_Jac_j[nSpecies+2][nSpecies+2] = mu*thetaz/ (dij*rho);
+  val_Jac_j[nSpecies+2][nSpecies]   = mu*etay  / (dij*rho) * val_dS;
+  val_Jac_j[nSpecies+2][nSpecies+1] = mu*etax  / (dij*rho) * val_dS;
+  val_Jac_j[nSpecies+2][nSpecies+2] = mu*thetaz/ (dij*rho) * val_dS;
   // total energy
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    val_Jac_j[nSpecies+3][iSpecies] = -pix*u/rho - piy*v/rho - piz*w/rho
+    val_Jac_j[nSpecies+3][iSpecies] = (-pix*u/rho - piy*v/rho - piz*w/rho
                                     + ktr*theta/dij*dTdrs[iSpecies]
-                                    + kve*theta/dij*dTvedrs[iSpecies];
+                                    + kve*theta/dij*dTvedrs[iSpecies]) * val_dS;
+    
+//    cout << "temp: " << (ktr*theta/dij*dTdrs[iSpecies]
+//                         + kve*theta/dij*dTvedrs[iSpecies])*val_dS << endl;
+//    cout << "Momen: " << (-pix*u/rho - piy*v/rho - piz*w/rho)*val_dS << endl;
+//    cin.get();
   }
-  val_Jac_j[nSpecies+3][nSpecies]   = pix/rho - ktr*theta*u/(dij*rhoCvtr);
-  val_Jac_j[nSpecies+3][nSpecies+1] = piy/rho - ktr*theta*v/(dij*rhoCvtr);
-  val_Jac_j[nSpecies+3][nSpecies+2] = piz/rho - ktr*theta*w/(dij*rhoCvtr);
-  val_Jac_j[nSpecies+3][nSpecies+3] = ktr*theta/(dij*rhoCvtr);
-  val_Jac_j[nSpecies+3][nSpecies+4] = -ktr*theta/(dij*rhoCvtr) +
-                                       kve*theta/(dij*rhoCvve);
+  val_Jac_j[nSpecies+3][nSpecies]   = (pix/rho - ktr*theta*u/(dij*rhoCvtr)) * val_dS;
+  val_Jac_j[nSpecies+3][nSpecies+1] = (piy/rho - ktr*theta*v/(dij*rhoCvtr)) * val_dS;
+  val_Jac_j[nSpecies+3][nSpecies+2] = (piz/rho - ktr*theta*w/(dij*rhoCvtr)) * val_dS;
+  val_Jac_j[nSpecies+3][nSpecies+3] = ktr*theta/(dij*rhoCvtr) * val_dS;
+  val_Jac_j[nSpecies+3][nSpecies+4] = (-ktr*theta/(dij*rhoCvtr) +
+                                       kve*theta/(dij*rhoCvve)) * val_dS;
+  
   // vib-el. energy
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    val_Jac_j[nSpecies+4][iSpecies] = kve*theta/dij * dTvedrs[iSpecies];
+    val_Jac_j[nSpecies+4][iSpecies] = kve*theta/dij * dTvedrs[iSpecies] * val_dS;
   }
-  val_Jac_j[nSpecies+4][nSpecies+4] = kve*theta/(dij*rhoCvve);
+  val_Jac_j[nSpecies+4][nSpecies+4] = kve*theta/(dij*rhoCvve) * val_dS;
   
   /*--- Calculate i Jacobian before adding common terms ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -3078,6 +3172,26 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   
   /*--- Add common terms ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    // species continuity
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      for (kVar = 0; kVar < nSpecies; kVar++) {
+//        val_Jac_i[iSpecies][jSpecies] += dFdYi[iSpecies][kVar]*(-Ys[kVar]/rho) * val_dS;
+//        val_Jac_j[iSpecies][jSpecies] += dFdYj[iSpecies][kVar]*(-Ys[kVar]/rho) * val_dS;
+      }
+//      val_Jac_i[iSpecies][jSpecies] += dFdYi[iSpecies][jSpecies]/rho * val_dS;
+//      val_Jac_j[iSpecies][jSpecies] += dFdYj[iSpecies][jSpecies]/rho * val_dS;
+      
+//      val_Jac_i[nSpecies+3][iSpecies] += sumdFdYih[jSpecies]*(-Ys[jSpecies]/rho) * val_dS;
+//      val_Jac_j[nSpecies+3][iSpecies] += sumdFdYjh[jSpecies]*(-Ys[jSpecies]/rho) * val_dS;
+//      val_Jac_i[nSpecies+4][iSpecies] += sumdFdYieve[jSpecies]*(-Ys[jSpecies]/rho) * val_dS;
+//      val_Jac_j[nSpecies+4][iSpecies] += sumdFdYjeve[jSpecies]*(-Ys[jSpecies]/rho) * val_dS;
+    }
+//    val_Jac_i[nSpecies+3][iSpecies] += sumdFdYih[jSpecies]/rho * val_dS;
+//    val_Jac_j[nSpecies+3][iSpecies] += sumdFdYjh[jSpecies]/rho * val_dS;
+//    val_Jac_i[nSpecies+4][iSpecies] += sumdFdYieve[jSpecies]/rho * val_dS;
+//    val_Jac_j[nSpecies+4][iSpecies] += sumdFdYjeve[jSpecies]/rho * val_dS;
+    
+    // total energy
     val_Jac_i[nSpecies+3][iSpecies] += -0.5*u*val_Fv[nSpecies]/rho
                                        -0.5*v*val_Fv[nSpecies+1]/rho
                                        -0.5*w*val_Fv[nSpecies+2]/rho;
@@ -3091,12 +3205,12 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   }
   
   /*--- Multiply by dual-grid area ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
-      val_Jac_i[iVar][jVar] *= val_dS;
-      val_Jac_j[iVar][jVar] *= val_dS;
-    }
-  }
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      val_Jac_i[iVar][jVar] *= val_dS;
+//      val_Jac_j[iVar][jVar] *= val_dS;
+//    }
+//  }
   
   
   // OLD
@@ -3150,6 +3264,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   }
   delete [] dFdYi;
   delete [] dFdYj;
+  delete [] sumdFdYih;
+  delete [] sumdFdYjh;
+  delete [] sumdFdYieve;
+  delete [] sumdFdYjeve;
 }
 
 
