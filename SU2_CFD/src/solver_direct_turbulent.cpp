@@ -2940,7 +2940,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 		vorticity[1] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(1);
 		vorticity[2] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(2);
 		vortMag = sqrt(vorticity[0]*vorticity[0] + vorticity[1]*vorticity[1] + vorticity[2]*vorticity[2]);
-		//vort   = 0.0; //not yet implemented
 		solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
 		strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
     
@@ -2963,9 +2962,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 		kine  = node[iPoint]->GetSolution(0);
 		omega = node[iPoint]->GetSolution(1);
     
-		//zeta = min(1.0/omega,a1/(vortMag*F2));
 		zeta = min(1.0/omega,a1/(strMag*F2));
-		//zeta = 1.0/omega;
 		muT = min(max(rho*kine*zeta,0.0),1.0);
 		node[iPoint]->SetmuT(muT);
 	}

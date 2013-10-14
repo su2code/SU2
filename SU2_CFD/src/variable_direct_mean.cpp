@@ -514,18 +514,40 @@ void CNSVariable::SetVorticity(void) {
 }
 
 void CNSVariable::SetStrainMag(void) {
-	double div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1] + Gradient_Primitive[3][2];
-	StrainMag = 0.0;
-	// add diagonals
-	StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div,2.0);
-	StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div,2.0);
-	StrainMag += pow(Gradient_Primitive[3][2] - 1.0/3.0*div,2.0);
-	// add off diagonals
-	StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1]+Gradient_Primitive[2][0]),2.0);
-	StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2]+Gradient_Primitive[3][0]),2.0);
-	StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2]+Gradient_Primitive[3][1]),2.0);
   
-	StrainMag = sqrt(2.0*StrainMag);
+  double div;
+  
+  if (nDim == 2) {
+    div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1];
+    StrainMag = 0.0;
+    
+    // add diagonals
+    StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div, 2.0);
+    StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div, 2.0);
+    
+    // add off diagonals
+    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
+    
+    StrainMag = sqrt(2.0*StrainMag);
+    
+  }
+  else {
+    div = Gradient_Primitive[1][0] + Gradient_Primitive[2][1] + Gradient_Primitive[3][2];
+    StrainMag = 0.0;
+    
+    // add diagonals
+    StrainMag += pow(Gradient_Primitive[1][0] - 1.0/3.0*div,2.0);
+    StrainMag += pow(Gradient_Primitive[2][1] - 1.0/3.0*div,2.0);
+    StrainMag += pow(Gradient_Primitive[3][2] - 1.0/3.0*div,2.0);
+    
+    // add off diagonals
+    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][1] + Gradient_Primitive[2][0]), 2.0);
+    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[1][2] + Gradient_Primitive[3][0]), 2.0);
+    StrainMag += 2.0*pow(0.5*(Gradient_Primitive[2][2] + Gradient_Primitive[3][1]), 2.0);
+    
+    StrainMag = sqrt(2.0*StrainMag);
+  }
+  
 }
 
 bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
