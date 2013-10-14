@@ -7097,6 +7097,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Surface_CMx_Inv  = new double[config->GetnMarker_Monitoring()];
     Surface_CMy_Inv  = new double[config->GetnMarker_Monitoring()];
     Surface_CMz_Inv  = new double[config->GetnMarker_Monitoring()];
+    Surface_CLift    = new double[config->GetnMarker_Monitoring()];
+    Surface_CDrag    = new double[config->GetnMarker_Monitoring()];
+    Surface_CMx      = new double[config->GetnMarker_Monitoring()];
+    Surface_CMy      = new double[config->GetnMarker_Monitoring()];
+    Surface_CMz      = new double[config->GetnMarker_Monitoring()];
     
 	/*--- Rotational coefficients ---*/
 	CMerit_Inv = new double[nMarker];

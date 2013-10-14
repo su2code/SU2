@@ -356,7 +356,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
         config->SetAeroelastic_n1();
         config->SetAeroelastic_n();
         
-    /*--- Also communicate plunge and pitch to the master node. Needed for output ---*/
+    /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
 #ifndef NO_MPI
         double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
         unsigned short iMarker, iMarker_Monitoring;
@@ -364,9 +364,13 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
         
         string Marker_Tag, Monitoring_Tag;
         
+#ifdef WINDOWS
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
         int rank = MPI::COMM_WORLD.Get_rank();
         int nProcessor = MPI::COMM_WORLD.Get_size();
-        
+#endif
         /*--- Only if mater node allocate memory ---*/
         if (rank == MASTER_NODE) {
             plunge_all = new double[nProcessor];
@@ -374,37 +378,14 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
             owner_all  = new unsigned long[nProcessor];
         }
         
+        /*--- Find marker and give it's plunge and pitch coordinate to the master node ---*/
         for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
             
-            // Check if you own the airfoil
-            // If you do send to Master
-//            plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);
-//            pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
-//            cout << "rank = " << rank << ", iMarker = " << iMarker_Monitoring << ", plunge = " << plunge << ", pitch = " << pitch << endl;
-            
-            //                    MPI::COMM_WORLD.Send(&plunge, 1, MPI::DOUBLE, MASTER_NODE, 0);
-            //
-            //                    if (rank == MASTER_NODE) {
-            //
-            //                        MPI::COMM_WORLD.Recv(&plunge_all, 1, MPI::DOUBLE, rank, 0);
-            //                    //cout << "about to broadcast. my rank is " << rank << endl;
-            //                    //MPI::COMM_WORLD.Barrier();
-            //                    //MPI::COMM_WORLD.Bcast(plunge, 1, MPI::DOUBLE, rank);
-            //                    //MPI::COMM_WORLD.Bcast(pitch, 1, MPI::DOUBLE, rank);
-            //
-            //                        config->SetAeroelastic_plunge(iMarker_Monitoring,plunge_all);
-            //                        cout << "iMarker = " << iMarker_Monitoring << ", plunge = " << plunge_all << ", pitch = " << pitch_all << endl;
-            //
-            //                    }
-            
-            
             for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-                    /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
-                    
+                
                 Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
                 Marker_Tag = config->GetMarker_All_Tag(iMarker);
                 if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
-                    cout << "monitor: " <<iMarker_Monitoring << " owner: " << rank << endl;
                 } else {
                     owner = 0;
                 }
@@ -414,26 +395,22 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
                 pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
                 
                 /*--- Gather the data on the master node. ---*/
+#ifdef WINDOWS
+                MPI_Barrier(MPI_COMM_WORLD);
+                MPI_Gather(&plunge, 1, MPI::DOUBLE, plunge_all, 1, MPI::DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                MPI_Gather(&pitch, 1, MPI::DOUBLE, pitch_all, 1, MPI::DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+                MPI_COMM_WORLD.Gather(&owner, 1, MPI::UNSIGNED_LONG, owner_all, 1, MPI::UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
                 MPI::COMM_WORLD.Barrier();
-                MPI::COMM_WORLD.Gather(&plunge, 1, MPI::DOUBLE,
-                                       plunge_all, 1, MPI::DOUBLE,
-                                       MASTER_NODE);
-                MPI::COMM_WORLD.Gather(&pitch, 1, MPI::DOUBLE,
-                                       pitch_all, 1, MPI::DOUBLE,
-                                       MASTER_NODE);
-                MPI::COMM_WORLD.Gather(&owner, 1, MPI::UNSIGNED_LONG,
-                                       owner_all, 1, MPI::UNSIGNED_LONG,
-                                       MASTER_NODE);
-                
-
+                MPI::COMM_WORLD.Gather(&plunge, 1, MPI::DOUBLE, plunge_all, 1, MPI::DOUBLE, MASTER_NODE);
+                MPI::COMM_WORLD.Gather(&pitch, 1, MPI::DOUBLE, pitch_all, 1, MPI::DOUBLE, MASTER_NODE);
+                MPI::COMM_WORLD.Gather(&owner, 1, MPI::UNSIGNED_LONG, owner_all, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
+#endif
+            
+            /*--- Set plunge and pitch on the master node ---*/
             if (rank == MASTER_NODE) {
-                
                 for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-                    
-                    cout << owner_all[iProcessor] << endl;
                     if (owner_all[iProcessor] == 1) {
-                        
-                        cout << "monitor: " <<iMarker_Monitoring << " owning proc: : " << iProcessor << " pitch: " <<pitch_all[iProcessor]<< " plunge: " << plunge_all[iProcessor]<< endl;
                         config->SetAeroelastic_plunge(iMarker_Monitoring,plunge_all[iProcessor]);
                         config->SetAeroelastic_pitch(iMarker_Monitoring,pitch_all[iProcessor]);
                         break;
