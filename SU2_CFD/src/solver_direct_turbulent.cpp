@@ -5153,7 +5153,9 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 	unsigned long iPoint, iVertex;
 	double *Normal;
 	unsigned short iVar, iDim;
-    
+  
+  bool grid_movement = config->GetGrid_Movement();
+  
 	Normal = new double[nDim];
     
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -5186,7 +5188,11 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 			for (iDim = 0; iDim < nDim; iDim++)
 				Normal[iDim] = -Normal[iDim];
 			conv_numerics->SetNormal(Normal);
-            
+      
+      /*--- Grid Movement ---*/
+			if (grid_movement)
+				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+      
 			/*--- Compute residuals and jacobians ---*/
 			conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
             
