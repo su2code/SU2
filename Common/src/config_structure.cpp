@@ -1563,7 +1563,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Fluid-Structure problems always have grid movement ---*/
 	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
       Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
+		if (Kind_Turb_Model != NONE)
 			Kind_Solver = FLUID_STRUCTURE_RANS;
 		Grid_Movement = true;
 	}
@@ -1572,7 +1572,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	else FinestMesh = MESH_0;
 
 	if ((Kind_Solver == NAVIER_STOKES) &&
-			(Kind_Turb_Model == SA || Kind_Turb_Model == SST))
+			(Kind_Turb_Model != NONE))
 		Kind_Solver = RANS;
 
 	if (Kind_Regime == FREESURFACE) GravityForce = true;
@@ -3565,6 +3565,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         switch (Kind_Turb_Model) {
           case SA:  cout << "Spalart Allmaras" << endl; break;
           case SST: cout << "Menter's SST"     << endl; break;
+          case ML: cout << "Machine Learning" <<endl;break;
         }
         break;
       case TNE2_EULER:

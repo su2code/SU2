@@ -486,7 +486,7 @@ void CNSVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable
 	switch (val_Kind_Turb_Model) {
     case NONE :
       EddyViscosity = 0.0;                     break;
-    case SA : case SST :
+    case SA : case SST : case ML:
       EddyViscosity = TurbVariable->GetmuT(); break;
 	}
   
