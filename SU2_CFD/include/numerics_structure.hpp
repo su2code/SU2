@@ -2812,6 +2812,46 @@ public:
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
+
+/*!
+ * \class CUpwSca_TurbML
+ * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
+ * \ingroup ConvDiscr
+ * \author A. Bueno.
+ * \version 2.0.8
+ */
+class CUpwSca_TurbML : public CNumerics {
+private:
+	double *Velocity_i, *Velocity_j;
+	bool implicit, grid_movement, incompressible;
+	double Density_i, Density_j, q_ij, a0, a1;
+	unsigned short iDim;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwSca_TurbML(void);
+  
+	/*!
+	 * \brief Compute the scalar upwind flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+};
+
 /*!
  * \class CUpwSca_TurbSST
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
@@ -3579,6 +3619,53 @@ public:
 	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
 };
 
+
+/*!
+ * \class CAvgGrad_TurbML
+ * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ * \version 2.0.8
+ */
+class CAvgGrad_TurbML : public CNumerics {
+private:
+	double **Mean_GradTurbVar;
+	double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge;
+	double *Edge_Vector;
+	bool implicit, incompressible;
+	double sigma;
+	double nu_i, nu_j, nu_e;
+	double dist_ij_2;
+	double proj_vector_ij;
+	unsigned short iVar, iDim;
+	double nu_hat_i;
+	double nu_hat_j;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGrad_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGrad_TurbML(void);
+  
+	/*!
+	 * \brief Compute the viscous turbulence terms residual using an average of gradients.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
+};
+
 /*!
  * \class CAvgGrad_TransLM
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
@@ -3826,6 +3913,48 @@ public:
 	 */
 	~CAvgGradCorrected_TurbSA(void);
     
+	/*!
+	 * \brief Compute the viscous turbulent residual using an average of gradients with correction.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config);
+};
+
+
+/*!
+ * \class CAvgGradCorrected_TurbML
+ * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ * \version 2.0.8
+ */
+class CAvgGradCorrected_TurbML : public CNumerics {
+private:
+	double **Mean_GradTurbVar;
+	double *Proj_Mean_GradTurbVar_Kappa, *Proj_Mean_GradTurbVar_Edge, *Proj_Mean_GradTurbVar_Corrected;
+	double *Edge_Vector;
+	bool implicit, incompressible;
+	double sigma, nu_i, nu_j, nu_e, dist_ij_2, proj_vector_ij, nu_hat_i, nu_hat_j;
+	unsigned short iVar, iDim;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGradCorrected_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGradCorrected_TurbML(void);
+  
 	/*!
 	 * \brief Compute the viscous turbulent residual using an average of gradients with correction.
 	 * \param[out] val_residual - Pointer to the total residual.
@@ -4838,7 +4967,7 @@ public:
 };
 
 /*!
- * \class CSourcePieceWise_TurbSA
+ * \class CSourcePieceWise_TurbML
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
@@ -4940,6 +5069,113 @@ public:
     double GetCrossProduction(void);
     
 };
+
+
+/*!
+ * \class CSourcePieceWise_TurbML
+ * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author A. Bueno.
+ * \version 2.0.8
+ */
+class CSourcePieceWise_TurbML : public CNumerics {
+private:
+	double cv1_3;
+	double k2;
+	double cb1;
+	double cw2;
+	double cw3_6;
+  double cb2_sigma;
+	double sigma;
+	double cb2;
+	double cw1;
+	double DivVelocity, Vorticity;
+	unsigned short iDim;
+	double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+	double r, g, g_6, glim, fw;
+	double norm2_Grad;
+	double dfv1, dfv2, dShat;
+	double dr, dg, dfw;;
+	double nu_hat_i;
+	double grad_nu_hat;
+	double prod_grads;
+	bool incompressible;
+  bool transition;
+  bool rotating_frame;
+  double div, StrainMag;
+  double beta, gamma_sep, gamma_eff, intermittency;
+  double Freattach, r_t, s1;
+  double Production, Destruction, CrossProduction;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CSourcePieceWise_TurbML(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CSourcePieceWise_TurbML(void);
+  
+	/*!
+	 * \brief Residual for source term integration.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+	/*!
+	 * \brief Residual for source term integration.
+	 * \param[in] intermittency_in - Value of the intermittency.
+	 */
+  void SetIntermittency(double intermittency_in);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_production - Value of the Production.
+	 */
+  void SetProduction(double val_production);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_destruction - Value of the Destruction.
+	 */
+  void SetDestruction(double val_destruction);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 */
+  void SetCrossProduction(double val_crossproduction);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_production - Value of the Production.
+	 */
+  double GetProduction(void);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_destruction - Value of the Destruction.
+	 */
+  double GetDestruction(void);
+  
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 */
+  double GetCrossProduction(void);
+  
+};
+
+
 
 /*!
  * \class CSourcePieceWise_TurbSA

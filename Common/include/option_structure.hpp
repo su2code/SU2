@@ -509,12 +509,14 @@ static const map<string, ENUM_SOURCEJAC> SourceJac_Map = CCreateMap<string, ENUM
 enum ENUM_TURB_MODEL {
 	NO_TURB_MODEL = 0,            /*!< \brief No turbulence model. */
 	SA = 1,                       /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
-	SST = 2       		/*!< \brief Kind of Turbulence model (Menter SST). */
+	SST = 2,       		/*!< \brief Kind of Turbulence model (Menter SST). */
+  ML  = 3       		/*!< \brief Kind of Turbulence model (Machine Learning). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
-("SST", SST);
+("SST", SST)
+("ML", ML);
 
 /*!
  * \brief types of transition models
