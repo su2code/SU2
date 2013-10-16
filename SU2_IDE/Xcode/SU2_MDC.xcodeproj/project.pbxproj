@@ -32,7 +32,7 @@
 
 /* Begin PBXFileReference section */
 		050BACD21374A60900564A35 /* SU2_MDC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_MDC; sourceTree = BUILT_PRODUCTS_DIR; };
-		05AF5C2E17F63AD400BF6128 /* default.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = default.cfg; path = DerivedData/SU2_MDC/Build/Products/Debug/default.cfg; sourceTree = "<group>"; };
+		05A9E2DD180DCD5200BFCFD2 /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 		05E6DA8417EB5FD800FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
 		05E6DA8517EB5FD800FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
 		05E6DA8617EB5FD800FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
@@ -108,7 +108,7 @@
 		08FB7794FE84155DC02AAC07 /* SU2_MDC */ = {
 			isa = PBXGroup;
 			children = (
-				05AF5C2E17F63AD400BF6128 /* default.cfg */,
+				05A9E2DD180DCD5200BFCFD2 /* config_template.cfg */,
 				050BACD81374A60F00564A35 /* InLine */,
 				050BACD91374A61F00564A35 /* Include */,
 				08FB7795FE84155DC02AAC07 /* Source */,
