@@ -743,7 +743,62 @@ public:
 	 */
   bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
                             unsigned long val_Point_2, unsigned long val_Point_3, double scale);
+  
+  /*!
+	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+	 * \param[in] val_Point_1 - Index value for Node 1 of the current hexahedron.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current hexahedron.
+   * \param[in] val_Point_3 - Index value for Node 3 of the current hexahedron.
+   * \param[in] val_Point_4 - Index value for Node 4 of the current hexahedron.
+   * \param[in] val_Point_5 - Index value for Node 5 of the current hexahedron.
+   * \param[in] val_Point_6 - Index value for Node 6 of the current hexahedron.
+   * \param[in] val_Point_7 - Index value for Node 7 of the current hexahedron.
+   * \param[in] val_Point_8 - Index value for Node 8 of the current hexahedron.
+	 */
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
+   unsigned long Point_1, unsigned long Point_2,
+   unsigned long Point_3, unsigned long Point_4,
+   unsigned long Point_5, unsigned long Point_6,
+   unsigned long Point_7, unsigned long Point_8, double scale);
 	
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] Node - Node from 1 to 8.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  double GetHexa_ShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
+  
+  /*!
+	 * \brief Compute the derivative of the shape functions for hexahedron
+	 * \param[in] Node - Node from 1 to 8.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  double *GetHexa_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
+
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  void GetHexa_Jacobian(double HexaCorners[8][3], unsigned short iNode, double Jacobian[3][3]);
+
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  void GetHexa_InvJacobian(double HexaCorners[8][3], unsigned short iNode, double InvJacobian[3][3]);
+  
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
 	 * \param[in] geometry - Geometrical definition of the problem.
