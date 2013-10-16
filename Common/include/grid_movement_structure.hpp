@@ -758,10 +758,10 @@ public:
    * \param[in] val_Point_8 - Index value for Node 8 of the current hexahedron.
 	 */
   bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-   unsigned long Point_1, unsigned long Point_2,
-   unsigned long Point_3, unsigned long Point_4,
-   unsigned long Point_5, unsigned long Point_6,
-   unsigned long Point_7, unsigned long Point_8, double scale);
+   unsigned long Point_0, unsigned long Point_1,
+   unsigned long Point_2, unsigned long Point_3,
+   unsigned long Point_4, unsigned long Point_5,
+   unsigned long Point_6, unsigned long Point_7, double scale);
 	
   /*!
 	 * \brief Compute the shape functions for hexahedron
@@ -790,6 +790,12 @@ public:
 	 */
   void GetHexa_Jacobian(double HexaCorners[8][3], unsigned short iNode, double Jacobian[3][3]);
 
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetHexa_Volume(double HexaCorners[8][3]);
+  
   /*!
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
@@ -823,6 +829,19 @@ public:
                             unsigned long val_Point_2, unsigned long val_Point_3);
   
   /*!
+	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
+   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
+	 */
+  void AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
+                            unsigned long val_Point_2, unsigned long val_Point_3, unsigned long val_Point_4, unsigned long val_Point_5,
+                            unsigned long val_Point_6, unsigned long val_Point_7);
+  
+  /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
@@ -849,6 +868,19 @@ public:
 	 */
   bool Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2,
                     unsigned long val_Point_3, double *Volume);
+  
+  /*!
+	 * \brief Check for negative volumes for 3-D elements after grid deformation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iElem - Index value for the current primal grid element.
+	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
+   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
+   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
+   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
+	 */
+  bool Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2,
+                    unsigned long val_Point_3, unsigned long val_Point_4, unsigned long val_Point_5, unsigned long val_Point_6,
+                    unsigned long val_Point_7, double *Volume);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
