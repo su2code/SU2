@@ -24,7 +24,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, time
-from ..io   import expand_part, get_adjointSuffix, add_suffix, \
+from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
 from ..util import bunch
 from ..util import ordered_bunch
@@ -166,20 +166,17 @@ class State(ordered_bunch):
             
             # link big files
             if key == 'MESH':
-                # mesh (merged and partitions)
-                if config.DECOMPOSED:
-                    value = expand_part(value,config) # hack - twl
-                else:
-                    value = [value]
+                # mesh (merged or partitioned)
+                value = expand_part(value,config)
                 link.extend(value)
             elif key == 'DIRECT':
-                #if config.RESTART_SOL == 'YES':
                 # direct solution
-                link.append(value)
+                value = expand_time(value,config)
+                link.extend(value)
             elif 'ADJOINT_' in key:
-                #if config.RESTART_SOL == 'YES':
                 # adjoint solution
-                link.append(value)
+                value = expand_time(value,config)
+                link.extend(value)
             # copy all other files
             else:
                 pull.append(value)

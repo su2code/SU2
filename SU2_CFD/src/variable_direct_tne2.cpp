@@ -381,7 +381,6 @@ void CTNE2EulerVariable::SetVelocity2(void) {
 bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   // Note: Requires previous call to SetDensity()
-  // Note: Missing contribution from electronic energy
   bool ionization;
   unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter, *nElStates;
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
@@ -439,7 +438,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
   Tve   = Primitive[TVE_INDEX];
-  Tve2  = Primitive[TVE_INDEX];
   Tve_o = Primitive[TVE_INDEX];
   
   for (iIter = 0; iIter < maxIter; iIter++) {
@@ -463,7 +461,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         
         /*--- Add contribution ---*/
         rhoEve_t += Solution[iSpecies] * evs;
-        rhoCvve  += Solution[iSpecies] * Cvvs;        
+        rhoCvve  += Solution[iSpecies] * Cvvs;
       }
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
@@ -497,6 +495,9 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     df = -rhoCvve;
     Tve2 = Tve - (f/df)*0.5;
     
+    if (Tve2 < 0.0)
+      Tve2 = EPS;
+    
     /*--- Check for convergence ---*/
     if (fabs(Tve2-Tve) < tol) break;
     if (iIter == maxIter-1) {
@@ -506,25 +507,21 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       cout << "T: " << Primitive[T_INDEX] << endl;
       cout << "Tve2: " << Tve2 << endl;
       cout << "Tve_o: " << Tve_o << endl;
-      cin.get();
+      //        cin.get();
       Tve2 = Tve_o;
       break;
     }
     Tve = Tve2;
-    
   }
   
-  if (Tve2 <= 0)
-    Tve2 = 1E-8;
   Primitive[TVE_INDEX] = Tve2;
   
   /*--- Assign Gas Properties ---*/
   Primitive[RHOCVTR_INDEX] = rhoCvtr;
-//  Primitive[RHOCVVE_INDEX] = rhoCvve;
-  Primitive[RHOCVVE_INDEX] = 0.2;
+  Primitive[RHOCVVE_INDEX] = rhoCvve;
   
   /*--- Check that the solution is physical ---*/
-  if ((Primitive[T_INDEX] > 0.0) && (Primitive[TVE_INDEX])) return false;
+  if ((Primitive[T_INDEX] > 0.0) && (Primitive[TVE_INDEX] > 0.0)) return false;
   else return true;
 }
 
@@ -732,7 +729,7 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 
-	unsigned short iDim, iVar, iSpecies;
+	unsigned short iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp, RightVol;
   
   /*--- Initialize booleans that check for physical solutions ---*/
@@ -1041,9 +1038,14 @@ void CTNE2NSVariable::SetLaminarViscosity(CConfig *config) {
 void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
 	unsigned short iSpecies, jSpecies, nHeavy, nEl;
   double rho, T, Tve, Cvve;
-  double *xi, *Ms, Mi, Mj, pi, R, Ru, Na, kb, gam_i, gam_j, Theta_v;
+  double *xi, *Ms, Mi, Mj, mi, mj, pi, R, Ru, Na, kb, gam_i, gam_j, Theta_v;
   double denom_t, denom_r, d1_ij, d2_ij, a_ij;
   double ***Omega00, ***Omega11, Omega_ij;
+  
+  if (ionization) {
+    cout << "SetThermalConductivity: NEEDS REVISION w/ IONIZATION" << endl;
+    exit(1);
+  }
   
   /*--- Acquire gas parameters from CConfig ---*/
   Omega00 = config->GetCollisionIntegral00();
@@ -1076,6 +1078,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
     
     /*--- Calculate molar concentration ---*/
     Mi      = Ms[iSpecies];
+    mi      = Mi/Na;
     gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
     Theta_v = config->GetCharVibTemp(iSpecies);
     
@@ -1083,9 +1086,10 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
     denom_r = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       Mj    = config->GetMolar_Mass(jSpecies);
+      mj    = Mj/Na;
       gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
       
-      a_ij = 1.0 + (1.0 - Mi/Mj)*(0.45 - 2.54*Mi/Mj) / ((1.0 + Mi/Mj)*(1.0 + Mi/Mj));
+      a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
@@ -1115,7 +1119,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
     /*--- Translational contribution to thermal conductivity ---*/
     if (xi[iSpecies] != 0.0)
       ThermalCond  += kb*gam_i/denom_r;
-      
+    
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
     ThermalCond_ve += kb*Cvve/R*gam_i / denom_r;
   }
@@ -1143,7 +1147,7 @@ void CTNE2NSVariable::SetVorticity(void) {
 }
 
 bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
-	unsigned short iDim, iVar, iSpecies;
+	unsigned short iVar, iSpecies;
   bool check_dens, check_press, check_sos, check_temp, RightVol;
   
   /*--- Initialize booleans that check for physical solutions ---*/

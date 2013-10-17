@@ -54,12 +54,8 @@ inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geome
 
 inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
-inline void CSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) { }
+inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) { }
   
-inline void CSolver::SetNoise_Source(CSolver ***flow_solution, CGeometry **wave_geometry, CConfig *wave_config) { }
-
-inline void CSolver::SetAeroacoustic_Coupling(CSolver ***wave_solution, CSolver ***flow_solution, CNumerics *numerics, CGeometry **flow_geometry, CConfig *flow_config) { }
-
 inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned short val_vertex, double val_sensitivity) { }
@@ -363,12 +359,6 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
-
-inline void CSolver::BC_FWH(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-              unsigned short val_marker) { }
-   
-inline void CSolver::BC_Observer(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-            unsigned short val_marker) { }
             
 inline void CSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
                          

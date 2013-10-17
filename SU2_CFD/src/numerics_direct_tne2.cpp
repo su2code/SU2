@@ -1233,15 +1233,6 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
     }
 	}
   
-  //  cout << "Corrected: " << endl;
-  //  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-  //    for (iDim = 0; iDim < nDim; iDim++) {
-  //      cout << Mean_GradPrimVar[iVar][iDim] << "\t";
-  //    }
-  //    cout << endl;
-  //  }
-  //  cin.get();
-  
 	/*--- Get projected flux tensor ---*/
 	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar,
                      Normal, Mean_Diffusion_Coeff,
