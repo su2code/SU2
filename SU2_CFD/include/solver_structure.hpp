@@ -997,6 +997,27 @@ public:
     /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CDrag(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CMx(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+	 */
+	virtual double GetSurface_CMy(unsigned short val_marker);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
 	 */
 	virtual double GetSurface_CMz(unsigned short val_marker);
@@ -1690,9 +1711,10 @@ public:
      * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
 	 * \param[in] config - Definition of the particular problem.
      * \param[in] iter - Sudo time iteration number.
+     * \param[in] val_Marker - Surface that is being monitored.
      * \param[in] displacements - solution of typical section wing model.
 	 */
-    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, double (&displacements)[4]);
+    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short val_Marker, double (&displacements)[4]);
 
 };
 
@@ -1778,6 +1800,9 @@ protected:
 	*CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
 	*CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
     *Surface_CLift_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CDrag_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
+    *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
     *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
 	*CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
 	*CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
@@ -1835,6 +1860,9 @@ protected:
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
     Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
     double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
+    *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
+    *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
+    *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
     *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
 	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
@@ -2364,6 +2392,27 @@ public:
 	double GetSurface_CLift(unsigned short val_marker);
     
     /*!
+	 * \brief Provide the non dimensional drag coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the drag coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CDrag(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the non dimensional x moment coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CMx(unsigned short val_marker);
+    
+    /*!
+	 * \brief Provide the non dimensional y moment coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
+	 */
+	double GetSurface_CMy(unsigned short val_marker);
+    
+    /*!
 	 * \brief Provide the non dimensional z moment coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
@@ -2685,6 +2734,9 @@ private:
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
     *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
+    *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
     *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
@@ -3206,6 +3258,228 @@ public:
 
     
 };
+
+/*!
+ * \class CTurbMLSolver
+ * \brief Main class for defining the turbulence model solver.
+ * \ingroup Turbulence_Model
+ * \author A. Bueno.
+ * \version 2.0.8
+ */
+
+class CTurbMLSolver: public CTurbSolver {
+private:
+	double nu_tilde_Inf;
+	
+public:
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTurbMLSolver(void);
+  
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CTurbMLSolver(void);
+  
+	/*!
+	 * \brief Restart residual and compute gradients.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 */
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                      unsigned short iMesh);
+  
+	/*!
+	 * \brief Compute the spatial integration using a upwind scheme.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+  
+	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                       unsigned short iMesh);
+  
+	/*!
+	 * \brief Compute the viscous residuals for the turbulent equation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 */
+	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  
+	/*!
+	 * \brief Source term computation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh);
+  
+	/*!
+	 * \brief Source term computation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh);
+  
+	/*!
+	 * \brief Impose the Navier-Stokes wall boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                        unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the Navier-Stokes wall boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                          unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the Far Field boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                    unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the inlet boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the outlet boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+  
+	void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                 unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the nacelle inflow boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                         CConfig *config, unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the ancelle exhaust boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                          CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the interface boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                             CConfig *config, unsigned short val_marker);
+  
+	/*!
+	 * \brief Impose the near-field boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                             CConfig *config, unsigned short val_marker);
+  
+	/*!
+	 * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
+	 * \param[in] geometry - Geometric definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 */
+	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
+  /*!
+	 * \brief Load a solution from a restart file.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_iter - Current external iteration number.
+	 */
+	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  
+  
+};
+
+
 
 /*!
  * \class CTransLMSolver
