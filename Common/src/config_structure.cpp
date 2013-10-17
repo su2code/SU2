@@ -1041,12 +1041,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- Don't do any deformation if there is no Design variable information ---*/
+  if (Design_Variable == NULL) {
+    Design_Variable = new unsigned short [1];
+    nDV = 1; Design_Variable[0] = NONE;
+  }
+  
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
 
-  /*--- Divide grid if runnning SU2_MDC ---*/
-  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
-   
+//  /*--- Divide grid if runnning SU2_MDC ---*/
+//  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
+  
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (Kind_Regime == FREESURFACE) {
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
@@ -1543,6 +1549,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			Aeroelastic_n1[i]  = 0.0;
 		}
 	}
+    
+    /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
+    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
+        Aeroelastic_pitch = new double[nMarker_Monitoring];
+        Aeroelastic_plunge = new double[nMarker_Monitoring];
+        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
+            Aeroelastic_pitch[iMarker] = 0.0;
+            Aeroelastic_plunge[iMarker] = 0.0;
+        }
+    }
 
     /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
 	if (Grid_Movement && Kind_GridMovement[ZONE_0] == AEROELASTIC)
@@ -1553,7 +1569,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Fluid-Structure problems always have grid movement ---*/
 	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
       Kind_Solver == FLUID_STRUCTURE_NAVIER_STOKES) {
-		if (Kind_Turb_Model == SA || Kind_Turb_Model == SST)
+		if (Kind_Turb_Model != NONE)
 			Kind_Solver = FLUID_STRUCTURE_RANS;
 		Grid_Movement = true;
 	}
@@ -1562,7 +1578,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	else FinestMesh = MESH_0;
 
 	if ((Kind_Solver == NAVIER_STOKES) &&
-			(Kind_Turb_Model == SA || Kind_Turb_Model == SST))
+			(Kind_Turb_Model != NONE))
 		Kind_Solver = RANS;
 
 	if (Kind_Regime == FREESURFACE) GravityForce = true;
@@ -3631,6 +3647,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         switch (Kind_Turb_Model) {
           case SA:  cout << "Spalart Allmaras" << endl; break;
           case SST: cout << "Menter's SST"     << endl; break;
+          case ML: cout << "Machine Learning" <<endl;break;
         }
         break;
       case TNE2_EULER:
@@ -5403,6 +5420,9 @@ CConfig::~CConfig(void)
 		delete[] Aeroelastic_np1;
 		delete[] Aeroelastic_n;
 		delete[] Aeroelastic_n1;
+        
+        delete[] Aeroelastic_pitch;
+        delete[] Aeroelastic_plunge;
 	}
 
 	/*--- Free memory for unspecified grid motion parameters ---*/

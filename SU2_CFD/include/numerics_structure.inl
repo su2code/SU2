@@ -587,6 +587,22 @@ inline double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction
 
 inline double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
 
+
+
+inline void CSourcePieceWise_TurbML::SetIntermittency(double intermittency_in) { intermittency = intermittency_in; }
+
+inline void CSourcePieceWise_TurbML::SetProduction(double val_production) { Production = val_production; }
+
+inline void CSourcePieceWise_TurbML::SetDestruction(double val_destruction) { Destruction = val_destruction; }
+
+inline void CSourcePieceWise_TurbML::SetCrossProduction(double val_crossproduction) { CrossProduction = val_crossproduction; }
+
+inline double CSourcePieceWise_TurbML::GetProduction(void) { return Production; }
+
+inline double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction; }
+
+inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
+
 inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { poissonField = val_Efield; }
 
 inline double* CSourcePieceWise_Plasma::GetMagneticField() { return JcrossB; }
