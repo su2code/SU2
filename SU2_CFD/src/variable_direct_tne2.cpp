@@ -287,6 +287,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
   /*--- Allocate partial derivative vectors ---*/
   dPdrhos = new double [nSpecies];
   
+  /*--- Determine the number of heavy species ---*/
+  ionization = config->GetIonization();
+  
 	/*--- Initialize Solution & Solution_Old vectors ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Solution[iVar]     = val_solution[iVar];
@@ -381,7 +384,6 @@ void CTNE2EulerVariable::SetVelocity2(void) {
 bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   // Note: Requires previous call to SetDensity()
-  bool ionization;
   unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter, *nElStates;
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
@@ -397,7 +399,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   maxIter = 50;
   
   /*--- Determine the number of heavy species ---*/
-  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
