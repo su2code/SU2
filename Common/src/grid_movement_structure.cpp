@@ -322,6 +322,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
         Point_3 = geometry->elem[iElem]->GetNode(3);
         RightVol = Check_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3, &Volume);
       }
+      
       if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
         Point_0 = geometry->elem[iElem]->GetNode(0);
         Point_1 = geometry->elem[iElem]->GetNode(1);
@@ -489,9 +490,9 @@ void CVolumetricMovement::GetHexa_Jacobian(double HexaCorners[8][3], unsigned sh
   double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
     {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
   
-  double Xi = HexaCode[iNode][0];
-  double Eta = HexaCode[iNode][1];
-  double Mu = HexaCode[iNode][2];
+  double Xi   = HexaCode[iNode][0];
+  double Eta  = HexaCode[iNode][1];
+  double Mu   = HexaCode[iNode][2];
 
   for (iDim = 0; iDim < 3; iDim++) {
     for (jDim = 0; jDim < 3; jDim++) {
@@ -565,7 +566,7 @@ double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
 	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume = fabs((CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0);
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = HexaCorners[0];
   Coord_1 = HexaCorners[2];
@@ -581,7 +582,7 @@ double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
 	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += fabs((CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0);
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = HexaCorners[0];
   Coord_1 = HexaCorners[2];
@@ -597,7 +598,7 @@ double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
 	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += fabs((CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0);
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = HexaCorners[0];
   Coord_1 = HexaCorners[5];
@@ -613,7 +614,7 @@ double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
 	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += fabs((CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0);
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = HexaCorners[2];
   Coord_1 = HexaCorners[7];
@@ -629,7 +630,7 @@ double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
 	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += fabs((CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0);
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -667,6 +668,58 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
     HexaCorners[7][iDim] = geometry->node[Point_7]->GetCoord(iDim);
   }
   
+//  Node = 6;
+//  Xi = 1.0; Eta = 1.0; Mu = 1.0;
+//  
+//  cout << GetHexa_ShapeFunction(Node, Xi, Eta, Mu) << endl;
+//  
+//  
+//  GetHexa_Jacobian(HexaCorners, Node, Jacobian);
+//  
+//  cout <<"InvJacobian" << endl;
+//
+//  cout << Jacobian[0][0] <<" "<< Jacobian[0][1] <<" "<< Jacobian[0][2] << endl;
+//  cout << Jacobian[1][0] <<" "<< Jacobian[1][1] <<" "<< Jacobian[1][2] << endl;
+//  cout << Jacobian[2][0] <<" "<< Jacobian[2][1] <<" "<< Jacobian[2][2] << endl;
+//  
+//  GetHexa_InvJacobian(HexaCorners, Node, InvJacobian);
+//  
+//  cout << endl;
+//  cout <<"InvJacobian" << endl;
+//
+//  cout << InvJacobian[0][0] <<" "<< InvJacobian[0][1] <<" "<< InvJacobian[0][2] << endl;
+//  cout << InvJacobian[1][0] <<" "<< InvJacobian[1][1] <<" "<< InvJacobian[1][2] << endl;
+//  cout << InvJacobian[2][0] <<" "<< InvJacobian[2][1] <<" "<< InvJacobian[2][2] << endl;
+//  
+//  for (iDim = 0; iDim < 3; iDim++) {
+//    for (jDim = 0; jDim < 3; jDim++) {
+//      Identity[iDim][jDim] = 0.0;
+//      for (kDim = 0; kDim < 3; kDim++) {
+//        Identity[iDim][jDim] += Jacobian[iDim][kDim]*InvJacobian[kDim][jDim];
+//      }
+//    }
+//  }
+//  
+//  cout << endl;
+//  cout <<"Identity" << endl;
+//
+//  cout << Identity[0][0] <<" "<< Identity[0][1] <<" "<< Identity[0][2] << endl;
+//  cout << Identity[1][0] <<" "<< Identity[1][1] <<" "<< Identity[1][2] << endl;
+//  cout << Identity[2][0] <<" "<< Identity[2][1] <<" "<< Identity[2][2] << endl;
+//  
+//  cin.get();
+  
+//  for (iNode = 0; iNode < 8; iNode++) {
+//    cout << iNode <<" ";
+//
+//    for (iDim = 0; iDim < 3; iDim++) {
+//      cout <<" "<< HexaCorners[iNode][iDim] <<" ";
+//    }
+//    cout << endl;
+//    
+//  }
+//  cin.get();
+//  
   
   Volume = GetHexa_Volume(HexaCorners);
   
@@ -684,11 +737,12 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
     
   }
   else {
-    
-    GetHexa_InvJacobian(HexaCorners, Node, InvJacobian);
+  
     
     for (iNode = 0; iNode < 8; iNode++) {
       
+      GetHexa_InvJacobian(HexaCorners, iNode, InvJacobian);
+
       Xi = HexaCode[iNode][0];
       Eta = HexaCode[iNode][1];
       Mu = HexaCode[iNode][2];
@@ -698,9 +752,31 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
         for (jDim = 0; jDim < 3; jDim++) {
           DShapeFunction[iNode][iDim] += InvJacobian[iDim][jDim]*GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[jDim];
         }
+        
       }
       
     }
+    
+    
+//    for (iNode = 0; iNode < 8; iNode++) {
+//      
+//      GetHexa_InvJacobian(HexaCorners, iNode, InvJacobian);
+//      
+//      Xi = HexaCode[iNode][0];
+//      Eta = HexaCode[iNode][1];
+//      Mu = HexaCode[iNode][2];
+//      
+//      cout << GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[0] <<" "<< GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[1] <<" "<< GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[2] << endl;
+//      
+//    }
+//    
+//    for (iNode = 0; iNode < 8; iNode++) {
+//      cout << DShapeFunction[iNode][0] <<" "<< DShapeFunction[iNode][1] <<" "<< DShapeFunction[iNode][2] << endl;
+//      
+//      
+//    }
+//    cin.get();
+    
     
     /*--- Compute the B Matrix ---*/
     for (iVar = 0; iVar < 6; iVar++)
@@ -719,9 +795,19 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
       B_Matrix[5][16+iVar]  = DShapeFunction[iVar][0];
     }
     
-    for (iVar = 0; iVar < 6; iVar++)
-      for (jVar = 0; jVar < 24; jVar++)
+    for (iVar = 0; iVar < 6; iVar++) {
+      for (jVar = 0; jVar < 24; jVar++) {
         BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
+//        cout << BT_Matrix[jVar][iVar] <<"\t";
+      }
+//      cout <<endl;
+    }
+    
+//    cout <<endl;
+
+ //   cin.get();
+    
+    
     
     E = 1.0 / Volume * fabs(scale);
     Mu = E;
@@ -749,7 +835,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
       for (jVar = 0; jVar < 24; jVar++) {
         StiffMatrix_Elem[iVar][jVar] = 0.0;
         for (kVar = 0; kVar < 6; kVar++)
-          StiffMatrix_Elem[iVar][jVar] += Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
+          StiffMatrix_Elem[iVar][jVar] += 0.125 * Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
       }
     }
     
@@ -958,8 +1044,9 @@ void CVolumetricMovement::AddFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
 
 void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
                                                unsigned long val_Point_2, unsigned long val_Point_3) {
-  unsigned short iVar, jVar;
+  unsigned short iVar, jVar, iDim, jDim;
   unsigned short nVar = geometry->GetnDim();
+  unsigned long Point[4] = { 0, 0, 0, 0 };
   
   double **StiffMatrix_Node;
   StiffMatrix_Node = new double* [nVar];
@@ -970,89 +1057,24 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
     for (jVar = 0; jVar < nVar; jVar++)
       StiffMatrix_Node[iVar][jVar] = 0.0;
 
-  
+  Point[0] = val_Point_0; Point[1] = val_Point_1; Point[2] = val_Point_2; Point[3] = val_Point_3;
+
   /*--- Transform the stiffness matrix for the tetrahedral element into the
    contributions for the individual nodes relative to each other. ---*/
   
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][2];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][2];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][2];
-  StiffMatrix.AddBlock(val_Point_0, val_Point_0, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][5];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][5];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][5];
-  StiffMatrix.AddBlock(val_Point_0, val_Point_1, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][8];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][8];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][8];
-  StiffMatrix.AddBlock(val_Point_0, val_Point_2, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[0][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[0][10];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[0][11];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[1][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[1][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[1][11];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[2][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[2][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[2][11];
-  StiffMatrix.AddBlock(val_Point_0, val_Point_3, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][2];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][2];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][2];
-  StiffMatrix.AddBlock(val_Point_1, val_Point_0, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][5];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][5];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][5];
-  StiffMatrix.AddBlock(val_Point_1, val_Point_1, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][8];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][8];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][8];
-  StiffMatrix.AddBlock(val_Point_1, val_Point_2, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[3][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[3][10];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[3][11];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[4][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[4][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[4][11];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[5][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[5][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[5][11];
-  StiffMatrix.AddBlock(val_Point_1, val_Point_3, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][2];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][2];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][2];
-  StiffMatrix.AddBlock(val_Point_2, val_Point_0, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][5];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][5];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][5];
-  StiffMatrix.AddBlock(val_Point_2, val_Point_1, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][8];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][8];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][8];
-  StiffMatrix.AddBlock(val_Point_2, val_Point_2, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[6][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[6][10];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[6][11];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[7][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[7][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[7][11];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[8][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[8][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[8][11];
-  StiffMatrix.AddBlock(val_Point_2, val_Point_3, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][0];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][1];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][2];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][0];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][1];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][2];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][0];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][1];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][2];
-  StiffMatrix.AddBlock(val_Point_3, val_Point_0, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][3];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][4];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][5];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][3];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][4];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][5];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][3];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][4];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][5];
-  StiffMatrix.AddBlock(val_Point_3, val_Point_1, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][6];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][7];	StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][8];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][6];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][7];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][8];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][6];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][7];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][8];
-  StiffMatrix.AddBlock(val_Point_3, val_Point_2, StiffMatrix_Node);
-  
-  StiffMatrix_Node[0][0] = StiffMatrix_Elem[9][9];	StiffMatrix_Node[0][1] = StiffMatrix_Elem[9][10];		StiffMatrix_Node[0][2] = StiffMatrix_Elem[9][11];
-  StiffMatrix_Node[1][0] = StiffMatrix_Elem[10][9];	StiffMatrix_Node[1][1] = StiffMatrix_Elem[10][10];	StiffMatrix_Node[1][2] = StiffMatrix_Elem[10][11];
-  StiffMatrix_Node[2][0] = StiffMatrix_Elem[11][9];	StiffMatrix_Node[2][1] = StiffMatrix_Elem[11][10];	StiffMatrix_Node[2][2] = StiffMatrix_Elem[11][11];
-  StiffMatrix.AddBlock(val_Point_3, val_Point_3, StiffMatrix_Node);
+  for (iVar = 0; iVar < 4; iVar++) {
+    for (jVar = 0; jVar < 4; jVar++) {
+      
+      for (iDim = 0; iDim < nVar; iDim++) {
+        for (jDim = 0; jDim < nVar; jDim++) {
+          StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nVar)+iDim][(jVar*nVar)+jDim];
+        }
+      }
+      
+      StiffMatrix.AddBlock(Point[iVar], Point[jVar], StiffMatrix_Node);
+      
+    }
+  }
   
   /*--- Deallocate memory and exit ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -1061,9 +1083,7 @@ void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
-                                               unsigned long val_Point_2, unsigned long val_Point_3, unsigned long val_Point_4, unsigned long val_Point_5,
-                                               unsigned long val_Point_6, unsigned long val_Point_7) {
+void CVolumetricMovement::AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, unsigned long val_Point_3, unsigned long val_Point_4, unsigned long val_Point_5, unsigned long val_Point_6, unsigned long val_Point_7) {
   unsigned short iVar, jVar, iDim, jDim;
   unsigned short nVar = geometry->GetnDim();
   unsigned long Point[8] = { 0, 0, 0, 0, 0, 0, 0, 0};
@@ -1254,11 +1274,11 @@ bool CVolumetricMovement::Check_Elem3D(CGeometry *geometry, unsigned long val_iE
   (*Volume) += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   if ((*Volume) < 0.0) {
-    
     return false;
-    
   }
-  else return true;
+  else {
+    return true;
+  }
   
 }
 
@@ -1458,8 +1478,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
     
-    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
-    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system->ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
+    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, true);
+    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system->ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, true);
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
 
@@ -1476,6 +1496,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Check for failed deformation (negative volumes). ---*/
     
+    cout << "Check for failed deformation (negative volumes)." << endl;
     MinVol = Check_Grid(geometry);
     
     if (rank == MASTER_NODE) {
