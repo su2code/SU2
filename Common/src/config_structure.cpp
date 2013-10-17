@@ -27,7 +27,11 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Reading config options  ---*/
@@ -66,8 +70,7 @@ CConfig::CConfig(char case_filename[200]) {
   
 	if (case_file.fail()) {
 		cout << "There is no configuration file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
   
 	/*--- Parse the configuration file and set the options ---*/
@@ -177,10 +180,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
 	AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
-	/* DESCRIPTION: Sliding mesh interface boundary marker(s) for use with SU2_SMC
-   Format: ( sliding marker, zone # of sliding marker, donor marker, zone # of donor, ... ) */
-	AddMarkerSliding("MARKER_SLIDING", nMarker_Sliding, Marker_SlideBound, Marker_SlideDonor,
-                   SlideBound_Zone, SlideDonor_Zone);
   /* DESCRIPTION: Inlet boundary type */
 	AddEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, "TOTAL_CONDITIONS");
 	/* DESCRIPTION: Inlet boundary marker(s) with the following formats,
@@ -219,10 +218,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerLoad("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
 	/* DESCRIPTION: Flow load boundary marker(s) */
 	AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
-	/* DESCRIPTION: FW-H boundary marker(s) */
-	AddMarkerOption("MARKER_FWH", nMarker_FWH, Marker_FWH);
-	/* DESCRIPTION: Observer boundary marker(s) */
-	AddMarkerOption("MARKER_OBSERVER", nMarker_Observer, Marker_Observer);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
 	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
   
@@ -277,8 +272,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("UNST_INT_ITER", Unst_nIntIter, 100);
 	/* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
 	AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
-  /* DESCRIPTION: Number of internal iterations (dual time method) */
+  /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
 	AddScalarOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
+  /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
+	AddScalarOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
   /* DESCRIPTION: Time discretization */
@@ -978,7 +975,11 @@ void CConfig::SetParsing(char case_filename[200]) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Read the configuration file ---*/
@@ -986,8 +987,7 @@ void CConfig::SetParsing(char case_filename[200]) {
   
   if (case_file.fail()) {
     cout << "There is no configuration file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
 	}
   
 	/*--- Parse the configuration file and set the options ---*/
@@ -1015,7 +1015,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
   int size = SINGLE_NODE;
 #else
-  int size = MPI::COMM_WORLD.Get_size();
+  int size;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+	size = MPI::COMM_WORLD.Get_size();
+#endif
 #endif
   
 #ifdef NO_TECIO
@@ -1032,8 +1037,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
     }
   }
@@ -1076,8 +1079,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
       cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      cout << "Press any key to exit..." << endl;
-      cin.get();
       exit(1);
     }
   }
@@ -1109,26 +1110,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   
   /*--- Make sure that there aren't more than one rigid motion or 
-   rotating frame specified in GRID_MOVEMENT_KIND. This means that sliding
-   mesh simulations are currently disabled. ---*/
+   rotating frame specified in GRID_MOVEMENT_KIND. ---*/
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get();
     exit(1);
   }
   
@@ -1148,8 +1142,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1161,8 +1153,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1174,8 +1164,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1188,8 +1176,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1201,8 +1187,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1214,8 +1198,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
         cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1228,8 +1210,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
         cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1241,8 +1221,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
         cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1254,8 +1232,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
         cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1268,8 +1244,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1281,8 +1255,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1294,8 +1266,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
         cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1308,8 +1278,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1321,8 +1289,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1334,8 +1300,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
         cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1348,8 +1312,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1361,8 +1323,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1374,8 +1334,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
         cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1388,8 +1346,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1401,8 +1357,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1414,8 +1368,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
         cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1428,8 +1380,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1441,8 +1391,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1454,8 +1402,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
         cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
       }
     }
@@ -1467,7 +1413,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	if (Unsteady_Simulation == TIME_SPECTRAL) {
 
 		unsigned short N_MOTION_TYPES = 3;
-		double periods[N_MOTION_TYPES];
+		// double periods[N_MOTION_TYPES];
+		double *periods;
+		periods = new double[N_MOTION_TYPES];
 
 		/*--- rotation: ---*/
 		double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
@@ -1498,6 +1446,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 				TimeSpectral_Period = periods[iVar];
 		}
 
+		delete periods;
+
 	}
     
     /*--- Initialize the RefOriginMoment Pointer ---*/
@@ -1516,8 +1466,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
     if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
         cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
-        cout << "Press any key to exit..." << endl;
-        cin.get();
         exit(1);
     }
 
@@ -1527,13 +1475,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             RefOriginMoment_X[iMarker] = 0.0;
     } else {
         if (nRefOriginMoment_X == 1) {
+          
+          double aux_RefOriginMoment_X = RefOriginMoment_X[0];
+          delete [] RefOriginMoment_X;
+          RefOriginMoment_X = new double[nMarker_Monitoring];
+          nRefOriginMoment_X = nMarker_Monitoring;
+          
             for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-                RefOriginMoment_X[iMarker] = RefOriginMoment_X[0];
+                RefOriginMoment_X[iMarker] = aux_RefOriginMoment_X;
         }
         else if (nRefOriginMoment_X != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
             exit(1);
         }
     }
@@ -1544,13 +1496,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             RefOriginMoment_Y[iMarker] = 0.0;
     } else {
         if (nRefOriginMoment_Y == 1) {
+          
+            double aux_RefOriginMoment_Y = RefOriginMoment_Y[0];
+            delete [] RefOriginMoment_Y;
+            RefOriginMoment_Y = new double[nMarker_Monitoring];
+            nRefOriginMoment_Y = nMarker_Monitoring;
+          
             for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-                RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[0];
+                RefOriginMoment_Y[iMarker] = aux_RefOriginMoment_Y;
         }
         else if (nRefOriginMoment_Y != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
             exit(1);
         }
     }
@@ -1561,17 +1517,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             RefOriginMoment_Z[iMarker] = 0.0;
     } else {
         if (nRefOriginMoment_Z == 1) {
+          
+            double aux_RefOriginMoment_Z = RefOriginMoment_Z[0];
+            delete [] RefOriginMoment_Z;
+            RefOriginMoment_Z = new double[nMarker_Monitoring];
+            nRefOriginMoment_Z = nMarker_Monitoring;
+          
             for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ )
-                RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[0];
+                RefOriginMoment_Z[iMarker] = aux_RefOriginMoment_Z;
         }
         else if (nRefOriginMoment_Z != nMarker_Monitoring) {
             cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
             exit(1);
         }
     }
-    
+  
 	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
 	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
 		Aeroelastic_np1 = new double[4];
@@ -1597,13 +1557,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 			Kind_Solver = FLUID_STRUCTURE_RANS;
 		Grid_Movement = true;
 	}
-  
-	/*--- Set a flag for sliding interfaces so that a search
-   and interpolation is performed after each time step. ---*/
-	if (nMarker_Sliding > 0)
-		Relative_Motion = true;
-	else
-		Relative_Motion = false;
 
 	if (FullMG) FinestMesh = nMultiLevel;
 	else FinestMesh = MESH_0;
@@ -1710,7 +1663,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
     if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
 		if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
-    if (Kind_Solver == AEROACOUSTIC_EULER) Kind_Solver = ADJ_AEROACOUSTIC_EULER;
 		if (Kind_Solver == PLASMA_EULER) Kind_Solver = ADJ_PLASMA_EULER;
 		if (Kind_Solver == PLASMA_NAVIER_STOKES) Kind_Solver = ADJ_PLASMA_NAVIER_STOKES;
 	}
@@ -1757,30 +1709,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
 		cout << "You must define a solver type!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
 	if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
 		cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get();
 		exit(1);
 	}
 
@@ -2063,6 +2007,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Reactions[iRxn] = new int*[2];
           for (unsigned short ii = 0; ii < 2; ii++)
             Reactions[iRxn][ii] = new int[6];
+        }
+        
+        // Omega[iSpecies][jSpecies][iCoeff]
+        Omega00 = new double**[nSpecies];
+        Omega11 = new double**[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Omega00[iSpecies] = new double*[nSpecies];
+          Omega11[iSpecies] = new double*[nSpecies];
+          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+            Omega00[iSpecies][jSpecies] = new double[4];
+            Omega11[iSpecies][jSpecies] = new double[4];
+          }
         }
         
         MassFrac_FreeStream = new double[nSpecies];
@@ -2352,6 +2308,71 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
         Tcf_a[15] = 1.0; Tcf_b[15] = 0.0; Tcb_a[15] = 1;  Tcb_b[15] = 0;
         Tcf_a[16] = 1.0; Tcf_b[16] = 0.0; Tcb_a[16] = 1;  Tcb_b[16] = 0;
+        
+        /*--- Collision integral data ---*/
+        // Omega(0,0) ----------------------
+        //N2
+        Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+        Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
+        Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
+        Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
+        Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+        //O2
+        Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
+        Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
+        Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
+        Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
+        Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+        //NO
+        Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
+        Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
+        Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
+        Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
+        Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+        //N
+        Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
+        Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
+        Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
+        Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
+        Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+        //O
+        Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
+        Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
+        Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
+        Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
+        Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
+        
+        // Omega(1,1) ----------------------
+        //N2
+        Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+        Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
+        Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
+        Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
+        Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+        //O2
+        Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
+        Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
+        Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
+        Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
+        Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+        //NO
+        Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
+        Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
+        Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
+        Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
+        Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+        //N
+        Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
+        Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
+        Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
+        Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
+        Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+        //O
+        Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
+        Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
+        Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
+        Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
+        Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
         
         break;
     }
@@ -3217,7 +3238,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 			cout << "WARNING: No species temperature specified, using mean flow freestream value for all species." << endl;
 #else
-			if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+			int rank;
+#ifdef WINDOWS
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+			rank = MPI::COMM_WORLD.Get_rank();
+#endif
+			if (rank == MASTER_NODE)
 				cout << "WARNING: No species temperature specified, using mean flow freestream value for all species." << endl;
 #endif
 			Species_Temperature_FreeStream = new double[nSpecies];
@@ -3238,7 +3265,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 				cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #else
-				if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();				
+#endif
+				if (rank == MASTER_NODE)
 					cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #endif
 				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -3260,7 +3293,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 				cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #else
-				if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();
+#endif
+				if (rank == MASTER_NODE)
 					cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #endif
 				CFL_Iter_Species = new unsigned short[nSpecies];
@@ -3273,7 +3312,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #ifdef NO_MPI
 				cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #else
-				if (MPI::COMM_WORLD.Get_rank() == MASTER_NODE)
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();
+#endif
+				if (rank == MASTER_NODE)
 					cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
 #endif
 				CFL_Max_Species = new double[nSpecies];
@@ -3293,20 +3338,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
 
 #ifdef NO_MPI
-  nDomain = SINGLE_NODE;
+	nDomain = SINGLE_NODE;
 #else
   /*--- Identify the solvers that work in serial ---*/
 	if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
+#ifdef WINDOWS
+		MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
+#else
 		nDomain = MPI::COMM_WORLD.Get_size();
-  else
-    nDomain = SINGLE_NODE;
+#endif		
+	else
+		nDomain = SINGLE_NODE;
 #endif
 
 	/*--- Boundary (marker) treatment ---*/
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Custom + 2*nDomain;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -3317,13 +3366,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
-	Marker_All_Sliding    = new unsigned short[nMarker_All+2];	// Store whether the boundary belongs to a sliding interface.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-	iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-	iMarker_Supersonic_Inlet, iMarker_Sliding;
+	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
+	iMarker_Supersonic_Inlet;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
@@ -3335,11 +3383,10 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
 		Marker_All_PerBound[iMarker_All]   = 0;
-		Marker_All_Sliding[iMarker_All]    = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
-			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_FWH + nMarker_Observer + nMarker_Custom + nMarker_Sliding;
+			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -3349,8 +3396,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_Config_Moving     = new unsigned short[nMarker_Config];
 	Marker_Config_Designing  = new unsigned short[nMarker_Config];
 	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
-	Marker_Config_Sliding    = new unsigned short[nMarker_Config];
-    
+  
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config]   = 0;
@@ -3360,7 +3406,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_DV[iMarker_Config]         = 0;
     Marker_Config_Moving[iMarker_Config]     = 0;
 		Marker_Config_PerBound[iMarker_Config]   = 0;
-		Marker_Config_Sliding[iMarker_Config]    = 0;
 	}
 
 	iMarker_Config = 0;
@@ -3386,13 +3431,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_Tag[iMarker_Config] = Marker_PerBound[iMarker_PerBound];
 		Marker_Config_Boundary[iMarker_Config] = PERIODIC_BOUNDARY;
 		Marker_Config_PerBound[iMarker_Config] = iMarker_PerBound + 1;
-		iMarker_Config++;
-	}
-
-	for (iMarker_Sliding = 0; iMarker_Sliding < nMarker_Sliding; iMarker_Sliding++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_SlideBound[iMarker_Sliding];
-		Marker_Config_Boundary[iMarker_Config] = SLIDING_INTERFACE;
-		Marker_Config_Sliding[iMarker_Config]  = iMarker_Sliding + 1;
 		iMarker_Config++;
 	}
 
@@ -3491,18 +3529,6 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		iMarker_Config++;
 	}
 
-	for (iMarker_FWH = 0; iMarker_FWH < nMarker_FWH; iMarker_FWH++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_FWH[iMarker_FWH];
-		Marker_Config_Boundary[iMarker_Config] = FWH_SURFACE;
-		iMarker_Config++;
-	}
-
-	for (iMarker_Observer = 0; iMarker_Observer < nMarker_Observer; iMarker_Observer++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_Observer[iMarker_Observer];
-		Marker_Config_Boundary[iMarker_Config] = WAVE_OBSERVER;
-		iMarker_Config++;
-	}
-
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Monitoring[iMarker_Config] = NO;
 		for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
@@ -3543,7 +3569,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_FWH, iMarker_Observer, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -3559,7 +3585,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	case SU2_MAC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
 	case SU2_GDC: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Design Code)              |" << endl; break;
 	case SU2_PBC: cout << "|  |_____/   \\____/  |____|   Suite (Periodic Boundary Code)            |" << endl; break;
-	case SU2_SMC: cout << "|  |_____/   \\____/  |____|   Suite (Sliding Mesh Code)                 |" << endl; break;
 	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
@@ -3824,6 +3849,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
 				case PARABOLIC: cout << "Parabolic <-> "; break;
 				case OBSTACLE: cout << "Obstacle <-> "; break;
+        case AIRFOIL: cout << "Airfoil <-> "; break;
 				case STRETCH: cout << "Stretch <-> "; break;
 				case ROTATION: cout << "Rotation <-> "; break;
 				case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
@@ -3851,6 +3877,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
 				if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
 				if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
+        if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
 				if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
 				if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
 				if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;
@@ -3885,6 +3912,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
 			case PARABOLIC: cout << "Parabolic <-> "; break;
 			case OBSTACLE: cout << "Obstacle <-> "; break;
+      case AIRFOIL: cout << "Airfoil <-> "; break;
 			case STRETCH: cout << "Stretch <-> "; break;
 			case ROTATION: cout << "Rotation <-> "; break;
 			case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
@@ -3912,6 +3940,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
 			if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
 			if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
+      if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
 			if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
 			if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
 			if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;
@@ -3958,7 +3987,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case HEAT_LOAD: cout << "Integrated heat flux objective function." << endl; break;
 		case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
 		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
-		case NOISE: cout << "Noise objective function." << endl; break;
 		}
 
 	}
@@ -4727,24 +4755,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (nMarker_FWH != 0) {
-		cout << "FW-H boundary marker(s): ";
-		for (iMarker_FWH = 0; iMarker_FWH < nMarker_FWH; iMarker_FWH++) {
-			cout << Marker_FWH[iMarker_FWH];
-			if (iMarker_FWH < nMarker_FWH-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
-	}
-
-	if (nMarker_Observer != 0) {
-		cout << "Wave observer boundary marker(s): ";
-		for (iMarker_Observer = 0; iMarker_Observer < nMarker_Observer; iMarker_Observer++) {
-			cout << Marker_Observer[iMarker_Observer];
-			if (iMarker_Observer < nMarker_Observer-1) cout << ", ";
-			else cout <<"."<<endl;
-		}
-	}
-
 	if (nMarker_Neumann != 0) {
 		cout << "Neumann boundary marker(s): ";
 		for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
@@ -5033,15 +5043,6 @@ void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_Pe
 	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
-void CConfig::AddMarkerSliding(const string & name, unsigned short & nMarker_Sliding,
-		string* & Marker_SlideBound, string* & Marker_SlideDonor,
-		unsigned short* & SlideBound_Zone, unsigned short* & SlideDonor_Zone) {
-	nMarker_Sliding = 0;
-	CAnyOptionRef* option_ref = new CMarkerSlidingRef(nMarker_Sliding, Marker_SlideBound,
-			Marker_SlideDonor, SlideBound_Zone, SlideDonor_Zone);
-	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-}
-
 void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
 		string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
 		double** & FlowDir) {
@@ -5304,8 +5305,6 @@ unsigned short CConfig::GetMarker_Config_Tag(string val_marker) {
 			return iMarker_Config;
 
 	cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
-	cout <<"Press any key to exit..." << endl;
-	cin.get();
 	exit(1);
 }
 
@@ -5356,13 +5355,6 @@ unsigned short CConfig::GetMarker_Config_PerBound(string val_marker) {
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
 		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
 	return Marker_Config_PerBound[iMarker_Config];
-}
-
-unsigned short CConfig::GetMarker_Config_Sliding(string val_marker) {
-	unsigned short iMarker_Config;
-	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-	return Marker_Config_Sliding[iMarker_Config];
 }
 
 CConfig::~CConfig(void)
@@ -5499,42 +5491,48 @@ CConfig::~CConfig(void)
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
 
 #ifndef NO_MPI
+	int size;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+	size = MPI::COMM_WORLD.Get_size();
+#endif
 
 	string old_name;
 	char buffer[10]; 
 
 	/*--- Standard surface output ---*/
 	old_name = SurfFlowCoeff_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain)); 
 		SurfFlowCoeff_FileName = old_name + buffer;	
 	}
 
 	old_name = SurfAdjCoeff_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain)); 
 		SurfAdjCoeff_FileName = old_name + buffer;
 	}
 
-  old_name = SurfStructure_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	old_name = SurfStructure_FileName;
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfStructure_FileName = old_name + buffer;
 	}
   
-  old_name = SurfWave_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	old_name = SurfWave_FileName;
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfWave_FileName = old_name + buffer;
 	}
   
-  old_name = SurfHeat_FileName;
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	old_name = SurfHeat_FileName;
+	if (size > 1) {
 		sprintf (buffer, "_%d", int(val_domain));
 		SurfHeat_FileName = old_name + buffer;
 	}
   
-	if (MPI::COMM_WORLD.Get_size() > 1) {
+	if (size > 1) {
 
 		/*--- Standard flow and adjoint output ---*/
 		sprintf (buffer, "_%d", int(val_domain));
@@ -5568,8 +5566,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   /*--- Check that a positive value iteration is requested (for now). ---*/
   if (val_iter < 0) {
     cout << "Requesting a negative iteration number for the restart file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Append iteration number for unsteady cases ---*/
@@ -5618,7 +5615,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
       case FREE_SURFACE:          AdjExt = "_fs";   break;
-      case NOISE:                 AdjExt = "_fwh";  break;
     }
     Filename.append(AdjExt);
     
@@ -5690,7 +5686,12 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 			cout << CFL[nMultiLevel] <<".\n"<< endl;
 		}
 #else
-		int rank = MPI::COMM_WORLD.Get_rank();
+		int rank;
+#ifdef WINDOWS
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+		rank = MPI::COMM_WORLD.Get_rank();
+#endif 
 		if ((change) && (rank == MASTER_NODE)) {
 			cout <<"\n New value of the CFL number: ";
 			for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
@@ -5723,7 +5724,12 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 						cout << CFL_MS[iSpecies][nMultiLevel] <<".\n"<< endl;
 					}
 #else
-					int rank = MPI::COMM_WORLD.Get_rank();
+					int rank;
+#ifdef WINDOWS
+					MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+					rank = MPI::COMM_WORLD.Get_rank();
+#endif					
 					if ((change) && (rank == MASTER_NODE)) {
 						cout <<"\n New value of the CFL number for Species: " << iSpecies << " = ";
 						for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
@@ -5990,49 +5996,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
 			SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
 		}
 		break;
-	case AEROACOUSTIC_EULER:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_WAVE_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-		}
-		break;
-	case ADJ_AEROACOUSTIC_EULER:
-		if (val_system == RUNTIME_FLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-					GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
-		}
-		if (val_system == RUNTIME_WAVE_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-		}
-		if (val_system == RUNTIME_ADJFLOW_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-					GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
-		}
-		if (val_system == RUNTIME_WAVE_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
-		}
-		break;
 	}
 }
 
@@ -6085,37 +6048,6 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
 	Periodic_Rotation  = new double*[nPeriodic_Index];
 	Periodic_Translate = new double*[nPeriodic_Index];
 
-}
-
-string CConfig::GetMarker_Sliding_Donor(string val_marker) {
-	unsigned short iMarker_SlideBound;
-
-	/*--- Find the marker for this sliding boundary. ---*/
-	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
-		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
-
-	/*--- Return the tag for the sliding donor boundary. ---*/
-	return Marker_SlideDonor[iMarker_SlideBound];
-}
-
-unsigned short CConfig::GetSlideDonor_Zone(string val_marker) {
-	unsigned short iMarker_SlideBound;
-
-	/*--- Find the marker for this sliding boundary. ---*/
-	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
-		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
-
-	return SlideDonor_Zone[iMarker_SlideBound];
-}
-
-unsigned short CConfig::GetSlideBound_Zone(string val_marker) {
-	unsigned short iMarker_SlideBound;
-
-	/*--- Find the marker for this sliding boundary. ---*/
-	for (iMarker_SlideBound = 0; iMarker_SlideBound < nMarker_Sliding; iMarker_SlideBound++)
-		if (Marker_SlideBound[iMarker_SlideBound] == val_marker) break;
-
-	return SlideBound_Zone[iMarker_SlideBound];
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
@@ -6273,7 +6205,11 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	int rank = MASTER_NODE;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	Velocity_FreeStreamND = new double[val_nDim];
@@ -6303,8 +6239,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		/*--- In case there is no restart file ---*/
 		if (farfield_file.fail()) {
 			cout << "There is no farfield bounadry data file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- The first line is the header ---*/

@@ -353,6 +353,7 @@ def read_config(filename):
             if case("AVAILABLE_PROC")         : pass
             if case("EXT_ITER")               : pass
             if case("TIME_INSTANCES")         : pass
+            if case("UNST_ADJOINT_ITER")      : pass
             if case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
@@ -585,6 +586,7 @@ def write_config(filename,param_dict):
             if case("ADAPT_CYCLES")           : pass
             if case("TIME_INSTANCES")         : pass
             if case("AVAILABLE_PROC")         : pass
+            if case("UNST_ADJOINT_ITER")      : pass
             if case("EXT_ITER")               :
                 output_file.write("%i" % new_value)
                 break

@@ -281,10 +281,6 @@ inline void CVertex::SetRotation_Type(short val_rotation_type) { Rotation_Type =
 
 inline short CVertex::GetRotation_Type(void) { return Rotation_Type; }
 
-inline void CVertex::SetMatching_Zone(short val_matching_zone) { Matching_Zone = val_matching_zone; }
-
-inline short CVertex::GetMatching_Zone(void) { return Matching_Zone; }
-
 inline void CVertex::SetDonorPoint(long val_periodicpoint) { PeriodicPoint[0] = val_periodicpoint; }
 
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) { 

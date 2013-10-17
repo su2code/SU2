@@ -2,11 +2,10 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	3/16/13
+# Last updated: 	10/11/13
 #
 # Created by: 		M. Colonno
-# Updated by: 		M. Colonno
-# Updated by:       T. Lukaczyk 4/4/2013
+# Updated by: 		T. Economon
 #
 ##########################
 
@@ -39,10 +38,6 @@ endif
 
 if BUILD_PBC
 SUBDIRS +=SU2_PBC/obj
-endif
-
-if BUILD_SMC
-SUBDIRS +=SU2_SMC/obj
 endif
 
 if BUILD_SOL

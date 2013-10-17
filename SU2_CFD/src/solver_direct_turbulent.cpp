@@ -564,32 +564,47 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     delete precond;
     
 	/*--- Update solution (system written in terms of increments) ---*/
-	switch (config->GetKind_Turb_Model()){
-        case SA:
-            if (!adjoint) {
-                for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-                    for (iVar = 0; iVar < nVar; iVar++)
-                        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-            }
-            break;
-        case SST:
-            if (!adjoint) {
+    
+    if (!adjoint) {
+        
+        /*--- Update and clip trubulent solution ---*/
+        
+        switch (config->GetKind_Turb_Model()) {
+                
+            case SA:
+                
+                for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+                    node[iPoint]->AddClippedSolution(0, config->GetLinear_Solver_Relax()*LinSysSol[iPoint],
+                                                     lowerlimit[0], upperlimit[0]);
+                }
+                
+                break;
+                
+            case SST:
+                
                 for (iPoint = 0; iPoint < nPointDomain; iPoint++){
                     density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
                     density     = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(0);
                     
-                    for (iVar = 0; iVar < nVar; iVar++)
+                    for (iVar = 0; iVar < nVar; iVar++) {
                         node[iPoint]->AddConservativeSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar],
                                                               density, density_old, lowerlimit[iVar], upperlimit[iVar]);
+                    }
+                    
                 }
-            }
-            break;
-	}
+                
+                break;
+                
+        }
+    }
+    
     
     /*--- MPI solution ---*/
+    
     Set_MPI_Solution(geometry, config);
     
     /*--- Compute the root mean square residual ---*/
+    
     SetResidual_RMS(geometry, config);
     
 }
@@ -767,6 +782,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 	double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val;
     
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+    bool adjoint = config->GetAdjoint();
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
     bool freesurface = (config->GetKind_Regime() == FREESURFACE);
@@ -847,6 +863,13 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         
 	}
     
+    /* --- Initialize lower and upper limits--- */
+    lowerlimit = new double[nVar];
+	upperlimit = new double[nVar];
+    
+    lowerlimit[0] = 1.0e-10;
+	upperlimit[0] = 1.0;
+    
 	/*--- Read farfield conditions from config ---*/
 	Density_Inf   = config->GetDensity_FreeStreamND();
 	Viscosity_Inf = config->GetViscosity_FreeStreamND();
@@ -882,7 +905,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         /*--- Modify file name for an unsteady restart ---*/
         if (dual_time) {
             int Unst_RestartIter;
-            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            if (adjoint) {
+                Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+            } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
                 Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
             else
                 Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
@@ -893,8 +918,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
         
@@ -994,6 +1017,7 @@ CTurbSASolver::~CTurbSASolver(void) {
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+    
 	unsigned long iPoint;
     
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -1001,13 +1025,10 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
         /*--- Initialize the residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
         
-        /*--- Basic nu tilde check ---*/
-        if (node[iPoint]->GetSolution(0) < 0.0)
-            node[iPoint]->SetSolution(0, node[iPoint]->GetSolution_Old(0));
-        
     }
     
     /*--- Initialize the jacobian matrices ---*/
+    
 	Jacobian.SetValZero();
     
     /*--- Upwind second order reconstruction ---*/
@@ -2518,24 +2539,22 @@ void CTurbSASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_c
     }
 }
 
-void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
+void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
     
 	/*--- Restart the solution from file information ---*/
-	unsigned long iPoint, index;
-	string UnstExt, text_line;
-	ifstream restart_file;
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    unsigned short iVar, iMesh;
+	unsigned long iPoint, index, iChildren, Point_Fine;
+    double dull_val, Area_Children, Area_Parent, *Solution_Fine;
+    bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-    double dull_val;
+    bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    
+    string UnstExt, text_line;
+	ifstream restart_file;
     string restart_filename = config->GetSolution_FlowFileName();
     
     /*--- Modify file name for an unsteady restart ---*/
-    /*--- For the unsteady adjoint, we integrate backwards through
-     physical time, so load in the direct solution files in reverse eventually. ---*/
     if (dual_time)
         restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
     
@@ -2543,22 +2562,21 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
 	restart_file.open(restart_filename.data(), ios::in);
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
     
 	/*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
 	long *Global2Local = NULL;
-	Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+	Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
 	/*--- First, set all indices to a negative value by default ---*/
-	for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+	for(iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++) {
 		Global2Local[iPoint] = -1;
 	}
     
 	/*--- Now fill array with the transform values only for local points ---*/
-	for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
-		Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	for(iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+		Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
 	}
     
 	/*--- Read all lines in the restart file ---*/
@@ -2603,8 +2621,28 @@ void CTurbSASolver::GetRestart(CGeometry *geometry, CConfig *config, int val_ite
 	/*--- Free memory needed for the transformation ---*/
 	delete [] Global2Local;
     
-    /*--- MPI solution ---*/
-	Set_MPI_Solution(geometry, config);
+    /*--- MPI solution and compute the eddy viscosity ---*/
+	solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+    solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+    
+    /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+    for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
+        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+            Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+            for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+                Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+                Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+                Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+                for (iVar = 0; iVar < nVar; iVar++) {
+                    Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+                }
+            }
+            solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+        }
+        solver[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+    }
     
 }
 
@@ -2623,9 +2661,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 	string text_line;
     
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
+    bool adjoint = config->GetAdjoint();
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
     bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+    bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
     
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -2743,20 +2784,27 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 			node[iPoint] = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nDim, nVar, constants, config);
 	}
 	else {
+        
 		/*--- Restart the solution from file information ---*/
+		ifstream restart_file;
 		string filename = config->GetSolution_FlowFileName();
         
         /*--- Modify file name for an unsteady restart ---*/
-        int Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
-        filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+        if (dual_time) {
+            int Unst_RestartIter;
+            if (adjoint) {
+                Unst_RestartIter = int(config->GetUnst_AdjointIter()) - 1;
+            } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+                Unst_RestartIter = int(config->GetUnst_RestartIter())-1;
+            else
+                Unst_RestartIter = int(config->GetUnst_RestartIter())-2;
+            filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+        }
         
         /*--- Open the restart file, throw an error if this fails. ---*/
 		restart_file.open(filename.data(), ios::in);
-        
 		if (restart_file.fail()) {
 			cout << "There is no turbulent restart file!!" << endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get();
 			exit(1);
 		}
         
@@ -2774,10 +2822,11 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		}
         
 		/*--- Read all lines in the restart file ---*/
-		long iPoint_Local; unsigned long iPoint_Global = 0;
+		long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
         
         /*--- The first line is the header ---*/
         getline (restart_file, text_line);
+        
         
 		while (getline (restart_file,text_line)) {
 			istringstream point_line(text_line);
@@ -2834,26 +2883,34 @@ CTurbSSTSolver::~CTurbSSTSolver(void) {
 }
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+    
 	unsigned long iPoint;
     
-	for (iPoint = 0; iPoint < nPoint; iPoint ++){
+	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+        
+        /*--- Initialize the residual vector ---*/
+        
 		LinSysRes.SetBlock_Zero(iPoint);
+        
 	}
+    
+    /*--- Initialize the jacobian matrices ---*/
+    
 	Jacobian.SetValZero();
     
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
-	// Compute mean flow gradients
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-		solver_container[FLOW_SOL]->SetPrimVar_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-		solver_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config);
+	/*--- Compute mean flow gradients ---*/
     
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-		solver_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-		solver_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
+	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+        solver_container[FLOW_SOL]->SetPrimVar_Gradient_GG(geometry, config);
+        solver_container[FLOW_SOL]->SetSolution_Gradient_GG(geometry, config);
+    }
+	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+        solver_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config);
+        solver_container[FLOW_SOL]->SetSolution_Gradient_LS(geometry, config);
+    }
     
 }
 
@@ -2883,7 +2940,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 		vorticity[1] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(1);
 		vorticity[2] = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(2);
 		vortMag = sqrt(vorticity[0]*vorticity[0] + vorticity[1]*vorticity[1] + vorticity[2]*vorticity[2]);
-		//vort   = 0.0; //not yet implemented
 		solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
 		strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
         
@@ -2905,10 +2961,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 		/*--- Compute the eddy viscosity ---*/
 		kine  = node[iPoint]->GetSolution(0);
 		omega = node[iPoint]->GetSolution(1);
-        
-		//zeta = min(1.0/omega,a1/(vortMag*F2));
 		zeta = min(1.0/omega,a1/(strMag*F2));
-		//zeta = 1.0/omega;
 		muT = min(max(rho*kine*zeta,0.0),1.0);
 		node[iPoint]->SetmuT(muT);
 	}

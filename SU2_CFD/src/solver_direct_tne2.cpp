@@ -47,6 +47,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 	Precon_Mat_inv  = NULL;
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
+  lowerlimit      = NULL;
+  upperlimit      = NULL;
   
 }
 
@@ -86,6 +88,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Precon_Mat_inv  = NULL;
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
+  lowerlimit      = NULL;
+  upperlimit      = NULL;
   
   /*--- Set booleans for solver settings ---*/
   restart    = (config->GetRestart() || config->GetRestart_Flow());
@@ -125,6 +129,22 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Solution   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
 	Solution_i = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
 	Solution_j = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  
+  /*--- Allocate arrays for conserved variable limits ---*/
+  lowerlimit = new double[nVar];
+  upperlimit = new double[nVar];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    lowerlimit[iSpecies] = 0.0;
+    upperlimit[iSpecies] = 1E16;
+  }
+  for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+    lowerlimit[iVar] = -1E16;
+    upperlimit[iVar] = 1E16;
+  }
+  for (iVar = nSpecies+nDim; iVar < nSpecies+nDim+2; iVar++) {
+    lowerlimit[iVar] = 0.0;
+    upperlimit[iVar] = 1E16;
+  }
   
 	/*--- Define some auxiliary vectors related to the geometry ---*/
 	Vector   = new double[nDim];
@@ -283,8 +303,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		if (restart_file.fail()) {
 			cout << "There is no flow restart file!! " << filename.data()
            << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -509,6 +528,8 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 	if (MomentInviscid != NULL) delete [] MomentInviscid;
 	if (PrimVar_i != NULL) delete [] PrimVar_i;
 	if (PrimVar_j != NULL) delete [] PrimVar_j;
+  if (lowerlimit != NULL) delete [] lowerlimit;
+  if (upperlimit != NULL) delete [] upperlimit;
   
 	if (Precon_Mat_inv != NULL) {
 		for (iVar = 0; iVar < nVar; iVar ++)
@@ -1971,12 +1992,10 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
     /*--- Subtract Residual (and Jacobian) ---*/
-//    LinSysRes.SubtractBlock(iPoint, Residual);
-//    if (implicit)
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    if (implicit)
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
   }
-  // Deallocate
-//  delete[] Res_new;
 }
 
 void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
@@ -2252,9 +2271,18 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
 	/*--- Update solution (system written in terms of increments) ---*/
 	if (!adjoint) {
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-			for (iVar = 0; iVar < nVar; iVar++) {
-				node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
-			}
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+//      }
+      for (iVar = 0; iVar < nSpecies; iVar++) {
+        node[iPoint]->AddClippedSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar], lowerlimit[iVar], upperlimit[iVar]);
+      }
+      for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+        node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+      }
+      for (iVar = nSpecies+nDim; iVar < nSpecies+nDim+2; iVar++) {
+        node[iPoint]->AddClippedSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar], lowerlimit[iVar], upperlimit[iVar]);
+      }
 		}
 	}
   
@@ -3519,14 +3547,8 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	/*--- In case there is no file ---*/
 	if (restart_file.fail()) {
 		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
-  
-	/*--- Store the previous solution (needed for aeroacoustic adjoint) ---*/
-	if (config->GetExtIter() > 0)
-		for (iPoint = 0; iPoint < nPoint; iPoint++)
-			node[iPoint]->Set_Solution_time_n();
   
 	/*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
@@ -3579,29 +3601,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 		}
 		iPoint_Global++;
 	}
-  
-	/*--- Set an average grid velocity at any halo nodes for the unsteady adjoint ---*/
-	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && grid_movement) {
-		unsigned long jPoint;
-		unsigned short nNeighbors;
-		double AvgVel[3], *GridVel;
-		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-			AvgVel[0] = 0.0; AvgVel[1] = 0.0; AvgVel[2] = 0.0; nNeighbors = 0;
-			/*--- Find & store any neighbor points to the sliding boundary in the donor zone (jZone). ---*/
-			for (unsigned short iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
-				jPoint = geometry->node[iPoint]->GetPoint(iNeighbor);
-				if (geometry->node[jPoint]->GetDomain()) {
-					GridVel = geometry->node[jPoint]->GetGridVel();
-					for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-						AvgVel[iDim] += GridVel[iDim];
-						nNeighbors++;
-					}
-				}
-			}
-			for (unsigned short iDim = 0; iDim < nDim; iDim++)
-				geometry->node[iPoint]->SetGridVel(iDim, AvgVel[iDim]/(double)nNeighbors);
-		}
-	}
+
   
 	/*--- Close the restart file ---*/
 	restart_file.close();
@@ -3775,6 +3775,22 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     roe_turkel = true;
 	}
   
+  /*--- Allocate arrays for conserved variable limits ---*/
+  lowerlimit = new double[nVar];
+  upperlimit = new double[nVar];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    lowerlimit[iSpecies] = 0.0;
+    upperlimit[iSpecies] = INFINITY;
+  }
+  for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+    lowerlimit[iVar] = -1E16;
+    upperlimit[iVar] = 1E16;
+  }
+  for (iVar = nSpecies+nDim; iVar < nSpecies+nDim+2; iVar++) {
+    lowerlimit[iVar] = 1E-4;
+    upperlimit[iVar] = 1E16;
+  }
+  
   /*--- Initialize the solution & residual CVectors ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -3921,8 +3937,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-			cout << "Press any key to exit..." << endl;
-			cin.get(); exit(1);
+			exit(1);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -4413,24 +4428,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
-    
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
-    
-//    if (iPoint == 0) {
-//    unsigned short iVar, jVar;
-//    cout << "Jacobian_i: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_i[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
-//    }
-    
-    
-    /*--- Implicit part ---*/
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
@@ -4643,6 +4642,91 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	delete [] UnitaryNormal;
 	delete [] TauTangent;
 	delete [] TauElem;
+}
+
+
+void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config,
+                                    unsigned short val_marker) {
+//  bool implicit;
+//  unsigned short iDim;
+//  unsigned long iPoint, jPoint, iVertex;
+//  double *Normal, *UnitNormal, Area;
+//  
+//  /*--- Allocate arrays ---*/
+//  UnitNormal = new double[3];
+//  
+//  /*--- Set booleans based on configuration settings ---*/
+//  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Call the Euler wall routine ---*/
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  
+//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+//  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+//  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+//  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+//  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+//  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+//  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+//  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+//  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+//  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+//  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+//  
+//  /*--- Compute the viscous contribution ---*/
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//    if (geometry->node[iPoint]->GetDomain()) {
+//      /*--- Calculate parameters from the geometry ---*/
+//      // Note: The vertex normal points out of the geometry by convention,
+//      //       so to calculate the influence from the boundary condition
+//      //       to the domain, we negate this vector
+//      Area   = 0.0;
+//      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//      Area = sqrt (Area);
+//      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//      
+//      /*--- Determine the nearest normal neighbor ---*/
+//      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+//      
+//      /*--- Set parameters in the viscous numerics ---*/
+//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                              geometry->node[jPoint]->GetCoord() );
+//      visc_numerics->SetNormal(Normal);
+//      visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
+//                                  node[jPoint]->GetPrimVar() );
+//      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+//                                        node[jPoint]->GetGradient_Primitive() );
+//      visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+//                                       node[jPoint]->GetDiffusionCoeff() );
+//      visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+//                                         node[jPoint]->GetLaminarViscosity() );
+//      visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+//                                            node[jPoint]->GetThermalConductivity());
+//      visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+//                                               node[jPoint]->GetThermalConductivity_ve() );
+//      
+//      /*--- Compute the viscous residual ---*/
+//      visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+//      
+//      /*--- Apply to the linear system ---*/
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//      if (implicit) {
+//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+//      }
+//    }
+//  }
+//  
+//  
+//  delete [] UnitNormal;
+  
 }
 
 void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,

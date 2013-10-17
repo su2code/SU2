@@ -1586,8 +1586,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- In case there is no restart file ---*/
   if (restart_file.fail()) {
     cout << "There is no SU2 restart file!!" << endl;
-    cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    exit(1);
   }
   
   /*--- Output the file name to the console. ---*/
@@ -1784,7 +1783,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_iter) {
+void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -1818,8 +1817,7 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	/*--- In case there is no file ---*/
 	if (solution_file.fail()) {
 		cout << "There is no SU2 restart file!!" << endl;
-		cout << "Press any key to exit..." << endl;
-		cin.get(); exit(1);
+		exit(1);
 	}
   
   /*--- Output the file name to the console. ---*/
@@ -1835,15 +1833,15 @@ void CBaselineSolver::GetRestart(CGeometry *geometry, CConfig *config, int val_i
 	/*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 	long *Global2Local = NULL;
-	Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+	Global2Local = new long[geometry[ZONE_0]->GetGlobal_nPointDomain()];
 	/*--- First, set all indices to a negative value by default ---*/
-	for(iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+	for(iPoint = 0; iPoint < geometry[ZONE_0]->GetGlobal_nPointDomain(); iPoint++) {
 		Global2Local[iPoint] = -1;
 	}
   
 	/*--- Now fill array with the transform values only for local points ---*/
-	for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+	for(iPoint = 0; iPoint < geometry[ZONE_0]->GetnPointDomain(); iPoint++) {
+		Global2Local[geometry[ZONE_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
 	}
   
 	/*--- Read all lines in the restart file ---*/
