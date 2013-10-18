@@ -3230,6 +3230,84 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
 	}
 }
 
+void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
+                                        unsigned long iter, unsigned short iZone) {
+	
+	double deltaT, time_new, time_old, Lref, *Coord;
+  double xDot[3], Center[3], deltaX[3], newCoord[3], VarCoord[3];
+  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, iVertex;
+  string Marker_Tag;
+  
+#ifndef NO_MPI
+	int rank = MPI::COMM_WORLD.Get_rank();
+#else
+	int rank = MASTER_NODE;
+#endif
+	
+  /*--- Retrieve values from the config file ---*/
+  
+  deltaT = config->GetDelta_UnstTimeND();
+  Lref   = config->GetLength_Ref();
+  
+	/*--- Store displacement of each node on the rotating surface ---*/
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+      
+      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+      
+      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      jMarker    = config->GetMarker_Moving(Marker_Tag);
+      
+      /*--- Rotation origin and angular velocity from config. ---*/
+      
+      Center[0] = config->GetMotion_Origin_X(jMarker);
+      Center[1] = config->GetMotion_Origin_Y(jMarker);
+      Center[2] = config->GetMotion_Origin_Z(jMarker);
+      xDot[0]   = config->GetTranslation_Rate_X(jMarker);
+      xDot[1]   = config->GetTranslation_Rate_Y(jMarker);
+      xDot[2]   = config->GetTranslation_Rate_Z(jMarker);
+
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << " Storing translating displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
+          cout << ", " << xDot[2] << ") m/s." << endl;
+        }
+      }
+      
+      /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+
+      VarCoord[0] = xDot[0]*deltaT;
+      VarCoord[1] = xDot[1]*deltaT;
+      VarCoord[2] = xDot[2]*deltaT;
+      
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        /*--- Set node displacement for volume deformation ---*/
+        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        
+      }
+		}
+    
+    
+//    // This has to be done for all markers
+//    
+//    /*--- Set the mesh motion center to the new location after
+//     incrementing the position with the rigid translation. This
+//     new location will be used for subsequent pitching/rotation.---*/
+//    
+//    config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
+//    config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
+//    config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+	}
+}
+
 void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
 	
@@ -3370,6 +3448,129 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
         rotCoord[2] = rotMatrix[2][0]*r[0]
                     + rotMatrix[2][1]*r[1]
                     + rotMatrix[2][2]*r[2] + Center[2];
+        
+        /*--- Calculate delta change in the x, y, & z directions ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+        if (nDim == 2) VarCoord[nDim] = 0.0;
+        
+        /*--- Set node displacement for volume deformation ---*/
+        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        
+      }
+		}
+	}
+}
+
+void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
+                                        unsigned long iter, unsigned short iZone) {
+	
+	double deltaT, time_new, time_old, Lref, *Coord;
+  double Center[3], Omega[3], rotCoord[3], r[3], VarCoord[3];
+  double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  double dtheta, dphi, dpsi, cosTheta, sinTheta;
+  double cosPhi, sinPhi, cosPsi, sinPsi;
+  double DEG2RAD = PI_NUMBER/180.0;
+  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, iVertex;
+  bool adjoint = config->GetAdjoint();
+  string Marker_Tag;
+  
+#ifndef NO_MPI
+	int rank = MPI::COMM_WORLD.Get_rank();
+#else
+	int rank = MASTER_NODE;
+#endif
+	
+  /*--- Retrieve values from the config file ---*/
+  
+  deltaT = config->GetDelta_UnstTimeND();
+  Lref   = config->GetLength_Ref();
+  
+	/*--- Store displacement of each node on the rotating surface ---*/
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+      
+      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
+      
+      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      jMarker    = config->GetMarker_Moving(Marker_Tag);
+      
+      /*--- Rotation origin and angular velocity from config. ---*/
+      
+      Center[0] = config->GetMotion_Origin_X(jMarker);
+      Center[1] = config->GetMotion_Origin_Y(jMarker);
+      Center[2] = config->GetMotion_Origin_Z(jMarker);
+      Omega[0]  = config->GetRotation_Rate_X(jMarker)/config->GetOmega_Ref();
+      Omega[1]  = config->GetRotation_Rate_Y(jMarker)/config->GetOmega_Ref();
+      Omega[2]  = config->GetRotation_Rate_Z(jMarker)/config->GetOmega_Ref();
+
+      /*--- Print some information to the console. Be verbose at the first
+       iteration only (mostly for debugging purposes). ---*/
+      
+      if (rank == MASTER_NODE) {
+        cout << " Storing rotating displacement for marker: ";
+        cout << Marker_Tag << "." << endl;
+        if (iter == 0) {
+          cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
+          cout << ", " << Omega[2] << ") rad/s about origin: (" << Center[0];
+          cout << ", " << Center[1] << ", " << Center[2] << ")." << endl;
+        }
+      }
+      
+      /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+      
+      dtheta = Omega[0]*deltaT;
+      dphi   = Omega[1]*deltaT;
+      dpsi   = Omega[2]*deltaT;
+      
+      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      
+      cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+      sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+      
+      /*--- Compute the rotation matrix. Note that the implicit
+       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+      
+      rotMatrix[0][0] = cosPhi*cosPsi;
+      rotMatrix[1][0] = cosPhi*sinPsi;
+      rotMatrix[2][0] = -sinPhi;
+      
+      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+      rotMatrix[2][1] = sinTheta*cosPhi;
+      
+      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[2][2] = cosTheta*cosPhi;
+      
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        /*--- Index and coordinates of the current point ---*/
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
+        
+        /*--- Calculate non-dim. position from rotation center ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+        if (nDim == 2) r[nDim] = 0.0;
+        
+        /*--- Compute transformed point coordinates ---*/
+        
+        rotCoord[0] = rotMatrix[0][0]*r[0]
+        + rotMatrix[0][1]*r[1]
+        + rotMatrix[0][2]*r[2] + Center[0];
+        
+        rotCoord[1] = rotMatrix[1][0]*r[0]
+        + rotMatrix[1][1]*r[1]
+        + rotMatrix[1][2]*r[2] + Center[1];
+        
+        rotCoord[2] = rotMatrix[2][0]*r[0]
+        + rotMatrix[2][1]*r[1]
+        + rotMatrix[2][2]*r[2] + Center[2];
         
         /*--- Calculate delta change in the x, y, & z directions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
