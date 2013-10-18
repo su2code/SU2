@@ -773,6 +773,15 @@ public:
   double GetHexa_ShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
   
   /*!
+	 * \brief Compute the shape functions for tetrahedron
+	 * \param[in] Node - Node from 1 to 8.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  double GetTets_ShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
+  
+  /*!
 	 * \brief Compute the derivative of the shape functions for hexahedron
 	 * \param[in] Node - Node from 1 to 8.
    * \param[in] Xi - Local coordinates.
@@ -781,6 +790,15 @@ public:
 	 */
   double *GetHexa_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
 
+  /*!
+	 * \brief Compute the derivative of the shape functions for hexahedron
+	 * \param[in] Node - Node from 1 to 8.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  double *GetTets_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
+  
   /*!
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
@@ -793,8 +811,23 @@ public:
   /*!
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  void GetTets_Jacobian(double TetCorners[4][3], unsigned short iNode, double Jacobian[3][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
 	 */
   double GetHexa_Volume(double HexaCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetTets_Volume(double TetCorners[4][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
@@ -804,6 +837,15 @@ public:
    * \param[in] Mu - Local coordinates.
 	 */
   void GetHexa_InvJacobian(double HexaCorners[8][3], unsigned short iNode, double InvJacobian[3][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 */
+  void GetTets_InvJacobian(double TetCorners[4][3], unsigned short iNode, double InvJacobian[3][3]);
   
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
