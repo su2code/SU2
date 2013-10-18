@@ -1039,6 +1039,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     exit(1);
     }
+    
   }
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
@@ -1050,8 +1051,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
 
-//  /*--- Divide grid if runnning SU2_MDC ---*/
-//  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
+  /*--- Divide grid if runnning SU2_MDC ---*/
+  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (Kind_Regime == FREESURFACE) {
