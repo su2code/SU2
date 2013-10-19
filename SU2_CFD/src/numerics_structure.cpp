@@ -3189,6 +3189,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   delete [] Ys;
   delete [] dTdrs;
   delete [] dTvedrs;
+  delete [] hs;
+  delete [] eve;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     delete [] dFdYi[iSpecies];
     delete [] dFdYj[iSpecies];

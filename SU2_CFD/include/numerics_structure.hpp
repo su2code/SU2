@@ -6442,12 +6442,51 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-    
-    /*!
-	 * \brief Generates an orthonormal basis given a single vector
-	 * \param[in] val_Normal - Normal vector.
+};
+
+/*!
+ * \class CUpwAUSM_TNE2
+ * \brief Class for solving an approximate Riemann AUSM.
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ * \version 2.0.6
+ */
+class CUpwAUSMPWplus_TNE2 : public CNumerics {
+private:
+	bool implicit, ionization;
+	double *FcL, *FcR, *FcLR;
+  double *dmLP, *dmRM, *dpLP, *dpRM;
+  double *daL, *daR;
+  double *rhos_i, *u_i;
+	double *rhos_j, *u_j;
+  double a_i, P_i, h_i, ProjVel_i;
+  double a_j, P_j, h_j, ProjVel_j;
+	double sq_vel, Proj_ModJac_Tensor_ij;
+ 	unsigned short nSpecies, nVar, nDim;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-    void CreateBasis(double *val_Normal);
+	CUpwAUSMPWplus_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwAUSMPWplus_TNE2(void);
+  
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
 
