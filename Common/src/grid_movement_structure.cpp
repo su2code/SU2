@@ -792,7 +792,8 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   double DShapeFunction[8][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
   double Volume, E, Lambda;
-  
+  double Jacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
   for (iDim = 0; iDim < 3; iDim++) {
     HexaCorners[0][iDim] = geometry->node[Point_0]->GetCoord(iDim);
     HexaCorners[1][iDim] = geometry->node[Point_1]->GetCoord(iDim);
@@ -841,46 +842,60 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
         DShapeFunction[iNode][iDim] = 0.0;
         for (jDim = 0; jDim < 3; jDim++) {
           DShapeFunction[iNode][iDim] += InvJacobian[iDim][jDim]*GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[jDim];
+//          cout << InvJacobian[iDim][jDim] <<"\t";
         }
-        
+//        cout << endl;
       }
-      
     }
+//    cin.get();
     
-    
+//    for (iNode = 0; iNode < 8; iNode++) {
+//      for (iDim = 0; iDim < 3; iDim++) {
+//        cout << DShapeFunction[iNode][iDim] <<"\t";
+//      }
+//      cout << endl;
+//    }
+//    cin.get();
+
     /*--- Compute the B Matrix ---*/
     for (iVar = 0; iVar < 6; iVar++)
       for (jVar = 0; jVar < 24; jVar++)
         B_Matrix[iVar][jVar] = 0.0;
     
+
     for (iVar = 0; iVar < 8; iVar++) {
-      B_Matrix[0][iVar*3] = DShapeFunction[iVar][0];
+      B_Matrix[0][0+iVar*3] = DShapeFunction[iVar][0];
       B_Matrix[1][1+iVar*3] = DShapeFunction[iVar][1];
       B_Matrix[2][2+iVar*3] = DShapeFunction[iVar][2];
       
-      B_Matrix[3][iVar*3] = DShapeFunction[iVar][1];
+      B_Matrix[3][0+iVar*3] = DShapeFunction[iVar][1];
       B_Matrix[3][1+iVar*3] = DShapeFunction[iVar][0];
       
       B_Matrix[4][1+iVar*3] = DShapeFunction[iVar][2];
       B_Matrix[4][2+iVar*3] = DShapeFunction[iVar][1];
       
-      B_Matrix[5][iVar*3] = DShapeFunction[iVar][2];
+      B_Matrix[5][0+iVar*3] = DShapeFunction[iVar][2];
       B_Matrix[5][2+iVar*3] = DShapeFunction[iVar][0];
-      
     }
+    
     
     for (iVar = 0; iVar < 6; iVar++) {
       for (jVar = 0; jVar < 24; jVar++) {
         BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
-  //      cout << B_Matrix[iVar][jVar] <<"\t";
+//        cout << B_Matrix[iVar][jVar] <<"\t";
       }
- //     cout << endl;
+//      cout << endl;
     }
- //   cin.get();
+//    cin.get();
     
-    E = 1.0 / Volume * fabs(scale);
-    Mu = E;
-    Lambda = -E;
+//    E = 1.0 / Volume * fabs(scale);
+//    Mu = E;
+//    Lambda = -E;
+    
+    double E = 2E11;
+        double Nu = 0.3;
+        double Mu = E / (2.0*(1.0 + Nu));
+        double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
 
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
@@ -907,10 +922,13 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
       for (jVar = 0; jVar < 24; jVar++) {
         StiffMatrix_Elem[iVar][jVar] = 0.0;
         for (kVar = 0; kVar < 6; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] = Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
+          StiffMatrix_Elem[iVar][jVar] += 0.125 * Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
         }
+//        cout << StiffMatrix_Elem[iVar][jVar] <<"\t";
       }
+//      cout << endl;
     }
+//    cin.get();
         
     return true;
     
@@ -959,11 +977,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
      is a modification to help allow rigid rotation of elements (see
      "Robust Mesh Deformation using the Linear Elasticity Equations" by
      R. P. Dwight. ---*/
-    
-    E = 1.0 / Volume * fabs(scale);
-    Mu = E;
-    Lambda = -E;
-    
+
     /*--- Compute the jacobian of the transformation ---*/
     
     for (iNode = 0; iNode < 4; iNode++) {
@@ -990,19 +1004,18 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
         B_Matrix[iVar][jVar] = 0.0;
     
     for (iVar = 0; iVar < 4; iVar++) {
-      B_Matrix[0][iVar*3] = DShapeFunction[iVar][0];
+      B_Matrix[0][0+iVar*3] = DShapeFunction[iVar][0];
       B_Matrix[1][1+iVar*3] = DShapeFunction[iVar][1];
       B_Matrix[2][2+iVar*3] = DShapeFunction[iVar][2];
       
-      B_Matrix[3][iVar*3] = DShapeFunction[iVar][1];
+      B_Matrix[3][0+iVar*3] = DShapeFunction[iVar][1];
       B_Matrix[3][1+iVar*3] = DShapeFunction[iVar][0];
  
       B_Matrix[4][1+iVar*3] = DShapeFunction[iVar][2];
       B_Matrix[4][2+iVar*3] = DShapeFunction[iVar][1];
       
-      B_Matrix[5][iVar*3] = DShapeFunction[iVar][2];
+      B_Matrix[5][0+iVar*3] = DShapeFunction[iVar][2];
       B_Matrix[5][2+iVar*3] = DShapeFunction[iVar][0];
-
     }
     
     for (iVar = 0; iVar < 6; iVar++)
@@ -1010,6 +1023,15 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
         BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
+    
+    E = 1.0 / Volume * fabs(scale);
+    Mu = E;
+    Lambda = -E;
+    
+    double E = 2E11;
+    double Nu = 0.30;
+    double Mu = E / (2.0*(1.0 + Nu));
+    double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
     
     D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;					D_Matrix[0][3] = 0.0;	D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
     D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;					D_Matrix[1][3] = 0.0;	D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
@@ -1346,19 +1368,19 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = 0.0;
-					LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-    }
-  }
+//	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
+//			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//				for (iDim = 0; iDim < nDim; iDim++) {
+//					total_index = iPoint*nDim + iDim;
+//					LinSysRes[total_index] = 0.0;
+//					LinSysSol[total_index] = 0.0;
+//          StiffMatrix.DeleteValsRowi(total_index);
+//				}
+//			}
+//    }
+//  }
 	
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1387,23 +1409,81 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 		}
 	}
   
-	/*--- Set the known displacements, note that some points of the moving surfaces
-   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
-					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
-          StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-    }
+//	/*--- Set the known displacements, note that some points of the moving surfaces
+//   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
+//	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+//        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+//			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+//				for (iDim = 0; iDim < nDim; iDim++) {
+//					total_index = iPoint*nDim + iDim;
+//					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
+//					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
+//          StiffMatrix.DeleteValsRowi(total_index);
+//				}
+//			}
+//    }
+//  }
+  
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    total_index = 8*nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+    total_index = 9*nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+    total_index = 10*nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+    total_index = 11 *nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
   }
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    total_index = 0*nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+    total_index = 1*nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+    total_index = 2*nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+    total_index = 3 *nDim + iDim;
+    LinSysRes[total_index] = 0.0;
+    LinSysSol[total_index] = 0.0;
+    StiffMatrix.DeleteValsRowi(total_index);
+  }
+  
+  total_index = 0*nDim + 2;
+  LinSysRes[total_index] = -5;
+  LinSysSol[total_index] = -5;
+  StiffMatrix.DeleteValsRowi(total_index);
+  total_index = 1*nDim + 2;
+  LinSysRes[total_index] = -5;
+  LinSysSol[total_index] = -5;
+  StiffMatrix.DeleteValsRowi(total_index);
+  total_index = 2*nDim + 2;
+  LinSysRes[total_index] = -5;
+  LinSysSol[total_index] = -5;
+  StiffMatrix.DeleteValsRowi(total_index);
+  total_index = 3*nDim + 2;
+  LinSysRes[total_index] = -5;
+  LinSysSol[total_index] = -5;
+  StiffMatrix.DeleteValsRowi(total_index);
+
+
   
   /*--- Don't move the nearfield plane ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1420,6 +1500,13 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
   
+//  for (unsigned short iNode = 0; iNode < 16; iNode++) {
+//  StiffMatrix.GetBlock(0, iNode);
+//  StiffMatrix.DisplayBlock();
+//    cin.get();
+//  }
+  
+
 }
 
 void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *config) {
@@ -1495,7 +1582,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinLength * 1E-2;
+    NumError = MinLength * 1E-10;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
