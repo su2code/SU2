@@ -97,6 +97,7 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, un
 }
 
 void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz) {
+  unsigned long iVar;
   
 	nPoint = val_nPoint;              // Assign number of points in the mesh
 	nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
@@ -111,8 +112,16 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
 	prod_block_vector = new double [nEqn];
 	prod_row_vector = new double [nVar];
 	aux_vector = new double [nVar];
-	
   invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
+  
+  /*--- Memory initialization ---*/
+
+  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++) block[iVar] = 0.0;
+  for (iVar = 0; iVar < nEqn; iVar++) prod_block_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++) prod_row_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++) aux_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++) invM[iVar] = 0.0;
   
 }
 
