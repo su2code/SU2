@@ -763,6 +763,9 @@ public:
    unsigned long Point_4, unsigned long Point_5,
    unsigned long Point_6, unsigned long Point_7, double scale);
 	
+  double shp3dlinbrick(double Xi, double Eta, double Mu, double xl[8][3], double shp[8][4]);
+  double int3dlinbrick(int ll, double s[8][4]);
+
   /*!
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] Node - Node from 1 to 8.
@@ -806,7 +809,7 @@ public:
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
 	 */
-  void GetHexa_Jacobian(double HexaCorners[8][3], unsigned short iNode, double Jacobian[3][3]);
+  double GetHexa_Determinant(double HexaCorners[8][3], double Xi, double Eta, double Mu, double Jacobian[3][3]);
 
   /*!
 	 * \brief Compute the shape functions for hexahedron
@@ -836,7 +839,7 @@ public:
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
 	 */
-  void GetHexa_InvJacobian(double HexaCorners[8][3], unsigned short iNode, double InvJacobian[3][3]);
+  void GetHexa_InvJacobian(double HexaCorners[8][3], double Xi, double Eta, double Mu, double InvJacobian[3][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron

@@ -497,17 +497,6 @@ double CVolumetricMovement::GetTets_ShapeFunction(unsigned short Node, double Xi
   
 }
 
-double CVolumetricMovement::GetHexa_ShapeFunction(unsigned short Node, double Xi, double Eta, double Mu) {
-  
-  double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
-    {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
-  double N;
-  
-  N = 0.125 * (1.0+Xi*HexaCode[Node][0]) * (1.0+Eta*HexaCode[Node][1]) * (1.0+Mu*HexaCode[Node][2]);
-  
-  return N;
-}
-
 double *CVolumetricMovement::GetTets_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu) {
   
   double *DShapeFunction = new double[3];
@@ -518,41 +507,6 @@ double *CVolumetricMovement::GetTets_DShapeFunction(unsigned short Node, double 
   if (Node == 3) { DShapeFunction[0] = -1.0; DShapeFunction[1] = -1.0; DShapeFunction[2] = -1.0; }
 
   return DShapeFunction;
-  
-}
-
-double *CVolumetricMovement::GetHexa_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu) {
-  
-  double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
-    {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
-  double *DShapeFunction = new double[3];
-
-  DShapeFunction[0] = 0.125 * HexaCode[Node][0] * (1.0+Eta*HexaCode[Node][1]) * (1.0+Mu*HexaCode[Node][2]);
-  DShapeFunction[1] = 0.125 * (1.0+Xi*HexaCode[Node][0]) * HexaCode[Node][1] * (1.0+Mu*HexaCode[Node][2]);
-  DShapeFunction[2] = 0.125 * (1.0+Xi*HexaCode[Node][0]) * (1.0+Eta*HexaCode[Node][1]) * HexaCode[Node][2];
-
-  return DShapeFunction;
-  
-}
-
-void CVolumetricMovement::GetHexa_Jacobian(double HexaCorners[8][3], unsigned short iNode, double Jacobian[3][3]) {
-  
-  unsigned short iDim, jDim, jNode;
-  double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
-    {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
-  
-  double Xi   = HexaCode[iNode][0];
-  double Eta  = HexaCode[iNode][1];
-  double Mu   = HexaCode[iNode][2];
-
-  for (iDim = 0; iDim < 3; iDim++) {
-    for (jDim = 0; jDim < 3; jDim++) {
-      Jacobian[iDim][jDim] = 0.0;
-      for (jNode = 0; jNode < 8; jNode++) {
-        Jacobian[iDim][jDim] += HexaCorners[jNode][jDim]*GetHexa_DShapeFunction(jNode, Xi, Eta, Mu)[iDim];
-      }
-    }
-  }
   
 }
 
@@ -619,16 +573,80 @@ void CVolumetricMovement::GetTets_InvJacobian(double TetCorners[4][3], unsigned 
   
 }
 
-void CVolumetricMovement::GetHexa_InvJacobian(double HexaCorners[8][3], unsigned short iNode, double InvJacobian[3][3]) {
+double CVolumetricMovement::GetTets_Volume(double TetCorners[4][3]) {
   
-  unsigned short iDim, jDim, jNode;
+  unsigned short iDim;
+  
+  double *Coord_0 = TetCorners[0];
+  double *Coord_1 = TetCorners[1];
+  double *Coord_2 = TetCorners[2];
+  double *Coord_3 = TetCorners[3];
+  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  return Volume;
+  
+}
+
+double CVolumetricMovement::GetHexa_ShapeFunction(unsigned short Node, double Xi, double Eta, double Mu) {
+  
   double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
     {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
-  double Jacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double N;
+  
+  N = 0.125 * (1.0+Xi*HexaCode[Node][0]) * (1.0+Eta*HexaCode[Node][1]) * (1.0+Mu*HexaCode[Node][2]);
+  
+  return N;
+  
+}
 
-  double Xi = HexaCode[iNode][0];
-  double Eta = HexaCode[iNode][1];
-  double Mu = HexaCode[iNode][2];
+double *CVolumetricMovement::GetHexa_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu) {
+  
+  double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
+    {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
+  double *DShapeFunction = new double[3];
+  
+  DShapeFunction[0] = 0.125 * HexaCode[Node][0] * (1.0+Eta*HexaCode[Node][1]) * (1.0+Mu*HexaCode[Node][2]);
+  DShapeFunction[1] = 0.125 * (1.0+Xi*HexaCode[Node][0]) * HexaCode[Node][1] * (1.0+Mu*HexaCode[Node][2]);
+  DShapeFunction[2] = 0.125 * (1.0+Xi*HexaCode[Node][0]) * (1.0+Eta*HexaCode[Node][1]) * HexaCode[Node][2];
+  
+  return DShapeFunction;
+  
+}
+
+double CVolumetricMovement::GetHexa_Determinant(double HexaCorners[8][3], double Xi, double Eta, double Mu, double Jacobian[3][3]) {
+  
+  unsigned short iDim, jDim, jNode;
+  double Det;
+  
+  for (iDim = 0; iDim < 3; iDim++) {
+    for (jDim = 0; jDim < 3; jDim++) {
+      Jacobian[iDim][jDim] = 0.0;
+      for (jNode = 0; jNode < 8; jNode++) {
+        Jacobian[iDim][jDim] += HexaCorners[jNode][jDim]*GetHexa_DShapeFunction(jNode, Xi, Eta, Mu)[iDim];
+      }
+    }
+  }
+  
+  Det = Determinant_3x3(Jacobian[0][0], Jacobian[0][1], Jacobian[0][2], Jacobian[1][0], Jacobian[1][1], Jacobian[1][2], Jacobian[2][0], Jacobian[2][1], Jacobian[2][2]);
+
+  return Det;
+}
+
+void CVolumetricMovement::GetHexa_InvJacobian(double HexaCorners[8][3], double Xi, double Eta, double Mu, double InvJacobian[3][3]) {
+  
+  unsigned short iDim, jDim, jNode;
+  double Jacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
   
   for (iDim = 0; iDim < 3; iDim++) {
     for (jDim = 0; jDim < 3; jDim++) {
@@ -665,11 +683,13 @@ void CVolumetricMovement::GetHexa_InvJacobian(double HexaCorners[8][3], unsigned
 
 double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
   unsigned short iDim;
-  double *Coord_0 = HexaCorners[0];
-  double *Coord_1 = HexaCorners[1];
-  double *Coord_2 = HexaCorners[2];
-  double *Coord_3 = HexaCorners[5];
+  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
   double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+
+  Coord_0 = HexaCorners[0];
+  Coord_1 = HexaCorners[1];
+  Coord_2 = HexaCorners[2];
+  Coord_3 = HexaCorners[5];
   
   for (iDim = 0; iDim < nDim; iDim++) {
     r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
@@ -750,30 +770,249 @@ double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
 
 }
 
-double CVolumetricMovement::GetTets_Volume(double TetCorners[4][3]) {
+
+//-----------------------------------------------------------------------
+// shape functions
+//-----------------------------------------------------------------------
+double CVolumetricMovement::shp3dlinbrick(double Xi, double Eta, double Mu, double xl[8][3], double shp[8][4]) {
   
-  unsigned short iDim;
+  int i, j, k;
+  double a0, a1, a2, c0, c1, c2, xsj;
+  double ss[3], xs[3][3], ad[3][3];
+  double s0[8] = {-0.5, 0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5};
+  double s1[8] = {-0.5,-0.5, 0.5, 0.5,-0.5,-0.5,0.5, 0.5};
+  double s2[8] = {-0.5,-0.5,-0.5,-0.5, 0.5, 0.5,0.5, 0.5};
   
-  double *Coord_0 = TetCorners[0];
-  double *Coord_1 = TetCorners[1];
-  double *Coord_2 = TetCorners[2];
-  double *Coord_3 = TetCorners[3];
-  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  ss[0] = Xi;
+  ss[1] = Eta;
+  ss[2] = Mu;
+
+  // shape functions
+  for (i = 0; i < 8; i++) {
+    a0 = 0.5+s0[i]*ss[0]; // shape function in xi-direction
+    a1 = 0.5+s1[i]*ss[1]; // shape function in eta-direction
+    a2 = 0.5+s2[i]*ss[2]; // shape function in mu-direction
+    shp[i][0] = s0[i]*a1*a2; // dN/d xi
+    shp[i][1] = s1[i]*a0*a2; // dN/d eta
+    shp[i][2] = s2[i]*a0*a1; // dN/d mu
+    shp[i][3] = a0*a1*a2; // actual shape function N
   }
   
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  // jacobian transformation
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 3; j++) {
+      xs[i][j] = 0.0;
+      for (k = 0; k < 8; k++) {
+        xs[i][j] = xs[i][j]+xl[k][j]*shp[k][i];
+      }
+    }
+  }
   
-  return Volume;
+  // adjoint to jacobian
+  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
+  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
+  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
+  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
+  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
+  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
+  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
+  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
+  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
+  
+  // determinant of jacobian
+  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
+  
+  // jacobian inverse
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 3; j++) {
+      xs[i][j] = ad[i][j]/xsj;
+    }
+  }
+  
+  // derivatives with repect to global coordinates
+  for (k = 0; k < 8; k++) {
+    c0 = xs[0][0]*shp[k][0]+xs[0][1]*shp[k][1]+xs[0][2]*shp[k][2]; // dN/dx
+    c1 = xs[1][0]*shp[k][0]+xs[1][1]*shp[k][1]+xs[1][2]*shp[k][2]; // dN/dy
+    c2 = xs[2][0]*shp[k][0]+xs[2][1]*shp[k][1]+xs[2][2]*shp[k][2]; // dN/dz
+    shp[k][0] = c0; // store dN/dx instead of dN/d xi
+    shp[k][1] = c1; // store dN/dy instead of dN/d eta
+    shp[k][2] = c2; // store dN/dz instead of dN/d mu
+  }
+  
+  return xsj;
   
 }
+
+double CVolumetricMovement::int3dlinbrick(int ll, double s[8][4]) {
+  
+  double gp[2][2], wg[2][2];
+  int j, k, m, jj, kk;
+  double lint;
+  
+  // 2 gauss points in each direction
+  gp[1][0]=-0.577350269189626;
+  wg[1][0]= 1.0;
+  gp[1][1]= 0.577350269189626;
+  wg[1][1]= 1.0;
+  lint=ll*ll*ll; // total number of gauss points
+  
+  for (j = 0; j < ll; j++) { // index for z-coordinate
+    jj=j*ll*ll;
+    for (k = 0; k < ll; k++) { // index for y-coordinate
+      kk=k*ll;
+      for (m = 0; m < ll; m++) { // index for x-coordinate
+        s[jj+kk+m][0] = gp[1][m]; // x-coordinate of gauss point
+        s[jj+kk+m][1] = gp[1][k]; // y-coordinate of gauss point
+        s[jj+kk+m][2] = gp[1][j]; // z-coordinate of gauss point
+        s[jj+kk+m][3] = wg[1][m]*wg[1][k]*wg[1][j]; // weight of gauss point
+      }
+    }
+  }
+  
+  return lint;
+}
+
+
+
+#ifdef DEBUG
+
+
+bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
+                                               unsigned long Point_0, unsigned long Point_1,
+                                               unsigned long Point_2, unsigned long Point_3,
+                                               unsigned long Point_4, unsigned long Point_5,
+                                               unsigned long Point_6, unsigned long Point_7,
+                                               double scale) {
+  
+  double B_Matrix[6][24], BT_Matrix[24][6], D_Matrix[6][6], Aux_Matrix[24][6];
+  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det, Weight;
+  unsigned short iDim, jDim, iNode, iVar, jVar, kVar, iGauss, jGauss, kGauss;
+  double HexaCorners[8][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double InvJacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
+    {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
+  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
+  double Volume, E, Lambda, Nu;
+  double iWeight, jWeight, kWeight;
+  double Jacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double StiffMatrix_Elem_[24][24];
+  
+  for (iVar = 0; iVar < 24; iVar++) {
+    for (jVar = 0; jVar < 24; jVar++) {
+      StiffMatrix_Elem[iVar][jVar] = 0.0;
+    }
+  }
+  
+  for (iDim = 0; iDim < 3; iDim++) {
+    HexaCorners[0][iDim] = geometry->node[Point_0]->GetCoord(iDim);
+    HexaCorners[1][iDim] = geometry->node[Point_1]->GetCoord(iDim);
+    HexaCorners[2][iDim] = geometry->node[Point_2]->GetCoord(iDim);
+    HexaCorners[3][iDim] = geometry->node[Point_3]->GetCoord(iDim);
+    HexaCorners[4][iDim] = geometry->node[Point_4]->GetCoord(iDim);
+    HexaCorners[5][iDim] = geometry->node[Point_5]->GetCoord(iDim);
+    HexaCorners[6][iDim] = geometry->node[Point_6]->GetCoord(iDim);
+    HexaCorners[7][iDim] = geometry->node[Point_7]->GetCoord(iDim);
+  }
+  
+  Volume = GetHexa_Volume(HexaCorners);
+
+  
+  int l = 2; // 2 gauss points in each direction
+  int lint;
+  
+  // material matrix
+  
+  double sg[8][4];
+  double dd[6][6];
+  
+  for (iVar = 0; iVar < 6; iVar++) {
+    for (jVar = 0; jVar < 6; jVar++) {
+      dd[iVar][jVar] = 0.0;
+    }
+  }
+
+  double emod = 2E11;
+  double nue = 0.3;
+  double matfac = emod/((1.0-2.0*nue)*(1.0+nue));
+  dd[0][0] = matfac*(1.0-nue);
+  dd[1][1] = dd[0][0];
+  dd[2][2] = dd[0][0];
+  dd[3][3] = matfac*(1.0-2.0*nue)/2.0;
+  dd[4][4] = dd[3][3];
+  dd[5][5] = dd[3][3];
+  dd[0][1] = matfac*nue;
+  dd[1][0] = dd[0][1];
+  dd[0][2] = dd[0][1];
+  dd[2][0] = dd[0][1];
+  dd[1][2] = dd[0][1];
+  dd[2][1] = dd[0][1];
+
+  // gauss points and weights
+  
+  lint = int3dlinbrick(2, sg);
+  
+  // loop over all gauss points
+  
+  for (l = 0; l < lint; l++) {
+    
+    Xi = sg[l][0];
+    Eta = sg[l][1];
+    Mu = sg[l][2];
+    Weight = sg[l][3];
+
+    // shape functions for current gauss point
+    
+    Det = shp3dlinbrick(Xi, Eta, Mu, HexaCorners, DShapeFunction);
+    double dvol = Weight*Det;
+
+    // B-matrix
+    
+    double b[8][6][3];
+    for (iVar = 0; iVar < 8; iVar++) {
+      for (jVar = 0; jVar < 6; jVar++) {
+        for (kVar = 0; kVar < 3; kVar++) {
+          b[iVar][jVar][kVar] = 0.0;
+        }
+      }
+    }
+    
+    int i1, i2, i3, i4, i5, i6;
+    
+    for (i1 = 0; i1 < 8; i1++) {
+      b[i1][0][0] = DShapeFunction[i1][0];
+      b[i1][1][1] = DShapeFunction[i1][1];
+      b[i1][2][2] = DShapeFunction[i1][2];
+      b[i1][3][0] = DShapeFunction[i1][1];
+      b[i1][3][1] = DShapeFunction[i1][0];
+      b[i1][4][1] = DShapeFunction[i1][2];
+      b[i1][4][2] = DShapeFunction[i1][1];
+      b[i1][5][0] = DShapeFunction[i1][2];
+      b[i1][5][2] = DShapeFunction[i1][0];
+    }
+    
+    // stiffness matrix
+    
+    for (i1 = 0; i1 < 8; i1++) {
+      for (i2 = 0; i2 < 3; i2++) {
+        for (i3 = 0; i3 < 8; i3++) {
+          for (i4 = 0; i4 < 3; i4++) {
+            for (i5 = 0; i5 < 6; i5++) {
+              for (i6 = 0; i6 < 6; i6++) {
+                StiffMatrix_Elem[i2+3*i1][i4+3*i3] += b[i1][i5][i2]*dd[i5][i6]*b[i3][i6][i4]*dvol;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+  } // end loop over all gauss points
+  
+}
+
+#else
 
 bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
                                                unsigned long Point_0, unsigned long Point_1,
@@ -782,18 +1021,25 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
                                                unsigned long Point_6, unsigned long Point_7,
                                                double scale) {
   double B_Matrix[6][24], BT_Matrix[24][6], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Mu = 0.0;
-  unsigned short iDim, jDim, iNode, iVar, jVar, kVar;
+  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det;
+  unsigned short iDim, jDim, iNode, iVar, jVar, kVar, iGauss, jGauss, kGauss;
   double HexaCorners[8][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
   double InvJacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
   double HexaCode[8][3] = {{-1.0, -1.0, -1.0}, {+1.0, -1.0, -1.0}, {+1.0, +1.0, -1.0}, {-1.0, +1.0, -1.0},
     {-1.0, -1.0, +1.0}, {+1.0, -1.0, +1.0}, {+1.0, +1.0, +1.0}, {-1.0, +1.0, +1.0}};
-  double DShapeFunction[8][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+  double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   double Volume, E, Lambda;
+  double iWeight, jWeight, kWeight;
   double Jacobian[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
+  
+  for (iVar = 0; iVar < 24; iVar++) {
+    for (jVar = 0; jVar < 24; jVar++) {
+      StiffMatrix_Elem[iVar][jVar] = 0.0;
+    }
+  }
+  
   for (iDim = 0; iDim < 3; iDim++) {
     HexaCorners[0][iDim] = geometry->node[Point_0]->GetCoord(iDim);
     HexaCorners[1][iDim] = geometry->node[Point_1]->GetCoord(iDim);
@@ -821,120 +1067,142 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
     
   }
   else {
-  
+    
     /*--- Each element uses their own stiffness which is inversely
      proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
      is a modification to help allow rigid rotation of elements (see
      "Robust Mesh Deformation using the Linear Elasticity Equations" by
      R. P. Dwight. ---*/
     
-
     
-    for (iNode = 0; iNode < 8; iNode++) {
-      
-      GetHexa_InvJacobian(HexaCorners, iNode, InvJacobian);
-
-      Xi = HexaCode[iNode][0];
-      Eta = HexaCode[iNode][1];
-      Mu = HexaCode[iNode][2];
-      
-      for (iDim = 0; iDim < 3; iDim++) {
-        DShapeFunction[iNode][iDim] = 0.0;
-        for (jDim = 0; jDim < 3; jDim++) {
-          DShapeFunction[iNode][iDim] += InvJacobian[iDim][jDim]*GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[jDim];
-//          cout << InvJacobian[iDim][jDim] <<"\t";
+    
+    //    for (iGauss = 0; iGauss < 1; iGauss++) {
+    //      for (jGauss = 0; jGauss < 1; jGauss++) {
+    //        for (kGauss = 0; kGauss < 1; kGauss++) {
+    //
+    //          if (iGauss == 0) { Xi = 0.0;   iWeight = 1.0; }
+    //          if (jGauss == 0) { Eta = 0.0;  jWeight = 1.0; }
+    //          if (kGauss == 0) { Mu = 0.0;   kWeight = 1.0; }
+    
+    
+    for (iGauss = 0; iGauss < 2; iGauss++) {
+      for (jGauss = 0; jGauss < 2; jGauss++) {
+        for (kGauss = 0; kGauss < 2; kGauss++) {
+          
+          if (iGauss == 0) { Xi = -0.57735026919; iWeight = 1.0; }
+          if (iGauss == 1) { Xi = 0.57735026919; iWeight = 1.0; }
+          if (jGauss == 0) { Eta = -0.57735026919; jWeight = 1.0; }
+          if (jGauss == 1) { Eta = 0.57735026919; jWeight = 1.0; }
+          if (kGauss == 0) { Mu = -0.57735026919; kWeight = 1.0; }
+          if (kGauss == 1) { Mu = 0.57735026919; kWeight = 1.0; }
+          
+          //    for (iGauss = 0; iGauss < 3; iGauss++) {
+          //      for (jGauss = 0; jGauss < 3; jGauss++) {
+          //        for (kGauss = 0; kGauss < 3; kGauss++) {
+          //
+          //          if (iGauss == 0) { Xi = -0.77459666924;   iWeight = 0.55555555555; }
+          //          if (iGauss == 1) { Xi = 0.0;              iWeight = 0.88888888888; }
+          //          if (iGauss == 2) { Xi = 0.77459666924;    iWeight = 0.55555555555; }
+          //          if (jGauss == 0) { Eta = -0.77459666924;  jWeight = 0.55555555555; }
+          //          if (jGauss == 1) { Eta = 0.0;             jWeight = 0.88888888888; }
+          //          if (jGauss == 2) { Eta = 0.77459666924;   jWeight = 0.55555555555; }
+          //          if (kGauss == 0) { Mu = -0.77459666924;   kWeight = 0.55555555555; }
+          //          if (kGauss == 1) { Mu = 0.0;              kWeight = 0.88888888888; }
+          //          if (kGauss == 2) { Mu = 0.77459666924;    kWeight = 0.55555555555; }
+          
+          GetHexa_InvJacobian(HexaCorners, Xi, Eta, Mu, InvJacobian);
+          Det = GetHexa_Determinant(HexaCorners, Xi, Eta, Mu, Jacobian);
+          
+          for (iNode = 0; iNode < 8; iNode++) {
+            for (iDim = 0; iDim < 3; iDim++) {
+              DShapeFunction[iNode][iDim] = 0.0;
+              for (jDim = 0; jDim < 3; jDim++) {
+                DShapeFunction[iNode][iDim] += InvJacobian[iDim][jDim]*GetHexa_DShapeFunction(iNode, Xi, Eta, Mu)[jDim];
+              }
+            }
+          }
+          
+ //         Det = shp3dlinbrick(Xi, Eta, Mu, HexaCorners, DShapeFunction);
+          
+          
+          /*--- Compute the B Matrix ---*/
+          for (iVar = 0; iVar < 6; iVar++)
+            for (jVar = 0; jVar < 24; jVar++)
+              B_Matrix[iVar][jVar] = 0.0;
+          
+          for (iNode = 0; iNode < 8; iNode++) {
+            B_Matrix[0][0+iNode*3] = DShapeFunction[iNode][0];
+            B_Matrix[1][1+iNode*3] = DShapeFunction[iNode][1];
+            B_Matrix[2][2+iNode*3] = DShapeFunction[iNode][2];
+            
+            B_Matrix[3][0+iNode*3] = DShapeFunction[iNode][1];
+            B_Matrix[3][1+iNode*3] = DShapeFunction[iNode][0];
+            
+            B_Matrix[4][1+iNode*3] = DShapeFunction[iNode][2];
+            B_Matrix[4][2+iNode*3] = DShapeFunction[iNode][1];
+            
+            B_Matrix[5][0+iNode*3] = DShapeFunction[iNode][2];
+            B_Matrix[5][2+iNode*3] = DShapeFunction[iNode][0];
+          }
+          
+          
+          for (iVar = 0; iVar < 6; iVar++) {
+            for (jVar = 0; jVar < 24; jVar++) {
+              BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
+            }
+          }
+          
+//          double E = 1.0 / Volume * fabs(scale);
+//          double Mu = E;
+//          double Lambda = -E;
+          
+          double E = 2E11;
+          double Nu = 0.30;
+          double Mu = E / (2.0*(1.0 + Nu));
+          double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+          
+          /*--- Compute the D Matrix (for plane strain and 3-D)---*/
+          
+          D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;					D_Matrix[0][3] = 0.0;	D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
+          D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;					D_Matrix[1][3] = 0.0;	D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
+          D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;	D_Matrix[2][3] = 0.0;	D_Matrix[2][4] = 0.0;	D_Matrix[2][5] = 0.0;
+          D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;							D_Matrix[3][3] = Mu;	D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
+          D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;							D_Matrix[4][3] = 0.0;	D_Matrix[4][4] = Mu;	D_Matrix[4][5] = 0.0;
+          D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;							D_Matrix[5][3] = 0.0;	D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = Mu;
+          
+          
+          /*--- Compute the BT.D Matrix ---*/
+          
+          for (iVar = 0; iVar < 24; iVar++) {
+            for (jVar = 0; jVar < 6; jVar++) {
+              Aux_Matrix[iVar][jVar] = 0.0;
+              for (kVar = 0; kVar < 6; kVar++)
+                Aux_Matrix[iVar][jVar] += BT_Matrix[iVar][kVar]*D_Matrix[kVar][jVar];
+            }
+          }
+          
+          /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original 
+           matrix using Gauss integration ---*/
+          
+          for (iVar = 0; iVar < 24; iVar++) {
+            for (jVar = 0; jVar < 24; jVar++) {
+              for (kVar = 0; kVar < 6; kVar++) {
+                StiffMatrix_Elem[iVar][jVar] += iWeight * jWeight * kWeight * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * Det;
+              }
+            }
+          }
+          
         }
-//        cout << endl;
-      }
-    }
-//    cin.get();
-    
-//    for (iNode = 0; iNode < 8; iNode++) {
-//      for (iDim = 0; iDim < 3; iDim++) {
-//        cout << DShapeFunction[iNode][iDim] <<"\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
-
-    /*--- Compute the B Matrix ---*/
-    for (iVar = 0; iVar < 6; iVar++)
-      for (jVar = 0; jVar < 24; jVar++)
-        B_Matrix[iVar][jVar] = 0.0;
-    
-
-    for (iVar = 0; iVar < 8; iVar++) {
-      B_Matrix[0][0+iVar*3] = DShapeFunction[iVar][0];
-      B_Matrix[1][1+iVar*3] = DShapeFunction[iVar][1];
-      B_Matrix[2][2+iVar*3] = DShapeFunction[iVar][2];
-      
-      B_Matrix[3][0+iVar*3] = DShapeFunction[iVar][1];
-      B_Matrix[3][1+iVar*3] = DShapeFunction[iVar][0];
-      
-      B_Matrix[4][1+iVar*3] = DShapeFunction[iVar][2];
-      B_Matrix[4][2+iVar*3] = DShapeFunction[iVar][1];
-      
-      B_Matrix[5][0+iVar*3] = DShapeFunction[iVar][2];
-      B_Matrix[5][2+iVar*3] = DShapeFunction[iVar][0];
-    }
-    
-    
-    for (iVar = 0; iVar < 6; iVar++) {
-      for (jVar = 0; jVar < 24; jVar++) {
-        BT_Matrix[jVar][iVar] = B_Matrix[iVar][jVar];
-//        cout << B_Matrix[iVar][jVar] <<"\t";
-      }
-//      cout << endl;
-    }
-//    cin.get();
-    
-//    E = 1.0 / Volume * fabs(scale);
-//    Mu = E;
-//    Lambda = -E;
-    
-    double E = 2E11;
-        double Nu = 0.3;
-        double Mu = E / (2.0*(1.0 + Nu));
-        double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-
-    /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-    
-    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;					D_Matrix[0][3] = 0.0;	D_Matrix[0][4] = 0.0;	D_Matrix[0][5] = 0.0;
-    D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;					D_Matrix[1][3] = 0.0;	D_Matrix[1][4] = 0.0;	D_Matrix[1][5] = 0.0;
-    D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;	D_Matrix[2][3] = 0.0;	D_Matrix[2][4] = 0.0;	D_Matrix[2][5] = 0.0;
-    D_Matrix[3][0] = 0.0;							D_Matrix[3][1] = 0.0;							D_Matrix[3][2] = 0.0;							D_Matrix[3][3] = Mu;	D_Matrix[3][4] = 0.0;	D_Matrix[3][5] = 0.0;
-    D_Matrix[4][0] = 0.0;							D_Matrix[4][1] = 0.0;							D_Matrix[4][2] = 0.0;							D_Matrix[4][3] = 0.0;	D_Matrix[4][4] = Mu;	D_Matrix[4][5] = 0.0;
-    D_Matrix[5][0] = 0.0;							D_Matrix[5][1] = 0.0;							D_Matrix[5][2] = 0.0;							D_Matrix[5][3] = 0.0;	D_Matrix[5][4] = 0.0;	D_Matrix[5][5] = Mu;
-    
-    /*--- Compute the BT.D Matrix ---*/
-    
-    for (iVar = 0; iVar < 24; iVar++) {
-      for (jVar = 0; jVar < 6; jVar++) {
-        Aux_Matrix[iVar][jVar] = 0.0;
-        for (kVar = 0; kVar < 6; kVar++)
-          Aux_Matrix[iVar][jVar] += BT_Matrix[iVar][kVar]*D_Matrix[kVar][jVar];
       }
     }
     
-    /*--- Compute the BT.D.B Matrix (stiffness matrix) ---*/
-    
-    for (iVar = 0; iVar < 24; iVar++) {
-      for (jVar = 0; jVar < 24; jVar++) {
-        StiffMatrix_Elem[iVar][jVar] = 0.0;
-        for (kVar = 0; kVar < 6; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += 0.125 * Volume * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar];
-        }
-//        cout << StiffMatrix_Elem[iVar][jVar] <<"\t";
-      }
-//      cout << endl;
-    }
-//    cin.get();
-        
     return true;
     
   }
   
 }
+
+#endif
 
 bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
                                                unsigned long val_Point_0, unsigned long val_Point_1,
@@ -1024,9 +1292,9 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
-    E = 1.0 / Volume * fabs(scale);
-    Mu = E;
-    Lambda = -E;
+//    E = 1.0 / Volume * fabs(scale);
+//    Mu = E;
+//    Lambda = -E;
     
     double E = 2E11;
     double Nu = 0.30;
@@ -1368,21 +1636,22 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
-//	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
-//			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-//				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//				for (iDim = 0; iDim < nDim; iDim++) {
-//					total_index = iPoint*nDim + iDim;
-//					LinSysRes[total_index] = 0.0;
-//					LinSysSol[total_index] = 0.0;
-//          StiffMatrix.DeleteValsRowi(total_index);
-//				}
-//			}
-//    }
-//  }
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+				for (iDim = 0; iDim < nDim; iDim++) {
+					total_index = iPoint*nDim + iDim;
+					LinSysRes[total_index] = 0.0;
+					LinSysSol[total_index] = 0.0;
+          StiffMatrix.DeleteValsRowi(total_index);
+				}
+			}
+    }
+  }
 	
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if ((config->GetMarker_All_Boundary(iMarker) == SYMMETRY_PLANE) && (nDim == 3)) {
       
@@ -1409,83 +1678,83 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 		}
 	}
   
-//	/*--- Set the known displacements, note that some points of the moving surfaces
-//   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
-//	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-//        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
-//			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-//				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-//				for (iDim = 0; iDim < nDim; iDim++) {
-//					total_index = iPoint*nDim + iDim;
-//					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
-//					LinSysSol[total_index] = VarCoord[iDim] * VarIncrement;
-//          StiffMatrix.DeleteValsRowi(total_index);
-//				}
-//			}
-//    }
+	/*--- Set the known displacements, note that some points of the moving surfaces
+   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+				for (iDim = 0; iDim < nDim; iDim++) {
+					total_index = iPoint*nDim + iDim;
+					LinSysRes[total_index] = VarCoord[iDim] * VarIncrement;
+					LinSysSol[total_index] = 0.0;
+          StiffMatrix.DeleteValsRowi(total_index);
+				}
+			}
+    }
+  }
+  
+  
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    total_index = 8*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//    total_index = 9*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//    total_index = 10*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//    total_index = 11*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
 //  }
-  
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    total_index = 8*nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-    total_index = 9*nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-    total_index = 10*nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-    total_index = 11 *nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-  }
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    total_index = 0*nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-    total_index = 1*nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-    total_index = 2*nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-    total_index = 3 *nDim + iDim;
-    LinSysRes[total_index] = 0.0;
-    LinSysSol[total_index] = 0.0;
-    StiffMatrix.DeleteValsRowi(total_index);
-  }
-  
-  total_index = 0*nDim + 2;
-  LinSysRes[total_index] = -5;
-  LinSysSol[total_index] = -5;
-  StiffMatrix.DeleteValsRowi(total_index);
-  total_index = 1*nDim + 2;
-  LinSysRes[total_index] = -5;
-  LinSysSol[total_index] = -5;
-  StiffMatrix.DeleteValsRowi(total_index);
-  total_index = 2*nDim + 2;
-  LinSysRes[total_index] = -5;
-  LinSysSol[total_index] = -5;
-  StiffMatrix.DeleteValsRowi(total_index);
-  total_index = 3*nDim + 2;
-  LinSysRes[total_index] = -5;
-  LinSysSol[total_index] = -5;
-  StiffMatrix.DeleteValsRowi(total_index);
+//  
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    total_index = 0*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//    total_index = 1*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//    total_index = 2*nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//    total_index = 3 *nDim + iDim;
+//    LinSysRes[total_index] = 0.0;
+//    LinSysSol[total_index] = 0.0;
+//    StiffMatrix.DeleteValsRowi(total_index);
+//  }
+//  
+//  total_index = 0*nDim + 2;
+//  LinSysRes[total_index] = 1 * VarIncrement;
+//  LinSysSol[total_index] = 0.0;
+//  StiffMatrix.DeleteValsRowi(total_index);
+//  total_index = 1*nDim + 2;
+//  LinSysRes[total_index] = 1* VarIncrement;
+//  LinSysSol[total_index] = 0.0;
+//  StiffMatrix.DeleteValsRowi(total_index);
+//  total_index = 2*nDim + 2;
+//  LinSysRes[total_index] = 1* VarIncrement;
+//  LinSysSol[total_index] = 0.0;
+//  StiffMatrix.DeleteValsRowi(total_index);
+//  total_index = 3*nDim + 2;
+//  LinSysRes[total_index] = 1* VarIncrement;
+//  LinSysSol[total_index] = 0.0;
+//  StiffMatrix.DeleteValsRowi(total_index);
 
-
-  
   /*--- Don't move the nearfield plane ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1499,13 +1768,6 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 			}
     }
   }
-  
-//  for (unsigned short iNode = 0; iNode < 16; iNode++) {
-//  StiffMatrix.GetBlock(0, iNode);
-//  StiffMatrix.DisplayBlock();
-//    cin.get();
-//  }
-  
 
 }
 
@@ -1582,7 +1844,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinLength * 1E-10;
+    NumError = MinLength * 1E-2;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
