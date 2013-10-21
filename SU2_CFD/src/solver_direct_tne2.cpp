@@ -1991,6 +1991,14 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     // NOTE: Jacobians don't account for relaxation time derivatives
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
+    if (iPoint == 17) {
+      cout << "Source Residual: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        cout << Residual[iVar] << endl;
+      }
+      cin.get();
+    }
+    
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
