@@ -125,6 +125,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
+  /* DESCRIPTION: Location of the executable for calling the machine learning code  */
+	AddScalarOption("ML_TURB_EXEC", ML_Turb_Exec, string("cfd_caller"));
+  /* DESCRIPTION: Location of the turb model itself (to pass to TURB_MODEL_EXEC)  */
+	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.gob"));
+  /* DESCRIPTION:  */
+	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
