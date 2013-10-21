@@ -165,6 +165,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
+  /*--- Create the structure for storing extra information ---*/
+  if (config->GetExtraOutput()) {
+    nOutputVariables = nVar;
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+  }
+  
 	/*--- Allocate Jacobians for implicit time-stepping ---*/
 	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
 		Jacobian_i = new double* [nVar];
@@ -1991,6 +1997,13 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     // NOTE: Jacobians don't account for relaxation time derivatives
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = Residual[iVar];
+      }
+    }
+    
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
@@ -3795,6 +3808,12 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
+  /*--- Create the structure for storing extra information ---*/
+  if (config->GetExtraOutput()) {
+    nOutputVariables = nVar;
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+  }
+  
 	/*--- Allocate Jacobians for implicit time-stepping ---*/
 	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
 		Jacobian_i = new double* [nVar];
@@ -4723,7 +4742,6 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
 //      }
 //    }
 //  }
-//  
 //  
 //  delete [] UnitNormal;
   

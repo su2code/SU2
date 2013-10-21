@@ -226,6 +226,12 @@ inline double *CConfig::GetRefOriginMoment(unsigned short val_marker) {
     return RefOriginMoment;
 }
 
+inline void CConfig::SetRefOriginMoment_X(unsigned short val_marker, double val_origin) { RefOriginMoment_X[val_marker] = val_origin; }
+
+inline void CConfig::SetRefOriginMoment_Y(unsigned short val_marker, double val_origin) { RefOriginMoment_Y[val_marker] = val_origin; }
+
+inline void CConfig::SetRefOriginMoment_Z(unsigned short val_marker, double val_origin) { RefOriginMoment_Z[val_marker] = val_origin; }
+
 inline double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
 inline double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
