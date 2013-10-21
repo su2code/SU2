@@ -968,6 +968,27 @@ public:
 	 * \return Reference origin (in cartesians coordinates) for moment computation.
 	 */
 	double *GetRefOriginMoment(unsigned short val_marker);
+  
+  /*!
+	 * \brief Set reference origin x-coordinate for moment computation.
+   * \param[in] val_marker - the marker we are monitoring.
+	 * \param[in] val_origin - New x-coordinate of the mesh motion origin.
+	 */
+	void SetRefOriginMoment_X(unsigned short val_marker, double val_origin);
+  
+  /*!
+	 * \brief Set reference origin y-coordinate for moment computation.
+   * \param[in] val_marker - the marker we are monitoring.
+	 * \param[in] val_origin - New y-coordinate of the mesh motion origin.
+	 */
+	void SetRefOriginMoment_Y(unsigned short val_marker, double val_origin);
+
+  /*!
+	 * \brief Set reference origin z-coordinate for moment computation.
+   * \param[in] val_marker - the marker we are monitoring.
+	 * \param[in] val_origin - New z-coordinate of the mesh motion origin.
+	 */
+	void SetRefOriginMoment_Z(unsigned short val_marker, double val_origin);
 
 	/*! 
 	 * \brief Get maximum number of children in the agglomeration process.
