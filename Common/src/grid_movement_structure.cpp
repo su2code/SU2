@@ -88,70 +88,6 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
  
 }
 
-double CVolumetricMovement::SetSpringMethodContributions_Edges(CGeometry *geometry) {
-	unsigned short iDim, jDim, nDim = geometry->GetnDim();
-	unsigned long iEdge, Point_0, Point_1;
-	double *Coord_0, *Coord_1, *Edge_Vector, *Unit_Vector;
-	double Length, kij, **Smatrix, MinLength;
-
-	Edge_Vector = new double [nDim];
-	Unit_Vector = new double [nDim];
-	MinLength = 1E10;
-	
-	Smatrix = new double* [nDim];
-	for (iDim = 0; iDim < nDim; iDim++)
-		Smatrix[iDim] = new double [nDim];
-
-	/*--- Compute contributions of the basic edge spring method ---*/
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-
-		/*--- Points in edge and coordinates ---*/
-		Point_0 = geometry->edge[iEdge]->GetNode(0);
-		Point_1 = geometry->edge[iEdge]->GetNode(1);
-		Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-
-		/*--- Compute Edge_Vector ---*/
-		Length = 0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_1[iDim] - Coord_0[iDim];
-			Length += Edge_Vector[iDim]*Edge_Vector[iDim];
-		}
-		Length = sqrt(Length);
-		MinLength = min(Length, MinLength);
-		
-		/*--- Compute Unit_Vector ---*/
-		for (iDim = 0; iDim < nDim; iDim++)
-			Unit_Vector[iDim] = Edge_Vector[iDim]/Length;
-
-		/*--- Compute spring stiffness (kij) and point-to-point matrix ---*/
-		kij = 1.0/Length;
-		
-		for (iDim = 0; iDim < nDim; iDim++)
-			for (jDim = 0; jDim < nDim; jDim++)
-				Smatrix[iDim][jDim] = kij*Unit_Vector[iDim]*Unit_Vector[jDim];
-
-		/*--- Add and substract contributions to the global matrix ---*/
-		StiffMatrix.AddBlock(Point_0, Point_0, Smatrix);
-		StiffMatrix.SubtractBlock(Point_0, Point_1, Smatrix);
-		StiffMatrix.SubtractBlock(Point_1, Point_0, Smatrix);
-		StiffMatrix.AddBlock(Point_1, Point_1, Smatrix);
-	}
-	
-	for (iDim = 0; iDim < nDim; iDim++)
-		delete [] Smatrix [iDim];
-	delete [] Smatrix;
-	delete [] Unit_Vector;
-	delete [] Edge_Vector;
-	
-#ifndef NO_MPI
-  double MinLength_Local = MinLength;
-  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
-#endif
-  
-	return MinLength;
-}
-
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
   double MinLength, NumError, MinVol;
@@ -191,8 +127,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
-    if (config->GetKind_GridDef_Method() == SPRING) MinLength = SetSpringMethodContributions_Edges(geometry);
-    if (config->GetKind_GridDef_Method() == FEA)    MinLength = SetFEAMethodContributions_Elem(geometry);
+    MinLength = SetFEAMethodContributions_Elem(geometry);
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
@@ -223,8 +158,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
     
-    if (config->GetKind_GridDef_Method() == FEA) IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
-    if (config->GetKind_GridDef_Method() == SPRING) IterLinSol = system->ConjugateGradient(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -259,6 +193,90 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
 }
 
+double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
+  
+	unsigned long iElem, ElemCounter = 0, PointCorners[8];
+  double Area, Volume, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22, CoordCorners[8][3];
+  unsigned short nNodes, iNodes, iDim;
+  bool RightVol;
+  
+  int rank = MASTER_NODE;
+  
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+	/*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
+  
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
+    if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE)    nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
+    if (geometry->elem[iElem]->GetVTK_Type() == WEDGE)        nNodes = 6;
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
+    
+    for (iNodes = 0; iNodes < nNodes; iNodes++) {
+      PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
+      for (iDim = 0; iDim < nDim; iDim++) {
+        CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
+      }
+    }
+    
+    /*--- Triangles ---*/
+    
+    if (nDim == 2) {
+      
+      if (nNodes == 3) Area = GetTriangle_Area(CoordCorners);
+      if (nNodes == 4) Area = GetRectangle_Area(CoordCorners);
+      
+      if (Area >= -EPS) RightVol = true;
+      else RightVol = false;;
+      
+      MaxArea = max(MaxArea, Area);
+      MinArea = min(MinArea, Area);
+      
+    }
+    
+    /*--- Tetrahedra ---*/
+    if (nDim == 3) {
+      
+      if (nNodes == 4) Volume = GetTetra_Volume(CoordCorners);
+      if (nNodes == 5) Volume = GetPyram_Volume(CoordCorners);
+      if (nNodes == 6) Volume = GetWedge_Volume(CoordCorners);
+      if (nNodes == 8) Volume = GetHexa_Volume(CoordCorners);
+      
+      if (Volume >= -EPS) RightVol = true;
+      else RightVol = false;;
+      
+      MaxVolume = max(MaxVolume, Volume);
+      MinVolume = min(MinVolume, Volume);
+      
+    }
+    
+    if (!RightVol) ElemCounter++;
+    
+	}
+  
+#ifndef NO_MPI
+  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+  double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
+  double MinVolume_Local = MinVolume; MinVolume = 0.0;
+  
+  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI::DOUBLE, MPI::MAX);
+  MPI::COMM_WORLD.Allreduce(&MinVolume_Local, &MinVolume, 1, MPI::DOUBLE, MPI::MIN);
+#endif
+  
+  if ((ElemCounter != 0) && (rank == MASTER_NODE))
+    cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
+  
+  if (nDim == 2) return MinArea;
+  else return MinVolume;
+  
+}
+
 double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) {
   
 	unsigned short iVar, iDim, nNodes, iNodes;
@@ -272,24 +290,20 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-  /*--- Allocate maximum size (rectangle and hexa) ---*/
+  /*--- Allocate maximum size (rectangle and hexahedron) ---*/
   
   if (nDim == 2) {
-    
     StiffMatrix_Elem = new double* [8];
     for (iVar = 0; iVar < 8; iVar++)
       StiffMatrix_Elem[iVar] = new double [8];
-    
   }
   if (nDim == 3) {
-    
     StiffMatrix_Elem = new double* [24];
     for (iVar = 0; iVar < 24; iVar++)
       StiffMatrix_Elem[iVar] = new double [24];
-    
   }
   
-  /*--- First, check the minimum edge length in the entire mesh. ---*/
+  /*--- Check the minimum edge length in the entire mesh. ---*/
   
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -313,7 +327,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
 #endif
   
-  /*--- Second, compute min volume in the entire mesh. ---*/
+  /*--- Compute min volume in the entire mesh. ---*/
   Scale = Check_Grid(geometry);
   
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
@@ -444,7 +458,7 @@ double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, dou
   
 }
 
-double CVolumetricMovement::ShapeFunc_Tets(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
   double c0, c1, c2, xsj;
@@ -785,6 +799,286 @@ double CVolumetricMovement::ShapeFunc_Rectangle(double Xi, double Eta, double Co
   
 }
 
+double CVolumetricMovement::GetTriangle_Area(double CoordCorners[8][3]) {
+  
+  unsigned short iDim;
+  double a[3], b[3];
+  double *Coord_0, *Coord_1, *Coord_2, Area;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[2];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+  }
+  
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  
+  return Area;
+  
+}
+
+double CVolumetricMovement::GetRectangle_Area(double CoordCorners[8][3]) {
+  
+  unsigned short iDim;
+  double a[3], b[3];
+  double *Coord_0, *Coord_1, *Coord_2, Area;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[2];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+  }
+  
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[2];
+  Coord_2 = CoordCorners[3];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+  }
+  
+  Area += 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+  
+  return Area;
+  
+}
+
+double CVolumetricMovement::GetTetra_Volume(double CoordCorners[8][3]) {
+  
+  unsigned short iDim;
+  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
+  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[2];
+  Coord_3 = CoordCorners[3];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  return Volume;
+  
+}
+
+double CVolumetricMovement::GetPyram_Volume(double CoordCorners[8][3]) {
+  
+  unsigned short iDim;
+  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
+  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[2];
+  Coord_3 = CoordCorners[4];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[2];
+  Coord_2 = CoordCorners[3];
+  Coord_3 = CoordCorners[4];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  return Volume;
+
+}
+
+double CVolumetricMovement::GetWedge_Volume(double CoordCorners[8][3]) {
+  
+  unsigned short iDim;
+  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
+  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[2];
+  Coord_3 = CoordCorners[5];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[5];
+  Coord_3 = CoordCorners[4];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[4];
+  Coord_2 = CoordCorners[5];
+  Coord_3 = CoordCorners[3];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  return Volume;
+
+}
+
+double CVolumetricMovement::GetHexa_Volume(double CoordCorners[8][3]) {
+  
+  unsigned short iDim;
+  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
+  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[1];
+  Coord_2 = CoordCorners[2];
+  Coord_3 = CoordCorners[5];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[2];
+  Coord_2 = CoordCorners[7];
+  Coord_3 = CoordCorners[5];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[2];
+  Coord_2 = CoordCorners[3];
+  Coord_3 = CoordCorners[7];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[0];
+  Coord_1 = CoordCorners[5];
+  Coord_2 = CoordCorners[7];
+  Coord_3 = CoordCorners[4];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  Coord_0 = CoordCorners[2];
+  Coord_1 = CoordCorners[7];
+  Coord_2 = CoordCorners[5];
+  Coord_3 = CoordCorners[6];
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
+    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
+    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
+  }
+  
+	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+  
+  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  
+  return Volume;
+
+}
+
 bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
@@ -818,7 +1112,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
         if (kGauss == 0) { Mu = -0.577350269189626; kWeight = 1.0; }
         if (kGauss == 1) { Mu = 0.577350269189626; kWeight = 1.0; }
         
-        if (nNodes == 4) Det = ShapeFunc_Tets(Xi, Eta, Mu, CoordCorners, DShapeFunction);
+        if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Mu, CoordCorners, DShapeFunction);
         if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Mu, CoordCorners, DShapeFunction);
         if (nNodes == 6) Det = ShapeFunc_Wedge(Xi, Eta, Mu, CoordCorners, DShapeFunction);
         if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Mu, CoordCorners, DShapeFunction);
@@ -844,7 +1138,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
           B_Matrix[5][2+iNode*nVar] = DShapeFunction[iNode][0];
         }
         
-//      double E = 1.0 / (iWeight * jWeight * kWeight * Det) ;
+//      double E = scale / (iWeight * jWeight * kWeight * Det) ;
 //      double Mu = E;
 //      double Lambda = -E;
         
@@ -915,7 +1209,6 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
    "Robust Mesh Deformation using the Linear Elasticity Equations" by
    R. P. Dwight. ---*/
   
-  
   for (iGauss = 0; iGauss < 1; iGauss++) {
     for (jGauss = 0; jGauss < 1; jGauss++) {
       
@@ -941,7 +1234,7 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
         B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
       }
       
-//      double E = 1.0 / (iWeight * jWeight * Det) ;
+//      double E = scale / (iWeight * jWeight * Det) ;
 //      double Mu = E;
 //      double Lambda = -E;
       
@@ -1020,335 +1313,6 @@ void CVolumetricMovement::AddFEA_StiffMatrix(CGeometry *geometry, double **Stiff
   for (iVar = 0; iVar < nVar; iVar++)
     delete StiffMatrix_Node[iVar];
   delete [] StiffMatrix_Node;
-  
-}
-
-double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
-	unsigned long Point_0, Point_1, Point_2, Point_3, Point_4, Point_5, Point_6, Point_7, iElem, ElemCounter = 0;
-  double Area, Volume, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22;
-  bool RightVol;
-  
-  int rank = MASTER_NODE;
-  
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
-  
-	/*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
-  
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    
-    /*--- Triangles ---*/
-    if (nDim == 2) {
-      Point_0 = geometry->elem[iElem]->GetNode(0);
-      Point_1 = geometry->elem[iElem]->GetNode(1);
-      Point_2 = geometry->elem[iElem]->GetNode(2);
-      RightVol = Check_Elem2D(geometry, iElem, Point_0, Point_1, Point_2, &Area);
-      
-      MaxArea = max(MaxArea, Area);
-      MinArea = min(MinArea, Area);
-      
-    }
-    
-    /*--- Tetrahedra ---*/
-    if (nDim == 3) {
-      
-      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-        Point_0 = geometry->elem[iElem]->GetNode(0);
-        Point_1 = geometry->elem[iElem]->GetNode(1);
-        Point_2 = geometry->elem[iElem]->GetNode(2);
-        Point_3 = geometry->elem[iElem]->GetNode(3);
-        RightVol = Check_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3, &Volume);
-      }
-      
-      if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-        Point_0 = geometry->elem[iElem]->GetNode(0);
-        Point_1 = geometry->elem[iElem]->GetNode(1);
-        Point_2 = geometry->elem[iElem]->GetNode(2);
-        Point_3 = geometry->elem[iElem]->GetNode(3);
-        Point_4 = geometry->elem[iElem]->GetNode(4);
-        Point_5 = geometry->elem[iElem]->GetNode(5);
-        Point_6 = geometry->elem[iElem]->GetNode(6);
-        Point_7 = geometry->elem[iElem]->GetNode(7);
-        RightVol = Check_Elem3D(geometry, iElem, Point_0, Point_1, Point_2, Point_3, Point_4, Point_5, Point_6, Point_7, &Volume);
-      }
-      
-      MaxVolume = max(MaxVolume, Volume);
-      MinVolume = min(MinVolume, Volume);
-      
-    }
-    
-    if (!RightVol) ElemCounter++;
-    
-	}
-  
-#ifndef NO_MPI
-  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
-  double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
-  double MinVolume_Local = MinVolume; MinVolume = 0.0;
-  
-  MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI::DOUBLE, MPI::MAX);
-  MPI::COMM_WORLD.Allreduce(&MinVolume_Local, &MinVolume, 1, MPI::DOUBLE, MPI::MIN);
-#endif
-  
-  if ((ElemCounter != 0) && (rank == MASTER_NODE))
-    cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
-  
-  if (nDim == 2) return MinArea;
-  else return MinVolume;
-}
-
-bool CVolumetricMovement::Check_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0,
-                                       unsigned long val_Point_1, unsigned long val_Point_2, double *Area) {
-  
-  unsigned short iDim;
-  double a[3], b[3];
-  
-  double *Coord_0 = geometry->node[val_Point_0]->GetCoord();
-  double *Coord_1 = geometry->node[val_Point_1]->GetCoord();
-  double *Coord_2 = geometry->node[val_Point_2]->GetCoord();
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-  }
-  
-  (*Area) = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
-  if ((*Area) < 0.0) {
- 
-    return false;
-
-  }
-  else return true;
-      
-}
-
-bool CVolumetricMovement::Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1,
-                                       unsigned long val_Point_2, unsigned long val_Point_3, double *Volume) {
-  
-  unsigned short iDim;
-  double r1[3], r2[3], r3[3], CrossProduct[3];
-  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-
-  Coord_0 = geometry->node[val_Point_0]->GetCoord();
-  Coord_1 = geometry->node[val_Point_1]->GetCoord();
-  Coord_2 = geometry->node[val_Point_2]->GetCoord();
-  Coord_3 = geometry->node[val_Point_3]->GetCoord();
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  (*Volume) = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  if ((*Volume) < 0.0) return false;
-  else return true;
-
-}
-
-bool CVolumetricMovement::Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1,
-                                       unsigned long val_Point_2, unsigned long val_Point_3, unsigned long val_Point_4, unsigned long val_Point_5,
-                                       unsigned long val_Point_6, unsigned long val_Point_7, double *Volume) {
-  
-  unsigned short iDim;
-  double r1[3], r2[3], r3[3], CrossProduct[3];
-  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-
-  Coord_0 = geometry->node[val_Point_0]->GetCoord();
-  Coord_1 = geometry->node[val_Point_1]->GetCoord();
-  Coord_2 = geometry->node[val_Point_2]->GetCoord();
-  Coord_3 = geometry->node[val_Point_5]->GetCoord();
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  (*Volume) = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = geometry->node[val_Point_0]->GetCoord();
-  Coord_1 = geometry->node[val_Point_2]->GetCoord();
-  Coord_2 = geometry->node[val_Point_7]->GetCoord();
-  Coord_3 = geometry->node[val_Point_5]->GetCoord();
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  (*Volume) += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = geometry->node[val_Point_0]->GetCoord();
-  Coord_1 = geometry->node[val_Point_2]->GetCoord();
-  Coord_2 = geometry->node[val_Point_3]->GetCoord();
-  Coord_3 = geometry->node[val_Point_7]->GetCoord();
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  (*Volume) += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = geometry->node[val_Point_0]->GetCoord();
-  Coord_1 = geometry->node[val_Point_5]->GetCoord();
-  Coord_2 = geometry->node[val_Point_7]->GetCoord();
-  Coord_3 = geometry->node[val_Point_4]->GetCoord();
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  (*Volume) += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = geometry->node[val_Point_2]->GetCoord();
-  Coord_1 = geometry->node[val_Point_7]->GetCoord();
-  Coord_2 = geometry->node[val_Point_5]->GetCoord();
-  Coord_3 = geometry->node[val_Point_6]->GetCoord();
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  (*Volume) += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  if ((*Volume) < 0.0) return false;
-  else return true;
-  
-}
-
-double CVolumetricMovement::GetTets_Volume(double TetCorners[4][3]) {
-  
-  unsigned short iDim;
-  
-  double *Coord_0 = TetCorners[0];
-  double *Coord_1 = TetCorners[1];
-  double *Coord_2 = TetCorners[2];
-  double *Coord_3 = TetCorners[3];
-  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  return Volume;
-  
-}
-
-double CVolumetricMovement::GetHexa_Volume(double HexaCorners[8][3]) {
-  unsigned short iDim;
-  double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-  double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
-  
-  Coord_0 = HexaCorners[0];
-  Coord_1 = HexaCorners[1];
-  Coord_2 = HexaCorners[2];
-  Coord_3 = HexaCorners[5];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = HexaCorners[0];
-  Coord_1 = HexaCorners[2];
-  Coord_2 = HexaCorners[7];
-  Coord_3 = HexaCorners[5];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = HexaCorners[0];
-  Coord_1 = HexaCorners[2];
-  Coord_2 = HexaCorners[3];
-  Coord_3 = HexaCorners[7];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = HexaCorners[0];
-  Coord_1 = HexaCorners[5];
-  Coord_2 = HexaCorners[7];
-  Coord_3 = HexaCorners[4];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = HexaCorners[2];
-  Coord_1 = HexaCorners[7];
-  Coord_2 = HexaCorners[5];
-  Coord_3 = HexaCorners[6];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  return Volume;
   
 }
 

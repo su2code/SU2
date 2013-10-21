@@ -706,13 +706,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \return Value of the length of the smallest edge of the grid.
-	 */
-	double SetSpringMethodContributions_Edges(CGeometry *geometry);
   
   /*!
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
@@ -755,7 +748,7 @@ public:
 	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
    * \param[in] shp[8][4] - Shape function information
 	 */
-  double ShapeFunc_Tets(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  double ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -801,13 +794,37 @@ public:
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
 	 */
-  double GetHexa_Volume(double HexaCorners[8][3]);
+  double GetHexa_Volume(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
 	 */
-  double GetTets_Volume(double TetCorners[4][3]);
+  double GetTetra_Volume(double CoordCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetWedge_Volume(double CoordCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetPyram_Volume(double CoordCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetTriangle_Area(double CoordCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetRectangle_Area(double CoordCorners[8][3]);
     
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
@@ -825,41 +842,6 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	double Check_Grid(CGeometry *geometry);
-  
-  /*!
-	 * \brief Check for negative volumes for 2-D elements after grid deformation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iElem - Index value for the current primal grid element.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
-	 */
-  bool Check_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, double *Area);
-  
-  /*!
-	 * \brief Check for negative volumes for 3-D elements after grid deformation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iElem - Index value for the current primal grid element.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
-   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
-	 */
-  bool Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2,
-                    unsigned long val_Point_3, double *Volume);
-  
-  /*!
-	 * \brief Check for negative volumes for 3-D elements after grid deformation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iElem - Index value for the current primal grid element.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
-   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
-	 */
-  bool Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2,
-                    unsigned long val_Point_3, unsigned long val_Point_4, unsigned long val_Point_5, unsigned long val_Point_6,
-                    unsigned long val_Point_7, double *Volume);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
