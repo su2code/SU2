@@ -3235,9 +3235,9 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
 	
 	double deltaT, time_new, time_old, Lref, *Coord;
   double xDot[3], Center[3], deltaX[3], newCoord[3], VarCoord[3];
-  unsigned short iMarker, jMarker, iDim, nDim = geometry->GetnDim();
+  unsigned short iMarker, jMarker, Moving, Move, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
-  string Marker_Tag;
+  string Marker_Tag, Moving_Tag;
   
 #ifndef NO_MPI
 	int rank = MPI::COMM_WORLD.Get_rank();
@@ -3253,59 +3253,77 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
 	/*--- Store displacement of each node on the rotating surface ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-      
-      /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
-      
-      Marker_Tag = config->GetMarker_All_Tag(iMarker);
-      jMarker    = config->GetMarker_Moving(Marker_Tag);
-      
-      /*--- Rotation origin and angular velocity from config. ---*/
-      
-      Center[0] = config->GetMotion_Origin_X(jMarker);
-      Center[1] = config->GetMotion_Origin_Y(jMarker);
-      Center[2] = config->GetMotion_Origin_Z(jMarker);
-      xDot[0]   = config->GetTranslation_Rate_X(jMarker);
-      xDot[1]   = config->GetTranslation_Rate_Y(jMarker);
-      xDot[2]   = config->GetTranslation_Rate_Z(jMarker);
+    Moving = config->GetMarker_All_Moving(iMarker);
+    if (Moving == YES) {
+      for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+        
+        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        
+        if (Marker_Tag == Moving_Tag) {
 
-      /*--- Print some information to the console. Be verbose at the first
-       iteration only (mostly for debugging purposes). ---*/
-      
-      if (rank == MASTER_NODE) {
-        cout << " Storing translating displacement for marker: ";
-        cout << Marker_Tag << "." << endl;
-        if (iter == 0) {
-          cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
-          cout << ", " << xDot[2] << ") m/s." << endl;
+          /*--- Rotation origin and angular velocity from config. ---*/
+          
+          Center[0] = config->GetMotion_Origin_X(jMarker);
+          Center[1] = config->GetMotion_Origin_Y(jMarker);
+          Center[2] = config->GetMotion_Origin_Z(jMarker);
+          xDot[0]   = config->GetTranslation_Rate_X(jMarker);
+          xDot[1]   = config->GetTranslation_Rate_Y(jMarker);
+          xDot[2]   = config->GetTranslation_Rate_Z(jMarker);
+          
+          /*--- Print some information to the console. Be verbose at the first
+           iteration only (mostly for debugging purposes). ---*/
+          
+          if (rank == MASTER_NODE) {
+            cout << " Storing translating displacement for marker: ";
+            cout << Marker_Tag << "." << endl;
+            if (iter == 0) {
+              cout << " Translational velocity: (" << xDot[0] << ", " << xDot[1];
+              cout << ", " << xDot[2] << ") m/s." << endl;
+            }
+          }
+          
+          /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+          
+          VarCoord[0] = xDot[0]*deltaT;
+          VarCoord[1] = xDot[1]*deltaT;
+          VarCoord[2] = xDot[2]*deltaT;
+          
+          for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            
+            /*--- Set node displacement for volume deformation ---*/
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+            
+          }
         }
       }
-      
-      /*--- Compute delta change in the position in the x, y, & z directions. ---*/
-
-      VarCoord[0] = xDot[0]*deltaT;
-      VarCoord[1] = xDot[1]*deltaT;
-      VarCoord[2] = xDot[2]*deltaT;
-      
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
-        /*--- Set node displacement for volume deformation ---*/
-        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-        
-      }
-		}
+    }
     
-    
-//    // This has to be done for all markers
-//    
-//    /*--- Set the mesh motion center to the new location after
-//     incrementing the position with the rigid translation. This
-//     new location will be used for subsequent pitching/rotation.---*/
-//    
-//    config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
-//    config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
-//    config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
-	}
+    /*--- Move quantities that need to be updated ---*/
+//    for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+//    for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+//      Move = config->GetMove_Moment_Origin
+//      
+//      
+//      if (Monitoring == YES) {
+//        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//          Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+//          Marker_Tag = config->GetMarker_All_Tag(iMarker);
+//          if (Marker_Tag == Monitoring_Tag)
+//            Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+//        }
+//      }
+      //    // This has to be done for all markers
+      //
+      //    /*--- Set the mesh motion center to the new location after
+      //     incrementing the position with the rigid translation. This
+      //     new location will be used for subsequent pitching/rotation.---*/
+      //
+      //    config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
+      //    config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
+      //    config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+//    }
+  }
 }
 
 void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,

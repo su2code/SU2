@@ -724,6 +724,8 @@ inline string CConfig::GetMarker_NacelleExhaust(unsigned short val_marker) { ret
 
 inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
 
+inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
+
 inline unsigned short CConfig::GetTag_Marker_All(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
 		if (val_tag == Marker_All_Tag[iMarker])
@@ -775,6 +777,8 @@ inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
+
+inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 

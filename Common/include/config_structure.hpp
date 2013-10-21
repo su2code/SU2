@@ -1696,6 +1696,12 @@ public:
 	 * \return Total number of monitoring markers.
 	 */
 	unsigned short GetnMarker_Monitoring(void);
+  
+  /*!
+	 * \brief Get the total number of moving markers.
+	 * \return Total number of moving markers.
+	 */
+	unsigned short GetnMarker_Moving(void);
 
 	/*!
 	 * \brief Stores the number of marker in the simulation.
@@ -4210,6 +4216,14 @@ public:
 	 * \return Internal index for a moving boundary <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_Moving(string val_marker);
+  
+  /*!
+	 * \brief Get the name of the surface defined in the geometry file.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return Name that is in the geometry file for the surface that
+	 *         has the marker <i>val_marker</i>.
+	 */
+	string GetMarker_Moving(unsigned short val_marker);
 
 	/*!
 	 * \brief Get information about converting a mesh from CGNS to SU2 format.
