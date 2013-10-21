@@ -936,6 +936,10 @@ inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = 
 
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 
+inline string CConfig::GetML_Turb_Exec(void) { return ML_Turb_Exec; }
+
+inline string CConfig::GetML_Turb_Model_File(void) { return ML_Turb_Model_File; }
+
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
 inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
