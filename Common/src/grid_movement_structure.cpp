@@ -3660,6 +3660,8 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
         }
         /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
         config->SetMotion_Origin_Y(iMarker,Center[1]+dy);
+        config->SetRefOriginMoment_Y(iMarker,Center[1]+dy);
+
     }
     else {
         if (rank == MASTER_NODE)

@@ -52,7 +52,8 @@ protected:
 	double Gas_Constant;		 		/*!< \brief Gas constant. */
 	double *Gas_Constant_MultipleSpecies;
 	double *Vector_Gamma;
-    double *Enthalpy_formation;
+  double *Vector; /*!< \brief Auxiliary vector. */
+  double *Enthalpy_formation;
 	unsigned short nDiatomics, nMonatomics;
     
 public:
@@ -1014,14 +1015,15 @@ public:
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
 	 */
 	void GetViscousProjFlux(double *val_primvar,
-                            double **val_gradprimvar,
-                            double *val_normal,
-                            double *val_diffusioncoeff,
-                            double val_viscosity,
-                            double val_therm_conductivity,
-                            double val_therm_conductivity_ve);
-    
-	/*!
+                          double **val_gradprimvar,
+                          double *val_normal,
+                          double *val_diffusioncoeff,
+                          double val_viscosity,
+                          double val_therm_conductivity,
+                          double val_therm_conductivity_ve,
+                          CConfig *config);
+
+  /*
 	 * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
 	 * \param[in] val_primvar - Primitive variables.
 	 * \param[in] val_gradprimvar - Gradient of the primitive variables.
@@ -6440,12 +6442,51 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-    
-    /*!
-	 * \brief Generates an orthonormal basis given a single vector
-	 * \param[in] val_Normal - Normal vector.
+};
+
+/*!
+ * \class CUpwAUSM_TNE2
+ * \brief Class for solving an approximate Riemann AUSM.
+ * \ingroup ConvDiscr
+ * \author F. Palacios
+ * \version 2.0.6
+ */
+class CUpwAUSMPWplus_TNE2 : public CNumerics {
+private:
+	bool implicit, ionization;
+	double *FcL, *FcR, *FcLR;
+  double *dmLP, *dmRM, *dpLP, *dpRM;
+  double *daL, *daR;
+  double *rhos_i, *u_i;
+	double *rhos_j, *u_j;
+  double a_i, P_i, h_i, ProjVel_i;
+  double a_j, P_j, h_j, ProjVel_j;
+	double sq_vel, Proj_ModJac_Tensor_ij;
+ 	unsigned short nSpecies, nVar, nDim;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-    void CreateBasis(double *val_Normal);
+	CUpwAUSMPWplus_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwAUSMPWplus_TNE2(void);
+  
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
 
@@ -6561,6 +6602,65 @@ public:
                          double **val_Jacobian_i,
                          double **val_Jacobian_j,
                          CConfig *config);
+};
+
+
+/*!
+ * \class CAvgGrad_Flow
+ * \brief Class for computing viscous term using the average of gradients.
+ * \ingroup ViscDiscr
+ * \author S. R. Copeland
+ * \version 2.0.8
+ */
+class CAvgGradCorrected_TNE2 : public CNumerics {
+private:
+	unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;		/*!< \brief Iterators in dimension an variable. */
+	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
+	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
+	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
+  *Edge_Vector,
+  *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
+	*Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
+  Mean_Laminar_Viscosity, /*!< \brief Mean value of the viscosity. */
+  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Thermal_Conductivity_ve, /*!< \brief Mean value of the vib-el. thermal conductivity. */
+  
+	*Proj_flux_tensor,	/*!< \brief Projection of the viscous fluxes. */
+	dist_ij;						/*!< \brief Length of the edge and face. */
+	bool implicit; /*!< \brief Implicit calculus. */
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimension of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables of the problem.
+   * \param[in] val_nPrimVarGrad - Number of variables in the primitive variable gradient.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGradCorrected_TNE2(unsigned short val_nDim,
+                unsigned short val_nVar,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
+                CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGradCorrected_TNE2(void);
+  
+	/*!
+	 * \brief Compute the viscous flow residual using an average of gradients.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual,
+                       double **val_Jacobian_i,
+                       double **val_Jacobian_j,
+                       CConfig *config);
 };
 
 

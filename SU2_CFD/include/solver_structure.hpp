@@ -6605,8 +6605,7 @@ class CTNE2EulerSolver : public CSolver {
 protected:
 
   unsigned short
-  nSpecies,	                /*!< \brief Number of species in the gas mixture. */
-  nPrimVar;                 /*!< \brief Number of primitive variables. */
+  nSpecies;	                /*!< \brief Number of species in the gas mixture. */
   
   double
   Gamma,                    /*!< \brief Mixture Cp/Cv. */
@@ -6627,6 +6626,10 @@ protected:
   *MassFrac_Inf,            /*!< \brief Free stream species mass fraction. */
   Temperature_Inf,          /*!< \brief Trans.-rot. free stream temperature. */
   Temperature_ve_Inf;       /*!< \brief Vib.-el. free stream temperature. */
+
+  double
+  *lowerlimit,            /*!< \brief contains lower limits for conserved variables. */
+	*upperlimit;            /*!< \brief contains upper limits for conserved variables. */
 
 	double                    
   *CDrag_Inv,	              /*!< \brief Boundary invisc. Cd contribution. */
@@ -7291,6 +7294,18 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
 	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+  
+  /*!
+	 * \brief Impose the symmetry boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
 	 * \brief Impose a constant heat-flux condition at the wall.

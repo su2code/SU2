@@ -287,6 +287,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_
   /*--- Allocate partial derivative vectors ---*/
   dPdrhos = new double [nSpecies];
   
+  /*--- Determine the number of heavy species ---*/
+  ionization = config->GetIonization();
+  
 	/*--- Initialize Solution & Solution_Old vectors ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Solution[iVar]     = val_solution[iVar];
@@ -381,14 +384,12 @@ void CTNE2EulerVariable::SetVelocity2(void) {
 bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   // Note: Requires previous call to SetDensity()
-  // Note: Missing contribution from electronic energy
-  bool ionization;
   unsigned short iEl, iSpecies, iDim, nHeavy, nEl, iIter, maxIter, *nElStates;
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   double evs, eels;
   double Ru, sqvel, rhoCvtr, rhoCvve;
-  double Cvvs, Cves, Tve, Tve2;
+  double Cvvs, Cves, Tve, Tve2, Tve_o;
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;
@@ -398,7 +399,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   maxIter = 50;
   
   /*--- Determine the number of heavy species ---*/
-  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
@@ -438,8 +438,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Cannot write an expression explicitly in terms of Tve
   // NOTE: We use Newton-Raphson to iteratively find the value of Tve
   // NOTE: Use T as an initial guess
-  Tve  = Primitive[TVE_INDEX];
-  Tve2 = Primitive[TVE_INDEX];
+  Tve   = Primitive[TVE_INDEX];
+  Tve_o = Primitive[TVE_INDEX];
   
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
@@ -462,7 +462,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
         
         /*--- Add contribution ---*/
         rhoEve_t += Solution[iSpecies] * evs;
-        rhoCvve  += Solution[iSpecies] * Cvvs;        
+        rhoCvve  += Solution[iSpecies] * Cvvs;
       }
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
@@ -496,18 +496,25 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     df = -rhoCvve;
     Tve2 = Tve - (f/df)*0.5;
     
+    if (Tve2 < 0.0)
+      Tve2 = EPS;
+    
     /*--- Check for convergence ---*/
     if (fabs(Tve2-Tve) < tol) break;
     if (iIter == maxIter-1) {
       cout << "WARNING!!! Tve convergence not reached!" << endl;
-      Tve2 = Primitive[TVE_INDEX];
+      cout << "rhoE: " << rhoE << endl;
+      cout << "rhoEve: " << rhoEve << endl;
+      cout << "T: " << Primitive[T_INDEX] << endl;
+      cout << "Tve2: " << Tve2 << endl;
+      cout << "Tve_o: " << Tve_o << endl;
+      //        cin.get();
+      Tve2 = Tve_o;
+      break;
     }
     Tve = Tve2;
-    
   }
   
-  if (Tve2 <= 0)
-    Tve2 = 1E-8;
   Primitive[TVE_INDEX] = Tve2;
   
   /*--- Assign Gas Properties ---*/
@@ -515,7 +522,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   Primitive[RHOCVVE_INDEX] = rhoCvve;
   
   /*--- Check that the solution is physical ---*/
-  if ((Primitive[T_INDEX] > 0.0) && (Primitive[TVE_INDEX])) return false;
+  if ((Primitive[T_INDEX] > 0.0) && (Primitive[TVE_INDEX] > 0.0)) return false;
   else return true;
 }
 
@@ -936,6 +943,9 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    DiffusionCoeff[iSpecies] = 0.0;
 }
 
 
@@ -1029,9 +1039,14 @@ void CTNE2NSVariable::SetLaminarViscosity(CConfig *config) {
 void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
 	unsigned short iSpecies, jSpecies, nHeavy, nEl;
   double rho, T, Tve, Cvve;
-  double *xi, *Ms, Mi, Mj, pi, R, Ru, Na, kb, gam_i, gam_j, Theta_v;
+  double *xi, *Ms, Mi, Mj, mi, mj, pi, R, Ru, Na, kb, gam_i, gam_j, Theta_v;
   double denom_t, denom_r, d1_ij, d2_ij, a_ij;
   double ***Omega00, ***Omega11, Omega_ij;
+  
+  if (ionization) {
+    cout << "SetThermalConductivity: NEEDS REVISION w/ IONIZATION" << endl;
+    exit(1);
+  }
   
   /*--- Acquire gas parameters from CConfig ---*/
   Omega00 = config->GetCollisionIntegral00();
@@ -1064,6 +1079,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
     
     /*--- Calculate molar concentration ---*/
     Mi      = Ms[iSpecies];
+    mi      = Mi/Na;
     gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
     Theta_v = config->GetCharVibTemp(iSpecies);
     
@@ -1071,9 +1087,10 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
     denom_r = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       Mj    = config->GetMolar_Mass(jSpecies);
+      mj    = Mj/Na;
       gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
       
-      a_ij = 1.0 + (1.0 - Mi/Mj)*(0.45 - 2.54*Mi/Mj) / ((1.0 + Mi/Mj)*(1.0 + Mi/Mj));
+      a_ij = 1.0 + (1.0 - mi/mj)*(0.45 - 2.54*mi/mj) / ((1.0 + mi/mj)*(1.0 + mi/mj));
 
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
       Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
@@ -1103,7 +1120,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
     /*--- Translational contribution to thermal conductivity ---*/
     if (xi[iSpecies] != 0.0)
       ThermalCond  += kb*gam_i/denom_r;
-      
+    
     /*--- Vibrational-electronic contribution to thermal conductivity ---*/
     ThermalCond_ve += kb*Cvve/R*gam_i / denom_r;
   }
@@ -1171,7 +1188,7 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
     
     RightVol = false;
   }
-  
+
   SetEnthalpy();                            // Requires density & pressure computation.
   SetDiffusionCoeff(config);
   SetLaminarViscosity(config);                    // Requires temperature computation.
