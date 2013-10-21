@@ -1110,11 +1110,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 //      surface_movement->Surface_Plunging(geometry_container[MESH_0],
 //                                            config_container, ExtIter, iZone);
       
-      surface_movement->Surface_Pitching(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
+//      surface_movement->Surface_Pitching(geometry_container[MESH_0],
+//                                         config_container, ExtIter, iZone);
       
-      surface_movement->Surface_Rotating(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
+//      surface_movement->Surface_Rotating(geometry_container[MESH_0],
+//                                         config_container, ExtIter, iZone);
       
       /*--- Deform the volume grid around the new boundary locations ---*/
       
