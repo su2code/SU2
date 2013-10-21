@@ -4724,7 +4724,6 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
 //    }
 //  }
 //  
-//  
 //  delete [] UnitNormal;
   
 }
