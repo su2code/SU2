@@ -438,8 +438,6 @@ inline double CConfig::GetViscosity_Ref(unsigned short iSpecies) { return Specie
 
 inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradient_Method; }
 
-inline unsigned short CConfig::GetKind_GridDef_Method(void) { return Kind_GridDef_Method; }
-
 inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_Linear_Solver_Prec(void) { return Kind_Linear_Solver_Prec; }

@@ -930,7 +930,8 @@ public:
 class CWedge : public CPrimalGrid {
 private:
 	static unsigned short Faces[5][4];			/*!< \brief Matrix to store the local nodes of all the faces. */
-	static unsigned short Neighbor_Nodes[6][3];	/*!< \brief Neighbor to a nodes in the element. */
+//	static unsigned short Neighbor_Nodes[6][3];	/*!< \brief Neighbor to a nodes in the element. */
+	static unsigned short Neighbor_Nodes[6][5];	/*!< \brief Neighbor to a nodes in the element. */
 	static unsigned short nNodesFace[5];		/*!< \brief Number of nodes of each face of the element. */
 	static unsigned short nNeighbor_Nodes[6];	/*!< \brief Number of Neighbor to a nodes in the element. */
 	static unsigned short nFaces;				/*!< \brief Number of faces of the element. */
