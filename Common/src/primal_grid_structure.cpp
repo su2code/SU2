@@ -236,11 +236,15 @@ void CTriangle::Change_Orientation(void) {
 
 unsigned short CRectangle::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 
-unsigned short CRectangle::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
+// unsigned short CRectangle::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
+
+unsigned short CRectangle::Neighbor_Nodes[4][3] = {{1,2,3},{0,2,3},{0,1,3},{0,1,2}};
 
 unsigned short CRectangle::nNodesFace[4] = {2,2,2,2};
 
-unsigned short CRectangle::nNeighbor_Nodes[4] = {2,2,2,2};
+//unsigned short CRectangle::nNeighbor_Nodes[4] = {2,2,2,2};
+
+unsigned short CRectangle::nNeighbor_Nodes[4] = {3,3,3,3};
 
 unsigned short CRectangle::nFaces = 4;
 

@@ -584,7 +584,8 @@ public:
 class CRectangle : public CPrimalGrid {
 private:
 	static unsigned short Faces[4][2];			/*!< \brief Matrix to store the local nodes of all the faces. */
-	static unsigned short Neighbor_Nodes[4][2];	/*!< \brief Neighbor to a nodes in the element. */
+//	static unsigned short Neighbor_Nodes[4][2];	/*!< \brief Neighbor to a nodes in the element. */
+	static unsigned short Neighbor_Nodes[4][3];	/*!< \brief Neighbor to a nodes in the element. */
 	static unsigned short nNodesFace[4];		/*!< \brief Number of nodes of each face of the element. */
 	static unsigned short nNeighbor_Nodes[4];	/*!< \brief Number of Neighbor to a nodes in the element. */
 	static unsigned short nFaces;				/*!< \brief Number of faces of the element. */
