@@ -2801,7 +2801,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- The master node unpacks and sorts this variable by global index ---*/
       if (rank == MASTER_NODE) {
         jPoint = 0;
-        iVar = iVar_Press;
+        iVar = iVar_TempLam+iSpecies;
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
@@ -2839,7 +2839,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- The master node unpacks and sorts this variable by global index ---*/
     if (rank == MASTER_NODE) {
       jPoint = 0;
-      iVar = iVar_Press;
+      iVar = iVar_TempLam+config->GetnSpecies();
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
@@ -2876,7 +2876,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- The master node unpacks and sorts this variable by global index ---*/
     if (rank == MASTER_NODE) {
       jPoint = 0;
-      iVar = iVar_Press;
+      iVar = iVar_TempLam+config->GetnSpecies()+1;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
@@ -2913,7 +2913,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- The master node unpacks and sorts this variable by global index ---*/
     if (rank == MASTER_NODE) {
       jPoint = 0;
-      iVar = iVar_Press;
+      iVar = iVar_TempLam+config->GetnSpecies()+2;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
@@ -3874,7 +3874,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case TNE2_EULER : case TNE2_NAVIER_STOKES:
       ConvHist_file[0] << begin << flow_coeff;
       if (isothermal) ConvHist_file[0] << heat_coeff;
-      for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
+      for (iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
         ConvHist_file[0] << ",\"Residual[" << iSpecies << "]\"";
       ConvHist_file[0] << end;
       break;
