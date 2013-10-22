@@ -636,7 +636,9 @@ private:
 	nPlunging_Omega_Z,           /*!< \brief Number of Angular frequencies in the z-direction for plunging. */
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
-	nPlunging_Ampl_Z;           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+  nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
+  *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
 	double *Aeroelastic_np1, /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
 	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
 	*Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
@@ -966,6 +968,27 @@ public:
 	 * \return Reference origin (in cartesians coordinates) for moment computation.
 	 */
 	double *GetRefOriginMoment(unsigned short val_marker);
+
+  /*!
+	 * \brief Get reference origin x-coordinate for moment computation.
+   * \param[in] val_marker - the marker we are monitoring.
+	 * \return Reference origin x-coordinate (in cartesians coordinates) for moment computation.
+	 */
+	double GetRefOriginMoment_X(unsigned short val_marker);
+  
+  /*!
+	 * \brief Get reference origin y-coordinate for moment computation.
+   * \param[in] val_marker - the marker we are monitoring.
+	 * \return Reference origin y-coordinate (in cartesians coordinates) for moment computation.
+	 */
+	double GetRefOriginMoment_Y(unsigned short val_marker);
+  
+  /*!
+	 * \brief Get reference origin z-coordinate for moment computation.
+   * \param[in] val_marker - the marker we are monitoring.
+	 * \return Reference origin z-coordinate (in cartesians coordinates) for moment computation.
+	 */
+	double GetRefOriginMoment_Z(unsigned short val_marker);
   
   /*!
 	 * \brief Set reference origin x-coordinate for moment computation.
@@ -3949,6 +3972,13 @@ public:
 	 */
 	double GetPlunging_Ampl_Z(unsigned short val_iZone);
 
+  /*!
+	 * \brief Get if we should update the motion origin.
+	 * \param[in] val_marker - Value of the marker in which we are interested.
+	 * \return yes or no to update motion origin.
+	 */
+	unsigned short GetMoveMotion_Origin(unsigned short val_marker);
+  
 	/*!
 	 * \brief Get the minimum value of Beta for Roe-Turkel preconditioner
 	 * \return the minimum value of Beta for Roe-Turkel preconditioner

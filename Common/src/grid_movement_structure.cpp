@@ -3232,10 +3232,10 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
 
 void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
-	
+  
 	double deltaT, time_new, time_old, Lref, *Coord;
   double xDot[3], Center[3], deltaX[3], newCoord[3], VarCoord[3];
-  unsigned short iMarker, jMarker, Moving, Move, iDim, nDim = geometry->GetnDim();
+  unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
   
@@ -3245,6 +3245,9 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
 	int rank = MASTER_NODE;
 #endif
 	
+  /*--- Initialize the delta variation in coordinates ---*/
+  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+  
   /*--- Retrieve values from the config file ---*/
   
   deltaT = config->GetDelta_UnstTimeND();
@@ -3262,11 +3265,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
         
         if (Marker_Tag == Moving_Tag) {
 
-          /*--- Rotation origin and angular velocity from config. ---*/
+          /*--- Translation velocity from config. ---*/
           
-          Center[0] = config->GetMotion_Origin_X(jMarker);
-          Center[1] = config->GetMotion_Origin_Y(jMarker);
-          Center[2] = config->GetMotion_Origin_Z(jMarker);
           xDot[0]   = config->GetTranslation_Rate_X(jMarker);
           xDot[1]   = config->GetTranslation_Rate_Y(jMarker);
           xDot[2]   = config->GetTranslation_Rate_Z(jMarker);
@@ -3298,31 +3298,39 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
         }
       }
     }
+  }
+  
+  /*--- When updating the origins it is assumed that all markers have the
+        same translational velocity, because we use the last VarCoord set ---*/
+  
+  /*--- Set the mesh motion center to the new location after
+   incrementing the position with the translation. This new
+   location will be used for subsequent mesh motion for the given marker.---*/
+  
+  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
     
-    /*--- Move quantities that need to be updated ---*/
-//    for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
-//    for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-//      Move = config->GetMove_Moment_Origin
-//      
-//      
-//      if (Monitoring == YES) {
-//        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-//          Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-//          Marker_Tag = config->GetMarker_All_Tag(iMarker);
-//          if (Marker_Tag == Monitoring_Tag)
-//            Origin = config->GetRefOriginMoment(iMarker_Monitoring);
-//        }
-//      }
-      //    // This has to be done for all markers
-      //
-      //    /*--- Set the mesh motion center to the new location after
-      //     incrementing the position with the rigid translation. This
-      //     new location will be used for subsequent pitching/rotation.---*/
-      //
-      //    config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
-      //    config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
-      //    config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
-//    }
+    /*-- Check if we want to update the motion origin for the given marker ---*/
+    
+    if (config->GetMoveMotion_Origin(jMarker) == YES) {
+      Center[0] = config->GetMotion_Origin_X(jMarker) + VarCoord[0];
+      Center[1] = config->GetMotion_Origin_Y(jMarker) + VarCoord[1];
+      Center[2] = config->GetMotion_Origin_Z(jMarker) + VarCoord[2];
+      config->SetMotion_Origin_X(jMarker, Center[0]);
+      config->SetMotion_Origin_Y(jMarker, Center[1]);
+      config->SetMotion_Origin_Z(jMarker, Center[2]);
+    }
+  }
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the translation. ---*/
+  
+  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
+    Center[1] = config->GetRefOriginMoment_Y(jMarker) + VarCoord[1];
+    Center[2] = config->GetRefOriginMoment_Z(jMarker) + VarCoord[2];
+    config->SetRefOriginMoment_X(jMarker, Center[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
 }
 
