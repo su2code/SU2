@@ -62,10 +62,10 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	/*--- Initialization of matrix structures ---*/
   
-	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
   if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Linear Elasticity)." << endl;
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
   
   /*--- Initialization of linear solver structures ---*/
   
