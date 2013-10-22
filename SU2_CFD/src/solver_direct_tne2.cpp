@@ -115,20 +115,40 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	node = new CVariable*[nPoint];
   
 	/*--- Define some auxiliary vectors related to the residual ---*/
-	Residual      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-	Point_Max     = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
-	Res_Conv      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
-	Res_Visc      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
-	Res_Sour      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
+	Residual = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
+	Residual_RMS = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
+	Residual_Max  = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
+	Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]    = 0;
+	Residual_i = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]   = 0.0;
+	Residual_j = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]   = 0.0;
+	Res_Conv = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]     = 0.0;
+	Res_Visc = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]     = 0.0;
+	Res_Sour = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]     = 0.0;
   
 	/*--- Define some auxiliary vectors related to the solution ---*/
-	Solution   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
-	Solution_i = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
-	Solution_j = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+	Solution   = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+	Solution_i = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
+	Solution_j = new double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  
+  /*--- Define some auxiliary vectors related to the geometry ---*/
+	Vector   = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
+	Vector_i = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
+	Vector_j = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
   /*--- Allocate arrays for conserved variable limits ---*/
   lowerlimit = new double[nVar];
@@ -146,24 +166,15 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     upperlimit[iVar] = 1E16;
   }
   
-	/*--- Define some auxiliary vectors related to the geometry ---*/
-	Vector   = new double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
-	Vector_i = new double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
-	Vector_j = new double[nDim];
-  for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
-  
-	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND) ||
-      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST)   ) {
-		Precon_Mat_inv = new double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar ++)
-			Precon_Mat_inv[iVar] = new double[nVar];
-		roe_turkel = true;
-	}
-  
+  /*--- Initialize the solution & residual CVectors ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  
+  /*--- Create the structure for storing extra information ---*/
+  if (config->GetExtraOutput()) {
+    nOutputVariables = nVar;
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+  }
   
 	/*--- Allocate Jacobians for implicit time-stepping ---*/
 	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
@@ -340,8 +351,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
           point_line >> Solution[iVar];
         }
         
-//        point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5] >> Solution[6];
-        
+        /*--- Call the CVariable constructor with the solution ---*/
 				node[iPoint_Local] = new CTNE2EulerVariable(Solution, nDim, nVar, nPrimVar,
                                                     nPrimVarGrad, config);
 			}
@@ -1991,12 +2001,11 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     // NOTE: Jacobians don't account for relaxation time derivatives
     numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
-    if (iPoint == 17) {
-      cout << "Source Residual: " << endl;
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        cout << Residual[iVar] << endl;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = Residual[iVar];
       }
-      cin.get();
     }
     
     /*--- Subtract Residual (and Jacobian) ---*/
@@ -3718,6 +3727,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   
   /*--- Set booleans from settings in CConfig ---*/
   restart = (config->GetRestart() || config->GetRestart_Flow());
+  roe_turkel = false;
   
 	/*--- Define geometry constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
@@ -3774,15 +3784,6 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	Vector_j = new double[nDim];
   for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
-  roe_turkel = false;
-	if ((config->GetKind_Upwind_TNE2() == ROE_TURKEL_1ST) ||
-      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND)   ) {
-		Precon_Mat_inv = new double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar ++)
-			Precon_Mat_inv[iVar] = new double[nVar];
-    roe_turkel = true;
-	}
-  
   /*--- Allocate arrays for conserved variable limits ---*/
   lowerlimit = new double[nVar];
   upperlimit = new double[nVar];
@@ -3802,6 +3803,12 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   /*--- Initialize the solution & residual CVectors ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  
+  /*--- Create the structure for storing extra information ---*/
+  if (config->GetExtraOutput()) {
+    nOutputVariables = nVar;
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+  }
   
 	/*--- Allocate Jacobians for implicit time-stepping ---*/
 	if (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT) {
@@ -3981,11 +3988,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
         for (iVar = 0; iVar < nVar; iVar++) {
           point_line >> Solution[iVar];
         }
-      /// OLD
-//			if (iPoint_Local >= 0) {
-//        if (nDim == 2) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-//        if (nDim == 3) point_line >> index >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         
+        /*--- Call the CVariable constructor with the solution ---*/
 				node[iPoint_Local] = new CTNE2NSVariable(Solution, nDim, nVar,
                                                  nPrimVar,nPrimVarGrad, config);
 			}
@@ -3996,8 +4000,13 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-			node[iPoint] = new CTNE2NSVariable(Solution, nDim, nVar, nPrimVar,
-                                         nPrimVarGrad, config);
+      node[iPoint] = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
+                                         Mvec_Inf, Temperature_Inf,
+                                         Temperature_ve_Inf, nDim, nVar,
+                                         nPrimVar, nPrimVarGrad, config);
+    
+			//node[iPoint] = new CTNE2NSVariable(Solution, nDim, nVar, nPrimVar,
+        //                                 nPrimVarGrad, config);
     
 		/*--- Close the restart file ---*/
 		restart_file.close();

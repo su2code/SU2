@@ -1728,9 +1728,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   }
   
   if (config->GetExtraOutput()) {
-    iVar_Extra  = nVar_Total;
-    nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables();
-    nVar_Total += nVar_Extra;
+    if (Kind_Solver == RANS) {
+      iVar_Extra  = nVar_Total;
+      nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables();
+      nVar_Total += nVar_Extra;
+    }
+    if ((Kind_Solver == TNE2_EULER)         ||
+        (Kind_Solver == TNE2_NAVIER_STOKES)) {
+      iVar_Extra  = nVar_Total;
+      nVar_Extra  = solver[TNE2_SOL]->GetnVar();
+      nVar_Total += nVar_Extra;
+    }
   }
   
   /*--- Merge the solution either in serial or parallel. ---*/
@@ -2066,9 +2074,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     if (config->GetExtraOutput()) {
-      for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
-        Data[jVar][jPoint] =  solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
-        jVar++;
+      if (Kind_Solver == RANS) {
+        for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
+          Data[jVar][jPoint] =  solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
+          jVar++;
+        }
+      }
+      if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+        for (unsigned short iVar = 0; iVar < nVar_Extra; iVar++) {
+          Data[jVar][jPoint] =  solver[TNE2_SOL]->OutputVariables[iPoint*nVar_Extra+iVar];
+          jVar++;
+        }
       }
     }
     
@@ -3310,8 +3326,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
           
           /*--- Get this variable into the temporary send buffer. ---*/
-          Buffer_Send_Var[jPoint] = solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
-          
+          if (Kind_Solver == RANS) {
+            Buffer_Send_Var[jPoint] = solver[TURB_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
+          }
+          if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+            Buffer_Send_Var[jPoint] = solver[TNE2_SOL]->OutputVariables[iPoint*nVar_Extra+jVar];
+          }
           jPoint++;
           
         }
@@ -3339,7 +3359,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       }
     }
-    
   }
   
   
