@@ -80,7 +80,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, CGeometry *geometry);
+  void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, bool EdgeConnect, CGeometry *geometry);
   
   /*!
 	 * \brief Assings values to the sparse-matrix structure.

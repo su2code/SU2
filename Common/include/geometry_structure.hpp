@@ -333,7 +333,7 @@ public:
 	 * \brief A virtual member.
 	 */	
 	virtual void SetPsuP(void);
-
+  
 	/*! 
 	 * \brief A virtual member.
 	 */		
@@ -891,12 +891,6 @@ public:
 	 * \brief Set points which surround a point.
 	 */
 	void SetPsuP(void);
-  
-  /*!
-	 * \brief Set points which surround a point. Special version for FEA
-   * grid deformation that performs element divisions internally.
-	 */
-	void SetPsuP_FEA(void);
 
 	/*!
 	 * \brief Function declaration to avoid partially overridden classes.
