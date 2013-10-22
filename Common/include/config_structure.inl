@@ -226,6 +226,12 @@ inline double *CConfig::GetRefOriginMoment(unsigned short val_marker) {
     return RefOriginMoment;
 }
 
+inline double CConfig::GetRefOriginMoment_X(unsigned short val_marker) { return RefOriginMoment_X[val_marker]; }
+
+inline double CConfig::GetRefOriginMoment_Y(unsigned short val_marker) { return RefOriginMoment_Y[val_marker]; }
+
+inline double CConfig::GetRefOriginMoment_Z(unsigned short val_marker) { return RefOriginMoment_Z[val_marker]; }
+
 inline void CConfig::SetRefOriginMoment_X(unsigned short val_marker, double val_origin) { RefOriginMoment_X[val_marker] = val_origin; }
 
 inline void CConfig::SetRefOriginMoment_Y(unsigned short val_marker, double val_origin) { RefOriginMoment_Y[val_marker] = val_origin; }
@@ -376,6 +382,8 @@ inline double CConfig::GetPlunging_Ampl_X(unsigned short val_iZone) { return  Pl
 inline double CConfig::GetPlunging_Ampl_Y(unsigned short val_iZone) { return  Plunging_Ampl_Y[val_iZone]; }
 
 inline double CConfig::GetPlunging_Ampl_Z(unsigned short val_iZone) { return  Plunging_Ampl_Z[val_iZone]; }
+
+inline unsigned short CConfig::GetMoveMotion_Origin(unsigned short val_marker) {return MoveMotion_Origin[val_marker]; }
 
 inline double CConfig::GetminTurkelBeta() { return  Min_Beta_RoeTurkel; }
 
