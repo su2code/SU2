@@ -236,15 +236,11 @@ void CTriangle::Change_Orientation(void) {
 
 unsigned short CRectangle::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 
-// unsigned short CRectangle::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
-
-unsigned short CRectangle::Neighbor_Nodes[4][3] = {{1,2,3},{0,2,3},{0,1,3},{0,1,2}};
+unsigned short CRectangle::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
 
 unsigned short CRectangle::nNodesFace[4] = {2,2,2,2};
 
-//unsigned short CRectangle::nNeighbor_Nodes[4] = {2,2,2,2};
-
-unsigned short CRectangle::nNeighbor_Nodes[4] = {3,3,3,3};
+unsigned short CRectangle::nNeighbor_Nodes[4] = {2,2,2,2};
 
 unsigned short CRectangle::nFaces = 4;
 
@@ -377,15 +373,11 @@ void CTetrahedron::Change_Orientation(void) {
 
 unsigned short CHexahedron::Faces[6][4] = {{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7},{0,3,2,1},{4,5,6,7}};
 
-//unsigned short CHexahedron::Neighbor_Nodes[8][3] = {{1,3,4},{0,2,5},{1,3,6},{0,2,7},{0,5,7},{4,6,1},{2,5,7},{4,3,6}};
-
-unsigned short CHexahedron::Neighbor_Nodes[8][7] = {{1,2,3,4,5,6,7},{0,2,3,4,5,6,7},{0,1,3,4,5,6,7},{0,1,2,4,5,6,7},{0,1,2,3,5,6,7},{0,1,2,3,4,6,7},{0,1,2,3,4,5,7},{0,1,2,3,4,5,6}};
+unsigned short CHexahedron::Neighbor_Nodes[8][3] = {{1,3,4},{0,2,5},{1,3,6},{0,2,7},{0,5,7},{4,6,1},{2,5,7},{4,3,6}};
 
 unsigned short CHexahedron::nNodesFace[6] = {4,4,4,4,4,4};
 
-//unsigned short CHexahedron::nNeighbor_Nodes[8] = {3,3,3,3,3,3,3,3};
-
-unsigned short CHexahedron::nNeighbor_Nodes[8] = {7,7,7,7,7,7,7,7};
+unsigned short CHexahedron::nNeighbor_Nodes[8] = {3,3,3,3,3,3,3,3};
 
 unsigned short CHexahedron::nFaces = 6;
 
@@ -464,15 +456,11 @@ void CHexahedron::Change_Orientation(void) {
 
 unsigned short CWedge::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 
-//unsigned short CWedge::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
-
-unsigned short CWedge::Neighbor_Nodes[6][5] = {{1,2,3,4,5},{0,2,3,4,5},{0,1,3,4,5},{0,1,2,4,5},{0,1,2,3,5},{0,1,2,3,4}};
+unsigned short CWedge::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
 
 unsigned short CWedge::nNodesFace[5] = {4,4,4,3,3};
 
-//unsigned short CWedge::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
-
-unsigned short CWedge::nNeighbor_Nodes[6] = {5,5,5,5,5,5};
+unsigned short CWedge::nNeighbor_Nodes[6] = {3,3,3,3,3,3};
 
 unsigned short CWedge::nFaces = 5;
 
@@ -543,15 +531,11 @@ void CWedge::Change_Orientation(void) {
 
 unsigned short CPyramid::Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
 
-//unsigned short CPyramid::Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};
-
-unsigned short CPyramid::Neighbor_Nodes[5][4] = {{1,2,3,4},{0,2,3,4},{0,1,3,4},{0,1,2,4},{0,1,2,3}};
+unsigned short CPyramid::Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};
 
 unsigned short CPyramid::nNodesFace[5] = {4,3,3,3,3};
 
-//unsigned short CPyramid::nNeighbor_Nodes[5] = {3,3,3,3,4};
-
-unsigned short CPyramid::nNeighbor_Nodes[5] = {4,4,4,4,4};
+unsigned short CPyramid::nNeighbor_Nodes[5] = {3,3,3,3,4};
 
 unsigned short CPyramid::nFaces = 5;
 

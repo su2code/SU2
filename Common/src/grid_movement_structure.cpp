@@ -131,7 +131,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinLength * 1E-2;
+    NumError = MinLength * 1E-3;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
