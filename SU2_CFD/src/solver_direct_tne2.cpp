@@ -184,7 +184,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure. MG level: "
            << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 	} else {
 		if (rank == MASTER_NODE)
 			cout << "Explicit scheme. No jacobian structure (Euler). MG level: "
@@ -3827,7 +3827,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: "
            << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 	} else {
 		if (rank == MASTER_NODE)
 			cout << "Explicit scheme. No jacobian structure (TNE2 Navier-Stokes). MG level: "
