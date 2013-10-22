@@ -927,8 +927,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
-	/* DESCRIPTION: Grid deformation technique */
-	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "FEA");
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
@@ -1051,8 +1049,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
 
-  /*--- Divide grid if runnning SU2_MDC ---*/
-  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
+//  /*--- Divide grid if runnning SU2_MDC ---*/
+//  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (Kind_Regime == FREESURFACE) {
@@ -3847,10 +3845,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_MDC) {
 		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
-		switch (Kind_GridDef_Method) {
-      case SPRING: cout << "Grid deformation using a classical spring method." << endl; break;
-      case FEA: cout << "Grid deformation using a linear elasticity method." << endl; break;
-		}
+		cout << "Grid deformation using a linear elasticity method." << endl;
 
 		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;

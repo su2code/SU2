@@ -54,9 +54,9 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	}
   
 	/*--- Initialization of matrix structures ---*/
-	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
   
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
