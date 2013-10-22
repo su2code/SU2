@@ -3133,162 +3133,44 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetPsuP(void) {
-    
+  
 	unsigned short Node_Neighbor, iNode, iNeighbor;
 	unsigned long jElem, Point_Neighbor, iPoint, iElem;
-    
+  
 	/*--- Loop over all the points ---*/
+  
 	for(iPoint = 0; iPoint < nPoint; iPoint++)
-    /*--- Loop over all elements shared by the point ---*/
+    
+  /*--- Loop over all elements shared by the point ---*/
+    
 		for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      
 			jElem = node[iPoint]->GetElem(iElem);
+      
 			/*--- If we find the point iPoint in the surronding element ---*/
+      
 			for(iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
+        
 				if (elem[jElem]->GetNode(iNode) == iPoint)
-                /*--- Localize the local index of the neighbor of iPoint in the element ---*/
+          
+        /*--- Localize the local index of the neighbor of iPoint in the element ---*/
+          
 					for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
 						Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
 						Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
+            
 						/*--- Store the point into the point ---*/
+            
 						node[iPoint]->SetPoint(Point_Neighbor);
 					}
 		}
-    
+  
 	/*--- Set the number of neighbors variable, this is
 	 important for JST and multigrid in parallel ---*/
+  
 	for(iPoint = 0; iPoint < nPoint; iPoint++)
 		node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
-    
-}
-
-void CPhysicalGeometry::SetPsuP_FEA(void) {
-    
-	unsigned short Node_Neighbor, iNode, iNeighbor;
-	unsigned long jElem, Point_Neighbor, iPoint, jPoint, iElem;
-    
-	/*--- Loop over all the points ---*/
-	for(iPoint = 0; iPoint < nPoint; iPoint++) {
-        
-        /*--- Loop over all elements shared by the point ---*/
-		for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
-			jElem = node[iPoint]->GetElem(iElem);
-            
-			/*--- If we find the point iPoint in the surrounding element ---*/
-			for(iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
-				if (elem[jElem]->GetNode(iNode) == iPoint)
-                /*--- Localize the local index of the neighbor of iPoint in the element ---*/
-					for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
-						Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
-						Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
-						/*--- Store the point into the point ---*/
-						node[iPoint]->SetPoint(Point_Neighbor);
-					}
-		}
-    }
-    
-    /*--- For grid deformation using the linear elasticity equations,
-     we will cut each element into either triangles (2-D) or tetrahedra (3-D)
-     because we already have these shape functions implemented. We only do
-     this internally however, because we want the deformed mesh to retain
-     the original element connectivity. Therefore, we add the new edges
-     in this routine manually for these divisions so that the global stiffness
-     matrix is constructed correctly. ---*/
-    
-    for(iElem = 0; iElem < nElem; iElem++) {
-        
-        /*--- Divide quads into 2 triangles ---*/
-        
-        if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(2);
-            
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-        }
-        
-        /*--- Divide hexehedra into 5 tetrahedra ---*/
-        
-        if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-            
-            /*--- Cut each of the 6 quad faces of the hex cell ---*/
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(2);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(2);
-            jPoint = elem[iElem]->GetNode(7);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(5);
-            jPoint = elem[iElem]->GetNode(7);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(5);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(7);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(2);
-            jPoint = elem[iElem]->GetNode(5);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-        }
-        
-        /*--- Divide prisms into 3 tetrahedra ---*/
-        
-        if (elem[iElem]->GetVTK_Type() == WEDGE) {
-            
-            /*--- Cut each of the 3 quad faces of the prism ---*/
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(4);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(2);
-            jPoint = elem[iElem]->GetNode(4);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(5);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-        }
-        
-        /*--- Divide pyramids into 2 tetrahedra ---*/
-        
-        if (elem[iElem]->GetVTK_Type() == PYRAMID) {
-            
-            /*--- Cut the single quad face of the pyramid ---*/
-            
-            iPoint = elem[iElem]->GetNode(0);
-            jPoint = elem[iElem]->GetNode(2);
-            node[iPoint]->SetPoint(jPoint);
-            node[jPoint]->SetPoint(iPoint);
-            
-        }
-        
-    }
-    
-	/*--- Set the number of neighbors variable, this is
-	 important for JST and multigrid in parallel ---*/
-	for(iPoint = 0; iPoint < nPoint; iPoint++)
-		node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
-    
+  
 }
 
 void CPhysicalGeometry::SetEsuE(void) {

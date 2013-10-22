@@ -940,17 +940,6 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 ("LINELET", LINELET);
 
 /*!
- * \brief types of grid deformation techniques
- */
-enum ENUM_DEFORM {
-	SPRING = 1,  	         	/*!< \brief Classical spring analogy as the grid deformation technique. */
-  FEA = 2                 /*!< \brief Movement of the grid using an FEA based method. */
-};
-static const map<string, ENUM_DEFORM> Deform_Map = CCreateMap<string, ENUM_DEFORM>
-("SPRING", SPRING)
-("FEA", FEA);
-
-/*!
  * \brief types of analytic definitions for various geometries
  */
 enum ENUM_GEO_ANALYTIC {
