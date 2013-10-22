@@ -26,6 +26,7 @@
 CSysMatrix::CSysMatrix(void) {
   
   /*--- Array initialization ---*/
+  
 	matrix            = NULL;
 	row_ptr           = NULL;
 	col_ind           = NULL;
@@ -41,6 +42,8 @@ CSysMatrix::CSysMatrix(void) {
 
 CSysMatrix::~CSysMatrix(void) {
   
+  /*--- Memory deallocation ---*/
+
 	if (matrix != NULL)             delete [] matrix;
 	if (row_ptr != NULL)            delete [] row_ptr;
 	if (col_ind != NULL)            delete [] col_ind;
@@ -54,18 +57,27 @@ CSysMatrix::~CSysMatrix(void) {
   
 }
 
-void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, CGeometry *geometry) {
-	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz;
-	unsigned short iNeigh, nNeigh, Max_nNeigh;
+void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, bool EdgeConnect, CGeometry *geometry) {
   
-	/*--- Don't delete *row_ptr, *col_ind because they are asigned to the Jacobian structure. ---*/
+	unsigned long iPoint, *row_ptr, *col_ind, *vneighs, index, nnz, jElem;
+	unsigned short iNeigh, nNeigh, Max_nNeigh, iElem, iNode;
+  
+  vector<unsigned long>::iterator it;
+  vector<unsigned long> Aux_vneighs;
+  
+	/*--- Don't delete *row_ptr, *col_ind because they are 
+   asigned to the Jacobian structure. Setting main diagonal. ---*/
+  
 	row_ptr = new unsigned long [nPoint+1];
+  
 	row_ptr[0] = 0;
 	for (iPoint = 0; iPoint < nPoint; iPoint++)
-		row_ptr[iPoint+1] = row_ptr[iPoint]+(geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal element
+		row_ptr[iPoint+1] = row_ptr[iPoint] + (geometry->node[iPoint]->GetnPoint()+1); // +1 -> to include diagonal element
 	nnz = row_ptr[nPoint];
   
 	col_ind = new unsigned long [nnz];
+  
+  /*--- Setting off-diagonal terms ---*/
   
   Max_nNeigh = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -74,23 +86,94 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, un
   }
 	vneighs = new unsigned long [Max_nNeigh+1]; // +1 -> to include diagonal
   
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		nNeigh = geometry->node[iPoint]->GetnPoint();
-		for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
-			vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
-		vneighs[nNeigh] = iPoint;
-		sort(vneighs,vneighs+nNeigh+1);
-		index = row_ptr[iPoint];
-		for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
-			col_ind[index] = vneighs[iNeigh];
-			index++;
-		}
-	}
+  /*--- Final structure definition ---*/
+//  if (EdgeConnect) {
+//    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+//      nNeigh = geometry->node[iPoint]->GetnPoint();
+//      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++)
+//        vneighs[iNeigh] = geometry->node[iPoint]->GetPoint(iNeigh);
+//      vneighs[nNeigh] = iPoint;
+//      sort(vneighs,vneighs+nNeigh+1);
+//      index = row_ptr[iPoint];
+//      for (iNeigh = 0; iNeigh <= nNeigh; iNeigh++) {
+//        col_ind[index] = vneighs[iNeigh];
+//        index++;
+//      }
+//    }
+//  }
   
-  /*--- Set the indices in the in the sparce matrix structure ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    Aux_vneighs.clear();
+    
+    /*--- Loop over all the elements ---*/
+    
+    for(iElem = 0; iElem < geometry->node[iPoint]->GetnElem(); iElem++) {
+      
+      jElem =  geometry->node[iPoint]->GetElem(iElem);
+      
+      /*--- Loop over all the nodes of the element ---*/
+      
+      for (iNode = 0; iNode < geometry->elem[jElem]->GetnNodes(); iNode++) {
+        
+        /*--- Add the nodes to the auxiliar vector ---*/
+        
+        Aux_vneighs.push_back(geometry->elem[jElem]->GetNode(iNode));
+        
+      }
+      
+      /*--- Sort, and remove duplicated elements ---*/
+
+      sort(Aux_vneighs.begin(), Aux_vneighs.end());
+      it = unique(Aux_vneighs.begin(), Aux_vneighs.end());
+      Aux_vneighs.resize( it - Aux_vneighs.begin() );
+      
+      nNeigh = Aux_vneighs.size();
+      
+    }
+    
+    index = row_ptr[iPoint];
+    for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+      col_ind[index] = Aux_vneighs[iNeigh];
+      index++;
+    }
+    
+  }
+  
+//  for(iPoint = 0; iPoint < nPoint; iPoint++)
+//    
+//  /*--- Loop over all elements shared by the point ---*/
+//    
+//		for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+//      
+//			jElem = node[iPoint]->GetElem(iElem);
+//      
+//			/*--- If we find the point iPoint in the surronding element ---*/
+//      
+//			for(iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++)
+//        
+//				if (elem[jElem]->GetNode(iNode) == iPoint)
+//          
+//        /*--- Localize the local index of the neighbor of iPoint in the element ---*/
+//          
+//					for(iNeighbor = 0; iNeighbor < elem[jElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+//						Node_Neighbor = elem[jElem]->GetNeighbor_Nodes(iNode,iNeighbor);
+//						Point_Neighbor = elem[jElem]->GetNode(Node_Neighbor);
+//            
+//						/*--- Store the point into the point ---*/
+//            
+//						node[iPoint]->SetPoint(Point_Neighbor);
+//					}
+//		}
+  
+  
+  
+  /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
+  
 	SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz);
   
-  /*--- Initialization to zero ---*/
+  /*--- Initialization matrix to zero ---*/
+  
   SetValZero();
   
 	delete[] vneighs;
@@ -107,12 +190,12 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
 	row_ptr = val_row_ptr;
 	col_ind = val_col_ind;
 	
-	matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
-	block = new double [nVar*nEqn];
+	matrix            = new double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
+	block             = new double [nVar*nEqn];
 	prod_block_vector = new double [nEqn];
-	prod_row_vector = new double [nVar];
-	aux_vector = new double [nVar];
-  invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
+	prod_row_vector   = new double [nVar];
+	aux_vector        = new double [nVar];
+  invM              = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
   
   /*--- Memory initialization ---*/
 
