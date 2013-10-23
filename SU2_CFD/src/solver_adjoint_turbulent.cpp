@@ -70,7 +70,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	}
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
   Jacobian.SetValZero();
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);

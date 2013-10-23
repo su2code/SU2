@@ -835,20 +835,17 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         
         /*--- Initialization of the structure of the whole Jacobian ---*/
         if (rank == MASTER_NODE) cout << "Initialize jacobian structure (SA model)." << endl;
-        Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+        Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
         
         LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
         LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
         
-        if (config->GetExtraOutput()) {
-            if (nDim==2){
-                nOutputVariables = 12;
-            }else if (nDim == 3){
-                nOutputVariables = 18;
-            }
-            OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
-        }
-        
+    if (config->GetExtraOutput()) {
+      if (nDim == 2){ nOutputVariables = 12; }
+      else if (nDim == 3){ nOutputVariables = 18; }
+      OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+    }
+    
 		/*--- Computation of gradients by least squares ---*/
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
 			/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
@@ -2708,17 +2705,14 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (ML model)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim==2){
-        nOutputVariables = 12;
-      }else if (nDim == 3){
-        nOutputVariables = 18;
-      }
+      if (nDim == 2){ nOutputVariables = 12; }
+      else if (nDim == 3){ nOutputVariables = 18; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
     }
     
@@ -4593,7 +4587,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
         /*--- Initialization of the structure of the whole Jacobian ---*/
         if (rank == MASTER_NODE) cout << "Initialize jacobian structure (SST model)." << endl;
-        Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+        Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
         LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
         LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
