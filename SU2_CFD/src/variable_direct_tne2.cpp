@@ -218,15 +218,22 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   Primitive[P_INDEX]   = val_pressure;
 }
 
-CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
-                                       unsigned short val_nvar, unsigned short val_nvarprim,
-                                       unsigned short val_nvarprimgrad, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
+CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
+                                       unsigned short val_ndim,
+                                       unsigned short val_nvar,
+                                       unsigned short val_nvarprim,
+                                       unsigned short val_nvarprimgrad,
+                                       CConfig *config) : CVariable(val_ndim,
+                                                                    val_nvar,
+                                                                    config) {
+
+	unsigned short iVar, iDim, iMesh, nMGSmooth;
   
   nSpecies     = config->GetnSpecies();
   nDim         = val_ndim;
   nPrimVar     = val_nvarprim;
   nPrimVarGrad = val_nvarprimgrad;
+  nMGSmooth    = 0;
   
   /*--- Define structure of the primtive variable vector ---*/
   // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
