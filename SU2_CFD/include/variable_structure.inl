@@ -349,6 +349,8 @@ inline bool CVariable::SetSoundSpeed(double Gamma) { return false; }
 
 inline bool CVariable::SetTemperature(double Gas_Constant) { return false; }
 
+inline bool CVariable::SetTemperature_ve(double val_Tve) {return false; }
+
 inline bool CVariable::SetTemperature(CConfig *config) { return false; }
 
 inline void CVariable::SetTemperature_tr(CConfig *config) { }
@@ -821,7 +823,11 @@ inline double CTNE2EulerVariable::GetSoundSpeed(void) { return Primitive[A_INDEX
 
 inline double CTNE2EulerVariable::GetTemperature(void) { return Primitive[T_INDEX]; }
 
+inline bool CTNE2EulerVariable::SetTemperature(double val_T) { Primitive[T_INDEX] = val_T; return false; }
+
 inline double CTNE2EulerVariable::GetTemperature_ve(void) { return Primitive[TVE_INDEX]; }
+
+inline bool CTNE2EulerVariable::SetTemperature_ve(double val_Tve) { Primitive[TVE_INDEX] = val_Tve; return false; }
 
 inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_INDEX]; }
 
