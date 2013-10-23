@@ -1035,6 +1035,16 @@ public:
                         unsigned long iter, unsigned short iZone);
   
   /*!
+	 * \brief Computes the displacement of a plunging surface for a dynamic mesh simulation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
+	 */
+	void Surface_Plunging(CGeometry *geometry, CConfig *config,
+                           unsigned long iter, unsigned short iZone);
+  
+  /*!
 	 * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
