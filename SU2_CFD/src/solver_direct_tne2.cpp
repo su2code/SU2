@@ -4897,6 +4897,11 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
 			/*--- Compute closest normal neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Normal[iDim] = geometry->node[jPoint]->GetCoord(iDim)
+                     - geometry->node[iPoint]->GetCoord(iDim);
+      }
+      
 			/*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
