@@ -1976,14 +1976,6 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   /*--- loop over points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    /*--- Initialize Residual & Jacobian arrays to zero ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      Residual[iVar] = 0;
-    if (implicit)
-      for (iVar =0 ; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
-    
     /*--- Set conserved & primitive variables  ---*/
     numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
     numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
@@ -1993,25 +1985,54 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-
-    /*--- Compute the non-equilibrium chemistry ---*/
-    numerics->ComputeChemistry(Residual, Jacobian_i, config);
-    
-    /*--- Compute vibrational energy relaxation ---*/
-    // NOTE: Jacobians don't account for relaxation time derivatives
-    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
     
     /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
     if (config->GetExtraOutput()) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = Residual[iVar];
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
       }
     }
-    
-    /*--- Subtract Residual (and Jacobian) ---*/
+
+    /*--- Compute the non-equilibrium chemistry ---*/
+    numerics->ComputeChemistry(Residual, Jacobian_i, config);
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+      }
+    }
+    
+    if (iPoint == 9258) {
+      cout << "Chemistry: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << Residual[iVar] << endl;
+      cin.get();
+    }
+    
+    /*--- Compute vibrational energy relaxation ---*/
+    // NOTE: Jacobians don't account for relaxation time derivatives
+    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    if (implicit)
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    
+    if (iPoint == 9258) {
+      cout << "Energy: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++)
+        cout << Residual[iVar] << endl;
+      cin.get();
+    }
+    
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+      }
+    }
   }
 }
 

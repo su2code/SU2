@@ -1087,11 +1087,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         /*--- Compressible TNE2 ---*/
         numerics_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
         }
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
         }
         break;
       case GALERKIN :
