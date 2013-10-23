@@ -1214,6 +1214,12 @@ public:
 	virtual bool SetTemperature(double Gas_Constant);
   
   /*!
+	 * \brief Sets the vibrational electronic temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+  virtual bool SetTemperature_ve(double val_Tve);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
 	 */
@@ -3786,10 +3792,22 @@ public:
 	double GetTemperature(void);
   
   /*!
+	 * \brief Sets the temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+	bool SetTemperature(double val_T);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \return Value of the vibrational-electronic temperature.
 	 */
 	double GetTemperature_ve(void);
+
+  /*!
+	 * \brief Sets the vibrational electronic temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+  bool SetTemperature_ve(double val_Tve);
   
   /*!
    * \brief Get the mixture specific heat at constant volume (trans.-rot.).
