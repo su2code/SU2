@@ -97,7 +97,7 @@ CAdjPlasmaSolver::CAdjPlasmaSolver(CGeometry *geometry, CConfig *config) : CSolv
 			for (iVar = 0; iVar < nVar; iVar++)
 				Jacobian_Axisymmetric[iVar] = new double[nVar];
 		}
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 
 	}
 

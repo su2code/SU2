@@ -1539,11 +1539,13 @@ CAvgGradCorrected_TNE2::~CAvgGradCorrected_TNE2(void) {
 	delete [] PrimVar_i;
 	delete [] PrimVar_j;
 	delete [] Mean_PrimVar;
+  
   delete [] Mean_Diffusion_Coeff;
   
 	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
+  
   delete [] Proj_Mean_GradPrimVar_Edge;
   delete [] Edge_Vector;
 }
@@ -1639,8 +1641,6 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
                        Proj_Flux_Tensor, val_Jacobian_i,
                        val_Jacobian_j, config);
 	}
-  
-  delete [] Proj_Mean_GradPrimVar_Edge;
 }
 
 
@@ -1744,9 +1744,9 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                     CConfig *config) {
   
   /*--- Nonequilibrium chemistry ---*/
-  bool ionization, implicit;
-  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, iEl, iDim, nEve;
-  unsigned short *nElStates, nHeavy, nEl;
+  bool ionization;
+  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar, iEl, iDim;
+  unsigned short *nElStates, nHeavy, nEl, nEve;
   int ***RxnMap;
   double T_min, epsilon;
   double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
@@ -1764,6 +1764,14 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
 //  double *wdot = new double[nSpecies];
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //    wdot[iSpecies] = 0.0;
+  
+  /*--- Initialize residual and Jacobian arrays ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual[iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_Jacobian_i[iVar][jVar] = 0.0;
+    }
+  }
   
   
   /*--- Define artificial chemistry parameters ---*/
@@ -1841,7 +1849,8 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
-        num = 0.0; num2 = 0.0;
+        num   = 0.0;
+        num2  = 0.0;
         denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
         num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
         for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
@@ -2164,7 +2173,8 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Park limiting cross section
   
   bool ionization, implicit;
-  unsigned short iDim, iEl, iSpecies, jSpecies, nEv, nHeavy, nEl, *nElStates;
+  unsigned short iDim, iEl, iSpecies, jSpecies, iVar, jVar;
+  unsigned short nEv, nHeavy, nEl, *nElStates;
   double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, sqvel, N;
   double Qtv, estar, tau, tauMW, tauP;
   double tau_sr, mu, A_sr, B_sr, num, denom;
@@ -2174,6 +2184,14 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double sigma, ws;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi, ef;
+  
+  /*--- Initialize residual and Jacobian arrays ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual[iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_Jacobian_i[iVar][jVar] = 0.0;
+    }
+  }
   
   /*--- Determine if Jacobian calculation is required ---*/
   // NOTE: Need to take derivatives of relaxation time (not currently implemented).
