@@ -216,7 +216,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     /*--- Initialization of the structure for the global Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
   } else {
     if (rank == MASTER_NODE)
@@ -7061,7 +7061,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
     /*--- Initialization of the structure of the whole Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
   } else {
     if (rank == MASTER_NODE)

@@ -6581,10 +6581,10 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CAvgGrad_TNE2(unsigned short val_nDim,
-                  unsigned short val_nVar,
-                  unsigned short val_nPrimVar,
-                  unsigned short val_nPrimVarGrad,
-                  CConfig *config);
+                unsigned short val_nVar,
+                unsigned short val_nPrimVar,
+                unsigned short val_nPrimVarGrad,
+                CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -6599,9 +6599,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual,
-                         double **val_Jacobian_i,
-                         double **val_Jacobian_j,
-                         CConfig *config);
+                       double **val_Jacobian_i,
+                       double **val_Jacobian_j,
+                       CConfig *config);
 };
 
 

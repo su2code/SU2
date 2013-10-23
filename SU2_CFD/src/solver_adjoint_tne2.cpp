@@ -143,7 +143,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
     
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
     if (axisymmetric) {
       Jacobian_Axisymmetric = new double* [nVar];
@@ -2361,7 +2361,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry, CConfig *config, unsigne
 		}
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
   } else {
     if (rank == MASTER_NODE)

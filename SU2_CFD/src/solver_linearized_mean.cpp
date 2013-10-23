@@ -63,7 +63,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
