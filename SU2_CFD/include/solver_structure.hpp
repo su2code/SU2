@@ -39,6 +39,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iostream>
+#include <stdlib.h>
 
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
@@ -503,6 +505,17 @@ public:
 	 */
 	virtual void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                          unsigned short val_marker);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                              unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -1609,7 +1622,14 @@ public:
 	 * \return A pointer to an array containing a set of constants
 	 */
 	virtual double* GetConstants();
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] fea_geometry - Geometrical definition of the problem.
@@ -5115,6 +5135,17 @@ public:
 	 */
 	void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose a load boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                      unsigned short val_marker);
     
 	/*!
 	 * \brief Set residuals to zero.
@@ -5165,7 +5196,14 @@ public:
 	 */
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-    
+  
+  /*!
+	 * \brief Get the surface pressure from a file.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Set the the pressure load in the FEA solver.
 	 * \param[in] fea_geometry - Geometrical definition of the problem.

@@ -197,6 +197,10 @@ CFEASolver::~CFEASolver(void) {
 void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
 	
+  
+  GetSurface_Pressure(geometry, config);
+
+  
   /*--- Set residuals and auxiliar variable to zero ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -858,6 +862,114 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 	
 }
 
+void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                unsigned short val_marker) {
+	
+	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
+	double *Coord_0 = NULL, *Coord_1 = NULL, *Coord_2 = NULL, Length_Elem = 0.0, Area_Elem = 0.0,
+  Normal_Elem[3] = {0.0, 0.0, 0.0}, Pressure[3] = {0.0, 0.0, 0.0}, a[3], b[3];
+	unsigned short iDim;
+		
+	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0); Coord_0 = geometry->node[Point_0]->GetCoord();  Pressure[0] = node[Point_0]->GetPressure();
+		Point_1 = geometry->bound[val_marker][iElem]->GetNode(1); Coord_1 = geometry->node[Point_1]->GetCoord();  Pressure[1] = node[Point_1]->GetPressure();
+		if (nDim == 3) {
+      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);
+      Coord_2 = geometry->node[Point_2]->GetCoord();
+      Pressure[2] = node[Point_2]->GetPressure();
+    }
+    
+    cout << Pressure[0] <<" " <<Pressure[1] <<" " << Pressure[2] <<endl;
+    
+		/*--- Compute area (3D), and length of the surfaces (2D) ---*/
+    
+		if (nDim == 2) {
+			for (iDim = 0; iDim < nDim; iDim++)
+				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
+			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
+      
+      Normal_Elem[0] = -a[1];
+			Normal_Elem[1] = a[0];
+      
+		}
+		if (nDim == 3) {
+			for (iDim = 0; iDim < nDim; iDim++) {
+				a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+				b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+			}
+			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+      
+      Normal_Elem[0] = 0.5*(a[1]*b[2]-a[2]*b[1]);
+			Normal_Elem[1] = -0.5*(a[0]*b[2]-a[2]*b[0]);
+			Normal_Elem[2] = 0.5*(a[0]*b[1]-a[1]*b[0]);
+		}
+		
+    /*--- Add the residual corresponding to the force on the surface ---*/
+
+    if (config->GetUnsteady_Simulation() == STEADY) {
+      if (nDim == 2) {
+        Residual[0] = (1.0/2.0)*Pressure[0]*Normal_Elem[0];
+        Residual[1] = (1.0/2.0)*Pressure[0]*Normal_Elem[1];
+        LinSysRes.AddBlock(Point_0, Residual);
+        Residual[0] = (1.0/2.0)*Pressure[1]*Normal_Elem[0];
+        Residual[1] = (1.0/2.0)*Pressure[1]*Normal_Elem[1];
+        LinSysRes.AddBlock(Point_1, Residual);
+      }
+      else {
+        Residual[0] = (1.0/3.0)*Pressure[0]*Normal_Elem[0];
+        Residual[1] = (1.0/3.0)*Pressure[0]*Normal_Elem[1];
+        Residual[2] = (1.0/3.0)*Pressure[0]*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_0, Residual);
+        
+        Residual[0] = (1.0/3.0)*Pressure[1]*Normal_Elem[0];
+        Residual[1] = (1.0/3.0)*Pressure[1]*Normal_Elem[1];
+        Residual[2] = (1.0/3.0)*Pressure[1]*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_1, Residual);
+        
+        Residual[0] = (1.0/3.0)*Pressure[2]*Normal_Elem[0];
+        Residual[1] = (1.0/3.0)*Pressure[2]*Normal_Elem[1];
+        Residual[2] = (1.0/3.0)*Pressure[2]*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_2, Residual);
+      }
+    }
+    else {
+      if (nDim == 2) {
+        Residual[0] = 0.0; Residual[1] = 0.0;
+        Residual[2] = (1.0/2.0)*Pressure[0]*Normal_Elem[0];
+        Residual[3] = (1.0/2.0)*Pressure[0]*Normal_Elem[1];
+        LinSysRes.AddBlock(Point_0, Residual);
+        Residual[0] = 0.0; Residual[1] = 0.0;
+        Residual[2] = (1.0/2.0)*Pressure[1]*Normal_Elem[0];
+        Residual[3] = (1.0/2.0)*Pressure[1]*Normal_Elem[1];
+        LinSysRes.AddBlock(Point_1, Residual);
+      }
+      else {
+        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
+        Residual[3] = (1.0/3.0)*Pressure[0]*Normal_Elem[0];
+        Residual[4] = (1.0/3.0)*Pressure[0]*Normal_Elem[1];
+        Residual[5] = (1.0/3.0)*Pressure[0]*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_0, Residual);
+        
+        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
+        Residual[3] = (1.0/3.0)*Pressure[1]*Normal_Elem[0];
+        Residual[4] = (1.0/3.0)*Pressure[1]*Normal_Elem[1];
+        Residual[5] = (1.0/3.0)*Pressure[1]*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_1, Residual);
+        
+        Residual[0] = 0.0; Residual[1] = 0.0; Residual[2] = 0.0;
+        Residual[3] = (1.0/3.0)*Pressure[2]*Normal_Elem[0];
+        Residual[4] = (1.0/3.0)*Pressure[2]*Normal_Elem[1];
+        Residual[5] = (1.0/3.0)*Pressure[2]*Normal_Elem[2];
+        LinSysRes.AddBlock(Point_2, Residual);
+      }
+    }
+		
+	}
+	
+  
+  cin.get();
+}
+
 void CFEASolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                               unsigned short val_marker) {
 	
@@ -1340,6 +1452,179 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
 			
 		}
 	}
+}
+
+void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iMarker, icommas, iDim;
+  unsigned long iVertex, iPoint, iExtIter;
+  double Pressure, Dist, MinDist, Coord[3], Dummy;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
+#endif
+#endif
+  
+  for (iExtIter = 0; iExtIter < config->GetnExtIter(); iExtIter++) {
+    
+    /*--- Prepare to read surface sensitivity files (CSV) ---*/
+    string text_line;
+    ifstream Surface_file;
+    char buffer[50];
+    char cstr[200];
+    string surfadj_filename = config->GetSurfFlowCoeff_FileName();
+    
+    /*--- Remove the domain number from the surface csv filename ---*/
+    if (size > SINGLE_NODE) {
+      if ((rank+1 >= 0) && (rank+1 < 10)) surfadj_filename.erase (surfadj_filename.end()-2, surfadj_filename.end());
+      if ((rank+1 >= 10) && (rank+1 < 100)) surfadj_filename.erase (surfadj_filename.end()-3, surfadj_filename.end());
+      if ((rank+1 >= 100) && (rank+1 < 1000)) surfadj_filename.erase (surfadj_filename.end()-4, surfadj_filename.end());
+      if ((rank+1 >= 1000) && (rank+1 < 10000)) surfadj_filename.erase (surfadj_filename.end()-5, surfadj_filename.end());
+    }
+    strcpy (cstr, surfadj_filename.c_str());
+    
+    /*--- Write file name with extension if unsteady or steady ---*/
+    if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+        (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+      if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
+      if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
+      if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
+      if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
+      if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+    }
+    else
+      sprintf (buffer, ".csv");
+    
+    strcat (cstr, buffer);
+    
+    ifstream infile(cstr);
+
+    stringstream ss;
+
+    
+//    /*-- Read input into the buffer a line at a time, until
+//     end of file is reached (newlines are automatically
+//     discarded).  The buffer must be big enough to fit
+//     an entire line from the file.
+//     Notice that while reading from the file we check how
+//     many rows have been read, to avoid writing beyond
+//     the end of the array.
+//     ---*/
+//
+//    const int BUFFSIZE = 80;
+//    const int COLS = 6;
+//    int row, col;
+//    char buff[BUFFSIZE]; // a buffer to temporarily park the data
+//
+//    while( infile.getline( buff,  BUFFSIZE ) ) {
+//      
+//      /*--- Copy the entire buffered line into the stringstream ---*/
+//      
+//      ss << buff;
+//      
+//      /*--- Read from ss back into the buffer.  Now, ',' is
+//       specified as the delimiter so it reads only until
+//       it reaches a comma (which is automatically
+//       discarded) or reaches the 'eof', but of course
+//       this 'eof' is really just the end of a line of the
+//       original input.  The "10" means this will handle
+//       input numbers of 9 digits or less.
+//       While reading from the stringstream, we check
+//       how many columns have been read to avoid
+//       writing past the end of the array. ---*/
+//      col = 0;
+//      while( ss.getline( buff, 6, ',' ) && col < COLS ) {
+//        /*-- Next, use the stdlib atoi function to convert the
+//         input value that was just read from ss to an int,
+//         and copy it into the array. ---*/
+//        if (col == 0) iPoint = atoi(buff);
+//        if (col == 1) Coord[0] = atof(buff);
+//        if (col == 2) Coord[1] = atof(buff);
+//        if (col == 3) Coord[2] = atof(buff);
+//        if (col == 4) Pressure = atof(buff);
+//        ++col;
+//      }
+//      
+//            cout << iPoint <<" "<< Coord[0] <<" "<< Coord[1] <<" "<< Pressure <<" "<< Dummy << endl;
+//            cin.get();
+//      
+//      /*--- This copies an empty string into ss, erasing the
+//       previous contents. ---*/
+//      ss << "";
+//      /*--- This clears the 'eof' flag.  Otherwise, even after
+//       writing new data to ss we wouldn't be able to
+//       read from it. ---*/
+//      ss.clear();
+//
+//      
+//    }
+
+    
+    /*--- Read the sensitivity file ---*/
+    string::size_type position;
+    
+    Surface_file.open(cstr, ios::in);
+    
+    getline(Surface_file, text_line);
+    
+    while (getline(Surface_file, text_line)) {
+      
+      for (icommas = 0; icommas < 100; icommas++) {
+        position = text_line.find( ",", 0 );
+        if (position!=string::npos) text_line.erase (position, 1);
+      }
+      
+      istringstream point_line(text_line);
+      if (nDim == 2) { point_line >> iPoint >> Coord[0] >> Coord[1] >> Pressure; }
+      if (nDim == 3) { point_line >> iPoint >> Coord[0] >> Coord[1] >> Coord[2] >> Pressure; }
+      
+      cout << text_line << endl;
+
+      cout << iPoint <<" "<< Coord[0] <<" "<< Coord[1] <<" "<< Pressure <<" "<< Dummy << endl;
+      cin.get();
+      
+      /*--- Compute the distance from the surface to the points in the csv files ---*/
+      
+      MinDist = 1E6;
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        if (config->GetMarker_All_Boundary(iMarker) == PRESSURE_BOUNDARY) {
+          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            double *SurfaceCoord = geometry->node[iPoint]->GetCoord();
+            /*--- Compute the distance between the point and the grid points ---*/
+            Dist = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Dist += (SurfaceCoord[iDim]-Coord[iDim])*(SurfaceCoord[iDim]-Coord[iDim]);
+            Dist = sqrt(Dist);
+            if (Dist < MinDist) {
+              MinDist = Dist;
+              node[iPoint]->SetPressure(Pressure);
+            }
+          }
+        }
+      }
+      
+//      cout << node[iPoint]->GetPressure(Pressure) <<" "<< MinDist << endl;
+//
+      cin.get();
+      
+    }
+    
+    
+    
+//    Surface_file.close();
+    
+    
+  }
+  
 }
 
 void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,

@@ -58,6 +58,12 @@
             ReferencedContainer = "container:SU2_CFD.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "structure_ONERAM6.cfg"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>
       <LocationScenarioReference

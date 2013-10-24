@@ -131,6 +131,7 @@ private:
 	nMarker_FarField,				/*!< \brief Number of far-field markers. */
 	nMarker_Custom,
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
+  nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -156,6 +157,7 @@ private:
 	*Marker_FarField,				/*!< \brief Far field markers. */
 	*Marker_Custom,
 	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
+  *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
