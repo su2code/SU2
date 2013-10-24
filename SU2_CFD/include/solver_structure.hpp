@@ -3030,33 +3030,19 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
-	/*!
-	 * \brief Alternative Green Gauss calculation of gradient of solution. Required for discrete adjoint
-	 * \param[in] U_i - Solution at i.
-	 * \param[in] U_js - Solutions at js (neighbours of i).
-	 * \param[in] nNeigh - Number of neighbours of i.
-	 * \param[in] Normals - Normals from i to neighbours.
-	 * \param[out] grad_U_i - gradient at i.
+  
+  /*!
+	 * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
+	 * \param[in] geometry - Geometric definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-    
-	void CalcGradient_GG(double *val_U_i, double **val_U_js, unsigned short nNeigh, unsigned short numVar,
-                         double **Normals, double **grad_U_i, CConfig *config, CGeometry *geometry, unsigned long iPoint);
-    
-	/*!
-	 * \brief Alternative Least Squares calculation of gradient of solution. Required for discrete adjoint
-	 * \param[in] U_i - Solution at i.
-	 * \param[in] U_js - Solutions at js (neighbours of i).
-	 * \param[in] nNeigh - Number of neighbours of i.
-	 * \param[in] coords_i - coords of i.
-	 * \param[in] coords_js - coords of neighbours.
-	 * \param[out] grad_U_i - gradient at i.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void CalcGradient_LS(double *U_i, double **U_js, unsigned long nNeigh,
-                         double *coords_i, double **coords_js, double **grad_U_i, CConfig *config);
-    
+	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
 };
 
 /*!
@@ -3254,18 +3240,6 @@ public:
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
-    
-	/*!
-	 * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
-	 * \param[in] geometry - Geometric definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 */
-	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                              unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
 	 * \brief Load a solution from a restart file.
@@ -3474,18 +3448,6 @@ public:
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
-	/*!
-	 * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
-	 * \param[in] geometry - Geometric definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 */
-	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
 	 * \brief Load a solution from a restart file.
@@ -3830,18 +3792,6 @@ public:
     
 	void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                    unsigned short val_marker);
-    
-	/*!
-	 * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
-	 * \param[in] geometry - Geometric definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 */
-	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                              unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
     
 	/*!
 	 * \brief Get the constants for the SST model.
@@ -6958,6 +6908,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
   
 	/*!
 	 * \brief Compute the limiter of the primitive variables.
