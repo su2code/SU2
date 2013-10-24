@@ -1344,86 +1344,143 @@ void CFEASolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_con
 
 void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,
                              CConfig *fea_config, CConfig *flow_config) {
-  //	unsigned short iMarker;
-  //	unsigned long iVertex, iPoint;
-  //	double Pressure;
-  //
-  //#ifdef NO_MPI
-  //
-  //	unsigned long iPoint_Donor;
-  //
-  //	for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
-  //		if (fea_config->GetMarker_All_Boundary(iMarker) == FLOWLOAD_BOUNDARY) {
-  //			for(iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //				iPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //				iPoint_Donor = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
-  //				Pressure = 1.0; //(flow_solution[MESH_0][FLOW_SOL]->node[iPoint_Donor]->GetPressure()-101325.0);
-  //				node[iPoint]->SetPressureValue(Pressure);
-  //			}
-  //		}
-  //	}
-  //
-  //#else
-  //
-  //	int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  //	double *Buffer_Send_U = new double [1];
-  //	double *Buffer_Receive_U = new double [1];
-  //	unsigned long jPoint;
-  //
-  //	/*--- Do the send process, by the moment we are sending each
-  //	 node individually, this must be changed ---*/
-  //	for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-  //		/*--- There must be a better way to identify the marker that correspond with a fluid structure interation!!! ---*/
-  //		if ((flow_config->GetMarker_All_Boundary(iMarker) == EULER_WALL) &&
-  //        (flow_config->GetMarker_All_Moving(iMarker) == YES)) {
-  //			for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //				iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //
-  //				if (flow_geometry[MESH_0]->node[iPoint]->GetDomain()) {
-  //
-  //					/*--- Find the associate pair to the original node (index and processor) ---*/
-  //					jPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-  //					jProcessor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-  //
-  //					/*--- We only send the pressure that belong to other boundary ---*/
-  //					if (jProcessor != rank) {
-  //						Buffer_Send_U[0] = 1.0; //(flow_solution[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure()-101325.0);;
-  //						MPI::COMM_WORLD.Bsend(Buffer_Send_U, 1, MPI::DOUBLE, jProcessor, iPoint);
-  //					}
-  //
-  //				}
-  //			}
-  //		}
-  //	}
-  //
-  //	/*--- Now the loop is over the fea points ---*/
-  //	for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
-  //		if (fea_config->GetMarker_All_Boundary(iMarker) == LOAD_BOUNDARY) {
-  //			for(iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //				iPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //				if (fea_geometry[MESH_0]->node[iPoint]->GetDomain()) {
-  //
-  //					/*--- Find the associate pair to the original node ---*/
-  //					jPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-  //					jProcessor = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-  //
-  //					/*--- We only receive the information that belong to other boundary ---*/
-  //					if (jProcessor != rank)
-  //						MPI::COMM_WORLD.Recv(Buffer_Receive_U, 1, MPI::DOUBLE, jProcessor, jPoint);
-  //					else
-  //						Buffer_Receive_U[0] = 1.0; //(flow_solution[MESH_0][FLOW_SOL]->node[jPoint]->GetPressure()-101325.0);
-  //					
-  //					/*--- Store the solution for both points ---*/
-  //					Pressure = Buffer_Receive_U[1];
-  //					node[iPoint]->SetPressureValue(Pressure);
-  //					
-  //				}
-  //			}
-  //		}
-  //	}
-  //  
-  //	delete[] Buffer_Send_U;
-  //	delete[] Buffer_Receive_U;
-  //  
-  //#endif
+  
+  unsigned short iMarker, icommas;
+	unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+	double Sensitivity;
+	bool *PointInDomain;
+	int rank = MASTER_NODE;
+	int size = SINGLE_NODE;
+  
+#ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+	size = MPI::COMM_WORLD.Get_size();
+#endif
+#endif
+  
+	nPointLocal = nPoint;
+#ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+	MPI::COMM_WORLD.Allreduce(&nPointLocal, &nPointGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+#else
+	nPointGlobal = nPointLocal;
+#endif
+  
+	Point2Vertex = new unsigned long[nPointGlobal][2];
+	PointInDomain = new bool[nPointGlobal];
+  
+	for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
+		PointInDomain[iPoint] = false;
+  
+	for (iMarker = 0; iMarker < nMarker; iMarker++)
+		if (config->GetMarker_All_DV(iMarker) == YES)
+			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        
+				/*--- The sensitivity file uses the global numbering ---*/
+#ifdef NO_MPI
+				iPoint = vertex[iMarker][iVertex]->GetNode();
+#else
+				iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+#endif
+				if (vertex[iMarker][iVertex]->GetNode() < GetnPointDomain()) {
+					Point2Vertex[iPoint][0] = iMarker;
+					Point2Vertex[iPoint][1] = iVertex;
+					PointInDomain[iPoint] = true;
+					vertex[iMarker][iVertex]->SetAuxVar(0.0);
+				}
+			}
+  
+	/*--- Time-average any unsteady surface sensitivities ---*/
+	unsigned long iExtIter, nExtIter;
+	double delta_T, total_T;
+	if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+		nExtIter = config->GetUnst_AdjointIter();
+		delta_T  = config->GetDelta_UnstTimeND();
+		total_T  = (double)nExtIter*delta_T;
+	} else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    
+		/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+		double period = config->GetTimeSpectral_Period();
+		nExtIter  = config->GetnTimeInstances();
+		delta_T   = period/(double)nExtIter;
+		total_T   = period;
+    
+	} else {
+		nExtIter = 1;
+		delta_T  = 1.0;
+		total_T  = 1.0;
+	}
+  
+	for (iExtIter = 0; iExtIter < nExtIter; iExtIter++) {
+    
+		/*--- Prepare to read surface sensitivity files (CSV) ---*/
+		string text_line;
+		ifstream Surface_file;
+		char buffer[50];
+		char cstr[200];
+		string surfadj_filename = config->GetSurfAdjCoeff_FileName();
+    
+		/*--- Remove the domain number from the surface csv filename ---*/
+		if (size > SINGLE_NODE) {
+			if ((rank+1 >= 0) && (rank+1 < 10)) surfadj_filename.erase (surfadj_filename.end()-2, surfadj_filename.end());
+			if ((rank+1 >= 10) && (rank+1 < 100)) surfadj_filename.erase (surfadj_filename.end()-3, surfadj_filename.end());
+			if ((rank+1 >= 100) && (rank+1 < 1000)) surfadj_filename.erase (surfadj_filename.end()-4, surfadj_filename.end());
+			if ((rank+1 >= 1000) && (rank+1 < 10000)) surfadj_filename.erase (surfadj_filename.end()-5, surfadj_filename.end());
+		}
+		strcpy (cstr, surfadj_filename.c_str());
+    
+		/*--- Write file name with extension if unsteady or steady ---*/
+		if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+        (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+			if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.csv", int(iExtIter));
+			if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.csv",  int(iExtIter));
+			if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.csv",   int(iExtIter));
+			if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.csv",    int(iExtIter));
+			if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.csv", int(iExtIter));
+		}
+		else
+			sprintf (buffer, ".csv");
+    
+		strcat (cstr, buffer);
+    
+		/*--- Read the sensitivity file ---*/
+		string::size_type position;
+    
+		Surface_file.open(cstr, ios::in);
+		getline(Surface_file,text_line);
+    
+		while (getline(Surface_file,text_line)) {
+			for (icommas = 0; icommas < 50; icommas++) {
+				position = text_line.find( ",", 0 );
+				if(position!=string::npos) text_line.erase (position,1);
+			}
+			stringstream  point_line(text_line);
+			point_line >> iPoint >> Sensitivity;
+      
+			if (PointInDomain[iPoint]) {
+        
+				/*--- Find the vertex for the Point and Marker ---*/
+				iMarker = Point2Vertex[iPoint][0];
+				iVertex = Point2Vertex[iPoint][1];
+        
+				/*--- Increment the auxiliary variable with the contribution of
+         this unsteady timestep. For steady problems, this reduces to
+         a single sensitivity value multiplied by 1.0. ---*/
+				vertex[iMarker][iVertex]->AddAuxVar(Sensitivity*(delta_T/total_T));
+			}
+      
+		}
+		Surface_file.close();
+	}
+  
+	delete[] Point2Vertex;
+  
+  
 }
