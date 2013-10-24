@@ -6921,6 +6921,14 @@ public:
 	 */
 	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
   
+  /*!
+	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
+  
 	/*!
 	 * \brief Compute the limiter of the primitive variables.
 	 * \param[in] geometry - Geometrical definition of the problem.

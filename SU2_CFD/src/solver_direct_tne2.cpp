@@ -2538,6 +2538,129 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 }
 
 
+void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry,
+                                              CConfig *config,
+                                              unsigned long val_Point) {
+
+	unsigned short iSpecies, iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
+	unsigned long iPoint, jPoint;
+	double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
+	r23_b, r33, rho_i, rho_j, weight, product;
+  
+	/*--- Initialize arrays ---*/
+  // Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w]^T
+	PrimVar_i = new double [nPrimVarGrad];
+	PrimVar_j = new double [nPrimVarGrad];
+  
+  /*--- Get indices of species & mixture density ---*/
+  RHOS_INDEX = node[0]->GetRhosIndex();
+  RHO_INDEX  = node[0]->GetRhoIndex();
+  
+  
+  iPoint = val_Point;
+  Coord_i = geometry->node[iPoint]->GetCoord();
+  
+  /*--- Get primitives from CVariable ---*/
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+  
+  /*--- Modify species density to mass fraction ---*/
+  rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+  for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++)
+    PrimVar_i[RHOS_INDEX+iSpecies] = PrimVar_i[RHOS_INDEX+iSpecies]/rho_i;
+  
+  /*--- Inizialization of variables ---*/
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      cvector[iVar][iDim] = 0.0;
+  
+  r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
+  r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
+  
+  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+    jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    Coord_j = geometry->node[jPoint]->GetCoord();
+    
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+    
+    /*--- Modify species density to mass fraction ---*/
+    rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      PrimVar_j[RHOS_INDEX+iSpecies] = PrimVar_j[RHOS_INDEX+iSpecies]/rho_j;
+    
+    weight = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+    
+    /*--- Sumations for entries of upper triangular matrix R ---*/
+    r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
+    r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
+    r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/(weight);
+    if (nDim == 3) {
+      r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
+      r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/(weight);
+      r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
+      r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
+    }
+    
+    /*--- Entries of c:= transpose(A)*b ---*/
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      for (iDim = 0; iDim < nDim; iDim++)
+        cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
+  }
+  
+  /*--- Entries of upper triangular matrix R ---*/
+  r11 = sqrt(r11);
+  r12 = r12/(r11);
+  r22 = sqrt(r22-r12*r12);
+  if (nDim == 3) {
+    r13 = r13/(r11);
+    r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
+    r33 = sqrt(r33-r23*r23-r13*r13);
+  }
+  /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+  if (nDim == 2) {
+    double detR2 = (r11*r22)*(r11*r22);
+    Smatrix[0][0] = (r12*r12+r22*r22)/(detR2);
+    Smatrix[0][1] = -r11*r12/(detR2);
+    Smatrix[1][0] = Smatrix[0][1];
+    Smatrix[1][1] = r11*r11/(detR2);
+  }
+  else {
+    double detR2 = (r11*r22*r33)*(r11*r22*r33);
+    double z11, z12, z13, z22, z23, z33;
+    z11 = r22*r33;
+    z12 = -r12*r33;
+    z13 = r12*r23-r13*r22;
+    z22 = r11*r33;
+    z23 = -r11*r23;
+    z33 = r11*r22;
+    Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/(detR2);
+    Smatrix[0][1] = (z12*z22+z13*z23)/(detR2);
+    Smatrix[0][2] = (z13*z33)/(detR2);
+    Smatrix[1][0] = Smatrix[0][1];
+    Smatrix[1][1] = (z22*z22+z23*z23)/(detR2);
+    Smatrix[1][2] = (z23*z33)/(detR2);
+    Smatrix[2][0] = Smatrix[0][2];
+    Smatrix[2][1] = Smatrix[1][2];
+    Smatrix[2][2] = (z33*z33)/(detR2);
+  }
+  /*--- Computation of the gradient: S*c ---*/
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      product = 0.0;
+      for (jDim = 0; jDim < nDim; jDim++)
+        product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+      node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
+    }
+  }
+  
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
+}
+
+
 void CTNE2EulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
 
 void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
@@ -4832,21 +4955,27 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   
   bool ionization, jnk;
 	unsigned long iVertex, iPoint, jPoint, total_index;
-	unsigned short iVar, jVar, iDim, iSpecies;
+	unsigned short iVar, jVar, iDim, jDim, iSpecies;
   unsigned short T_INDEX, TVE_INDEX, RHO_INDEX, P_INDEX, VEL_INDEX;
   unsigned short RHOCVTR_INDEX, RHOCVVE_INDEX;
 	double *Normal, Area;
 	double UnitNormal[3];
-	double Twall, T, Tve, P, Pwall, *dPdrhos;
-	double rho, sqvel, rhoE, rhoEve, rhoCvtr, rhoCvve, conc, *Ms, rho_el;
-	double Ru;
+	double Twall, T, Tve, P, *dPdrhos;
+	double rho, sqvel, rhoE, rhoEve, rhoCvtr, rhoCvve, conc, *Ms, rho_el, Ru;
+  double mu, k, kve;
+	double **gradV, **tau, div_vel;
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   ionization = config->GetIonization();
+  
   if (ionization) {
     cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
     exit(1);
   }
+  
+  tau = new double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    tau[iDim] = new double[nDim];
   
 	/*--- Identify the boundary ---*/
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
@@ -4862,17 +4991,17 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   RHOCVTR_INDEX = node[0]->GetRhoCvtrIndex();
   RHOCVVE_INDEX = node[0]->GetRhoCvveIndex();
   
-  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
-  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
-  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
-  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
-  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+//  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+//  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+//  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+//  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+//  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+//  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+//  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+//  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+//  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+//  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
   Ms = config->GetMolar_Mass();
   Ru = UNIVERSAL_GAS_CONSTANT;
@@ -4891,15 +5020,13 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
 			for (iDim = 0; iDim < nDim; iDim++)
 				UnitNormal[iDim] = -Normal[iDim]/Area;
       
-      for (iDim = 0; iDim < nDim; iDim++)
-        Normal[iDim] = -Normal[iDim];
-      
 			/*--- Compute closest normal neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       for (iDim = 0; iDim < nDim; iDim++) {
-        Normal[iDim] = geometry->node[jPoint]->GetCoord(iDim)
-                     - geometry->node[iPoint]->GetCoord(iDim);
+//        Normal[iDim] = geometry->node[iPoint]->GetCoord(iDim)
+//                     - geometry->node[jPoint]->GetCoord(iDim);
+        Normal[iDim] = -Normal[iDim];
       }
       
 			/*--- Store the corrected velocity at the wall which will
@@ -4930,37 +5057,41 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
         }
 			}
       
-      /*--- Set and get appropriate wall conditions ---*/
-      Pwall = node[iPoint]->GetPrimVar(P_INDEX);
-      jnk = node[iPoint]->SetTemperature(Twall);
-      jnk = node[iPoint]->SetTemperature_ve(Twall);
+      /*--- Set appropriate wall conditions ---*/
+//      jnk = node[iPoint]->SetTemperature(Twall);
+//      jnk = node[iPoint]->SetTemperature_ve(Twall);
+//      node[iPoint]->SetVelocity(Vector, false);
+      
+      
+      /*--- Calculate useful quantities ---*/
+      rho     = node[iPoint]->GetPrimVar(RHO_INDEX);
+      rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
+      rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
+      P       = node[iPoint]->GetPrimVar(P_INDEX);
+      T       = node[iPoint]->GetPrimVar(T_INDEX);
+      Tve     = node[iPoint]->GetPrimVar(TVE_INDEX);
+      rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
+      rhoCvve = node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+      sqvel   = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        sqvel += node[iPoint]->GetPrimVar(VEL_INDEX+iDim)
+               * node[iPoint]->GetPrimVar(VEL_INDEX+iDim);
+      mu      = node[iPoint]->GetLaminarViscosity();
+      k       = node[iPoint]->GetThermalConductivity();
+      kve     = node[iPoint]->GetThermalConductivity_ve();
+      
+      dPdrhos = node[iPoint]->GetdPdrhos();
+      
+      if (ionization) { rho_el = node[iPoint]->GetMassFraction(nSpecies-1)*rho; }
+      else            { rho_el = 0.0; }
       
       /*--- Set convective contribution to boundary ---*/
       for (iDim = 0; iDim < nDim; iDim++)
-        Res_Conv[nSpecies+iDim] = Pwall * UnitNormal[iDim] * Area;
+        Res_Conv[nSpecies+iDim] = P * UnitNormal[iDim] * Area;
       LinSysRes.AddBlock(iPoint, Res_Conv);
       
       /*--- Calculate Jacobian of the inviscid terms ---*/
 			if (implicit) {
-        
-				/*--- Calculate useful quantities ---*/
-				rho     = node[iPoint]->GetPrimVar(RHO_INDEX);
-				rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
-        rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
-        P       = node[iPoint]->GetPrimVar(P_INDEX);
-				T       = node[iPoint]->GetPrimVar(T_INDEX);
-        Tve     = node[iPoint]->GetPrimVar(TVE_INDEX);
-        rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
-        rhoCvve = node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
-				sqvel   = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					sqvel += node[iPoint]->GetPrimVar(VEL_INDEX+iDim)
-          * node[iPoint]->GetPrimVar(VEL_INDEX+iDim);
-        
-        dPdrhos = node[iPoint]->GetdPdrhos();
-        
-        if (ionization) { rho_el = node[iPoint]->GetMassFraction(nSpecies-1)*rho; }
-        else            { rho_el = 0.0; }
 
         /*--- Inviscid Jacobian (loaded in to Jacobian_j) ---*/
         conc = 0.0;
@@ -4983,30 +5114,31 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
         Jacobian.AddBlock(iPoint,iPoint, Jacobian_j);
 			}
       
-      /*--- Set viscous contribution to boundary using specified numerics ---*/
-      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                              geometry->node[jPoint]->GetCoord() );
-      visc_numerics->SetNormal(Normal);
-      visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
-                                  node[jPoint]->GetPrimVar() );
-      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                        node[jPoint]->GetGradient_Primitive() );
-      visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
-                                       node[jPoint]->GetDiffusionCoeff() );
-      visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
-                                         node[jPoint]->GetLaminarViscosity() );
-      visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
-                                            node[jPoint]->GetThermalConductivity());
-      visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
-                                               node[jPoint]->GetThermalConductivity_ve() );
-
-      /*--- Apply viscous residual and Jacobian to the linear system ---*/
-      visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-      if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      ////////////  VISCOUS PORTION  ///////////////
+      double Tj, Tvej, dTdn, dTvedn, dij;
+      Tj = node[jPoint]->GetPrimVar(T_INDEX);
+      Tvej = node[jPoint]->GetPrimVar(TVE_INDEX);
+      dij = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dij += (geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim))
+             * (geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
       }
+      dij = sqrt(dij);
+      dTdn = (Tj-Twall)/dij;
+      dTvedn = (Tvej-Twall)/dij;
+      
+      Res_Visc[nSpecies+nDim] = (k*dTdn + kve*dTvedn)*Area;
+      Res_Visc[nSpecies+nDim] = kve*dTvedn*Area;
+
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      
+      
 		}
 	}
+  
+  /*--- Deallocate ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] tau[iDim];
+  delete [] tau;
 }
