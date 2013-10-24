@@ -1284,11 +1284,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressureInc(double val_pressure);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressureValue(double val_pressure);
   
 	/*!
 	 * \brief A virtual member.
@@ -1863,11 +1858,6 @@ public:
 	 * \brief Destructor of the class. 
 	 */	
 	~CFEAVariable(void);
-
-	/*!
-	 * \brief Set the value of the pressure.
-	 */
-	void SetPressureValue(double val_pressure);
   
   /*!
 	 * \brief Set the value of the stress.
@@ -1894,6 +1884,19 @@ public:
    * \return Value of the Von Mises stress.
 	 */
   double GetVonMises_Stress(void);
+  
+  
+  /*!
+	 * \brief Set the value of the Von Mises stress.
+	 * \param[in] val_stress - Value of the Von Mises stress.
+	 */
+  bool SetPressure(double val_pressure);
+  
+  /*!
+	 * \brief Get the value of the Von Mises stress.
+   * \return Value of the Von Mises stress.
+	 */
+  double GetPressure(void);
 
 };
 
