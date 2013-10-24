@@ -1550,8 +1550,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
-  
-  double *Aux_Press, *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
+  double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure, factor;
+
+  double *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
   
   bool grid_movement = config->GetGrid_Movement();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1569,6 +1570,30 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (Kind_Solver == PLASMA_NAVIER_STOKES) {
     if (val_iZone == ZONE_0) Kind_Solver = PLASMA_NAVIER_STOKES;
     if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
+  }
+  
+  unsigned short iDim;
+  bool nDim               = geometry->GetnDim();
+  double RefAreaCoeff     = config->GetRefAreaCoeff();
+  double Gamma            = config->GetGamma();
+  double RefVel2;
+  
+  /*--- Set the non-dimensionalization ---*/
+  if (flow) {
+    if (grid_movement) {
+      Gas_Constant = config->GetGas_ConstantND();
+      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+      Mach_Motion = config->GetMach_Motion();
+      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+    }
+    else {
+      RefVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
+    }
+    RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
+    RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
+    factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
   }
   
   /*--- Prepare send buffers for the conservative variables. Need to
@@ -1756,22 +1781,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   /*--- In case there is grid movement ---*/
   double *Grid_Vel;
   
-  if (flow) {
-    /*--- First, loop through the mesh in order to find and store the
-     value of the coefficient of pressure at any surface nodes. They
-     will be placed in an auxiliary vector and then communicated like
-     all other volumetric variables. ---*/
-    
-    Aux_Press = new double [geometry->GetnPoint()];
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-        }
-  }
-  
+  /*--- First, loop through the mesh in order to find and store the
+   value of some coefficients at any surface nodes. They
+   will be placed in an auxiliary vector and then communicated like
+   all other volumetric variables. ---*/
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     
     Aux_Frict = new double [geometry->GetnPointDomain()];
@@ -1866,10 +1879,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Any extra data for output files ---*/
       switch (Kind_Solver) {
         case EULER:
+
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
           if (compressible) {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           }
@@ -1878,7 +1892,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             
@@ -1888,7 +1902,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case NAVIER_STOKES:
           if (compressible) {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
@@ -1903,7 +1917,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
@@ -1917,7 +1931,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case RANS:
           if (compressible) {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
@@ -1931,7 +1945,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
@@ -2141,7 +2155,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Auxiliary vectors for surface coefficients ---*/
   
-  Aux_Press = new double[geometry->GetnPoint()];
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     Aux_Frict = new double[geometry->GetnPoint()];
     Aux_Heat  = new double[geometry->GetnPoint()];
@@ -2360,14 +2373,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
      will be placed in an auxiliary vector and then communicated like
      all other volumetric variables. ---*/
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-        }
-    
     /*--- Loop over this partition to collect the current variable ---*/
     jPoint = 0;
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -2379,13 +2384,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
         if (compressible) {
           Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
-          Buffer_Send_Res[jPoint] = Aux_Press[iPoint];
+          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff;
           Buffer_Send_Vol[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
         }
         if (incompressible || freesurface) {
           Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE);
-          Buffer_Send_Res[jPoint] = Aux_Press[iPoint];
+          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff;
           Buffer_Send_Vol[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
         }
@@ -3378,8 +3383,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
   
   /*--- Release memory needed for surface coefficients ---*/
-  if (flow)
-    delete [] Aux_Press;
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
   }
