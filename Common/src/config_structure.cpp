@@ -106,6 +106,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
 	Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
+  MoveMotion_Origin = NULL;
 
     
 	/* BEGIN_CONFIG_OPTIONS */
@@ -394,6 +395,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
 	AddListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  /* DESCRIPTION: Value to move motion origins (1 or 0) */
+	AddListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
 	/* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
@@ -1171,6 +1174,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        exit(1);
+      }
+    }
+
+    if (MoveMotion_Origin == NULL) {
+      MoveMotion_Origin = new unsigned short[nMoving];
+      for (iZone = 0; iZone < nMoving; iZone++ )
+        MoveMotion_Origin[iZone] = 0;
+    } else {
+      if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
+        cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
         exit(1);
       }
     }
@@ -5450,6 +5464,8 @@ CConfig::~CConfig(void)
 		delete [] Motion_Origin_Y;
 	if (Motion_Origin_Z != NULL)
 		delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL)
+    delete [] MoveMotion_Origin;
 
 	/*--- rotation: ---*/
 	if (Rotation_Rate_X != NULL)
