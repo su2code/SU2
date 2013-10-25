@@ -1856,6 +1856,8 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
+    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
+    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
     
     /*--- Set the largest convective eigenvalue ---*/
 		numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
@@ -1926,6 +1928,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
+    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
+    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
     
     /*--- Compute the upwind residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);    
@@ -1982,6 +1986,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[iPoint]->GetdTdrhos());
+    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[iPoint]->GetdTvedrhos());
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -4556,6 +4562,11 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                            node[jPoint]->GetPrimVar() );
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
                                  node[jPoint]->GetGradient_Primitive() );
+
+    /*--- Pass supplementary information to CNumerics ---*/
+    numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
+    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
     
     /*--- Species diffusion coefficients ---*/
     numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
@@ -4987,8 +4998,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   
   eve     = new double[nSpecies];
   hs      = new double [nSpecies];
-  dTdrs   = new double [nSpecies];
-  dTvedrs = new double [nSpecies];
+//  dTdrs   = new double [nSpecies];
+//  dTvedrs = new double [nSpecies];
   Ys      = new double[nSpecies];
   
 	/*--- Identify the boundary ---*/
@@ -5102,6 +5113,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       mu      = node[iPoint]->GetLaminarViscosity();
       ktr     = node[iPoint]->GetThermalConductivity();
       kve     = node[iPoint]->GetThermalConductivity_ve();
+      dTdrs   = node[iPoint]->GetdTdrhos();
+      dTvedrs   = node[iPoint]->GetdTvedrhos();
       
       dPdrhos = node[iPoint]->GetdPdrhos();
       
@@ -5181,31 +5194,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       
       if (implicit) {
         
-        /*--- Calculate supporting quantities ---*/
-        sqvel = 0.0;
-        
-        for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-          ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
-          Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-          if (thv[iSpecies]!= 0.0)
-            evibs = Ru/Ms[iSpecies] * thv[iSpecies] / (exp(thv[iSpecies]/Tve) - 1.0);
-          else
-            evibs = 0.0;
-          num   = 0.0;
-          denom = g[iSpecies][0] * exp(the[iSpecies][0]/Tve);
-          for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-            num   += g[iSpecies][iEl] * the[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
-            denom += g[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
-          }
-          eels = Ru/Ms[iSpecies] * (num/denom);
-          eve[iSpecies]     = evibs + eels;
-          hs[iSpecies]      = Ru/Ms[iSpecies]*T + (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies]
-          + hf[iSpecies] + eve[iSpecies];
-          dTdrs[iSpecies]   = (-ef + 0.5*sqvel + Cvtrs*(Tref[iSpecies]-T)) / rhoCvtr;
-          dTvedrs[iSpecies] = -(evibs+eels)/rhoCvve;
-          Ys[iSpecies]      = node[iPoint]->GetMassFraction(iSpecies);
-        }
-        
         /*--- Calculate geometrical parameters ---*/
         theta = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -5268,8 +5256,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   /*--- Deallocate ---*/
   delete [] eve;
   delete [] hs;
-  delete [] dTdrs;
-  delete [] dTvedrs;
   delete [] Ys;
   
   for (iDim = 0; iDim < nDim; iDim++)

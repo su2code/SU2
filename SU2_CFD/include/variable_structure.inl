@@ -337,6 +337,10 @@ inline void CVariable::SetdPdrhos(CConfig *config) { }
 
 inline double *CVariable::GetdPdrhos() { return NULL; }
 
+inline double *CVariable::GetdTdrhos() { return NULL; }
+
+inline double *CVariable::GetdTvedrhos() { return NULL; }
+
 inline void CVariable::SetDensity() { }
 
 inline void CVariable::SetDeltaPressure(double *val_velocity, double Gamma) { }
@@ -834,6 +838,10 @@ inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_I
 inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
 
 inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
+
+inline double* CTNE2EulerVariable::GetdTdrhos(void) { return dTdrhos; }
+
+inline double* CTNE2EulerVariable::GetdTvedrhos(void) { return dTvedrhos; }
 
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) {
 double velocity;

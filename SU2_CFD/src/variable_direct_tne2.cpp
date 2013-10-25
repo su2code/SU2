@@ -116,7 +116,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   }
   
   /*--- Allocate partial derivative vectors ---*/
-  dPdrhos = new double [nSpecies];
+  dPdrhos   = new double [nSpecies];
+  dTdrhos   = new double [nSpecies];
+  dTvedrhos = new double [nSpecies];
   
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
@@ -293,6 +295,8 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
   
   /*--- Allocate partial derivative vectors ---*/
   dPdrhos = new double [nSpecies];
+  dTdrhos   = new double [nSpecies];
+  dTvedrhos = new double [nSpecies];
   
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
@@ -328,7 +332,9 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
       delete Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-  if (dPdrhos != NULL) delete [] dPdrhos;
+  if (dPdrhos   != NULL) delete [] dPdrhos;
+  if (dTdrhos   != NULL) delete [] dTdrhos;
+  if (dTvedrhos != NULL) delete [] dTvedrhos;
   
 }
 
@@ -738,6 +744,84 @@ void CTNE2EulerVariable::SetdPdrhos(CConfig *config) {
   }
 }
 
+void CTNE2EulerVariable::SetdTdrhos(CConfig *config) {
+
+  unsigned short iDim, iSpecies, nHeavy, nEl;
+  double *Ms, *xi, *Tref, *hf;
+  double v2, ef, T, Cvtrs, rhoCvtr, Ru;
+  
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Get gas properties from config settings ---*/
+  Ms   = config->GetMolar_Mass();
+  xi   = config->GetRotationModes();
+  hf   = config->GetEnthalpy_Formation();
+  Tref = config->GetRefTemperature();
+  
+  /*--- Rename for convenience ---*/
+  rhoCvtr = Primitive[RHOCVTR_INDEX];
+  T       = Primitive[T_INDEX];
+  Ru      = UNIVERSAL_GAS_CONSTANT;
+  
+  /*--- Calculate supporting quantities ---*/
+  v2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    v2 += Primitive[VEL_INDEX+iDim]*Primitive[VEL_INDEX+iDim];
+  
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    ef    = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+    Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+    dTdrhos[iSpecies]   = (-ef + 0.5*v2 + Cvtrs*(Tref[iSpecies]-T)) / rhoCvtr;
+  }
+  if (ionization) {
+    cout << "CTNE2Variable: NEED TO IMPLEMENT dTdrhos for IONIZED MIX" << endl;
+    exit(1);
+  }
+}
+
+void CTNE2EulerVariable::SetdTvedrhos(CConfig *config) {
+  
+  unsigned short iSpecies, nHeavy, iEl, nEl, *nElStates;
+  double *Ms, *thv, **the, **g;
+  double Tve, evibs, eels, Ru, num, denom, rhoCvve;
+  
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Get gas properties from config settings ---*/
+  Ms = config->GetMolar_Mass();
+  thv = config->GetCharVibTemp();
+  the = config->GetCharElTemp();
+  g   = config->GetElDegeneracy();
+  nElStates = config->GetnElStates();
+  
+  /*--- Rename for convenience ---*/
+  Ru      = UNIVERSAL_GAS_CONSTANT;
+  Tve     = Primitive[TVE_INDEX];
+  rhoCvve = Primitive[RHOCVVE_INDEX];
+
+  
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    if (thv[iSpecies]!= 0.0)
+      evibs = Ru/Ms[iSpecies] * thv[iSpecies] / (exp(thv[iSpecies]/Tve) - 1.0);
+    else
+      evibs = 0.0;
+    num   = 0.0;
+    denom = g[iSpecies][0] * exp(the[iSpecies][0]/Tve);
+    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+      num   += g[iSpecies][iEl] * the[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
+      denom += g[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
+    }
+    eels = Ru/Ms[iSpecies] * (num/denom);
+    dTvedrhos[iSpecies] = -(evibs+eels)/rhoCvve;
+  }
+  if (ionization) {
+    cout << "CTNE2Variable: IONIZATION FOR dTvedrhos" << endl;
+    exit(1);
+  }
+  
+}
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 
@@ -768,6 +852,8 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
  	check_press = SetPressure(config);        // Requires T & Tve computation.
 	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.  
+  SetdTdrhos(config);
+  SetdTvedrhos(config);
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
@@ -783,6 +869,8 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
     check_press = SetPressure(config);      // Requires T & Tve computation.
     check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
     SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.
+    SetdTdrhos(config);
+    SetdTvedrhos(config);
     RightVol = false;
   }
   
@@ -1181,6 +1269,8 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
  	check_press = SetPressure(config);        // Requires T & Tve computation.
 	check_sos   = SetSoundSpeed(config);      // Requires density & pressure computation.
   SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.
+  SetdTdrhos(config);
+  SetdTvedrhos(config);
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
@@ -1196,6 +1286,8 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
     check_press = SetPressure(config);      // Requires T & Tve computation.
     check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
     SetdPdrhos(config);                       // Requires density, pressure, rhoCvtr, & rhoCvve.
+    SetdTdrhos(config);
+    SetdTvedrhos(config);
     
     RightVol = false;
   }
