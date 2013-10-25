@@ -3353,10 +3353,10 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
   
-	double deltaT, time_new, time_old, Lref, *Coord;
-  double xDot[3], Center[3], deltaX[3], newCoord[3], VarCoord[3];
-  unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iVertex;
+	double deltaT, time_new, time_old, Lref;
+  double Center[3], VarCoord[3], xDot[3];
+  unsigned short iMarker, jMarker, Moving;
+  unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
   
 #ifndef NO_MPI
@@ -3381,7 +3381,8 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
     time_old = static_cast<double>(iter-1)*deltaT;
   }
   
-	/*--- Store displacement of each node on the rotating surface ---*/
+	/*--- Store displacement of each node on the translating surface ---*/
+    /*--- Loop over markers and find the particular marker(s) (surface) to translate ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Moving = config->GetMarker_All_Moving(iMarker);
@@ -3401,6 +3402,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
           
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
+          // Note that the MASTER_NODE might not contain all the markers being moved.
           
           if (rank == MASTER_NODE) {
             cout << " Storing translating displacement for marker: ";
@@ -3465,11 +3467,11 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
                                            unsigned long iter, unsigned short iZone) {
   
-	double deltaT, time_new, time_old, Lref, *Coord;
-  double xDot[3], Center[3], deltaX[3], Omega[3], Ampl[3], newCoord[3], VarCoord[3];
+	double deltaT, time_new, time_old, Lref;
+  double Center[3], VarCoord[3], Omega[3], Ampl[3];
   double DEG2RAD = PI_NUMBER/180.0;
-  unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iVertex;
+  unsigned short iMarker, jMarker, Moving;
+  unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
   
 #ifndef NO_MPI
@@ -3494,7 +3496,8 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
     time_old = static_cast<double>(iter-1)*deltaT;
   }
   
-	/*--- Store displacement of each node on the rotating surface ---*/
+	/*--- Store displacement of each node on the plunging surface ---*/
+    /*--- Loop over markers and find the particular marker(s) (surface) to plunge ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Moving = config->GetMarker_All_Moving(iMarker);
@@ -3508,16 +3511,17 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
           
           /*--- Plunging frequency and amplitude from config. ---*/
           
-          Omega[0]  = (config->GetPlunging_Omega_X(jMarker)/config->GetOmega_Ref());
-          Omega[1]  = (config->GetPlunging_Omega_Y(jMarker)/config->GetOmega_Ref());
-          Omega[2]  = (config->GetPlunging_Omega_Z(jMarker)/config->GetOmega_Ref());
+          Omega[0]  = config->GetPlunging_Omega_X(jMarker)/config->GetOmega_Ref();
+          Omega[1]  = config->GetPlunging_Omega_Y(jMarker)/config->GetOmega_Ref();
+          Omega[2]  = config->GetPlunging_Omega_Z(jMarker)/config->GetOmega_Ref();
           Ampl[0]   = config->GetPlunging_Ampl_X(jMarker)/Lref;
           Ampl[1]   = config->GetPlunging_Ampl_Y(jMarker)/Lref;
           Ampl[2]   = config->GetPlunging_Ampl_Z(jMarker)/Lref;
           
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
-          
+          // Note that the MASTER_NODE might not contain all the markers being moved.
+
           if (rank == MASTER_NODE) {
             cout << " Storing plunging displacement for marker: ";
             cout << Marker_Tag << "." << endl;
@@ -3585,7 +3589,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
 	
 	double deltaT, time_new, time_old, Lref, *Coord;
-  double Center[3], Omega[3], Ampl[3], Phase[3], rotCoord[3], r[3], VarCoord[3];
+  double Center[3], VarCoord[3], Omega[3], Ampl[3], Phase[3], rotCoord[3], r[3];
   double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   double dtheta, dphi, dpsi, cosTheta, sinTheta;
   double cosPhi, sinPhi, cosPsi, sinPsi;
@@ -3599,7 +3603,10 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
 #else
 	int rank = MASTER_NODE;
 #endif
-	
+  
+  /*--- Initialize the delta variation in coordinates ---*/
+  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+  
   /*--- Retrieve values from the config file ---*/
   
   deltaT = config->GetDelta_UnstTimeND();
@@ -3614,7 +3621,8 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
   }
 
 	/*--- Store displacement of each node on the pitching surface ---*/
-  
+    /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
+
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Moving = config->GetMarker_All_Moving(iMarker);
     if (Moving == YES) {
@@ -3642,7 +3650,8 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
           
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
-          
+          // Note that the MASTER_NODE might not contain all the markers being moved.
+
           if (rank == MASTER_NODE) {
             cout << " Storing pitching displacement for marker: ";
             cout << Marker_Tag << "." << endl;
@@ -3728,20 +3737,19 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
       }
     }
   }
+  /*--- For pitching we don't update the motion origin and moment reference origin. ---*/
 }
 
 void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
                                         unsigned long iter, unsigned short iZone) {
 	
 	double deltaT, time_new, time_old, Lref, *Coord;
-  double Center[3], Omega[3], rotCoord[3], r[3], VarCoord[3];
+  double Center[3], VarCoord[3], Omega[3], rotCoord[3], r[3], Center_Aux[3];
   double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
   double dtheta, dphi, dpsi, cosTheta, sinTheta;
   double cosPhi, sinPhi, cosPsi, sinPsi;
-  double DEG2RAD = PI_NUMBER/180.0;
   unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
-  bool adjoint = config->GetAdjoint();
   string Marker_Tag, Moving_Tag;
   
 #ifndef NO_MPI
@@ -3750,6 +3758,9 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
 	int rank = MASTER_NODE;
 #endif
 	
+  /*--- Initialize the delta variation in coordinates ---*/
+  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+  
   /*--- Retrieve values from the config file ---*/
   
   deltaT = config->GetDelta_UnstTimeND();
@@ -3764,7 +3775,8 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   }
   
 	/*--- Store displacement of each node on the rotating surface ---*/
-  
+    /*--- Loop over markers and find the particular marker(s) (surface) to rotate ---*/
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Moving = config->GetMarker_All_Moving(iMarker);
     if (Moving == YES) {
@@ -3786,7 +3798,8 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
           
           /*--- Print some information to the console. Be verbose at the first
            iteration only (mostly for debugging purposes). ---*/
-          
+          // Note that the MASTER_NODE might not contain all the markers being moved.
+
           if (rank == MASTER_NODE) {
             cout << " Storing rotating displacement for marker: ";
             cout << Marker_Tag << "." << endl;
@@ -3876,16 +3889,17 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
+      /*--- There is no movement in the first iteration ---*/
       if (iter !=0) {
         
-        Coord[0] = config->GetMotion_Origin_X(jMarker);
-        Coord[1] = config->GetMotion_Origin_Y(jMarker);
-        Coord[2] = config->GetMotion_Origin_Z(jMarker);
+        Center_Aux[0] = config->GetMotion_Origin_X(jMarker);
+        Center_Aux[1] = config->GetMotion_Origin_Y(jMarker);
+        Center_Aux[2] = config->GetMotion_Origin_Z(jMarker);
         
         /*--- Calculate non-dim. position from rotation center ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+          r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
         if (nDim == 2) r[nDim] = 0.0;
         
         /*--- Compute transformed point coordinates ---*/
@@ -3904,11 +3918,11 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
         
         /*--- Calculate delta change in the x, y, & z directions ---*/
         for (iDim = 0; iDim < nDim; iDim++)
-          VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+          VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
         if (nDim == 2) VarCoord[nDim] = 0.0;
-        config->SetMotion_Origin_X(jMarker, Coord[0]+VarCoord[0]);
-        config->SetMotion_Origin_Y(jMarker, Coord[1]+VarCoord[1]);
-        config->SetMotion_Origin_Z(jMarker, Coord[2]+VarCoord[2]);
+        config->SetMotion_Origin_X(jMarker, Center_Aux[0]+VarCoord[0]);
+        config->SetMotion_Origin_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+        config->SetMotion_Origin_Z(jMarker, Center_Aux[2]+VarCoord[2]);
       }
     }
   }
@@ -3917,19 +3931,17 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
    incrementing the position with the rotation. ---*/
   
   for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-
-    //cout << "nMarker_Monitoring = " << config->GetnMarker_Monitoring() << std::endl;
-
+    /*--- There is no movement in the first iteration ---*/
     if (iter !=0) {
       
-      Coord[0] = config->GetRefOriginMoment_X(jMarker);
-      Coord[1] = config->GetRefOriginMoment_Y(jMarker);
-      Coord[2] = config->GetRefOriginMoment_Z(jMarker);
+      Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
+      Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
+      Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
 
       /*--- Calculate non-dim. position from rotation center ---*/
       
       for (iDim = 0; iDim < nDim; iDim++)
-        r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+        r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
       if (nDim == 2) r[nDim] = 0.0;
       
       /*--- Compute transformed point coordinates ---*/
@@ -3948,14 +3960,12 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       
       /*--- Calculate delta change in the x, y, & z directions ---*/
       for (iDim = 0; iDim < nDim; iDim++)
-        VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+        VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
       if (nDim == 2) VarCoord[nDim] = 0.0;
       
-      config->SetRefOriginMoment_X(jMarker, Coord[0]+VarCoord[0]);
-      config->SetRefOriginMoment_Y(jMarker, Coord[1]+VarCoord[1]);
-      config->SetRefOriginMoment_Z(jMarker, Coord[2]+VarCoord[2]);
-  
-      cout << "iter = " << iter << endl;
+      config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
+      config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+      config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
     }
   }
 }
