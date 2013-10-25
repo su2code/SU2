@@ -599,6 +599,7 @@ enum BC_TYPE {
 	NACELLE_EXHAUST = 26,		/*!< \brief Boundary nacelle exhaust. */
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
+  PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 

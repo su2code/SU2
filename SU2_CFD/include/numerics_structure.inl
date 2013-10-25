@@ -27,6 +27,10 @@ inline double CNumerics::Determinant_3x3(double A00, double A01, double A02, dou
 	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
 }
 
+inline void CNumerics::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) { }
+
+inline void CNumerics::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) { }
+
 inline void CNumerics::ComputeResidual(double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_MacCormack(double *val_residual, CConfig *config) { }

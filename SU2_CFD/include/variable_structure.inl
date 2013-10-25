@@ -29,8 +29,6 @@ inline void CVariable::SetVelSolutionOldDVector(void) { }
 
 inline void CVariable::SetVelSolutionDVector(void) { }
 
-inline void CVariable::SetPressureValue(double val_pressure) { }
-
 inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
   
 inline double **CVariable::GetStress(void) { return 0; }
@@ -38,6 +36,10 @@ inline double **CVariable::GetStress(void) { return 0; }
 inline void CVariable::SetVonMises_Stress(double val_stress) { }
   
 inline double CVariable::GetVonMises_Stress(void) { return 0; }
+
+inline void CVariable::SetFlow_Pressure(double val_pressure) { }
+
+inline double CVariable::GetFlow_Pressure(void) { return 0; }
 
 inline void CVariable::SetPressureInc(double val_pressure) { }
 
@@ -755,8 +757,6 @@ inline void CAdjPlasmaVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump
 
 inline void CAdjPlasmaVariable::SetPhi_Old(double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
 
-inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
-
 inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] = val_stress; }
   
 inline double **CFEAVariable::GetStress(void) { return Stress; }
@@ -764,6 +764,10 @@ inline double **CFEAVariable::GetStress(void) { return Stress; }
 inline void CFEAVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
   
 inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
+
+inline void CFEAVariable::SetFlow_Pressure(double val_pressure) { Flow_Pressure = val_pressure; }
+
+inline double CFEAVariable::GetFlow_Pressure(void) { return Flow_Pressure; }
 
 inline double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
