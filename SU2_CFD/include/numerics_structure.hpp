@@ -1783,6 +1783,20 @@ public:
 	 */
 	virtual void ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi,
                                  double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config);
+  
+  /*!
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+  
+  /*!
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
     
 };
 
@@ -4935,13 +4949,81 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CGalerkin_FEA(void);
-    
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Triangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Rectangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Wedge(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Pyram(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
 	/*!
 	 * \brief Computing stiffness matrix of the Galerkin method.
 	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(double **val_stiffmatrix_elem, CConfig *config);
+	void SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+  
+  /*!
+	 * \brief Computing stiffness matrix of the Galerkin method.
+	 * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+  
 };
 
 /*!

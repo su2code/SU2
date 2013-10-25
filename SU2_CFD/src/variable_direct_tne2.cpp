@@ -368,12 +368,16 @@ double CTNE2EulerVariable::GetProjVel(double *val_vector) {
 
 void CTNE2EulerVariable::SetVelocity(double *val_velocity, bool val_incomp) {
 	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 			Solution[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
+      Primitive[VEL_INDEX+iDim] = val_velocity[iDim];
+    }
 	}
 	else {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 			Solution[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
+      Primitive[VEL_INDEX+iDim] = val_velocity[iDim];
+    }
 	}
 }
 
