@@ -203,7 +203,9 @@ public:
     double *WindGustDer_i,	/*!< \brief Wind gust derivatives at point i. */
 	*WindGustDer_j;			/*!< \brief Wind gust derivatives at point j. */
     
-    double *dPdrhos_i, *dPdrhos_j;
+  double *dPdrhos_i, *dPdrhos_j;
+  double *dTdrhos_i, *dTdrhos_j;
+  double *dTvedrhos_i, *dTvedrhos_j;
     unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
     RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
     
@@ -870,7 +872,19 @@ public:
 	 * \param[in] iRho_s
 	 */
     void SetdPdrhos(double *val_dPdrhos_i, double *val_dPdrhos_j);
-    
+  
+  /*!
+	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
+	 * \param[in] iRho_s
+	 */
+  void SetdTdrhos(double *val_dTdrhos_i, double *val_dTdrhos_j);
+  
+  /*!
+	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
+	 * \param[in] iRho_s
+	 */
+  void SetdTvedrhos(double *val_dTvedrhos_i, double *val_dTvedrhos_j);
+  
 	/*!
 	 * \brief Get the inviscid fluxes.
 	 * \param[in] val_density - Value of the density.

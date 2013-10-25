@@ -1176,7 +1176,17 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetdPdrhos(void);  
+	virtual double *GetdPdrhos(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetdTdrhos(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetdTvedrhos(void);
   
   /*!
 	 * \brief A virtual member.
@@ -3576,6 +3586,8 @@ protected:
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
   double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
   double *dPdrhos;      /*!< \brief Partial derivative of pressure w.r.t. species densities. */
+  double *dTdrhos;
+  double *dTvedrhos;
   
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
@@ -3702,7 +3714,27 @@ public:
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
+  void SetdTdrhos(CConfig *config);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  void SetdTvedrhos(CConfig *config);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
   double *GetdPdrhos(void);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  double *GetdTdrhos(void);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  double *GetdTvedrhos(void);
   
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
