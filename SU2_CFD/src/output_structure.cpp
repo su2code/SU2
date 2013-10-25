@@ -60,12 +60,15 @@ COutput::~COutput(void) { }
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone) {
   
 #ifdef NO_MPI
+  
   unsigned long iPoint, iVertex, Global_Index;
   unsigned short iMarker;
-  double PressCoeff = 0.0, SkinFrictionCoeff, xCoord, yCoord, zCoord, Mach;
+  double PressCoeff = 0.0, SkinFrictionCoeff, xCoord, yCoord, zCoord, Mach, Pressure;
   char cstr[200], buffer [50];
   ofstream SurfFlow_file;
+  
   unsigned short solver = config->GetKind_Solver();
+  unsigned short nDim = geometry->GetnDim();
   
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
@@ -91,57 +94,40 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
   SurfFlow_file.precision(15);
   SurfFlow_file.open(cstr, ios::out);
   
-  if (geometry->GetnDim() == 2) {
-    switch (solver) {
-      case EULER : SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Mach_Number\",\"y_coord\",\"Global_Index\"" << endl; break;
-      case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Skin_Friction_Coefficient\",\"y_coord\",\"Global_Index\"" << endl; break;
-    }
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          xCoord = geometry->node[iPoint]->GetCoord(0);
-          yCoord = geometry->node[iPoint]->GetCoord(1);
-          PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
-          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-          switch (solver) {
-            case EULER :
-              Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
-              SurfFlow_file << scientific << xCoord << "," << PressCoeff << "," << Mach << "," << yCoord << ", " << Global_Index << endl;
-              break;
-            case NAVIER_STOKES: case RANS:
-              SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-              SurfFlow_file << scientific << xCoord << "," << PressCoeff << "," << SkinFrictionCoeff << "," << yCoord << ", " << Global_Index << endl;
-              break;
-          }
-        }
+  SurfFlow_file << "\"Global_Index\", \"x_coord\", \"y_coord\", ";
+  if (nDim == 3) SurfFlow_file << "\"z_coord\", ";
+  SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
+
+  switch (solver) {
+    case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
+    case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
   }
   
-  if (geometry->GetnDim() == 3) {
-    switch (solver) {
-      case EULER : SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Mach_Number\",\"y_coord\",\"z_coord\",\"Global_Index\"" << endl; break;
-      case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Skin_Friction_Coefficient\",\"y_coord\",\"z_coord\",\"Global_Index\"" << endl; break;
-    }
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          xCoord = geometry->node[iPoint]->GetCoord(0);
-          yCoord = geometry->node[iPoint]->GetCoord(1);
-          zCoord = geometry->node[iPoint]->GetCoord(2);
-          PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
-          Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-          switch (solver) {
-            case EULER :
-              Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
-              SurfFlow_file << scientific << xCoord << "," << PressCoeff << "," << Mach <<"," << yCoord << "," << zCoord << ", " << Global_Index << endl;
-              break;
-            case NAVIER_STOKES: case RANS:
-              SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-              SurfFlow_file << scientific << xCoord << "," << PressCoeff << "," << SkinFrictionCoeff << "," << yCoord << "," << zCoord << ", " << Global_Index << endl;
-              break;
-          }
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        xCoord = geometry->node[iPoint]->GetCoord(0);
+        yCoord = geometry->node[iPoint]->GetCoord(1);
+        if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+        Pressure = FlowSolver->node[iPoint]->GetPressure(COMPRESSIBLE);
+        PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
+        SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
+        if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
+        SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
+        switch (solver) {
+          case EULER :
+            Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
+            SurfFlow_file << scientific << Mach << endl;
+            break;
+          case NAVIER_STOKES: case RANS:
+            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
+            SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+            break;
         }
+      }
+    }
   }
   
   SurfFlow_file.close();
@@ -152,6 +138,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
   double PressCoeff = 0.0, SkinFrictionCoeff, xCoord, yCoord, zCoord, Mach;
   char cstr[200];
   unsigned short iMarker;
+  unsigned short nDim = geometry->GetnDim();
+
   unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
   MaxLocalVertex_Surface = 0, nBuffer_Scalar, *Buffer_Receive_nVertex = NULL, position, Global_Index;
   ofstream SurfFlow_file;
@@ -179,6 +167,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
   double *Buffer_Send_Coord_y = new double [MaxLocalVertex_Surface];
   double *Buffer_Send_Coord_z = new double [MaxLocalVertex_Surface];
   double *Buffer_Send_Press = new double [MaxLocalVertex_Surface];
+  double *Buffer_Send_CPress = new double [MaxLocalVertex_Surface];
   double *Buffer_Send_Mach = new double [MaxLocalVertex_Surface];
   double *Buffer_Send_SkinFriction = new double [MaxLocalVertex_Surface];
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
@@ -189,11 +178,12 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          Buffer_Send_Press[nVertex_Surface] = FlowSolver->GetCPressure(iMarker,iVertex);
+          Buffer_Send_Press[nVertex_Surface] = FlowSolver->node[iPoint]->GetPressure(COMPRESSIBLE);
+          Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker,iVertex);
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
           Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
-          if (geometry->GetnDim() == 3) Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2);
+          if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2);
           if (config->GetKind_Solver() == EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver() == RANS))
@@ -202,16 +192,16 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
         }
       }
   
-  double *Buffer_Receive_Coord_x = NULL, *Buffer_Receive_Coord_y = NULL, *Buffer_Receive_Coord_z = NULL, *Buffer_Receive_Press = NULL,
+  double *Buffer_Receive_Coord_x = NULL, *Buffer_Receive_Coord_y = NULL, *Buffer_Receive_Coord_z = NULL, *Buffer_Receive_Press = NULL, *Buffer_Receive_CPress = NULL,
   *Buffer_Receive_Mach = NULL, *Buffer_Receive_SkinFriction = NULL;
   unsigned long *Buffer_Receive_GlobalIndex = NULL;
   
   if (rank == MASTER_NODE) {
     Buffer_Receive_Coord_x = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_Coord_y = new double [nProcessor*MaxLocalVertex_Surface];
-    if (geometry->GetnDim() == 3)
-      Buffer_Receive_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3) Buffer_Receive_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_Press = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Receive_CPress = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_Mach = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_SkinFriction = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_GlobalIndex = new  unsigned long [nProcessor*MaxLocalVertex_Surface];
@@ -225,11 +215,12 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
                          Buffer_Receive_Coord_x, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_Coord_y, nBuffer_Scalar, MPI::DOUBLE,
                          Buffer_Receive_Coord_y, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  if (geometry->GetnDim() == 3)
-    MPI::COMM_WORLD.Gather(Buffer_Send_Coord_z, nBuffer_Scalar, MPI::DOUBLE,
+  if (nDim == 3) MPI::COMM_WORLD.Gather(Buffer_Send_Coord_z, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Receive_Coord_z, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_Press, nBuffer_Scalar, MPI::DOUBLE,
                          Buffer_Receive_Press, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Gather(Buffer_Send_CPress, nBuffer_Scalar, MPI::DOUBLE,
+                         Buffer_Receive_CPress, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
   if (config->GetKind_Solver() == EULER)
     MPI::COMM_WORLD.Gather(Buffer_Send_Mach, nBuffer_Scalar, MPI::DOUBLE,
                            Buffer_Receive_Mach, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
@@ -273,66 +264,49 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
     SurfFlow_file.precision(15);
     SurfFlow_file.open(cstr, ios::out);
     
-    /*--- Write the 2D surface flow coefficient file ---*/
-    if (geometry->GetnDim() == 2) {
-      switch (config->GetKind_Solver()) {
-        case EULER : SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Mach_Number\",\"y_coord\",\"Global_Index\"" << endl; break;
-        case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Skin_Friction_Coefficient\",\"y_coord\",\"Global_Index\"" << endl; break;
-      }
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-          position = iProcessor*MaxLocalVertex_Surface+iVertex;
-          xCoord = Buffer_Receive_Coord_x[position];
-          yCoord = Buffer_Receive_Coord_y[position];
-          PressCoeff = Buffer_Receive_Press[position];
-          Global_Index = Buffer_Receive_GlobalIndex[position];
-          switch (config->GetKind_Solver()) {
-            case EULER :
-              Mach = Buffer_Receive_Mach[position];
-              SurfFlow_file << scientific << xCoord << ", " << PressCoeff << ", " << Mach << ", " << yCoord << ", " << Global_Index << endl;
-              break;
-            case NAVIER_STOKES: case RANS:
-              SkinFrictionCoeff = Buffer_Receive_SkinFriction[position];
-              SurfFlow_file << scientific << xCoord << ", " << PressCoeff << ", " << SkinFrictionCoeff << ", " << yCoord << ", " << Global_Index << endl;
-              break;
-          }
-        }
+    SurfFlow_file << "\"Global_Index\", \"x_coord\", \"y_coord\", ";
+    if (nDim == 3) SurfFlow_file << "\"z_coord\", ";
+    SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
+    
+    switch (solver) {
+      case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
+      case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
     }
     
-    /*--- Write the 3D surface flow coefficient file ---*/
-    if (geometry->GetnDim() == 3) {
-      switch (config->GetKind_Solver()) {
-        case EULER : SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Mach_Number\",\"y_coord\",\"z_coord\",\"Global_Index\"" << endl; break;
-        case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"x_coord\",\"Pressure_Coefficient\",\"Skin_Friction_Coefficient\",\"y_coord\",\"z_coord\",\"Global_Index\"" << endl; break;
-      }
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-          position = iProcessor*MaxLocalVertex_Surface+iVertex;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          Global_Index = Buffer_Receive_GlobalIndex[position];
           xCoord = Buffer_Receive_Coord_x[position];
           yCoord = Buffer_Receive_Coord_y[position];
-          zCoord = Buffer_Receive_Coord_z[position];
-          PressCoeff = Buffer_Receive_Press[position];
-          Global_Index = Buffer_Receive_GlobalIndex[position];
-          switch (config->GetKind_Solver()) {
+          if (nDim == 3) zCoord = Buffer_Receive_Coord_z[position];
+          Pressure = Buffer_Receive_Press[position];
+          PressCoeff = Buffer_Receive_CPress[position];
+          SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
+          if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
+          SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
+          switch (solver) {
             case EULER :
               Mach = Buffer_Receive_Mach[position];
-              SurfFlow_file << scientific << xCoord << ", " << PressCoeff << ", " << Mach << ", " << yCoord << ", " << zCoord << ", " << Global_Index << endl;
+              SurfFlow_file << scientific << Mach << endl;
               break;
             case NAVIER_STOKES: case RANS:
               SkinFrictionCoeff = Buffer_Receive_SkinFriction[position];
-              SurfFlow_file << scientific << xCoord << ", " << PressCoeff << ", " << SkinFrictionCoeff << ", " << yCoord << ", " << zCoord << ", " << Global_Index << endl;
+              SurfFlow_file << scientific << SkinFrictionCoeff << endl;
               break;
           }
         }
+      }
     }
+
   }
   
   if (rank == MASTER_NODE) {
     delete [] Buffer_Receive_Coord_x;
     delete [] Buffer_Receive_Coord_y;
-    if (geometry->GetnDim() == 3)
-      delete [] Buffer_Receive_Coord_z;
+    if (nDim == 3) delete [] Buffer_Receive_Coord_z;
     delete [] Buffer_Receive_Press;
+    delete [] Buffer_Receive_CPress;
     delete [] Buffer_Receive_Mach;
     delete [] Buffer_Receive_SkinFriction;
     delete [] Buffer_Receive_GlobalIndex;
@@ -342,6 +316,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
   delete [] Buffer_Send_Coord_y;
   delete [] Buffer_Send_Coord_z;
   delete [] Buffer_Send_Press;
+  delete [] Buffer_Send_CPress;
   delete [] Buffer_Send_Mach;
   delete [] Buffer_Send_SkinFriction;
   delete [] Buffer_Send_GlobalIndex;
@@ -1550,8 +1525,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
-  
-  double *Aux_Press, *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
+  double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure, factor;
+
+  double *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
   
   bool grid_movement = config->GetGrid_Movement();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1569,6 +1545,30 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (Kind_Solver == PLASMA_NAVIER_STOKES) {
     if (val_iZone == ZONE_0) Kind_Solver = PLASMA_NAVIER_STOKES;
     if (val_iZone == ZONE_1) Kind_Solver = POISSON_EQUATION;
+  }
+  
+  unsigned short iDim;
+  bool nDim               = geometry->GetnDim();
+  double RefAreaCoeff     = config->GetRefAreaCoeff();
+  double Gamma            = config->GetGamma();
+  double RefVel2;
+  
+  /*--- Set the non-dimensionalization ---*/
+  if (flow) {
+    if (grid_movement) {
+      Gas_Constant = config->GetGas_ConstantND();
+      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+      Mach_Motion = config->GetMach_Motion();
+      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+    }
+    else {
+      RefVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
+    }
+    RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
+    RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
+    factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
   }
   
   /*--- Prepare send buffers for the conservative variables. Need to
@@ -1724,7 +1724,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (Kind_Solver == LINEAR_ELASTICITY) {
     /*--- Surface sensitivity coefficient, and solution sensor ---*/
     iVar_FEA   = nVar_Total;
-    nVar_Total += 1;
+    nVar_Total += 2;
   }
   
   if (config->GetExtraOutput()) {
@@ -1756,22 +1756,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   /*--- In case there is grid movement ---*/
   double *Grid_Vel;
   
-  if (flow) {
-    /*--- First, loop through the mesh in order to find and store the
-     value of the coefficient of pressure at any surface nodes. They
-     will be placed in an auxiliary vector and then communicated like
-     all other volumetric variables. ---*/
-    
-    Aux_Press = new double [geometry->GetnPoint()];
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-        }
-  }
-  
+  /*--- First, loop through the mesh in order to find and store the
+   value of some coefficients at any surface nodes. They
+   will be placed in an auxiliary vector and then communicated like
+   all other volumetric variables. ---*/
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     
     Aux_Frict = new double [geometry->GetnPointDomain()];
@@ -1866,10 +1854,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Any extra data for output files ---*/
       switch (Kind_Solver) {
         case EULER:
+
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
           if (compressible) {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           }
@@ -1878,7 +1867,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             
@@ -1888,7 +1877,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case NAVIER_STOKES:
           if (compressible) {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
@@ -1903,7 +1892,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
@@ -1917,7 +1906,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         case RANS:
           if (compressible) {
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
@@ -1931,7 +1920,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = Aux_Press[iPoint]; jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
@@ -2066,8 +2055,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           break;
           
         case LINEAR_ELASTICITY:
-          
-          Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); jVar++;
+          Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
+          jVar++;
+          Data[jVar][jPoint] = solver[FEA_SOL]->node[iPoint]->GetFlow_Pressure();
+          jVar++;
           break;
           
       }
@@ -2141,7 +2132,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Auxiliary vectors for surface coefficients ---*/
   
-  Aux_Press = new double[geometry->GetnPoint()];
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     Aux_Frict = new double[geometry->GetnPoint()];
     Aux_Heat  = new double[geometry->GetnPoint()];
@@ -2360,14 +2350,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
      will be placed in an auxiliary vector and then communicated like
      all other volumetric variables. ---*/
     
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Press[iPoint] = 0.0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_Plotting(iMarker) == YES)
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Press[iPoint] = solver[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-        }
-    
     /*--- Loop over this partition to collect the current variable ---*/
     jPoint = 0;
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -2379,13 +2361,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
         if (compressible) {
           Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
-          Buffer_Send_Res[jPoint] = Aux_Press[iPoint];
+          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff;
           Buffer_Send_Vol[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
         }
         if (incompressible || freesurface) {
           Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE);
-          Buffer_Send_Res[jPoint] = Aux_Press[iPoint];
+          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff;
           Buffer_Send_Vol[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
         }
@@ -3284,6 +3266,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         
         /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
         Buffer_Send_Var[jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
+        Buffer_Send_Res[jPoint] = solver[FEA_SOL]->node[iPoint]->GetPressure_Flow();
         jPoint++;
       }
     }
@@ -3302,7 +3285,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
           /*--- Get global index, then loop over each variable and store ---*/
           iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
           jPoint++;
         }
         /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
@@ -3378,8 +3362,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
   
   /*--- Release memory needed for surface coefficients ---*/
-  if (flow)
-    delete [] Aux_Press;
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
   }
@@ -3671,7 +3653,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   }
   
   if (Kind_Solver == LINEAR_ELASTICITY) {
-    restart_file << "\t\"Von_Mises_Stress\"";
+    restart_file << "\t\"Von_Mises_Stress\"\t\"Flow_Pressure\"";
   }
   
   if (config->GetExtraOutput()) {

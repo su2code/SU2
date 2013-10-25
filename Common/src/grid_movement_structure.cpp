@@ -158,7 +158,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
     
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -178,7 +178,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     MinVol = Check_Grid(geometry);
     
     if (rank == MASTER_NODE) {
-      cout << "Non-linear iter.: " << iGridDef_Iter << "/" << config->GetGridDef_Iter()
+      cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
       << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVol
       << ". Error: " << NumError << "." <<endl;
     }
@@ -364,7 +364,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
-    cout <<"There are " << ElemCounter << " degenerated elements in the original grid." << endl;
+    cout <<"There are " << ElemCounter << " degenerate elements in the original grid." << endl;
   
   /*--- Deallocate memory and exit ---*/
   
@@ -1209,8 +1209,8 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
    "Robust Mesh Deformation using the Linear Elasticity Equations" by
    R. P. Dwight. ---*/
   
-  for (iGauss = 0; iGauss < 1; iGauss++) {
-    for (jGauss = 0; jGauss < 1; jGauss++) {
+  for (iGauss = 0; iGauss < 2; iGauss++) {
+    for (jGauss = 0; jGauss < 2; jGauss++) {
       
       if (iGauss == 0) { Xi = -0.577350269189626; iWeight = 1.0; }
       if (iGauss == 1) { Xi = 0.577350269189626; iWeight = 1.0; }

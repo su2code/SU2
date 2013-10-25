@@ -1294,11 +1294,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressureInc(double val_pressure);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressureValue(double val_pressure);
   
 	/*!
 	 * \brief A virtual member.
@@ -1321,6 +1316,17 @@ public:
    
 	 */
   virtual double GetVonMises_Stress(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetFlow_Pressure(double val_pressure);
+  
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double GetFlow_Pressure(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1849,7 +1855,7 @@ public:
  */
 class CFEAVariable : public CVariable {
 protected:
-	double Pressure;	/*!< \brief Pressure of the fluid. */
+	double Flow_Pressure;	/*!< \brief Pressure of the fluid. */
   double **Stress;  /*!< \brief Stress tensor. */
   double VonMises_Stress; /*!< \brief Von Mises stress. */
   
@@ -1873,11 +1879,6 @@ public:
 	 * \brief Destructor of the class. 
 	 */	
 	~CFEAVariable(void);
-
-	/*!
-	 * \brief Set the value of the pressure.
-	 */
-	void SetPressureValue(double val_pressure);
   
   /*!
 	 * \brief Set the value of the stress.
@@ -1904,6 +1905,18 @@ public:
    * \return Value of the Von Mises stress.
 	 */
   double GetVonMises_Stress(void);
+  
+  /*!
+	 * \brief Set the value of the Von Mises stress.
+	 * \param[in] val_stress - Value of the Von Mises stress.
+	 */
+  void SetFlow_Pressure(double val_pressure);
+  
+  /*!
+	 * \brief Get the value of the Von Mises stress.
+   * \return Value of the Von Mises stress.
+	 */
+  double GetFlow_Pressure(void);
 
 };
 
