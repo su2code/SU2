@@ -59,16 +59,19 @@ COutput::~COutput(void) { }
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone) {
   
-#ifdef NO_MPI
-  
-  unsigned long iPoint, iVertex, Global_Index;
   unsigned short iMarker;
+  unsigned long iPoint, iVertex, Global_Index;
   double PressCoeff = 0.0, SkinFrictionCoeff, xCoord, yCoord, zCoord, Mach, Pressure;
-  char cstr[200], buffer [50];
-  ofstream SurfFlow_file;
+  char cstr[200];
   
   unsigned short solver = config->GetKind_Solver();
   unsigned short nDim = geometry->GetnDim();
+  
+#ifdef NO_MPI
+  
+  char buffer [50];
+  ofstream SurfFlow_file;
+  
   
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
@@ -135,13 +138,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *
 #else
   
   int rank = MPI::COMM_WORLD.Get_rank(), iProcessor, nProcessor = MPI::COMM_WORLD.Get_size();
-  double PressCoeff = 0.0, SkinFrictionCoeff, xCoord, yCoord, zCoord, Mach;
-  char cstr[200];
-  unsigned short iMarker;
-  unsigned short nDim = geometry->GetnDim();
 
-  unsigned long Buffer_Send_nVertex[1], iVertex, iPoint, nVertex_Surface = 0, nLocalVertex_Surface = 0,
-  MaxLocalVertex_Surface = 0, nBuffer_Scalar, *Buffer_Receive_nVertex = NULL, position, Global_Index;
+  unsigned long Buffer_Send_nVertex[1], nVertex_Surface = 0, nLocalVertex_Surface = 0,
+  MaxLocalVertex_Surface = 0, nBuffer_Scalar, *Buffer_Receive_nVertex = NULL, position;
   ofstream SurfFlow_file;
   
   /*--- Write the surface .csv file, the information of all the vertices is
@@ -3266,7 +3265,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         
         /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
         Buffer_Send_Var[jPoint] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress();
-        Buffer_Send_Res[jPoint] = solver[FEA_SOL]->node[iPoint]->GetPressure_Flow();
+        Buffer_Send_Res[jPoint] = solver[FEA_SOL]->node[iPoint]->GetFlow_Pressure();
         jPoint++;
       }
     }
