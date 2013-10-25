@@ -250,7 +250,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     }
     
     if (Kind_Solver == LINEAR_ELASTICITY) {
-      Tecplot_File << ", \"Von_Mises_Stress\"";
+      Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
     }
     
     if (config->GetExtraOutput()) {

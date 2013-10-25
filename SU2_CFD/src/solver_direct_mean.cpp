@@ -6380,68 +6380,205 @@ void CEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CN
 
 void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
-  unsigned short iVar, jVar;
-  unsigned long iPoint;
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iVar, jVar, iMarker, iDim;
+  unsigned long iPoint, jPoint, iEdge, iVertex;
+  
   double *U_time_nM1, *U_time_n, *U_time_nP1;
-  double Volume_nM1, Volume_n, Volume_nP1, TimeStep;
+  double Volume_nM1, Volume_nP1, TimeStep;
+  double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool FlowEq = (RunTime_EqSystem == RUNTIME_FLOW_SYS);
-  bool AdjEq = (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS);
+  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool FlowEq         = (RunTime_EqSystem == RUNTIME_FLOW_SYS);
+  bool AdjEq          = (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool Grid_Movement = config->GetGrid_Movement();
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool grid_movement  = config->GetGrid_Movement();
   
-  /*--- loop over points ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  /*--- Store the physical time step ---*/
+  
+  TimeStep = config->GetDelta_UnstTimeND();
+  
+  /*--- Compute the dual time-stepping source term for static meshes ---*/
+  
+  if (!grid_movement) {
     
-    /*--- Solution at time n-1, n and n+1 ---*/
-    U_time_nM1 = node[iPoint]->GetSolution_time_n1();
-    U_time_n   = node[iPoint]->GetSolution_time_n();
-    U_time_nP1 = node[iPoint]->GetSolution();
+    /*--- Loop over all nodes (excluding halos) ---*/
     
-    /*--- Volume at time n-1 and n ---*/
-    if (Grid_Movement) {
-      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
-      Volume_n = geometry->node[iPoint]->GetVolume_n();
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+       previous solutions that are stored in memory. ---*/
+      
+      U_time_nM1 = node[iPoint]->GetSolution_time_n1();
+      U_time_n   = node[iPoint]->GetSolution_time_n();
+      U_time_nP1 = node[iPoint]->GetSolution();
+      
+      /*--- CV volume at time n+1. As we are on a static mesh, the volume
+       of the CV will remained fixed for all time steps. ---*/
+      
       Volume_nP1 = geometry->node[iPoint]->GetVolume();
-    }
-    else {
-      Volume_nM1 = geometry->node[iPoint]->GetVolume();
-      Volume_n = geometry->node[iPoint]->GetVolume();
-      Volume_nP1 = geometry->node[iPoint]->GetVolume();
-    }
-    
-    /*--- Time Step ---*/
-    TimeStep = config->GetDelta_UnstTimeND();
-    
-    /*--- Compute Residual ---*/
-    for(iVar = 0; iVar < nVar; iVar++) {
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Residual[iVar] = ( U_time_nP1[iVar]*Volume_nP1 - U_time_n[iVar]*Volume_n ) / TimeStep;
-      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-        Residual[iVar] = ( 3.0*U_time_nP1[iVar]*Volume_nP1 - 4.0*U_time_n[iVar]*Volume_n
-                          +  1.0*U_time_nM1[iVar]*Volume_nM1 ) / (2.0*TimeStep);
-    }
-    
-    if ((incompressible || freesurface) && (FlowEq || AdjEq)) Residual[0] = 0.0;
-    
-    /*--- Add Residual ---*/
-    LinSysRes.AddBlock(iPoint, Residual);
-    
-    if (implicit) {
+      
+      /*--- Compute the dual time-stepping source term based on the chosen
+       time discretization scheme (1st- or 2nd-order).---*/
+      
       for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
-        
         if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+          Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+                            +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
-      if ((incompressible || freesurface) && (FlowEq || AdjEq)) Jacobian_i[0][0] = 0.0;
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      if ((incompressible || freesurface) && (FlowEq || AdjEq)) Residual[0] = 0.0;
+      
+      /*--- Store the residual and compute the Jacobian contribution due
+       to the dual time source term. ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+        }
+        if ((incompressible || freesurface) && (FlowEq || AdjEq)) Jacobian_i[0][0] = 0.0;
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
     }
+    
+  } else {
+    
+    /*--- For unsteady flows on dynamic meshes (rigidly transforming or
+     dynamically deforming), the Geometric Conservation Law (GCL) should be
+     satisfied in conjunction with the ALE formulation of the governing
+     equations. The GCL prevents accuracy issues caused by grid motion, i.e.
+     a uniform free-stream should be preserved through a moving grid. First,
+     we will loop over the edges and boundaries to compute the GCL component
+     of the dual time source term that depends on grid velocities. ---*/
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      /*--- Get indices for nodes i & j plus the face normal ---*/
+      
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      Normal = geometry->edge[iEdge]->GetNormal();
+      
+      /*--- Grid velocities stored at nodes i & j ---*/
+      
+      GridVel_i = geometry->node[iPoint]->GetGridVel();
+      GridVel_j = geometry->node[jPoint]->GetGridVel();
+      
+      /*--- Compute the GCL term by averaging the grid velocities at the
+       edge mid-point and dotting with the face normal. ---*/
+      
+      Residual_GCL = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual_GCL += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+      
+      /*--- Compute the GCL component of the source term for node i ---*/
+      
+      U_time_n = node[iPoint]->GetSolution_time_n();
+      for(iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      if ((incompressible || freesurface) && (FlowEq || AdjEq)) Residual[0] = 0.0;
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Compute the GCL component of the source term for node j ---*/
+      
+      U_time_n = node[jPoint]->GetSolution_time_n();
+      for(iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      if ((incompressible || freesurface) && (FlowEq || AdjEq)) Residual[0] = 0.0;
+      LinSysRes.SubtractBlock(jPoint, Residual);
+      
+    }
+    
+    /*---	Loop over the boundary edges ---*/
+    
+    for(iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        /*--- Get the index for node i plus the boundary face normal ---*/
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- Grid velocities stored at boundary node i ---*/
+        
+        GridVel_i = geometry->node[iPoint]->GetGridVel();
+        
+        /*--- Compute the GCL term by dotting the grid velocity with the face
+         normal. The normal is negated to match the boundary convention. ---*/
+        
+        Residual_GCL = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
+        
+        /*--- Compute the GCL component of the source term for node i ---*/
+        
+        U_time_n = node[iPoint]->GetSolution_time_n();
+        for(iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+        if ((incompressible || freesurface) && (FlowEq || AdjEq)) Residual[0] = 0.0;
+        LinSysRes.AddBlock(iPoint, Residual);
+      }
+    }
+    
+    /*--- Loop over all nodes (excluding halos) to compute the remainder
+     of the dual time-stepping source term. ---*/
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      /*--- Retrieve the solution at time levels n-1 and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n-1 is a fixed,
+       previous solution that is stored in memory. ---*/
+      
+      U_time_nM1 = node[iPoint]->GetSolution_time_n1();
+      U_time_nP1 = node[iPoint]->GetSolution();
+      
+      /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
+       grids, the volumes will change. On rigidly transforming grids, the
+       volumes will remain constant. ---*/
+      
+      Volume_nM1 = geometry->node[iPoint]->GetVolume_nM1();
+      Volume_nP1 = geometry->node[iPoint]->GetVolume();
+      
+      /*--- Compute the dual time-stepping source residual. Due to the
+       introduction of the GCL term above, the remainder of the source residual
+       due to the time discretization has a new form.---*/
+      
+      for(iVar = 0; iVar < nVar; iVar++) {
+        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])* (Volume_nP1/TimeStep);
+        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+          Residual[iVar] = (U_time_nP1[iVar]-U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          + (U_time_nM1[iVar]-U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+      }
+      if ((incompressible || freesurface) && (FlowEq || AdjEq)) Residual[0] = 0.0;
+      
+      /*--- Store the residual and compute the Jacobian contribution due
+       to the dual time source term. ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+        }
+        if ((incompressible || freesurface) && (FlowEq || AdjEq)) Jacobian_i[0][0] = 0.0;
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
+    }
+    
   }
   
 }

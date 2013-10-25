@@ -160,6 +160,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
 	/* DESCRIPTION: Symmetry boundary condition */
 	AddMarkerOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
+  /* DESCRIPTION: Symmetry boundary condition */
+	AddMarkerOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
 	/* DESCRIPTION: Near-Field boundary condition */
 	AddMarkerOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
 	/* DESCRIPTION: Zone interface boundary marker(s) */
@@ -3370,7 +3372,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_Custom + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -3383,7 +3385,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
-	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
 	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
 	iMarker_Supersonic_Inlet;
@@ -3400,7 +3402,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_PerBound[iMarker_All]   = 0;
 	}
 
-	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
+	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
@@ -3439,6 +3441,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
 		Marker_Config_Tag[iMarker_Config] = Marker_SymWall[iMarker_SymWall];
 		Marker_Config_Boundary[iMarker_Config] = SYMMETRY_PLANE;
+		iMarker_Config++;
+	}
+  
+  for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_Pressure[iMarker_Pressure];
+		Marker_Config_Boundary[iMarker_Config] = PRESSURE_BOUNDARY;
 		iMarker_Config++;
 	}
 
@@ -3583,7 +3591,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
-	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+	iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
@@ -4719,6 +4727,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
 			cout << Marker_SymWall[iMarker_SymWall];
 			if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
+  if (nMarker_Pressure != 0) {
+		cout << "Pressure boundary marker(s): ";
+		for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
+			cout << Marker_Pressure[iMarker_Pressure];
+			if (iMarker_Pressure < nMarker_Pressure-1) cout << ", ";
 			else cout <<"."<<endl;
 		}
 	}

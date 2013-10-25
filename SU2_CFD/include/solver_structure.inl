@@ -52,6 +52,8 @@ inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *confi
 
 inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config) { }
 
+inline void CSolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) { }
@@ -317,6 +319,9 @@ inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_containe
 									 unsigned short val_marker) { }
 									 
 inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+									 unsigned short val_marker) { }
+                   
+inline void CSolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
 									 unsigned short val_marker) { }
                   
 inline void CSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
