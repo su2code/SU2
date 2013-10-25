@@ -2215,6 +2215,14 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   rhoCvve = V_i[RHOCVVE_INDEX];
   nEv     = nSpecies+nDim+1;
   
+  /*--- Clip temperatures to prevent NaNs ---*/
+  if (T < 50.0) {
+    T = 50;
+  }
+  if (Tve < 50.0) {
+    Tve = 50;
+  }
+  
   /*--- Read from CConfig ---*/
   Ms        = config->GetMolar_Mass();
   thetav    = config->GetCharVibTemp();
@@ -2295,7 +2303,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       denom = 0.0;
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
         mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-        A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
+        A_sr   = 1.16 * 1E-3 * sqrt(fabs(mu)) * pow(thetav[iSpecies], 4.0/3.0);
         B_sr   = 0.015 * pow(mu, 0.25);
         tau_sr = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
         num   += X[iSpecies];
@@ -2305,7 +2313,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       
       /*--- Park limiting cross section ---*/
       sigma = 1E-20 * (5E4/T)*(5E4/T);
-      ws    = sqrt(8.0*Ru*T / (PI_NUMBER*Ms[iSpecies]));
+      ws    = sqrt(fabs(8.0*Ru*T / (PI_NUMBER*Ms[iSpecies])));
       tauP  = 1.0 / (sigma * ws * N);
       
       /*--- Species relaxation time ---*/
@@ -2327,6 +2335,18 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
         val_Jacobian_i[nEv][iSpecies] += (estar - evib)/tau * Volume;
         for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
           val_Jacobian_i[nEv][jSpecies] += U_i[iSpecies]/tau * (Cvvst*dTdrhos[jSpecies] - Cvvs*dTvedrhos[jSpecies]) * Volume;
+        
+        if (tau == 0)
+          cout << "tau=0" << endl;
+        if (tau!=tau)
+          cout << "tau NaN" << endl;
+        if (Cvvst != Cvvst) {
+          cout << "Cvvst NaN" << endl;
+          cout << "expt: " << expt << endl;
+          cout << "T: " << T << endl;
+        }
+        if (Cvvs != Cvvs)
+          cout << "Cvvs NaN" << endl;
         
         /*--- Momentum ---*/
         val_Jacobian_i[nEv][nSpecies]      += U_i[iSpecies]/tau * (Cvvst*dTdrhou - Cvvs*dTvedrhou) * Volume;
