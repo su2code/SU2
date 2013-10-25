@@ -275,7 +275,7 @@ if __name__=="__main__":
   cylinder.cfg_dir   = "TestCases/navierstokes/cylinder"
   cylinder.cfg_file  = "lam_cylinder_JST.cfg"
   cylinder.test_iter = 25
-  cylinder.test_vals = [-9.724776,-8.896674,0.032211,3.890232]
+  cylinder.test_vals = [-9.724742,-8.896688,0.032200,3.890274]
   cylinder.su2_exec  = "parallel_computation.py -f"
   cylinder.timeout   = 1600
   cylinder.tol       = 0.00001
