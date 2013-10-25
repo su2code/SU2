@@ -5060,7 +5060,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       for (iDim = 0; iDim < nDim; iDim++) {
 //        Normal[iDim] = geometry->node[iPoint]->GetCoord(iDim)
 //                     - geometry->node[jPoint]->GetCoord(iDim);
-        Normal[iDim] = -Normal[iDim];
+//        Normal[iDim] = -Normal[iDim];
       }
       
 			/*--- Store the corrected velocity at the wall which will
@@ -5159,6 +5159,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       
       ////////////  VISCOUS PORTION  ///////////////
       /*--- Re-calculate wall gradients with updated primitive values ---*/
+      SetPrimVar_Gradient_LS(geometry, config, iPoint);
       gradV = node[iPoint]->GetGradient_Primitive();
       
       double Tj, Tvej, dTdn, dTvedn, dij;
@@ -5190,6 +5191,12 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
 //      }
       Res_Visc[nSpecies+nDim] = -(ktr*dTdn + kve*dTvedn)*Area;
       Res_Visc[nSpecies+nDim+1] = -kve*dTvedn*Area;
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Res_Visc[nSpecies+nDim] = (ktr*gradV[T_INDEX][iDim] + kve*gradV[TVE_INDEX][iDim])*Normal[iDim];
+        Res_Visc[nSpecies+nDim+1] = kve*gradV[TVE_INDEX][iDim]*Normal[iDim];
+      }
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
       if (implicit) {
