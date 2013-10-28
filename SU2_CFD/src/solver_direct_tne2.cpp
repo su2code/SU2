@@ -2010,6 +2010,16 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
+/*    if (iPoint == 25024) {
+      cout << "T: " << node[iPoint]->GetPrimVar(nSpecies) << endl;
+      cout << "Tve: " << node[iPoint]->GetPrimVar(nSpecies+1) << endl;
+      cout << "Chemistry: " << endl;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        cout << Residual[iVar] << endl;
+      }
+      cin.get();
+    }*/
+    
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       if (Residual[iVar] != Residual[iVar]) {
@@ -5013,6 +5023,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   double rhoCvtr, rhoCvve, ktr, kve, Ti, Tvei, Tj, Tvej, *dTdrs, *dTvedrs;
   double Twall, dTdn, dTvedn, dij, theta;
   double Area, *Normal, UnitNormal[3];
+  double **gradV;
   
   implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
@@ -5050,14 +5061,19 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
 			/*--- Compute closest normal neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
+      /*--- Compute distance between wall & normal neighbor ---*/
+      dij = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dij += (geometry->node[jPoint]->GetCoord(iDim) -
+                geometry->node[iPoint]->GetCoord(iDim))
+             * (geometry->node[jPoint]->GetCoord(iDim) -
+                geometry->node[iPoint]->GetCoord(iDim));
+      }
+      dij = sqrt(dij);
+      
       /*--- Initialize viscous residual (and Jacobian if implicit) to zero ---*/
 			for (iVar = 0; iVar < nVar; iVar ++)
 				Res_Visc[iVar] = 0.0;
-			if (implicit)
-				for (iVar = 0; iVar < nVar; iVar ++)
-					for (jVar = 0; jVar < nVar; jVar ++)
-            Jacobian_i[iVar][jVar] = 0.0;
-
       
 			/*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/
@@ -5067,16 +5083,10 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
       }
-      if (implicit) {
-        for (iVar = nSpecies; iVar <= nSpecies+nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      }
       
       /*--- Set appropriate wall conditions ---*/
-      jnk = node[iPoint]->SetTemperature(Twall);
-      jnk = node[iPoint]->SetTemperature_ve(Twall);
+//      jnk = node[iPoint]->SetTemperature(Twall);
+//      jnk = node[iPoint]->SetTemperature_ve(Twall);
       
       /*--- Calculate useful quantities ---*/
       rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
@@ -5091,32 +5101,58 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       Tvej    = node[jPoint]->GetPrimVar(TVE_INDEX);
       dTdrs   = node[iPoint]->GetdTdrhos();
       dTvedrs = node[iPoint]->GetdTvedrhos();
-      dij = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dij += (geometry->node[jPoint]->GetCoord(iDim) -
-                geometry->node[iPoint]->GetCoord(iDim))
-             * (geometry->node[jPoint]->GetCoord(iDim) -
-                geometry->node[iPoint]->GetCoord(iDim));
-      }
-      dij = sqrt(dij);
+      
       
       /*--- Calculate FD derivative of temperature normal to the surface ---*/
-      dTdn = (Tj-Twall)/dij;
-      dTvedn = (Tvej-Twall)/dij;
+      dTdn = (Twall-Tj)/dij;
+      dTvedn = (Twall-Tvej)/dij;
       
       /*--- Apply to the linear system ---*/
-      Res_Visc[nSpecies+nDim] = -(ktr*dTdn + kve*dTvedn)*Area;
-      Res_Visc[nSpecies+nDim+1] = -kve*dTvedn*Area;
+      Res_Visc[nSpecies+nDim] = (ktr*dTdn + kve*dTvedn)*Area;
+      Res_Visc[nSpecies+nDim+1] = kve*dTvedn*Area;
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      
+//      cout << "Twall: " << Twall << endl;
+//      cout << "Tj: " << Tj << endl;
+//      cout << "Tvej: " << Tvej << endl;
+//      cout << "dij: " << dij << endl;
+//      cout << "dTdn 1: " << dTdn << endl;
+//      cout << "dTvedn 1: " << dTvedn << endl;
+//      
+//      //// Test 2 --
+//      /*--- Gradient approach ---*/
+//      SetPrimVar_Gradient_LS(geometry, config, iPoint);
+//      gradV = node[iPoint]->GetGradient_Primitive();
+//      
+//      dTdn = 0.0;
+//      dTvedn = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        dTdn = gradV[T_INDEX][iDim]*UnitNormal[iDim];
+//        dTdn = gradV[TVE_INDEX][iDim]*UnitNormal[iDim];
+//      }
+//      cout << "dTdn 2: " << dTdn << endl;
+//      cout << "dTvedn 2: " << dTvedn << endl;
+//      cin.get();
       
       
       if (implicit) {
+        /*--- Initialize the Jacobian ---*/
+        for (iVar = 0; iVar < nVar; iVar ++)
+					for (jVar = 0; jVar < nVar; jVar ++)
+            Jacobian_i[iVar][jVar] = 0.0;
         
         /*--- Calculate geometrical parameters ---*/
         theta = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          theta += Normal[iDim]*Normal[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          theta += UnitNormal[iDim]*UnitNormal[iDim];
+//          theta += Normal[iDim]*Normal[iDim];
+        }
 
+        /*--- Enforce the no-slip boundary condition in a strong way ---*/
+        for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+          total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
         // total energy
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
           Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdrs[iSpecies]

@@ -2250,30 +2250,30 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   
   /*--- Calculate partial derivatives of T & Tve ---*/
   if (implicit) {
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-      ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
-      if (thetav[iSpecies] != 0)
-        evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
-      else
-        evibs = 0.0;
-
-      num = 0.0;
-      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      }
-      eels = Ru/Ms[iSpecies] * (num/denom);
-      
-      dTdrhos[iSpecies]   = (-Cvtrs*(T - Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
-      dTvedrhos[iSpecies] = -(evibs + eels) / rhoCvve;
-    }
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-      dTdrhos[nSpecies-1] = (-ef + 0.5*sqvel) / rhoCvtr;
-      dTvedrhos[nSpecies-1] = -(3.0/2.0) * Ru/Ms[nSpecies-1] * Tve / rhoCvve;
-    }
+//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//      Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
+//      ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
+//      if (thetav[iSpecies] != 0)
+//        evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
+//      else
+//        evibs = 0.0;
+//
+//      num = 0.0;
+//      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+//      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//      }
+//      eels = Ru/Ms[iSpecies] * (num/denom);
+//      
+//      dTdrhos[iSpecies]   = (-Cvtrs*(T - Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
+//      dTvedrhos[iSpecies] = -(evibs + eels) / rhoCvve;
+//    }
+//    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+//      ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+//      dTdrhos[nSpecies-1] = (-ef + 0.5*sqvel) / rhoCvtr;
+//      dTvedrhos[nSpecies-1] = -(3.0/2.0) * Ru/Ms[nSpecies-1] * Tve / rhoCvve;
+//    }
     dTdrhou     = -u / rhoCvtr;
     dTdrhov     = -v / rhoCvtr;
     dTdrhow     = -w / rhoCvtr;
