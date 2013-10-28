@@ -3543,7 +3543,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
           for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }
@@ -3730,7 +3730,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
             if (nDim == 2) VarCoord[nDim] = 0.0;
             
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }
@@ -3869,7 +3869,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
             if (nDim == 2) VarCoord[nDim] = 0.0;
             
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }
