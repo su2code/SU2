@@ -1102,20 +1102,51 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       if (rank == MASTER_NODE)
         cout << endl << " Updating surface positions." << endl;
       
+      /*--- Translating ---*/
+
       /*--- Compute the new node locations for moving markers ---*/
       
       surface_movement->Surface_Translating(geometry_container[MESH_0],
                                          config_container, ExtIter, iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
+                                           config_container, true);
+      
+      /*--- Plunging ---*/
+      
+      /*--- Compute the new node locations for moving markers ---*/
       
       surface_movement->Surface_Plunging(geometry_container[MESH_0],
                                             config_container, ExtIter, iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
+                                           config_container, true);
+      
+      /*--- Pitching ---*/
+      
+      /*--- Compute the new node locations for moving markers ---*/
       
       surface_movement->Surface_Pitching(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
+                                            config_container, ExtIter, iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+      
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
+                                           config_container, true);
+      
+      /*--- Rotating ---*/
+      
+      /*--- Compute the new node locations for moving markers ---*/
       
       surface_movement->Surface_Rotating(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
-      
+                                            config_container, ExtIter, iZone);
       /*--- Deform the volume grid around the new boundary locations ---*/
       
       if (rank == MASTER_NODE)
