@@ -856,22 +856,32 @@ CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
 }
 
 void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
-                                    double **val_Jacobian_i,
-                                    double **val_Jacobian_j,
-                                    CConfig *config         ) {
+                                          double **val_Jacobian_i,
+                                          double **val_Jacobian_j,
+                                          CConfig *config         ) {
+  
+  // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
   
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
-  double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
-  double Cvtrs;
-  double Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
+  double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, rhoE_i, rhoE_j, rhoEve_i, rhoEve_j;
+  double Cvtrs, aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
+  double rhoRi, rhoRj, Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
+  double w, fL, fR, alpha;
   double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   double e_ve_i, e_ve_j;
+  double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   
+  alpha = 3.0/16.0;
+  
+  /*---- Initialize the residual vector ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] = 0.0;
+  
+  /*--- Calculate geometric quantities ---*/
 	Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
-  
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitNormal[iDim] = Normal[iDim]/Area;
   
@@ -913,10 +923,20 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   rho_j     = V_j[RHO_INDEX];
   e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
   e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
+  rhoE_i    = U_i[nSpecies+nDim];
+  rhoE_j    = U_j[nSpecies+nDim];
+  rhoEve_i  = U_i[nSpecies+nDim+1];
+  rhoEve_j  = U_j[nSpecies+nDim+1];
   rhoCvtr_i = V_i[RHOCVTR_INDEX];
   rhoCvtr_j = V_j[RHOCVTR_INDEX];
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
+  rhoRi = 0.0;
+  rhoRj = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    rhoRi += V_i[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
+    rhoRj += V_j[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
+  }
   
 	/*--- Projected velocities ---*/
 	ProjVel_i = 0.0; ProjVel_j = 0.0;
@@ -924,54 +944,99 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
 		ProjVel_i += u_i[iDim]*UnitNormal[iDim];
 		ProjVel_j += u_j[iDim]*UnitNormal[iDim];
 	}
+  sqVi = 0.0;
+  sqVj = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim])
+          * (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
+    sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim])
+          * (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
+  }
   
-  /*--- Calculate L/R Mach numbers ---*/
-	double mL	= ProjVel_i/a_i;
-	double mR	= ProjVel_j/a_j;
+  /*--- Calculate interface numerical speed of sound ---*/
+  Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
+  gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
+  gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
+//  if ((gtl_i == gtl_j) && (ProjVel_i == ProjVel_j))
+    atl = sqrt(2.0*Hnorm*(0.5*(gtl_i+gtl_j)-1.0)/(0.5*(gtl_i+gtl_j)+1.0));
+//  else
+//    atl = sqrt(2.0*Hnorm * (((gtl_i-1.0)/(gtl_i*ProjVel_j) - (gtl_j-1.0)/(gtl_j*ProjVel_i))/
+//                            ((gtl_j+1.0)/(gtl_j*ProjVel_j) - (gtl_i+1.0)/(gtl_i*ProjVel_i))));
+
+  if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i),atl);
+  else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
   
-  /*--- Calculate split numerical fluxes ---*/
-	double mLP;
-	if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
-  else                 mLP = 0.5*(mL+fabs(mL));
+  /*--- Calculate L/R Mach & Pressure functions ---*/
+	mL	= ProjVel_i/aij;
+	mR	= ProjVel_j/aij;
+  if (fabs(mL) <= 1.0) {
+    mLP = 0.25*(mL+1.0)*(mL+1.0);
+    pLP = P_i*(0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
+  } else {
+    mLP = 0.5*(mL+fabs(mL));
+    pLP = P_i*0.5*(mL+fabs(mL))/mL;
+  }
+  if (fabs(mR) <= 1.0) {
+    mRM = -0.25*(mR-1.0)*(mR-1.0);
+    pRM = P_j*(0.25*(mR-1.0)*(mR-1.0)*(2.0+mR)-alpha*mR*(mR*mR-1.0)*(mR*mR-1.0));
+  } else {
+    mRM = 0.5*(mR-fabs(mR));
+    pRM = 0.5*P_j*(mR-fabs(mR))/mR;
+  }
   
-	double mRM;
-	if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0);
-	else                 mRM = 0.5*(mR-fabs(mR));
+  /*--- Calculate supporting w & f functions ---*/
+  w = 1.0 - pow(min(P_i/P_j, P_j/P_i), 3.0);
+  ps = pLP + pRM;
+  // Modified f function:
+  if (fabs(mL) < 1.0) fL = P_i/ps - 1.0;
+  else fL = 0.0;
+  if (fabs(mR) < 1.0) fR = P_j/ps - 1.0;
+  else fR = 0.0;
   
-	double mF = mLP + mRM;
-  
-	double pLP;
-	if (fabs(mL) <= 1.0) pLP = 0.25*P_i*(mL+1.0)*(mL+1.0)*(2.0-mL);
-	else                 pLP = 0.5*P_i*(mL+fabs(mL))/mL;
-  
-	double pRM;
-	if (fabs(mR) <= 1.0) pRM = 0.25*P_j*(mR-1.0)*(mR-1.0)*(2.0+mR);
-	else                 pRM = 0.5*P_j*(mR-fabs(mR))/mR;
-  
-	double pF = pLP + pRM;
-	double Phi = fabs(mF);
+  /*--- Calculate modified M functions ---*/
+	mF = mLP + mRM;
+  if (mF >= 0.0) {
+    mbLP = mLP + mRM*((1.0-w)*(1.0+fR) - fL);
+    mbRM = mRM*w*(1.0+fR);
+  } else {
+    mbLP = mLP*w*(1+fL);
+    mbRM = mRM + mLP*((1.0-w)*(1.0+fL) + fL -fR);
+  }
   
   /*--- Assign left & right convective vectors ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    FcL[iSpecies] = rhos_i[iSpecies]*a_i;
-    FcR[iSpecies] = rhos_j[iSpecies]*a_j;
+    FcL[iSpecies] = rhos_i[iSpecies];
+    FcR[iSpecies] = rhos_j[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++) {
-    FcL[nSpecies+iDim] = rho_i*a_i*u_i[iDim];
-    FcR[nSpecies+iDim] = rho_j*a_j*u_j[iDim];
+    FcL[nSpecies+iDim] = rho_i*u_i[iDim];
+    FcR[nSpecies+iDim] = rho_j*u_j[iDim];
   }
-  FcL[nSpecies+nDim]   = rho_i*a_i*h_i;
-  FcR[nSpecies+nDim]   = rho_j*a_j*h_j;
-  FcL[nSpecies+nDim+1] = rho_i*a_i*e_ve_i;
-  FcR[nSpecies+nDim+1] = rho_j*a_j*e_ve_j;
+  FcL[nSpecies+nDim]   = rho_i*h_i;
+  FcR[nSpecies+nDim]   = rho_j*h_j;
+  FcL[nSpecies+nDim+1] = rhoEve_i;
+  FcR[nSpecies+nDim+1] = rhoEve_j;
   
-  /*--- Compute numerical flux ---*/
+//  cout << "Hnorm: " << Hnorm << endl;
+//  cout << "ProjVeli : " << ProjVel_i << endl;
+//  cout << "ProjVelj : " << ProjVel_j << endl;
+//  cout << "gtl_i: " << gtl_i << endl;
+//  cout << "gtl_j: " << gtl_j << endl;
+//  cout << "atl: " << atl << endl;
+//  cout << "atl2: " << 2.0*Hnorm * (((gtl_i-1.0)/gtl_i*ProjVel_j - (gtl_j-1.0)/gtl_j*ProjVel_i)/
+//                                   ((gtl_j+1.0)/gtl_j*ProjVel_j - (gtl_i+1.0)/gtl_i*ProjVel_i)) << endl;
+//  cout << "aij: " << aij << endl;
+//  cout << "mRM : " << mRM << endl;
+//  cout << "mLP : " << mRM << endl;
+//  cout << "mbRM : " << mbRM << endl;
+//  cout << "mbLP : " << mbLP << endl;
+//  cin.get();
+  
+  /*--- Calculate the numerical flux ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
-  //val_residual[iVar] = 0.5*(mF*(FcL[iVar]+FcR[iVar]) - Phi*(FcR[iVar]-FcL[iVar]))*Area;
+    val_residual[iVar] = (mbLP*aij*FcL[iVar] + mbRM*aij*FcR[iVar])*Area;
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-  
+    val_residual[nSpecies+iDim] += (pLP*UnitNormal[iDim] + pRM*UnitNormal[iDim])*Area;
   
 	if (implicit) {
     
