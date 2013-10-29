@@ -1951,13 +1951,19 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
+//    unsigned short iVar;
+//    cout << "Residual: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      cout << Res_Conv[iVar] << endl;
+//    cin.get();
+    
 		/*--- Update the implicit Jacobian ---*/
-		if (implicit) {
-			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-		}
+//		if (implicit) {
+//			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+//			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+//			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+//		}
 	}
 }
 
@@ -5023,7 +5029,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   double rhoCvtr, rhoCvve, ktr, kve, Ti, Tvei, Tj, Tvej, *dTdrs, *dTvedrs;
   double Twall, dTdn, dTvedn, dij, theta;
   double Area, *Normal, UnitNormal[3];
-  double **gradV;
   
   implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
@@ -5085,8 +5090,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       }
       
       /*--- Set appropriate wall conditions ---*/
-//      jnk = node[iPoint]->SetTemperature(Twall);
-//      jnk = node[iPoint]->SetTemperature_ve(Twall);
+      jnk = node[iPoint]->SetTemperature(Twall);
+      jnk = node[iPoint]->SetTemperature_ve(Twall);
       
       /*--- Calculate useful quantities ---*/
       rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
@@ -5112,29 +5117,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       Res_Visc[nSpecies+nDim+1] = kve*dTvedn*Area;
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
-//      cout << "Twall: " << Twall << endl;
-//      cout << "Tj: " << Tj << endl;
-//      cout << "Tvej: " << Tvej << endl;
-//      cout << "dij: " << dij << endl;
-//      cout << "dTdn 1: " << dTdn << endl;
-//      cout << "dTvedn 1: " << dTvedn << endl;
-//      
-//      //// Test 2 --
-//      /*--- Gradient approach ---*/
-//      SetPrimVar_Gradient_LS(geometry, config, iPoint);
-//      gradV = node[iPoint]->GetGradient_Primitive();
-//      
-//      dTdn = 0.0;
-//      dTvedn = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        dTdn = gradV[T_INDEX][iDim]*UnitNormal[iDim];
-//        dTdn = gradV[TVE_INDEX][iDim]*UnitNormal[iDim];
-//      }
-//      cout << "dTdn 2: " << dTdn << endl;
-//      cout << "dTvedn 2: " << dTvedn << endl;
-//      cin.get();
-      
-      
       if (implicit) {
         /*--- Initialize the Jacobian ---*/
         for (iVar = 0; iVar < nVar; iVar ++)
@@ -5145,7 +5127,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
         theta = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           theta += UnitNormal[iDim]*UnitNormal[iDim];
-//          theta += Normal[iDim]*Normal[iDim];
         }
 
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
