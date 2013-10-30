@@ -97,7 +97,8 @@ enum SU2_COMPONENT {
 	SU2_GDC = 6,	/*!< \brief Running the SU2_GDC software. */
 	SU2_PBC = 7,	/*!< \brief Running the SU2_PBC software. */
 	SU2_SMC = 8,	/*!< \brief Running the SU2_SMC software. */
-	SU2_SOL = 9	  /*!< \brief Running the SU2_SOL software. */
+	SU2_SOL = 9,	/*!< \brief Running the SU2_SOL software. */
+  SU2_EDU = 10	/*!< \brief Running the SU2_CFD software. */
 };
 
 const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processors. */
