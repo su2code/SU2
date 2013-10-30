@@ -630,7 +630,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   
   /*--- Compute the dual time-stepping source term for static meshes ---*/
   
-  if (!grid_movement) {
+  if (true) {
     
     /*--- Loop over all nodes (excluding halos) ---*/
     
@@ -676,7 +676,10 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       }
     }
     
-  } else {
+  }
+  
+#ifdef DEBUG_TDE
+  else {
     
     /*--- For unsteady flows on dynamic meshes (rigidly transforming or
      dynamically deforming), the Geometric Conservation Law (GCL) should be
@@ -800,6 +803,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     }
     
   }
+#endif
   
 }
 
