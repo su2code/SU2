@@ -6551,10 +6551,14 @@ class CUpwAUSMPWplus_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
 	double *FcL, *FcR, *FcLR;
-  double *dmLP, *dmRM, *dpLP, *dpRM;
+  double *dmLdL, *dmLdR, *dmRdL, *dmRdR;
+  double *dmLPdL, *dmLPdR, *dmRMdL, *dmRMdR;
+  double *dmbLPdL, *dmbLPdR, *dmbRMdL, *dmbRMdR;
+  double *dpLPdL, *dpLPdR, *dpRMdL, *dpRMdR;
   double *daL, *daR;
   double *rhos_i, *u_i;
 	double *rhos_j, *u_j;
+  double *dPdU_i, *dPdU_j;
   double a_i, P_i, h_i, ProjVel_i;
   double a_j, P_j, h_j, ProjVel_j;
 	double sq_vel, Proj_ModJac_Tensor_ij;
