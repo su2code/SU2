@@ -273,7 +273,7 @@ PACKAGE_VERSION='2.0.8'
 PACKAGE_STRING='SU^2 2.0.8'
 PACKAGE_BUGREPORT='susquared-dev@lists.stanford.edu'
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar BUILD_CGNS_TRUE BUILD_CGNS_FALSE CGNS_CXX CGNS_LD BUILD_METIS_TRUE BUILD_METIS_FALSE METIS_CXX METIS_LD BUILD_TECIO_TRUE BUILD_TECIO_FALSE TECIO_CXX TECIO_LD BUILD_MUTATIONPP_TRUE BUILD_MUTATIONPP_FALSE MUTATIONPP_CXX MUTATIONPP_LD BUILD_CFD_TRUE BUILD_CFD_FALSE BUILD_DDC_TRUE BUILD_DDC_FALSE BUILD_GPC_TRUE BUILD_GPC_FALSE BUILD_MAC_TRUE BUILD_MAC_FALSE BUILD_MDC_TRUE BUILD_MDC_FALSE BUILD_PBC_TRUE BUILD_PBC_FALSE BUILD_SOL_TRUE BUILD_SOL_FALSE BUILD_GDC_TRUE BUILD_GDC_FALSE CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE RANLIB ac_ct_RANLIB LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar BUILD_CGNS_TRUE BUILD_CGNS_FALSE CGNS_CXX CGNS_LD BUILD_METIS_TRUE BUILD_METIS_FALSE METIS_CXX METIS_LD BUILD_TECIO_TRUE BUILD_TECIO_FALSE TECIO_CXX TECIO_LD BUILD_MUTATIONPP_TRUE BUILD_MUTATIONPP_FALSE MUTATIONPP_CXX MUTATIONPP_LD BUILD_CFD_TRUE BUILD_CFD_FALSE BUILD_DDC_TRUE BUILD_DDC_FALSE BUILD_GPC_TRUE BUILD_GPC_FALSE BUILD_MAC_TRUE BUILD_MAC_FALSE BUILD_MDC_TRUE BUILD_MDC_FALSE BUILD_PBC_TRUE BUILD_PBC_FALSE BUILD_SOL_TRUE BUILD_SOL_FALSE BUILD_GDC_TRUE BUILD_GDC_FALSE BUILD_UMC_TRUE BUILD_UMC_FALSE CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE RANLIB ac_ct_RANLIB LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -815,6 +815,7 @@ Optional Features:
   --disable-PBC           build the SU2_PBC executable (default = yes)
   --disable-SOL           build the SU2_SOL executable (default = yes)
   --disable-GDC           build the SU2_GDC executable (default = yes)
+  --disable-UMC           build the SU2_UMC executable (default = yes)
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
 
@@ -1873,6 +1874,13 @@ if test "${enable_GDC+set}" = set; then
 else
   build_GDC="yes"
 fi;
+# Check whether --enable-UMC or --disable-UMC was given.
+if test "${enable_UMC+set}" = set; then
+  enableval="$enable_UMC"
+  build_UMC=$enableval
+else
+  build_UMC="yes"
+fi;
 
 ##########################
 
@@ -2451,6 +2459,16 @@ if test $build_GDC != "no"; then
 else
   BUILD_GDC_TRUE='#'
   BUILD_GDC_FALSE=
+fi
+
+
+
+if test $build_UMC != "no"; then
+  BUILD_UMC_TRUE=
+  BUILD_UMC_FALSE='#'
+else
+  BUILD_UMC_TRUE='#'
+  BUILD_UMC_FALSE=
 fi
 
 
@@ -3269,7 +3287,7 @@ else
   RANLIB="$ac_cv_prog_RANLIB"
 fi
 
-                                                                                                              ac_config_files="$ac_config_files Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DDC/obj/Makefile SU2_GPC/obj/Makefile SU2_MAC/obj/Makefile SU2_MDC/obj/Makefile SU2_PBC/obj/Makefile SU2_SOL/obj/Makefile SU2_GDC/obj/Makefile SU2_PY/Makefile"
+                                                                                                                        ac_config_files="$ac_config_files Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DDC/obj/Makefile SU2_GPC/obj/Makefile SU2_MAC/obj/Makefile SU2_MDC/obj/Makefile SU2_PBC/obj/Makefile SU2_SOL/obj/Makefile SU2_GDC/obj/Makefile SU2_UMC/obj/Makefile SU2_PY/Makefile"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -3501,6 +3519,13 @@ if test -z "${BUILD_GDC_TRUE}" && test -z "${BUILD_GDC_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"BUILD_GDC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"BUILD_GDC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${BUILD_UMC_TRUE}" && test -z "${BUILD_UMC_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"BUILD_UMC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"BUILD_UMC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -3967,6 +3992,7 @@ do
   "SU2_PBC/obj/Makefile" ) CONFIG_FILES="$CONFIG_FILES SU2_PBC/obj/Makefile" ;;
   "SU2_SOL/obj/Makefile" ) CONFIG_FILES="$CONFIG_FILES SU2_SOL/obj/Makefile" ;;
   "SU2_GDC/obj/Makefile" ) CONFIG_FILES="$CONFIG_FILES SU2_GDC/obj/Makefile" ;;
+  "SU2_UMC/obj/Makefile" ) CONFIG_FILES="$CONFIG_FILES SU2_UMC/obj/Makefile" ;;
   "SU2_PY/Makefile" ) CONFIG_FILES="$CONFIG_FILES SU2_PY/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -4107,6 +4133,8 @@ s,@BUILD_SOL_TRUE@,$BUILD_SOL_TRUE,;t t
 s,@BUILD_SOL_FALSE@,$BUILD_SOL_FALSE,;t t
 s,@BUILD_GDC_TRUE@,$BUILD_GDC_TRUE,;t t
 s,@BUILD_GDC_FALSE@,$BUILD_GDC_FALSE,;t t
+s,@BUILD_UMC_TRUE@,$BUILD_UMC_TRUE,;t t
+s,@BUILD_UMC_FALSE@,$BUILD_UMC_FALSE,;t t
 s,@CXX@,$CXX,;t t
 s,@CXXFLAGS@,$CXXFLAGS,;t t
 s,@LDFLAGS@,$LDFLAGS,;t t
@@ -4627,6 +4655,7 @@ Build Configuration Summary:
     Build SU2_PBC:        $build_PBC
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
+    Build SU2_UMC:        $build_UMC
 
 Please be sure to add the \$SU2_HOME and \$SU2_RUN environment variables, and update your \$PATH with \$SU2_RUN
 
@@ -4663,6 +4692,7 @@ Build Configuration Summary:
     Build SU2_PBC:        $build_PBC
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
+    Build SU2_UMC:        $build_UMC
 
 Please be sure to add the \$SU2_HOME and \$SU2_RUN environment variables, and update your \$PATH with \$SU2_RUN
 
