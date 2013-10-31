@@ -946,6 +946,18 @@ inline string CConfig::GetML_Turb_Exec(void) { return ML_Turb_Exec; }
 
 inline string CConfig::GetML_Turb_Model_File(void) { return ML_Turb_Model_File; }
 
+inline string CConfig::GetML_Turb_Model_Read(void) { return ML_Turb_Model_Read; }
+
+inline string CConfig::GetML_Turb_Model_Write(void) { return ML_Turb_Model_Write; }
+
+inline int CConfig::GetML_Turb_Model_Counter(void) { return ML_Turb_Model_Counter; }
+
+inline void CConfig::SetML_Turb_Model_Counter(int i) { ML_Turb_Model_Counter = i; }
+
+inline ofstream * CConfig::GetML_Turb_Model_WriteStream(void) { return ML_Turb_Model_WriteStream; }
+
+inline void CConfig::SetML_Turb_Model_WriteStream(ofstream *a) {ML_Turb_Model_WriteStream = a; }
+
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
 inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }

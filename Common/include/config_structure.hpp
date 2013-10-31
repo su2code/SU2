@@ -349,6 +349,10 @@ private:
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Exec;   /*!< \brief Executable script for calling a turbulence model. */
   string ML_Turb_Model_File;   /*!< \brief File location for storing the turbulence file. */
+  string ML_Turb_Model_Read;   /*!< \brief Text file for communicating from su2 to the turbulence model */
+  string ML_Turb_Model_Write;   /*!< \brief Text file for communicating from the turbulence model back to su2  */
+  ofstream * ML_Turb_Model_WriteStream;
+  int64_t ML_Turb_Model_Counter;
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -2194,17 +2198,52 @@ public:
 	unsigned short GetKind_Turb_Model(void);
 
   /*!
-	 * \brief Get the kind of the turbulence model.
+	 * \brief Get the location of the ML executable.
 	 * \return Kind of the turbulence model.
 	 */
 	string GetML_Turb_Exec(void);
   
   /*!
-	 * \brief Get the kind of the turbulence model.
-	 * \return Kind of the turbulence model.
+	 * \brief Get the file of the stored model used by ML_Turb_Exec.
+	 * \return Name of exec file.
 	 */
 	string GetML_Turb_Model_File(void);
+  
+  /*!
+	 * \brief Temporary file for talking from ML back to SU2.
+	 * \return Temporary ml->SU2 file name.
+	 */
+	string GetML_Turb_Model_Read(void);
+  
+  /*!
+	 * \brief Temporary file for talking from ML back to SU2.
+	 * \return Temporary SU2->ml file name.
+	 */
+	string GetML_Turb_Model_Write(void);
 
+  /*!
+	 * \brief Get the write stream
+	 * \return
+	 */
+  ofstream * GetML_Turb_Model_WriteStream(void);
+  /*!
+	 * \brief Set the write stream
+	 * \return
+	 */
+  void SetML_Turb_Model_WriteStream(ofstream *);
+
+  /*!
+	 * \brief Get the ML Turb Model Counter. This is there to keep the ML code in sync with SU2
+	 * \return the counter
+	 */
+  int GetML_Turb_Model_Counter(void);
+  /*!
+	 * \brief Set the ML Turb Model Counter. This is there to keep the ML code in sync with SU2
+	 * \return
+	 */
+  void SetML_Turb_Model_Counter(int);
+  
+  
 	/*! 
 	 * \brief Get the kind of the transition model.
 	 * \return Kind of the transion model.

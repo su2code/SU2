@@ -615,50 +615,55 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) { }
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   if (dist_i > 0.0) {
-    ///////// Make a system call to the machine learning code
-    // Get executable name
-    string execName = "/Users/brendan/Documents/mygo/bin/cfd_callable";
-    // Set write filename
-    string filename = "ml_source_val.txt";
-    
 #ifndef NO_MPI
     cout << "Not coded for parallel";
     exit(1);
 #endif
     
-    // construct system call
-    ostringstream s;
-    s << execName << " "<< filename << " " << Laminar_Viscosity_i/Density_i << " "<<TurbVar_i[0]<<" "<< dist_i<< " ";
+    /* Write state to ML code file */
+    
+    // Open the write file
+    ofstream writefile;
+    string writename =config->GetML_Turb_Model_Write();
+    writefile.open(writename.c_str(),ios::out);
+    
+    // Truncate file to beginning
+    writefile.seekp(0);
+    int counter = config->GetML_Turb_Model_Counter();
+    counter++;
+    cout << "Counter "<<counter<<endl;
+    config->SetML_Turb_Model_Counter(counter);
+    writefile << counter << " " << Laminar_Viscosity_i/Density_i << " "<<TurbVar_i[0]<<" "<< dist_i<< " ";
     for (iDim = 0; iDim < nDim; iDim++){
-      s<<TurbVar_Grad_i[0][iDim]<< " ";
+      writefile<<TurbVar_Grad_i[0][iDim]<< " ";
     }
     for (iDim = 0; iDim < nDim; iDim++){
       for (int jDim=0; jDim< nDim; jDim++){
-        s<<PrimVar_Grad_i[iDim+1][iDim]<< " ";
+        writefile<<PrimVar_Grad_i[iDim+1][iDim]<< " ";
       }
     }
-    string execCommand = s.str();
-    int i = 0;
-    i = system(execCommand.c_str());
-    if (i != 0){
-      cout<<endl<<"Error in system call"<<endl;
-      exit(1);
-    }
+    writefile<<flush;
+    writefile.close();
+    
     // Read in answer
-    ifstream myfile;
-    myfile.open(filename.c_str(),ios::binary);
-    char *input = new char[8];
-    myfile.read(input, 8);
-    myfile.close();
-    //cout << "Source: "<< source<<endl;
-    cout << "input "<<input<<endl;
-    
-    
+    string readFilename = config->GetML_Turb_Model_Read();
+    string readdata;
+    ifstream readfile;
+    int fCount; // counter from the file
+    double source;
+    while(true){
+      readfile.open(readFilename.c_str());
+      // Read in the integer and see if it's the new counter
+      readfile >> fCount;
+      if (fCount == counter){
+        readfile >> source;
+        break;
+      }
+      readfile.close();
+    }
     
     //  val_residual[0] = Production - Destruction + CrossProduction;
-    double source = 0;
     val_residual[0] = source;
-    delete[] input;
   }
   
 }

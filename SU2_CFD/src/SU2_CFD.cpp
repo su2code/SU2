@@ -485,6 +485,17 @@ int main(int argc, char *argv[]) {
     cout << endl <<"History file, closed." << endl;
   }
   
+  if (config->GetKind_Solver() == RANS){
+    if (config->GetKind_Turb_Model() == ML){
+      // Tell the ML code to stop running
+      string mlWriteFilename = config->GetML_Turb_Model_Write();
+      ofstream mlWrite;
+      mlWrite.open(mlWriteFilename.c_str());
+      mlWrite << int(-1) << flush;
+      mlWrite.close();
+    }
+  }
+  
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {
   //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
