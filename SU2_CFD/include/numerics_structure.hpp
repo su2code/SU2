@@ -6555,6 +6555,7 @@ private:
   double *dmLPdL, *dmLPdR, *dmRMdL, *dmRMdR;
   double *dmbLPdL, *dmbLPdR, *dmbRMdL, *dmbRMdR;
   double *dpLPdL, *dpLPdR, *dpRMdL, *dpRMdR;
+  double *dHnL, *dHnR;
   double *daL, *daR;
   double *rhos_i, *u_i;
 	double *rhos_j, *u_j;
