@@ -846,6 +846,8 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
   dpLPdR  = new double [nVar];
   dpRMdL  = new double [nVar];
   dpRMdR  = new double [nVar];
+  dHnL    = new double [nVar];
+  dHnR    = new double [nVar];
   daL     = new double [nVar];
   daR     = new double [nVar];
   rhos_i  = new double [nSpecies];
@@ -890,7 +892,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
   
-  unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
+  unsigned short iDim, jDim, iVar, jVar, iSpecies, nHeavy, nEl;
   double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, rhoE_i, rhoE_j, rhoEve_i, rhoEve_j;
   double Cvtrs, aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   double rhoRi, rhoRj, Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
@@ -898,7 +900,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   double e_ve_i, e_ve_j;
   double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
-  double fact;
+  double fact, gam, dV2L, dV2R;
   
   alpha = 3.0/16.0;
   
@@ -986,16 +988,12 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   Hnorm = 0.5*(h_i-0.5*sqVi + h_j-0.5*sqVj);
   gtl_i = rhoRi/(rhoCvtr_i+rhoCvve_i)+1;
   gtl_j = rhoRj/(rhoCvtr_j+rhoCvve_j)+1;
-//  cout << "Check: " << fabs(rho_i-rho_j)/(0.5*(rho_i+rho_j)) << endl;
+  gam = 0.5*(gtl_i+gtl_j);
   if (fabs(rho_i-rho_j) < 1E-3)
-    atl = sqrt(2.0*Hnorm*(0.5*(gtl_i+gtl_j)-1.0)/(0.5*(gtl_i+gtl_j)+1.0));
+    atl = sqrt(2.0*Hnorm*(gam-1.0)/(gam+1.0));
   else
     atl = sqrt(2.0*Hnorm * (((gtl_i-1.0)/(gtl_i*rho_i) - (gtl_j-1.0)/(gtl_j*rho_j))/
                             ((gtl_j+1.0)/(gtl_j*rho_i) - (gtl_i+1.0)/(gtl_i*rho_j))));
-//  cout << "atl: " << atl << endl;
-  
-  //    atl = sqrt(2.0*Hnorm * (((gtl_i-1.0)/(gtl_i*ProjVel_j) - (gtl_j-1.0)/(gtl_j*ProjVel_i))/
-  //                            ((gtl_j+1.0)/(gtl_j*ProjVel_j) - (gtl_i+1.0)/(gtl_i*ProjVel_i))));
   
   if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) aij = atl*atl/max(fabs(ProjVel_i),atl);
   else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
@@ -1087,25 +1085,128 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
                             + rho_el_j*Ru/(Ms[nSpecies-1]*rhoCvve_j);
     
     /*--- Derivatives of the interface speed of sound, aij ---*/
+    // Derivatives of Hnorm
+    fact = 0.5*sqrt(2*(gam-1.0)/((gam+1.0)*Hnorm));
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      daL[iSpecies] = 0.0;
-      daR[iSpecies] = 0.0;
+      dHnL[iSpecies] = 0.5*(dPdU_i[iSpecies] /*+ sqVi/rho_i*/);
+      dHnR[iSpecies] = 0.5*(dPdU_j[iSpecies] /*+ sqVj/rho_j*/);
     }
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      daL[nSpecies-1] = 0.0;
-      daR[nSpecies-1] = 0.0;
-    }
-    // Sound speed derivatives: Momentum
     for (iDim = 0; iDim < nDim; iDim++) {
-      daL[nSpecies+iDim] = 0.0;
-      daR[nSpecies+iDim] = 0.0;
+      dV2L = 0.0;
+      dV2R = 0.0;
+      for (jDim = 0; jDim < nDim; jDim++) {
+        dV2L += 2.0/rho_i*(u_i[jDim]-ProjVel_i*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
+        dV2R += 2.0/rho_j*(u_j[jDim]-ProjVel_j*UnitNormal[jDim]*(-UnitNormal[iDim]*UnitNormal[jDim]));
+      }
+      dV2L += 2.0/rho_i*(u_i[iDim]-ProjVel_i*UnitNormal[iDim] - sqVi);
+      dV2R += 2.0/rho_j*(u_j[iDim]-ProjVel_j*UnitNormal[iDim] - sqVj);
+      dHnL[nSpecies+iDim] = 0.5*(dPdU_i[nSpecies+iDim] /*- 0.5*(dV2L)*/);
+      dHnR[nSpecies+iDim] = 0.5*(dPdU_j[nSpecies+iDim] /*- 0.5*(dV2R)*/);
     }
-    // Sound speed derivatives: Energy
-    daL[nSpecies+nDim]   = 0.0;
-    daR[nSpecies+nDim]   = 0.0;
-    //Sound speed derivatives: Vib-el energy
-    daL[nSpecies+nDim+1] = 0.0;
-    daR[nSpecies+nDim+1] = 0.0;
+    dHnL[nSpecies+nDim]   = 0.5*(1.0+dPdU_i[nSpecies+nDim]);
+    dHnR[nSpecies+nDim]   = 0.5*(1.0+dPdU_j[nSpecies+nDim]);
+    dHnL[nSpecies+nDim+1] = 0.5*dPdU_i[nSpecies+nDim+1];
+    dHnR[nSpecies+nDim+1] = 0.5*dPdU_j[nSpecies+nDim+1];
+    
+//    //////////////////
+//    //debug:
+//    cout << "sqVi before: " << sqVi << endl;
+//    //check sqV routine w/ conserved:
+//    double rVi, delta;
+//    rVi = 0.0;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
+//    }
+//    sqVi = 0.0;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      sqVi += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
+//            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
+//    }
+//    cout << "sqVi after: " << sqVi << endl;
+//    
+//    //perturb:
+//    delta = V_i[0];
+//    rho_i = V_i[0]+V_i[1]+delta;
+//    rVi = 0.0;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
+//    }
+//    sqVj = 0.0;
+//    for (iDim = 0; iDim < nDim; iDim++) {
+//      sqVj += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
+//            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
+//    }
+//    cout << "FD: " << (sqVj-sqVi)/delta << endl;
+//    cout << "analytic: " << -2*sqVi/(rho_i-delta) << endl;
+//    cout << "V0: " << V_i[0] << endl;
+//    cout << "V1: " << V_i[1] << endl;
+//    cout << "rho_i: " << rho_i << endl;
+//    cout << "delta: " << delta << endl;
+//    cout << "diff: " << sqVj-sqVi << endl;
+//    cin.get();
+    
+    
+    
+    
+    // Derivatives of aij
+    if (0.5*(ProjVel_i+ProjVel_j) >= 0.0) {
+      if (atl >= fabs(ProjVel_i)) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          daL[iVar] = fact*dHnL[iVar];
+          daR[iVar] = fact*dHnR[iVar];
+        }
+      } else {
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          daL[iSpecies] = atl*atl/(rho_i*fabs(ProjVel_i))
+                        + 2*atl/fabs(ProjVel_i)*fact*dHnL[iSpecies];
+          daR[iSpecies] = 2*atl/fabs(ProjVel_i)*fact*dHnR[iSpecies];
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          daL[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_i)*ProjVel_i)
+                             + 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+iDim];
+          daR[nSpecies+iDim] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+iDim];
+        }
+        daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim];
+        daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim];
+        daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim+1];
+        daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim+1];
+      }
+    } else {
+      if (atl >= fabs(ProjVel_j)) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          daL[iVar] = fact*dHnL[iVar];
+          daR[iVar] = fact*dHnR[iVar];
+        }
+      } else {
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          daR[iSpecies] = atl*atl/(rho_j*fabs(ProjVel_j))
+                        + 2*atl/fabs(ProjVel_j)*fact*dHnR[iSpecies];
+          daL[iSpecies] = 2*atl/fabs(ProjVel_j)*fact*dHnL[iSpecies];
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          daR[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_j)*ProjVel_j)
+                             + 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+iDim];
+          daL[nSpecies+iDim] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+iDim];
+        }
+        daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim];
+        daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim];
+        daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim+1];
+        daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim+1];
+      }
+    }
+    
+//    cout << "atl: " << atl << endl;
+//    cout << "ProjVel_i: " << ProjVel_i << endl;
+//    cout << "term1: " << atl*atl/(rho_i*fabs(ProjVel_i)) << endl;
+//    cout << "term2: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      cout << 2*atl/fabs(ProjVel_i)*fact*dHnL[iVar] << endl;
+//    cout << "area: " << Area << endl;
+//    cout << "daL: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      cout << daL[iVar] << endl;
+//    }
+//    cin.get();
     
     /*--- Derivatives of advection speed, mL & mR ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
