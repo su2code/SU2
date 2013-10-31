@@ -166,6 +166,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   unsigned short iMGlevel, iZone;
   unsigned long iPoint;
   int rank = MASTER_NODE;
+  double chk;
 #ifndef NO_MPI
   rank = MPI::COMM_WORLD.Get_rank();
 #endif

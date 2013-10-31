@@ -877,6 +877,10 @@ CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
   delete [] dpLPdR;
   delete [] dpRMdL;
   delete [] dpRMdR;
+  delete [] dHnL;
+  delete [] dHnR;
+  delete [] daL;
+  delete [] daR;
   delete [] rhos_i;
   delete [] rhos_j;
 	delete [] u_i;
@@ -893,12 +897,12 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   // NOTE: OSCILLATOR DAMPER "f" NOT IMPLEMENTED!!!
   
   unsigned short iDim, jDim, iVar, jVar, iSpecies, nHeavy, nEl;
-  double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j, rhoE_i, rhoE_j, rhoEve_i, rhoEve_j;
-  double Cvtrs, aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
-  double rhoRi, rhoRj, Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
+  double rho_i, rho_j, rhoEve_i, rhoEve_j, P_i, P_j, h_i, h_j;
+  double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
+  double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
+  double ProjVel_i, ProjVel_j;
+  double rhoRi, rhoRj, Ru, rho_el_i, rho_el_j, *Ms, *xi;
   double w, fL, fR, alpha;
-  double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
-  double e_ve_i, e_ve_j;
   double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   double fact, gam, dV2L, dV2R;
   
@@ -948,14 +952,8 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
   P_j       = V_j[P_INDEX];
   h_i       = V_i[H_INDEX];
   h_j       = V_j[H_INDEX];
-  a_i       = V_i[A_INDEX];
-  a_j       = V_j[A_INDEX];
   rho_i     = V_i[RHO_INDEX];
   rho_j     = V_j[RHO_INDEX];
-  e_ve_i    = U_i[nSpecies+nDim+1] / rho_i;
-  e_ve_j    = U_j[nSpecies+nDim+1] / rho_j;
-  rhoE_i    = U_i[nSpecies+nDim];
-  rhoE_j    = U_j[nSpecies+nDim];
   rhoEve_i  = U_i[nSpecies+nDim+1];
   rhoEve_j  = U_j[nSpecies+nDim+1];
   rhoCvtr_i = V_i[RHOCVTR_INDEX];
@@ -1064,9 +1062,6 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
         val_Jacobian_j[iVar][jVar] = 0.0;
       }
     }
-    
-    if (mF >= 0.0) FcLR = FcL;
-    else           FcLR = FcR;
     
     /*--- Calculate dPdU ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -2300,17 +2295,17 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Park limiting cross section
   
   bool ionization, implicit;
-  unsigned short iDim, iEl, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
   double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, sqvel, N;
   double Qtv, estar, tau, tauMW, tauP;
   double tau_sr, mu, A_sr, B_sr, num, denom;
-  double thoTve, exptv, evibs, eels;
-  double thoT, expt, Cvvs, Cvvst, Cvtrs;
+  double thoTve, exptv;
+  double thoT, expt, Cvvs, Cvvst;
   double dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
   double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double sigma, ws;
-  double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi, ef;
+  double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
   
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

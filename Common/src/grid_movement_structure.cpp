@@ -2904,7 +2904,8 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
   Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(0.1524);
   Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(0.1524);
   Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(0.1524);
-  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(1.41372);   Radius_Spline.push_back(0.1524);
+//  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
   
   
   /*--- Read the baseline spline ---*/
@@ -2971,7 +2972,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
         
         x = 0.1524 - Coord[0];	// HARD-CODED VALUE; needs to be fixed (MC)
         
-        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.128559))  {
+        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.12855939))  {
           
           /*--- Compute the coordinate variation due to a surface modification, given
            ControlPoint_Index, Theta, Radius, and Ampl ---*/

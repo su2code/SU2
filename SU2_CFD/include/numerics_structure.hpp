@@ -6550,7 +6550,7 @@ public:
 class CUpwAUSMPWplus_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
-	double *FcL, *FcR, *FcLR;
+	double *FcL, *FcR;
   double *dmLdL, *dmLdR, *dmRdL, *dmRdR;
   double *dmLPdL, *dmLPdR, *dmRMdL, *dmRMdR;
   double *dmbLPdL, *dmbLPdR, *dmbRMdL, *dmbRMdR;
@@ -6560,10 +6560,7 @@ private:
   double *rhos_i, *u_i;
 	double *rhos_j, *u_j;
   double *dPdU_i, *dPdU_j;
-  double a_i, P_i, h_i, ProjVel_i;
-  double a_j, P_j, h_j, ProjVel_j;
-	double sq_vel, Proj_ModJac_Tensor_ij;
- 	unsigned short nSpecies, nVar, nDim;
+  unsigned short nSpecies, nVar, nDim;
   
 public:
   
