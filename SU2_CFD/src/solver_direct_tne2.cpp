@@ -4866,81 +4866,81 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
-//  bool implicit;
-//  unsigned short iDim;
-//  unsigned long iPoint, jPoint, iVertex;
-//  double *Normal, *UnitNormal, Area;
-//  
-//  /*--- Allocate arrays ---*/
-//  UnitNormal = new double[3];
-//  
-//  /*--- Set booleans based on configuration settings ---*/
-//  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  bool implicit;
+  unsigned short iDim;
+  unsigned long iPoint, jPoint, iVertex;
+  double *Normal, *UnitNormal, Area;
+  
+  /*--- Allocate arrays ---*/
+  UnitNormal = new double[3];
+  
+  /*--- Set booleans based on configuration settings ---*/
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Call the Euler wall routine ---*/
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
   
-//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-//  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-//  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-//  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
-//  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
-//  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-//  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-//  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
-//  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
-//  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-//  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
-//  
-//  /*--- Compute the viscous contribution ---*/
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//    
-//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//    if (geometry->node[iPoint]->GetDomain()) {
-//      /*--- Calculate parameters from the geometry ---*/
-//      // Note: The vertex normal points out of the geometry by convention,
-//      //       so to calculate the influence from the boundary condition
-//      //       to the domain, we negate this vector
-//      Area   = 0.0;
-//      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-//      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-//      Area = sqrt (Area);
-//      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-//      
-//      /*--- Determine the nearest normal neighbor ---*/
-//      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-//      
-//      /*--- Set parameters in the viscous numerics ---*/
-//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-//                              geometry->node[jPoint]->GetCoord() );
-//      visc_numerics->SetNormal(Normal);
-//      visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
-//                                  node[jPoint]->GetPrimVar() );
-//      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-//                                        node[jPoint]->GetGradient_Primitive() );
-//      visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
-//                                       node[jPoint]->GetDiffusionCoeff() );
-//      visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
-//                                         node[jPoint]->GetLaminarViscosity() );
-//      visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
-//                                            node[jPoint]->GetThermalConductivity());
-//      visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
-//                                               node[jPoint]->GetThermalConductivity_ve() );
-//      
-//      /*--- Compute the viscous residual ---*/
-//      visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
-//      
-//      /*--- Apply to the linear system ---*/
-//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-//      if (implicit) {
-//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-//      }
-//    }
-//  }
-//  
-//  delete [] UnitNormal;
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  
+  /*--- Compute the viscous contribution ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+      /*--- Calculate parameters from the geometry ---*/
+      // Note: The vertex normal points out of the geometry by convention,
+      //       so to calculate the influence from the boundary condition
+      //       to the domain, we negate this vector
+      Area   = 0.0;
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+      
+      /*--- Determine the nearest normal neighbor ---*/
+      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      
+      /*--- Set parameters in the viscous numerics ---*/
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                              geometry->node[jPoint]->GetCoord() );
+      visc_numerics->SetNormal(Normal);
+      visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
+                                  node[jPoint]->GetPrimVar() );
+      visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                        node[jPoint]->GetGradient_Primitive() );
+      visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+                                       node[jPoint]->GetDiffusionCoeff() );
+      visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+                                         node[jPoint]->GetLaminarViscosity() );
+      visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+                                            node[jPoint]->GetThermalConductivity());
+      visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+                                               node[jPoint]->GetThermalConductivity_ve() );
+      
+      /*--- Compute the viscous residual ---*/
+      visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+      
+      /*--- Apply to the linear system ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      if (implicit) {
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      }
+    }
+  }
+  
+  delete [] UnitNormal;
   
 }
 
