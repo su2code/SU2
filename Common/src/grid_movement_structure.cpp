@@ -90,7 +90,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
-  double MinLength, NumError, MinVol;
+  double MinVolume, NumError;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -127,11 +127,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
-    MinLength = SetFEAMethodContributions_Elem(geometry);
+    MinVolume = SetFEAMethodContributions_Elem(geometry);
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinLength * 1E-3;
+    NumError = MinVolume * 1.0;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
@@ -158,7 +158,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
     
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 999, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -175,11 +175,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    MinVol = Check_Grid(geometry);
+    MinVolume = Check_Grid(geometry);
     
     if (rank == MASTER_NODE) {
       cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
-      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVol
+      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVolume
       << ". Error: " << NumError << "." <<endl;
     }
     
@@ -352,7 +352,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
-    /*--- Create a list with the degenerated elements ---*/
+    /*--- Create a list with the degenerate elements ---*/
 
     if (!RightVol) ElemCounter++;
       
@@ -381,6 +381,9 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
   delete [] Edge_Vector;
   
+  /*--- If there are no degenerate cells, use the minimum volume instead ---*/
+  if (ElemCounter == 0) MinLength = Scale;
+      
 	return MinLength;
 }
 
