@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "variable_structure.hpp"
 
 using namespace std;
 
@@ -202,8 +203,9 @@ public:
 	*WindGust_j;			/*!< \brief Wind gust at point j. */
     double *WindGustDer_i,	/*!< \brief Wind gust derivatives at point i. */
 	*WindGustDer_j;			/*!< \brief Wind gust derivatives at point j. */
-    
-  double *dPdrhos_i, *dPdrhos_j;
+  
+  double *l, *m;
+  double *dPdU_i, *dPdU_j;
   double *dTdrhos_i, *dTdrhos_j;
   double *dTvedrhos_i, *dTvedrhos_j;
     unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
@@ -871,7 +873,7 @@ public:
 	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
 	 * \param[in] iRho_s
 	 */
-    void SetdPdrhos(double *val_dPdrhos_i, double *val_dPdrhos_j);
+    void SetdPdU(double *val_dPdU_i, double *val_dPdU_j);
   
   /*!
 	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
@@ -1240,28 +1242,22 @@ public:
 	void GetPMatrix(double *val_density, double **val_velocity, double *val_soundspeed,
                     double *val_normal, double **val_p_tensor);
     
-    /*!
+  /*!
 	 * \overload
 	 * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
 	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Vector of species density values.
-	 * \param[in] val_velocity - Value of the velocity.
-     * \param[in] val_enthalpy - Value of the enthalpy.
-     * \param[in] val_energy_ve - Value of the vibrational-electronic energy.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-     * \param[in] val_dPdrhos - Vector of partial derivative of pressure w.r.t. species densities.
-     * \param[in] val_dPdrhoE - Partial derivative of pressure w.r.t. $\rho E$.
-     * \param[in] val_dPdrhoEve - Partial derivative of pressure w.r.t. $\rho E_{ve}$.
+	 * \param[in] U - Vector of conserved variables (really only need rhoEve)
+	 * \param[in] V - Vector of primitive variables
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-     * \param[in] l - Tangential vector to face.
-     * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-    void GetPMatrix(double *val_density, double *val_velocity, double *val_enthalpy,
-                    double *val_energy_ve, double *val_soundspeed, double *val_dPdrhos,
-                    double val_dPdrhoE, double val_dPdrhoEve, double *val_normal,
-                    double *l, double *m, double **val_p_tensor);
-    
+  void GetPMatrix(double *U, double *V, double *val_dPdU,
+                  double *val_normal, double *l, double *m,
+                  double **val_p_tensor) ;
+  
 	/*!
 	 * \overload
 	 * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians in
@@ -1376,24 +1372,22 @@ public:
 	void GetPMatrix_inv(double *val_density, double **val_velocity, double *val_soundspeed,
                         double *val_normal, double **val_invp_tensor);
     
-    /*!
+  /*!
 	 * \overload
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
-	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Vector of species density values.
-	 * \param[in] val_velocity - Value of the velocity.
-     * \param[in] val_energy_ve - Value of the vibrational-electronic energy.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-     * \param[in] val_dPdrhos - Vector of partial derivative of pressure w.r.t. species densities.
-     * \param[in] val_dPdrhoE - Partial derivative of pressure w.r.t. $\rho E$.
-     * \param[in] val_dPdrhoEve - Partial derivative of pressure w.r.t. $\rho E_{ve}$.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-     * \param[in] l - Tangential vector to face.
-     * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables.
+   * \param[in] V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-    void GetPMatrix_inv(double *val_density, double *val_velocity, double *val_energy_ve, double *val_soundspeed, double *val_dPdrhos, double val_dPdrhoE, double val_dPdrhoEve, double *val_normal, double *l, double *m, double **val_invp_tensor);
-    
+  void GetPMatrix_inv(double *U, double *V, double *val_dPdU,
+                      double *val_normal, double *l, double *m,
+                      double **val_invp_tensor) ;
+  
 	/*!
 	 * \overload
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
@@ -1811,6 +1805,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes);
+
+  /*!
+	 * \brief Computes a basis of orthogonal vectors from a suppled vector
+	 * \param[in] config - Normal vector
+	 */
+  void CreateBasis(double *val_Normal);
     
 };
 
@@ -6449,21 +6449,23 @@ class CUpwRoe_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
 	double *Diff_U;
-    double *Density_i, *Density_j, *RoeDensity;
+  double *Density_i, *Density_j, *RoeDensity;
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
+  double *RoeU, *RoeV;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-    double Energy_i, Energy_j, Energy_ve_i, Energy_ve_j, RoeEnergy_ve;
-    double Enthalpy_i, Enthalpy_j, RoeEnthalpy;
-    double SoundSpeed_i, SoundSpeed_j, RoeSoundSpeed;
-    double Pressure_i, Pressure_j, RoePressure;
-    double Temperature_i, Temperature_j, Temperature_ve_i, Temperature_ve_j, RoeTemperature_ve;
-    double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  double Energy_i, Energy_j, Energy_ve_i, Energy_ve_j, RoeEnergy_ve;
+  double Enthalpy_i, Enthalpy_j, RoeEnthalpy;
+  double SoundSpeed_i, SoundSpeed_j, RoeSoundSpeed;
+  double Pressure_i, Pressure_j, RoePressure;
+  double Temperature_i, Temperature_j, Temperature_ve_i, Temperature_ve_j, RoeTemperature_ve;
+  double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
 	double sq_vel, Proj_ModJac_Tensor_ij, R;
-    double *dPdrhos, *l, *m;
- 	unsigned short nSpecies, nVar, nDim;
-    
+  double *dPdrhos, *RoedPdU, *l, *m;
+ 	unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
+  CVariable *var;
+  
 public:
     
 	/*!
@@ -6472,7 +6474,9 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
+               unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+               CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -6487,12 +6491,61 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-    
-    /*!
-	 * \brief Generates an orthonormal basis given a single vector
-	 * \param[in] val_Normal - Normal vector.
+  
+};
+
+
+/*!
+ * \class CUpwMSW_PlasmaDiatomic
+ * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
+ * \ingroup ConvDiscr
+ * \author ADL Stanford
+ * \version 2.0.8
+ */
+class CUpwMSW_TNE2 : public CNumerics {
+private:
+	bool ionization, implicit;
+	double *Diff_U;
+	double *u_i, *u_j, *ust_i, *ust_j;
+	double *Fc_i, *Fc_j;
+	double *Lambda_i, *Lambda_j;
+  double *rhos_i, *rhos_j, *rhosst_i, *rhosst_j;
+  double *Ust_i, *Ust_j, *Vst_i, *Vst_j;
+  double *dPdUst_i, *dPdUst_j;
+	double **P_Tensor, **invP_Tensor;
+  unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
+  
+  CVariable *var;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] val_nSpecies - Number of species in the problem.
+	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
+	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 */
-    void CreateBasis(double *val_Normal);
+	CUpwMSW_TNE2(unsigned short val_nDim, unsigned short val_nVar,
+               unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+               CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwMSW_TNE2(void);
+  
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
 };
 
 /*!

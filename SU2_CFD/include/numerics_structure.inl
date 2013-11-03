@@ -143,7 +143,7 @@ inline void CNumerics::SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX
 
 inline void CNumerics::SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
 
-inline void CNumerics::SetdPdrhos(double *val_dPdrhos_i, double *val_dPdrhos_j) { dPdrhos_i = val_dPdrhos_i; dPdrhos_j = val_dPdrhos_j; }
+inline void CNumerics::SetdPdU(double *val_dPdU_i, double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
 
 inline void CNumerics::SetdTdrhos(double *val_dTdrhos_i, double *val_dTdrhos_j) { dTdrhos_i = val_dTdrhos_i; dTdrhos_j = val_dTdrhos_j; }
 

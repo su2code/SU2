@@ -1171,12 +1171,12 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
-	virtual void SetdPdrhos(CConfig *config);
+	virtual void CalcdPdU(double *V, CConfig *config, double *dPdU);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetdPdrhos(void);
+	virtual double *GetdPdU(void);
   
   /*!
 	 * \brief A virtual member.
@@ -3598,7 +3598,7 @@ protected:
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
   double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
-  double *dPdrhos;      /*!< \brief Partial derivative of pressure w.r.t. species densities. */
+  double *dPdU;                 /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
   double *dTdrhos;
   double *dTvedrhos;
   
@@ -3612,6 +3612,14 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CTNE2EulerVariable(void);
+
+  /*!
+	 * \brief Constructor of the class.
+	 */
+  CTNE2EulerVariable(unsigned short val_ndim, unsigned short val_nVar,
+                     unsigned short val_nPrimVar,
+                     unsigned short val_nPrimVarGrad,
+                     CConfig *config);
   
 	/*!
 	 * \overload
@@ -3637,8 +3645,9 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar,
-                     unsigned short val_nvarprim, unsigned short val_nvarprimgrad, CConfig *config);
+	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
+                     unsigned short val_nvar, unsigned short val_nvarprim,
+                     unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -3718,11 +3727,13 @@ public:
    * \brief Sets gas mixture quantities (\f$\rho C^{trans-rot}_v\f$ & \f$\rho C^{vib-el}_v\f$)
    */
   void SetGasProperties(CConfig *config);
-	
+  
   /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
+   * \param[in] config - Configuration settings
+   * \param[in] dPdU - Passed-by-reference array to assign the derivatives
    */
-  void SetdPdrhos(CConfig *config);
+  void CalcdPdU(double *V, CConfig *config, double *dPdU);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -3737,7 +3748,7 @@ public:
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  double *GetdPdrhos(void);
+  double *GetdPdU(void);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
