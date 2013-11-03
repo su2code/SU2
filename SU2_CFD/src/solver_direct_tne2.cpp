@@ -1855,7 +1855,7 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
+    numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
     numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
     numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
     
@@ -1927,7 +1927,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetConservative(U_i, U_j);
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[jPoint]->GetdPdrhos());
+    numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
     numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
     numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
     
@@ -1950,14 +1950,14 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
-    
-//    unsigned short iVar;
-//    cout << "Residual: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      cout << Res_Conv[iVar] << endl;
-//    cin.get();
-    
-		/*--- Update the implicit Jacobian ---*/
+//
+////    unsigned short iVar;
+////    cout << "Residual: " << endl;
+////    for (iVar = 0; iVar < nVar; iVar++)
+////      cout << Res_Conv[iVar] << endl;
+////    cin.get();
+//    
+//		/*--- Update the implicit Jacobian ---*/
 		if (implicit) {
 			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
@@ -1996,7 +1996,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
 
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+    numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
     numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[iPoint]->GetdTdrhos());
     numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[iPoint]->GetdTvedrhos());
     
@@ -2770,7 +2770,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
   unsigned short iDim, iSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
-  double *Normal, *UnitNormal, *Ms, *dPdrhos;
+  double *Normal, *UnitNormal, *Ms, *dPdU;
   double Area, rhoCvtr, rhoCvve, rho_el, Ru;
   double rho, cs, u, v, w, P, rhoE, rhoEve, conc, Beta;
   
@@ -2832,7 +2832,7 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
         rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
-        dPdrhos = node[iPoint]->GetdPdrhos();
+        dPdU    = node[iPoint]->GetdPdU();
         
         /*--- If free electrons are present, retrieve the electron gas density ---*/
         if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
@@ -2843,9 +2843,9 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
           cs    = node[iPoint]->GetMassFraction(iSpecies);
           conc += cs * rho/Ms[iSpecies];
           
-          Jacobian_i[nSpecies][iSpecies]   = dPdrhos[iSpecies] * UnitNormal[0];
-          Jacobian_i[nSpecies+1][iSpecies] = dPdrhos[iSpecies] * UnitNormal[1];
-          Jacobian_i[nSpecies+2][iSpecies] = dPdrhos[iSpecies] * UnitNormal[2];
+          Jacobian_i[nSpecies][iSpecies]   = dPdU[iSpecies] * UnitNormal[0];
+          Jacobian_i[nSpecies+1][iSpecies] = dPdU[iSpecies] * UnitNormal[1];
+          Jacobian_i[nSpecies+2][iSpecies] = dPdU[iSpecies] * UnitNormal[2];
           Jacobian_i[nSpecies+3][iSpecies] = 0.0;
           Jacobian_i[nSpecies+4][iSpecies] = 0.0;
           
@@ -2858,23 +2858,23 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
         
         Beta = Ru*conc/rhoCvtr;
         
-        Jacobian_i[nSpecies][nSpecies]     = u*UnitNormal[0] - u*Beta*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitNormal[1] - v*Beta*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitNormal[2] - w*Beta*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+3]   = Beta*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+4]   = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies]     = u*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+3]   = dPdU[nSpecies+3]*UnitNormal[0];
+        Jacobian_i[nSpecies][nSpecies+4]   = dPdU[nSpecies+4]*UnitNormal[0];
         
-        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitNormal[0] - u*Beta*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitNormal[1] - v*Beta*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitNormal[2] - w*Beta*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+3] = Beta*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+3] = dPdU[nSpecies+3]*UnitNormal[1];
+        Jacobian_i[nSpecies+1][nSpecies+4] = dPdU[nSpecies+4]*UnitNormal[1];
         
-        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitNormal[0] - u*Beta*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitNormal[1] - v*Beta*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitNormal[2] - w*Beta*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+3] = Beta*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+4] = (-Beta + (rho_el/Ms[nSpecies-1])*Ru/rhoCvve)*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+3] = dPdU[nSpecies+3]*UnitNormal[2];
+        Jacobian_i[nSpecies+2][nSpecies+4] = dPdU[nSpecies+4]*UnitNormal[2];
         
         Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitNormal[0];
         Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitNormal[1];
@@ -2957,7 +2957,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       conv_numerics->SetPrimitive(V_domain, V_infty);
       
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node_infty->GetdPdrhos());
+      conv_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
       
 			/*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in definition_structure.cpp
@@ -4610,7 +4610,7 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                                  node[jPoint]->GetGradient_Primitive() );
 
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdrhos(node[iPoint]->GetdPdrhos(), node[iPoint]->GetdPdrhos());
+    numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
     numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
     numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
     
@@ -4932,11 +4932,11 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
       visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
       
       /*--- Apply to the linear system ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-      if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      }
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//      if (implicit) {
+//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+//      }
     }
   }
   

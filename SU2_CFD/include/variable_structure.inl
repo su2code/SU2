@@ -335,9 +335,9 @@ inline bool CVariable::SetPressure(double Gamma, double turb_ke) { return false;
 
 inline void CVariable::SetPressure() { }
 
-inline void CVariable::SetdPdrhos(CConfig *config) { }
+inline double *CVariable::GetdPdU() { return NULL; }
 
-inline double *CVariable::GetdPdrhos() { return NULL; }
+inline void CVariable::CalcdPdU(double *V, CConfig *config, double *dPdU) { }
 
 inline double *CVariable::GetdTdrhos() { return NULL; }
 
@@ -841,7 +841,7 @@ inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_I
 
 inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
 
-inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
+inline double* CTNE2EulerVariable::GetdPdU(void) { return dPdU; }
 
 inline double* CTNE2EulerVariable::GetdTdrhos(void) { return dTdrhos; }
 

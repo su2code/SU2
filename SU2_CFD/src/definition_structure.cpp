@@ -1025,7 +1025,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case LAX :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
           default : cout << "Centered scheme not implemented." << endl; exit(1); break;
@@ -1038,8 +1038,15 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
           case ROE_1ST : case ROE_2ND :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+            }
+            break;
+            
+          case MSW_1ST : case MSW_2ND :
+            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
             
