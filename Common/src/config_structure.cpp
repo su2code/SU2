@@ -126,6 +126,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
+  /* DESCRIPTION: Location of the turb model itself */
+	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: Location of the check for the proper loading of the turbulence model */
+	AddScalarOption("ML_TURB_MODEL_CHECK_FILE", ML_Turb_Model_Check_File, string("check_model.txt"));
+  /* DESCRIPTION:  */
+	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
@@ -935,7 +941,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 10);
+	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -1037,7 +1043,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Kind_SU2 = val_software;
   
   /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
-  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_EDU) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     exit(1);
@@ -1052,7 +1058,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
-  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
+  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL) || (Kind_SU2 == SU2_EDU))) Mesh_FileFormat = SU2;
 
 //  /*--- Divide grid if runnning SU2_MDC ---*/
 //  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
@@ -1096,7 +1102,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_EDU) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
@@ -1738,11 +1744,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
 	}
 
-  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+  if (((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU)) && (Kind_Solver == NO_SOLVER)) {
 		cout << "You must define a solver type!!" << endl;
 		exit(1);
 	}
-
+  
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
@@ -3616,6 +3622,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
 	switch (val_software) {
 	case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamic Code)  |" << endl; break;
+  case SU2_EDU: cout << "|  |_____/   \\____/  |____|   Suite (Educational Code)                  |" << endl; break;
 	case SU2_MDC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
 	case SU2_GPC: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
 	case SU2_DDC: cout << "|  |_____/   \\____/  |____|   Suite (Domain Decomposition Code)         |" << endl; break;
@@ -3636,7 +3643,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		switch (Kind_Solver) {
       case EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
@@ -3935,7 +3942,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Linearized )) || (val_software == SU2_GPC)) {
+	if ((((val_software == SU2_CFD) || (val_software == SU2_EDU)) && ( Linearized )) || (val_software == SU2_GPC)) {
 		cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
 		cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
 		for (unsigned short iDV = 0; iDV < nDV; iDV++) {
@@ -3997,7 +4004,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
+	if ((((val_software == SU2_CFD) || (val_software == SU2_EDU)) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -4029,7 +4036,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	}
 
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
@@ -4528,10 +4535,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Euler implicit time integration for the turbulence model." << endl;
 	}
 
-	if (val_software == SU2_CFD)
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU))
 		cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
 
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		cout << "Maximum number of iterations: " << nExtIter <<"."<<endl;
 
 		if (ConvCriteria == CAUCHY) {
@@ -4626,7 +4633,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cerr << "Error: STL output file format only valid for SU2_MDC" << endl; throw(-1);
 	}
 
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 
 		cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
 		cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
