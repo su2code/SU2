@@ -280,7 +280,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
 	AddScalarOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
@@ -489,7 +489,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "AVG_GRAD_CORRECTED");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
@@ -515,9 +515,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "AVG_GRAD_CORRECTED");
 	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "NONE");
+	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "PIECEWISE_CONSTANT");
   
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "NONE");
@@ -3803,14 +3803,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
         }
     
-    
-    cout << "Surface(s) where the objective function is evaluated: ";
-		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
-			cout << Marker_Designing[iMarker_Designing];
-			if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
-			else cout <<".";
-		}
-    cout<<endl;
+    if (nMarker_Designing != 0) {
+      cout << "Surface(s) where the objective function is evaluated: ";
+      for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
+        cout << Marker_Designing[iMarker_Designing];
+        if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
     cout << "Surface(s) plotted in the output file: ";
 		for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
@@ -3820,13 +3821,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
     cout<<endl;
     
-    cout << "Surface(s) affected by the design variables: ";
-		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
-			cout << Marker_DV[iMarker_DV];
-			if (iMarker_DV < nMarker_DV-1) cout << ", ";
-			else cout <<".";
-		}
-    cout<<endl;
+    if (nMarker_DV != 0) {
+      cout << "Surface(s) affected by the design variables: ";
+      for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+        cout << Marker_DV[iMarker_DV];
+        if (iMarker_DV < nMarker_DV-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
     if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
       cout << "Surface(s) in motion: ";
@@ -6599,11 +6602,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Reynolds number (non-dimensional): " << Reynolds << endl;
 			cout << "Reynolds length (m): "       << Length_Reynolds     << endl;
 		}
-		cout << "Froude number (non-dimensional): " << Froude << endl;
-		cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    if (GravityForce) {
+      cout << "Froude number (non-dimensional): " << Froude << endl;
+      cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    }
     
 		if (compressible) {
-			cout << "Negative pressure, temperature or density is not allowed!" << endl;
 			cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
 			cout << "Freestream temperature (non-dimensional): "  << Temperature_FreeStreamND << endl;
 		}
@@ -6635,6 +6639,10 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
 		if (Grid_Movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
+    
+    if (compressible) {
+      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
+    }
 	}
   
 }
