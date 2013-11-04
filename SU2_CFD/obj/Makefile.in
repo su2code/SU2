@@ -77,6 +77,7 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-numerics_direct_transition.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_wave.$(OBJEXT) \
+	../src/___bin_SU2_CFD-nnet.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_linearized_mean.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_linearized_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_structure.$(OBJEXT) \
@@ -279,6 +280,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_direct_transition.cpp \
 		../src/numerics_direct_turbulent.cpp \
 		../src/numerics_direct_wave.cpp \
+		../src/nnet.cpp \
 		../src/numerics_linearized_mean.cpp \
 		../src/numerics_linearized_turbulent.cpp \
 		../src/numerics_structure.cpp \
@@ -438,6 +440,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_direct_wave.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD-nnet.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_linearized_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_linearized_turbulent.$(OBJEXT):  \
@@ -542,6 +546,7 @@ mostlyclean-compile:
 	-rm -f ../src/___bin_SU2_CFD-integration_structure.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-integration_time.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-iteration_structure.$(OBJEXT)
+	-rm -f ../src/___bin_SU2_CFD-nnet.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_plasma.$(OBJEXT)
@@ -609,6 +614,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-integration_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-integration_time.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-iteration_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Po@am__quote@
@@ -935,6 +941,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_wave.cpp' object='../src/___bin_SU2_CFD-numerics_direct_wave.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_direct_wave.obj `if test -f '../src/numerics_direct_wave.cpp'; then $(CYGPATH_W) '../src/numerics_direct_wave.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_wave.cpp'; fi`
+
+../src/___bin_SU2_CFD-nnet.o: ../src/nnet.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-nnet.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo" -c -o ../src/___bin_SU2_CFD-nnet.o `test -f '../src/nnet.cpp' || echo '$(srcdir)/'`../src/nnet.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/nnet.cpp' object='../src/___bin_SU2_CFD-nnet.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-nnet.o `test -f '../src/nnet.cpp' || echo '$(srcdir)/'`../src/nnet.cpp
+
+../src/___bin_SU2_CFD-nnet.obj: ../src/nnet.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-nnet.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo" -c -o ../src/___bin_SU2_CFD-nnet.obj `if test -f '../src/nnet.cpp'; then $(CYGPATH_W) '../src/nnet.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/nnet.cpp'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/nnet.cpp' object='../src/___bin_SU2_CFD-nnet.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-nnet.obj `if test -f '../src/nnet.cpp'; then $(CYGPATH_W) '../src/nnet.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/nnet.cpp'; fi`
 
 ../src/___bin_SU2_CFD-numerics_linearized_mean.o: ../src/numerics_linearized_mean.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_linearized_mean.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_linearized_mean.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_linearized_mean.o `test -f '../src/numerics_linearized_mean.cpp' || echo '$(srcdir)/'`../src/numerics_linearized_mean.cpp; \
