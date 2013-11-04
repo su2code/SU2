@@ -484,7 +484,7 @@ int main(int argc, char *argv[]) {
     ConvHist_file.close();
     cout << endl <<"History file, closed." << endl;
   }
-  
+  /*
   if (config->GetKind_Solver() == RANS){
     if (config->GetKind_Turb_Model() == ML){
       // Tell the ML code to stop running
@@ -495,6 +495,7 @@ int main(int argc, char *argv[]) {
       mlWrite.close();
     }
   }
+   */
   
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {

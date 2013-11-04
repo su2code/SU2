@@ -1,4 +1,4 @@
-#include "nnet.hpp"
+#include "../include/nnet.hpp"
 using namespace std;
 
 Scaler::Scaler(){}
@@ -264,7 +264,7 @@ int CNeurNet::LoadInteger(ifstream& f, string name){
 	}
 	if (!stringFound){
 		cout << "String "<< name <<" not found"<<endl;
-		throw 10;
+    exit(1);
 	}
 	return i;
 }

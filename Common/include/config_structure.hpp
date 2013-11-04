@@ -41,6 +41,7 @@
 #include <map>
 
 #include "./option_structure.hpp"
+#include "../../SU2_CFD/include/nnet.hpp"
 
 using namespace std;
 
@@ -348,12 +349,10 @@ private:
 	Kind_Upwind_Plasma,			/*!< \brief Upwind scheme for the plasma model. */
 	Kind_Upwind_AdjPlasma;			/*!< \brief Upwind scheme for the adjoint plasma model. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
-  string ML_Turb_Exec;   /*!< \brief Executable script for calling a turbulence model. */
-  string ML_Turb_Model_File;   /*!< \brief File location for storing the turbulence file. */
-  string ML_Turb_Model_Read;   /*!< \brief Text file for communicating from su2 to the turbulence model */
-  string ML_Turb_Model_Write;   /*!< \brief Text file for communicating from the turbulence model back to su2  */
-  ofstream * ML_Turb_Model_WriteStream;
-  int64_t ML_Turb_Model_Counter;
+  string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
+  string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
+  CNeurNet* Net;
+  
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -2222,51 +2221,17 @@ public:
 	unsigned short GetKind_Turb_Model(void);
 
   /*!
-	 * \brief Get the location of the ML executable.
-	 * \return Kind of the turbulence model.
-	 */
-	string GetML_Turb_Exec(void);
-  
-  /*!
-	 * \brief Get the file of the stored model used by ML_Turb_Exec.
-	 * \return Name of exec file.
+	 * \brief Get the file containing the ML model
 	 */
 	string GetML_Turb_Model_File(void);
-  
   /*!
-	 * \brief Temporary file for talking from ML back to SU2.
+	 * \brief File containing a check for the proper creation of the turb model
 	 * \return Temporary ml->SU2 file name.
 	 */
-	string GetML_Turb_Model_Read(void);
+	string GetML_Turb_Model_Check_File(void);
   
-  /*!
-	 * \brief Temporary file for talking from ML back to SU2.
-	 * \return Temporary SU2->ml file name.
-	 */
-	string GetML_Turb_Model_Write(void);
-
-  /*!
-	 * \brief Get the write stream
-	 * \return
-	 */
-  ofstream * GetML_Turb_Model_WriteStream(void);
-  /*!
-	 * \brief Set the write stream
-	 * \return
-	 */
-  void SetML_Turb_Model_WriteStream(ofstream *);
-
-  /*!
-	 * \brief Get the ML Turb Model Counter. This is there to keep the ML code in sync with SU2
-	 * \return the counter
-	 */
-  int GetML_Turb_Model_Counter(void);
-  /*!
-	 * \brief Set the ML Turb Model Counter. This is there to keep the ML code in sync with SU2
-	 * \return
-	 */
-  void SetML_Turb_Model_Counter(int);
-  
+  CNeurNet* GetML_Model(void);
+  void SetML_Model(CNeurNet*);
   
 	/*! 
 	 * \brief Get the kind of the transition model.

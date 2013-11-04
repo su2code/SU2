@@ -952,21 +952,12 @@ inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = 
 
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 
-inline string CConfig::GetML_Turb_Exec(void) { return ML_Turb_Exec; }
-
 inline string CConfig::GetML_Turb_Model_File(void) { return ML_Turb_Model_File; }
 
-inline string CConfig::GetML_Turb_Model_Read(void) { return ML_Turb_Model_Read; }
+inline string CConfig::GetML_Turb_Model_Check_File(void) { return ML_Turb_Model_Check_File; }
 
-inline string CConfig::GetML_Turb_Model_Write(void) { return ML_Turb_Model_Write; }
-
-inline int CConfig::GetML_Turb_Model_Counter(void) { return ML_Turb_Model_Counter; }
-
-inline void CConfig::SetML_Turb_Model_Counter(int i) { ML_Turb_Model_Counter = i; }
-
-inline ofstream * CConfig::GetML_Turb_Model_WriteStream(void) { return ML_Turb_Model_WriteStream; }
-
-inline void CConfig::SetML_Turb_Model_WriteStream(ofstream *a) {ML_Turb_Model_WriteStream = a; }
+inline CNeurNet* CConfig::GetML_Model(void){return Net;}
+inline void CConfig::SetML_Model(CNeurNet *Net){this->Net = Net;}
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 

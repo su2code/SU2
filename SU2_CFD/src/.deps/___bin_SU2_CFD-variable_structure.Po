@@ -138,6 +138,7 @@
   /usr/include/c++/4.2.1/bits/stl_bvector.h \
   /usr/include/c++/4.2.1/bits/vector.tcc \
   ../src/../include/../../Common/include/./option_structure.hpp \
+  ../src/../include/../../Common/include/../../SU2_CFD/include/nnet.hpp \
   ../src/../include/../../Common/include/config_structure.inl \
   ../src/../include/variable_structure.inl
 
@@ -518,6 +519,8 @@
 /usr/include/c++/4.2.1/bits/vector.tcc:
 
 ../src/../include/../../Common/include/./option_structure.hpp:
+
+../src/../include/../../Common/include/../../SU2_CFD/include/nnet.hpp:
 
 ../src/../include/../../Common/include/config_structure.inl:
 

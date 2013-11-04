@@ -356,6 +356,7 @@
 		05D28619178BCA1200DD76AE /* Numerics */ = {
 			isa = PBXGroup;
 			children = (
+				C6BB5AF21828121E00097D6E /* nnet.cpp */,
 				05E6DBC217EB62A100FA1F7E /* numerics_adjoint_levelset.cpp */,
 				05E6DBC317EB62A100FA1F7E /* numerics_adjoint_mean.cpp */,
 				05E6DBC417EB62A100FA1F7E /* numerics_adjoint_plasma.cpp */,
@@ -381,7 +382,6 @@
 		08FB7794FE84155DC02AAC07 /* SU2_CFD */ = {
 			isa = PBXGroup;
 			children = (
-				C6BB5AF21828121E00097D6E /* nnet.cpp */,
 				E97B6C8117F941800008255B /* config_template.cfg */,
 				0541ABE41370DC56002D668B /* InLine */,
 				0541ABE51370DC5E002D668B /* Include */,

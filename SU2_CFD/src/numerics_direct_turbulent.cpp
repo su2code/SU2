@@ -615,55 +615,37 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) { }
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   if (dist_i > 0.0) {
-#ifndef NO_MPI
-    cout << "Not coded for parallel";
-    exit(1);
-#endif
-    
-    /* Write state to ML code file */
-    
-    // Open the write file
-    ofstream writefile;
-    string writename =config->GetML_Turb_Model_Write();
-    writefile.open(writename.c_str(),ios::out);
-    
-    // Truncate file to beginning
-    writefile.seekp(0);
-    int counter = config->GetML_Turb_Model_Counter();
-    counter++;
-    cout << "Counter "<<counter<<endl;
-    config->SetML_Turb_Model_Counter(counter);
-    writefile << counter << " " << Laminar_Viscosity_i/Density_i << " "<<TurbVar_i[0]<<" "<< dist_i<< " ";
+    // Call turbulence model
+    // Get all the variables
+    int nInputMLVariables = 9;
+    int nOutputMLVariables = 1;
+    double * input = new double[nInputMLVariables];
+    int ctr = 0;
+    input[ctr] = Laminar_Viscosity_i/Density_i;
+    ctr++;
+    input[ctr] = TurbVar_i[0];
+    ctr++;
+    input[ctr] = dist_i;
+    ctr++;
     for (iDim = 0; iDim < nDim; iDim++){
-      writefile<<TurbVar_Grad_i[0][iDim]<< " ";
+      input[ctr] = TurbVar_Grad_i[0][iDim];
+      ctr++;
     }
-    for (iDim = 0; iDim < nDim; iDim++){
-      for (int jDim=0; jDim< nDim; jDim++){
-        writefile<<PrimVar_Grad_i[iDim+1][iDim]<< " ";
+    for (iDim = 0; iDim < nDim; iDim ++){
+      for (int jDim = 0; jDim < nDim; jDim++){
+        input[ctr] = PrimVar_Grad_i[iDim+1][iDim];
+        ctr++;
       }
     }
-    writefile<<flush;
-    writefile.close();
-    
-    // Read in answer
-    string readFilename = config->GetML_Turb_Model_Read();
-    string readdata;
-    ifstream readfile;
-    int fCount; // counter from the file
-    double source;
-    while(true){
-      readfile.open(readFilename.c_str());
-      // Read in the integer and see if it's the new counter
-      readfile >> fCount;
-      if (fCount == counter){
-        readfile >> source;
-        break;
-      }
-      readfile.close();
+    if (ctr != nInputMLVariables){
+      cout << "Improper number of variables put into ctr"<< endl;
+      exit(1);
     }
-    
-    //  val_residual[0] = Production - Destruction + CrossProduction;
-    val_residual[0] = source;
+    double *output = new double[nOutputMLVariables];
+    config->GetML_Model()->Predict(input, output);
+    val_residual[0] = output[0];
+    delete input;
+    delete output;
   }
   
 }

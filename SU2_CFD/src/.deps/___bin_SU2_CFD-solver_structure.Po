@@ -140,10 +140,11 @@
   /usr/include/c++/4.2.1/bits/stl_bvector.h \
   /usr/include/c++/4.2.1/bits/vector.tcc \
   ../src/../include/../../Common/include/./option_structure.hpp \
+  ../src/../include/../../Common/include/../../SU2_CFD/include/nnet.hpp \
   ../src/../include/../../Common/include/config_structure.inl \
-  ../src/../include/numerics_structure.inl \
   ../src/../include/variable_structure.hpp \
   ../src/../include/variable_structure.inl \
+  ../src/../include/numerics_structure.inl \
   ../src/../include/../../Common/include/geometry_structure.hpp \
   /Users/brendan/software/metis-4.0.3/Lib/metis.h /usr/include/strings.h \
   /Users/brendan/software/metis-4.0.3/Lib/defs.h \
@@ -548,13 +549,15 @@
 
 ../src/../include/../../Common/include/./option_structure.hpp:
 
-../src/../include/../../Common/include/config_structure.inl:
+../src/../include/../../Common/include/../../SU2_CFD/include/nnet.hpp:
 
-../src/../include/numerics_structure.inl:
+../src/../include/../../Common/include/config_structure.inl:
 
 ../src/../include/variable_structure.hpp:
 
 ../src/../include/variable_structure.inl:
+
+../src/../include/numerics_structure.inl:
 
 ../src/../include/../../Common/include/geometry_structure.hpp:
 
