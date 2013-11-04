@@ -617,17 +617,23 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 				(*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
             
 			break;
-            
-		case RUNTIME_PLASMA_SYS:
-            
+      
+    case RUNTIME_TNE2_SYS:
+      
 			/*--- Calculate the inviscid and viscous forces ---*/
-			solver_container[FinestMesh][PLASMA_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
-			if (config->GetKind_ViscNumScheme() != NONE) solver_container[FinestMesh][PLASMA_SOL]->Viscous_Forces(geometry[FinestMesh], config);
-            
+			solver_container[FinestMesh][TNE2_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
+			if ((config->GetKind_Solver() == TNE2_NAVIER_STOKES) && (config->GetKind_ViscNumScheme() != NONE))
+        solver_container[FinestMesh][TNE2_SOL]->Viscous_Forces(geometry[FinestMesh], config);
+      
 			/*--- Evaluate convergence monitor ---*/
+			if (config->GetConvCriteria() == CAUCHY) {
+				if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CDrag();
+				if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CLift();
+			}
+      
 			if (config->GetConvCriteria() == RESIDUAL)
-				(*monitor) = log10(solver_container[FinestMesh][PLASMA_SOL]->GetRes_RMS(0));
-            
+				(*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
+      
 			break;
             
 		case RUNTIME_ADJFLOW_SYS:
