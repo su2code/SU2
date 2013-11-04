@@ -1794,15 +1794,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     cout << "Not coded for parallel";
     exit(1);
 #endif
-    
-    // Construct the nnet
-    string readFile = config->GetML_Turb_Model_File();
-    string checkFile = config->GetML_Turb_Model_Check_File();
-    cout << "Loading ML file from " << readFile << endl;
-    CNeurNet* Net = new CNeurNet(readFile, checkFile);
-    config->SetML_Model(Net);
-    cout << "ML File successfully read asouth " << endl;
-    
+
     /*
     // Open the write file
     ofstream ml_write;
