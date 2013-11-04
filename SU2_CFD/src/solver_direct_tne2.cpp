@@ -4704,7 +4704,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		Boundary   = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
+    Maxq_Visc[iMarker] = 0.0;
 		if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
       
 			for (iDim = 0; iDim < nDim; iDim++) ForceViscous[iDim] = 0.0;
@@ -4822,8 +4822,11 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           Q_Visc[iMarker]     = HeatLoad;
 				}
 				if (nDim == 3) {
-					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
-					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
+					CDrag_Visc[iMarker] = ForceViscous[0]*cos(Alpha)*cos(Beta)
+                              + ForceViscous[1]*sin(Beta)
+                              + ForceViscous[2]*sin(Alpha)*cos(Beta);
+					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha)
+                              + ForceViscous[2]*cos(Alpha);
 					CMx_Visc[iMarker]   = MomentViscous[0];
 					CMy_Visc[iMarker]   = MomentViscous[1];
 					CMz_Visc[iMarker]   = MomentViscous[2];
@@ -4836,14 +4839,14 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
 				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
 				AllBound_CLift_Visc += CLift_Visc[iMarker];
-				AllBound_CMx_Visc += CMx_Visc[iMarker];
-				AllBound_CMy_Visc += CMy_Visc[iMarker];
-				AllBound_CMz_Visc += CMz_Visc[iMarker];
-				AllBound_CEff_Visc += CEff_Visc[iMarker];
-				AllBound_CFx_Visc += CFx_Visc[iMarker];
-				AllBound_CFy_Visc += CFy_Visc[iMarker];
-				AllBound_CFz_Visc += CFz_Visc[iMarker];
-        AllBound_Q_Visc += Q_Visc[iMarker];
+				AllBound_CMx_Visc   += CMx_Visc[iMarker];
+				AllBound_CMy_Visc   += CMy_Visc[iMarker];
+				AllBound_CMz_Visc   += CMz_Visc[iMarker];
+				AllBound_CEff_Visc  += CEff_Visc[iMarker];
+				AllBound_CFx_Visc   += CFx_Visc[iMarker];
+				AllBound_CFy_Visc   += CFy_Visc[iMarker];
+				AllBound_CFz_Visc   += CFz_Visc[iMarker];
+        AllBound_Q_Visc     += Q_Visc[iMarker];
         if (Maxq_Visc[iMarker] > AllBound_Maxq_Visc)
           AllBound_Maxq_Visc = Maxq_Visc[iMarker];
 			}
@@ -4851,15 +4854,15 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	}
 	Total_CDrag += AllBound_CDrag_Visc;
 	Total_CLift += AllBound_CLift_Visc;
-	Total_CMx += AllBound_CMx_Visc;
-	Total_CMy += AllBound_CMy_Visc;
-	Total_CMz += AllBound_CMz_Visc;
-	Total_CEff = Total_CLift/(Total_CDrag+EPS);
-	Total_CFx += AllBound_CFx_Visc;
-	Total_CFy += AllBound_CFy_Visc;
-	Total_CFz += AllBound_CFz_Visc;
-  Total_Q += AllBound_Q_Visc;
-  Total_Maxq = AllBound_Maxq_Visc;
+	Total_CMx   += AllBound_CMx_Visc;
+	Total_CMy   += AllBound_CMy_Visc;
+	Total_CMz   += AllBound_CMz_Visc;
+	Total_CEff   = Total_CLift/(Total_CDrag+EPS);
+	Total_CFx   += AllBound_CFx_Visc;
+	Total_CFy   += AllBound_CFy_Visc;
+	Total_CFz   += AllBound_CFz_Visc;
+  Total_Q     += AllBound_Q_Visc;
+  Total_Maxq   = AllBound_Maxq_Visc;
   
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Tau[iDim];
