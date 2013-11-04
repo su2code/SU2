@@ -57,7 +57,8 @@ CSysMatrix::~CSysMatrix(void) {
   
 }
 
-void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
+void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
+                            unsigned short nVar, unsigned short nEqn,
                             bool EdgeConnect, CGeometry *geometry) {
   
   unsigned long iPoint, *row_ptr, *col_ind, index, nnz, Elem;
@@ -948,9 +949,11 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
 }
 
-void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
+                                              CSysVector & prod,
+                                              CGeometry *geometry, CConfig *config) {
   
-  unsigned long iVar, jVar, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
+  unsigned long iVar, jVar, max_nElem, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
   long iElemLoop;
   
 #ifndef NO_MPI
@@ -958,20 +961,20 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   MPI::Request send_request, recv_request;
 #endif
   
-  nElem = LineletPoint[0].size();
+  max_nElem = LineletPoint[0].size();
   for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)
-    if (LineletPoint[iLinelet].size() > nElem)
-      nElem = LineletPoint[iLinelet].size();
+    if (LineletPoint[iLinelet].size() > max_nElem)
+      max_nElem = LineletPoint[iLinelet].size();
   
   /*--- Memory allocation, this should be done in the constructor ---*/
   
-  double **UBlock = new double* [nElem];
-  double **invUBlock = new double* [nElem];
-  double **LBlock = new double* [nElem];
-  double **yVector = new double* [nElem];
-  double **zVector = new double* [nElem];
-  double **rVector = new double* [nElem];
-  for (iElem = 0; iElem < nElem; iElem++) {
+  double **UBlock = new double* [max_nElem];
+  double **invUBlock = new double* [max_nElem];
+  double **LBlock = new double* [max_nElem];
+  double **yVector = new double* [max_nElem];
+  double **zVector = new double* [max_nElem];
+  double **rVector = new double* [max_nElem];
+  for (iElem = 0; iElem < max_nElem; iElem++) {
     UBlock[iElem] = new double [nVar*nVar];
     invUBlock[iElem] = new double [nVar*nVar];
     LBlock[iElem] = new double [nVar*nVar];
@@ -1064,6 +1067,27 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   
   SendReceive_Solution(prod, geometry, config);
   
+  /*--- De-allocate (should be done in destructor ---*/
+  
+  for (iElem = 0; iElem < max_nElem; iElem++) {
+    delete [] UBlock[iElem];
+    delete [] invUBlock[iElem];
+    delete [] LBlock[iElem];
+    delete [] yVector[iElem];
+    delete [] zVector[iElem];
+    delete [] rVector[iElem];
+  }
+  delete [] UBlock;
+  delete [] invUBlock;
+  delete [] LBlock;
+  delete [] yVector;
+  delete [] zVector;
+  delete [] rVector;
+  
+  delete [] LFBlock;
+  delete [] LyVector;
+  delete [] FzVector;
+  delete [] AuxVector;
 }
 
 void CSysMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {

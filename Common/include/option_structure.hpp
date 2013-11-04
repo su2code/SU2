@@ -97,7 +97,8 @@ enum SU2_COMPONENT {
 	SU2_GDC = 6,	/*!< \brief Running the SU2_GDC software. */
 	SU2_PBC = 7,	/*!< \brief Running the SU2_PBC software. */
 	SU2_SMC = 8,	/*!< \brief Running the SU2_SMC software. */
-	SU2_SOL = 9	  /*!< \brief Running the SU2_SOL software. */
+	SU2_SOL = 9,	/*!< \brief Running the SU2_SOL software. */
+  SU2_EDU = 10	/*!< \brief Running the SU2_CFD software. */
 };
 
 const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processors. */
@@ -424,7 +425,9 @@ enum ENUM_UPWIND {
   MSW_1ST = 12,     /*!< \brief First order Modified Steger-Warming method. */
   MSW_2ND = 13,     /*!< \brief Second order Modified Steger-Warming method. */
 	ROE_TURKEL_1ST = 14,			/*!< \brief First order Roe-Turkel's upwind numerical method. */
-	ROE_TURKEL_2ND = 15			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
+	ROE_TURKEL_2ND = 15,			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
+  AUSMPWPLUS_1ST = 16,  /*!< \brief First order AUSMPW+ numerical method. */
+  AUSMPWPLUS_2ND = 17   /*!< \brief Second order AUSMPW+ numerical method. */
   
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
@@ -435,6 +438,8 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("ROE_TURKEL_2ND", ROE_TURKEL_2ND)
 ("AUSM-1ST_ORDER", AUSM_1ST)
 ("AUSM-2ND_ORDER", AUSM_2ND)
+("AUSMPW+-1ST_ORDER", AUSMPWPLUS_1ST)
+("AUSMPW+-2ND_ORDER", AUSMPWPLUS_2ND)
 ("HLLC-1ST_ORDER", HLLC_1ST)
 ("HLLC-2ND_ORDER", HLLC_2ND)
 ("SW-1ST_ORDER", SW_1ST)

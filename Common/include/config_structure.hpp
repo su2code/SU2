@@ -346,9 +346,12 @@ private:
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
 	Kind_Upwind_Plasma,			/*!< \brief Upwind scheme for the plasma model. */
-	Kind_Upwind_AdjPlasma,			/*!< \brief Upwind scheme for the adjoint plasma model. */
-	Kind_Turb_Model,			/*!< \brief Turbulent model definition. */
-	Kind_Trans_Model,			/*!< \brief Transition model definition. */
+	Kind_Upwind_AdjPlasma;			/*!< \brief Upwind scheme for the adjoint plasma model. */
+  unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
+  string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
+  
+  unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -2215,6 +2218,16 @@ public:
 	 */
 	unsigned short GetKind_Turb_Model(void);
 
+  /*!
+	 * \brief Get the file containing the ML model
+	 */
+	string GetML_Turb_Model_File(void);
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+	string GetML_Turb_Model_Check_File(void);
+  
 	/*! 
 	 * \brief Get the kind of the transition model.
 	 * \return Kind of the transion model.

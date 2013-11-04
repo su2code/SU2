@@ -208,7 +208,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
     conc   += RoeDensity[iSpecies] / Ms[iSpecies];
     conc_i += Density_i[iSpecies] / Ms[iSpecies];
     conc_j += Density_j[iSpecies] / Ms[iSpecies];
-    dPdrhos[iSpecies] = 0.5*(dPdrhos_i[iSpecies] + dPdrhos_j[iSpecies]);
+    dPdrhos[iSpecies] = 0.5*(dPdU_i[iSpecies] + dPdU_j[iSpecies]);
   }
   dPdrhoE_i   = conc_i*Ru / rhoCvtr_i;
   dPdrhoE_j   = conc_j*Ru / rhoCvtr_j;
@@ -221,10 +221,10 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
 	/*--- Calculate Projected Flux Jacobians (inviscid) ---*/
   // Note: Scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal
   GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
-                     dPdrhos_i, dPdrhoE_i, dPdrhoEve_i, Normal, 0.5,
+                     dPdU_i, dPdrhoE_i, dPdrhoEve_i, Normal, 0.5,
                      Proj_Jac_Tensor_i);
   GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
-                     dPdrhos_j, dPdrhoE_j, dPdrhoEve_j, Normal, 0.5,
+                     dPdU_j, dPdrhoE_j, dPdrhoEve_j, Normal, 0.5,
                      Proj_Jac_Tensor_j);
   
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -239,11 +239,13 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   CreateBasis(UnitNormal);
   
   /*--- Compute projected P, invP, and Lambda ---*/
-  GetPMatrix(RoeDensity, RoeVelocity, &RoeEnthalpy, &RoeEnergy_ve,
-             &RoeSoundSpeed, dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal,
-             l, m, P_Tensor);
-  GetPMatrix_inv(RoeDensity, RoeVelocity, &RoeEnergy_ve, &RoeSoundSpeed,
-                 dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal, l, m, invP_Tensor);
+  cout << "ERROR: CORRECT P & INVP CALLS IN CUPWROE_ADJTNE2" << endl;
+  exit(1);
+//  GetPMatrix(RoeDensity, RoeVelocity, &RoeEnthalpy, &RoeEnergy_ve,
+//             &RoeSoundSpeed, dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal,
+//             l, m, P_Tensor);
+//  GetPMatrix_inv(RoeDensity, RoeVelocity, &RoeEnergy_ve, &RoeSoundSpeed,
+//                 dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal, l, m, invP_Tensor);
   
   /*--- Compute projected velocities ---*/
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -698,10 +700,10 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
   
 	/*--- Calculate Projected Flux Jacobians (inviscid) ---*/
   GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
-                     dPdrhos_i, dPdrhoE_i, dPdrhoEve_i, Normal_ij, 1.0,
+                     dPdU_i, dPdrhoE_i, dPdrhoEve_i, Normal_ij, 1.0,
                      Proj_Jac_Tensor_i);
   GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
-                     dPdrhos_j, dPdrhoE_j, dPdrhoEve_j, Normal_ji, 1.0,
+                     dPdU_j, dPdrhoE_j, dPdrhoEve_j, Normal_ji, 1.0,
                      Proj_Jac_Tensor_j);
 	
   

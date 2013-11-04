@@ -57,7 +57,9 @@ COutput::COutput(void) {
 
 COutput::~COutput(void) { }
 
-void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone) {
+void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
+                                 CSolver *FlowSolver, unsigned long iExtIter,
+                                 unsigned short val_iZone) {
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
@@ -3873,7 +3875,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       
     case TNE2_EULER : case TNE2_NAVIER_STOKES:
       ConvHist_file[0] << begin << flow_coeff;
-      if (isothermal) ConvHist_file[0] << heat_coeff;
+      if (config->GetKind_Solver() == TNE2_NAVIER_STOKES)
+        ConvHist_file[0] << heat_coeff;
       for (iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
         ConvHist_file[0] << ",\"Residual[" << iSpecies << "]\"";
       ConvHist_file[0] << end;
@@ -4038,21 +4041,21 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     if (freesurface) nVar_AdjLevelSet = 1;
     
     /*--- Allocate memory for the residual ---*/
-    residual_flow = new double[nVar_Flow];
-    residual_turbulent = new double[nVar_Turb];
+    residual_flow       = new double[nVar_Flow];
+    residual_turbulent  = new double[nVar_Turb];
     residual_transition = new double[nVar_Trans];
-    residual_TNE2 = new double[nVar_TNE2];
-    residual_plasma = new double[nVar_Plasma];
-    residual_levelset = new double[nVar_LevelSet];
-    residual_wave = new double[nVar_Wave];
-    residual_fea = new double[nVar_FEA];
-    residual_heat = new double[nVar_Heat];
+    residual_TNE2       = new double[nVar_TNE2];
+    residual_plasma     = new double[nVar_Plasma];
+    residual_levelset   = new double[nVar_LevelSet];
+    residual_wave       = new double[nVar_Wave];
+    residual_fea        = new double[nVar_FEA];
+    residual_heat       = new double[nVar_Heat];
     
-    residual_adjflow = new double[nVar_AdjFlow];
+    residual_adjflow      = new double[nVar_AdjFlow];
     residual_adjturbulent = new double[nVar_AdjTurb];
-    residual_adjTNE2 = new double[nVar_AdjTNE2];
-    residual_adjplasma = new double[nVar_AdjPlasma];
-    residual_adjlevelset = new double[nVar_AdjLevelSet];
+    residual_adjTNE2      = new double[nVar_AdjTNE2];
+    residual_adjplasma    = new double[nVar_AdjPlasma];
+    residual_adjlevelset  = new double[nVar_AdjLevelSet];
     
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4166,11 +4169,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           /*--- Adjoint solution coefficients ---*/
           
-          Total_Sens_Geo    = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
-          Total_Sens_Mach   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
-          Total_Sens_AoA    = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA();
-          Total_Sens_Press  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
-          Total_Sens_Temp   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_Geo   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
+          Total_Sens_Mach  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
+          Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA();
+          Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
+          Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
           
           /*--- Adjoint flow residuals ---*/
           
@@ -4222,6 +4225,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         break;
         
       case TNE2_EULER:  case TNE2_NAVIER_STOKES:
+        
+        /*--- Coefficients ---*/
+        
         Total_CLift       = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CLift();
         Total_CDrag       = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CDrag();
         Total_CSideForce  = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CSideForce();
@@ -4232,13 +4238,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         Total_CFx         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFx();
         Total_CFy         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFz();
-        
-        if (isothermal) {
-          Total_Q         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Q();
-          Total_MaxQ      = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxQ();
+        if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
+          Total_Q           = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Q();
+          Total_MaxQ        = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxQ();
         }
         
-        /*--- TNE2 Residuals ---*/
+        /*--- Residuals ---*/
         
         for (iVar = 0; iVar < nVar_TNE2; iVar++)
           residual_TNE2[iVar] = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_RMS(iVar);
@@ -4448,12 +4453,16 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           case TNE2_EULER : case TNE2_NAVIER_STOKES:
             
             /*--- Direct coefficients ---*/
-            sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
-                     Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
-                     Total_CFz, Total_CEff);
-            if (isothermal)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
-                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Q, Total_MaxQ);
+            if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
+              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                       Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+                       Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
+                       Total_CEff, Total_Q, Total_MaxQ);
+            else
+              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                       Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+                       Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
+                       Total_CEff);
             
             /*--- Direct problem residual ---*/
             for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
@@ -4585,7 +4594,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             break;
             
-          case TNE2_EULER :                  case TNE2_NAVIER_STOKES:
+          case TNE2_EULER :  case TNE2_NAVIER_STOKES:
             
             /*--- Visualize the maximum residual ---*/
             cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0))
@@ -4594,7 +4603,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             
-            cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)" << endl;
+            cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)";
+            if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
+              cout << "   Max qdot" << endl;
+            else cout << endl;
             break;
             
           case RANS : case FLUID_STRUCTURE_RANS:
@@ -4850,9 +4862,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim]);
           cout.width(14); cout << log10(residual_TNE2[nSpecies+nDim+1]);
           cout.width(15); cout << Total_CDrag;
+          if (config[val_iZone]->GetKind_Solver()==TNE2_NAVIER_STOKES) {
+            cout.precision(1);
+            cout.width(11); cout << Total_MaxQ;
+          }
           cout << endl;
           break;
-          
           
         case PLASMA_EULER : case PLASMA_NAVIER_STOKES:
           

@@ -5,7 +5,7 @@
 # Last updated:         10/11/13
 #
 # Created by: 		M. Colonno  10/26/12
-# Updated by: 		T. Economon  10/11/13
+# Updated by: 		T. Economon  10/30/13
 #
 ##########################
 
@@ -69,6 +69,9 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GDC,
    	AS_HELP_STRING([--disable-GDC], [build the SU2_GDC executable (default = yes)]), 
 	[build_GDC=$enableval], [build_GDC="yes"])
+AC_ARG_ENABLE(UMC,
+   	AS_HELP_STRING([--disable-UMC], [build the SU2_UMC executable (default = yes)]), 
+	[build_UMC=$enableval], [build_UMC="yes"])
 
 ##########################
 
@@ -282,6 +285,7 @@ AM_CONDITIONAL([BUILD_MDC],[test $build_MDC != "no"])
 AM_CONDITIONAL([BUILD_PBC],[test $build_PBC != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GDC],[test $build_GDC != "no"])
+AM_CONDITIONAL([BUILD_UMC],[test $build_UMC != "no"])
 
 ###########################
 
@@ -300,6 +304,7 @@ AC_OUTPUT(Makefile \
 	SU2_PBC/obj/Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GDC/obj/Makefile \
+	SU2_UMC/obj/Makefile \
 	SU2_PY/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
@@ -331,6 +336,7 @@ Build Configuration Summary:
     Build SU2_PBC:        $build_PBC
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
+    Build SU2_UMC:        $build_UMC
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, and update your [\$]PATH with [\$]SU2_RUN
 
