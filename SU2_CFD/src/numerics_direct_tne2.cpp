@@ -1989,8 +1989,6 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   alphak    = new int[nSpecies];
   betak     = new int[nSpecies];
   A         = new double[5];
-  dTdrhos   = new double[nSpecies];
-  dTvedrhos = new double[nSpecies];
   evibs     = new double[nSpecies];
   eels      = new double[nSpecies];
   Cvvs      = new double[nSpecies];
@@ -2016,8 +2014,6 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] Cves;
   delete [] alphak;
   delete [] betak;
-  delete [] dTdrhos;
-  delete [] dTvedrhos;
   delete [] dkf;
   delete [] dkb;
   delete [] dRfok;
@@ -2078,8 +2074,6 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   double rho, u, v, w, rhoCvtr, rhoCvve, P, sqvel;
   double num, num2, num3, denom;
   double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
-  double dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
-  double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
   double *hf, *Tref, *xi, Cvtrs, ef;
   double af, bf, ab, bb, coeff;
@@ -2146,74 +2140,6 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   Tcf_b      = config->GetRxnTcf_b();
   Tcb_a      = config->GetRxnTcb_a();
   Tcb_b      = config->GetRxnTcb_b();
-  
-  /*--- Calculate partial derivatives of T & Tve ---*/
-  if (implicit) {
- 
-    
-    sqvel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      sqvel += V_i[VEL_INDEX+iDim]*V_i[VEL_INDEX+iDim];
-    }
-    
-    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-      ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
-      
-      /*--- Vibrational energy ---*/
-      if (thetav[iSpecies] != 0) {
-        thoTve = thetav[iSpecies]/Tve;
-        exptv = exp(thetav[iSpecies]/Tve);
-        evibs[iSpecies] = Ru/Ms[iSpecies] * thetav[iSpecies] / (exptv - 1.0);
-        Cvvs[iSpecies]  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
-      }
-      else {
-        evibs[iSpecies] = 0.0;
-        Cvvs[iSpecies]  = 0.0;
-      }
-      
-      /*--- Electronic energy ---*/
-      if (nElStates[iSpecies] != 0) {
-        num   = 0.0;
-        num2  = 0.0;
-        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-        num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-          thoTve = thetae[iSpecies][iEl]/Tve;
-          exptv = exp(-thetae[iSpecies][iEl]/Tve);
-          
-          num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exptv;
-          denom += g[iSpecies][iEl] * exptv;
-          num2  += g[iSpecies][iEl] * (thoTve*thoTve) * exptv;
-          num3  += g[iSpecies][iEl] * thoTve/Tve * exptv;
-        }
-        eels[iSpecies] = Ru/Ms[iSpecies] * (num/denom);
-        Cves[iSpecies] = Ru/Ms[iSpecies] * (num2/denom - num*num3/(denom*denom));
-      } else {
-        eels[iSpecies] = 0.0;
-        Cves[iSpecies] = 0.0;
-      }
-      /*--- Partial derivatives of temperature ---*/
-      dTdrhos[iSpecies]   = (-Cvtrs*(T-Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
-      dTvedrhos[iSpecies] = -(evibs[iSpecies] + eels[iSpecies]) / rhoCvve;
-    }
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-      dTdrhos[nSpecies-1] = (-ef + 0.5*sqvel) / rhoCvtr;
-      dTvedrhos[nSpecies-1] = -(3.0/2.0) * Ru/Ms[nSpecies-1] * Tve / rhoCvve;
-    }
-    dTdrhou     = -u / rhoCvtr;
-    dTdrhov     = -v / rhoCvtr;
-    dTdrhow     = -w / rhoCvtr;
-    dTdrhoE     = 1.0 / rhoCvtr;
-    dTdrhoEve   = -1.0 / rhoCvtr;
-    dTvedrhou   = 0.0;
-    dTvedrhov   = 0.0;
-    dTvedrhow   = 0.0;
-    dTvedrhoE   = 0.0;
-    dTvedrhoEve = 1.0 / rhoCvve;
-  }
-  
   
   for (iReaction = 0; iReaction < nReactions; iReaction++) {
     
@@ -2297,38 +2223,18 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       /*--- Rate coefficient derivatives ---*/
       // Fwd
       coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        dkf[iSpecies] = coeff * (  af*Trxnf/T*dTdrhos[iSpecies]
-                                 + bf*Trxnf/Tve*dTvedrhos[iSpecies]);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        dkf[iVar] = coeff * (  af*Trxnf/T*dTdU_i[iVar]
+                             + bf*Trxnf/Tve*dTvedU_i[iVar] );
       }
-      dkf[nSpecies]   = coeff * (  af*Trxnf/T*dTdrhou
-                                 + bf*Trxnf/Tve*dTvedrhou );
-      dkf[nSpecies+1] = coeff * (  af*Trxnf/T*dTdrhov
-                                 + bf*Trxnf/Tve*dTvedrhov );
-      dkf[nSpecies+2] = coeff * (  af*Trxnf/T*dTdrhow
-                                 + bf*Trxnf/Tve*dTvedrhow );
-      dkf[nSpecies+3] = coeff * (  af*Trxnf/T*dTdrhoE
-                                 + bf*Trxnf/Tve*dTvedrhoE );
-      dkf[nSpecies+4] = coeff * (  af*Trxnf/T*dTdrhoEve
-                                 + bf*Trxnf/Tve*dTvedrhoEve );
       // Bkw
       coeff = kb * (eta/Thb+theta/(Thb*Thb)
                     + (-A[0]*Thb/1E4 + A[2] + A[3]*1E4/Thb
                        + 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        dkb[iSpecies] = coeff * (  ab*Trxnb/T*dTdrhos[iSpecies]
-                                 + bb*Trxnb/Tve*dTvedrhos[iSpecies]);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        dkb[iVar] = coeff * (  ab*Trxnb/T*dTdU_i[iVar]
+                             + bb*Trxnb/Tve*dTvedU_i[iVar]);
       }
-      dkb[nSpecies]   = coeff * (  ab*Trxnb/T*dTdrhou
-                                 + bb*Trxnb/Tve*dTvedrhou );
-      dkb[nSpecies+1] = coeff * (  ab*Trxnb/T*dTdrhov
-                                 + bb*Trxnb/Tve*dTvedrhov );
-      dkb[nSpecies+2] = coeff * (  ab*Trxnb/T*dTdrhow
-                                 + bb*Trxnb/Tve*dTvedrhow );
-      dkb[nSpecies+3] = coeff * (  ab*Trxnb/T*dTdrhoE
-                                 + bb*Trxnb/Tve*dTvedrhoE );
-      dkb[nSpecies+4] = coeff * (  ab*Trxnb/T*dTdrhoEve
-                                 + bb*Trxnb/Tve*dTvedrhoEve );
       
       /*--- Rxn rate derivatives ---*/
       for (ii = 0; ii < 3; ii++) {
@@ -2362,44 +2268,6 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
         dRbok[iSpecies] *= 1000.0;
       }
       
-/*      cout << endl << "************" << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dkf[" << iVar << "]: " << dkf[iVar] << endl;
-      cout << endl << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dkb[" << iVar << "]: " << dkb[iVar] << endl;
-      cout << endl << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dRfok[" << iVar << "]: " << dRfok[iVar] << endl;
-      cout << endl << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dRbok[" << iVar << "]: " << dRbok[iVar] << endl;
-      
-      cout << "kf: " << kf << endl;
-      cout << "kb: " << kb << endl;
-      cout << "fwdRxn: " << fwdRxn << endl;
-      cout << "bkwRxn: " << bkwRxn << endl;
-      cout << "iReaction: " << iReaction << endl;
-      cin.get();*/
-      
-/*      cout << "dTdrhou: " << dTdrhou << endl;
-      cout << "dTdrhov: " << dTdrhov << endl;
-      cout << "dTdrhow: " << dTdrhow << endl;
-
-      cout << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dkf[" << iVar << "]: " << dkf[iVar] << endl;
-      cout << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dkb[" << iVar << "]: " << dkb[iVar] << endl;
-      cout << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dRfok[" << iVar << "]: " << dRfok[iVar] << endl;
-      cout << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << "dRbok[" << iVar << "]: " << dRbok[iVar] << endl;
-      cin.get();*/
-      
       nEve = nSpecies+nDim+1;
       for (ii = 0; ii < 3; ii++) {
         /*--- Products ---*/
@@ -2413,32 +2281,13 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
                              * (evibs[iSpecies]+eels[iSpecies]) * Volume;
-/*            cout << "dwskfwd * eve: " << Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                                      -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-            * (evibs[iSpecies]+eels[iSpecies]) * Volume;
-            cin.get();*/
           }
-          
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            val_Jacobian_i[nEve][jSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhos[jSpecies] * Volume;
+
+          for (jVar = 0; jVar < nVar; jVar++) {
+            val_Jacobian_i[nEve][jVar] += Ms[iSpecies] * (fwdRxn-bkwRxn)
+                                        * (Cvvs[iSpecies]+Cves[iSpecies])
+                                        * dTvedU_i[jVar] * Volume;
           }
-          val_Jacobian_i[nEve][nSpecies]   += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhou * Volume;
-          val_Jacobian_i[nEve][nSpecies+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhov * Volume;
-          val_Jacobian_i[nEve][nSpecies+2] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhow * Volume;
-          val_Jacobian_i[nEve][nSpecies+3] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;
-          val_Jacobian_i[nEve][nSpecies+4] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoEve * Volume;
         }
         
         /*--- Reactants ---*/
@@ -2452,33 +2301,14 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
                              * (evibs[iSpecies] + eels[iSpecies]) * Volume;
-/*            cout << "dwskbkw * eve: " <<     Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                                             -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-            * (evibs[iSpecies] + eels[iSpecies]) * Volume;
-            cin.get();*/
             
           }
-          
-          for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-            val_Jacobian_i[nEve][jSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhos[jSpecies] * Volume;
+
+          for (jVar = 0; jVar < nVar; jVar++) {
+            val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
+            * (Cvvs[iSpecies]+Cves[iSpecies])
+            * dTvedU_i[jVar] * Volume;
           }
-          val_Jacobian_i[nEve][nSpecies]   -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhou * Volume;
-          val_Jacobian_i[nEve][nSpecies+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhov * Volume;
-          val_Jacobian_i[nEve][nSpecies+2] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhow * Volume;
-          val_Jacobian_i[nEve][nSpecies+3] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoE * Volume;
-          val_Jacobian_i[nEve][nSpecies+4] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                            * (Cvvs[iSpecies]+Cves[iSpecies])
-                                            * dTvedrhoEve * Volume;
         } // != nSpecies
       } // ii
     } // implicit
@@ -2500,13 +2330,11 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   bool ionization, implicit;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
-  double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, sqvel, N;
+  double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
   double Qtv, estar, tau, tauMW, tauP;
   double tau_sr, mu, A_sr, B_sr, num, denom;
   double thoTve, exptv;
   double thoT, expt, Cvvs, Cvvst;
-  double dTdrhou, dTdrhov, dTdrhow, dTdrhoE, dTdrhoEve;
-  double dTvedrhou, dTvedrhov, dTvedrhow, dTvedrhoE, dTvedrhoEve;
   double sigma, ws;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
   
@@ -2567,50 +2395,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
-  
-  sqvel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    sqvel += V_i[VEL_INDEX+iDim]*V_i[VEL_INDEX+iDim];
-  }
-  
-  /*--- Calculate partial derivatives of T & Tve ---*/
-  if (implicit) {
-//    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//      Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
-//      ef    = hf[iSpecies] - Ru/Ms[iSpecies] * Tref[iSpecies];
-//      if (thetav[iSpecies] != 0)
-//        evibs = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve) - 1.0);
-//      else
-//        evibs = 0.0;
-//
-//      num = 0.0;
-//      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
-//      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-//        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-//      }
-//      eels = Ru/Ms[iSpecies] * (num/denom);
-//      
-//      dTdrhos[iSpecies]   = (-Cvtrs*(T - Tref[iSpecies]) - ef + 0.5*sqvel) / rhoCvtr;
-//      dTvedrhos[iSpecies] = -(evibs + eels) / rhoCvve;
-//    }
-//    for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-//      ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
-//      dTdrhos[nSpecies-1] = (-ef + 0.5*sqvel) / rhoCvtr;
-//      dTvedrhos[nSpecies-1] = -(3.0/2.0) * Ru/Ms[nSpecies-1] * Tve / rhoCvve;
-//    }
-    dTdrhou     = -u / rhoCvtr;
-    dTdrhov     = -v / rhoCvtr;
-    dTdrhow     = -w / rhoCvtr;
-    dTdrhoE     = 1.0 / rhoCvtr;
-    dTdrhoEve   = -1.0 / rhoCvtr;
-    dTvedrhou   = 0.0;
-    dTvedrhov   = 0.0;
-    dTvedrhow   = 0.0;
-    dTvedrhoE   = 0.0;
-    dTvedrhoEve = 1.0 / rhoCvve;
-  }
-  
 
   /*--- Loop over species to calculate source term --*/
   Qtv = 0.0;
@@ -2656,33 +2440,10 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
         Cvvst = Ru/Ms[iSpecies] * thoT*thoT * expt / ((expt-1.0)*(expt-1.0));
         Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
         
-        /*--- Density ---*/
         val_Jacobian_i[nEv][iSpecies] += (estar - evib)/tau * Volume;
-        for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-          val_Jacobian_i[nEv][jSpecies] += U_i[iSpecies]/tau * (Cvvst*dTdrhos[jSpecies] - Cvvs*dTvedrhos[jSpecies]) * Volume;
-        
-        if (tau == 0)
-          cout << "tau=0" << endl;
-        if (tau!=tau)
-          cout << "tau NaN" << endl;
-        if (Cvvst != Cvvst) {
-          cout << "Cvvst NaN" << endl;
-          cout << "expt: " << expt << endl;
-          cout << "T: " << T << endl;
-        }
-        if (Cvvs != Cvvs)
-          cout << "Cvvs NaN" << endl;
-        
-        /*--- Momentum ---*/
-        val_Jacobian_i[nEv][nSpecies]      += U_i[iSpecies]/tau * (Cvvst*dTdrhou - Cvvs*dTvedrhou) * Volume;
-        val_Jacobian_i[nEv][nSpecies+1]    += U_i[iSpecies]/tau * (Cvvst*dTdrhov - Cvvs*dTvedrhov) * Volume;
-        val_Jacobian_i[nEv][nSpecies+2]    += U_i[iSpecies]/tau * (Cvvst*dTdrhow - Cvvs*dTvedrhow) * Volume;
-        
-        /*--- Energy ---*/
-        val_Jacobian_i[nEv][nSpecies+nDim] += U_i[iSpecies]/tau * (Cvvst*dTdrhoE - Cvvs*dTvedrhoE) * Volume;
-        
-        /*--- Vibrational energy ---*/
-        val_Jacobian_i[nEv][nEv]           += U_i[iSpecies]/tau * (Cvvst*dTdrhoEve - Cvvs*dTvedrhoEve) * Volume;
+        for (jVar = 0; jVar < nVar; jVar++)
+          val_Jacobian_i[nEv][jVar] += U_i[iSpecies]/tau * (Cvvst*dTdU_i[jVar] -
+                                                            Cvvs*dTvedU_i[jVar]  ) * Volume;
       }
     }
   }

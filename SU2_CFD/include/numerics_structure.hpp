@@ -206,10 +206,10 @@ public:
   
   double *l, *m;
   double *dPdU_i, *dPdU_j;
-  double *dTdrhos_i, *dTdrhos_j;
-  double *dTvedrhos_i, *dTvedrhos_j;
-    unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-    RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  double *dTdU_i, *dTdU_j;
+  double *dTvedU_i, *dTvedU_j;
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
     
 	/*!
 	 * \brief Constructor of the class.
@@ -876,16 +876,16 @@ public:
     void SetdPdU(double *val_dPdU_i, double *val_dPdU_j);
   
   /*!
-	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
+	 * \brief Sets the value of the derivative of temperature w.r.t. species density.
 	 * \param[in] iRho_s
 	 */
-  void SetdTdrhos(double *val_dTdrhos_i, double *val_dTdrhos_j);
+  void SetdTdU(double *val_dTdU_i, double *val_dTdU_j);
   
   /*!
-	 * \brief Sets the value of the derivative of pressure w.r.t. species density.
+	 * \brief Sets the value of the derivative of vib-el. temperature w.r.t. species density.
 	 * \param[in] iRho_s
 	 */
-  void SetdTvedrhos(double *val_dTvedrhos_i, double *val_dTvedrhos_j);
+  void SetdTvedU(double *val_dTvedU_i, double *val_dTvedU_j);
   
 	/*!
 	 * \brief Get the inviscid fluxes.
@@ -6830,7 +6830,7 @@ private:
     double **RxnConstantTable;
     double *dkf, *dkb, *dRfok, *dRbok, *A;
     double *evibs, *eels, *Cvvs, *Cves;
-    double *dTdrhos, *dTvedrhos;
+
 public:
     
 	/*!

@@ -145,9 +145,9 @@ inline void CNumerics::SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX
 
 inline void CNumerics::SetdPdU(double *val_dPdU_i, double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
 
-inline void CNumerics::SetdTdrhos(double *val_dTdrhos_i, double *val_dTdrhos_j) { dTdrhos_i = val_dTdrhos_i; dTdrhos_j = val_dTdrhos_j; }
+inline void CNumerics::SetdTdU(double *val_dTdU_i, double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
 
-inline void CNumerics::SetdTvedrhos(double *val_dTvedrhos_i, double *val_dTvedrhos_j) { dTvedrhos_i = val_dTvedrhos_i; dTvedrhos_j = val_dTvedrhos_j; }
+inline void CNumerics::SetdTvedU(double *val_dTvedU_i, double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
 	
 inline void CNumerics::SetUndivided_Laplacian(double *val_und_lapl_i, double *val_und_lapl_j) {
 	Und_Lapl_i = val_und_lapl_i; 
