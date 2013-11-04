@@ -106,6 +106,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
 	Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
+  MoveMotion_Origin = NULL;
 
     
 	/* BEGIN_CONFIG_OPTIONS */
@@ -170,6 +171,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
 	/* DESCRIPTION: Symmetry boundary condition */
 	AddMarkerOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
+  /* DESCRIPTION: Symmetry boundary condition */
+	AddMarkerOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
 	/* DESCRIPTION: Near-Field boundary condition */
 	AddMarkerOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
 	/* DESCRIPTION: Zone interface boundary marker(s) */
@@ -402,6 +405,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
 	/* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
 	AddListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  /* DESCRIPTION: Value to move motion origins (1 or 0) */
+	AddListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
 	/* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
@@ -937,12 +942,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
-	/* DESCRIPTION: Grid deformation technique */
-	AddEnumOption("GRID_DEFORM_METHOD", Kind_GridDef_Method, Deform_Map, "FEA");
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 10);
+	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -1044,7 +1047,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Kind_SU2 = val_software;
   
   /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
-  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_EDU) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     exit(1);
@@ -1059,10 +1062,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
-  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
+  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL) || (Kind_SU2 == SU2_EDU))) Mesh_FileFormat = SU2;
 
-  /*--- Divide grid if runnning SU2_MDC ---*/
-  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
+//  /*--- Divide grid if runnning SU2_MDC ---*/
+//  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (Kind_Regime == FREESURFACE) {
@@ -1103,7 +1106,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_EDU) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
@@ -1181,6 +1184,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		} else {
       if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
         cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
+        exit(1);
+      }
+    }
+
+    if (MoveMotion_Origin == NULL) {
+      MoveMotion_Origin = new unsigned short[nMoving];
+      for (iZone = 0; iZone < nMoving; iZone++ )
+        MoveMotion_Origin[iZone] = 0;
+    } else {
+      if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
+        cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
         exit(1);
       }
     }
@@ -1734,11 +1748,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
 	}
 
-  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
+  if (((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU)) && (Kind_Solver == NO_SOLVER)) {
 		cout << "You must define a solver type!!" << endl;
 		exit(1);
 	}
-
+  
 	if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
 			&& (Kind_ViscNumScheme_Flow == NONE)) {
 		cout << "You must define a viscous numerical method for the flow equations!!" << endl;
@@ -3382,7 +3396,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_Custom + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -3395,7 +3409,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
-	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
 	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
 	iMarker_Supersonic_Inlet;
@@ -3412,7 +3426,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_PerBound[iMarker_All]   = 0;
 	}
 
-	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound
+	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
@@ -3451,6 +3465,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
 		Marker_Config_Tag[iMarker_Config] = Marker_SymWall[iMarker_SymWall];
 		Marker_Config_Boundary[iMarker_Config] = SYMMETRY_PLANE;
+		iMarker_Config++;
+	}
+  
+  for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_Pressure[iMarker_Pressure];
+		Marker_Config_Boundary[iMarker_Config] = PRESSURE_BOUNDARY;
 		iMarker_Config++;
 	}
 
@@ -3595,7 +3615,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
-	iMarker_SymWall, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+	iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
@@ -3606,6 +3626,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
 	switch (val_software) {
 	case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamic Code)  |" << endl; break;
+  case SU2_EDU: cout << "|  |_____/   \\____/  |____|   Suite (Educational Code)                  |" << endl; break;
 	case SU2_MDC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
 	case SU2_GPC: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
 	case SU2_DDC: cout << "|  |_____/   \\____/  |____|   Suite (Domain Decomposition Code)         |" << endl; break;
@@ -3626,7 +3647,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		switch (Kind_Solver) {
       case EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
@@ -3857,10 +3878,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_MDC) {
 		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
-		switch (Kind_GridDef_Method) {
-      case SPRING: cout << "Grid deformation using a classical spring method." << endl; break;
-      case FEA: cout << "Grid deformation using a linear elasticity method." << endl; break;
-		}
+		cout << "Grid deformation using a linear elasticity method." << endl;
 
 		if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
 			if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
@@ -3925,7 +3943,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Linearized )) || (val_software == SU2_GPC)) {
+	if ((((val_software == SU2_CFD) || (val_software == SU2_EDU)) && ( Linearized )) || (val_software == SU2_GPC)) {
 		cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
 		cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
 		for (unsigned short iDV = 0; iDV < nDV; iDV++) {
@@ -3987,7 +4005,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
+	if ((((val_software == SU2_CFD) || (val_software == SU2_EDU)) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -4019,7 +4037,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	}
 
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
@@ -4518,10 +4536,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Euler implicit time integration for the turbulence model." << endl;
 	}
 
-	if (val_software == SU2_CFD)
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU))
 		cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
 
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		cout << "Maximum number of iterations: " << nExtIter <<"."<<endl;
 
 		if (ConvCriteria == CAUCHY) {
@@ -4616,7 +4634,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cerr << "Error: STL output file format only valid for SU2_MDC" << endl; throw(-1);
 	}
 
-	if (val_software == SU2_CFD) {
+	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 
 		cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
 		cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
@@ -4734,6 +4752,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
 			cout << Marker_SymWall[iMarker_SymWall];
 			if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
+  if (nMarker_Pressure != 0) {
+		cout << "Pressure boundary marker(s): ";
+		for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
+			cout << Marker_Pressure[iMarker_Pressure];
+			if (iMarker_Pressure < nMarker_Pressure-1) cout << ", ";
 			else cout <<"."<<endl;
 		}
 	}
@@ -5448,6 +5475,8 @@ CConfig::~CConfig(void)
 		delete [] Motion_Origin_Y;
 	if (Motion_Origin_Z != NULL)
 		delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL)
+    delete [] MoveMotion_Origin;
 
 	/*--- rotation: ---*/
 	if (Rotation_Rate_X != NULL)

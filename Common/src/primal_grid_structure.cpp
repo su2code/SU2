@@ -527,6 +527,7 @@ void CWedge::Change_Orientation(void) {
 	Nodes[1] = Point_0;
 	Nodes[3] = Point_4;
 	Nodes[4] = Point_3;
+  
 }
 
 unsigned short CPyramid::Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};

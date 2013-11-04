@@ -270,7 +270,7 @@ if __name__=="__main__":
   cylinder.cfg_dir   = "TestCases/navierstokes/cylinder"
   cylinder.cfg_file  = "lam_cylinder_JST.cfg"
   cylinder.test_iter = 25
-  cylinder.test_vals = [-9.760849,-8.884867,-0.058082,3.716108]
+  cylinder.test_vals = [-9.760817,-8.884991,-0.058051,3.716147]
   cylinder.su2_exec  = "SU2_CFD"
   cylinder.timeout   = 1600
   cylinder.tol       = 0.00001
@@ -443,7 +443,7 @@ if __name__=="__main__":
   ramc.cfg_dir   = "TestCases/tne2/ramc"
   ramc.cfg_file  = "ramc61km.cfg"
   ramc.test_iter = 25
-  ramc.test_vals = [-4.638119,2.854480,-4.439634,0.000176]
+  ramc.test_vals = [-4.638119,2.854417,-4.439634,0.000000]
   ramc.su2_exec  = "SU2_CFD"
   ramc.timeout   = 1600
   ramc.tol       = 0.00001

@@ -143,7 +143,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 
     if (axisymmetric) {
       Jacobian_Axisymmetric = new double* [nVar];
@@ -4731,7 +4731,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		}
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
   } else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
@@ -5414,6 +5414,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
                 psi5_tau_grad_vel += Psi[nDim+1]*tau[iDim][jDim]*PrimVar_Grad[iDim+1][jDim];
             
             /*--- Retrieve the angular velocity vector ---*/
+            source_v_1 = 0.0; source_v_2 = 0.0;
             if (rotating_frame) {
               
               Omega[0]  = (config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref());
@@ -5430,7 +5431,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               CrossProduct[1] = Omega[2]*rho_v[0] - Omega[0]*rho_v[2];
               CrossProduct[2] = Omega[0]*rho_v[1] - Omega[1]*rho_v[0];
               
-              source_v_1 = 0.0; source_v_2 = 0.0;
+              
               for(iDim = 0; iDim < nDim; iDim++) {
                 source_v_1 += Psi[iDim+1]*CrossProduct[iDim];
               }

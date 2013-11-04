@@ -97,7 +97,7 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
       
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Adj. Level Set). MG level: 0." << endl;
-      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, geometry);
+      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
       
     }
 	
