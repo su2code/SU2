@@ -467,7 +467,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
-  maxIter = 50;
+  maxIter = 100;
   
   /*--- Determine the number of heavy species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -511,6 +511,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Use T as an initial guess
   Tve   = Primitive[TVE_INDEX];
   Tve_o = Primitive[TVE_INDEX];
+//  Tve   = Primitive[T_INDEX];
+//  Tve_o = Primitive[T_INDEX];
   
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
@@ -567,8 +569,9 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     df = -rhoCvve;
     Tve2 = Tve - (f/df)*0.5;
     
-    if (Tve2 < 0.0)
-      Tve2 = EPS;
+    /*--- Check for non-physical conditions ---*/
+    if ((Tve2 != Tve2) || (Tve2 < 0))
+      Tve2 = Primitive[T_INDEX];
     
     /*--- Check for convergence ---*/
     if (fabs(Tve2-Tve) < tol) break;
@@ -579,7 +582,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       cout << "T: " << Primitive[T_INDEX] << endl;
       cout << "Tve2: " << Tve2 << endl;
       cout << "Tve_o: " << Tve_o << endl;
-      //        cin.get();
       Tve2 = Tve_o;
       break;
     }
@@ -1359,6 +1361,14 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
   SetDiffusionCoeff(config);
   SetLaminarViscosity(config);                    // Requires temperature computation.
   SetThermalConductivity(config);
+  
+//  for (iVar = 0; iVar < nPrimVar; iVar++)
+//    cout << "V[" << iVar << "]: " << Primitive[iVar] << endl;
+//  cout << "Check T: " << check_temp << endl;
+//  cout << "Check P: " << check_press << endl;
+//  cout << "Check sos: " << check_sos << endl;
+//  cout << "Check density: " << check_dens << endl;
+//  cin.get();
   
   return RightVol;
 }
