@@ -143,9 +143,9 @@
   /usr/include/c++/4.2.1/bits/vector.tcc \
   ../../SU2_CFD/src/../include/../../Common/include/./option_structure.hpp \
   ../../SU2_CFD/src/../include/../../Common/include/config_structure.inl \
-  ../../SU2_CFD/src/../include/numerics_structure.inl \
   ../../SU2_CFD/src/../include/variable_structure.hpp \
   ../../SU2_CFD/src/../include/variable_structure.inl \
+  ../../SU2_CFD/src/../include/numerics_structure.inl \
   ../../SU2_CFD/src/../include/../../Common/include/geometry_structure.hpp \
   /Users/brendan/software/metis-4.0.3/Lib/metis.h /usr/include/strings.h \
   /Users/brendan/software/metis-4.0.3/Lib/defs.h \
@@ -558,11 +558,11 @@
 
 ../../SU2_CFD/src/../include/../../Common/include/config_structure.inl:
 
-../../SU2_CFD/src/../include/numerics_structure.inl:
-
 ../../SU2_CFD/src/../include/variable_structure.hpp:
 
 ../../SU2_CFD/src/../include/variable_structure.inl:
+
+../../SU2_CFD/src/../include/numerics_structure.inl:
 
 ../../SU2_CFD/src/../include/../../Common/include/geometry_structure.hpp:
 

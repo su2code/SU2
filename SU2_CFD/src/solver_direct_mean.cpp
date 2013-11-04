@@ -1788,12 +1788,22 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
   }
   
-  if (config->GetKind_Turb_Model()==ML){
+  if (config->GetKind_Turb_Model()==ML && ExtIter == 0){
     // Call the ML executable code
 #ifndef NO_MPI
     cout << "Not coded for parallel";
     exit(1);
 #endif
+    
+    // Construct the nnet
+    string readFile = config->GetML_Turb_Model_File();
+    string checkFile = config->GetML_Turb_Model_Check_File();
+    cout << "Loading ML file from " << readFile << endl;
+    CNeurNet* Net = new CNeurNet(readFile, checkFile);
+    config->SetML_Model(Net);
+    cout << "ML File successfully read asouth " << endl;
+    
+    /*
     // Open the write file
     ofstream ml_write;
     string writename =config->GetML_Turb_Model_Write();
@@ -1819,6 +1829,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       cout<<endl<<"Error in system call to start ML service";
       exit(1);
     }
+     */
   }
 }
 

@@ -41,5 +41,6 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../include/definition_structure.hpp"
 #include "../include/iteration_structure.hpp"
+#include "nnet.hpp"
 
 using namespace std;

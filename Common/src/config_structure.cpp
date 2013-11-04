@@ -126,14 +126,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
-  /* DESCRIPTION: Location of the executable for calling the machine learning code  */
-	AddScalarOption("ML_TURB_EXEC", ML_Turb_Exec, string("cfd_caller"));
-  /* DESCRIPTION: Temporary writer file between c++ and ML code  */
-	AddScalarOption("ML_TURB_MODEL_WRITE", ML_Turb_Model_Write, string("tmp_su2_to_ml.txt"));
-  /* DESCRIPTION: Temporary writer file between c++ and ML code  */
-	AddScalarOption("ML_TURB_MODEL_READ", ML_Turb_Model_Read, string("tmp_ml_to_su2.txt"));
-  /* DESCRIPTION: Location of the turb model itself (to pass to TURB_MODEL_EXEC)  */
-	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.gob"));
+  /* DESCRIPTION: Location of the turb model itself */
+	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: Location of the check for the proper loading of the turbulence model */
+	AddScalarOption("ML_TURB_MODEL_CHECK_FILE", ML_Turb_Model_Check_File, string("check_model.txt"));
   /* DESCRIPTION:  */
 	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Specify transition model */
@@ -5418,6 +5414,7 @@ CConfig::~CConfig(void)
 	delete [] MG_PreSmooth;
 	delete [] MG_PostSmooth;
 	delete [] U_FreeStreamND;
+  delete Net;
 
 	/*--- If allocated, delete arrays for Plasma solver ---*/
 	if (Species_Gas_Constant != NULL) delete [] Species_Gas_Constant;
