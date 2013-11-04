@@ -1174,6 +1174,16 @@ public:
 	virtual void CalcdPdU(double *V, CConfig *config, double *dPdU);
   
   /*!
+   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  virtual void CalcdTdU(double *V, CConfig *config, double *dTdU);
+  
+  /*!
+   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  virtual void CalcdTvedU(double *V, CConfig *config, double *dTdU);
+  
+  /*!
 	 * \brief A virtual member.
 	 */
 	virtual double *GetdPdU(void);
@@ -1181,12 +1191,12 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetdTdrhos(void);
+	virtual double *GetdTdU(void);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetdTvedrhos(void);
+	virtual double *GetdTvedU(void);
   
   /*!
 	 * \brief A virtual member.
@@ -3599,8 +3609,8 @@ protected:
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
   double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
   double *dPdU;                 /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
-  double *dTdrhos;
-  double *dTvedrhos;
+  double *dTdU;  /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
+  double *dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
   
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
@@ -3734,6 +3744,16 @@ public:
    * \param[in] dPdU - Passed-by-reference array to assign the derivatives
    */
   void CalcdPdU(double *V, CConfig *config, double *dPdU);
+
+  /*!
+   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  void CalcdTdU(double *V, CConfig *config, double *dTdU);
+  
+  /*!
+   * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  void CalcdTvedU(double *V, CConfig *config, double *dTvedU);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -3751,14 +3771,14 @@ public:
   double *GetdPdU(void);
   
   /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial T}{\partial \rho_s}\f$
    */
-  double *GetdTdrhos(void);
+  double *GetdTdU(void);
   
   /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial T^{V-E}}{\partial \rho_s}\f$
    */
-  double *GetdTvedrhos(void);
+  double *GetdTvedU(void);
   
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.

@@ -1856,8 +1856,8 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
-    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
-    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
+    numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
+    numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
     
     /*--- Set the largest convective eigenvalue ---*/
 		numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
@@ -1928,8 +1928,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
-    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
-    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
+    numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
+    numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
     
     /*--- Compute the upwind residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);    
@@ -1991,8 +1991,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
-    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[iPoint]->GetdTdrhos());
-    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[iPoint]->GetdTvedrhos());
+    numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
+    numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -2009,16 +2009,6 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
-/*    if (iPoint == 25024) {
-      cout << "T: " << node[iPoint]->GetPrimVar(nSpecies) << endl;
-      cout << "Tve: " << node[iPoint]->GetPrimVar(nSpecies+1) << endl;
-      cout << "Chemistry: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        cout << Residual[iVar] << endl;
-      }
-      cin.get();
-    }*/
     
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -4599,8 +4589,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
 
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
-    numerics->SetdTdrhos(node[iPoint]->GetdTdrhos(), node[jPoint]->GetdTdrhos());
-    numerics->SetdTvedrhos(node[iPoint]->GetdTvedrhos(), node[jPoint]->GetdTvedrhos());
+    numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
+    numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
     
     /*--- Species diffusion coefficients ---*/
     numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
@@ -4939,16 +4929,20 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                             node[jPoint]->GetThermalConductivity());
       visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
                                                node[jPoint]->GetThermalConductivity_ve() );
+      visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
+      visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
+      visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
+      
       
       /*--- Compute the viscous residual ---*/
       visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
       
       /*--- Apply to the linear system ---*/
-//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-//      if (implicit) {
-//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-//      }
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      if (implicit) {
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      }
     }
   }
   
@@ -5038,7 +5032,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
   unsigned short iDim, iSpecies, iVar, jVar;
   unsigned short T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint, total_index;
-  double rhoCvtr, rhoCvve, ktr, kve, Ti, Tvei, Tj, Tvej, *dTdrs, *dTvedrs;
+  double rhoCvtr, rhoCvve, ktr, kve, Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
   double Twall, dTdn, dTvedn, dij, theta;
   double Area, *Normal, UnitNormal[3];
   
@@ -5116,8 +5110,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
       Tvei    = node[iPoint]->GetPrimVar(TVE_INDEX);
       Tj      = node[jPoint]->GetPrimVar(T_INDEX);
       Tvej    = node[jPoint]->GetPrimVar(TVE_INDEX);
-      dTdrs   = node[iPoint]->GetdTdrhos();
-      dTvedrs = node[iPoint]->GetdTvedrhos();
+      dTdU   = node[iPoint]->GetdTdU();
+      dTvedU = node[iPoint]->GetdTvedU();
       
       
       /*--- Calculate FD derivative of temperature normal to the surface ---*/
@@ -5148,8 +5142,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
         }
         // total energy
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdrs[iSpecies]
-                                               + kve*theta/dij*dTvedrs[iSpecies]) * Area;
+          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies]
+                                               + kve*theta/dij*dTvedU[iSpecies]) * Area;
         }
         Jacobian_i[nSpecies+3][nSpecies]   = 0.0;
         Jacobian_i[nSpecies+3][nSpecies+1] = 0.0;
@@ -5159,7 +5153,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solution_c
                                                kve*theta/(dij*rhoCvve)) * Area;
         // vib-el. energy
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+4][iSpecies] = -kve*theta/dij * dTvedrs[iSpecies] * Area;
+          Jacobian_i[nSpecies+4][iSpecies] = -kve*theta/dij * dTvedU[iSpecies] * Area;
         }
         Jacobian_i[nSpecies+4][nSpecies+4] = -kve*theta/(dij*rhoCvve) * Area;
       
