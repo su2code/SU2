@@ -1787,7 +1787,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       config->SetAeroelastic_plunge(iMarker_Monitoring,0.0);
     }
   }
-  
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
@@ -6403,7 +6402,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   
   /*--- Compute the dual time-stepping source term for static meshes ---*/
   
-  if (!grid_movement) {
+  if (true) {
     
     /*--- Loop over all nodes (excluding halos) ---*/
     
@@ -6451,7 +6450,10 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
       }
     }
     
-  } else {
+  }
+  
+#ifdef DEBUG_TDE
+  else {
     
     /*--- For unsteady flows on dynamic meshes (rigidly transforming or
      dynamically deforming), the Geometric Conservation Law (GCL) should be
@@ -6580,6 +6582,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
     }
     
   }
+#endif
   
 }
 

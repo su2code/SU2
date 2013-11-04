@@ -335,13 +335,17 @@ inline bool CVariable::SetPressure(double Gamma, double turb_ke) { return false;
 
 inline void CVariable::SetPressure() { }
 
-inline void CVariable::SetdPdrhos(CConfig *config) { }
+inline double *CVariable::GetdPdU() { return NULL; }
 
-inline double *CVariable::GetdPdrhos() { return NULL; }
+inline double *CVariable::GetdTdU() { return NULL; }
 
-inline double *CVariable::GetdTdrhos() { return NULL; }
+inline double *CVariable::GetdTvedU() { return NULL; }
 
-inline double *CVariable::GetdTvedrhos() { return NULL; }
+inline void CVariable::CalcdPdU(double *V, CConfig *config, double *dPdU) { }
+
+inline void CVariable::CalcdTdU(double *V, CConfig *config, double *dTdU) { }
+
+inline void CVariable::CalcdTvedU(double *V, CConfig *config, double *dTvedU) { }
 
 inline void CVariable::SetDensity() { }
 
@@ -841,11 +845,11 @@ inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_I
 
 inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
 
-inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
+inline double* CTNE2EulerVariable::GetdPdU(void) { return dPdU; }
 
-inline double* CTNE2EulerVariable::GetdTdrhos(void) { return dTdrhos; }
+inline double* CTNE2EulerVariable::GetdTdU(void) { return dTdU; }
 
-inline double* CTNE2EulerVariable::GetdTvedrhos(void) { return dTvedrhos; }
+inline double* CTNE2EulerVariable::GetdTvedU(void) { return dTvedU; }
 
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) {
 double velocity;

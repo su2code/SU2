@@ -90,7 +90,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
-  double MinLength, NumError, MinVol;
+  double MinVolume, NumError;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -127,11 +127,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
-    MinLength = SetFEAMethodContributions_Elem(geometry);
+    MinVolume = SetFEAMethodContributions_Elem(geometry);
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinLength * 1E-3;
+    NumError = MinVolume * 1.0;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
@@ -158,7 +158,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
     
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 999, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -175,11 +175,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    MinVol = Check_Grid(geometry);
+    MinVolume = Check_Grid(geometry);
     
     if (rank == MASTER_NODE) {
       cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
-      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVol
+      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVolume
       << ". Error: " << NumError << "." <<endl;
     }
     
@@ -352,7 +352,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
-    /*--- Create a list with the degenerated elements ---*/
+    /*--- Create a list with the degenerate elements ---*/
 
     if (!RightVol) ElemCounter++;
       
@@ -381,6 +381,9 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
   delete [] Edge_Vector;
   
+  /*--- If there are no degenerate cells, use the minimum volume instead ---*/
+  if (ElemCounter == 0) MinLength = Scale;
+      
 	return MinLength;
 }
 
@@ -1138,14 +1141,14 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
           B_Matrix[5][2+iNode*nVar] = DShapeFunction[iNode][0];
         }
         
-//      double E = scale / (iWeight * jWeight * kWeight * Det) ;
-//      double Mu = E;
-//      double Lambda = -E;
+      double E = scale / (iWeight * jWeight * kWeight * Det) ;
+      double Mu = E;
+      double Lambda = -E;
         
-        double E = 2E11;
-        double Nu = 0.30;
-        double Mu = E / (2.0*(1.0 + Nu));
-        double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//        double E = 2E11;
+//        double Nu = 0.30;
+//        double Mu = E / (2.0*(1.0 + Nu));
+//        double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
         
         /*--- Compute the D Matrix (for plane strain and 3-D)---*/
         
@@ -1234,14 +1237,14 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
         B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
       }
       
-//      double E = scale / (iWeight * jWeight * Det) ;
-//      double Mu = E;
-//      double Lambda = -E;
+      double E = scale / (iWeight * jWeight * Det) ;
+      double Mu = E;
+      double Lambda = -E;
       
-      double E = 2E11;
-      double Nu = 0.30;
-      double Mu = E / (2.0*(1.0 + Nu));
-      double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//      double E = 2E11;
+//      double Nu = 0.30;
+//      double Mu = E / (2.0*(1.0 + Nu));
+//      double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
       
       /*--- Compute the D Matrix (for plane strain and 3-D)---*/
       
@@ -2904,7 +2907,8 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
   Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(0.1524);
   Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(0.1524);
   Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(0.1524);
-  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(1.41372);   Radius_Spline.push_back(0.1524);
+//  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
   
   
   /*--- Read the baseline spline ---*/
@@ -2971,7 +2975,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
         
         x = 0.1524 - Coord[0];	// HARD-CODED VALUE; needs to be fixed (MC)
         
-        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.128559))  {
+        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.12855939))  {
           
           /*--- Compute the coordinate variation due to a surface modification, given
            ControlPoint_Index, Theta, Radius, and Ampl ---*/
@@ -3543,7 +3547,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
           for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }
@@ -3730,7 +3734,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
             if (nDim == 2) VarCoord[nDim] = 0.0;
             
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }
@@ -3869,7 +3873,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
             if (nDim == 2) VarCoord[nDim] = 0.0;
             
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
             
           }
         }
@@ -4434,266 +4438,350 @@ void CSurfaceMovement::SetObstacle(CGeometry *boundary, CConfig *config) {
 }
 
 void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
-	unsigned long iVertex, Point;
-	unsigned short iMarker;
-	double VarCoord[3], *Coord, NewYCoord, NewXCoord;
+  unsigned long iVertex, Point;
+  unsigned short iMarker;
+  double VarCoord[3], *Coord, NewYCoord, NewXCoord;
   unsigned long n_Upper, n_Lower, n_Nose;
-	vector<double> Xcoord_Upper, Ycoord_Upper, Y2coord_Upper, Xcoord_Lower, Ycoord_Lower, Y2coord_Lower;
+  vector<double> Xcoord_Upper, Ycoord_Upper, Y2coord_Upper, Xcoord_Lower, Ycoord_Lower, Y2coord_Lower;
   vector<double> Xcoord_Nose, Ycoord_Nose, X2coord_Nose;
   double yp1, ypn, xp1, xpn;
-
-	if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
-
-  double SurfaceNose[24]={
-    0.2530661E-02,0.5214167E-02
-    ,0.1563217E-02,0.4076173E-02
-    ,0.8322645E-03,0.2988511E-02
-    ,0.3316348E-03,0.1958269E-02
-    ,0.5729375E-04,0.9763469E-03
-    ,0.1019368E-04,0.1822260E-04
-    ,0.2045149E-03,-0.9430565E-03
-    ,0.6654488E-03,-0.1916868E-02
-    ,0.1440709E-02,-0.2891670E-02
-    ,0.2555926E-02,-0.3843460E-02
-    ,0.3990158E-02,-0.4757584E-02
-    ,0.5714127E-02,-0.5625263E-02
-  };
-
-
-  double SurfaceUpper[164]={
-    0.9999999,-0.2491084E-03
-    ,0.9918991,0.9365876E-03
-    ,0.9807974,0.2511087E-02
-    ,0.9680250,0.4265705E-02
-    ,0.9540503,0.6126390E-02
-    ,0.9392941,0.8036156E-02
-    ,0.9240856,0.9959271E-02
-    ,0.9086373,0.1187350E-01
-    ,0.8930740,0.1376431E-01
-    ,0.8774481,0.1562638E-01
-    ,0.8617803,0.1745765E-01
-    ,0.8460882,0.1925645E-01
-    ,0.8303867,0.2102067E-01
-    ,0.8146843,0.2274803E-01
-    ,0.7989840,0.2443693E-01
-    ,0.7832827,0.2608652E-01
-    ,0.7675788,0.2769612E-01
-    ,0.7518733,0.2926473E-01
-    ,0.7361701,0.3079099E-01
-    ,0.7204739,0.3227288E-01
-    ,0.7047866,0.3370847E-01
-    ,0.6891075,0.3509608E-01
-    ,0.6734334,0.3643441E-01
-    ,0.6577614,0.3772255E-01
-    ,0.6420905,0.3895947E-01
-    ,0.6264214,0.4014402E-01
-    ,0.6107559,0.4127485E-01
-    ,0.5950962,0.4235041E-01
-    ,0.5794436,0.4336921E-01
-    ,0.5637982,0.4432987E-01
-    ,0.5481589,0.4523106E-01
-    ,0.5325251,0.4607162E-01
-    ,0.5168974,0.4685029E-01
-    ,0.5012768,0.4756583E-01
-    ,0.4856656,0.4821691E-01
-    ,0.4700658,0.4880213E-01
-    ,0.4544781,0.4932012E-01
-    ,0.4389019,0.4976954E-01
-    ,0.4233350,0.5014910E-01
-    ,0.4077758,0.5045772E-01
-    ,0.3922261,0.5069433E-01
-    ,0.3766911,0.5085787E-01
-    ,0.3611794,0.5094726E-01
-    ,0.3457003,0.5096043E-01
-    ,0.3302560,0.5089460E-01
-    ,0.3148428,0.5074789E-01
-    ,0.2994567,0.5051910E-01
-    ,0.2841039,0.5020768E-01
-    ,0.2688212,0.4981396E-01
-    ,0.2536651,0.4933343E-01
-    ,0.2386756,0.4875812E-01
-    ,0.2238800,0.4807835E-01
-    ,0.2093064,0.4728408E-01
-    ,0.1949814,0.4636303E-01
-    ,0.1809183,0.4530245E-01
-    ,0.1671018,0.4408741E-01
-    ,0.1534824,0.4270363E-01
-    ,0.1400305,0.4114566E-01
-    ,0.1267515,0.3941199E-01
-    ,0.1136444,0.3750140E-01
-    ,0.1007307,0.3542566E-01
-    ,0.8812914E-01,0.3321750E-01
-    ,0.7608656E-01,0.3093479E-01
-    ,0.6490525E-01,0.2863815E-01
-    ,0.5480972E-01,0.2637713E-01
-    ,0.4593079E-01,0.2419394E-01
-    ,0.3828108E-01,0.2210981E-01
-    ,0.3176194E-01,0.2012844E-01
-    ,0.2623813E-01,0.1824764E-01
-    ,0.2156484E-01,0.1646547E-01
-    ,0.1760671E-01,0.1477901E-01
-    ,0.1424349E-01,0.1318274E-01
-    ,0.1138616E-01,0.1167198E-01
-    ,0.8964834E-02,0.1024517E-01
-    ,0.6919064E-02,0.8898116E-02
-    ,0.5194428E-02,0.7619480E-02
-    ,0.3740570E-02,0.6395260E-02
-    ,0.2530661E-02,0.5214167E-02
-    ,0.1563217E-02,0.4076173E-02
-    ,0.8322645E-03,0.2988511E-02
-    ,0.3316348E-03,0.1958269E-02
-    ,1.15755e-05, 0.0  };
   
-  double SurfaceLower[156]={
-     1.15755e-05, 0.0
-    ,0.2045149E-03,-0.9430565E-03
-    ,0.6654488E-03,-0.1916868E-02
-    ,0.1440709E-02,-0.2891670E-02
-    ,0.2555926E-02,-0.3843460E-02
-    ,0.3990158E-02,-0.4757584E-02
-    ,0.5714127E-02,-0.5625263E-02
-    ,0.7736213E-02,-0.6451506E-02
-    ,0.1007945E-01,-0.7247711E-02
-    ,0.1276587E-01,-0.8023284E-02
-    ,0.1584185E-01,-0.8779585E-02
-    ,0.1936523E-01,-0.9520845E-02
-    ,0.2342322E-01,-0.1024916E-01
-    ,0.2813296E-01,-0.1096327E-01
-    ,0.3363958E-01,-0.1166049E-01
-    ,0.4012395E-01,-0.1233193E-01
-    ,0.4779375E-01,-0.1296830E-01
-    ,0.5684470E-01,-0.1355978E-01
-    ,0.6737892E-01,-0.1409094E-01
-    ,0.7937749E-01,-0.1454535E-01
-    ,0.9265041E-01,-0.1492356E-01
-    ,0.1068000,-0.1521960E-01
-    ,0.1215279,-0.1542541E-01
-    ,0.1366532,-0.1554682E-01
-    ,0.1520281,-0.1559083E-01
-    ,0.1675627,-0.1556318E-01
-    ,0.1832468,-0.1546826E-01
-    ,0.1990957,-0.1531805E-01
-    ,0.2150661,-0.1512539E-01
-    ,0.2311248,-0.1489586E-01
-    ,0.2472858,-0.1463641E-01
-    ,0.2635509,-0.1435651E-01
-    ,0.2798936,-0.1406454E-01
-    ,0.2962691,-0.1376673E-01
-    ,0.3126479,-0.1346288E-01
-    ,0.3290385,-0.1315323E-01
-    ,0.3454517,-0.1284268E-01
-    ,0.3618815,-0.1253374E-01
-    ,0.3783194,-0.1222450E-01
-    ,0.3947605,-0.1191412E-01
-    ,0.4112030,-0.1160335E-01
-    ,0.4276454,-0.1129297E-01
-    ,0.4440887,-0.1098372E-01
-    ,0.4605341,-0.1067562E-01
-    ,0.4769824,-0.1036815E-01
-    ,0.4934336,-0.1006076E-01
-    ,0.5098863,-0.9752984E-02
-    ,0.5263394,-0.9444835E-02
-    ,0.5427916,-0.9136708E-02
-    ,0.5592429,-0.8828991E-02
-    ,0.5756934,-0.8522025E-02
-    ,0.5921443,-0.8215726E-02
-    ,0.6085962,-0.7909696E-02
-    ,0.6250496,-0.7603546E-02
-    ,0.6415042,-0.7296926E-02
-    ,0.6579600,-0.6989801E-02
-    ,0.6744171,-0.6682294E-02
-    ,0.6908755,-0.6374541E-02
-    ,0.7073354,-0.6066657E-02
-    ,0.7237964,-0.5758745E-02
-    ,0.7402567,-0.5450925E-02
-    ,0.7567131,-0.5143346E-02
-    ,0.7731617,-0.4836465E-02
-    ,0.7896016,-0.4531061E-02
-    ,0.8060347,-0.4227862E-02
-    ,0.8224665,-0.3927124E-02
-    ,0.8389008,-0.3627864E-02
-    ,0.8553367,-0.3328958E-02
-    ,0.8717662,-0.3029519E-02
-    ,0.8881675,-0.2729255E-02
-    ,0.9044990,-0.2428215E-02
-    ,0.9206909,-0.2124476E-02
-    ,0.9366255,-0.1814706E-02
-    ,0.9521102,-0.1496142E-02
-    ,0.9667604,-0.1169115E-02
-    ,0.9800752,-0.8375850E-03
-    ,0.9916053,-0.5108843E-03
-    ,0.9999999,-0.2491084E-03
-  };
   
   unsigned short iVar;
+  unsigned long n_Airfoil = 0;
+  double Airfoil_Coord[2];
+  double c = 1.0, angle, x, y, r;
+  vector<double> Xcoord, Ycoord, Theta, Radius, Radius2;
   
-  for (iVar = 0; iVar < 82; iVar++) {
-    Xcoord_Upper.push_back (SurfaceUpper[162-iVar*2]-1.15755e-05);
-    Ycoord_Upper.push_back (SurfaceUpper[162-iVar*2+1]);
+  if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
+  
+  /*--- Read in the airfoil coordinates from file. It is assumed that the 
+   airfoil coordinates are given in order starting from the trailing edge, 
+   over the upper surface, nose, lower surface, and back to the trailing edge. ---*/
+  
+  ifstream airfoil_file;
+  string text_line;
+  
+  /*--- Open the restart file, throw an error if this fails. ---*/
+  airfoil_file.open("naca0015.dat", ios::in);
+  if (airfoil_file.fail()) {
+    cout << "There is no airfoil file!! "<< endl;
+    exit(1);
   }
   
-  for (iVar = 0; iVar < 78; iVar++) {
-    Xcoord_Lower.push_back(SurfaceLower[iVar*2]-1.15755e-05);
-    Ycoord_Lower.push_back(SurfaceLower[iVar*2+1]);
+  /*--- The first line is the header ---*/
+  getline (airfoil_file, text_line);
+  
+  /*--- Read the coordinates from the rest of the file ---*/
+  while (getline (airfoil_file, text_line)) {
+    istringstream point_line(text_line);
+    
+    /*--- Read the x & y coordinates from this line of the file ---*/
+    point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+    
+    /*--- Store the coordinates in vectors ---*/
+    Xcoord.push_back(Airfoil_Coord[0]);
+    Ycoord.push_back(Airfoil_Coord[1]);
   }
   
-  for (iVar = 0; iVar < 12; iVar++) {
-    Xcoord_Nose.push_back(SurfaceNose[22-iVar*2]-1.15755e-05);
-    Ycoord_Nose.push_back(SurfaceNose[22-iVar*2+1]);
+  /*--- Map the x & y coordinates into polar coordinates as if the airfoil
+   makes up a circle around x = chord/2 (for now c is constant at 1.0). ---*/
+  
+  for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+    
+    x = Xcoord[iVar] - c/2.0;
+    y = Ycoord[iVar];
+    r = sqrt(x*x + y*y);
+    angle =  atan2(y, x);
+    
+    /*--- Add 2*pi to negative angles in order to make fitting easier,
+     i.e. 0 <= Theta <= 2*pi. ---*/
+    if (angle < 0.0) angle += 2.0*PI_NUMBER;
+    
+    Radius.push_back(r);
+    Theta.push_back(angle);
+    //cout << Radius[iVar] << " " << Theta[iVar] << endl;
   }
   
-//  for (iVar = 0; iVar < Xcoord_Upper.size(); iVar++) {
-//    cout << Xcoord_Upper[iVar] <<" " << Ycoord_Upper[iVar] <<" " << endl;
-//  
-//  }
+  /*--- Close the restart file ---*/
+  airfoil_file.close();
   
-  /*--- Read the upper surface ---*/
-  n_Upper = Xcoord_Upper.size();
-  yp1 = (Ycoord_Upper[1]-Ycoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
-  ypn = (Ycoord_Upper[n_Upper-1]-Ycoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
-  Y2coord_Upper.resize(n_Upper+1);
-  boundary->SetSpline(Xcoord_Upper, Ycoord_Upper, n_Upper, yp1, ypn, Y2coord_Upper);
   
-  /*--- Read the lower surface ---*/
-  n_Lower = Xcoord_Lower.size();
-  yp1 = (Ycoord_Lower[1]-Ycoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
-  ypn = (Ycoord_Lower[n_Lower-1]-Ycoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
-  Y2coord_Lower.resize(n_Lower+1);
-  boundary->SetSpline(Xcoord_Lower, Ycoord_Lower, n_Lower, yp1, ypn, Y2coord_Lower);
+  //  double SurfaceNose[24]={
+  //    0.2530661E-02,0.5214167E-02
+  //    ,0.1563217E-02,0.4076173E-02
+  //    ,0.8322645E-03,0.2988511E-02
+  //    ,0.3316348E-03,0.1958269E-02
+  //    ,0.5729375E-04,0.9763469E-03
+  //    ,0.1019368E-04,0.1822260E-04
+  //    ,0.2045149E-03,-0.9430565E-03
+  //    ,0.6654488E-03,-0.1916868E-02
+  //    ,0.1440709E-02,-0.2891670E-02
+  //    ,0.2555926E-02,-0.3843460E-02
+  //    ,0.3990158E-02,-0.4757584E-02
+  //    ,0.5714127E-02,-0.5625263E-02
+  //  };
+  //
+  //
+  //  double SurfaceUpper[164]={
+  //    0.9999999,-0.2491084E-03
+  //    ,0.9918991,0.9365876E-03
+  //    ,0.9807974,0.2511087E-02
+  //    ,0.9680250,0.4265705E-02
+  //    ,0.9540503,0.6126390E-02
+  //    ,0.9392941,0.8036156E-02
+  //    ,0.9240856,0.9959271E-02
+  //    ,0.9086373,0.1187350E-01
+  //    ,0.8930740,0.1376431E-01
+  //    ,0.8774481,0.1562638E-01
+  //    ,0.8617803,0.1745765E-01
+  //    ,0.8460882,0.1925645E-01
+  //    ,0.8303867,0.2102067E-01
+  //    ,0.8146843,0.2274803E-01
+  //    ,0.7989840,0.2443693E-01
+  //    ,0.7832827,0.2608652E-01
+  //    ,0.7675788,0.2769612E-01
+  //    ,0.7518733,0.2926473E-01
+  //    ,0.7361701,0.3079099E-01
+  //    ,0.7204739,0.3227288E-01
+  //    ,0.7047866,0.3370847E-01
+  //    ,0.6891075,0.3509608E-01
+  //    ,0.6734334,0.3643441E-01
+  //    ,0.6577614,0.3772255E-01
+  //    ,0.6420905,0.3895947E-01
+  //    ,0.6264214,0.4014402E-01
+  //    ,0.6107559,0.4127485E-01
+  //    ,0.5950962,0.4235041E-01
+  //    ,0.5794436,0.4336921E-01
+  //    ,0.5637982,0.4432987E-01
+  //    ,0.5481589,0.4523106E-01
+  //    ,0.5325251,0.4607162E-01
+  //    ,0.5168974,0.4685029E-01
+  //    ,0.5012768,0.4756583E-01
+  //    ,0.4856656,0.4821691E-01
+  //    ,0.4700658,0.4880213E-01
+  //    ,0.4544781,0.4932012E-01
+  //    ,0.4389019,0.4976954E-01
+  //    ,0.4233350,0.5014910E-01
+  //    ,0.4077758,0.5045772E-01
+  //    ,0.3922261,0.5069433E-01
+  //    ,0.3766911,0.5085787E-01
+  //    ,0.3611794,0.5094726E-01
+  //    ,0.3457003,0.5096043E-01
+  //    ,0.3302560,0.5089460E-01
+  //    ,0.3148428,0.5074789E-01
+  //    ,0.2994567,0.5051910E-01
+  //    ,0.2841039,0.5020768E-01
+  //    ,0.2688212,0.4981396E-01
+  //    ,0.2536651,0.4933343E-01
+  //    ,0.2386756,0.4875812E-01
+  //    ,0.2238800,0.4807835E-01
+  //    ,0.2093064,0.4728408E-01
+  //    ,0.1949814,0.4636303E-01
+  //    ,0.1809183,0.4530245E-01
+  //    ,0.1671018,0.4408741E-01
+  //    ,0.1534824,0.4270363E-01
+  //    ,0.1400305,0.4114566E-01
+  //    ,0.1267515,0.3941199E-01
+  //    ,0.1136444,0.3750140E-01
+  //    ,0.1007307,0.3542566E-01
+  //    ,0.8812914E-01,0.3321750E-01
+  //    ,0.7608656E-01,0.3093479E-01
+  //    ,0.6490525E-01,0.2863815E-01
+  //    ,0.5480972E-01,0.2637713E-01
+  //    ,0.4593079E-01,0.2419394E-01
+  //    ,0.3828108E-01,0.2210981E-01
+  //    ,0.3176194E-01,0.2012844E-01
+  //    ,0.2623813E-01,0.1824764E-01
+  //    ,0.2156484E-01,0.1646547E-01
+  //    ,0.1760671E-01,0.1477901E-01
+  //    ,0.1424349E-01,0.1318274E-01
+  //    ,0.1138616E-01,0.1167198E-01
+  //    ,0.8964834E-02,0.1024517E-01
+  //    ,0.6919064E-02,0.8898116E-02
+  //    ,0.5194428E-02,0.7619480E-02
+  //    ,0.3740570E-02,0.6395260E-02
+  //    ,0.2530661E-02,0.5214167E-02
+  //    ,0.1563217E-02,0.4076173E-02
+  //    ,0.8322645E-03,0.2988511E-02
+  //    ,0.3316348E-03,0.1958269E-02
+  //    ,1.15755e-05, 0.0  };
+  //
+  //  double SurfaceLower[156]={
+  //     1.15755e-05, 0.0
+  //    ,0.2045149E-03,-0.9430565E-03
+  //    ,0.6654488E-03,-0.1916868E-02
+  //    ,0.1440709E-02,-0.2891670E-02
+  //    ,0.2555926E-02,-0.3843460E-02
+  //    ,0.3990158E-02,-0.4757584E-02
+  //    ,0.5714127E-02,-0.5625263E-02
+  //    ,0.7736213E-02,-0.6451506E-02
+  //    ,0.1007945E-01,-0.7247711E-02
+  //    ,0.1276587E-01,-0.8023284E-02
+  //    ,0.1584185E-01,-0.8779585E-02
+  //    ,0.1936523E-01,-0.9520845E-02
+  //    ,0.2342322E-01,-0.1024916E-01
+  //    ,0.2813296E-01,-0.1096327E-01
+  //    ,0.3363958E-01,-0.1166049E-01
+  //    ,0.4012395E-01,-0.1233193E-01
+  //    ,0.4779375E-01,-0.1296830E-01
+  //    ,0.5684470E-01,-0.1355978E-01
+  //    ,0.6737892E-01,-0.1409094E-01
+  //    ,0.7937749E-01,-0.1454535E-01
+  //    ,0.9265041E-01,-0.1492356E-01
+  //    ,0.1068000,-0.1521960E-01
+  //    ,0.1215279,-0.1542541E-01
+  //    ,0.1366532,-0.1554682E-01
+  //    ,0.1520281,-0.1559083E-01
+  //    ,0.1675627,-0.1556318E-01
+  //    ,0.1832468,-0.1546826E-01
+  //    ,0.1990957,-0.1531805E-01
+  //    ,0.2150661,-0.1512539E-01
+  //    ,0.2311248,-0.1489586E-01
+  //    ,0.2472858,-0.1463641E-01
+  //    ,0.2635509,-0.1435651E-01
+  //    ,0.2798936,-0.1406454E-01
+  //    ,0.2962691,-0.1376673E-01
+  //    ,0.3126479,-0.1346288E-01
+  //    ,0.3290385,-0.1315323E-01
+  //    ,0.3454517,-0.1284268E-01
+  //    ,0.3618815,-0.1253374E-01
+  //    ,0.3783194,-0.1222450E-01
+  //    ,0.3947605,-0.1191412E-01
+  //    ,0.4112030,-0.1160335E-01
+  //    ,0.4276454,-0.1129297E-01
+  //    ,0.4440887,-0.1098372E-01
+  //    ,0.4605341,-0.1067562E-01
+  //    ,0.4769824,-0.1036815E-01
+  //    ,0.4934336,-0.1006076E-01
+  //    ,0.5098863,-0.9752984E-02
+  //    ,0.5263394,-0.9444835E-02
+  //    ,0.5427916,-0.9136708E-02
+  //    ,0.5592429,-0.8828991E-02
+  //    ,0.5756934,-0.8522025E-02
+  //    ,0.5921443,-0.8215726E-02
+  //    ,0.6085962,-0.7909696E-02
+  //    ,0.6250496,-0.7603546E-02
+  //    ,0.6415042,-0.7296926E-02
+  //    ,0.6579600,-0.6989801E-02
+  //    ,0.6744171,-0.6682294E-02
+  //    ,0.6908755,-0.6374541E-02
+  //    ,0.7073354,-0.6066657E-02
+  //    ,0.7237964,-0.5758745E-02
+  //    ,0.7402567,-0.5450925E-02
+  //    ,0.7567131,-0.5143346E-02
+  //    ,0.7731617,-0.4836465E-02
+  //    ,0.7896016,-0.4531061E-02
+  //    ,0.8060347,-0.4227862E-02
+  //    ,0.8224665,-0.3927124E-02
+  //    ,0.8389008,-0.3627864E-02
+  //    ,0.8553367,-0.3328958E-02
+  //    ,0.8717662,-0.3029519E-02
+  //    ,0.8881675,-0.2729255E-02
+  //    ,0.9044990,-0.2428215E-02
+  //    ,0.9206909,-0.2124476E-02
+  //    ,0.9366255,-0.1814706E-02
+  //    ,0.9521102,-0.1496142E-02
+  //    ,0.9667604,-0.1169115E-02
+  //    ,0.9800752,-0.8375850E-03
+  //    ,0.9916053,-0.5108843E-03
+  //    ,0.9999999,-0.2491084E-03
+  //  };
+  //
+  //
+  //  for (iVar = 0; iVar < 82; iVar++) {
+  //    Xcoord_Upper.push_back (SurfaceUpper[162-iVar*2]-1.15755e-05);
+  //    Ycoord_Upper.push_back (SurfaceUpper[162-iVar*2+1]);
+  //  }
+  //
+  //  for (iVar = 0; iVar < 78; iVar++) {
+  //    Xcoord_Lower.push_back(SurfaceLower[iVar*2]-1.15755e-05);
+  //    Ycoord_Lower.push_back(SurfaceLower[iVar*2+1]);
+  //  }
+  //
+  //  for (iVar = 0; iVar < 12; iVar++) {
+  //    Xcoord_Nose.push_back(SurfaceNose[22-iVar*2]-1.15755e-05);
+  //    Ycoord_Nose.push_back(SurfaceNose[22-iVar*2+1]);
+  //  }
+  //
+  //  for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+  //    cout << Xcoord[iVar] <<" " << Ycoord[iVar] <<" " << endl;
+  //
+  //  }
+  //
+  //  /*--- Read the upper surface ---*/
+  //  n_Upper = Xcoord_Upper.size();
+  //  yp1 = (Ycoord_Upper[1]-Ycoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
+  //  ypn = (Ycoord_Upper[n_Upper-1]-Ycoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
+  //  Y2coord_Upper.resize(n_Upper+1);
+  //  boundary->SetSpline(Xcoord_Upper, Ycoord_Upper, n_Upper, yp1, ypn, Y2coord_Upper);
+  //
+  //  /*--- Read the lower surface ---*/
+  //  n_Lower = Xcoord_Lower.size();
+  //  yp1 = (Ycoord_Lower[1]-Ycoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
+  //  ypn = (Ycoord_Lower[n_Lower-1]-Ycoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
+  //  Y2coord_Lower.resize(n_Lower+1);
+  //  boundary->SetSpline(Xcoord_Lower, Ycoord_Lower, n_Lower, yp1, ypn, Y2coord_Lower);
+  //
+  //  /*--- Read the nose surface ---*/
+  //  n_Nose = Ycoord_Nose.size();
+  //  xp1 = (Xcoord_Nose[1]-Xcoord_Nose[0])/(Ycoord_Nose[1]-Ycoord_Nose[0]);
+  //  xpn = (Xcoord_Nose[n_Nose-1]-Xcoord_Nose[n_Nose-2])/(Ycoord_Nose[n_Nose-1]-Ycoord_Nose[n_Nose-2]);
+  //  X2coord_Nose.resize(n_Nose+1);
+  //  boundary->SetSpline(Ycoord_Nose, Xcoord_Nose, n_Nose, xp1, xpn, X2coord_Nose);
   
-  /*--- Read the nose surface ---*/
-  n_Nose = Ycoord_Nose.size();
-  xp1 = (Xcoord_Nose[1]-Xcoord_Nose[0])/(Ycoord_Nose[1]-Ycoord_Nose[0]);
-  xpn = (Xcoord_Nose[n_Nose-1]-Xcoord_Nose[n_Nose-2])/(Ycoord_Nose[n_Nose-1]-Ycoord_Nose[n_Nose-2]);
-  X2coord_Nose.resize(n_Nose+1);
-  boundary->SetSpline(Ycoord_Nose, Xcoord_Nose, n_Nose, xp1, xpn, X2coord_Nose);
+  /*--- Create a spline for the (R,Theta) representation of the airfoil ---*/
+  n_Airfoil = Theta.size();
+  yp1 = (Radius[1]-Radius[0])/(Theta[1]-Theta[0]);
+  ypn = (Radius[n_Airfoil-1]-Radius[n_Airfoil-2])/(Theta[n_Airfoil-1]-Theta[n_Airfoil-2]);
+  Radius2.resize(n_Airfoil+1);
+  boundary->SetSpline(Theta, Radius, n_Airfoil, yp1, ypn, Radius2);
   
   NewXCoord = 0.0;
   NewYCoord = 0.0;
   
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-			if (config->GetMarker_All_DV(iMarker) == YES) {
-				Point = boundary->vertex[iMarker][iVertex]->GetNode();
-				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-        
-//        if (Coord[1] > 0) NewYCoord = boundary->GetSpline(Xcoord_Upper, Ycoord_Upper, Y2coord_Upper, n_Upper, Coord[0]);
-//        else NewYCoord = boundary->GetSpline(Xcoord_Lower, Ycoord_Lower, Y2coord_Lower, n_Lower, Coord[0]);
-//        
-//        VarCoord[0] = 0.0;
-//        VarCoord[1] = NewYCoord - Coord[1];
-        
-        if (Coord[0] < 0.002) {
-          NewXCoord = boundary->GetSpline(Ycoord_Nose, Xcoord_Nose, X2coord_Nose, n_Nose, Coord[1]);
-          
-          VarCoord[0] = NewXCoord - Coord[0];
-          VarCoord[1] = 0.0;
-        }
-        
-			}
-			boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-		}
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+    VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      Point = boundary->vertex[iMarker][iVertex]->GetNode();
+      Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+      
+      
+      /*--- Compute the theta angle for this airfoil point. We
+       are assuming that the theta angle will remain fixed. ---*/
+      angle =  atan2(Coord[1], Coord[0] - c/2.0);
+      if (angle < 0.0) angle += 2.0*PI_NUMBER;
+      
+      /*--- Sample the spline to get the radius value ---*/
+      r = boundary->GetSpline(Theta, Radius, Radius2, n_Airfoil, angle);
+      
+      /*--- Convert the polar coordinates to x & y ---*/
+      NewXCoord = r * cos(angle) + c/2.0;
+      NewYCoord = r * sin(angle);
+      
+      /*--- Store the delta change in the x & y coordinates ---*/
+      VarCoord[0] = NewXCoord - Coord[0];
+      VarCoord[1] = NewYCoord - Coord[1];
+      
+      //cout << y_new << " " << Coord[1] << "  " << r << "   " << x << "   " <<Coord[0] << "   " << angle << endl;
+      
+      //        if (Coord[1] > 0) NewYCoord = boundary->GetSpline(Xcoord_Upper, Ycoord_Upper, Y2coord_Upper, n_Upper, Coord[0]);
+      //        else NewYCoord = boundary->GetSpline(Xcoord_Lower, Ycoord_Lower, Y2coord_Lower, n_Lower, Coord[0]);
+      //
+      //        VarCoord[0] = 0.0;
+      //        VarCoord[1] = NewYCoord - Coord[1];
+      //        
+      //        if (Coord[0] < 0.002) {
+      //          NewXCoord = boundary->GetSpline(Ycoord_Nose, Xcoord_Nose, X2coord_Nose, n_Nose, Coord[1]);
+      //          
+      //          VarCoord[0] = NewXCoord - Coord[0];
+      //          VarCoord[1] = 0.0;
+      //        }
+      
+    }
+    boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+  }
 }
 
 void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh) {
