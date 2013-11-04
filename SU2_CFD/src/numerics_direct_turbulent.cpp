@@ -623,14 +623,21 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
+  if (incompressible) { Density_i = DensityInc_i; }
+  else { Density_i = U_i[0]; }
+  
   if (dist_i > 0.0) {
     // Call turbulence model
     // Get all the variables
     int nInputMLVariables = 9;
     int nOutputMLVariables = 1;
     double * input = new double[nInputMLVariables];
+    for (int i = 0; i < nInputMLVariables; i++){
+      input[i] = 0;
+    }
     int ctr = 0;
     input[ctr] = Laminar_Viscosity_i/Density_i;
+//    cout << "lam visc " << Laminar_Viscosity_i << " density " << Density_i << " input 0 " << input[0] <<endl;
     ctr++;
     input[ctr] = TurbVar_i[0];
     ctr++;
@@ -651,7 +658,18 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       exit(1);
     }
     double *output = new double[nOutputMLVariables];
+    for (int i=0; i < nOutputMLVariables; i++){
+      output[i] = 0;
+    }
+    /*
+    cout << "Input ";
+    for (int i=0; i < nInputMLVariables; i++){
+      cout << input[i] << " ";
+    }
+    cout << endl;
+    */
     this->MLModel->Predict(input, output);
+//    cout << "output "<<output[0]<<endl;
     val_residual[0] = output[0];
     delete input;
     delete output;
