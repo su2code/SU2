@@ -50,6 +50,7 @@
 #include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+#include "nnet.hpp"
 
 
 using namespace std;

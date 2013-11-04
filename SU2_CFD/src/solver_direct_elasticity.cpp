@@ -597,8 +597,8 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
 			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
       
-      Normal_Elem[0] = -a[1];
-			Normal_Elem[1] = a[0];
+      Normal_Elem[0] = -(-a[1]);
+			Normal_Elem[1] = -(a[0]);
       
 		}
 		if (nDim == 3) {
@@ -608,9 +608,9 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 			}
 			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       
-      Normal_Elem[0] = 0.5*(a[1]*b[2]-a[2]*b[1]);
-			Normal_Elem[1] = -0.5*(a[0]*b[2]-a[2]*b[0]);
-			Normal_Elem[2] = 0.5*(a[0]*b[1]-a[1]*b[0]);
+      Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
+			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
+			Normal_Elem[2] = -(0.5*(a[0]*b[1]-a[1]*b[0]));
 		}
 		
     if (config->GetUnsteady_Simulation() == STEADY) {
@@ -689,8 +689,8 @@ void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CN
 				a[iDim] = Coord_0[iDim]-Coord_1[iDim];
 			Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
       
-      Normal_Elem[0] = -a[1];
-			Normal_Elem[1] = a[0];
+      Normal_Elem[0] = -(-a[1]);
+			Normal_Elem[1] = -(a[0]);
       
 		}
 		if (nDim == 3) {
@@ -700,9 +700,9 @@ void CFEASolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CN
 			}
 			Area_Elem = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
       
-      Normal_Elem[0] = 0.5*(a[1]*b[2]-a[2]*b[1]);
-			Normal_Elem[1] = -0.5*(a[0]*b[2]-a[2]*b[0]);
-			Normal_Elem[2] = 0.5*(a[0]*b[1]-a[1]*b[0]);
+      Normal_Elem[0] = -(0.5*(a[1]*b[2]-a[2]*b[1]));
+			Normal_Elem[1] = -(-0.5*(a[0]*b[2]-a[2]*b[0]));
+			Normal_Elem[2] = -(0.5*(a[0]*b[1]-a[1]*b[0]));
 		}
 		
     /*--- Add the residual corresponding to the force on the surface ---*/

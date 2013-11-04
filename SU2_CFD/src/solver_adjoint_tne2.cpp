@@ -1440,8 +1440,8 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->SetConservative(U_i, U_j);
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdrhos(solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos(),
-                         solver_container[TNE2_SOL]->node[jPoint]->GetdPdrhos());
+    numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                      solver_container[TNE2_SOL]->node[jPoint]->GetdPdU());
     
     /*--- Adjoint variables w/o reconstruction ---*/
     Psi_i = solver_container[ADJTNE2_SOL]->node[iPoint]->GetSolution();
@@ -1560,8 +1560,8 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
                            solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdrhos(solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos(),
-                         solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos());
+    numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                      solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
     
     /*--- Set adjoint variables at point i ---*/
     numerics->SetAdjointVar(node[iPoint]->GetSolution(),
@@ -1935,7 +1935,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
   unsigned long iVertex, iPoint;
 	double *d, *Normal, Area, *UnitNormal, *Coord;
   double *Psi, *Psi_Aux, phin;
-  double *U, *Density, *Velocity, ProjVel, bcn, vn, sq_vel, *dPdrhos, *Ms;
+  double *U, *Density, *Velocity, ProjVel, bcn, vn, sq_vel, *dPdU, *Ms;
   double Enthalpy, Energy_ve, Ru, rho_el, conc, rhoCvtr, rhoCvve;
   double dPdrhoE, dPdrhoEve;
   
@@ -2010,7 +2010,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
       Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
       sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
-      dPdrhos   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos();
+      dPdU      = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       rhoCvtr   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
       rhoCvve   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
       
@@ -2040,7 +2040,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
         Psi[nSpecies+iDim] -= ( phin - bcn ) * UnitNormal[iDim];
       
       numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
-                                   dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal,
+                                   dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
                                    1.0, Jacobian_i);
       
       /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
@@ -2083,7 +2083,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
   unsigned long iVertex, iPoint;
 	double *Normal, Area, *UnitNormal, *Coord;
   double *Psi, *Psi_Aux, phin;
-  double *U, *Density, *Velocity, ProjVel, vn, sq_vel, *dPdrhos, *Ms;
+  double *U, *Density, *Velocity, ProjVel, vn, sq_vel, *dPdU, *Ms;
   double Enthalpy, Energy_ve, Ru, rho_el, conc, rhoCvtr, rhoCvve;
   double dPdrhoE, dPdrhoEve;
   
@@ -2154,7 +2154,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
       Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
       sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
-      dPdrhos   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos();
+      dPdU      = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       rhoCvtr   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
       rhoCvve   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
       
@@ -2183,7 +2183,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
         Psi[nSpecies+iDim] -= phin * UnitNormal[iDim];
       
       conv_numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
-                                        dPdrhos, dPdrhoE, dPdrhoEve, UnitNormal,
+                                        dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
                                         1.0, Jacobian_i);
       
       /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
@@ -2260,8 +2260,8 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
       conv_numerics->SetPrimitive(V_domain,V_infty);
       
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdrhos(solver_container[TNE2_SOL]->node[iPoint]->GetdPdrhos(),
-                                solver_container[TNE2_SOL]->node_infty->GetdPdrhos());
+      conv_numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                             solver_container[TNE2_SOL]->node_infty->GetdPdU());
       
       /*--- Pass adjoint solution to CNumerics ---*/
       conv_numerics->SetAdjointVar(Psi_domain, Psi_infty);

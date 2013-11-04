@@ -2,7 +2,7 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	10/11/13
+# Last updated: 	10/30/13
 #
 # Created by: 		M. Colonno
 # Updated by: 		T. Economon
@@ -46,4 +46,8 @@ endif
 
 if BUILD_GDC
 SUBDIRS +=SU2_GDC/obj
+endif
+
+if BUILD_UMC
+SUBDIRS +=SU2_UMC/obj
 endif
