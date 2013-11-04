@@ -1787,42 +1787,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       config->SetAeroelastic_plunge(iMarker_Monitoring,0.0);
     }
   }
-  
-  if (config->GetKind_Turb_Model()==ML && ExtIter == 0){
-    // Call the ML executable code
-#ifndef NO_MPI
-    cout << "Not coded for parallel";
-    exit(1);
-#endif
-
-    /*
-    // Open the write file
-    ofstream ml_write;
-    string writename =config->GetML_Turb_Model_Write();
-    ml_write.open(writename.c_str(),ios::out);
-    int tmp = 0;
-    ml_write << tmp<<flush;
-    config -> SetML_Turb_Model_Counter(tmp);
-    ml_write.close();
-    
-    
-    
-    // Construct the system call
-    ostringstream s;
-    s << "./"<<config->GetML_Turb_Exec();
-    s << " "<< config->GetML_Turb_Model_File();
-    s << " "<< writename;
-    cout<<config->GetML_Turb_Model_Read()<<endl;
-    s <<" "<<config->GetML_Turb_Model_Read();
-    // Start the ML code
-    int i = 0;
-    i = system(s.str().c_str());
-    if (i != 0){
-      cout<<endl<<"Error in system call to start ML service";
-      exit(1);
-    }
-     */
-  }
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
