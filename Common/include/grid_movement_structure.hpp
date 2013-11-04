@@ -706,13 +706,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \return Value of the length of the smallest edge of the grid.
-	 */
-	double SetSpringMethodContributions_Edges(CGeometry *geometry);
   
   /*!
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
@@ -722,94 +715,117 @@ public:
 	double SetFEAMethodContributions_Elem(CGeometry *geometry);
   
   /*!
-	 * \brief Build the stiffness matrix for a 2-D triangular element. The result will be placed in StiffMatrix_Elem.
+	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
+	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
-                            unsigned long val_Point_2, double scale);
-  
-  /*!
-	 * \brief Build the stiffness matrix for a 3-D tetrehedral element. The result will be placed in StiffMatrix_Elem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
-   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
-	 */
-  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
-                            unsigned long val_Point_2, unsigned long val_Point_3, double scale);
-  
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] val_Point_1 - Index value for Node 1 of the current hexahedron.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current hexahedron.
-   * \param[in] val_Point_3 - Index value for Node 3 of the current hexahedron.
-   * \param[in] val_Point_4 - Index value for Node 4 of the current hexahedron.
-   * \param[in] val_Point_5 - Index value for Node 5 of the current hexahedron.
-   * \param[in] val_Point_6 - Index value for Node 6 of the current hexahedron.
-   * \param[in] val_Point_7 - Index value for Node 7 of the current hexahedron.
-   * \param[in] val_Point_8 - Index value for Node 8 of the current hexahedron.
+	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem,
-   unsigned long Point_1, unsigned long Point_2,
-   unsigned long Point_3, unsigned long Point_4,
-   unsigned long Point_5, unsigned long Point_6,
-   unsigned long Point_7, unsigned long Point_8, double scale);
-	
-  /*!
-	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] Node - Node from 1 to 8.
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-	 */
-  double GetHexa_ShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
+  bool SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
   
   /*!
-	 * \brief Compute the derivative of the shape functions for hexahedron
-	 * \param[in] Node - Node from 1 to 8.
+	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
 	 */
-  double *GetHexa_DShapeFunction(unsigned short Node, double Xi, double Eta, double Mu);
-
+  double ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Pyram(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Wedge(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Triangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
+  /*!
+	 * \brief Shape functions and derivative of the shape functions
+   * \param[in] Xi - Local coordinates.
+   * \param[in] Eta - Local coordinates.
+   * \param[in] Mu - Local coordinates.
+	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+   * \param[in] shp[8][4] - Shape function information
+	 */
+  double ShapeFunc_Rectangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]);
+  
   /*!
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
 	 */
-  void GetHexa_Jacobian(double HexaCorners[8][3], unsigned short iNode, double Jacobian[3][3]);
-
+  double GetHexa_Volume(double CoordCorners[8][3]);
+  
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
 	 */
-  void GetHexa_InvJacobian(double HexaCorners[8][3], unsigned short iNode, double InvJacobian[3][3]);
+  double GetTetra_Volume(double CoordCorners[8][3]);
   
   /*!
-	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be copied into the global matrix structure.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
 	 */
-  void AddFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
-                            unsigned long val_Point_2);
+  double GetWedge_Volume(double CoordCorners[8][3]);
   
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetPyram_Volume(double CoordCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetTriangle_Area(double CoordCorners[8][3]);
+  
+  /*!
+	 * \brief Compute the shape functions for hexahedron
+	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 */
+  double GetRectangle_Area(double CoordCorners[8][3]);
+    
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -819,36 +835,13 @@ public:
    * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
    * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
 	 */
-  void AddFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long val_Point_0, unsigned long val_Point_1,
-                            unsigned long val_Point_2, unsigned long val_Point_3);
+  void AddFEA_StiffMatrix(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes);
   
   /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	double Check_Grid(CGeometry *geometry);
-  
-  /*!
-	 * \brief Check for negative volumes for 2-D elements after grid deformation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iElem - Index value for the current primal grid element.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current triangle.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current triangle.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current triangle.
-	 */
-  bool Check_Elem2D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2, double *Area);
-  
-  /*!
-	 * \brief Check for negative volumes for 3-D elements after grid deformation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iElem - Index value for the current primal grid element.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
-   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
-	 */
-  bool Check_Elem3D(CGeometry *geometry, unsigned long val_iElem, unsigned long val_Point_0, unsigned long val_Point_1, unsigned long val_Point_2,
-                    unsigned long val_Point_3, double *Volume);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
@@ -1024,7 +1017,27 @@ public:
 	 */
 	void Moving_Walls(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
-  /*! 
+  /*!
+	 * \brief Computes the displacement of a translating surface for a dynamic mesh simulation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
+	 */
+	void Surface_Translating(CGeometry *geometry, CConfig *config,
+                        unsigned long iter, unsigned short iZone);
+  
+  /*!
+	 * \brief Computes the displacement of a plunging surface for a dynamic mesh simulation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
+	 */
+	void Surface_Plunging(CGeometry *geometry, CConfig *config,
+                           unsigned long iter, unsigned short iZone);
+  
+  /*!
 	 * \brief Computes the displacement of a pitching surface for a dynamic mesh simulation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1033,6 +1046,16 @@ public:
 	 */
 	void Surface_Pitching(CGeometry *geometry, CConfig *config,
                              unsigned long iter, unsigned short iZone);
+  
+  /*!
+	 * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
+	 */
+	void Surface_Rotating(CGeometry *geometry, CConfig *config,
+                        unsigned long iter, unsigned short iZone);
 
     /*!
 	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.

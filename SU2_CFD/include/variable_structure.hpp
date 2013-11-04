@@ -1171,12 +1171,22 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
-	virtual void SetdPdrhos(CConfig *config);
+	virtual void CalcdPdU(double *V, CConfig *config, double *dPdU);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetdPdrhos(void);  
+	virtual double *GetdPdU(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetdTdrhos(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetdTvedrhos(void);
   
   /*!
 	 * \brief A virtual member.
@@ -1212,6 +1222,12 @@ public:
 	 * \param[in] Gas_Constant - Value of the Gas Constant
 	 */		
 	virtual bool SetTemperature(double Gas_Constant);
+  
+  /*!
+	 * \brief Sets the vibrational electronic temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+  virtual bool SetTemperature_ve(double val_Tve);
   
   /*!
 	 * \brief A virtual member.
@@ -1278,11 +1294,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetPressureInc(double val_pressure);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressureValue(double val_pressure);
   
 	/*!
 	 * \brief A virtual member.
@@ -1305,6 +1316,17 @@ public:
    
 	 */
   virtual double GetVonMises_Stress(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetFlow_Pressure(double val_pressure);
+  
+	/*!
+	 * \brief A virtual member.
+   
+	 */
+  virtual double GetFlow_Pressure(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1833,7 +1855,7 @@ public:
  */
 class CFEAVariable : public CVariable {
 protected:
-	double Pressure;	/*!< \brief Pressure of the fluid. */
+	double Flow_Pressure;	/*!< \brief Pressure of the fluid. */
   double **Stress;  /*!< \brief Stress tensor. */
   double VonMises_Stress; /*!< \brief Von Mises stress. */
   
@@ -1857,11 +1879,6 @@ public:
 	 * \brief Destructor of the class. 
 	 */	
 	~CFEAVariable(void);
-
-	/*!
-	 * \brief Set the value of the pressure.
-	 */
-	void SetPressureValue(double val_pressure);
   
   /*!
 	 * \brief Set the value of the stress.
@@ -1888,6 +1905,18 @@ public:
    * \return Value of the Von Mises stress.
 	 */
   double GetVonMises_Stress(void);
+  
+  /*!
+	 * \brief Set the value of the Von Mises stress.
+	 * \param[in] val_stress - Value of the Von Mises stress.
+	 */
+  void SetFlow_Pressure(double val_pressure);
+  
+  /*!
+	 * \brief Get the value of the Von Mises stress.
+   * \return Value of the Von Mises stress.
+	 */
+  double GetFlow_Pressure(void);
 
 };
 
@@ -3569,7 +3598,9 @@ protected:
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
   double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
-  double *dPdrhos;      /*!< \brief Partial derivative of pressure w.r.t. species densities. */
+  double *dPdU;                 /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
+  double *dTdrhos;
+  double *dTvedrhos;
   
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
@@ -3581,6 +3612,14 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CTNE2EulerVariable(void);
+
+  /*!
+	 * \brief Constructor of the class.
+	 */
+  CTNE2EulerVariable(unsigned short val_ndim, unsigned short val_nVar,
+                     unsigned short val_nPrimVar,
+                     unsigned short val_nPrimVarGrad,
+                     CConfig *config);
   
 	/*!
 	 * \overload
@@ -3606,8 +3645,9 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar,
-                     unsigned short val_nvarprim, unsigned short val_nvarprimgrad, CConfig *config);
+	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
+                     unsigned short val_nvar, unsigned short val_nvarprim,
+                     unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -3687,16 +3727,38 @@ public:
    * \brief Sets gas mixture quantities (\f$\rho C^{trans-rot}_v\f$ & \f$\rho C^{vib-el}_v\f$)
    */
   void SetGasProperties(CConfig *config);
-	
+  
   /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
+   * \param[in] config - Configuration settings
+   * \param[in] dPdU - Passed-by-reference array to assign the derivatives
    */
-  void SetdPdrhos(CConfig *config);
+  void CalcdPdU(double *V, CConfig *config, double *dPdU);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  double *GetdPdrhos(void);
+  void SetdTdrhos(CConfig *config);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  void SetdTvedrhos(CConfig *config);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  double *GetdPdU(void);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  double *GetdTdrhos(void);
+  
+  /*!
+   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   */
+  double *GetdTvedrhos(void);
   
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
@@ -3786,10 +3848,22 @@ public:
 	double GetTemperature(void);
   
   /*!
+	 * \brief Sets the temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+	bool SetTemperature(double val_T);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \return Value of the vibrational-electronic temperature.
 	 */
 	double GetTemperature_ve(void);
+
+  /*!
+	 * \brief Sets the vibrational electronic temperature of the flow.
+	 * \return Value of the temperature of the flow.
+	 */
+  bool SetTemperature_ve(double val_Tve);
   
   /*!
    * \brief Get the mixture specific heat at constant volume (trans.-rot.).

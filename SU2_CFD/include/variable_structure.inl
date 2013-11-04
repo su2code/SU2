@@ -29,8 +29,6 @@ inline void CVariable::SetVelSolutionOldDVector(void) { }
 
 inline void CVariable::SetVelSolutionDVector(void) { }
 
-inline void CVariable::SetPressureValue(double val_pressure) { }
-
 inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { }
   
 inline double **CVariable::GetStress(void) { return 0; }
@@ -38,6 +36,10 @@ inline double **CVariable::GetStress(void) { return 0; }
 inline void CVariable::SetVonMises_Stress(double val_stress) { }
   
 inline double CVariable::GetVonMises_Stress(void) { return 0; }
+
+inline void CVariable::SetFlow_Pressure(double val_pressure) { }
+
+inline double CVariable::GetFlow_Pressure(void) { return 0; }
 
 inline void CVariable::SetPressureInc(double val_pressure) { }
 
@@ -333,9 +335,13 @@ inline bool CVariable::SetPressure(double Gamma, double turb_ke) { return false;
 
 inline void CVariable::SetPressure() { }
 
-inline void CVariable::SetdPdrhos(CConfig *config) { }
+inline double *CVariable::GetdPdU() { return NULL; }
 
-inline double *CVariable::GetdPdrhos() { return NULL; }
+inline void CVariable::CalcdPdU(double *V, CConfig *config, double *dPdU) { }
+
+inline double *CVariable::GetdTdrhos() { return NULL; }
+
+inline double *CVariable::GetdTvedrhos() { return NULL; }
 
 inline void CVariable::SetDensity() { }
 
@@ -348,6 +354,8 @@ inline bool CVariable::SetSoundSpeed() { return false; }
 inline bool CVariable::SetSoundSpeed(double Gamma) { return false; }
 
 inline bool CVariable::SetTemperature(double Gas_Constant) { return false; }
+
+inline bool CVariable::SetTemperature_ve(double val_Tve) {return false; }
 
 inline bool CVariable::SetTemperature(CConfig *config) { return false; }
 
@@ -753,8 +761,6 @@ inline void CAdjPlasmaVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump
 
 inline void CAdjPlasmaVariable::SetPhi_Old(double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
 
-inline void CFEAVariable::SetPressureValue(double val_pressure) { Pressure = val_pressure; }
-
 inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, double val_stress) { Stress[iVar][jVar] = val_stress; }
   
 inline double **CFEAVariable::GetStress(void) { return Stress; }
@@ -762,6 +768,10 @@ inline double **CFEAVariable::GetStress(void) { return Stress; }
 inline void CFEAVariable::SetVonMises_Stress(double val_stress) { VonMises_Stress = val_stress; }
   
 inline double CFEAVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
+
+inline void CFEAVariable::SetFlow_Pressure(double val_pressure) { Flow_Pressure = val_pressure; }
+
+inline double CFEAVariable::GetFlow_Pressure(void) { return Flow_Pressure; }
 
 inline double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
@@ -821,13 +831,21 @@ inline double CTNE2EulerVariable::GetSoundSpeed(void) { return Primitive[A_INDEX
 
 inline double CTNE2EulerVariable::GetTemperature(void) { return Primitive[T_INDEX]; }
 
+inline bool CTNE2EulerVariable::SetTemperature(double val_T) { Primitive[T_INDEX] = val_T; return false; }
+
 inline double CTNE2EulerVariable::GetTemperature_ve(void) { return Primitive[TVE_INDEX]; }
+
+inline bool CTNE2EulerVariable::SetTemperature_ve(double val_Tve) { Primitive[TVE_INDEX] = val_Tve; return false; }
 
 inline double CTNE2EulerVariable::GetRhoCv_tr(void) { return Primitive[RHOCVTR_INDEX]; }
 
 inline double CTNE2EulerVariable::GetRhoCv_ve(void) { return Primitive[RHOCVVE_INDEX]; }
 
-inline double* CTNE2EulerVariable::GetdPdrhos(void) { return dPdrhos; }
+inline double* CTNE2EulerVariable::GetdPdU(void) { return dPdU; }
+
+inline double* CTNE2EulerVariable::GetdTdrhos(void) { return dTdrhos; }
+
+inline double* CTNE2EulerVariable::GetdTvedrhos(void) { return dTvedrhos; }
 
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) {
 double velocity;
