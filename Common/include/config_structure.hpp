@@ -41,7 +41,6 @@
 #include <map>
 
 #include "./option_structure.hpp"
-#include "../../SU2_CFD/include/nnet.hpp"
 
 using namespace std;
 
@@ -351,7 +350,6 @@ private:
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
   string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
-  CNeurNet* Net;
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
@@ -2229,9 +2227,6 @@ public:
 	 * \return Temporary ml->SU2 file name.
 	 */
 	string GetML_Turb_Model_Check_File(void);
-  
-  CNeurNet* GetML_Model(void);
-  void SetML_Model(CNeurNet*);
   
 	/*! 
 	 * \brief Get the kind of the transition model.

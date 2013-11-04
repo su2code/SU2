@@ -608,9 +608,18 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
   beta = 0.5;
   s1   = 2.0;
   
+  // Construct the nnet
+  string readFile = config->GetML_Turb_Model_File();
+  string checkFile = config->GetML_Turb_Model_Check_File();
+  cout << "Loading ML file from " << readFile << endl;
+  CNeurNet* Net = new CNeurNet(readFile, checkFile);
+  this->MLModel = Net;
+  cout << "ML File successfully read asouth " << endl;
 }
 
-CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) { }
+CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
+  delete MLModel;
+}
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
@@ -642,7 +651,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       exit(1);
     }
     double *output = new double[nOutputMLVariables];
-    config->GetML_Model()->Predict(input, output);
+    this->MLModel->Predict(input, output);
     val_residual[0] = output[0];
     delete input;
     delete output;

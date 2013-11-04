@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "nnet.hpp"
 #include "variable_structure.hpp"
 
 using namespace std;
@@ -5204,9 +5205,9 @@ private:
   double beta, gamma_sep, gamma_eff, intermittency;
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
+  CNeurNet * MLModel;
   
 public:
-  
 	/*!
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.

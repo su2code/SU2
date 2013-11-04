@@ -5414,7 +5414,6 @@ CConfig::~CConfig(void)
 	delete [] MG_PreSmooth;
 	delete [] MG_PostSmooth;
 	delete [] U_FreeStreamND;
-  delete Net;
 
 	/*--- If allocated, delete arrays for Plasma solver ---*/
 	if (Species_Gas_Constant != NULL) delete [] Species_Gas_Constant;
