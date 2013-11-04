@@ -1,2 +1,0 @@
-___bin_SU2_CFD-solver_direct_tne2.o ___bin_SU2_CFD-solver_direct_tne2.o:  \
- ../src/solver_direct_tne2.cpp
