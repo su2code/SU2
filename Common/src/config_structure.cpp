@@ -292,15 +292,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_PLASMA", Kind_TimeIntScheme_Plasma, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_PLASMA", Kind_TimeIntScheme_Plasma, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJPLASMA", Kind_TimeIntScheme_AdjPlasma, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJPLASMA", Kind_TimeIntScheme_AdjPlasma, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -472,11 +472,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Jacobi implicit smoothing of the correction */
 	AddListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
 	/* DESCRIPTION: Damping factor for the residual restriction */
-	AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
+	AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
 	/* DESCRIPTION: Damping factor for the correction prolongation */
-	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
+	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
 	/* DESCRIPTION: CFL reduction factor on the coarse levels */
-	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.75);
+	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
 	/* DESCRIPTION: Maximum number of children in the agglomeration stage */
 	AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
 	/* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
@@ -493,6 +493,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
 	/* DESCRIPTION: Convective numerical method */
+  Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE_2ND;
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "AVG_GRAD_CORRECTED");
@@ -505,6 +506,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
   
 	/* DESCRIPTION: Convective numerical method */
+  Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE_2ND;
 	AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_ADJ", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
