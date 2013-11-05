@@ -586,7 +586,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     
     /*--- Check for non-physical conditions ---*/
     if ((Tve2 != Tve2) || (Tve2 < 0))
-      Tve2 = Primitive[T_INDEX];
+      Tve2 = 1.4*Primitive[T_INDEX];
     
     /*--- Check for convergence ---*/
     if (fabs(Tve2-Tve) < tol) break;
@@ -614,10 +614,10 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     Primitive[T_INDEX] = Tmax;
   }
   if (Primitive[TVE_INDEX] <= Tvemin) {
-    cout << "WARNING: Tve = " << Primitive[T_INDEX] << "\t -- Clipping at: " << Tmin << endl;
+    cout << "WARNING: Tve = " << Primitive[TVE_INDEX] << "\t -- Clipping at: " << Tvemin << endl;
     Primitive[TVE_INDEX] = Tvemin;
   } else if (Primitive[TVE_INDEX] >= Tvemax) {
-    cout << "WARNING: Tve = " << Primitive[T_INDEX] << "\t -- Clipping at: " << Tmin << endl;
+    cout << "WARNING: Tve = " << Primitive[TVE_INDEX] << "\t -- Clipping at: " << Tvemax << endl;
     Primitive[TVE_INDEX] = Tvemax;
   }
     

@@ -2448,7 +2448,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 	r23_b, r33, rho_i, rho_j, weight, product;
   
 	/*--- Initialize arrays ---*/
-  // Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w]^T
+  // Primitive variables: [Y1, ..., YNs, T, Tve, u, v, w, P]^T
 	PrimVar_i = new double [nPrimVarGrad];
 	PrimVar_j = new double [nPrimVarGrad];
   
@@ -4382,20 +4382,32 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   
 }
 
-void CTNE2NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
-                                 unsigned short iMesh, unsigned long Iteration) {
-	double *Normal, Area, Vol, Mean_SoundSpeed, Mean_ProjVel, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
-	Global_Delta_Time = 1E6, Mean_LaminarVisc, Mean_Density, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
-	unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
+void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
+                                 CSolver **solution_container,
+                                 CConfig *config,
+                                 unsigned short iMesh,
+                                 unsigned long Iteration) {
+  
 	unsigned short iDim, iMarker;
+  unsigned long iEdge, iVertex, iPoint, jPoint;
+	double *Normal, Area, Vol;
+  double Mean_SoundSpeed, Mean_ProjVel;
+  double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
+  double Mean_LaminarVisc, Mean_Density;
+  double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
 	double ProjVel, ProjVel_i, ProjVel_j;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool grid_movement = config->GetGrid_Movement();
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  /*--- Initialize parameters ---*/
+  Global_Delta_Time = 1E6;
+  Min_Delta_Time    = 1.E6;
+  Max_Delta_Time    = 0.0;
+  K_v    = 0.25;
+  iPoint = 0;
+  jPoint = 0;
   
 	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -4409,25 +4421,15 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_contain
 		/*--- Point identification, Normal vector and area ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
-    
 		Normal = geometry->edge[iEdge]->GetNormal();
-		Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+		Area   = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Area += Normal[iDim]*Normal[iDim];
+    Area = sqrt(Area);
     
 		/*--- Mean Values ---*/
-    Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
+    Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
     Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
-    
-		/*--- Adjustment for grid movement ---*/
-		if (grid_movement) {
-			double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-			double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-			ProjVel_i = 0.0; ProjVel_j =0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				ProjVel_i += GridVel_i[iDim]*Normal[iDim];
-				ProjVel_j += GridVel_j[iDim]*Normal[iDim];
-			}
-			Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j) ;
-		}
     
 		/*--- Inviscid contribution ---*/
 		Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
@@ -4436,7 +4438,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_contain
     
 		/*--- Viscous contribution ---*/
     Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosity() + node[jPoint]->GetLaminarViscosity());
-    Mean_Density     = 0.5*(node[iPoint]->GetSolution(0) + node[jPoint]->GetSolution(0));
+    Mean_Density     = 0.5*(node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
     
 		Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
 		Lambda_2 = 0.0;
@@ -4454,20 +4456,14 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_contain
 			/*--- Point identification, Normal vector and area ---*/
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-			Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+			Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt(Area);
       
 			/*--- Mean Values ---*/
       Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
       Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
-      
-			/*--- Adjustment for grid movement ---*/
-			if (grid_movement) {
-				double *GridVel = geometry->node[iPoint]->GetGridVel();
-				ProjVel = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjVel += GridVel[iDim]*Normal[iDim];
-				Mean_ProjVel -= ProjVel;
-			}
       
 			/*--- Inviscid contribution ---*/
 			Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
@@ -4477,26 +4473,31 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_contain
       
 			/*--- Viscous contribution ---*/
       Mean_LaminarVisc = node[iPoint]->GetLaminarViscosity();
-      Mean_Density     = node[iPoint]->GetSolution(0);
+      Mean_Density     = node[iPoint]->GetDensity();
       
 			Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
 			Lambda_2 = 0.0;
 			Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
       
 			if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
-      
 		}
 	}
   
 	/*--- Each element uses their own speed ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Vol = geometry->node[iPoint]->GetVolume();
-		Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+    
+    /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
+		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-		Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
-		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-		Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
+    
+    /*--- Store minimum and maximum dt's within the grid for printing ---*/
+		Min_Delta_Time        = min(Min_Delta_Time, Local_Delta_Time);
+		Max_Delta_Time        = max(Max_Delta_Time, Local_Delta_Time);
+    
+    /*--- Set the time step ---*/
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
   
