@@ -3013,7 +3013,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
             
             // pass in the pressure and bring it back
             geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, config,
-                                             Xcoord_Airfoil[iSection], Ycoord_Airfoil[iSection], Zcoord_Airfoil[iSection], point1_Airfoil[iMarker][iSection], point2_Airfoil[iMarker][iSection], true);
+                                             Xcoord_Airfoil[iSection], Ycoord_Airfoil[iSection], Zcoord_Airfoil[iSection], true);
           }
         }
       }
