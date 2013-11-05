@@ -63,7 +63,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
-  double PressCoeff = 0.0, SkinFrictionCoeff, xCoord, yCoord, zCoord, Mach, Pressure;
+  double PressCoeff = 0.0, SkinFrictionCoeff, HeatFlux, xCoord, yCoord, zCoord, Mach, Pressure;
   char cstr[200];
   
   unsigned short solver = config->GetKind_Solver();
@@ -106,6 +106,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   switch (solver) {
     case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
     case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
+    case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" << endl; break;
+    case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
   }
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -130,6 +132,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
             SurfFlow_file << scientific << SkinFrictionCoeff << endl;
             break;
+          case TNE2_EULER:
+            Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
+            SurfFlow_file << scientific << Mach << endl;
+            break;
+          case TNE2_NAVIER_STOKES:
+            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
+            HeatFlux = FlowSolver->GetHeatTransferCoeff(iMarker,iVertex);
+            SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
         }
       }
     }
@@ -5122,7 +5132,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
         
       case TNE2_EULER : case TNE2_NAVIER_STOKES :
         
-        //        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solution_container[iZone][MESH_0][FLOW_SOL], iExtIter);
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][TNE2_SOL], iExtIter, iZone);
         break;
         
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
