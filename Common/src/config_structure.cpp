@@ -3335,7 +3335,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #endif
 				CFL_Iter_Species = new unsigned short[nSpecies];
 				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-					CFL_Iter_Species[iSpecies] = CFLRamp[1];
+					CFL_Iter_Species[iSpecies] = short(CFLRamp[1]);
 				}
 			}
 
