@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
 	            tracked_points.open(filename.c_str(), ios::out);
 	            tracked_points <<  "Marker_Name, Marker_Number, Section, point1, point2, weight1" << endl;
             }
-                
+
 	          /*--- find the number of nodes for 
                   the current airfoil section ---*/ 
 	          nNode = point1_Airfoil[iMarker][iSection].size();
