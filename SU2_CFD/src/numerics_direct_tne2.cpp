@@ -699,7 +699,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
   double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   double Cvtrs;
   double Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
-  double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
+//  double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   double e_ve_i, e_ve_j;
   
 	Area = 0;
@@ -821,40 +821,45 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
     if (mF >= 0.0) FcLR = FcL;
     else           FcLR = FcR;
     
-    /*--- Calculate supplementary values ---*/
-    conc_i = 0.0; conc_j = 0.0;
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      conc_i += V_i[RHOS_INDEX+iSpecies]/Ms[iSpecies];
-      conc_j += V_j[RHOS_INDEX+iSpecies]/Ms[iSpecies];
-    }
-    dPdrhoE_i = Ru/rhoCvtr_i * conc_i;
-    dPdrhoE_j = Ru/rhoCvtr_j * conc_j;
-    dPdrhoEve_i = -dPdrhoE_i + rho_el_i * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_i;
-    dPdrhoEve_j = -dPdrhoE_j + rho_el_j * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_j;
+//    /*--- Calculate supplementary values ---*/
+//    conc_i = 0.0; conc_j = 0.0;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      conc_i += V_i[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+//      conc_j += V_j[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+//    }
+//    dPdrhoE_i = Ru/rhoCvtr_i * conc_i;
+//    dPdrhoE_j = Ru/rhoCvtr_j * conc_j;
+//    dPdrhoEve_i = -dPdrhoE_i + rho_el_i * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_i;
+//    dPdrhoEve_j = -dPdrhoE_j + rho_el_j * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_j;
     
     // Sound speed derivatives: Species density
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdrhoE_i)*P_i/rho_i
-                                       + 1.0/rho_i*(1.0+dPdrhoE_i)*(dPdU_i[iSpecies] - P_i/rho_i));
-      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdrhoE_j)*P_j/rho_j
-                                       + 1.0/rho_j*(1.0+dPdrhoE_j)*(dPdU_j[iSpecies] - P_j/rho_j));
+      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
+                                       + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
+      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
+                                       + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
+      
+//      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdrhoE_i)*P_i/rho_i
+//                                       + 1.0/rho_i*(1.0+dPdrhoE_i)*(dPdU_i[iSpecies] - P_i/rho_i));
+//      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdrhoE_j)*P_j/rho_j
+//                                       + 1.0/rho_j*(1.0+dPdrhoE_j)*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
-      daL[nSpecies-1] = 1.0/(2.0*a_i*rho_i) * (1+dPdrhoE_i)*(dPdU_i[nSpecies-1] - P_i/rho_i);
-      daR[nSpecies-1] = 1.0/(2.0*a_j*rho_j) * (1+dPdrhoE_j)*(dPdU_j[nSpecies-1] - P_j/rho_j);
+      daL[nSpecies-1] = 1.0/(2.0*a_i*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
+      daR[nSpecies-1] = 1.0/(2.0*a_j*rho_j) * (1+dPdU_j[nSpecies+nDim])*(dPdU_j[nSpecies-1] - P_j/rho_j);
     }
     // Sound speed derivatives: Momentum
     for (iDim = 0; iDim < nDim; iDim++) {
-      daL[nSpecies+iDim] = -1.0/(2.0*rho_i*a_i) * ((1.0+dPdrhoE_i)*dPdrhoE_i)*u_i[iDim];
-      daR[nSpecies+iDim] = -1.0/(2.0*rho_j*a_j) * ((1.0+dPdrhoE_j)*dPdrhoE_j)*u_j[iDim];
+      daL[nSpecies+iDim] = -1.0/(2.0*rho_i*a_i) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim])*u_i[iDim];
+      daR[nSpecies+iDim] = -1.0/(2.0*rho_j*a_j) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim])*u_j[iDim];
     }
     // Sound speed derivatives: Energy
-    daL[nSpecies+nDim]   = 1.0/(2.0*rho_i*a_i) * ((1.0+dPdrhoE_i)*dPdrhoE_i);
-    daR[nSpecies+nDim]   = 1.0/(2.0*rho_j*a_j) * ((1.0+dPdrhoE_j)*dPdrhoE_j);
+    daL[nSpecies+nDim]   = 1.0/(2.0*rho_i*a_i) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim]);
+    daR[nSpecies+nDim]   = 1.0/(2.0*rho_j*a_j) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim]);
     //Sound speed derivatives: Vib-el energy
-    daL[nSpecies+nDim+1] = 1.0/(2.0*rho_i*a_i) * ((1.0+dPdrhoE_i)*dPdrhoEve_i);
-    daR[nSpecies+nDim+1] = 1.0/(2.0*rho_j*a_j) * ((1.0+dPdrhoE_j)*dPdrhoEve_j);
+    daL[nSpecies+nDim+1] = 1.0/(2.0*rho_i*a_i) * ((1.0+dPdU_i[nSpecies+nDim])*dPdU_i[nSpecies+nDim+1]);
+    daR[nSpecies+nDim+1] = 1.0/(2.0*rho_j*a_j) * ((1.0+dPdU_j[nSpecies+nDim])*dPdU_j[nSpecies+nDim+1]);
 
     /*--- Left state Jacobian ---*/
     if (mF >= 0) {
@@ -869,10 +874,10 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
         val_Jacobian_i[nSpecies+nDim][iSpecies] += mF * (dPdU_i[iSpecies]*a_i + rho_i*h_i*daL[iSpecies]);
       }
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdrhoE_i*u_i[iDim]*a_i + rho_i*h_i*daL[nSpecies+iDim]);
+        val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_i[nSpecies+nDim]*u_i[iDim]*a_i + rho_i*h_i*daL[nSpecies+iDim]);
       } 
-      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdrhoE_i)*a_i + rho_i*h_i*daL[nSpecies+nDim]);
-      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdrhoEve_i*a_i + rho_i*h_i*daL[nSpecies+nDim+1]);
+      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_i[nSpecies+nDim])*a_i + rho_i*h_i*daL[nSpecies+nDim]);
+      val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_i[nSpecies+nDim+1]*a_i + rho_i*h_i*daL[nSpecies+nDim+1]);
       for (jVar = 0; jVar < nVar; jVar++) {
         val_Jacobian_i[nSpecies+nDim+1][jVar] +=  mF * FcL[nSpecies+nDim+1]/a_i * daL[jVar];
       }
@@ -898,12 +903,12 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
                                             + P_i*(-ProjVel_i/(rho_i*a_i)
                                                    -ProjVel_i*daL[iSpecies]/(a_i*a_i))*(3.0-3.0*mL));
         for (iDim = 0; iDim < nDim; iDim++)
-          dpLP[nSpecies+iDim] = 0.25*(mL+1.0) * (-u_i[iDim]*dPdrhoE_i*(mL+1.0)*(2.0-mL)
+          dpLP[nSpecies+iDim] = 0.25*(mL+1.0) * (-u_i[iDim]*dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
                                                  + P_i*( -ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim]
                                                         + UnitNormal[iDim]/(rho_i*a_i))*(3.0-3.0*mL));
-        dpLP[nSpecies+nDim]   = 0.25*(mL+1.0) * (dPdrhoE_i*(mL+1.0)*(2.0-mL)
+        dpLP[nSpecies+nDim]   = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
                                                  + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim])*(3.0-3.0*mL));
-        dpLP[nSpecies+nDim+1] = 0.25*(mL+1.0) * (dPdrhoEve_i*(mL+1.0)*(2.0-mL)
+        dpLP[nSpecies+nDim+1] = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim+1]*(mL+1.0)*(2.0-mL)
                                                  + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1])*(3.0-3.0*mL));
       } else {
         
@@ -919,9 +924,9 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dpLP[iSpecies] = dPdU_i[iSpecies];
         for (iDim = 0; iDim < nDim; iDim++)
-          dpLP[nSpecies+iDim] = (-u_i[iDim]*dPdrhoE_i);
-        dpLP[nSpecies+nDim]   = dPdrhoE_i;
-        dpLP[nSpecies+nDim+1] = dPdrhoEve_i;
+          dpLP[nSpecies+iDim] = (-u_i[iDim]*dPdU_i[nSpecies+nDim]);
+        dpLP[nSpecies+nDim]   = dPdU_i[nSpecies+nDim];
+        dpLP[nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1];
       }
       
       /*--- dM contribution ---*/
@@ -952,10 +957,10 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
         val_Jacobian_j[nSpecies+nDim][iSpecies] += mF * (dPdU_j[iSpecies]*a_j + rho_j*h_j*daR[iSpecies]);
       }
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdrhoE_j*u_j[iDim]*a_j + rho_j*h_j*daR[nSpecies+iDim]);
+        val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] += mF * (-dPdU_j[nSpecies+nDim]*u_j[iDim]*a_j + rho_j*h_j*daR[nSpecies+iDim]);
       }
-      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdrhoE_j)*a_j + rho_j*h_j*daR[nSpecies+nDim]);
-      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdrhoEve_j*a_j + rho_j*h_j*daR[nSpecies+nDim+1]);
+      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]   += mF * ((1.0+dPdU_j[nSpecies+nDim])*a_j + rho_j*h_j*daR[nSpecies+nDim]);
+      val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] += mF * (dPdU_j[nSpecies+nDim+1]*a_j + rho_j*h_j*daR[nSpecies+nDim+1]);
       for (jVar = 0; jVar < nVar; jVar++) {
         val_Jacobian_j[nSpecies+nDim+1][jVar] +=  mF * FcR[nSpecies+nDim+1]/a_j * daR[jVar];
       }
@@ -980,12 +985,12 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
                                             + P_j*(-ProjVel_j/(rho_j*a_j)
                                                    -ProjVel_j*daR[iSpecies]/(a_j*a_j))*(3.0+3.0*mR));
         for (iDim = 0; iDim < nDim; iDim++)
-          dpRM[nSpecies+iDim] = 0.25*(mR-1.0) * ((-u_j[iDim]*dPdrhoE_j)*(mR-1.0)*(2.0+mR)
+          dpRM[nSpecies+iDim] = 0.25*(mR-1.0) * ((-u_j[iDim]*dPdU_j[nSpecies+nDim])*(mR-1.0)*(2.0+mR)
                                                  + P_j*( -ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim]
                                                         + UnitNormal[iDim]/(rho_j*a_j))*(3.0+3.0*mR));
-        dpRM[nSpecies+nDim]   = 0.25*(mR-1.0) * (dPdrhoE_j*(mR-1.0)*(2.0+mR)
+        dpRM[nSpecies+nDim]   = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim]*(mR-1.0)*(2.0+mR)
                                                  + P_j*(-ProjVel_j/(a_j*a_j)*daR[nSpecies+nDim])*(3.0+3.0*mR));
-        dpRM[nSpecies+nDim+1] = 0.25*(mR-1.0) * (dPdrhoEve_j*(mR-1.0)*(2.0+mR)
+        dpRM[nSpecies+nDim+1] = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim+1]*(mR-1.0)*(2.0+mR)
                                                  + P_j*(-ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim+1])*(3.0+3.0*mR));
         
       } else {
@@ -1002,9 +1007,9 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           dpRM[iSpecies] = dPdU_j[iSpecies];
         for (iDim = 0; iDim < nDim; iDim++)
-          dpRM[nSpecies+iDim] = -u_j[iDim]*dPdrhoE_j;
-        dpRM[nSpecies+nDim]   = dPdrhoE_j;
-        dpRM[nSpecies+nDim+1] = dPdrhoEve_j;
+          dpRM[nSpecies+iDim] = -u_j[iDim]*dPdU_j[nSpecies+nDim];
+        dpRM[nSpecies+nDim]   = dPdU_j[nSpecies+nDim];
+        dpRM[nSpecies+nDim+1] = dPdU_j[nSpecies+nDim+1];
       }
       
       /*--- Jacobian contribution: dM terms ---*/
