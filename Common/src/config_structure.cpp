@@ -69,7 +69,7 @@ CConfig::CConfig(char case_filename[200]) {
 	case_file.open(case_filename, ios::in);
   
 	if (case_file.fail()) {
-		cout << "There is no configuration file!!" << endl;
+		cout << "Configuration file " << case_filename << " not found." << endl;
 		exit(1);
 	}
   
