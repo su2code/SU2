@@ -277,6 +277,9 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   else { Density_i = U_i[0]; }
   
   val_residual[0] = 0.0;
+  Production = 0;
+  Destruction = 0;
+  CrossProduction = 0;
   val_Jacobian_i[0][0] = 0.0;
   
   /*--- Computation of vorticity ---*/
@@ -360,8 +363,44 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
-    
+  }else{
+    cout << "Distance is equal to zero" << endl;
   }
+  /*
+  
+  //// CHANGES
+  int nInputMLVariables = 9;
+  double * input = new double[nInputMLVariables];
+  for (int i = 0; i < nInputMLVariables; i++){
+    input[i] = 0;
+  }
+  int ctr = 0;
+  input[ctr] = Laminar_Viscosity_i/Density_i;
+  ctr++;
+  input[ctr] = TurbVar_i[0];
+  ctr++;
+  input[ctr] = dist_i;
+  ctr++;
+  for (iDim = 0; iDim < nDim; iDim++){
+    input[ctr] = TurbVar_Grad_i[0][iDim];
+    ctr++;
+  }
+  for (iDim = 0; iDim < nDim; iDim ++){
+    for (int jDim = 0; jDim < nDim; jDim++){
+      input[ctr] = PrimVar_Grad_i[iDim+1][iDim];
+      ctr++;
+    }
+  }
+   */
+  /*
+  cout << "Inputs: ";
+  for (int i=0; i< nInputMLVariables; i++){
+    cout << input[i] << " ";
+  }
+  cout << endl;
+  cout << "TurbSA source resid " << val_residual[0] << endl;
+   */
+//  exit(1);
   
 }
 
@@ -625,7 +664,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   
   if (incompressible) { Density_i = DensityInc_i; }
   else { Density_i = U_i[0]; }
-  
+  val_Jacobian_i[0][0] = 0.0;
+
   if (dist_i > 0.0) {
     // Call turbulence model
     // Get all the variables
@@ -637,7 +677,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     int ctr = 0;
     input[ctr] = Laminar_Viscosity_i/Density_i;
-//    cout << "lam visc " << Laminar_Viscosity_i << " density " << Density_i << " input 0 " << input[0] <<endl;
     ctr++;
     input[ctr] = TurbVar_i[0];
     ctr++;
@@ -671,6 +710,26 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     this->MLModel->Predict(input, output);
 //    cout << "output "<<output[0]<<endl;
     val_residual[0] = output[0];
+    if (dist_i <= 0.0){
+      val_residual[0] = 0;
+    }
+    
+    cout << "Inputs: ";
+    for (int i=0; i< nInputMLVariables; i++){
+      cout << input[i] << " ";
+    }
+    cout << endl;
+    
+    cout << "Scaled inputs: ";
+    this->MLModel->inputScaler->Scale(input);
+    for (int i=0; i< nInputMLVariables; i++){
+      cout << input[i] << " ";
+    }
+    cout << endl;
+    
+    cout << "TurbML Source residual " << val_residual[0] << endl;
+//    exit(1);
+    
     delete input;
     delete output;
   }
