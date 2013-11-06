@@ -286,11 +286,11 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
   if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
   Omega = sqrt(Vorticity);
-  /*
+  
   if (dist_i < 1.0e-10){
     cout << "Distance is lower than e-10: dist = " << dist_i <<endl;
   }
-   */
+   
  // double tmpDist = dist_i;
 //   dist_i = max(dist_i, 1.0e-10);
   
