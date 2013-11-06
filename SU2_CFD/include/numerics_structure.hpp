@@ -768,17 +768,12 @@ public:
     
     /*!
 	 * \brief Compute the projected inviscid flux vector.
-	 * \param[in] val_density - Pointer to the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_pressure - Pointer to the pressure.
-	 * \param[in] val_enthalpy - Pointer to the enthalpy.
-     * \param[in] val_energy_ve - Pointer to the vibrational-electronic energy.
+	 * \param[in] val_U - Conserved variables
+	 * \param[in] val_V - Primitive variables
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
 	 */
-	void GetInviscidProjFlux(double *val_density, double *val_velocity,
-                           double *val_pressure, double *val_enthalpy,
-                           double *val_energy_ve, double *val_normal,
+	void GetInviscidProjFlux(double *val_U, double *val_V, double *val_normal,
                            double *val_Proj_Flux);
     
 	/*!
@@ -919,20 +914,15 @@ public:
 	/*!
 	 * \overload
 	 * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
-     * \param[in] val_density - Vector of species densities.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-     * \param[in] val_energy_ve - Pointer to the vibrational-electronic energy.
-     * \param[in] val_dPdrhos - Vector of partial derivatives of pressure w.r.t. species density.
-     * \param[in] val_dPdrhoE - Partial derivative of pressure w.r.t. rho*E.
-     * \param[in] val_dPdrhoEve - Partial derivative of pressure w.r.t. rho*Eve.
+   * \param[in] val_U - Vector conserved variables.
+	 * \param[in] val_V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of partial derivatives of pressure w.r.t. conserved vars.
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-    void GetInviscidProjJac(double *val_density, double *val_velocity, double *val_enthalpy,
-                            double *val_energy_ve, double *val_dPdrhos, double val_dPdrhoE,
-                            double val_dPdrhoEve, double *val_normal, double val_scale,
+    void GetInviscidProjJac(double *val_U, double *val_V, double *val_dPdU,
+                            double *val_normal, double val_scale,
                             double **val_Proj_Jac_Tensor);
     
 	/*!
@@ -4848,20 +4838,14 @@ class CUpwRoe_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
 	double *Diff_U;
-  double *Density_i, *Density_j, *RoeDensity;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
   double *RoeU, *RoeV;
+	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-  double Energy_i, Energy_j, Energy_ve_i, Energy_ve_j, RoeEnergy_ve;
-  double Enthalpy_i, Enthalpy_j, RoeEnthalpy;
-  double SoundSpeed_i, SoundSpeed_j, RoeSoundSpeed;
-  double Pressure_i, Pressure_j, RoePressure;
-  double Temperature_i, Temperature_j, Temperature_ve_i, Temperature_ve_j, RoeTemperature_ve;
+  double RoeSoundSpeed;
   double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-	double sq_vel, Proj_ModJac_Tensor_ij, R;
-  double *dPdrhos, *RoedPdU, *l, *m;
+	double Proj_ModJac_Tensor_ij, R;
+  double *RoedPdU, *l, *m;
  	unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
   CVariable *var;
   
@@ -5041,7 +5025,7 @@ public:
 
 
 /*!
- * \class CCentLax_Flow
+ * \class CCentLax_TNE2
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios.
@@ -5051,25 +5035,20 @@ class CCentLax_TNE2 : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
 	double *Diff_U; /*!< \brief Difference of conservative variables. */
-    double *Density_i, *Density_j, *MeanDensity; /*!< \brief Species densities. */
-	double *Velocity_i, *Velocity_j, *MeanVelocity; /*!< \brief Velocity at i & j. */
-    double ProjVelocity, ProjVelocity_i, ProjVelocity_j;  /*!< \brief Projected velocities. */
-	double Energy_i, Energy_j;  /*!< \brief Energy at i & j. */
-    double Energy_ve_i, Energy_ve_j, MeanEnergy_ve; /*!< \brief Vib-elec. energy at i & j. */
-    double Temperature_i, Temperature_j, MeanTemperature;  /*!< \brief Temperature at i & j. */
-    double Temperature_ve_i, Temperature_ve_j, MeanTemperature_ve; /*!< \brief Vib-elec. energy at i & j. */
+  double *MeanU, *MeanV;
+  double *MeandPdU;
 	double *Proj_flux_tensor;  /*!< \brief Projected inviscid flux tensor. */
-	double sq_vel_i, sq_vel_j;   /*!< \brief Modulus of the velocity. */
-	double MeanPressure, MeanEnthalpy, MeanEnergy; /*!< \brief Mean values of primitive variables. */
 	double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */
 	double Local_Lambda_i, Local_Lambda_j, MeanLambda; /*!< \brief Local eigenvalues. */
 	double Phi_i, Phi_j, sc0, StretchingFactor; /*!< \brief Streching parameters. */
 	double Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
-    double *dPdrhos, dPdrhoE, dPdrhoEve; /*!< \brief Partial derivative of pressure w.r.t. conserved quantities. */
+  //    double *dPdrhos, dPdrhoE, dPdrhoEve; /*!< \brief Partial derivative of pressure w.r.t. conserved quantities. */
 	bool implicit; /*!< \brief Implicit time integration. */
-    bool ionization;  /*!< \brief Charged species with the mixture. */
+  bool ionization;  /*!< \brief Charged species with the mixture. */
 	bool stretching;
-    unsigned short nSpecies, nVar, nDim;
+  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad, nDim;
+  
+  CVariable *var;
     
 public:
     
@@ -5079,7 +5058,9 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CCentLax_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CCentLax_TNE2(unsigned short val_nDim, unsigned short val_nVar,
+                unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.

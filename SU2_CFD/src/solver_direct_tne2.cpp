@@ -1951,13 +1951,13 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
-		/*--- Update the implicit Jacobian ---*/
-		if (implicit) {
-			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-		}
+//		/*--- Update the implicit Jacobian ---*/
+//		if (implicit) {
+//			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+//			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+//			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+//		}
 	}
 }
 

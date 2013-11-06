@@ -554,6 +554,12 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_AdjFlow(void) { return Kind
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_AdjFlow(void) { return Kind_ViscNumScheme_AdjFlow; }
 
+inline double CConfig::GetKappa_1st_TNE2(void) { return Kappa_1st_TNE2; }
+
+inline double CConfig::GetKappa_2nd_TNE2(void) { return Kappa_2nd_TNE2; }
+
+inline double CConfig::GetKappa_4th_TNE2(void) { return Kappa_4th_TNE2; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTNE2(void) { return Kind_TimeIntScheme_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTNE2(void) { return Kind_ConvNumScheme_AdjTNE2; }

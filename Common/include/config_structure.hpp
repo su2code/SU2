@@ -347,7 +347,10 @@ private:
 	Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
 	Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
 	Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
-	Kappa_1st_AdjTNE2,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
+	Kappa_1st_TNE2,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
+	Kappa_2nd_TNE2,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
+	Kappa_4th_TNE2,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+  Kappa_1st_AdjTNE2,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
 	Kappa_2nd_AdjTNE2,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
 	Kappa_4th_AdjTNE2;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
 
@@ -2594,6 +2597,25 @@ public:
 	 * \return Calibrated constant for the JST method for the flow equations.
 	 */		
 	double GetKappa_4th_Flow(void);
+  
+  /*!
+	 * \brief Value of the calibrated constant for the Lax method (center scheme).
+	 * \note This constant is used in coarse levels and with first order methods.
+	 * \return Calibrated constant for the Lax method.
+	 */
+	double GetKappa_1st_TNE2(void);
+  
+	/*!
+	 * \brief Value of the calibrated constant for the JST method (center scheme).
+	 * \return Calibrated constant for the JST method for the flow equations.
+	 */
+	double GetKappa_2nd_TNE2(void);
+  
+	/*!
+	 * \brief Value of the calibrated constant for the JST method (center scheme).
+	 * \return Calibrated constant for the JST method for the flow equations.
+	 */
+	double GetKappa_4th_TNE2(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
