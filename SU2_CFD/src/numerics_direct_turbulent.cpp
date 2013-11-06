@@ -286,7 +286,6 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
   if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
   Omega = sqrt(Vorticity);
-  dist_i = max(dist_i, 1.0e-10);
   
   /*--- Rotational correction term ---*/
   if (rotating_frame) {
@@ -307,7 +306,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     Omega += 2.0*min(0.0,StrainMag-Omega);
   }
   
-  if (dist_i > 0.0) {
+  if (dist_i > 1e-10) {
     
     /*--- Production term ---*/
     dist_i_2 = dist_i*dist_i;
@@ -363,45 +362,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
-  }else{
-    cout << "Distance is equal to zero" << endl;
   }
-  /*
-  
-  //// CHANGES
-  int nInputMLVariables = 9;
-  double * input = new double[nInputMLVariables];
-  for (int i = 0; i < nInputMLVariables; i++){
-    input[i] = 0;
-  }
-  int ctr = 0;
-  input[ctr] = Laminar_Viscosity_i/Density_i;
-  ctr++;
-  input[ctr] = TurbVar_i[0];
-  ctr++;
-  input[ctr] = dist_i;
-  ctr++;
-  for (iDim = 0; iDim < nDim; iDim++){
-    input[ctr] = TurbVar_Grad_i[0][iDim];
-    ctr++;
-  }
-  for (iDim = 0; iDim < nDim; iDim ++){
-    for (int jDim = 0; jDim < nDim; jDim++){
-      input[ctr] = PrimVar_Grad_i[iDim+1][iDim];
-      ctr++;
-    }
-  }
-   */
-  /*
-  cout << "Inputs: ";
-  for (int i=0; i< nInputMLVariables; i++){
-    cout << input[i] << " ";
-  }
-  cout << endl;
-  cout << "TurbSA source resid " << val_residual[0] << endl;
-   */
-//  exit(1);
-  
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
