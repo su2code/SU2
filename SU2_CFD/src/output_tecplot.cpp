@@ -74,15 +74,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   if (Kind_Solver == POISSON_EQUATION)
   filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == PLASMA_EULER) {
-    if (val_iZone == 0) Kind_Solver = PLASMA_EULER;
-    if (val_iZone == 1) Kind_Solver = POISSON_EQUATION;
-  }
-  if (Kind_Solver == PLASMA_NAVIER_STOKES) {
-    if (val_iZone == 0) Kind_Solver = PLASMA_NAVIER_STOKES;
-    if (val_iZone == 1) Kind_Solver = POISSON_EQUATION;
-  }
-  
 #ifndef NO_MPI
   /*--- Remove the domain number from the surface csv filename ---*/
   int nProcessor = MPI::COMM_WORLD.Get_size();
@@ -103,13 +94,6 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
   if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
     sprintf (buffer, "_%d", int(val_iZone));
-    strcat(cstr,buffer);
-  }
-  
-  /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if (((Kind_Solver == POISSON_EQUATION) &&( (Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) )
-      && config->GetUnsteady_Simulation()) {
-    sprintf (buffer, "_%d", int(iExtIter));
     strcat(cstr,buffer);
   }
   
@@ -216,36 +200,17 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
       Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
     }
     
-    if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-      unsigned short iSpecies;
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-      Tecplot_File << ",\"Pressure_" << iSpecies << "\"";
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-      Tecplot_File << ",\"Temperature_" << iSpecies << "\"";
-      for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++)
-      Tecplot_File << ",\"TemperatureVib_" << iSpecies << "\"";
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-      Tecplot_File << ",\"Mach_" << iSpecies << "\"";
-    }
-    
-    if (Kind_Solver == PLASMA_NAVIER_STOKES) {
-      unsigned short iSpecies;
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-      Tecplot_File << ",\"LaminaryViscosity_" << iSpecies << "\"";
-      
-      if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
-        for (iDim = 0; iDim < nDim; iDim++)
-        Tecplot_File << ",\"Magnet_Field" << iDim << "\"";
-      }
-    }
-    
     if (Kind_Solver == POISSON_EQUATION) {
       unsigned short iDim;
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
       Tecplot_File << ",\"poissonField_" << iDim+1 << "\"";
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if (( Kind_Solver == ADJ_EULER              ) ||
+        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == ADJ_RANS               ) ||
+        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
       Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
     }
     
@@ -1825,41 +1790,6 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       *NVar += 1;
     }
     
-    if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-      unsigned short iSpecies;
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-        variables << "Pressure_" << iSpecies << " ";
-        *NVar += 1;
-      }
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-        variables << "Temperature_" << iSpecies << " ";
-        *NVar += 1;
-      }
-      for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
-        variables << "TemperatureVib_" << iSpecies << " ";
-        *NVar += 1;
-      }
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-        variables << "Mach_" << iSpecies << " ";
-        *NVar += 1;
-      }
-    }
-    
-    if (Kind_Solver == PLASMA_NAVIER_STOKES) {
-      unsigned short iSpecies;
-      for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-        variables << "LaminaryViscosity_" << iSpecies << " ";
-        *NVar += 1;
-      }
-      
-      if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          variables << "Magnet_Field" << iDim << " ";
-          *NVar += 1;
-        }
-      }
-    }
-    
     if (Kind_Solver == POISSON_EQUATION) {
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         variables << "poissonField_" << iDim+1 << " ";
@@ -1867,7 +1797,11 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       }
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if (( Kind_Solver == ADJ_EULER              ) ||
+        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == ADJ_RANS               ) ||
+        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
       variables << "Surface_Sensitivity Solution_Sensor ";
       *NVar += 2;
     }

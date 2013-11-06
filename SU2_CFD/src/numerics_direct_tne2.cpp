@@ -34,7 +34,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
 	unsigned short iVar;
   
   /*--- Read configuration parameters ---*/
-	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
   
   /*--- Define useful constants ---*/
@@ -428,7 +428,7 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
   
   /*--- Set booleans from CConfig settings ---*/
   ionization = config->GetIonization();
-	implicit = (config->GetKind_TimeIntScheme_Plasma() == EULER_IMPLICIT);
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Set iterator size ---*/
   nVar         = val_nVar;
@@ -655,7 +655,7 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                                                           config) {
   
   /*--- Read configuration parameters ---*/
-	implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
   
   /*--- Define useful constants ---*/
@@ -1044,7 +1044,7 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
                                                                       config) {
   
   /*--- Read configuration parameters ---*/
-	implicit   = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
   
   /*--- Define useful constants ---*/
@@ -1530,7 +1530,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(double *val_residual,
 CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   /*--- Read configuration parameters ---*/
-	implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
   
   /*--- Define useful constants ---*/
@@ -1980,6 +1980,9 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                                                         val_nVar,
                                                         config) {
 
+  /*--- Assign booleans from CConfig ---*/
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
   /*--- Define useful constants ---*/
   nVar     = val_nVar;
   nDim     = val_nDim;
