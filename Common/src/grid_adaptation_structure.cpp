@@ -31,10 +31,6 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 	nDim = geometry->GetnDim();
 	
 	switch (config->GetKind_Solver()) {			
-
-		case PLASMA_EULER: case PLASMA_NAVIER_STOKES: case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
-			nVar = config->GetnDiatomics()*(nDim+3) + config->GetnMonatomics()*(nDim+2);
-			break;			
 		
 		case POISSON_EQUATION:
 			nVar = 1;

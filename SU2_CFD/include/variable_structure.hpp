@@ -859,18 +859,6 @@ public:
 	 */		
 	virtual double GetBetaInc2(void);
 
-	/*! Overloaded for plasma equations
-	 * \brief A virtual member.
-	 * \return Value of the sound speed of Fluid val_species
-	 */
-	virtual double GetSoundSpeed(unsigned short val_species);
-
-	/*! Overloaded for plasma equations
-	 * \brief A virtual member.
-	 * \return Value of the enthalpy of Fluid val_species
-	 */
-	virtual double GetEnthalpy(unsigned short val_species);
-
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the temperature.
@@ -882,18 +870,6 @@ public:
 	 * \return Value of the vibrational-electronic temperature.
 	 */
 	virtual double GetTemperature_ve(void);
-
-	/*!
-	 * \brief Overloaded for plasma equations
-	 * \param[in] iSpecies - Index of species for desired TR temperature.
-	 */
-	virtual double GetTemperature_tr(unsigned short iSpecies);
-
-	/*!
-	 * \brief Overloaded for plasma equations
-	 * \param[in] iSpecies - Index of species for desired TR temperature.
-	 */
-	virtual double GetTemperature_vib(unsigned short iSpecies);
   
   /*!
    * \brief A virtual member -- Get the mixture specific heat at constant volume (trans.-rot.).
@@ -968,24 +944,6 @@ public:
    * \return Value of the thermal conductivity (vibrational)
    */
   virtual double GetThermalConductivity_ve(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \return Value of the thermal conductivity (translational/rotational)
-   */
-  virtual double GetThermalConductivity(unsigned short iSpecies);
-  
-  /*!
-   * \brief A virtual member.
-   * \return Value of the thermal conductivity (vibrational)
-   */
-  virtual double GetThermalConductivity_vib(unsigned short iSpecies);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return The Eddy viscosity of the flow.
-	 */
-	virtual double GetEddyViscosity(unsigned short iSpecies);
 
 	/*!
 	 * \brief A virtual member.
@@ -1113,21 +1071,11 @@ public:
 	 * \brief A virtual member.
 	 */
   virtual void SetPrimVar(double *val_prim);
-  
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual double GetPrimVar(unsigned short iSpecies, unsigned short val_var);
 
 	/*!
 	 * \brief A virtual member.
 	 */
 	virtual double *GetPrimVar(void);
-  
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual double **GetPrimVar_Plasma(void);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1248,20 +1196,6 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
-	 * \param[in] Coord - Coordinates for identifying non-physical temperatures.
-	 */
-	virtual void SetTemperature_tr(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Configuration parameters.
-	 * \param[in] Coord - Coordinates for identifying non-physical temperatures.
-	 */
-	virtual void SetTemperature_vib(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Configuration parameters.
 	 */	
 	virtual void SetPrimVar(CConfig *config);
   
@@ -1368,13 +1302,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 * \param[in] val_iSpecies - Index of the flow species.
-	 */
-	virtual void SetLaminarViscosity(double val_laminar_viscosity, unsigned short val_iSpecies);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
 	 */		
 	virtual void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
@@ -1411,7 +1338,6 @@ public:
 	 * \param[in] val_value - Value to add to the gradient of the primitive variables.
 	 */
 	virtual void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
-	virtual void AddGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief A virtual member.
@@ -1420,7 +1346,6 @@ public:
 	 * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
 	 */
 	virtual void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
-	virtual void SubtractGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief A virtual member.
@@ -1429,7 +1354,6 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
-	virtual double GetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim);
 
 	/*!
 	 * \brief A virtual member.
@@ -1438,15 +1362,12 @@ public:
 	 * \param[in] val_value - Value of the gradient.
 	 */
 	virtual void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
-	virtual void SetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
 
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double **GetGradient_Primitive(void);
-	virtual double **GetGradient_Primitive(unsigned short val_species);
-  virtual double ***GetGradient_Primitive_Plasma(void);
 
 	/*!
 	 * \brief Set the blending function for the blending of k-w and k-eps.
@@ -1484,20 +1405,6 @@ public:
 	virtual void SetmuT(double val_muT);
 
 	/*!
-	 * \brief Get the value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 * \param[in] iFluids - ID of the fluid in multispecies solver
-	 * \return the value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 */
-	virtual double GetMax_Lambda_Inv(unsigned short iFluids);
-
-	/*!
-	 * \brief Get the value of the maximum eigenvalue for the viscous terms of the PDE.
-	 * \param[in] iFluids - ID of the fluid in multispecies solver
-	 * \return the value of the maximum eigenvalue for the viscous terms of the PDE.
-	 */
-	virtual double GetMax_Lambda_Visc(unsigned short iFluids);
-
-	/*!
 	 * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
 	 * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
 	 * \param[in] iSpecies - Value of iSpecies to which the eigenvalue belongs
@@ -1521,53 +1428,6 @@ public:
 	 * \brief A virtual member.
 	 */		
 	virtual double GetDiffLevelSet(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] positive_charge - Mass density of positive charge.
-	 * \param[in] negative_charge - Mass density of negative charge.
-	 */
-	virtual void SetChargeDensity(double positive_charge, double negative_charge);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] iSpecies - Index of the flow species
-	 * \param[in] val_gradient - value of the gradient
-	 * \param[in] iDim - Index of physical dimension
-	 */
-	virtual void SetPlasmaRhoUGradient(unsigned short iSpecies, double val_gradient, unsigned short iDim);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] dt - Value of the time step
-	 */
-	virtual void SetPlasmaTimeStep(double dt);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual double* GetChargeDensity();
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual double** GetPlasmaRhoUGradient();
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual double GetPlasmaTimeStep();
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] poissonField - poissonField
-	 */
-	virtual void SetpoissonField(double* val_poissonField);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual double* GetpoissonField();
 
 	/*!
 	 * \brief A virtual member.
@@ -1703,8 +1563,6 @@ public:
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
-	double **PlasmaRhoUGradient;
-	double PlasmaTimeStep;
 public:
 
 	/*!
@@ -1733,34 +1591,10 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 */
-	double** GetPlasmaRhoUGradient();
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	double GetPlasmaTimeStep();
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] positive_charge - Mass density of positive charge.
 	 * \param[in] negative_charge - Mass density of negative charge.
 	 */
 	void SetChargeDensity(double positive_charge, double negative_charge);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] iSpecies - Index of the flow species
-	 * \param[in] val_gradient - value of the gradient
-	 * \param[in] iDim - Index of physical dimension
-	 */
-	void SetPlasmaRhoUGradient(unsigned short iSpecies, double val_gradient, unsigned short iDim);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] dt - value of the plasma time step
-	 */
-	void SetPlasmaTimeStep(double dt);
 
 };
 
@@ -3052,429 +2886,6 @@ class CLinNSVariable : public CLinEulerVariable {
 public:
 };
 
-/*!
- * \class CPlasmaVariable
- * \brief Main class for defining the variables of the Plasma solver.
- * \version 2.0.8
- */
-class CPlasmaVariable : public CVariable {
-protected:	
-	double *Sensor_MultiSpecies;
-	double *Velocity2;
-	double *Max_Lambda_Inv_MultiSpecies; /*!< \brief Vector of Maximun inviscid eingenvalues for different fluids */
-	double *Max_Lambda_Visc_MultiSpecies; /*!< \brief Vector of Maximun viscous eingenvalues for different fluids */
-	double *Lambda;
-	unsigned short nSpecies;	/*!< \brief Number of species in plasma and number of fluids to model plasma with. */
-	unsigned short nMonatomics,	/*!< \brief Number of species in plasma and number of fluids to model plasma with. */
-	nDiatomics;
-	double *LaminarViscosity_MultiSpecies;	/*!< \brief Viscosity of the fluid. */
-	double *EddyViscosity_MultiSpecies;	/*!< \brief Viscosity of the fluid. */
-	double Prandtl_Lam;       /*!< \brief Laminar Prandtl number. */
-	double *ThermalCoeff;		/*!< \brief Thermal conductivity of the fluid. */
-  double *ThermalCoeff_vib; /*!< \brief Vibrational thermal conductivity. */
-	double *Species_Delta_Time;
-	double *Residual_Chemistry,	/*!< \brief Residual of the chemistry source terms. */
-	*Residual_ElecForce,	/*!< \brief Residual of the electrostatic force source terms. */
-	*Residual_MomentumExch, /*!< \brief Residual of the collisional momentum exchange source terms. */
-	*Residual_EnergyExch;	/*! < \brief Residual of the collisional energy exchange source terms. */
-	double *Elec_Field;		/*! < \brief poisson field value from the poissonal solver. */
-	double *B_Field;		/*! < \brief Magnetic field value */
-	
-	/*--- Primitive variable definition ---*/
-											/*!< \brief Primitive variables (T_tr,vx,vy,   vz,   T_vi,      P,    rho,      h,      c ). */ 
-	double **Primitive;	/*!< \brief Primitive variables (   0, 1, 2, nDim, nDim+1, nDim+2, nDim+3, nDim+4, nDim+5 ). */ 
-	double ***Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T_tr, vx, vy, vz, T_vi). */
-  double **LimiterPrimitive; /*!< \brief Limiter of the primitive variables. */
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CPlasmaVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] *val_density - Vector of value of densities for all species (initialization value).
-	 * \param[in] **val_velocity - Matrix of velocities for all species  [Row: Species, Col: Dim](initialization value).
-	 * \param[in] *val_energy -Vector of value of total Energies for all species.
-	 * \param[in] *val_energy_vib -Vector of values of vibrational energies for all species.
-	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CPlasmaVariable(double *val_density, double **val_velocity, double *val_energy, double *val_energy_vib,
-			unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \overload
-	 * \param[in] val_solution - Pointer to the flow value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CPlasmaVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CPlasmaVariable(void);
-  
-  /*!
-	 * \brief Set the velocity of the truncation error to zero.
-   * \param[in] iSpecies - Species index.
-	 */
-	void SetVel_ResTruncError_Zero(unsigned short iSpecies);
-
-	/*!
-	 * \brief Set to zero the gradient of the primitive variables.
-   * \param[in] iSpecies - Species index.
-	 */
-	void SetGradient_PrimitiveZero(unsigned short val_primvar);
-
-	/*!
-	 * \param[in] val_delta_time - Value of the time step
-	 * \param[in] iSpecies - Index of the Species.
-	 * \brief Time step of species iSpecies.
-	 */
-	void SetDelta_Time(double val_delta_time, unsigned short iSpecies);
-
-	/*!
-	 * \param[in] iSpecies - Index of the Species.
-	 * \brief Time step of species iSpecies.
-	 */
-	double GetDelta_Time(unsigned short iSpecies);
-
-	/*!
-	 * \brief Add <i>val_value</i> to the gradient of the primitive variables.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \param[in] val_value - Value to add to the gradient of the primitive variables.
-	 */
-	void AddGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
-
-	/*!
-	 * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
-	 */
-	void SubtractGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
-
-	/*!
-	 * \brief Get the value of the primitive variables gradient.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \return Value of the primitive variables gradient.
-	 */
-	double GetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim);
-  
-  /*!
-	 * \brief Get the value of the primitive variables gradient.
-	 * \return Value of the primitive variables gradient.
-	 */
-  double ***GetGradient_Primitive_Plasma(void);
-
-	/*!
-	 * \brief Set the gradient of the primitive variables.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \param[in] val_value - Value of the gradient.
-	 */
-	void SetGradient_Primitive(unsigned short val_species, unsigned short val_var, unsigned short val_dim, double val_value);
-
-	/*!
-	 * \brief Get the value of the primitive variables gradient.
-	 * \return Value of the primitive variables gradient.
-	 */
-	double **GetGradient_Primitive(unsigned short val_species);
-  
-  /*!
-	 * \brief Set the value of the limiter.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
-	 */
-  void SetLimiterPrimitive(unsigned short val_species, unsigned short val_var, double val_limiter);
-  
-  /*!
-	 * \brief Set the value of the limiter.
-	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
-	 */
-  double GetLimiterPrimitive(unsigned short val_species, unsigned short val_var);
-
-	/*!
-	 * \brief Set the value of the pressure.
-	 */
-	void SetSensor(double val_sensor,unsigned short val_iSpecies);
-
-	/*!
-	 * \brief get the value of the pressure.
-	 */
-	double GetSensor(unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Set the value of the pressure.
-	 */
-	bool SetPressure(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Configuration parameters.
-	 */
-	void SetTemperature_tr(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - Configuration parameters.
-	 */
-	void SetTemperature_vib(CConfig *config);
-
-	/*!
-	 * \brief Get the value of the trans-rot temperature.
-	 * \param[in] iSpecies - Species index of desired temperature.
-	 */
-	double GetTemperature_tr(unsigned short iSpecies);	 
-
-	/*!
-	 * \brief Get the value of the trans-rot temperature.
-	 * \param[in] iSpecies - Species index of desired temperature.
-	 */
-	double GetTemperature_vib(unsigned short iSpecies);
-
-	/*!
-	 * \brief Set the value of the enthalpy.
-	 */
-	void SetEnthalpy(void);
-
-	/*!
-	 * \brief Get the flow pressure.
-	 * \return Value of the flow pressure.
-	 * \param[in] val_species - Index of the Species.
-	 */
-	double GetPressure(unsigned short val_species);
-
-	/*!
-	 * \brief Get the velocity of the flow.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \param[in] val_species - Index of the species.
-	 * \return Value of the velocity for the dimension <i>val_dim</i>.
-	 */
-	double GetVelocity(unsigned short val_dim, unsigned short val_species);
-
-	/*!
-	 * \brief Set the primitive variables.
-	 * \param[in] config - Configuration parameters.
-	 */	
-	void SetPrimVar(CConfig *config);
-  
-  /*!
-	 * \brief Set the primitive variables.
-	 * \param[in] config - Configuration parameters.
-	 */
-	void SetPrimVar(CConfig *config, double *Coord);
-  
-  /*!
-	 * \brief Get the primitive variables.
-	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the primitive variable for the index <i>val_var</i>.
-	 */
-	double GetPrimVar(unsigned short iSpecies, unsigned short val_var);
-  
-  /*!
-	 * \brief Returns a second order tensor of the primitive variables V[nSpecies][nVar]
-	 * \return Memory address of the matrix of primitive variables
-	 */
-  double **GetPrimVar_Plasma(void);
-
-	/*!
-	 * \brief Get the square of velocity of that particular flow.
-	 * \param[in] val_species - Index of the fluid.
-	 * \return Value of the velocity for the dimension <i>val_dim</i>.
-	 */
-	double GetVelocity2(unsigned short val_species);
-
-	/*! overload
-	 * \brief Get the projected velocity in a unitary vector direction.
-	 * \param[in] val_vector - Direction of projection.
-	 * \param[in] val_species - Index of the desired species.
-	 * \return Value of the projected velocity.
-	 */
-	double GetProjVel(double *val_vector, unsigned short val_species);
-
-	/*!
-	 * \brief Get the speed of the sound.
-	 * \return Value of speed of the sound pf val_species
-	 */
-	double GetSoundSpeed(unsigned short val_species);
-
-	/*!
-	 * \brief Get the enthalpy.
-	 * \return Value of enthalpy of val_species
-	 */
-	double GetEnthalpy(unsigned short val_species);
-
-	/*!
-	 * \brief Get the Density of species
-	 * \return Value of speed of the sound pf val_species
-	 */
-	double GetDensity(unsigned short val_species);
-
-	/*!
-	 * \brief Get the square of velocity of fluid val_var
-	 * \return Value of speed of the sound of val_var fluid
-	 */
-	void SetVelocity2(void);
-
-	/*!
-	 * \brief Calculate the speed of sound of all the fluids
-	 * \return Value of speed of the sound of all the fluids
-	 */
-	bool SetSoundSpeed(CConfig *config);
-
-	/*!
-	 * \brief Set the laminar viscosity.
-	 */
-	void SetLaminarViscosity(CConfig *config);
-
-	/*!
-	 * \brief Set the laminar viscosity.
-	 * \param[in] val_laminarviscosity - Value of the laminar viscosity
-	 * \param[in] val_iSpecies - Index of the species to set the value of max lambda.
-	 */
-	void SetLaminarViscosity(double val_laminarviscosity, unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Set the value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 * \param[in] val_iSpecies - Index of the species to set the value of max lambda.
-	 */
-	void SetMax_Lambda_Inv(double val_max_lambda, unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Set the value of the maximum eigenvalue for the viscous terms of the PDE.
-	 * \param[in] val_max_lambda - Value of the maximum eigenvalue for the viscous terms of the PDE.
-	 * \param[in] val_iSpecies - Index of the species to set the value of max lambda.
-	 */
-	void SetMax_Lambda_Visc(double val_max_lambda, unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Get the value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 * \param[in] iSpecies - ID of the species in multispecies solver
-	 * \return the value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 */
-	double GetMax_Lambda_Inv(unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the value of the maximum eigenvalue for the viscous terms of the PDE.
-	 * \param[in] iSpecies - ID of the species in multispecies solver
-	 * \return the value of the maximum eigenvalue for the viscous terms of the PDE.
-	 */
-	double GetMax_Lambda_Visc(unsigned short iSpecies);
-
-	/*!
-	 * \brief Set the value of the spectral radius.
-	 * \param[in] val_lambda - Value of the spectral radius.
-	 * \param[in] val_iSpecies -Index of species
-	 */
-	void SetLambda(double val_lambda, unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Add the value of the spectral radius.
-	 * \param[in] val_iSpecies -Index of species
-	 * \param[in] val_lambda - Value of the spectral radius.
-	 */
-	void AddLambda(double val_lambda, unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Get the value of the spectral radius.
-	 * \param[in] val_iSpecies -Index of species
-	 * \return Value of the spectral radius.
-	 */
-	double GetLambda(unsigned short val_iSpecies);
-
-	/*!
-	 * \brief Add a value to the maximum eigenvalue for the inviscid terms of the PDE.
-	 * \param[in] val_max_lambda - Value of the maximum eigenvalue for the inviscid terms of the PDE.
-	 * \param[in] iSpecies - Value of fluid to which the eigenvalue belongs
-	 */
-	void AddMax_Lambda_Inv(double val_max_lambda, unsigned short iSpecies);
-
-	/*!
-	 * \brief Add a value to the maximum eigenvalue for the viscous terms of the PDE.
-	 * \param[in] val_max_lambda - Value of the maximum eigenvalue for the viscous terms of the PDE.
-	 * \param[in] iSpecies - Value of fluid to which the eigenvalue belongs
-	 */
-	void AddMax_Lambda_Visc(double val_max_lambda, unsigned short iSpecies);
-
-	/*!
-	 * \brief Get the laminar viscosity of the flow.
-	 * \return Value of the laminar viscosity of the flow.
-	 */
-	double GetLaminarViscosity(unsigned short iSpecies);
-  
-  /*!
-   * \brief Get the thermal conductivity (translational/rotational)
-   * \return Value of the thermal conductivity (translational/rotational)
-   */
-  double GetThermalConductivity(unsigned short iSpecies);
-  
-  /*!
-   * \brief Get the thermal conductivity (vibrational)
-   * \return Value of the thermal conductivity (vibrational)
-   */
-  double GetThermalConductivity_vib(unsigned short iSpecies);
-
-	/*!
-	 * \brief Set the thermal coefficient.
-	 * \param[in] config - Configuration parameters.
-	 */
-	void SetThermalCoeff(CConfig *config);
-
-	/*!
-	 * \brief Get the laminar viscosity of the flow.
-	 * \return Value of the laminar viscosity of the flow.
-	 */
-	double GetEddyViscosity(unsigned short iSpecies);
-  
-	/*!
-	 * \brief Set the velocity vector from the old solution.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] iSpecies - Index of the species to set the old velocity.
-	 */
-	void SetVelocity_Old(double *val_velocity, unsigned short iSpecies);
-  
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] Temperature_Wall - Value of the Temperature at the wall
-	 */
-	void SetWallTemperature(double* Temperature_Wall);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] poissonField - poissonField
-	 */
-	void SetpoissonField(double* val_poissonField);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	double* GetpoissonField();
-
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \return Value of the magnetic field
-	 */
-	double* GetMagneticField();
-
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-	void SetMagneticField(double* val_B);
-
-};
-
 /*! 
  * \class CAdjLevelSetVariable
  * \brief Main class for defining the variables of the Level Set.
@@ -3511,83 +2922,6 @@ public:
 	 */
 	virtual ~CAdjLevelSetVariable(void);
 
-};
-
-/*! 
- * \class CAdjPlasmaVariable
- * \brief Main class for defining the variables of the adjoint Euler solver.
- * \ingroup Euler_Equations
- * \author F. Palacios.
- * \version 2.0.8
- */
-class CAdjPlasmaVariable : public CVariable {
-protected:
-	double *Psi;		/*!< \brief Vector of the adjoint variables. */
-	double *ForceProj_Vector;	/*!< \brief Vector d. */
-	double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-	bool incompressible;
-public:
-
-	/*!
-	 * \brief Constructor of the class. 
-	 */		
-	CAdjPlasmaVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
-	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
-	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
-	 * \param[in] val_psievib - Value of the adjoint vibrational energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */		
-	CAdjPlasmaVariable(double val_psirho, double *val_phi, double val_psie, double val_psievib, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \overload
-	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */		
-	CAdjPlasmaVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class. 
-	 */	
-	virtual ~CAdjPlasmaVariable(void);
-
-	/*!
-	 * \brief Set the value of the adjoint velocity.
-	 * \param[in] val_phi - Value of the adjoint velocity.
-	 */	
-	void SetPhi_Old(double *val_phi);
-
-	/*!
-	 * \brief Set the value of the force projection vector.
-	 * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
-	 */		
-	void SetForceProj_Vector(double *val_ForceProj_Vector);
-
-	/*!
-	 * \brief Set the value of the interior boundary jump vector vector.
-	 * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
-	 */		
-	void SetIntBoundary_Jump(double *val_IntBoundary_Jump);
-
-	/*!
-	 * \brief Get the value of the force projection vector.
-	 * \return Pointer to the force projection vector.
-	 */		
-	double *GetForceProj_Vector(void);
-
-	/*!
-	 * \brief Get the value of the force projection vector.
-	 * \return Pointer to the force projection vector.
-	 */		
-	double *GetIntBoundary_Jump(void);
 };
 
 /*!

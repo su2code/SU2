@@ -48,47 +48,38 @@ protected:
 	unsigned short nDim, nVar;	/*!< \brief Number of dimensions and variables. */
 	unsigned short nSpecies; 	/*!< \brief No of species present in plasma */
 	double Gamma;				/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	double GammaMonatomic;	/*!< \brief Fluid's Gamma constant (ratio of specific heats) for monatomic species. */
-	double GammaDiatomic;		/*!< \brief Fluid's Gamma constant (ratio of specific heats) for diatomic species. */
 	double Gamma_Minus_One;		/*!< \brief Fluids's Gamma - 1.0  . */
 	double Gas_Constant;		 		/*!< \brief Gas constant. */
-	double *Gas_Constant_MultipleSpecies;
-	double *Vector_Gamma;
   double *Vector; /*!< \brief Auxiliary vector. */
   double *Enthalpy_formation;
 	unsigned short nDiatomics, nMonatomics;
     
 public:
-	double **Flux_Tensor,	/*!< \brief Flux tensor (used for viscous and inviscid purposes. */
+	
+  double
+  **Flux_Tensor,	/*!< \brief Flux tensor (used for viscous and inviscid purposes. */
 	*Proj_Flux_Tensor;		/*!< \brief Flux tensor projected in a direction. */
-	double **tau,		/*!< \brief Viscous stress tensor. */
+	
+  double
+  **tau,		/*!< \brief Viscous stress tensor. */
 	**delta;			/*!< \brief Identity matrix. */
-    double **dVdU, /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
-    **dFvdV_i, /*!< \brief Jacobian of viscous therms w.r.t. primitive variables at i. */
-    **dFvdV_j; /*!< \brief Jacobian of viscous therms w.r.t. primitive variables at j. */
-    double *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
-    *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
+  double **dVdU; /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
+  double
+  *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
+  *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
 	double Laminar_Viscosity_i,	/*!< \brief Laminar viscosity at point i. */
 	Laminar_Viscosity_j,		/*!< \brief Laminar viscosity at point j. */
 	Laminar_Viscosity_id,	/*!< \brief Variation of laminar viscosity at point i. */
 	Laminar_Viscosity_jd;		/*!< \brief Variation of laminar viscosity at point j. */
-    double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
-    Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
-    Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
-    Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
-	double *Laminar_Viscosity_MultipleSpecies_i,	/*!< \brief Laminar viscosity at point i. */
-	*Laminar_Viscosity_MultipleSpecies_j,		/*!< \brief Laminar viscosity at point j. */
-    *Thermal_Conductivity_MultipleSpecies_i, /*!< \brief Thermal conductivity at point i (tr). */
-    *Thermal_Conductivity_MultipleSpecies_j, /*!< \brief Thermal conductivity at point j (tr). */
-    *Thermal_Conductivity_vib_MultipleSpecies_i, /*!< \brief Thermal conductivity at point i (vib). */
-    *Thermal_Conductivity_vib_MultipleSpecies_j; /*!< \brief Thermal conductivity at point j (vib). */
-    double *Theta_v; /*!< \brief Characteristic vibrational temperature */
+  double Thermal_Conductivity_i, /*!< \brief Thermal conductivity at point i. */
+  Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
+  Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
+  Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
+  double *Theta_v; /*!< \brief Characteristic vibrational temperature */
 	double Eddy_Viscosity_i,	/*!< \brief Eddy viscosity at point i. */
 	Eddy_Viscosity_j;			/*!< \brief Eddy viscosity at point j. */
 	double turb_ke_i,	/*!< \brief Turbulent kinetic energy at point i. */
 	turb_ke_j;			/*!< \brief Turbulent kinetic energy at point j. */
-	double *Eddy_Viscosity_MultipleSpecies_i,	/*!< \brief Eddy viscosity at point i. */
-	*Eddy_Viscosity_MultipleSpecies_j;		/*!< \brief Eddy viscosity at point j. */
 	double Pressure_i,	/*!< \brief Pressure at point i. */
 	Pressure_j;			/*!< \brief Pressure at point j. */
 	double GravityForce_i,	/*!< \brief Gravity force at point i. */
@@ -115,9 +106,6 @@ public:
 	*Temp_tr_j;/*!< \brief Temperature transl-rot at point j. */
 	double *Temp_vib_i, /*!< \brief Temperature vibrational at point i. */
 	*Temp_vib_j;/*!< \brief Temperature vibrational at point j. */
-	double *SpeciesPressure_i, /*!< \brief partial pressure of species at point j. */
-	*SpeciesPressure_id,
-	*SpeciesPressure_j; /*!< \brief partial pressure of species at point j. */
 	double *Und_Lapl_i, /*!< \brief Undivided laplacians at point i. */
 	*Und_Lapl_j;		/*!< \brief Undivided laplacians at point j. */
 	double Sensor_i,	/*!< \brief Pressure sensor at point i. */
@@ -126,18 +114,16 @@ public:
 	*GridVel_j;			/*!< \brief Grid velocity at point j. */
 	double *U_i,		/*!< \brief Vector of conservative variables at point i. */
 	*U_id,		/*!< \brief Vector of derivative of conservative variables at point i. */
-    *UZeroOrder_i,  /*!< \brief Vector of conservative variables at point i without reconstruction. */
+  *UZeroOrder_i,  /*!< \brief Vector of conservative variables at point i without reconstruction. */
 	*U_j,				/*!< \brief Vector of conservative variables at point j. */
-    *UZeroOrder_j,  /*!< \brief Vector of conservative variables at point j without reconstruction. */
+  *UZeroOrder_j,  /*!< \brief Vector of conservative variables at point j without reconstruction. */
 	*U_jd,				/*!< \brief Vector of derivative of conservative variables at point j. */
 	*U_0,				/*!< \brief Vector of conservative variables at node 0. */
 	*U_1,				/*!< \brief Vector of conservative variables at node 1. */
 	*U_2,				/*!< \brief Vector of conservative variables at node 2. */
 	*U_3;				/*!< \brief Vector of conservative variables at node 3. */
 	double *V_i,		/*!< \brief Vector of primitive variables at point i. */
-	*V_j,				/*!< \brief Vector of primitive variables at point j. */
-    **Varray_i, /*!< \brief Array of primitive variables at point i for the multi-species problem. */
-    **Varray_j; /*!< \brief Array of primitive variables at point j for the multi-species problem. */
+	*V_j;				/*!< \brief Vector of primitive variables at point j. */
 	double *Psi_i,		/*!< \brief Vector of adjoint variables at point i. */
 	*Psi_j;				/*!< \brief Vector of adjoint variables at point j. */
 	double *DeltaU_i,	/*!< \brief Vector of linearized variables at point i. */
@@ -160,17 +146,11 @@ public:
 	**ConsVar_Grad_3,			/*!< \brief Gradient of conservative variables at point 3. */
 	**ConsVar_Grad;				/*!< \brief Gradient of conservative variables which is a scalar. */
 	double **PrimVar_Grad_i,	/*!< \brief Gradient of primitive variables at point i. */
-	**PrimVar_Grad_j,			/*!< \brief Gradient of primitive variables at point j. */
-	**PrimVar_Grad_id,	/*!< \brief Variation of gradient of primitive variables at point i. */
-	**PrimVar_Grad_jd,			/*!< \brief Variation of gradient of primitive variables at point j. */
-    ***PrimVar_Grad_i_array,  /*!< \brief Gradient of primitive variables at point j for the multi-species problem. */
-    ***PrimVar_Grad_j_array;  /*!< \brief Gradient of primitive variables at point j for the multi-species problem. */
+	**PrimVar_Grad_j;			/*!< \brief Gradient of primitive variables at point j. */
 	double **PsiVar_Grad_i,		/*!< \brief Gradient of adjoint variables at point i. */
 	**PsiVar_Grad_j;			/*!< \brief Gradient of adjoint variables at point j. */
 	double **TurbVar_Grad_i,	/*!< \brief Gradient of turbulent variables at point i. */
-	**TurbVar_Grad_j,			/*!< \brief Gradient of turbulent variables at point j. */
-	**TurbVar_Grad_id,	/*!< \brief Variation of gradient of turbulent variables at point i. */
-	**TurbVar_Grad_jd;			/*!< \brief Variation of gradient of turbulent variables at point j. */
+	**TurbVar_Grad_j;			/*!< \brief Gradient of turbulent variables at point j. */
 	double **TransVar_Grad_i,	/*!< \brief Gradient of turbulent variables at point i. */
 	**TransVar_Grad_j;			/*!< \brief Gradient of turbulent variables at point j. */
 	double **LevelSetVar_Grad_i,	/*!< \brief Gradient of level set variables at point i. */
@@ -226,26 +206,6 @@ public:
 	CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
     
 	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, CConfig *config);
-    
-    
-	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species of the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species of the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species of the problem.
-	 * \param[in] config - Definition of the particular problem.	 */
-	CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CNumerics(void);
@@ -255,7 +215,9 @@ public:
 	 * \param[in] val_matrix 3 by 3 matrix.
 	 * \result Determinant of the matrix
 	 */
-	double Determinant_3x3(double A00, double A01, double A02, double A10, double A11, double A12, double A20, double A21, double A22);
+	double Determinant_3x3(double A00, double A01, double A02,
+                         double A10, double A11, double A12,
+                         double A20, double A21, double A22);
     
 	/*!
 	 * \brief Set the solution at different times.
@@ -312,13 +274,6 @@ public:
 	 */
 	void SetPrimitive(double *val_v_i, double *val_v_j);
     
-    /*!
-	 * \brief Set the value of the primitive variables for the multi-species problem.
-	 * \param[in] val_v_i - Value of the primitive variable at point i for each species.
-	 * \param[in] val_v_j - Value of the primitive variable at point j for each species.
-	 */
-	void SetPrimitive(double **val_v_i, double **val_v_j);
-    
 	/*!
 	 * \brief Set the value of the conservative variables.
 	 * \param[in] val_u_0 - Value of the conservative variable at point 0.
@@ -335,21 +290,6 @@ public:
 	 * \param[in] val_u_3 - Value of the conservative variable at point 3.
 	 */
 	void SetConservative(double *val_u_0, double *val_u_1, double *val_u_2, double *val_u_3);
-    
-	/*!
-	 * \brief Set the value of the charge densities.
-	 * \param[in] val_u_0 - Value of the charge density at point 0.
-	 * \param[in] val_u_1 - Value of the charge density  at point 1.
-	 * \param[in] val_u_2 - Value of the charge density  at point 2.
-	 * \param[in] val_u_3 - Value of the charge density  at point 3.
-	 */
-	virtual void SetChargeDensity(double *val_u_0, double *val_u_1, double *val_u_2, double *val_u_3);
-    
-	/*!
-	 * \brief Set the value of the charge densities.
-	 * \param[in] val_Efield - Value of the poisson field.
-	 */
-	virtual void SetElecField(double *val_Efield);
     
 	/*!
 	 * \brief Set the value of the poissonal conductivity
@@ -369,18 +309,6 @@ public:
 	virtual void SetElec_CondIntegralsqr(double val_var);
     
 	/*!
-	 * \brief Get the value of the magnetic field.
-	 * \param[out] MagneticField - Value of the Magnetic field.
-	 */
-	virtual double* GetMagneticField();
-    
-	/*!
-	 * \brief Get the value of the magnetic field.
-	 * \param[out] Mag_Force - Value of the Magnetic forces
-	 */
-	virtual double GetMagneticForce(unsigned short val_Species, unsigned short val_dim);
-    
-	/*!
 	 * \brief Set the gradient of the conservative variables.
 	 * \param[in] val_consvar_grad_i - Gradient of the conservative variable at point i.
 	 * \param[in] val_consvar_grad_j - Gradient of the conservative variable at point j.
@@ -393,7 +321,9 @@ public:
 	 * \param[in] val_consvar_grad_1 - Gradient of the conservative variable at point 1.
 	 * \param[in] val_consvar_grad_2 - Gradient of the conservative variable at point 2.
 	 */
-	void SetConsVarGradient(double **val_consvar_grad_0, double **val_consvar_grad_1, double **val_consvar_grad_2);
+	void SetConsVarGradient(double **val_consvar_grad_0,
+                          double **val_consvar_grad_1,
+                          double **val_consvar_grad_2);
     
 	/*!
 	 * \brief Set the gradient of the conservative variables.
@@ -402,7 +332,10 @@ public:
 	 * \param[in] val_consvar_grad_2 - Gradient of the conservative variable at point 2.
 	 * \param[in] val_consvar_grad_3 - Gradient of the conservative variable at point 3.
 	 */
-	void SetConsVarGradient(double **val_consvar_grad_0, double **val_consvar_grad_1, double **val_consvar_grad_2, double **val_consvar_grad_3);
+	void SetConsVarGradient(double **val_consvar_grad_0,
+                          double **val_consvar_grad_1,
+                          double **val_consvar_grad_2,
+                          double **val_consvar_grad_3);
     
 	/*!
 	 * \brief Set the gradient of the conservative variables.
@@ -415,14 +348,8 @@ public:
 	 * \param[in] val_primvar_grad_i - Gradient of the primitive variable at point i.
 	 * \param[in] val_primvar_grad_j - Gradient of the primitive variable at point j.
 	 */
-	void SetPrimVarGradient(double **val_primvar_grad_i, double **val_primvar_grad_j);
-    
-	/*!
-	 * \brief Set the gradient of the primitive variables.
-	 * \param[in] val_primvar_grad_i - Gradient of the primitive variable at point i.
-	 * \param[in] val_primvar_grad_j - Gradient of the primitive variable at point j.
-	 */
-	void SetPrimVarGradient(double ***val_primvar_grad_i, double ***val_primvar_grad_j);
+	void SetPrimVarGradient(double **val_primvar_grad_i,
+                          double **val_primvar_grad_j);
     
 	/*!
 	 * \brief Set the value of the adjoint variable.
@@ -536,35 +463,21 @@ public:
 	 */
 	void SetAuxVarGrad(double *val_auxvargrad_i, double *val_auxvargrad_j);
     
-	/*!
-	 * \brief Compute the primitive variables at point i -> [Temperature vel_x vel_y vel_z Pressure].
-	 * \param[in] val_consvar - Conservative variables.
-	 * \param[in] val_primvar - Primitive variables.
-	 */
-	void ConsVar2PrimVar_MultiSpecies(double *val_consvar, double *val_primvar);
-    
     /*!
 	 * \brief Set the diffusion coefficient
 	 * \param[in] val_diffusioncoeff_i - Value of the diffusion coefficients at i.
 	 * \param[in] val_diffusioncoeff_j - Value of the diffusion coefficients at j
 	 */
 	void SetDiffusionCoeff(double* val_diffusioncoeff_i,
-                           double* val_diffusioncoeff_j);
+                         double* val_diffusioncoeff_j);
     
 	/*!
 	 * \brief Set the laminar viscosity.
 	 * \param[in] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
 	 * \param[in] val_laminar_viscosity_j - Value of the laminar viscosity at point j.
 	 */
-	void SetLaminarViscosity(double val_laminar_viscosity_i, double val_laminar_viscosity_j);
-    
-	/*!
-	 * \brief Set the laminar viscosity.
-	 * \param[in] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
-	 * \param[in] val_laminar_viscosity_j - Value of the laminar viscosity at point j.
-	 * \param[in] iSpecies - Value of the species.
-	 */
-	void SetLaminarViscosity(double val_laminar_viscosity_i, double val_laminar_viscosity_j, unsigned short iSpecies);
+	void SetLaminarViscosity(double val_laminar_viscosity_i,
+                           double val_laminar_viscosity_j);
     
     /*!
 	 * \brief Set the thermal conductivity (translational/rotational)
@@ -573,7 +486,7 @@ public:
 	 * \param[in] iSpecies - Value of the species.
 	 */
 	void SetThermalConductivity(double val_thermal_conductivity_i,
-                                double val_thermal_conductivity_j);
+                              double val_thermal_conductivity_j);
     
     /*!
 	 * \brief Set the thermal conductivity (translational/rotational)
@@ -582,22 +495,15 @@ public:
 	 * \param[in] iSpecies - Value of the species.
 	 */
 	void SetThermalConductivity_ve(double val_thermal_conductivity_ve_i,
-                                   double val_thermal_conductivity_ve_j);
-    
-    /*!
-	 * \brief Set the thermal conductivity (translational/rotational)
-	 * \param[in] val_thermal_conductivity_i - Value of the thermal conductivity at point i.
-	 * \param[in] val_thermal_conductivity_j - Value of the thermal conductivity at point j.
-	 * \param[in] iSpecies - Value of the species.
-	 */
-	void SetThermalConductivity_vib(double val_thermal_conductivity_vib_i, double val_thermal_conductivity_vib_j, unsigned short iSpecies);
+                                 double val_thermal_conductivity_ve_j);
     
 	/*!
 	 * \brief Set the eddy viscosity.
 	 * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
 	 * \param[in] val_eddy_viscosity_j - Value of the eddy viscosity at point j.
 	 */
-	void SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j);
+	void SetEddyViscosity(double val_eddy_viscosity_i,
+                        double val_eddy_viscosity_j);
     
 	/*!
 	 * \brief Set the turbulent kinetic energy.
@@ -605,14 +511,6 @@ public:
 	 * \param[in] val_turb_ke_j - Value of the turbulent kinetic energy at point j.
 	 */
 	void SetTurbKineticEnergy(double val_turb_ke_i, double val_turb_ke_j);
-    
-	/*!
-	 * \brief Set the eddy viscosity.
-	 * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
-	 * \param[in] val_eddy_viscosity_j - Value of the eddy viscosity at point j.
-	 * \param[in] iSpecies - Value of the species.
-	 */
-	void SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j, unsigned short iSpecies);
     
 	/*!
 	 * \brief Set the value of the distance from the nearest wall.
@@ -675,14 +573,6 @@ public:
 	void SetPressure(double val_pressure_i, double val_pressure_j);
     
 	/*!
-	 * \brief Set the value of the pressure.
-	 * \param[in] val_pressure_i - Value of the pressure at point i.
-	 * \param[in] val_pressure_j - Value of the pressure at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	virtual void SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies);
-    
-	/*!
 	 * \brief Set the value of the density for the incompressible solver.
 	 * \param[in] val_densityinc_i - Value of the pressure at point i.
 	 * \param[in] val_densityinc_j - Value of the pressure at point j.
@@ -704,33 +594,11 @@ public:
 	void SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j);
     
 	/*!
-	 * \brief Set the value of the sound speed.
-	 * \param[in] val_soundspeed_i - Value of the sound speed at point i.
-	 * \param[in] val_soundspeed_j - Value of the sound speed at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	virtual void SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies);
-    
-	/*!
 	 * \brief Set the value of the temperature.
 	 * \param[in] val_temp_i - Value of the temperature at point i.
 	 * \param[in] val_temp_j - Value of the temperature at point j.
 	 */
 	void SetTemperature(double val_temp_i, double val_temp_j);
-    
-	/*!
-	 * \brief Set the value of the transl.-rot. temperature.
-	 * \param[in] val_temp_i - Value of the temperature at point i.
-	 * \param[in] val_temp_j - Value of the temperature at point j.
-	 */
-	void SetTemperature_tr(double* val_temp_i, double* val_temp_j);
-    
-	/*!
-	 * \brief Set the value of the vibrational temperature.
-	 * \param[in] val_temp_i - Value of the temperature at point i.
-	 * \param[in] val_temp_j - Value of the temperature at point j.
-	 */
-	void SetTemperature_vib(double* val_temp_i, double* val_temp_j);
     
 	/*!
 	 * \brief Set the value of the species pressures.
@@ -747,27 +615,11 @@ public:
 	void SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j);
     
 	/*!
-	 * \brief Set the value of the enthalpy.
-	 * \param[in] val_enthalpy_i - Value of the enthalpy at point i.
-	 * \param[in] val_enthalpy_j - Value of the enthalpy at point j.
-	 * \param[in] iSpecies - Index of the iSpecies
-	 */
-	virtual void SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies);
-    
-	/*!
 	 * \brief Set the value of the spectral radius.
 	 * \param[in] val_lambda_i - Value of the spectral radius at point i.
 	 * \param[in] val_lambda_j - Value of the spectral radius at point j.
 	 */
 	void SetLambda(double val_lambda_i, double val_lambda_j);
-    
-	/*!
-	 * \brief Set the value of the spectral radius.
-	 * \param[in] val_lambda_i - Value of the spectral radius at point i.
-	 * \param[in] val_lambda_j - Value of the spectral radius at point j.
-	 * \param[in] iSpecies - Index of the iSpecies
-	 */
-	virtual void SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies);
     
 	/*!
 	 * \brief Set the value of undivided laplacian.
@@ -782,14 +634,6 @@ public:
 	 * \param[in] val_sensor_j Pressure sensor at point j.
 	 */
 	void SetSensor(double val_sensor_i, double val_sensor_j);
-    
-	/*!
-	 * \brief Set the value of the pressure sensor.
-	 * \param[in] val_sensor_i Pressure sensor at point i.
-	 * \param[in] val_sensor_j Pressure sensor at point j.
-	 * \param[in] iSpecies Index of species.
-	 */
-	virtual void SetSensor(double val_sensor_i, double val_sensor_j, unsigned short iSpecies);
     
 	/*!
 	 * \brief Set the number of neighbor to a point.
@@ -906,7 +750,8 @@ public:
 	 * \param[in] val_mach_inf - Value of the Mach number at the infinity.
 	 */
 	void GetViscousFlux(double *val_primvar, double **val_gradprimvar,
-                        double val_laminar_viscosity, double val_eddy_viscosity, double val_mach_inf);
+                      double val_laminar_viscosity, double val_eddy_viscosity,
+                      double val_mach_inf);
     
 	/*!
 	 * \brief Compute the projected inviscid flux vector.
@@ -917,8 +762,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
 	 */
-	void GetInviscidProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_enthalpy,
-                             double *val_normal, double *val_Proj_Flux);
+	void GetInviscidProjFlux(double *val_density, double *val_velocity,
+                           double *val_pressure, double *val_enthalpy,
+                           double *val_normal, double *val_Proj_Flux);
     
     /*!
 	 * \brief Compute the projected inviscid flux vector.
@@ -930,22 +776,10 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
 	 */
-	void GetInviscidProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_enthalpy,
-                             double *val_energy_ve, double *val_normal, double *val_Proj_Flux);
-    
-	/*!
-	 * \brief Compute the projected inviscid flux vector.
-	 * \param[in] val_density - Pointer to the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_pressure - Pointer to the pressure.
-	 * \param[in] val_enthalpy - Pointer to the enthalpy.
-	 * \param[in] val_energy_vib - Pointer to the vibrational energy.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
-	 */
-	void GetInviscidProjFlux_(double *val_density, double **val_velocity,double *val_pressure, double *val_enthalpy,
-                              double *val_energy_vib, double *val_normal, double *val_Proj_Flux);
-    
+	void GetInviscidProjFlux(double *val_density, double *val_velocity,
+                           double *val_pressure, double *val_enthalpy,
+                           double *val_energy_ve, double *val_normal,
+                           double *val_Proj_Flux);
     
 	/*!
 	 * \brief Compute the projected inviscid flux vector for incompresible simulations
@@ -956,8 +790,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
 	 */
-	void GetInviscidArtCompProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_betainc2,
-                                    double *val_normal, double *val_Proj_Flux);
+	void GetInviscidArtCompProjFlux(double *val_density, double *val_velocity,
+                                  double *val_pressure, double *val_betainc2,
+                                  double *val_normal, double *val_Proj_Flux);
     
     /*!
 	 * \brief Compute the projected inviscid flux vector for incompresible simulations
@@ -968,23 +803,14 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
 	 */
-	void GetInviscidArtComp_FreeSurf_ProjFlux(double *val_density, double *val_velocity, double *val_pressure, double *val_betainc2, double *val_levelset,
-                                              double *val_normal, double *val_Proj_Flux);
-    
-	/*!
-	 * \overload
-	 * \brief Overloaded function for multi-species formulation (compressible flow).
-	 * \brief Compute the projected inviscid flux vector.
-	 * \param[in] val_density - Pointer to the density.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 * \param[in] val_pressure - Pointer to the pressure.
-	 * \param[in] val_enthalpy - Pointer to the enthalpy.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_Proj_Flux - Pointer to the projected flux.
-	 */
-	void GetInviscidProjFlux(double *val_density, double **val_velocity, double *val_pressure, double *val_enthalpy,
-                             double *val_normal, double *val_Proj_Flux);
-    
+	void GetInviscidArtComp_FreeSurf_ProjFlux(double *val_density,
+                                            double *val_velocity,
+                                            double *val_pressure,
+                                            double *val_betainc2,
+                                            double *val_levelset,
+                                            double *val_normal,
+                                            double *val_Proj_Flux);
+
 	/*!
 	 * \brief Compute the projection of the viscous fluxes into a direction.
 	 * \param[in] val_primvar - Primitive variables.
@@ -995,32 +821,11 @@ public:
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
 	 */
     
-	void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double val_turb_ke, double *val_normal, double val_laminar_viscosity,
-                            double val_eddy_viscosity);
-    
-    
-    /*!
-     * * \brief Compute the projection of the viscous fluxes into a direction.
-     * \brief Overloaded function for multiple species viscous calculations
-     * \param[in] val_primvar - Primitive variables.
-     * \param[in] val_gradprimvar - Gradient of the primitive variables.
-     * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-     * \param[in] val_laminar_viscosity - Laminar viscosity.
-     * \param[in] val_eddy_viscosity - Eddy viscosity.
-     */
-    
-    void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double *val_laminar_viscosity, double *val_eddy_viscosity, unsigned short val_iSpecies);
-    
-	/*!
-	 * * \brief Compute the projection of the viscous fluxes into a direction.
-	 * \brief Overloaded function for multiple species viscous calculations
-	 * \param[in] val_primvar - Primitive variables.
-	 * \param[in] val_gradprimvar - Gradient of the primitive variables.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[in] val_laminar_viscosity - Laminar viscosity.
-	 * \param[in] val_eddy_viscosity - Eddy viscosity.
-	 */
-	void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double *val_laminar_viscosity, double *val_eddy_viscosity, double *val_therm_conductivity, double *val_therm_conductivity_vib, unsigned short val_iSpecies);
+	void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
+                          double val_turb_ke, double *val_normal,
+                          double val_laminar_viscosity,
+                          double val_eddy_viscosity);
+  
     
     /*!
 	 * * \brief Compute the projection of the viscous fluxes into a direction.
@@ -1049,8 +854,10 @@ public:
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
 	 */
     
-	void GetViscousArtCompProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double val_laminar_viscosity,
-                                   double val_eddy_viscosity);
+	void GetViscousArtCompProjFlux(double *val_primvar, double **val_gradprimvar,
+                                 double *val_normal,
+                                 double val_laminar_viscosity,
+                                 double val_eddy_viscosity);
     
 	/*!
 	 * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -1060,8 +867,9 @@ public:
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-	void GetInviscidProjJac(double *val_velocity, double *val_energy, double *val_normal,
-                            double val_scale, double **val_Proj_Jac_tensor);
+	void GetInviscidProjJac(double *val_velocity, double *val_energy,
+                          double *val_normal, double val_scale,
+                          double **val_Proj_Jac_tensor);
     
 	/*!
 	 * \brief Compute the projection of the inviscid Jacobian matrices (artificial compresibility).
@@ -1072,8 +880,10 @@ public:
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-	void GetInviscidArtCompProjJac(double *val_density, double *val_velocity, double *val_betainc2, double *val_normal,
-                                   double val_scale, double **val_Proj_Jac_tensor);
+	void GetInviscidArtCompProjJac(double *val_density, double *val_velocity,
+                                 double *val_betainc2, double *val_normal,
+                                 double val_scale,
+                                 double **val_Proj_Jac_tensor);
     
     /*!
 	 * \brief Compute the projection of the inviscid Jacobian matrices (artificial compresibility).
@@ -1084,8 +894,14 @@ public:
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-	void GetInviscidArtComp_FreeSurf_ProjJac(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainc2, double *val_levelset, double *val_normal,
-                                             double val_scale, double **val_Proj_Jac_tensor);
+	void GetInviscidArtComp_FreeSurf_ProjJac(double *val_density,
+                                           double *val_ddensity,
+                                           double *val_velocity,
+                                           double *val_betainc2,
+                                           double *val_levelset,
+                                           double *val_normal,
+                                           double val_scale,
+                                           double **val_Proj_Jac_tensor);
     
 	/*!
 	 * \overload
@@ -1096,8 +912,9 @@ public:
 	 * \param[in] val_scale - Scale of the projection.
 	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
 	 */
-	void GetInviscidProjJac(double **val_velocity, double *val_energy, double *val_normal,
-                            double val_scale, double **val_Proj_Jac_tensor);
+	void GetInviscidProjJac(double **val_velocity, double *val_energy,
+                          double *val_normal, double val_scale,
+                          double **val_Proj_Jac_tensor);
     
 	/*!
 	 * \overload
@@ -1119,18 +936,6 @@ public:
                             double **val_Proj_Jac_Tensor);
     
 	/*!
-	 * \overload
-	 * \brief Compute the projection of the inviscid Jacobian matrices.
-	 * \param[in] val_velocity Pointer to the velocity.
-	 * \param[in] val_energy Value of the energy.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[in] val_scale - Scale of the projection.
-	 * \param[out] val_Proj_Jac_Tensor - Pointer to the projected inviscid Jacobian.
-	 */
-	void GetInviscidProjJac_(double **val_velocity, double *val_energy, double *val_energy_vib, double *val_enthalpy,
-                             double *val_normal, double val_scale, double **val_Proj_Jac_Tensor, CConfig *config);
-    
-	/*!
 	 * \brief TSL-Approximation of Viscous NS Jacobians.
 	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
 	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
@@ -1143,14 +948,14 @@ public:
 	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
 	 */
 	void GetViscousProjJacs(double *val_Mean_PrimVar,
-                            double val_laminar_viscosity,
-                            double val_eddy_viscosity,
-                            double val_dist_ij,
-                            double *val_normal, double val_dS,
-                            double *val_Proj_Visc_Flux,
-                            double **val_Proj_Jac_Tensor_i,
-                            double **val_Proj_Jac_Tensor_j);
-    
+                          double val_laminar_viscosity,
+                          double val_eddy_viscosity,
+                          double val_dist_ij,
+                          double *val_normal, double val_dS,
+                          double *val_Proj_Visc_Flux,
+                          double **val_Proj_Jac_Tensor_i,
+                          double **val_Proj_Jac_Tensor_j);
+  
     /*!
 	 * \brief TSL-Approximation of Viscous NS Jacobians.
 	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
@@ -1164,45 +969,16 @@ public:
 	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
 	 */
 	void GetViscousProjJacs(double *val_Mean_PrimVar,
-                            double *val_diffusion_coeff,
-                            double val_laminar_viscosity,
-                            double val_thermal_conductivity,
-                            double val_thermal_conductivity_ve,
-                            double val_dist_ij,
-                            double *val_normal, double val_dS,
-                            double *val_Proj_Visc_Flux,
-                            double **val_Proj_Jac_Tensor_i,
-                            double **val_Proj_Jac_Tensor_j,
-                            CConfig *config);
-    
-    /*!
-	 * \brief TSL-Approximation of Viscous NS Jacobians.
-	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-	 * \param[in] val_dist_ij - Distance between the points.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[in] val_dS - Area of the face between two nodes.
-	 * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
-	 * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-     * \param[in] val_iSpecies
-	 */
-    void GetViscousProjJacs(double *val_Mean_PrimVar,   double *val_laminar_viscosity,
-                            double *val_eddy_viscosity, double val_dist_ij, double *val_normal, double val_dS,
-                            double *val_Proj_Visc_Flux, double **val_Proj_Jac_Tensor_i, double **val_Proj_Jac_Tensor_j,
-                            unsigned short val_iSpecies);
-    
-    void GetViscousProjJacs(double *val_Mean_PrimVar,   double *val_laminar_viscosity,
-                            double *val_eddy_viscosity, double *val_thermal_conductivity, double *val_thermal_conductivity_vib, double val_dist_ij, double *val_normal, double val_dS,
-                            double *val_Proj_Visc_Flux, double **val_Proj_Jac_Tensor_i, double **val_Proj_Jac_Tensor_j,
-                            unsigned short val_iSpecies);
-    
-    void GetViscousProjJacsDiatomics(double *val_Mean_PrimVar,   double *val_laminar_viscosity,
-                                     double *val_eddy_viscosity, double *val_thermal_conductivity, double *val_thermal_conductivity_vib, double val_dist_ij, double *val_normal, double val_dS,
-                                     double *val_Proj_Visc_Flux, double **val_Proj_Jac_Tensor_i, double **val_Proj_Jac_Tensor_j,
-                                     unsigned short val_iSpecies);
-    
+                          double *val_diffusion_coeff,
+                          double val_laminar_viscosity,
+                          double val_thermal_conductivity,
+                          double val_thermal_conductivity_ve,
+                          double val_dist_ij,
+                          double *val_normal, double val_dS,
+                          double *val_Proj_Visc_Flux,
+                          double **val_Proj_Jac_Tensor_i,
+                          double **val_Proj_Jac_Tensor_j,
+                          CConfig *config);
     
 	/*!
 	 * \brief Compute the projection of the viscous Jacobian matrices.
@@ -1215,8 +991,10 @@ public:
 	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
 	 */
 	void GetViscousArtCompProjJacs(double val_laminar_viscosity,
-                                   double val_eddy_viscosity, double val_dist_ij, double *val_normal, double val_dS,
-                                   double **val_Proj_Jac_Tensor_i, double **val_Proj_Jac_Tensor_j);
+                                 double val_eddy_viscosity, double val_dist_ij,
+                                 double *val_normal, double val_dS,
+                                 double **val_Proj_Jac_Tensor_i,
+                                 double **val_Proj_Jac_Tensor_j);
     
 	/*!
 	 * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
@@ -1227,8 +1005,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
-	void GetPMatrix(double *val_density, double *val_velocity, double *val_soundspeed,
-                    double *val_normal, double **val_p_tensor);
+	void GetPMatrix(double *val_density, double *val_velocity,
+                  double *val_soundspeed, double *val_normal,
+                  double **val_p_tensor);
     
 	/*!
 	 * \overload
@@ -1240,8 +1019,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
-	void GetPMatrix(double *val_density, double **val_velocity, double *val_soundspeed,
-                    double *val_normal, double **val_p_tensor);
+	void GetPMatrix(double *val_density, double **val_velocity,
+                  double *val_soundspeed, double *val_normal,
+                  double **val_p_tensor);
     
   /*!
 	 * \overload
@@ -1258,38 +1038,6 @@ public:
   void GetPMatrix(double *U, double *V, double *val_dPdU,
                   double *val_normal, double *l, double *m,
                   double **val_p_tensor) ;
-  
-	/*!
-	 * \overload
-	 * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians in
-	 *        the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_enthalpy - Value of the enthalpy.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-	 * \param[in] val_energy_vib - Value of the vibrational energy.
-	 * \param[in] val_energy_el - Value of the electronic/electron energy.
-	 * \param[in] config - Pointer to the problem configuration definitions.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_p_tensor - Pointer to the P matrix.
-	 */
-	void GetPMatrix_(double *val_density, double **val_velocity, double *val_enthalpy,
-                     double *val_soundspeed, double *val_energy_vib, double *val_energy_el,
-                     CConfig *config, double *val_normal, double **val_p_tensor);
-    
-	/*!
-	 * \overload
-	 * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
-	 *        the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_p_tensor - Pointer to the P matrix.
-	 * \param[in] val_Energy_vib - Value of the vibrational energy.
-	 */
-	void GetPMatrix_AM(double *val_density, double **val_velocity, double *val_soundspeed,
-                       double *val_normal, double **val_p_tensor, double *val_Energy_vib);
     
 	/*!
 	 * \brief Computation of the matrix Rinv*Pe.
@@ -1300,7 +1048,9 @@ public:
 	 * \param[in] val_velocity - value of the velocity.
 	 * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
 	 */
-	void GetinvRinvPe(double Beta2, double val_enthalpy, double val_soundspeed, double val_density, double* val_velocity, double** val_invR_invPe);
+	void GetinvRinvPe(double Beta2, double val_enthalpy, double val_soundspeed,
+                    double val_density, double* val_velocity,
+                    double** val_invR_invPe);
     
 	/*!
 	 * \brief Computation of the matrix R.
@@ -1310,7 +1060,9 @@ public:
 	 * \param[in] val_velocity - value of the velocity.
 	 * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
 	 */
-	void GetRMatrix(double val_pressure, double val_soundspeed, double val_density, double* val_velocity, double** val_invR_invPe);
+	void GetRMatrix(double val_pressure, double val_soundspeed,
+                  double val_density, double* val_velocity,
+                  double** val_invR_invPe);
     
 	/*!
 	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians
@@ -1335,7 +1087,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
-	void GetPArtCompMatrix(double *val_density, double *val_velocity, double *val_betainv2, double *val_normal, double **val_p_tensor);
+	void GetPArtCompMatrix(double *val_density, double *val_velocity,
+                         double *val_betainv2, double *val_normal,
+                         double **val_p_tensor);
     
     /*!
 	 * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
@@ -1346,7 +1100,10 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_p_tensor - Pointer to the P matrix.
 	 */
-	void GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_p_tensor);
+	void GetPArtComp_FreeSurf_Matrix(double *val_density, double *val_ddensity,
+                                   double *val_velocity, double *val_betainv2,
+                                   double *val_levelset, double *val_normal,
+                                   double **val_p_tensor);
     
 	/*!
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
@@ -1357,8 +1114,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-	void GetPMatrix_inv(double *val_density, double *val_velocity, double *val_soundspeed,
-                        double *val_normal, double **val_invp_tensor);
+	void GetPMatrix_inv(double *val_density, double *val_velocity,
+                      double *val_soundspeed, double *val_normal,
+                      double **val_invp_tensor);
     
 	/*!
 	 * \overload
@@ -1370,8 +1128,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-	void GetPMatrix_inv(double *val_density, double **val_velocity, double *val_soundspeed,
-                        double *val_normal, double **val_invp_tensor);
+	void GetPMatrix_inv(double *val_density, double **val_velocity,
+                      double *val_soundspeed, double *val_normal,
+                      double **val_invp_tensor);
     
   /*!
 	 * \overload
@@ -1388,37 +1147,6 @@ public:
   void GetPMatrix_inv(double *U, double *V, double *val_dPdU,
                       double *val_normal, double *l, double *m,
                       double **val_invp_tensor) ;
-  
-	/*!
-	 * \overload
-	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
-	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-	 * \param[in] val_energy_vib - Value of the vibrational energy.
-	 * \param[in] val_energy_el - Value of the electronic/electron energy.
-	 * \param[in] config - Pointer to the problem configuration definitions.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-	 */
-	void GetPMatrix_inv_(double *val_density, double **val_velocity, double *val_soundspeed,
-                         double *val_energy_vib, double *val_energy_el, CConfig *config,
-                         double *val_normal, double **val_invp_tensor);
-    
-	/*!
-	 * \overload
-	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
-	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-	 * \param[in] val_Energy_vib - Value of the vibrational energy.
-	 */
-	void GetPMatrix_inv_AM(double *val_density, double **val_velocity, double *val_soundspeed,
-                           double *val_normal, double **val_invp_tensor, double *val_Energy_vib);
     
 	/*!
 	 * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
@@ -1429,7 +1157,9 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-	void GetPArtCompMatrix_inv(double *val_density, double *val_velocity, double *val_betainv2, double *val_normal, double **val_invp_tensor);
+	void GetPArtCompMatrix_inv(double *val_density, double *val_velocity,
+                             double *val_betainv2, double *val_normal,
+                             double **val_invp_tensor);
     
     /*!
 	 * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
@@ -1440,7 +1170,13 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
-	void GetPArtComp_FreeSurf_Matrix_inv(double *val_density, double *val_ddensity, double *val_velocity, double *val_betainv2, double *val_levelset, double *val_normal, double **val_invp_tensor);
+	void GetPArtComp_FreeSurf_Matrix_inv(double *val_density,
+                                       double *val_ddensity,
+                                       double *val_velocity,
+                                       double *val_betainv2,
+                                       double *val_levelset,
+                                       double *val_normal,
+                                       double **val_invp_tensor);
     
 	/*!
 	 * \brief Computation of the projected inviscid lambda (eingenvalues).
@@ -1450,7 +1186,7 @@ public:
 	 * \param[in] val_Lambda_Vector - Pointer to Lambda matrix.
 	 */
 	void GetJacInviscidLambda_fabs(double *val_velocity, double val_soundspeed,
-                                   double *val_normal, double *val_Lambda_Vector);
+                                 double *val_normal, double *val_Lambda_Vector);
     
 	/*!
 	 * \brief Compute the numerical residual.
@@ -1460,20 +1196,16 @@ public:
 	virtual void ComputeResidual(double *val_residual, CConfig *config);
     
 	/*!
-	 * \brief Compute the numerical residual.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void ComputeResidual_MacCormack(double *val_residual, CConfig *config);
-    
-	/*!
 	 * \overload
 	 * \param[out] val_residual_i - Pointer to the total residual at point i.
 	 * \param[out] val_residual_j - Pointer to the total residual at point j.
 	 */
 	virtual void ComputeResidual(double *val_residual_i, double *val_residual_j);
     
-    virtual void ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) ;
+  virtual void ComputeResidual_TransLM(double *val_residual,
+                                       double **val_Jacobian_i,
+                                       double **val_Jacobian_j, CConfig *config,
+                                       double &gamma_sep) ;
     
 	/*!
 	 * \overload
@@ -1481,7 +1213,8 @@ public:
 	 * \param[out] val_residual_j - Pointer to the total residual at point j.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double *val_residual_i, double *val_residual_j, CConfig *config);
+	virtual void ComputeResidual(double *val_residual_i,
+                               double *val_residual_j, CConfig *config);
     
 	/*!
 	 * \overload
@@ -1490,7 +1223,8 @@ public:
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+	virtual void ComputeResidual(double *val_residual, double **val_Jacobian_i,
+                               double **val_Jacobian_j, CConfig *config);
     
     /*!
 	 * \overload
@@ -1501,8 +1235,11 @@ public:
 	 * \param[out] val_JacobianMeanFlow_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
-                                 double **val_JacobianMeanFlow_i, double **val_JacobianMeanFlow_j, CConfig *config);
+    virtual void ComputeResidual(double *val_residual, double **val_Jacobian_i,
+                                 double **val_Jacobian_j,
+                                 double **val_JacobianMeanFlow_i,
+                                 double **val_JacobianMeanFlow_j,
+                                 CConfig *config);
     
 	/*!
 	 * \overload
@@ -1510,7 +1247,8 @@ public:
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+	virtual void ComputeResidual(double **val_Jacobian_i, double **val_Jacobian_j,
+                               CConfig *config);
     
 	/*!
 	 * \overload
@@ -1520,8 +1258,9 @@ public:
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
-                                 CConfig *config);
+	virtual void ComputeResidual(double *val_resconv, double *val_resvisc,
+                               double **val_Jacobian_i, double **val_Jacobian_j,
+                               CConfig *config);
     
 	/*!
 	 * \overload
@@ -1534,8 +1273,10 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void ComputeResidual(double *val_residual_i, double *val_residual_j,
-                                 double **val_Jacobian_ii, double **val_Jacobian_ij,
-                                 double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
+                               double **val_Jacobian_ii,
+                               double **val_Jacobian_ij,
+                               double **val_Jacobian_ji,
+                               double **val_Jacobian_jj, CConfig *config);
     
 	/*!
 	 * \overload
@@ -1549,9 +1290,12 @@ public:
 	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
-                                 double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
-                                 CConfig *config);
+	virtual void ComputeResidual(double *val_resconv_i, double *val_resvisc_i,
+                               double *val_resconv_j, double *val_resvisc_j,
+                               double **val_Jacobian_ii,
+                               double **val_Jacobian_ij,
+                               double **val_Jacobian_ji,
+                               double **val_Jacobian_jj, CConfig *config);
     
 	/*!
 	 * \overload
@@ -1566,7 +1310,8 @@ public:
 	 * \param[out] val_residual - residual of the source terms
 	 * \param[out] val_Jacobian_i - Jacobian of the source terms
 	 */
-	virtual void ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config);
+	virtual void ComputeResidual(double *val_residual, double **val_Jacobian_i,
+                               CConfig *config);
     
 	/*!
 	 * \overload
@@ -1612,131 +1357,14 @@ public:
 	 */
 	virtual void ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Calculates constants used for Keq correlation.
 	 * \param[out] A - Pointer to coefficient array.
-     * \param[in] val_reaction - Reaction number indicator.
+   * \param[in] val_reaction - Reaction number indicator.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - residual of the source terms
-	 */
-	virtual void ComputeResidual_Chemistry(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void ComputeResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - residual of the source terms
-	 */
-	virtual void ComputeResidual_Chemistry(double *val_residual, double **val_Jacobian, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetJacobian_Chemistry(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - residual of the source terms
-	 */
-	virtual void ComputeResidual_ElecForce(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - residual of the source terms
-	 * \param[out] val_Jacobian - Jacobian of the numerical method at node i (implicit computation).
-	 */
-	virtual void ComputeResidual_ElecForce(double *val_residual, double **val_Jacobian, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of poisson force source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetJacobian_ElecForce(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - residual of the source terms
-	 */
-	virtual void ComputeResidual_MomentumExch(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[out] val_residual - Pointer to the source residual containing momentum exchange terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void ComputeResidual_MomentumExch_ad(double *val_residual, double *val_residuald, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - residual of the source terms
-	 * \param[out] val_Jacobian - Jacobian of the numerical method at node i (implicit computation).
-	 */
-	virtual void ComputeResidual_MomentumExch(double *val_residual, double **val_Jacobian, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetJacobian_MomentumExch(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - Residual of the source terms.
-	 * \param[in] val_residual_ElecForce - Value of the poisson force source terms.
-	 */
-	virtual void ComputeResidual_EnergyExch(double *val_residual, double **val_Jacobian, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - Residual of the source terms.
-	 * \param[out] val_Jacobian - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] val_residual_ElecForce - Value of the poisson force source terms.
-	 */
-	virtual void ComputeResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, double **val_Jacobian, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - Residual of the source terms.
-	 */
-	virtual void ComputeResidual_EnergyExch(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - Residual of the source terms.
-	 */
-	virtual void ComputeResidual_EnergyExch_ad(double *val_residual, double *val_residuald, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of energy exchange source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetJacobian_EnergyExch(double **val_Jacobian_i, CConfig *config);
-    
+  virtual void GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config);
+  
 	/*!
 	 * \brief Set intermittency for numerics (used in SA with LM transition model)
 	 */
@@ -1783,15 +1411,21 @@ public:
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config);
+	virtual void ComputeResidual(double **val_Jacobian_i,
+                               double *val_Jacobian_mui,
+                               double ***val_Jacobian_gradi, CConfig *config);
     
 	/*!
 	 * \overload
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi,
-                                 double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config);
+	virtual void ComputeResidual(double **val_Jacobian_i,
+                               double *val_Jacobian_mui,
+                               double ***val_Jacobian_gradi,
+                               double **val_Jacobian_j,
+                               double *val_Jacobian_muj,
+                               double ***val_Jacobian_gradj, CConfig *config);
   
   /*!
 	 * \brief Computing stiffness matrix of the Galerkin method.
@@ -2147,411 +1781,6 @@ public:
 	 */
 	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                          double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
-};
-
-/*!
- * \class CUpwRoe_Plasma
- * \brief Class for solving an approximate Riemann solver of Roe for the plasma equations.
- * \ingroup ConvDiscr
- * \author Amrita Lonkar
- * \version 2.0.8
- */
-class CUpwRoe_Plasma : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
-	double Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j,  RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, R,delta_p, delta_rho,proj_delta_vel;
-	unsigned short iDim, iVar, jVar, kVar, nVar_Species;
-	double **ProjJac_i, **ProjJac_j;
-	double *Enthalpy_formation,Energy_vib, Energy_el;
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoe_Plasma(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoe_Plasma(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CUpwRoe_Turkel_Plasma
- * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for low Mach for the plasma equations.
- * \ingroup ConvDiscr
- * \author Amrita Lonkar
- * \version 2.0.8
- */
-class CUpwRoe_Turkel_Plasma : public CNumerics {
-private:
-	bool implicit, grid_movement;
-	double *Diff_U;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *Lambda, *Epsilon;
-	double **absPeJac,**invRinvPe,**R_Tensor,**Matrix,**Art_Visc, **Jac_ProjFlux_i, ** Jac_ProjFlux_j;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoePressure, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity;
-	unsigned short iDim, iVar, jVar, kVar, nVar_Species;
-	double Beta, Beta_min, Beta_max, Energy_vib, Energy_el;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoe_Turkel_Plasma(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoe_Turkel_Plasma(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CUpwRoe_Plasma
- * \brief Class for solving an approximate Riemann solver of Roe for the plasma equations.
- * \ingroup ConvDiscr
- * \author ADL Stanford
- * \version 2.0.8
- */
-class CUpwRoe_PlasmaDiatomic : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double **Velocity_i, **Velocity_j, **RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, **delta_vel;
-	double *Lambda, *Epsilon;
-	double *Density_i, *Energy_i, *Energy_vib_i, *Energy_el_i, *SoundSpeed_i, *Pressure_i, *Enthalpy_i,
-	*Density_j, *Energy_j, *Energy_vib_j, *Energy_el_j, *SoundSpeed_j, *Pressure_j, *Enthalpy_j,  *RoeDensity, *RoeEnthalpy, *RoeSoundSpeed, *RoeEnergy_vib,
-	*ProjVelocity, *ProjVelocity_i, *ProjVelocity_j;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Vel2, Proj_ModJac_Tensor_ij, R,delta_p, delta_rho,proj_delta_vel;
-	unsigned short iDim, iVar, jVar, kVar, iFluids;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoe_PlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoe_PlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-
-/*!
- * \class CUpwSW_PlasmaDiatomic
- * \brief Class for solving a flux-vector splitting method by Steger & Warming (1982).
- * \ingroup ConvDiscr
- * \author ADL Stanford
- * \version 2.0.8
- */
-class CUpwSW_PlasmaDiatomic : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double **Velocity_i, **Velocity_j, **Velocity_ij;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *Lambda;
-	double *Density_i, *Energy_i, *Energy_vib_i, *Energy_el_i, *SoundSpeed_i, *Pressure_i, *Enthalpy_i,
-	*Density_j, *Energy_j, *Energy_vib_j, *Energy_el_j, *SoundSpeed_j, *Pressure_j, *Enthalpy_j,
-	*Density_ij, *Enthalpy_ij, *SoundSpeed_ij, *Energy_vib_ij, *Energy_el_ij,
-	*ProjVelocity_ij, *ProjVelocity_i, *ProjVelocity_j;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Vel2,Proj_ModJac_Tensor_ij, Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j, delta_p, delta_rho,proj_delta_vel;
-	unsigned short iDim, iVar, jVar, kVar;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwSW_PlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwSW_PlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CUpwMSW_PlasmaDiatomic
- * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
- * \ingroup ConvDiscr
- * \author ADL Stanford
- * \version 2.0.8
- */
-class CUpwMSW_PlasmaDiatomic : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double **Velocity_i, **Velocity_j, **Velocityst_i, **Velocityst_j;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *Lambda_i, *Lambda_j;
-	double *Density_i, *Energy_i, *Energy_vib_i, *Energy_el_i, *SoundSpeed_i, *Pressure_i, *Enthalpy_i,
-    *Density_j, *Energy_j, *Energy_vib_j, *Energy_el_j, *SoundSpeed_j, *Pressure_j, *Enthalpy_j,
-    *Densityst_i, *Enthalpyst_i, *Soundspeedst_i, *Energy_vibst_i, *Energy_elst_i,
-    *Densityst_j, *Enthalpyst_j, *Soundspeedst_j, *Energy_vibst_j, *Energy_elst_j;
-    
-    double *ProjVelocity_i, *ProjVelocity_j, *ProjVelocityst_i, *ProjVelocityst_j;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Vel2,Proj_ModJac_Tensor_ij, Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j, delta_p, delta_rho,proj_delta_vel;
-	unsigned short iDim, iVar, jVar, kVar;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwMSW_PlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwMSW_PlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-
-/*!
- * \class CUpwHLLC_PlasmaDiatomic
- * \brief Class for solving an approximate Riemann AUSM.
- * \ingroup ConvDiscr
- * \author S. Copeland, based on the Joe code implementation
- * \version 2.0.8
- */
-class CUpwHLLC_PlasmaDiatomic : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-	unsigned short iDim, iVar, jVar, kVar;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwHLLC_PlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwHLLC_PlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-
-
-/*!
- * \class CUpwRoe_Plasma
- * \brief Class for solving an approximate Riemann solver of Roe for the plasma equations.
- * \ingroup ConvDiscr
- * \author ADL Stanford
- * \version 2.0.8
- */
-class CUpwRoe_AdjPlasmaDiatomic : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double **Velocity_i, **Velocity_j, **RoeVelocity;
-	double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j, **Proj_ModJac_Tensor;
-	double *delta_wave, **delta_vel;
-	double *Lambda, *Epsilon;
-	double *Density_i, *Energy_i, *Energy_vib_i, *SoundSpeed_i, *Pressure_i, *Enthalpy_i,
-	*Density_j, *Energy_j, *Energy_vib_j, *SoundSpeed_j, *Pressure_j, *Enthalpy_j,  *RoeDensity, *RoeEnthalpy, *RoeSoundSpeed, *RoeEnergy_vib,
-	*ProjVelocity, *ProjVelocity_i, *ProjVelocity_j, *Energy_el_i, *Energy_el_j;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, R,delta_p, delta_rho,proj_delta_vel;
-	unsigned short iDim, iVar, jVar, kVar, iFluids;
-	double **Proj_flux_tensor_i, **Proj_flux_tensor_j;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoe_AdjPlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoe_AdjPlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual_i - Pointer to the total residual at node i.
-	 * \param[out] val_residual_j - Pointer to the total residual at node j.
-	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method from node i to node j (implicit computation).
-	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method from node j to node i (implicit computation).
-	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
-};
-
-/*!
- * \class CUpwSW_PlasmaDiatomic
- * \brief Class for solving a flux-vector splitting method by Steger & Warming (1982).
- * \ingroup ConvDiscr
- * \author ADL Stanford
- * \version 2.0.8
- */
-class CUpwSW_AdjPlasmaDiatomic : public CNumerics {
-private:
-	bool implicit;
-	double *Diff_U;
-	double **Velocity_i, **Velocity_j, **Velocity_ij;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *Lambda_p, *Lambda_m;
-	double *Density_i, *Energy_i, *Energy_vib_i, *Energy_el_i, *SoundSpeed_i, *Pressure_i, *Enthalpy_i,
-	*Density_j, *Energy_j, *Energy_vib_j, *Energy_el_j, *SoundSpeed_j, *Pressure_j, *Enthalpy_j,
-	*Density_ij, *Enthalpy_ij, *SoundSpeed_ij, *Energy_vib_ij, *Energy_el_ij,
-	*ProjVelocity_ij, *ProjVelocity_i, *ProjVelocity_j;
-	double **P_Tensor, **invP_Tensor;
-	double **Proj_ModJac_Tensor;
-	double sq_vel, Vel2,Proj_ModJac_Tensor_ij, Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j, delta_p, delta_rho,proj_delta_vel;
-	unsigned short iDim, iVar, jVar, kVar;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwSW_AdjPlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwSW_AdjPlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
 };
 
 /*!
@@ -4362,551 +3591,6 @@ public:
 };
 
 /*!
- * \class CAvgGradCorrected_Plasma
- * \brief Class for computing viscous term using average of gradients.
- * \ingroup ViscDiscr
- * \author ADL Stanford.
- * \version 2.0.8
- */
-class CAvgGradCorrected_Plasma : public CNumerics {
-private:
-	unsigned short iDim, iVar; /*!< \brief Iterators in dimension an variable. */
-	double *Mean_PrimVar, /*!< \brief Mean primitive variables. */
-	*PrimVar_i, *PrimVar_j, /*!< \brief Primitives variables at point i and 1. */
-	*Mean_Laminar_Viscosity, *Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-	*Mean_Density,  /*!< \brief Mean density. */
-	*Proj_flux_tensor; /*!< \brief Projection of the viscous fluxes. */
-	double dist_ij_2, dS; /*!< \brief Length of the edge and face. */
-	double 	**Mean_GradPrimVar; /*!< \brief Mean value of the gradient. */
-	double *Edge_Vector,*Proj_Mean_GradPrimVar_Edge;									/*!< \brief Vector form point i to point j. */
-    
-	bool implicit; /*!< \brief Implicit calculus. */
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions.
-	 * \param[in] val_nVar - Number of variables.
-	 * \param[in] nSpecies - Number of species.
-	 * \param[in] nFluids - Number of fluids (aggregated from the various species).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGradCorrected_Plasma(unsigned short val_nDim, unsigned short val_nVar, unsigned short nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGradCorrected_Plasma(void);
-	/*!
-	 * \brief Compute the viscous flow residual using an average of gradients.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CAvgGrad_Plasma
- * \brief Class for computing viscous term using average of gradients.
- * \ingroup ViscDiscr
- * \author ADL Stanford.
- * \version 2.0.8
- */
-class CAvgGrad_Plasma : public CNumerics {
-private:
-	unsigned short iDim, iVar; /*!< \brief Iterators in dimension an variable. */
-	double *Mean_PrimVar, /*!< \brief Mean primitive variables. */
-	*PrimVar_i,                 *PrimVar_j, /*!< \brief Primitives variables at point i and 1. */
-	*Mean_Laminar_Viscosity,    *Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-    *Mean_Thermal_Conductivity, *Mean_Thermal_Conductivity_vib, /*!< \brief Mean value of the conductivity. */
-	*Proj_flux_tensor; /*!< \brief Projection of the viscous fluxes. */
-	double dist_ij, dS; /*!< \brief Length of the edge and face. */
-	double 	**Mean_GradPrimVar; /*!< \brief Mean value of the gradient. */
-    
-	bool implicit; /*!< \brief Implicit calculus. */
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions.
-	 * \param[in] val_nVar - Number of variables.
-	 * \param[in] nSpecies - Number of species.
-	 * \param[in] nFluids - Number of fluids (aggregated from the various species).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAvgGrad_Plasma(unsigned short val_nDim, unsigned short val_nVar, unsigned short nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CAvgGrad_Plasma(void);
-	/*!
-	 * \brief Compute the viscous flow residual using an average of gradients.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-
-/*!
- * \class CCentJST_Flow
- * \brief Class for centered shceme - JST.
- * \ingroup ConvDiscr
- * \author Amrita Lonkar, F. Palacios
- * \version 2.0.8
- */
-class CCentJST_Plasma : public CNumerics {
-    
-private:
-	unsigned short iDim, iVar, jVar, iSpecies, loc, nVar_Species; /*!< \brief Iteration on dimension and variables. */
-	double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-	**Velocity_i, **Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-	**MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-	Density_i, Density_j,
-	Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-	sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-	Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-	Local_Lambda_i, Local_Lambda_j, *MeanLambda, /*!< \brief Local eingenvalues. */
-	Phi_i, Phi_j, sc2, sc4, /*!< \brief Streching parameters. */
-	*Proj_flux_tensor,  /*!< \brief Projected inviscid flux tensor. */
-	cte_0, cte_1; /*!< \brief Artificial dissipation values. */
-	bool implicit; /*!< \brief Implicit calculation. */
-    
-	double *Pressure_i,/*!< \brief Pressure for multiple species point i. */
-	*Pressure_j,/*!< \brief Pressure for multiple species point i. */
-	*SoundSpeed_i,/*!< \brief speed of sound for multiple species point i. */
-	*SoundSpeed_j,/*!< \brief speed of sound for multiple species point i. */
-	*Enthalpy_i,/*!< \brief enthalpy for multiple species point i. */
-	*Enthalpy_j,/*!< \brief enthalpy for multiple species point i. */
-	*Lambda_i,/*!< \brief lambda for multiple species point i. */
-	*Lambda_j,/*!< \brief lambda for multiple species point i. */
-	*Sensor_i,/*!< \brief pressure sensor for multiple species point i. */
-	*Sensor_j,/*!< \brief pressure sensor for multiple species point i. */
-	*MeanEnergy,
-	*MeanDensity,
-	*MeanPressure,
-	*MeanEnthalpy,
-	*StretchingFactor,
-	*Epsilon_2,
-	*Epsilon_4;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimension of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentJST_Plasma(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentJST_Plasma(void);
-    
-	/*!
-	 * \brief Compute the flow residual using a JST method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
-                         CConfig *config);
-    
-	/*!
-	 * \brief Set the lambda of species.
-	 * \param[in] val_lambda_i - lambda at point i.
-	 * \param[in] val_lambda_j - lambda at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the enthalpy of species.
-	 * \param[in] val_enthalpy_i - enthalpy at point i.
-	 * \param[in] val_enthalpy_j - enthalpy at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the pressure of species.
-	 * \param[in] val_pressure_i - pressure at point i.
-	 * \param[in] val_pressure_j - pressure at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-    
-	void SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the speed of sound of species.
-	 * \param[in] val_soundspeed_i - speed of sound at point i.
-	 * \param[in] val_soundspeed_j - speed of sound at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the sensor .
-	 * \param[in] val_sensor_i - pressure sensor at point i.
-	 * \param[in] val_sensor_j - pressure sensor at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSensor(double val_sensor_i, double val_sensor_j, unsigned short iSpecies);
-    
-};
-
-
-/*!
- * \class CCentJST_Flow
- * \brief Class for centered shceme - JST.
- * \ingroup ConvDiscr
- * \author Amrita Lonkar, F. Palacios
- * \version 2.0.8
- */
-class CCentJST_PlasmaDiatomic : public CNumerics {
-    
-private:
-	unsigned short iDim, iVar, jVar, iSpecies, loc, nVar_Species; /*!< \brief Iteration on dimension and variables. */
-	double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-	**Velocity_i, **Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-	**MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-	Density_i, Density_j,
-	Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-	Energy_vib_i, Energy_vib_j,  /*!< \brief Mean vibrational energies. */
-	sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-	Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-	Local_Lambda_i, Local_Lambda_j, *MeanLambda, /*!< \brief Local eingenvalues. */
-	Phi_i, Phi_j, sc2, sc4, /*!< \brief Streching parameters. */
-	*Proj_flux_tensor,  /*!< \brief Projected inviscid flux tensor. */
-	cte_0, cte_1; /*!< \brief Artificial dissipation values. */
-	bool implicit; /*!< \brief Implicit calculation. */
-    
-	double *Pressure_i,/*!< \brief Pressure for multiple species point i. */
-	*Pressure_j,/*!< \brief Pressure for multiple species point i. */
-	*SoundSpeed_i,/*!< \brief speed of sound for multiple species point i. */
-	*SoundSpeed_j,/*!< \brief speed of sound for multiple species point i. */
-	*Enthalpy_i,/*!< \brief enthalpy for multiple species point i. */
-	*Enthalpy_j,/*!< \brief enthalpy for multiple species point i. */
-	*Lambda_i,/*!< \brief lambda for multiple species point i. */
-	*Lambda_j,/*!< \brief lambda for multiple species point i. */
-	*Sensor_i,/*!< \brief pressure sensor for multiple species point i. */
-	*Sensor_j,/*!< \brief pressure sensor for multiple species point i. */
-	*MeanEnergy,
-	*MeanEnergy_vib,
-	*MeanDensity,
-	*MeanPressure,
-	*MeanEnthalpy,
-	*StretchingFactor,
-	*Epsilon_2,
-	*Epsilon_4;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimension of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentJST_PlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentJST_PlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the flow residual using a JST method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
-                         CConfig *config);
-    
-	/*!
-	 * \brief Set the lambda of species.
-	 * \param[in] val_lambda_i - lambda at point i.
-	 * \param[in] val_lambda_j - lambda at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the enthalpy of species.
-	 * \param[in] val_enthalpy_i - enthalpy at point i.
-	 * \param[in] val_enthalpy_j - enthalpy at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the pressure of species.
-	 * \param[in] val_pressure_i - pressure at point i.
-	 * \param[in] val_pressure_j - pressure at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-    
-	void SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the speed of sound of species.
-	 * \param[in] val_soundspeed_i - speed of sound at point i.
-	 * \param[in] val_soundspeed_j - speed of sound at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the sensor .
-	 * \param[in] val_sensor_i - pressure sensor at point i.
-	 * \param[in] val_sensor_j - pressure sensor at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSensor(double val_sensor_i, double val_sensor_j, unsigned short iSpecies);
-    
-};
-
-
-/*!
- * \class CCentLax_PlasmaDiatomic
- * \brief Class for centered shceme - JST.
- * \ingroup ConvDiscr
- * \author Sean Copeland, F. Palacios
- * \version 2.0.8
- */
-class CCentLax_PlasmaDiatomic : public CNumerics {
-    
-private:
-	unsigned short iDim, iVar, jVar, iSpecies, loc, nVar_Species; /*!< \brief Iteration on dimension and variables. */
-	double *Diff_U, *Diff_Lapl, /*!< \brief Diference of conservative variables and undivided laplacians. */
-	**Velocity_i, **Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-	**MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-	Density_i, Density_j,
-	*Energy_i, *Energy_j,  /*!< \brief Mean Density and energies. */
-	*Energy_vib_i, *Energy_vib_j,  /*!< \brief Mean vibrational energies. */
-	sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-	Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-	Local_Lambda_i, Local_Lambda_j, *MeanLambda, /*!< \brief Local eingenvalues. */
-	Phi_i, Phi_j, sc0, /*!< \brief Streching parameters. */
-	*Proj_flux_tensor,  /*!< \brief Projected inviscid flux tensor. */
-	cte_0; /*!< \brief Artificial dissipation values. */
-	bool implicit; /*!< \brief Implicit calculation. */
-    
-	double *Pressure_i,/*!< \brief Pressure for multiple species point i. */
-	*Pressure_j,/*!< \brief Pressure for multiple species point i. */
-	*SoundSpeed_i,/*!< \brief speed of sound for multiple species point i. */
-	*SoundSpeed_j,/*!< \brief speed of sound for multiple species point i. */
-	*Enthalpy_i,/*!< \brief enthalpy for multiple species point i. */
-	*Enthalpy_j,/*!< \brief enthalpy for multiple species point i. */
-	*Lambda_i,/*!< \brief lambda for multiple species point i. */
-	*Lambda_j,/*!< \brief lambda for multiple species point i. */
-	*Sensor_i,/*!< \brief pressure sensor for multiple species point i. */
-	*Sensor_j,/*!< \brief pressure sensor for multiple species point i. */
-	*MeanEnergy,
-	*MeanEnergy_vib,
-	*MeanDensity,
-	*MeanPressure,
-	*MeanEnthalpy,
-	*StretchingFactor,
-	*Epsilon_0;
-	double Enthalpy_formation, Energy_el_i, Energy_el_j;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimension of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentLax_PlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentLax_PlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the flow residual using a JST method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
-                         CConfig *config);
-    
-	/*!
-	 * \brief Set the lambda of species.
-	 * \param[in] val_lambda_i - lambda at point i.
-	 * \param[in] val_lambda_j - lambda at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the enthalpy of species.
-	 * \param[in] val_enthalpy_i - enthalpy at point i.
-	 * \param[in] val_enthalpy_j - enthalpy at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the pressure of species.
-	 * \param[in] val_pressure_i - pressure at point i.
-	 * \param[in] val_pressure_j - pressure at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-    
-	void SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the speed of sound of species.
-	 * \param[in] val_soundspeed_i - speed of sound at point i.
-	 * \param[in] val_soundspeed_j - speed of sound at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the sensor .
-	 * \param[in] val_sensor_i - pressure sensor at point i.
-	 * \param[in] val_sensor_j - pressure sensor at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSensor(double val_sensor_i, double val_sensor_j, unsigned short iSpecies);
-};
-
-/*!
- * \class CCentLax_AdjPlasmaDiatomic
- * \brief Class for centered shceme - LF.
- * \ingroup ConvDiscr
- * \author Sean Copeland, F. Palacios
- * \version 2.0.8
- */
-class CCentLax_AdjPlasmaDiatomic : public CNumerics {
-    
-private:
-	unsigned short iDim, iVar, jVar, iSpecies, loc, nVar_Species; /*!< \brief Iteration on dimension and variables. */
-	double *Diff_Psi, /*!< \brief Diference of conservative variables and undivided laplacians. */
-	**Velocity_i, **Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-	**MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-	Density_i, Density_j,
-	*Energy_i, *Energy_j,  /*!< \brief Mean Density and energies. */
-	*Energy_vib_i, *Energy_vib_j,  /*!< \brief Mean vibrational energies. */
-	sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-	Param_p, Param_Kappa_0, /*!< \brief Artificial dissipation parameters. */
-	Local_Lambda_i, Local_Lambda_j, *MeanLambda, /*!< \brief Local eingenvalues. */
-	Phi_i, Phi_j, sc0, /*!< \brief Streching parameters. */
-	*Proj_flux_tensor,  /*!< \brief Projected inviscid flux tensor. */
-	cte_0, /*!< \brief Artificial dissipation values. */
-	**Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;  /*!< \brief Projected Jacobians. */
-	bool implicit; /*!< \brief Implicit calculation. */
-    
-	double *Pressure_i,/*!< \brief Pressure for multiple species point i. */
-	*Pressure_j,/*!< \brief Pressure for multiple species point i. */
-	*SoundSpeed_i,/*!< \brief speed of sound for multiple species point i. */
-	*SoundSpeed_j,/*!< \brief speed of sound for multiple species point i. */
-	*Enthalpy_i,/*!< \brief enthalpy for multiple species point i. */
-	*Enthalpy_j,/*!< \brief enthalpy for multiple species point i. */
-	*Lambda_i,/*!< \brief lambda for multiple species point i. */
-	*Lambda_j,/*!< \brief lambda for multiple species point i. */
-	*Sensor_i,/*!< \brief pressure sensor for multiple species point i. */
-	*Sensor_j,/*!< \brief pressure sensor for multiple species point i. */
-	*MeanEnergy,
-	*MeanEnergy_vib,
-	*MeanDensity,
-	*MeanPressure,
-	*MeanEnthalpy,
-	*StretchingFactor,
-	*Epsilon_0;
-	double Enthalpy_formation, Energy_el_i, Energy_el_j;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimension of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentLax_AdjPlasmaDiatomic(unsigned short val_nDim, unsigned short val_nVar,unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentLax_AdjPlasmaDiatomic(void);
-    
-	/*!
-	 * \brief Compute the flow residual using a JST method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
-                         double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
-                         CConfig *config);
-    
-	/*!
-	 * \brief Set the lambda of species.
-	 * \param[in] val_lambda_i - lambda at point i.
-	 * \param[in] val_lambda_j - lambda at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the enthalpy of species.
-	 * \param[in] val_enthalpy_i - enthalpy at point i.
-	 * \param[in] val_enthalpy_j - enthalpy at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the pressure of species.
-	 * \param[in] val_pressure_i - pressure at point i.
-	 * \param[in] val_pressure_j - pressure at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the speed of sound of species.
-	 * \param[in] val_soundspeed_i - speed of sound at point i.
-	 * \param[in] val_soundspeed_j - speed of sound at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies);
-    
-	/*!
-	 * \brief Set the sensor .
-	 * \param[in] val_sensor_i - pressure sensor at point i.
-	 * \param[in] val_sensor_j - pressure sensor at point j.
-	 * \param[in] iSpecies - Index of species
-	 */
-	void SetSensor(double val_sensor_i, double val_sensor_j, unsigned short iSpecies);
-};
-
-/*!
  * \class CGalerkin_Flow
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
@@ -5499,45 +4183,6 @@ public:
 };
 
 /*!
- * \class CSourcePieceWise_Elec
- * \brief Class for the soruce term integration of the poissonal potential equation.
- * \ingroup SourceDiscr
- * \author A. Bueno.
- * \version 2.0.8
- */
-class CSourcePieceWise_Elec : public CNumerics {
-	double **Ni_times_Nj;
-public:
-    
-	/*!
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_Elec(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_Elec(void);
-    
-	/*!
-	 * \brief Source term integration for the poissonal potential.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \brief Source term integration for the poissonal potential.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual_MacCormack(double *val_residual, CConfig *config);
-    
-};
-
-/*!
  * \class CSourceViscous_AdjFlow
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
@@ -5737,253 +4382,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, CConfig *config);
-};
-
-/*!
- * \class CSourcePieceWise_Plasma
- * \brief Class for integrating the source terms of the plasma equation.
- * \ingroup SourceDiscr
- * \author Amrita Lonkar
- * \version 2.0.8
- */
-class CSourcePieceWise_Plasma : public CNumerics {
-private:
-	bool implicit;
-    
-	double r1, m1, n1, e1, r2, m2, n2, e2,r3, m3, n3, e3,T1,T2,T3, P1,P2,P3, l1, l2,l3;
-	unsigned short iDim, iVar, iSpecies;
-	double tolerance;
-	double dT1_dr1,dT2_dr2,dT3_dr3,dT1_dm1,dT2_dm2,dT3_dm3,dT1_dn1,dT2_dn2,dT3_dn3,dT1_dl1,dT2_dl2,dT3_dl3,dT1_de1,dT2_de2,dT3_de3;
-	double C12,C13,C23;
-	double dC12_dT1,dC12_dT2,dC13_dT1,dC13_dT3,dC23_dT2,dC23_dT3;
-	double nu12,nu13,nu23;
-	double nu21,nu31,nu32;
-	double dr1_dT1,dr2_dT2,dr3_dT3;
-	double dv12_dT1,dv12_dT2,dv21_dT1,dv21_dT2;
-	double dv13_dT1,dv13_dT3,dv31_dT1,dv31_dT3;
-	double dv23_dT2,dv23_dT3,dv32_dT2,dv32_dT3;
-	double Cv1, Cv2,Cv3;
-	double gam1, gam2, gam3;
-	double f13,f12,f23;
-	double df13_dT1,df13_dT2,df13_dT3;
-	double df23_dT1, df23_dT2,df23_dT3;
-	double df12_dT1, df12_dT2,df12_dT3;
-	double QT1, QT2, QT3;
-	double dQT1_dT1,dQT1_dT2,dQT1_dT3;
-	double dQT2_dT1,dQT2_dT2,dQT2_dT3;
-	double dQT3_dT1,dQT3_dT2,dQT3_dT3;
-	double dQT1_dr1, dQT1_dr2, dQT1_dr3;
-	double dQT2_dr1, dQT2_dr2, dQT2_dr3;
-	double dQT3_dr1, dQT3_dr2, dQT3_dr3;
-	double C1, C2,C3;
-	double Ck1,Ck2,Ck3;
-	double eta1,eta2,eta3;
-	double zeta1,zeta2,zeta3;
-	double theta1,theta2,theta3;
-	double phi1,phi2,phi3;
-	double kf1,kf2,kf3,ke1,ke2,ke3,kb1,kb2,kb3;
-	double R,dkf1_dT1,dkf2_dT2,dkf3_dT3,dke1_dT1,dke2_dT2,dke3_dT3;
-	double dkb1_dT1,dkb2_dT2,dkb3_dT3;
-	double dR_dr1,dR_dm1,dR_dn1,dR_dl1,dR_de1;
-	double dR_dr2,dR_dm2,dR_dn2,dR_dl2,dR_de2;
-	double dR_dr3,dR_dm3,dR_dn3,dR_dl3,dR_de3;
-	double *poissonField, *MagneticField, **VcrossB, *MagneticDipole,**velocity;
-	double poisson_Conductivity;
-	double *Current_Density, *VioncrossB, *JcrossB,	*dpcenter, *vector_r;
-	double *SourceVector;
-	double **SourceJacobian;
-	double Kb,M1, M3,M2,ec,eps0,Te,Rc,r12,r13,r23,sigma12,sigma13,sigma23;
-	double Stagnation_B;
-	double w_c, nu_c,sigma_zero, sigma_Ped, sigma_Hall, sigma_parallel, Magnetic_field_Magnitude;
-	double Ex, Ey, Ez;
-	double AvgNum, tol;
-	double mdotr, distance, rpower5, rcubed;
-	double Tstart;
-	double M1Avg, M2Avg, M3Avg, M1M2M3Avg3;
-	double Gamma,Gas_Constant, *Enthalpy_formation, Energy_vib, Energy_el;
-    
-	double *MolarMass;				//Molar mass of each species
-	double *Molar_Mass;				//Molar mass of each species (kg/kmol) [iSpecies]
-	double *Molecular_Mass;		//Mass of a molecule of species (kg) [iSpecies]
-	double *Molecular_Diameter;//Diameter of species s (m) [iSpecies]
-	double *ChargeNumber;			//Charge number of each species (+1/0/-1 depending charge or neutrality) [iSpecies]
-	double *w_dot;						//Species mass source term [iSpecies]
-	double *w_dotd;						//Derivative of species mass source term [iSpecies]
-	double *ExtentOfReaction; //Extent of reaction [iReaction]
-	double *ReactionRateFwd;	//Forward reaction rate [iReaction]
-	double *ReactionRateFwdd;	//Derivative of forward reaction rate [iReaction]
-	double *ReactionRateBkw;	//Backward reaction rate [iReaction]
-	double *ReactionRateBkwd;	//Derivative of Backward reaction rate [iReaction]
-	double *T_rxnf;						//Forward reaction rate controlling temperature
-	double *T_rxnfd;					//Derivative of forward reaction rate controlling temperature
-	double *T_rxnb;						//Backward reaction rate controlling temperature
-	double *T_rxnbd;					//Derivative of backward reaction rate controlling temperature
-	double *T_tr;							//Translational-rotational temperature [iSpecies]
-	double *Temp_tr_id;
-	double *T_vib;						//Vibrational temperature [iSpecies]
-	double *Pressure;					//Partial pressure [iSpecies]
-	double *Q_tv;							//Transl-rot.->vibrational energy exchange [iSpecies]
-	double *Q_elastic;				//Energy exchange between species due to elastic collisions [iSpecies]
-	double *Q_elasticd;				//Energy exchange between species due to elastic collisions [iSpecies]
-	double *CharVibTemp;			//Characteristic Vibrational temperature [nSpecies]
-	double *CharVibTempd;			//Characteristic Vibrational temperature [nSpecies]
-	double Q_te;							//Transl-rot.->electronic energy exchange [iSpecies]
-	double equilVibEnergy;		//Equilibrium vibrational energy e_v^*
-	double E_vib;							//Vibrational energy
-	double *Residual_New;
-	double *Residual_Baseline;
-	double *U_Baseline;
-    
-	int ***Reactions;
-	int **ReactionMap;				//Matrix dictating the chemical reactions.  Row index is rxn #, Col index is species #
-	int **RxnReactants;				//Matrix dictating the reactants in the chemical reactions.  [iReaction][iSpecies]
-	int **RxnProducts;				//Matrix dictating the products in the chemical reactions.  [iReaction][iSpecies]
-	double ***Omega00;        //Collision integral Omega(0,0)
-	double ***Omega11;        //Collision integral Omega(1,1)
-	double **EqRxnConstants;	//Equilibrium extent of reaction constants A1s -> A5s (See appendix A of Candler (1988))
-	double **RxnConstantTable; //Matrix of constants for use in calculating the equilibrium extent of reaction.
-	double **P;								//Momentum exchange source terms (from inter-species collisions) [iSpecies][iDim]
-	double **Pd;							//Momentum exchange source terms (from inter-species collisions) [iSpecies][iDim]
-	double *Cf;								//Coefficients for the Arrhenius reaction equations
-	double *eta;							//Temperature exponent in Arrhenius reaction equations
-	double *theta;						//Characteristic temperature in Arrhenius reaction equations
-    
-	double *fwdRxn;						//Forward Reaction Rate
-	double *fwdRxnd;					//Derivative of forward Reaction Rate
-	double *bkwRxn;						//Backward Reaction Rate
-	double *bkwRxnd;					//Derivative of backward Reaction Rate
-	double *Keq;								//Equilibrium extent of reaction.  Function of T
-	double *Keqd;								//Derivative of equilibrium extent of reaction.  Function of T
-	unsigned short nReactions;	//Number of chemical reactions
-	double **Mag_Force;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Total number of species in the plasma.
-	 * \param[in] val_nDiatomics - Total number of diatomic species in the plasma.
-	 * \param[in] val_nMonatomics - Total number of monatomic species in the plasma.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CSourcePieceWise_Plasma(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics,
-                            CConfig *config);
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSourcePieceWise_Plasma(void);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
-    
-	/*!
-	 * \overload
-	 * \param[out] EqnRxnConstants - Constant values to be used in the calculation of the equilibrium extent of reaction Keq.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void GetEq_Rxn_Coefficients(double **EqnRxnConstants, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual_Axisymmetric(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of axisymmetric source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual_Chemistry(double *val_residual,CConfig *config);
-    
-	/*!
-	 * \brief Calculation of chemistry source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetJacobian_Chemistry(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing poisson force terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual_ElecForce(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of poisson force source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetJacobian_ElecForce(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing momentum exchange terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual_MomentumExch(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of momentum exchange source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetJacobian_MomentumExch(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[out] val_residual - Residual of the source terms.
-	 */
-	void ComputeResidual_EnergyExch(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of energy exchange source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetJacobian_EnergyExch(double **val_Jacobian_i, CConfig *config);
-    
-	/*!
-	 * \brief Set the value of the charge densities.
-	 * \param[in] val_Efield - Value of the poisson field.
-	 */
-	void SetElecField(double *val_Efield);
-    
-    
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \param[out] MagneticField - Value of the Magnetic Field.
-	 */
-	double* GetMagneticField();
-    
-	/*!
-	 * \brief Get the value of the magnetic field.
-	 * \param[out] Mag_Force - Value of the Magnetic forces
-	 */
-	double GetMagneticForce(unsigned short val_Species, unsigned short val_dim);
-    
-	/*!
-	 * \brief Set the time step.
-	 * \param[in] val_timestep - Value of the time step.
-	 */
-	void SetTimeStep(double val_timestep);
 };
 
 /*!
@@ -6497,7 +4895,7 @@ public:
 
 
 /*!
- * \class CUpwMSW_PlasmaDiatomic
+ * \class CUpwMSW_TNE2
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author ADL Stanford
