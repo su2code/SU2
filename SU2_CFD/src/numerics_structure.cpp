@@ -205,79 +205,129 @@ void CNumerics::GetInviscidProjFlux(double *val_density,
 
 }
 
-void CNumerics::GetInviscidProjFlux(double *val_density,
-                                    double *val_velocity,
-                                    double *val_pressure,
-                                    double *val_enthalpy,
-                                    double *val_energy_ve,
+void CNumerics::GetInviscidProjFlux(double *val_U,
+                                    double *val_V,
                                     double *val_normal,
                                     double *val_Proj_Flux) {
   unsigned short iSpecies;
-  double rho, rhou, rhov, rhow;
+  double rho, u, v, w, rhoEve, P, H;
+  double *rhos;
   
-  //************************************************//
-  // Please do not delete //SU2_CPP2C comment lines //
-  //************************************************//
+  rhos = new double[nSpecies];
   
-  //SU2_CPP2C SUB START GetInviscidProjFlux
-  //SU2_CPP2C SUB VARS *val_density val_velocity *val_pressure *val_enthalpy val_Proj_Flux val_normal
-  
-  rho = 0.0;
+  /*--- Rename for convienience ---*/
+  rho    = val_V[RHO_INDEX];
+  u      = val_V[VEL_INDEX];
+  v      = val_V[VEL_INDEX+1];
+  w      = val_V[VEL_INDEX+2];
+  P      = val_V[P_INDEX];
+  H      = val_V[H_INDEX];
+  rhoEve = val_U[nSpecies+nDim+1];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rho += val_density[iSpecies];
+    rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
   
-	if (nDim == 2) {
-		rhou = rho*val_velocity[0];
-		rhov = rho*val_velocity[1];
+  if (nDim == 2) {
     
     /*--- iDim = 0 (x-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Proj_Flux[iSpecies] = rhou * (val_density[iSpecies]/rho) * val_normal[0];
-		val_Proj_Flux[nSpecies]   = (rhou * val_velocity[0] + (*val_pressure)) * val_normal[0];
-		val_Proj_Flux[nSpecies+1] = rhou * val_velocity[1] * val_normal[0];
-		val_Proj_Flux[nSpecies+2] = rhou * (*val_enthalpy) * val_normal[0];
-    val_Proj_Flux[nSpecies+3] = rhou * (*val_energy_ve) * val_normal[0];
+      val_Proj_Flux[iSpecies]  = (rhos[iSpecies]*u) * val_normal[0];
+		val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
+		val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
+		val_Proj_Flux[nSpecies+2]  = (rho*u*H)          * val_normal[0];
+    val_Proj_Flux[nSpecies+3]  = (rhoEve*u)         * val_normal[0];
     
     /*---- iDim = 1 (y-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Proj_Flux[iSpecies] += rhov * (val_density[iSpecies]/rho) * val_normal[1];
-		val_Proj_Flux[nSpecies]   += rhov * val_velocity[0] * val_normal[1];
-		val_Proj_Flux[nSpecies+1] += (rhov * val_velocity[1] + (*val_pressure)) * val_normal[1];
-		val_Proj_Flux[nSpecies+2] += rhov * (*val_enthalpy) * val_normal[1];
-    val_Proj_Flux[nSpecies+3] += rhov * (*val_energy_ve) * val_normal[1];
+      val_Proj_Flux[iSpecies] += (rhos[iSpecies]*v) * val_normal[1];
+		val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
+		val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
+		val_Proj_Flux[nSpecies+2] += (rho*v*H)          * val_normal[1];
+    val_Proj_Flux[nSpecies+3] += (rhoEve*v)         * val_normal[1];
 	}
 	else {
-		rhou = (*val_density)*val_velocity[0];
-		rhov = (*val_density)*val_velocity[1];
-		rhow = (*val_density)*val_velocity[2];
     
     /*--- iDim = 0 (x-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Proj_Flux[iSpecies] = rhou * (val_density[iSpecies]/rho) * val_normal[0];
-		val_Proj_Flux[nSpecies]   = (rhou * val_velocity[0] + (*val_pressure)) * val_normal[0];
-		val_Proj_Flux[nSpecies+1] = rhou * val_velocity[1] * val_normal[0];
-		val_Proj_Flux[nSpecies+2] = rhou * val_velocity[2] * val_normal[0];
-		val_Proj_Flux[nSpecies+3] = rhou * (*val_enthalpy) * val_normal[0];
-    val_Proj_Flux[nSpecies+4] = rhou * (*val_energy_ve) * val_normal[0];
+      val_Proj_Flux[iSpecies]  = (rhos[iSpecies]*u) * val_normal[0];
+		val_Proj_Flux[nSpecies]    = (rho*u*u + P)      * val_normal[0];
+		val_Proj_Flux[nSpecies+1]  = (rho*u*v)          * val_normal[0];
+		val_Proj_Flux[nSpecies+2]  = (rho*u*w)          * val_normal[0];
+		val_Proj_Flux[nSpecies+3]  = (rho*u*H)          * val_normal[0];
+    val_Proj_Flux[nSpecies+4]  = (rhoEve*u)         * val_normal[0];
     
     /*--- iDim = 0 (y-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Proj_Flux[iSpecies] += rhov * (val_density[iSpecies]/rho) * val_normal[1];
-		val_Proj_Flux[nSpecies]   += rhov * val_velocity[0] * val_normal[1];
-		val_Proj_Flux[nSpecies+1] += (rhov * val_velocity[1] + (*val_pressure)) * val_normal[1];
-		val_Proj_Flux[nSpecies+2] += rhov * val_velocity[2] * val_normal[1];
-		val_Proj_Flux[nSpecies+3] += rhov * (*val_enthalpy) * val_normal[1];
-    val_Proj_Flux[nSpecies+4] += rhov * (*val_energy_ve) * val_normal[1];
+      val_Proj_Flux[iSpecies] += (rhos[iSpecies]*v) * val_normal[1];
+		val_Proj_Flux[nSpecies]   += (rho*v*u)          * val_normal[1];
+		val_Proj_Flux[nSpecies+1] += (rho*v*v + P)      * val_normal[1];
+		val_Proj_Flux[nSpecies+2] += (rho*v*w)          * val_normal[1];
+		val_Proj_Flux[nSpecies+3] += (rho*v*H)          * val_normal[1];
+    val_Proj_Flux[nSpecies+4] += (rhoEve*v)         * val_normal[1];
     
     /*--- iDim = 0 (z-direction) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      val_Proj_Flux[iSpecies] += rhow * (val_density[iSpecies]/rho) * val_normal[2];
-		val_Proj_Flux[nSpecies]   += rhow * val_velocity[0] * val_normal[2];
-		val_Proj_Flux[nSpecies+1] += rhow * val_velocity[1] * val_normal[2];
-		val_Proj_Flux[nSpecies+2] += (rhow * val_velocity[2] + (*val_pressure)) * val_normal[2];
-		val_Proj_Flux[nSpecies+3] += rhow * (*val_enthalpy) * val_normal[2];
-    val_Proj_Flux[nSpecies+4] += rhow * (*val_energy_ve) * val_normal[2];
+      val_Proj_Flux[iSpecies] += (rhos[iSpecies]*w) * val_normal[2];
+		val_Proj_Flux[nSpecies]   += (rho*w*u)          * val_normal[2];
+		val_Proj_Flux[nSpecies+1] += (rho*w*v)          * val_normal[2];
+		val_Proj_Flux[nSpecies+2] += (rho*w*w + P)      * val_normal[2];
+		val_Proj_Flux[nSpecies+3] += (rho*w*H)          * val_normal[2];
+    val_Proj_Flux[nSpecies+4] += (rhoEve*w)         * val_normal[2];
 	}
+  
+//	if (nDim == 2) {
+//		rhou = rho*val_velocity[0];
+//		rhov = rho*val_velocity[1];
+//    
+//    /*--- iDim = 0 (x-direction) ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Proj_Flux[iSpecies] = rhou * (val_density[iSpecies]/rho) * val_normal[0];
+//		val_Proj_Flux[nSpecies]   = (rhou * val_velocity[0] + (*val_pressure)) * val_normal[0];
+//		val_Proj_Flux[nSpecies+1] = rhou * val_velocity[1] * val_normal[0];
+//		val_Proj_Flux[nSpecies+2] = rhou * (*val_enthalpy) * val_normal[0];
+//    val_Proj_Flux[nSpecies+3] = rhou * (*val_energy_ve) * val_normal[0];
+//    
+//    /*---- iDim = 1 (y-direction) ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Proj_Flux[iSpecies] += rhov * (val_density[iSpecies]/rho) * val_normal[1];
+//		val_Proj_Flux[nSpecies]   += rhov * val_velocity[0] * val_normal[1];
+//		val_Proj_Flux[nSpecies+1] += (rhov * val_velocity[1] + (*val_pressure)) * val_normal[1];
+//		val_Proj_Flux[nSpecies+2] += rhov * (*val_enthalpy) * val_normal[1];
+//    val_Proj_Flux[nSpecies+3] += rhov * (*val_energy_ve) * val_normal[1];
+//	}
+//	else {
+//		rhou = (*val_density)*val_velocity[0];
+//		rhov = (*val_density)*val_velocity[1];
+//		rhow = (*val_density)*val_velocity[2];
+//    
+//    /*--- iDim = 0 (x-direction) ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Proj_Flux[iSpecies] = rhou * (val_density[iSpecies]/rho) * val_normal[0];
+//		val_Proj_Flux[nSpecies]   = (rhou * val_velocity[0] + (*val_pressure)) * val_normal[0];
+//		val_Proj_Flux[nSpecies+1] = rhou * val_velocity[1] * val_normal[0];
+//		val_Proj_Flux[nSpecies+2] = rhou * val_velocity[2] * val_normal[0];
+//		val_Proj_Flux[nSpecies+3] = rhou * (*val_enthalpy) * val_normal[0];
+//    val_Proj_Flux[nSpecies+4] = rhou * (*val_energy_ve) * val_normal[0];
+//    
+//    /*--- iDim = 0 (y-direction) ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Proj_Flux[iSpecies] += rhov * (val_density[iSpecies]/rho) * val_normal[1];
+//		val_Proj_Flux[nSpecies]   += rhov * val_velocity[0] * val_normal[1];
+//		val_Proj_Flux[nSpecies+1] += (rhov * val_velocity[1] + (*val_pressure)) * val_normal[1];
+//		val_Proj_Flux[nSpecies+2] += rhov * val_velocity[2] * val_normal[1];
+//		val_Proj_Flux[nSpecies+3] += rhov * (*val_enthalpy) * val_normal[1];
+//    val_Proj_Flux[nSpecies+4] += rhov * (*val_energy_ve) * val_normal[1];
+//    
+//    /*--- iDim = 0 (z-direction) ---*/
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      val_Proj_Flux[iSpecies] += rhow * (val_density[iSpecies]/rho) * val_normal[2];
+//		val_Proj_Flux[nSpecies]   += rhow * val_velocity[0] * val_normal[2];
+//		val_Proj_Flux[nSpecies+1] += rhow * val_velocity[1] * val_normal[2];
+//		val_Proj_Flux[nSpecies+2] += (rhow * val_velocity[2] + (*val_pressure)) * val_normal[2];
+//		val_Proj_Flux[nSpecies+3] += rhow * (*val_enthalpy) * val_normal[2];
+//    val_Proj_Flux[nSpecies+4] += rhow * (*val_energy_ve) * val_normal[2];
+//	}
+  
+  delete [] rhos;
   
   //SU2_CPP2C SUB END GetInviscidProjFlux
 }
@@ -376,86 +426,99 @@ void CNumerics::GetInviscidProjJac(double *val_velocity, double *val_energy,
 	val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
 }
 
-void CNumerics::GetInviscidProjJac(double *val_density, double *val_velocity, double *val_enthalpy,
-                                   double *val_energy_ve, double *val_dPdrhos, double val_dPdrhoE,
-                                   double val_dPdrhoEve, double *val_normal, double val_scale,
+void CNumerics::GetInviscidProjJac(double *val_U, double *val_V,
+                                   double *val_dPdU, double *val_normal,
+                                   double val_scale,
                                    double **val_Proj_Jac_Tensor) {
+
 	unsigned short iDim, iVar, jVar, iSpecies, jSpecies;
-  double proj_vel, rho;
+  double proj_vel, rho, u, v, w, rhoEve, H;
+  double *rhos;
   
+  rhos = new double[nSpecies];
   
+  /*--- Initialize the Jacobian tensor ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = 0.0;
   
-  rho = 0.0;
+  if (nDim == 2) {
+    cout << "ERROR!!!  Inviscid Projected Jacobian only implemented for 3D flows!" << endl;
+    exit(1);
+  }
+  
+  /*--- Rename for convenience ---*/
+  rho    = val_V[RHO_INDEX];
+  u      = val_V[VEL_INDEX];
+  v      = val_V[VEL_INDEX];
+  w      = val_V[VEL_INDEX];
+  H      = val_V[H_INDEX];
+  rhoEve = val_U[nSpecies+nDim+1];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rho += val_density[iSpecies];
+    rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
+
+  /*--- Calculate projected velocity ---*/
 	proj_vel = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
-		proj_vel += val_velocity[iDim]*val_normal[iDim];
+		proj_vel += val_V[VEL_INDEX+iDim]*val_normal[iDim];
 	}
-  
-/*  cout << "CNumerics -- InvProjJac: " << endl;
-  cout << "nSpecies: " << nSpecies << endl;
-  cout << "ProjVel: " << proj_vel << endl;
-  cout << "rho: " << rho << endl;
-  cout << "Val Velocity: " << val_velocity[0] << endl;
-  cout << "Enthalpy: " << *val_enthalpy << endl;
-  cout << "dPdrhos: " << val_dPdrhos[0] << endl;
-  cout << "dPdrhoE: " << val_dPdrhoE << endl;
-  cout << "dPdrhoEve: " << val_dPdrhoEve << endl;
-  cin.get();*/
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      val_Proj_Jac_Tensor[iSpecies][jSpecies] = -(val_density[iSpecies]/rho) * proj_vel;
+      val_Proj_Jac_Tensor[iSpecies][jSpecies] = -(rhos[iSpecies]/rho) * proj_vel;
     }
     val_Proj_Jac_Tensor[iSpecies][iSpecies]  += proj_vel;
-    val_Proj_Jac_Tensor[iSpecies][nSpecies]   = (val_density[iSpecies]/rho) * val_normal[0];
-    val_Proj_Jac_Tensor[iSpecies][nSpecies+1] = (val_density[iSpecies]/rho) * val_normal[1];
-    val_Proj_Jac_Tensor[iSpecies][nSpecies+2] = (val_density[iSpecies]/rho) * val_normal[2];
+    val_Proj_Jac_Tensor[iSpecies][nSpecies]   = (rhos[iSpecies]/rho) * val_normal[0];
+    val_Proj_Jac_Tensor[iSpecies][nSpecies+1] = (rhos[iSpecies]/rho) * val_normal[1];
+    val_Proj_Jac_Tensor[iSpecies][nSpecies+2] = (rhos[iSpecies]/rho) * val_normal[2];
     
-    val_Proj_Jac_Tensor[nSpecies][iSpecies]   = val_dPdrhos[iSpecies]*val_normal[0] - proj_vel*val_velocity[0];
-    val_Proj_Jac_Tensor[nSpecies+1][iSpecies] = val_dPdrhos[iSpecies]*val_normal[1] - proj_vel*val_velocity[1];
-    val_Proj_Jac_Tensor[nSpecies+2][iSpecies] = val_dPdrhos[iSpecies]*val_normal[2] - proj_vel*val_velocity[2];
-    val_Proj_Jac_Tensor[nSpecies+3][iSpecies] = (val_dPdrhos[iSpecies]-(*val_enthalpy)) * proj_vel;
-    val_Proj_Jac_Tensor[nSpecies+4][iSpecies] = -proj_vel * (*val_energy_ve);
+    val_Proj_Jac_Tensor[nSpecies][iSpecies]   = val_dPdU[iSpecies]*val_normal[0] - proj_vel*u;
+    val_Proj_Jac_Tensor[nSpecies+1][iSpecies] = val_dPdU[iSpecies]*val_normal[1] - proj_vel*v;
+    val_Proj_Jac_Tensor[nSpecies+2][iSpecies] = val_dPdU[iSpecies]*val_normal[2] - proj_vel*w;
+    val_Proj_Jac_Tensor[nSpecies+3][iSpecies] = (val_dPdU[iSpecies]-H) * proj_vel;
+    val_Proj_Jac_Tensor[nSpecies+4][iSpecies] = -proj_vel * rhoEve/rho;
   }
   
-  val_Proj_Jac_Tensor[nSpecies][nSpecies]     = -val_dPdrhoE*val_velocity[0]*val_normal[0] + val_velocity[0]*val_normal[0] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+1]   = -val_dPdrhoE*val_velocity[1]*val_normal[0] + val_velocity[0]*val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+2]   = -val_dPdrhoE*val_velocity[2]*val_normal[0] + val_velocity[0]*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+3]   = val_dPdrhoE * val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+4]   = val_dPdrhoEve * val_normal[0];
+  // X-momentum:
+  val_Proj_Jac_Tensor[nSpecies][nSpecies]     = val_dPdU[nSpecies]   * val_normal[0] + u*val_normal[0] + proj_vel;
+  val_Proj_Jac_Tensor[nSpecies][nSpecies+1]   = val_dPdU[nSpecies+1] * val_normal[0] + u*val_normal[1];
+  val_Proj_Jac_Tensor[nSpecies][nSpecies+2]   = val_dPdU[nSpecies+2] * val_normal[0] + u*val_normal[2];
+  val_Proj_Jac_Tensor[nSpecies][nSpecies+3]   = val_dPdU[nSpecies+3] * val_normal[0];
+  val_Proj_Jac_Tensor[nSpecies][nSpecies+4]   = val_dPdU[nSpecies+4] * val_normal[0];
   
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies]   = -val_dPdrhoE*val_velocity[0]*val_normal[1] + val_velocity[1]*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+1] = -val_dPdrhoE*val_velocity[1]*val_normal[1] + val_velocity[1]*val_normal[1] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+2] = -val_dPdrhoE*val_velocity[2]*val_normal[1] + val_velocity[1]*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+3] = val_dPdrhoE * val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+4] = val_dPdrhoEve * val_normal[1];
+  // Y-momentum:
+  val_Proj_Jac_Tensor[nSpecies+1][nSpecies]   = val_dPdU[nSpecies]   * val_normal[1] + v*val_normal[0];
+  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+1] = val_dPdU[nSpecies+1] * val_normal[1] + v*val_normal[1] + proj_vel;
+  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+2] = val_dPdU[nSpecies+2] * val_normal[1] + v*val_normal[2];
+  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+3] = val_dPdU[nSpecies+3] * val_normal[1];
+  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+4] = val_dPdU[nSpecies+4] * val_normal[1];
   
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies]   = -val_dPdrhoE*val_velocity[0]*val_normal[2] + val_velocity[2]*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+1] = -val_dPdrhoE*val_velocity[1]*val_normal[2] + val_velocity[2]*val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+2] = -val_dPdrhoE*val_velocity[2]*val_normal[2] + val_velocity[2]*val_normal[2] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+3] = val_dPdrhoE * val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+4] = val_dPdrhoEve * val_normal[2];
+  // Z-momentum:
+  val_Proj_Jac_Tensor[nSpecies+2][nSpecies]   = val_dPdU[nSpecies]   * val_normal[2] + w*val_normal[0];
+  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+1] = val_dPdU[nSpecies+1] * val_normal[2] + w*val_normal[1];
+  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+2] = val_dPdU[nSpecies+2] * val_normal[2] + w*val_normal[2] + proj_vel;
+  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+3] = val_dPdU[nSpecies+3] * val_normal[2];
+  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+4] = val_dPdU[nSpecies+4] * val_normal[2];
   
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies]   = -val_dPdrhoE*val_velocity[0]*proj_vel + (*val_enthalpy)*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+1] = -val_dPdrhoE*val_velocity[1]*proj_vel + (*val_enthalpy)*val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+2] = -val_dPdrhoE*val_velocity[2]*proj_vel + (*val_enthalpy)*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+3] = val_dPdrhoE*proj_vel + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+4] = val_dPdrhoEve * proj_vel;
+  // Total energy:
+  val_Proj_Jac_Tensor[nSpecies+3][nSpecies]   =    val_dPdU[nSpecies]   *proj_vel + H*val_normal[0];
+  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+1] =    val_dPdU[nSpecies+1] *proj_vel + H*val_normal[1];
+  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+2] =    val_dPdU[nSpecies+2] *proj_vel + H*val_normal[2];
+  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+3] = (1+val_dPdU[nSpecies+3])*proj_vel;
+  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+4] =    val_dPdU[nSpecies+4] *proj_vel;
   
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies]   = (*val_energy_ve) * val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+1] = (*val_energy_ve) * val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+2] = (*val_energy_ve) * val_normal[2];
+  // Vib.-el. energy
+  val_Proj_Jac_Tensor[nSpecies+4][nSpecies]   = rhoEve/rho * val_normal[0];
+  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+1] = rhoEve/rho * val_normal[1];
+  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+2] = rhoEve/rho * val_normal[2];
   val_Proj_Jac_Tensor[nSpecies+4][nSpecies+3] = 0.0;
   val_Proj_Jac_Tensor[nSpecies+4][nSpecies+4] = proj_vel;
   
 	for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = val_scale * val_Proj_Jac_Tensor[iVar][jVar];
+  
+  delete [] rhos;
 }
 
 

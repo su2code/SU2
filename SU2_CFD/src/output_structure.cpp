@@ -2062,7 +2062,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     Aux_yPlus = new double[geometry->GetnPoint()];
   }
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
     Aux_Sens = new double[geometry->GetnPoint()];
     
   }
@@ -2850,271 +2850,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
   }
   
-  /*--- Communicate additional variables for the plasma solvers ---*/
-  if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-    
-    /*--- Pressure ---*/
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies ++) {
-      /*--- Loop over this partition to collect the current variable ---*/
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-          
-          /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
-          Buffer_Send_Var[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetPressure(iSpecies);
-          jPoint++;
-        }
-        
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             MASTER_NODE);
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      if (rank == MASTER_NODE) {
-        jPoint = 0;
-        iVar = iVar_Press + iSpecies;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-            jPoint++;
-          }
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-    
-    /*--- Translational-rotational temperature ---*/
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      /*--- Loop over this partition to collect the current variable ---*/
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-          
-          /*--- Load buffer with the temperature. ---*/
-          Buffer_Send_Var[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetTemperature_tr(iSpecies);
-          jPoint++;
-        }
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             MASTER_NODE);
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      if (rank == MASTER_NODE) {
-        jPoint = 0;
-        iVar = iVar_Temp + iSpecies;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-            jPoint++;
-          }
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-    
-    /*--- Vibrational temperature ---*/
-    for (iSpecies = 0; iSpecies < config->GetnDiatomics(); iSpecies++) {
-      /*--- Loop over this partition to collect the current variable ---*/
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-          
-          /*--- Load buffer with the vibrational temperature. ---*/
-          Buffer_Send_Var[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetTemperature_vib(iSpecies);
-          jPoint++;
-        }
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             MASTER_NODE);
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      if (rank == MASTER_NODE) {
-        jPoint = 0;
-        iVar = iVar_Tempv + iSpecies;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-            jPoint++;
-          }
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-    
-    /*--- Mach number ---*/
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      /*--- Loop over this partition to collect the current variable ---*/
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-          
-          /*--- Load buffer with the vibrational temperature. ---*/
-          Buffer_Send_Var[jPoint] = sqrt(solver[PLASMA_SOL]->node[iPoint]->GetVelocity2(iSpecies))
-          / solver[PLASMA_SOL]->node[iPoint]->GetSoundSpeed(iSpecies);
-          jPoint++;
-        }
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             MASTER_NODE);
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      if (rank == MASTER_NODE) {
-        jPoint = 0;
-        iVar = iVar_Mach + iSpecies;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-            jPoint++;
-          }
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-  }
-  
-  if ( Kind_Solver == PLASMA_NAVIER_STOKES) {
-    
-    /*--- Laminar viscosity ---*/
-    for (iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
-      /*--- Loop over this partition to collect the current variable ---*/
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-          /*--- Load buffer with the laminar viscosity. ---*/
-          Buffer_Send_Var[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetLaminarViscosity(iSpecies);
-          jPoint++;
-          
-        }
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                             MASTER_NODE);
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      if (rank == MASTER_NODE) {
-        jPoint = 0;
-        iVar = iVar_Lam + iSpecies;
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-            jPoint++;
-          }
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-  }
-  
-  /*--- Communicate the Eddy Viscosity ---*/
-  if ( Kind_Solver == PLASMA_NAVIER_STOKES  && (config->GetMagnetic_Force() == YES) && (geometry->GetnDim() == 3)) {
-    
-    /*--- Loop over this partition to collect the current variable ---*/
-    jPoint = 0;
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      
-      /*--- Check for halos & write only if requested ---*/
-      
-      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
-        
-        /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
-        Buffer_Send_Var[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetMagneticField()[0];
-        Buffer_Send_Res[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetMagneticField()[1];
-        Buffer_Send_Vol[jPoint] = solver[PLASMA_SOL]->node[iPoint]->GetMagneticField()[2];
-        jPoint++;
-      }
-    }
-    
-    /*--- Gather the data on the master node. ---*/
-    MPI::COMM_WORLD.Barrier();
-    MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
-                           MASTER_NODE);
-    MPI::COMM_WORLD.Gather(Buffer_Send_Res, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Recv_Res, nBuffer_Scalar, MPI::DOUBLE,
-                           MASTER_NODE);
-    MPI::COMM_WORLD.Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Recv_Vol, nBuffer_Scalar, MPI::DOUBLE,
-                           MASTER_NODE);
-    /*--- The master node unpacks and sorts this variable by global index ---*/
-    if (rank == MASTER_NODE) {
-      jPoint = 0; iVar = iVar_MagF;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-          
-          /*--- Get global index, then loop over each variable and store ---*/
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
-          Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-          Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
-          jPoint++;
-        }
-        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-        jPoint = (iProcessor+1)*nBuffer_Scalar;
-      }
-    }
-  }
-  
   /*--- Communicate the surface sensitivity ---*/
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
     
     /*--- First, loop through the mesh in order to find and store the
      value of the surface sensitivity at any surface nodes. They
@@ -3837,7 +3575,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
     char begin[1000], direct_coeff[1000], surface_coeff[1000], adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000],
-    turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], plasma_resid[1000], adj_plasma_resid[1000], resid_aux[1000],
+    turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], resid_aux[1000],
     levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000],
     fea_resid[1000], end[1000];
     double dummy = 0.0;
@@ -3886,16 +3624,15 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Residual arrays ---*/
-    double *residual_flow = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_TNE2 = NULL, *residual_levelset = NULL, *residual_plasma = NULL;
-    double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjTNE2 = NULL, *residual_adjlevelset = NULL, *residual_adjplasma = NULL;
+    double *residual_flow = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_TNE2 = NULL, *residual_levelset = NULL;
+    double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjTNE2 = NULL, *residual_adjlevelset = NULL;
     double *residual_wave = NULL; double *residual_fea = NULL; double *residual_heat = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
     double *aeroelastic_plunge = NULL, *aeroelastic_pitch = NULL, *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL;
     
     /*--- Initialize number of variables ---*/
-    unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0, nVar_Plasma = 0,
-    nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjPlasma = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0;
+    unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0,     nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0;
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
@@ -3930,7 +3667,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     residual_turbulent  = new double[nVar_Turb];
     residual_transition = new double[nVar_Trans];
     residual_TNE2       = new double[nVar_TNE2];
-    residual_plasma     = new double[nVar_Plasma];
     residual_levelset   = new double[nVar_LevelSet];
     residual_wave       = new double[nVar_Wave];
     residual_fea        = new double[nVar_FEA];
@@ -3939,7 +3675,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     residual_adjflow      = new double[nVar_AdjFlow];
     residual_adjturbulent = new double[nVar_AdjTurb];
     residual_adjTNE2      = new double[nVar_AdjTNE2];
-    residual_adjplasma    = new double[nVar_AdjPlasma];
     residual_adjlevelset  = new double[nVar_AdjLevelSet];
     
     /*--- Allocate memory for the coefficients being monitored ---*/

@@ -42,7 +42,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(void) : CSolver() {
 
 CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  bool restart, axisymmetric;
+  bool restart;
 	unsigned long iPoint, index, iVertex;
 	unsigned short iDim, iSpecies, iVar, iMarker;
   string text_line, mesh_filename;
@@ -65,21 +65,21 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 	p1_Und_Lapl  = NULL;
 	p2_Und_Lapl  = NULL;
 	CSensitivity = NULL;
-  Jacobian_Axisymmetric = NULL;
   
   /*--- Set booleans for solver settings ---*/
   restart      = config->GetRestart();
-	axisymmetric = config->GetAxisymmetric();
   
 	/*--- Define constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
-  nDim         = geometry->GetnDim();
   nPointDomain = geometry->GetnPointDomain();
+  nDim         = geometry->GetnDim();
   
   /*--- Set the size of the solution array ---*/
-	nVar = nSpecies + nDim + 2;
+	nVar         = nSpecies + nDim + 2;
+  nPrimVar     = nSpecies + nDim + 8;
+  nPrimVarGrad = nSpecies + nDim + 3;
   
   /*--- Allocate a CVariable array for each node of the mesh ---*/
 	node = new CVariable*[nPoint];
@@ -144,12 +144,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
-    
-    if (axisymmetric) {
-      Jacobian_Axisymmetric = new double* [nVar];
-      for (iVar = 0; iVar < nVar; iVar++)
-        Jacobian_Axisymmetric[iVar] = new double [nVar];
-    }
+  
   } else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
@@ -313,12 +308,6 @@ CAdjTNE2EulerSolver::~CAdjTNE2EulerSolver(void) {
 	if (Sens_Temp   != NULL) delete [] Sens_Temp;
 	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
 	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
-    
-	if (Jacobian_Axisymmetric != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_Axisymmetric[iVar];
-    delete [] Jacobian_Axisymmetric;
-  }
   
 	if (CSensitivity != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -455,10 +444,8 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
       /*--- Deallocate receive buffer ---*/
       delete [] Buffer_Receive_U;
       
-    }
-    
+    } 
 	}
-  
 }
 
 void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
@@ -2039,9 +2026,9 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         Psi[nSpecies+iDim] -= ( phin - bcn ) * UnitNormal[iDim];
       
-      numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
-                                   dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
-                                   1.0, Jacobian_i);
+//      numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
+//                                   dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
+//                                   1.0, Jacobian_i);
       
       /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -2182,9 +2169,9 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         Psi[nSpecies+iDim] -= phin * UnitNormal[iDim];
       
-      conv_numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
-                                        dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
-                                        1.0, Jacobian_i);
+//      conv_numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
+//                                        dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
+//                                        1.0, Jacobian_i);
       
       /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
       for (iVar = 0; iVar < nVar; iVar++) {

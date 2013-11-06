@@ -551,6 +551,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
+  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
@@ -1679,6 +1682,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Solver == TNE2_NAVIER_STOKES)     ||
       (Kind_Solver == ADJ_TNE2_EULER)         ||
       (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
+    
+    Kappa_1st_TNE2    = Kappa_TNE2[0];
+    Kappa_2nd_TNE2    = Kappa_TNE2[1];
+    Kappa_4th_TNE2    = Kappa_TNE2[2];
+    Kappa_1st_AdjTNE2 = Kappa_AdjTNE2[0];
+    Kappa_2nd_AdjTNE2 = Kappa_AdjTNE2[1];
+    Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
     
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
