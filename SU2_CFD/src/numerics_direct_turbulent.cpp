@@ -286,7 +286,13 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
   if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
   Omega = sqrt(Vorticity);
-  dist_i = max(dist_i, 1.0e-10);
+  /*
+  if (dist_i < 1.0e-10){
+    cout << "Distance is lower than e-10: dist = " << dist_i <<endl;
+  }
+   */
+ // double tmpDist = dist_i;
+//   dist_i = max(dist_i, 1.0e-10);
   
   /*--- Rotational correction term ---*/
   if (rotating_frame) {
@@ -307,7 +313,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     Omega += 2.0*min(0.0,StrainMag-Omega);
   }
   
-  if (dist_i > 0.0) {
+  if (dist_i > 1e-10) {
     
     /*--- Production term ---*/
     dist_i_2 = dist_i*dist_i;
@@ -363,6 +369,11 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    /*
+    if (tmpDist == 0){
+      cout << "Source is: " << val_residual[0] <<endl;
+    }
+     */
   }
 }
 
