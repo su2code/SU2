@@ -267,11 +267,7 @@ def read_config(filename):
     """ reads a config file """
       
     # initialize output dictionary
-    data_dict = OrderedDict() 
-    
-    #hack - twl
-    data_dict['DV_VALUE_NEW'] = [0]
-    data_dict['DV_VALUE_OLD'] = [0]
+    data_dict = OrderedDict()
     
     input_file = open(filename)
     
@@ -476,7 +472,13 @@ def read_config(filename):
     # some defaults
     if not data_dict.has_key('DECOMPOSED'):
         data_dict['DECOMPOSED'] = False
-            
+    
+    #hack - twl
+    if not data_dict.has_key('DV_VALUE_NEW'):
+      data_dict['DV_VALUE_NEW'] = [0]
+    if not data_dict.has_key('DV_VALUE_OLD'):
+      data_dict['DV_VALUE_OLD'] = [0]
+
     return data_dict
     
 #: def read_config()
