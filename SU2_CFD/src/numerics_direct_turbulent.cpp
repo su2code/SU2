@@ -367,6 +367,55 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
   }
+  
+  // Compute the spalart allmaras term
+  SpalartAllmarasInputs* inputs = new SpalartAllmarasInputs(nDim);
+  SpalartAllmarasConstants* constants = new SpalartAllmarasConstants;
+  
+  int nResidual = 4;
+  int nJacobian = 1;
+  double* testResidual = new double[nResidual];
+  double* testJacobian = new double[nJacobian];
+  double** DUiDXj = new double*[nDim];
+  for(int i=0; i < nDim; i++){
+    DUiDXj[i] = new double[nDim];
+  }
+  
+  double* DNuhatDXj = new double[nDim];
+  for (int i =0; i < nDim; i++){
+    for (int j=0; j < nDim; j++){
+      DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
+    }
+    DNuhatDXj[i] = TurbVar_Grad_i[0][i];
+  }
+  
+  inputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
+  
+  
+  SpalartAllmarasSourceTerm(inputs, constants, testResidual, testJacobian);
+  
+  for (int i=0; i < nResidual; i++){
+    testResidual[i] *= Volume;
+  }
+  
+  for (int i=0; i < nJacobian; i++){
+     testJacobian[i] *= Volume;
+  }
+  
+  // Check if the old and new match
+  for (int i = 0; i < nResidual; i++){
+    cout << "resid val is: " << val_residual[0] << " " << " test resid: "<<testResidual[3] << endl;
+  }
+  
+  delete inputs;
+  delete constants;
+  delete testResidual;
+  delete testJacobian;
+  for (int i=0; i < nDim; i++){
+    delete DUiDXj[i];
+  }
+  delete DUiDXj;
+  delete DNuhatDXj;
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,

@@ -13,7 +13,13 @@ SpalartAllmarasConstants::SpalartAllmarasConstants(){
   cw1 = cb1/k2+(1+cb2)/sigma;
 }
 
-SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter){
+SpalartAllmarasConstants::~SpalartAllmarasConstants(){}
+
+SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim){
+  init(nDim, 1e-10);
+}
+
+void SpalartAllmarasInputs::init(int nDim, double limiter){
   this->nDim = nDim;
   this->limiter = limiter;
   DUiDXj = new double*[nDim];
@@ -22,6 +28,10 @@ SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter){
   }
   DTurb_Kin_Visc_DXj = new double[nDim];
   return;
+}
+
+SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter){
+  init(nDim, limiter);
 }
 
 SpalartAllmarasInputs::~SpalartAllmarasInputs(){
@@ -36,6 +46,33 @@ int SpalartAllmarasInputs::GetNumDim(){
   return nDim;
 }
 
+double SpalartAllmarasInputs::GetLimiter(){
+  return limiter;
+}
+
+double** SpalartAllmarasInputs::GetMeanFlowGradient(){
+  return DUiDXj;
+}
+double* SpalartAllmarasInputs::GetTurbKinViscGradient(){
+  return DTurb_Kin_Visc_DXj;
+}
+
+void SpalartAllmarasInputs::Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, bool rotating_frame, bool transition, double dist, double Laminar_Viscosity, double Density, double Turbulent_Kinematic_Viscosity, double intermittency){
+  for (int i=0; i <this->nDim; i++){
+    for (int j = 0; j < this->nDim; j++){
+      this->DUiDXj[i][j] = DUiDXj[i][j];
+    }
+    this->DTurb_Kin_Visc_DXj[i] = DTurb_Kin_Visc_DXj[i];
+  }
+  this->rotating_frame = rotating_frame;
+  this->transition = transition;
+  this->dist = dist;
+  this->Laminar_Viscosity = Laminar_Viscosity;
+  this->Turbulent_Kinematic_Viscosity = Turbulent_Kinematic_Viscosity;
+  this->intermittency = intermittency;
+  return;
+}
+
 /* Computes the spalart-allmaras source term.
  the outputs are
  (Production, Destruction, CrossProduction, Total)
@@ -44,22 +81,22 @@ int SpalartAllmarasInputs::GetNumDim(){
  
  Does not include the volume term
  */
-void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* outputs, double* jacobian){
+void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian){
   double dist = inputs->dist; // Wall distance
   int nDim = inputs->GetNumDim();
   // Limit if too close to the wall
-  double limiter = inputs->limiter;
+  double limiter = inputs->GetLimiter();
   if (dist < limiter){
     for (int iDim = 0; iDim < nDim; iDim++ ){
-      outputs[iDim] = 0;
-      jacobian[0] = 0;
+      output_residual[iDim] = 0;
+      output_jacobian[0] = 0;
     }
     return;
   }
   
-  double Vorticity = ComputeVorticity(nDim,inputs->DUiDXj);
+    double **DUiDXj = inputs->GetMeanFlowGradient();
+  double Vorticity = ComputeVorticity(nDim,DUiDXj);
   double Omega = sqrt(Vorticity);
-  double **DUiDXj = inputs->DUiDXj;
   double StrainMag;
   double Laminar_Viscosity = inputs->Laminar_Viscosity;
   double Density = inputs->Density;
@@ -72,7 +109,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   dfv1,dfv2, dr, dg, dfw;
   
   double Production, Destruction, CrossProduction;
-  double *DTurb_Kin_Visc_DXj = inputs->DTurb_Kin_Visc_DXj;
+  double *DTurb_Kin_Visc_DXj = inputs->GetTurbKinViscGradient();
   double dShat;
   
   // Correction for rotating frame
@@ -135,10 +172,10 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   }
   CrossProduction = constants->cb2_sigma*norm2_Grad;
   
-  outputs[0] = Production;
-  outputs[1] = Destruction;
-  outputs[2] = CrossProduction;
-  outputs[3] = Production - Destruction + CrossProduction;
+  output_residual[0] = Production;
+  output_residual[1] = Destruction;
+  output_residual[2] = CrossProduction;
+  output_residual[3] = Production - Destruction + CrossProduction;
   
   /*--- Implicit part ---*/
   
@@ -152,7 +189,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   else{
     dShat = (fv2+Turbulent_Kinematic_Viscosity*dfv2)*inv_k2_d2;
   }
-  jacobian[0] = constants->cb1*(Turbulent_Kinematic_Viscosity*dShat+Shat);
+  output_jacobian[0] = constants->cb1*(Turbulent_Kinematic_Viscosity*dShat+Shat);
   
   /*--- Destruction term ---*/
   
@@ -162,7 +199,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   }
   dg = dr*(1.+constants->cw2*(6.*pow(r,5.)-1.));
   dfw = dg*glim*(1.-g_6/(g_6+constants->cw3_6));
-  jacobian[0] -= constants->cw1*(dfw*Turbulent_Kinematic_Viscosity + 2.*fw)*Turbulent_Kinematic_Viscosity/dist_2;
+  output_jacobian[0] -= constants->cw1*(dfw*Turbulent_Kinematic_Viscosity + 2.*fw)*Turbulent_Kinematic_Viscosity/dist_2;
   
   // NOTE: Do not have derivative with respect to the cross production term
   
