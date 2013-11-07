@@ -47,6 +47,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_linearized_mean.cpp \
 		../src/numerics_linearized_turbulent.cpp \
 		../src/numerics_structure.cpp \
+		../src/functions_turbulent.hpp \
 		../src/numerics_template.cpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
