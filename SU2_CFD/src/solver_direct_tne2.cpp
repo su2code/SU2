@@ -2237,7 +2237,9 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solution_container, CConfig *config) {
+void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
+                                               CSolver **solution_container,
+                                               CConfig *config) {
 	unsigned short iVar, jVar;
 	unsigned long iPoint, total_index, IterLinSol = 0;
 	double Delta, *local_Res_TruncError, Vol;
@@ -2261,21 +2263,10 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **so
     
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / node[iPoint]->GetDelta_Time();
-    
+    Jacobian.AddVal2Diag(iPoint, Delta);
     if (Delta != Delta) {
       cout << "NaN in Timestep" << endl;
     }
-    
-		if (roe_turkel) {
-			SetPreconditioner(config, iPoint);
-			for (iVar = 0; iVar < nVar; iVar ++ )
-				for (jVar = 0; jVar < nVar; jVar ++ )
-					Precon_Mat_inv[iVar][jVar] = Delta*Precon_Mat_inv[iVar][jVar];
-			Jacobian.AddBlock(iPoint, iPoint, Precon_Mat_inv);
-		}
-		else {
-			Jacobian.AddVal2Diag(iPoint, Delta);
-		}
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
@@ -2740,8 +2731,10 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
   
 }
 
-void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_container,
-                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
+                                     CSolver **solution_container,
+                                     CNumerics *numerics, CConfig *config,
+                                     unsigned short val_marker) {
   unsigned short iDim, iSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;

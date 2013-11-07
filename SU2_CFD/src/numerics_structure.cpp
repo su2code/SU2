@@ -209,11 +209,16 @@ void CNumerics::GetInviscidProjFlux(double *val_U,
                                     double *val_V,
                                     double *val_normal,
                                     double *val_Proj_Flux) {
-  unsigned short iSpecies;
+  unsigned short iSpecies, iVar;
   double rho, u, v, w, rhoEve, P, H;
   double *rhos;
   
+  /*--- Allocate arrays ---*/
   rhos = new double[nSpecies];
+  
+  /*--- Initialize vectors ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_Proj_Flux[iVar] = 0.0;
   
   /*--- Rename for convienience ---*/
   rho    = val_V[RHO_INDEX];
@@ -223,8 +228,9 @@ void CNumerics::GetInviscidProjFlux(double *val_U,
   P      = val_V[P_INDEX];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
+  }
   
   if (nDim == 2) {
     
@@ -328,8 +334,6 @@ void CNumerics::GetInviscidProjFlux(double *val_U,
 //	}
   
   delete [] rhos;
-  
-  //SU2_CPP2C SUB END GetInviscidProjFlux
 }
 
 void CNumerics::GetInviscidArtCompProjFlux(double *val_density,
@@ -450,8 +454,8 @@ void CNumerics::GetInviscidProjJac(double *val_U, double *val_V,
   /*--- Rename for convenience ---*/
   rho    = val_V[RHO_INDEX];
   u      = val_V[VEL_INDEX];
-  v      = val_V[VEL_INDEX];
-  w      = val_V[VEL_INDEX];
+  v      = val_V[VEL_INDEX+1];
+  w      = val_V[VEL_INDEX+2];
   H      = val_V[H_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -940,7 +944,6 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
       val_invp_tensor[nSpecies+1][iSpecies] = -vW;
       val_invp_tensor[nSpecies+2][iSpecies] = val_dPdU[iSpecies] - vU*a;
       val_invp_tensor[nSpecies+3][iSpecies] = val_dPdU[iSpecies] + vU*a;
-      val_invp_tensor[nSpecies+4][iSpecies] = -eve * val_dPdU[iSpecies];
       val_invp_tensor[nSpecies+4][iSpecies] = -eve * val_dPdU[iSpecies];
     }
     

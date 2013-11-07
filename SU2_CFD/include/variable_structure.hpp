@@ -3518,7 +3518,9 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double val_adjlimit);
+	bool SetPrimVar_Compressible(double SharpEdge_Distance,
+                               bool check,
+                               CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.

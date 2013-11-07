@@ -49,8 +49,6 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   RoeU        = new double[nVar];
   RoeV        = new double[nPrimVar];
   RoedPdU     = new double [nVar];
-  l           = new double [nDim];
-  m           = new double [nDim];
 	Lambda      = new double [nVar];
 	Epsilon     = new double [nVar];
 	P_Tensor    = new double* [nVar];
@@ -72,8 +70,6 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
   delete [] RoeU;
   delete [] RoeV;
   delete [] RoedPdU;
-  delete [] l;
-  delete [] m;
 	delete [] Lambda;
 	delete [] Epsilon;
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -143,25 +139,25 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   Lambda[nSpecies+nDim]   = ProjVelocity - RoeSoundSpeed;
   Lambda[nSpecies+nDim+1] = ProjVelocity;
   
-//  /*--- Harten and Hyman (1983) entropy correction ---*/
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-//                                         ProjVelocity_j-Lambda[iDim] ));
-//  for (iDim = 0; iDim < nDim-1; iDim++)
-//    Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-//                                              ProjVelocity_j-Lambda[iDim] ));
-//  Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
-//                                              (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
-//  Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
-//                                              (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
-//  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-//                                              ProjVelocity_j-Lambda[iDim] ));
-//  
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-//      Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
-//    else
-//      Lambda[iVar] = fabs(Lambda[iVar]);
+  
+  /*--- Harten and Hyman (1983) entropy correction ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                         ProjVelocity_j-Lambda[iDim] ));
+  for (iDim = 0; iDim < nDim-1; iDim++)
+    Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
+  Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
+                                              (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
+  Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
+                                              (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
+  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
+  for (iVar = 0; iVar < nVar; iVar++)
+    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+      Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+    else
+      Lambda[iVar] = fabs(Lambda[iVar]);
   
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
@@ -170,6 +166,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
   GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
   GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
+  
   
   /*--- Difference of conserved variables at iPoint and jPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -1425,7 +1422,7 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
 	if (implicit) {
 		cte = Epsilon_0*StretchingFactor*MeanLambda;
     
-		for (iVar = 0; iVar < (nVar-1); iVar++) {
+		for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
 			val_Jacobian_i[iVar][iVar] += cte;
 			val_Jacobian_j[iVar][iVar] -= cte;
 		}
@@ -1434,18 +1431,18 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_i[nSpecies+nDim][iSpecies] += cte*dPdU_i[iSpecies];
 		for (iDim = 0; iDim < nDim; iDim++)
-			val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += cte*dPdU_i[nSpecies+iDim];
-		val_Jacobian_i[nSpecies+nDim][nSpecies+nDim] += cte*(1+dPdU_i[nSpecies+nDim]);
-    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += cte*dPdU_i[nSpecies+nDim+1];
+			val_Jacobian_i[nSpecies+nDim][nSpecies+iDim]   += cte*dPdU_i[nSpecies+iDim];
+		val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]     += cte*(1+dPdU_i[nSpecies+nDim]);
+    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1]   += cte*dPdU_i[nSpecies+nDim+1];
     val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += cte;
     
 		/*--- Last row of Jacobian_j ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_j[nSpecies+nDim][iSpecies] -= cte*dPdU_j[iSpecies];
 		for (iDim = 0; iDim < nDim; iDim++)
-			val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] -= cte*dPdU_j[nSpecies+nDim];
-		val_Jacobian_j[nSpecies+nDim][nSpecies+nDim] -= cte*(1+dPdU_j[nSpecies+nDim]);
-    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] -= cte*dPdU_j[nSpecies+nDim+1];
+			val_Jacobian_j[nSpecies+nDim][nSpecies+iDim]   -= cte*dPdU_j[nSpecies+nDim];
+		val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]     -= cte*(1+dPdU_j[nSpecies+nDim]);
+    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1]   -= cte*dPdU_j[nSpecies+nDim+1];
     val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
 	}
 }
