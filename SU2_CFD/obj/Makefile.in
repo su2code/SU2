@@ -337,6 +337,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
+		../include/functions_turbulent.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
 		../include/solver_structure.hpp \
