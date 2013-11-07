@@ -47,27 +47,31 @@ public:
 class SpalartAllmarasInputs{
 private:
   int  nDim;
+  double limiter; // How close to the wall should the turbulence model be turned off
+  double**  DUiDXj;  // Mean flow derivative
+  double* DTurb_Kin_Visc_DXj; // D NuTilde D X
+  void init(int nDim, double limiter);
 public:
+  SpalartAllmarasInputs(int nDim);
   SpalartAllmarasInputs(int nDim, double limiter);
   ~SpalartAllmarasInputs();
+  void Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, bool rotating_frame, bool transition, double dist, double Laminar_Viscosity, double Density, double Turbulent_Kinematic_Viscosity, double intermittency);
   int GetNumDim();
-  double**  DUiDXj;
-  double* DTurb_Kin_Visc_DXj;
+  double GetLimiter();
+  double** GetMeanFlowGradient();
+  double* GetTurbKinViscGradient();
   bool rotating_frame;
   bool transition;
-  double limiter; // How close to the wall should the turbulence model be turned off
   double dist; // Wall distance
   double Laminar_Viscosity;
   double Density;
   double Turbulent_Kinematic_Viscosity;
-  double Volume;
   double intermittency; // Used for transition
-  
 };
 
 /* \brief computes spalart allmaras source term. See
   functions_turbulent.cpp */
-void SpalartAllmarasSourceTerm(void);
+void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian);
 
 /* \brief Computes the vorticity from the velocity gradient
  tensor */
