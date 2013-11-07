@@ -189,6 +189,7 @@
 		05E6DC0017EB62A100FA1F7E /* variable_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_template.cpp; path = ../../SU2_CFD/src/variable_template.cpp; sourceTree = "<group>"; };
 		C6BB5AF1182811F400097D6E /* nnet.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = nnet.hpp; path = ../../SU2_CFD/include/nnet.hpp; sourceTree = "<group>"; };
 		C6BB5AF21828121E00097D6E /* nnet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = nnet.cpp; path = ../../SU2_CFD/src/nnet.cpp; sourceTree = "<group>"; };
+		C6BB5AF4182B7AB700097D6E /* functions_turbulent.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = functions_turbulent.hpp; path = ../../SU2_CFD/include/functions_turbulent.hpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -319,6 +320,7 @@
 				05E6DBB517EB627400FA1F7E /* integration_structure.hpp */,
 				05E6DBB617EB627400FA1F7E /* iteration_structure.hpp */,
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
+				C6BB5AF4182B7AB700097D6E /* functions_turbulent.hpp */,
 				05E6DBB817EB627400FA1F7E /* output_structure.hpp */,
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
