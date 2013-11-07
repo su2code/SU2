@@ -274,6 +274,9 @@ CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) { }
 
 void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
+  // WHEN CHANGE, REMEMBER TO MULTIPLY BY THE VOLUME
+  
+  
   if (incompressible) { Density_i = DensityInc_i; }
   else { Density_i = U_i[0]; }
   

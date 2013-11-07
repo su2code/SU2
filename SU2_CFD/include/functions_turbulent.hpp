@@ -48,9 +48,20 @@ class SpalartAllmarasInputs{
 private:
   int  nDim;
 public:
-  SpalartAllmarasInputs(int nDim);
+  SpalartAllmarasInputs(int nDim, double limiter);
   ~SpalartAllmarasInputs();
+  int GetNumDim();
   double**  DUiDXj;
+  double* DTurb_Kin_Visc_DXj;
+  bool rotating_frame;
+  bool transition;
+  double limiter; // How close to the wall should the turbulence model be turned off
+  double dist; // Wall distance
+  double Laminar_Viscosity;
+  double Density;
+  double Turbulent_Kinematic_Viscosity;
+  double Volume;
+  double intermittency; // Used for transition
   
 };
 
