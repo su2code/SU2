@@ -25,9 +25,6 @@
 #include "../include/functions_turbulent.hpp"
 #include <limits>
 
-
-double SpalartAllmarasSourceTerm(void);
-
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
                                CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
