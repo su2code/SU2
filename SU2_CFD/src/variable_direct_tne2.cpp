@@ -831,7 +831,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   }
   // Momentum
   for (iDim = 0; iDim < nDim; iDim++)
-    val_dPdU[nSpecies+iDim] = -conc*V[VEL_INDEX+iDim]/rhoCvtr;
+    val_dPdU[nSpecies+iDim] = -conc*Ru*V[VEL_INDEX+iDim]/rhoCvtr;
   
   // Total energy
   val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;

@@ -4845,7 +4845,7 @@ private:
   double RoeSoundSpeed;
   double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
 	double Proj_ModJac_Tensor_ij, R;
-  double *RoedPdU, *l, *m;
+  double *RoedPdU;
  	unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
   CVariable *var;
   
