@@ -3,6 +3,10 @@
 *.lo
 *.o
 
+# Autoconf/Automake
+*.Po
+*.dirstamp
+
 # Compiled Dynamic libraries
 *.so
 *.dylib
