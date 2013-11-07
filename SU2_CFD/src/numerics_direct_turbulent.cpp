@@ -22,6 +22,7 @@
  */
 
 #include "../include/numerics_structure.hpp"
+#include "../include/functions_turbulent.hpp"
 #include <limits>
 
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
