@@ -13,12 +13,14 @@ SpalartAllmarasConstants::SpalartAllmarasConstants(){
   cw1 = cb1/k2+(1+cb2)/sigma;
 }
 
-SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim){
+SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter){
   this->nDim = nDim;
-  double**  DUiDXj = new double*[nDim];
+  this->limiter = limiter;
+  DUiDXj = new double*[nDim];
   for (int i = 0; i < nDim; i++){
     DUiDXj[i] = new double[nDim];
   }
+  DTurb_Kin_Visc_DXj = new double[nDim];
   return;
 }
 
@@ -27,108 +29,151 @@ SpalartAllmarasInputs::~SpalartAllmarasInputs(){
     delete DUiDXj[i];
   }
   delete DUiDXj;
+  delete DTurb_Kin_Visc_DXj;
+}
+
+int SpalartAllmarasInputs::GetNumDim(){
+  return nDim;
 }
 
 /* Computes the spalart-allmaras source term.
- the outputs are 
- (Production, Destruction, CrossProduction)
-  jacobian is
-  dNu
+ the outputs are
+ (Production, Destruction, CrossProduction, Total)
+ jacobian is dSourceDNuHat (Turbulent_Kinematic_Viscosity)
+    This ignores the contribution of the cross-production term
+ 
+ Does not include the volume term
  */
 void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* outputs, double* jacobian){
-  return;
-  /*--- Computation of vorticity ---*/
-  /*
-  Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
-  if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
-  Omega = sqrt(Vorticity);
-  */
-  /*--- Rotational correction term ---*/
-  /*
-  if (rotating_frame) {
-    div = PrimVar_Grad_i[1][0] + PrimVar_Grad_i[2][1];
-    if (nDim == 3) div += PrimVar_Grad_i[3][2];
+  double dist = inputs->dist; // Wall distance
+  int nDim = inputs->GetNumDim();
+  // Limit if too close to the wall
+  double limiter = inputs->limiter;
+  if (dist < limiter){
+    for (int iDim = 0; iDim < nDim; iDim++ ){
+      outputs[iDim] = 0;
+      jacobian[0] = 0;
+    }
+    return;
+  }
+  
+  double Vorticity = ComputeVorticity(nDim,inputs->DUiDXj);
+  double Omega = sqrt(Vorticity);
+  double **DUiDXj = inputs->DUiDXj;
+  double StrainMag;
+  double Laminar_Viscosity = inputs->Laminar_Viscosity;
+  double Density = inputs->Density;
+  double Turbulent_Kinematic_Viscosity = inputs->Turbulent_Kinematic_Viscosity;
+  bool transition = inputs->transition;
+  double intermittency = inputs->intermittency;
+  
+  double div,dist_2, Laminar_Kinematic_Viscosity, J, J_2, J_3,
+  fv1, fv2, S, inv_k2_d2, Shat,inv_Shat, r, g, g_6, glim, fw, norm2_Grad,
+  dfv1,dfv2, dr, dg, dfw;
+  
+  double Production, Destruction, CrossProduction;
+  double *DTurb_Kin_Visc_DXj = inputs->DTurb_Kin_Visc_DXj;
+  double dShat;
+  
+  // Correction for rotating frame
+  if (inputs->rotating_frame) {
+    div = DUiDXj[0][0] + DUiDXj[1][1];
+    if (nDim == 3) div += DUiDXj[2][2];
     StrainMag = 0.0;
     // add diagonals
-    StrainMag += pow(PrimVar_Grad_i[1][0] - 1.0/3.0*div,2.0);
-    StrainMag += pow(PrimVar_Grad_i[2][1] - 1.0/3.0*div,2.0);
-    if (nDim == 3) StrainMag += pow(PrimVar_Grad_i[3][2] - 1.0/3.0*div,2.0);
+    StrainMag += pow(DUiDXj[0][0] - 1.0/3.0*div,2.0);
+    StrainMag += pow(DUiDXj[1][1] - 1.0/3.0*div,2.0);
+    if (nDim == 3) StrainMag += pow(DUiDXj[2][2] - 1.0/3.0*div,2.0);
     // add off diagonals
-    StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]),2.0);
+    StrainMag += 2.0*pow(0.5*(DUiDXj[0][1]+DUiDXj[1][0]),2.0);
     if (nDim == 3) {
-      StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][2]+PrimVar_Grad_i[3][0]),2.0);
-      StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[2][2]+PrimVar_Grad_i[3][1]),2.0);
+      StrainMag += 2.0*pow(0.5*(DUiDXj[0][2]+DUiDXj[2][0]),2.0);
+      StrainMag += 2.0*pow(0.5*(DUiDXj[1][2]+DUiDXj[2][1]),2.0);
     }
     StrainMag = sqrt(2.0*StrainMag);
     Omega += 2.0*min(0.0,StrainMag-Omega);
   }
-   */
+  /*--- Production term ---*/
   
-//  if (dist_i > 1e-10) {
-    
-    /*--- Production term ---*/
-  /*
-  dist_i_2 = dist_i*dist_i;
-    nu = Laminar_Viscosity_i/Density_i;
-    Ji = TurbVar_i[0]/nu;
-    Ji_2 = Ji*Ji;
-    Ji_3 = Ji_2*Ji;
-    fv1 = Ji_3/(Ji_3+cv1_3);
-    fv2 = 1.0 - Ji/(1.0+Ji*fv1);
-    S = Omega;
-    inv_k2_d2 = 1.0/(k2*dist_i_2);
-    
-    Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
-    inv_Shat = 1.0/max(Shat, 1.0e-10);
-    */
-    /*--- Production term ---*/
-    /*
-    if (!transition) Production = cb1*Shat*TurbVar_i[0]*Volume;
-    else Production = cb1*Shat*TurbVar_i[0]*Volume*intermittency;
-    */
-    /*--- Destruction term ---*/
-    /*
-    r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
-    g = r + cw2*(pow(r,6.0)-r);
-    g_6 =	pow(g,6.0);
-    glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
-    fw = g*glim;
-    
-    if (!transition) Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
-    else Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume*min(max(intermittency,0.1),1.0);
-    */
-    /*--- Diffusion term ---*/
-    /*
-    norm2_Grad = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      norm2_Grad += TurbVar_Grad_i[0][iDim]*TurbVar_Grad_i[0][iDim];
-    CrossProduction = cb2_sigma*norm2_Grad*Volume;
-    
-    val_residual[0] = Production - Destruction + CrossProduction;
-    */
-    /*--- Implicit part ---*/
-    
-    /*--- Production term ---*/
-  /*
-    dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
-    dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
-    if ( Shat <= 1.0e-10 ) dShat = 0.0;
-    else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-    val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
-    */
-    /*--- Destruction term ---*/
-  /*
-    dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-    if (r == 10.0) dr = 0.0;
-    dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
-    dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
-   */
+  dist_2 = dist*dist;
+  Laminar_Kinematic_Viscosity = Laminar_Viscosity/Density;
+  J = Turbulent_Kinematic_Viscosity/Laminar_Kinematic_Viscosity;
+  J_2 = J*J;
+  J_3 = J_2*J;
+  fv1 = J_3/(J_3+constants->cv1_3);
+  fv2 = 1.0 - J/(1.0+J*fv1);
+  S = Omega;
+  inv_k2_d2 = 1.0/(constants->k2*dist_2);
+  
+  Shat = S + Turbulent_Kinematic_Viscosity*fv2*inv_k2_d2;
+  inv_Shat = 1.0/max(Shat, 1.0e-10);
+  
+  Production = constants->cb1*Shat*Turbulent_Kinematic_Viscosity;
+  if (transition){
+    Production *= intermittency;
+  }
+  
+  /*--- Destruction term ---*/
+  
+  r = min(Turbulent_Kinematic_Viscosity*inv_Shat*inv_k2_d2,10.0);
+  g = r + constants->cw2*(pow(r,6.0)-r);
+  g_6 =	pow(g,6.0);
+  
+  double cw3_6 = constants->cw3_6;
+  glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
+  fw = g*glim;
+  
+  Destruction = constants->cw1*fw*Turbulent_Kinematic_Viscosity*Turbulent_Kinematic_Viscosity/dist_2;
+  if (transition){
+    Destruction *= min(max(intermittency,0.1),1.0);
+  }
+  
+  /*--- Diffusion term ---*/
+  norm2_Grad = 0.0;
+  for (int iDim = 0; iDim < nDim; iDim++){
+    norm2_Grad += DTurb_Kin_Visc_DXj[iDim]*DTurb_Kin_Visc_DXj[iDim];
+  }
+  CrossProduction = constants->cb2_sigma*norm2_Grad;
+  
+  outputs[0] = Production;
+  outputs[1] = Destruction;
+  outputs[2] = CrossProduction;
+  outputs[3] = Production - Destruction + CrossProduction;
+  
+  /*--- Implicit part ---*/
+  
+  /*--- Production term ---*/
+  
+  dfv1 = 3.0*J_2*constants->cv1_3/(Laminar_Kinematic_Viscosity*pow(J_3+constants->cv1_3,2.));
+  dfv2 = -(1/Laminar_Kinematic_Viscosity-J_2*dfv1)/pow(1.+J*fv1,2.);
+  if ( Shat <= 1.0e-10 ){
+    dShat = 0.0;
+  }
+  else{
+    dShat = (fv2+Turbulent_Kinematic_Viscosity*dfv2)*inv_k2_d2;
+  }
+  jacobian[0] = constants->cb1*(Turbulent_Kinematic_Viscosity*dShat+Shat);
+  
+  /*--- Destruction term ---*/
+  
+  dr = (Shat-Turbulent_Kinematic_Viscosity*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
+  if (r == 10.0){
+    dr = 0.0;
+  }
+  dg = dr*(1.+constants->cw2*(6.*pow(r,5.)-1.));
+  dfw = dg*glim*(1.-g_6/(g_6+constants->cw3_6));
+  jacobian[0] -= constants->cw1*(dfw*Turbulent_Kinematic_Viscosity + 2.*fw)*Turbulent_Kinematic_Viscosity/dist_2;
+  
+  // NOTE: Do not have derivative with respect to the cross production term
+  
+  return;
+  
 };
 
 double ComputeVorticity(int nDim, double** DUiDXj){
-  double Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
-  if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
-  
+  double Vorticity = (DUiDXj[1][0]-DUiDXj[0][1])*(DUiDXj[1][0]-DUiDXj[0][1]);
+  if (nDim == 3){
+    Vorticity += ( (DUiDXj[2][1]-DUiDXj[1][2])*(DUiDXj[2][1]-DUiDXj[1][2]) + (DUiDXj[0][2]-DUiDXj[1][0])*(DUiDXj[0][2]-DUiDXj[1][0]));
+  }
   return Vorticity;
-}
+};
