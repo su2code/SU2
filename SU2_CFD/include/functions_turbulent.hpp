@@ -45,11 +45,11 @@ public:
 };
 
 class SpalartAllmarasInputs{
+private:
+  int  nDim;
 public:
-  SpalartAllmarasInputs();
   SpalartAllmarasInputs(int nDim);
   ~SpalartAllmarasInputs();
-  double    Vorticity;
   double**  DUiDXj;
   
 };
@@ -57,3 +57,7 @@ public:
 /* \brief computes spalart allmaras source term. See
   functions_turbulent.cpp */
 void SpalartAllmarasSourceTerm(void);
+
+/* \brief Computes the vorticity from the velocity gradient
+ tensor */
+double ComputeVorticity(int nDim, double** DUiDXj);
