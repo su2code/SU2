@@ -502,21 +502,23 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   unsigned short iMGlevel, iSol, nDim,
   
-  nVar_Template     = 0,
-  nVar_Flow         = 0,
-  nVar_Trans        = 0,
-  nVar_TNE2         = 0,
-  nPrimVar_TNE2     = 0,
-  nPrimVarGrad_TNE2 = 0,
-  nVar_Turb         = 0,
-  nVar_Adj_Flow     = 0,
-  nVar_Adj_Turb     = 0,
-  nVar_Adj_TNE2     = 0,
-  nVar_Poisson      = 0,
-  nVar_FEA          = 0,
-  nVar_Wave         = 0,
-  nVar_Heat         = 0,
-  nVar_Lin_Flow     = 0;
+  nVar_Template         = 0,
+  nVar_Flow             = 0,
+  nVar_Trans            = 0,
+  nVar_TNE2             = 0,
+  nPrimVar_TNE2         = 0,
+  nPrimVarGrad_TNE2     = 0,
+  nVar_Turb             = 0,
+  nVar_Adj_Flow         = 0,
+  nVar_Adj_Turb         = 0,
+  nVar_Adj_TNE2         = 0,
+  nPrimVar_Adj_TNE2     = 0,
+  nPrimVarGrad_Adj_TNE2 = 0,
+  nVar_Poisson          = 0,
+  nVar_FEA              = 0,
+  nVar_Wave             = 0,
+  nVar_Heat             = 0,
+  nVar_Lin_Flow         = 0;
   
   double *constants = NULL;
   
@@ -604,8 +606,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (adj_euler)    	  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)			      nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)		      nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
-  if (adj_tne2_euler)   nVar_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
-  if (adj_tne2_ns)      nVar_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
+  if ((adj_tne2_euler) || (adj_tne2_ns)) {
+    nVar_Adj_TNE2         = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
+    nPrimVar_Adj_TNE2     = solver_container[MESH_0][ADJTNE2_SOL]->GetnPrimVar();
+    nPrimVarGrad_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnPrimVarGrad();
+  }
   
   /*--- Number of variables for the linear problem ---*/
   if (lin_euler)	nVar_Lin_Flow = solver_container[MESH_0][LINFLOW_SOL]->GetnVar();
@@ -995,7 +1000,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case PIECEWISE_CONSTANT :
         
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
         }
         
         break;
@@ -1384,15 +1389,15 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
         break;
       case SPACE_UPWIND :
         switch (config->GetKind_Upwind_AdjTNE2()) {
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
           case ROE_1ST : case ROE_2ND :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
             }
             break;
           default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
@@ -1451,7 +1456,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         break;
       case PIECEWISE_CONSTANT :
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
           
           //numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
         }

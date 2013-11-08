@@ -70,8 +70,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
   
-  if ((config->GetKind_Solver() == TNE2_EULER)        ||
-      (config->GetKind_Solver() == TNE2_NAVIER_STOKES)  ) {
+  if ((config->GetKind_Solver() == TNE2_EULER)            ||
+      (config->GetKind_Solver() == TNE2_NAVIER_STOKES)    ||
+      (config->GetKind_Solver() == ADJ_TNE2_EULER)        ||
+      (config->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)  ) {
     nSpecies = nVar - nDim - 2;
     Diffusion_Coeff_i = new double[nSpecies];
     Diffusion_Coeff_j = new double[nSpecies];
@@ -914,6 +916,39 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
   for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
       val_invp_tensor[iVar][jVar] = 0.0;
+  
+  
+  /////////
+//  cout << "U: " << endl;
+//  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+//    cout << U[iVar] << endl;
+//  cout << "V: " << endl;
+//  for (unsigned short iVar = 0; iVar < nSpecies+nDim+8; iVar++)
+//    cout << V[iVar] << endl;
+//  
+//  cout << "l: " << endl;
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    cout << l[iDim] << endl;
+//  cout << "m: " << endl;
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    cout << m[iDim] << endl;
+//  
+//  cout << "val_dPdU: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    cout << val_dPdU[iVar] << endl;
+//  
+//  cout << "Normal:"  << endl;
+//  for (iDim = 0; iDim < nDim; iDim ++)
+//    cout << val_normal[iDim] << endl;
+//  
+//  cout << "nSpecies: " << nSpecies << endl;
+//  
+//  cin.get();
+  
+  /////////////////
+  
+  
+  
   
   /*--- Pre-compute useful quantities ---*/
   rho = V[RHO_INDEX];

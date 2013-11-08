@@ -349,20 +349,6 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   var->CalcdPdU(Vst_i, config, dPdUst_i);
   var->CalcdPdU(Vst_j, config, dPdUst_j);
   
-//  cout << "U_i:" << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << U_i[iVar] << endl;
-//  cout << "V_i: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << V_i[iVar] << endl;
-//  cout << "Ust_i: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << Ust_i[iVar] << endl;
-//  cout << "dPdUst_i: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << dPdUst_i[iVar] << endl;
-//  cin.get();
-  
   /*--- Flow eigenvalues at i (Lambda+) --- */
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
     Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
@@ -412,7 +398,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
       val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
     }
   }
-  
+    
 	/*--- Flux splitting ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		val_residual[iVar] = Fc_i[iVar]+Fc_j[iVar];
@@ -1699,17 +1685,22 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                            unsigned short val_nVar,
+                           unsigned short val_nPrimVar,
+                           unsigned short val_nPrimVarGrad,
                            CConfig *config) : CNumerics(val_nDim,
                                                         val_nVar,
                                                         config) {
 
   /*--- Assign booleans from CConfig ---*/
   implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  ionization = config->GetIonization();
   
   /*--- Define useful constants ---*/
-  nVar     = val_nVar;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
+  nVar         = val_nVar;
+  nPrimVar     = val_nPrimVar;
+  nPrimVarGrad = val_nPrimVarGrad;
+  nDim         = val_nDim;
+  nSpecies     = config->GetnSpecies();
   
   X = new double[nSpecies];
   RxnConstantTable = new double*[6];
@@ -1717,17 +1708,18 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
 		RxnConstantTable[iVar] = new double[5];
 
   /*--- Allocate arrays ---*/
-  alphak    = new int[nSpecies];
-  betak     = new int[nSpecies];
-  A         = new double[5];
-  evibs     = new double[nSpecies];
-  eels      = new double[nSpecies];
-  Cvvs      = new double[nSpecies];
-  Cves      = new double[nSpecies];
-  dkf       = new double[nVar];
-  dkb       = new double[nVar];
-  dRfok     = new double[nVar];
-  dRbok     = new double[nVar];
+  alphak = new int[nSpecies];
+  betak  = new int[nSpecies];
+  A      = new double[5];
+  eves   = new double[nSpecies];
+  Cvvs   = new double[nSpecies];
+  Cves   = new double[nSpecies];
+  dkf    = new double[nVar];
+  dkb    = new double[nVar];
+  dRfok  = new double[nVar];
+  dRbok  = new double[nVar];
+  
+  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   
 }
 
@@ -1739,8 +1731,7 @@ CSource_TNE2::~CSource_TNE2(void) {
   
   /*--- Deallocate arrays ---*/
   delete [] A;
-  delete [] evibs;
-  delete [] eels;
+  delete [] eves;
   delete [] Cvvs;
   delete [] Cves;
   delete [] alphak;
@@ -1749,6 +1740,9 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] dkb;
   delete [] dRfok;
   delete [] dRbok;
+  
+  delete [] var;
+  
 }
 
 void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
@@ -1796,20 +1790,17 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                     CConfig *config) {
   
   /*--- Nonequilibrium chemistry ---*/
-  bool ionization;
-  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar, iEl, iDim;
+  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
   unsigned short *nElStates, nHeavy, nEl, nEve;
   int ***RxnMap;
   double T_min, epsilon;
   double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
-  double rho, u, v, w, rhoCvtr, rhoCvve, P, sqvel;
-  double num, num2, num3, denom;
+  double rho, u, v, w, rhoCvtr, rhoCvve, P;
   double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
   double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
-  double *hf, *Tref, *xi, Cvtrs, ef;
+  double *hf, *Tref, *xi;
   double af, bf, ab, bb, coeff;
   double dThf, dThb;
-  double thoTve, exptv;
   
 //  double *wdot = new double[nSpecies];
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1834,13 +1825,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   /*--- Define preferential dissociation coefficient ---*/
   alpha = 0.3;
   
-  /*--- Determine if Jacobian calculation is required ---*/
-  // NOTE: Need to take derivatives of relaxation time (not currently implemented).
-  //       For now, we de-activate the Jacobian and return to it at a later date.
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  
   /*--- Determine the number of heavy particle species ---*/
-  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
@@ -1855,6 +1840,10 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   w       = V_i[VEL_INDEX+2];
   rhoCvtr = V_i[RHOCVTR_INDEX];
   rhoCvve = V_i[RHOCVVE_INDEX];
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    eves[iSpecies] = var->CalcEve(V_i, config, iSpecies);
+  }
   
   /*--- Acquire parameters from the configuration file ---*/
   nReactions = config->GetnReactions();
@@ -1923,14 +1912,14 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                       * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+                                       * eves[iSpecies] * Volume;
       }
 			/*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                       * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+                                       * eves[iSpecies] * Volume;
       }
     }
     
@@ -2011,7 +2000,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
             val_Jacobian_i[nEve][iVar] +=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                             * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+                             * eves[iSpecies] * Volume;
           }
 
           for (jVar = 0; jVar < nVar; jVar++) {
@@ -2031,7 +2020,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
             val_Jacobian_i[nEve][iVar] -=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                             * (evibs[iSpecies] + eels[iSpecies]) * Volume;
+                             * eves[iSpecies] * Volume;
             
           }
 
@@ -2057,9 +2046,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
-  
-  bool ionization, implicit;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
   double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
   double Qtv, estar, tau, tauMW, tauP;
@@ -2076,14 +2063,8 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       val_Jacobian_i[iVar][jVar] = 0.0;
     }
   }
-  
-  /*--- Determine if Jacobian calculation is required ---*/
-  // NOTE: Need to take derivatives of relaxation time (not currently implemented).
-  //       For now, we de-activate the Jacobian and return to it at a later date.
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  
+
   /*--- Determine the number of heavy particle species ---*/
-  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   

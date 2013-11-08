@@ -5204,15 +5204,17 @@ public:
  */
 class CSource_TNE2 : public CNumerics {
 private:
-    bool   implicit;
-    int    *alphak, *betak;
-    double *X; // Mole fraction
-    double **RxnConstantTable;
-    double *dkf, *dkb, *dRfok, *dRbok, *A;
-    double *evibs, *eels, *Cvvs, *Cves;
+  bool   implicit, ionization;
+  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
+  int    *alphak, *betak;
+  double *X; // Mole fraction
+  double **RxnConstantTable;
+  double *dkf, *dkb, *dRfok, *dRbok, *A;
+  double *eves, *Cvvs, *Cves;
+  CVariable *var;
 
 public:
-    
+  
 	/*!
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
@@ -5220,9 +5222,11 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CSource_TNE2(unsigned short val_nDim,
-                 unsigned short val_nVar,
-                 CConfig *config);
-    
+               unsigned short val_nVar,
+               unsigned short val_nPrimVar,
+               unsigned short val_nPrimVarGrad,
+               CConfig *config);
+  
 	/*!
 	 * \brief Destructor of the class.
 	 */
@@ -5264,22 +5268,18 @@ public:
  */
 class CUpwRoe_AdjTNE2 : public CNumerics {
 private:
+  bool implicit, ionization;
+  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
 	double *Residual_Roe;
-    double *Density_i, *Density_j;
-    double *Velocity_i, *Velocity_j;
-    double *dPdrhos;
-    double Energy_i, Energy_j;
-    double Energy_ve_i, Energy_ve_j;
-    double SoundSpeed_i, SoundSpeed_j;
-	double *RoeDensity, RoeSoundSpeed, *RoeVelocity, RoeEnthalpy, RoeEnergy_ve;
-    double *Lambda;
-    double **Proj_flux_tensor_i, **Proj_flux_tensor_j;
-    double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-    double Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor;
-    double **P_Tensor, **invP_Tensor;
-    double *l, *m;
-	bool implicit, ionization;
-    
+  double *RoeU, *RoeV, *RoedPdU, RoeSoundSpeed;
+  double *Lambda;
+  double **Proj_flux_tensor_i, **Proj_flux_tensor_j;
+  double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
+  double Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor;
+  double **P_Tensor, **invP_Tensor;
+  
+  CVariable *var;
+  
 public:
     
 	/*!
@@ -5288,7 +5288,9 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoe_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwRoe_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar,
+                  unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                  CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
@@ -5307,12 +5309,6 @@ public:
 	 */
 	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
                          double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
-    
-    /*!
-	 * \brief Generate a set of mutually orthogonal vectors.
-	 * \param[in] val_Normal - Normal vector
-	 */
-    void CreateBasis(double *val_Normal);
 };
 
 
@@ -5376,17 +5372,11 @@ public:
  */
 class CCentLax_AdjTNE2 : public CNumerics {
 private:
-    bool implicit, stretching;
-    double *Normal_ij, *Normal_ji;
-	double *DiffPsi;
-    double *Density_i, *Density_j;
-	double *Velocity_i, *Velocity_j, ProjVelocity_i, ProjVelocity_j, sq_vel;
-    double *MeanPsi;
-    double *MeanPsiRho, MeanPsiE, MeanPsiEve;
-	double Phi_i, Phi_j, *MeanPhi, ProjPhi, ProjPhi_Vel, phis1, phis2;
-	double Residual, Local_Lambda_i, Local_Lambda_j, MeanLambda;
-    double Param_p, Param_Kappa_0, sc2, StretchingFactor, Epsilon_0, cte_0;
-    double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
+  bool implicit, ionization;
+  double *Normal_ij, *Normal_ji;
+	double *DiffPsi, *MeanPsi;
+  double Param_p, Param_Kappa_0;
+  double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
     
 public:
     
@@ -5415,9 +5405,11 @@ public:
 	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual (double *val_resconv_i, double *val_resvisc_i, double *val_resconv_j, double *val_resvisc_j,
-                          double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,
-                          CConfig *config);
+	void ComputeResidual (double *val_resconv_i, double *val_resvisc_i,
+                        double *val_resconv_j, double *val_resvisc_j,
+                        double **val_Jacobian_ii, double **val_Jacobian_ij,
+                        double **val_Jacobian_ji, double **val_Jacobian_jj,
+                        CConfig *config);
 };
 
 

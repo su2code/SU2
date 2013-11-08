@@ -1672,16 +1672,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-  /*--- Set a flag for viscous simulations ---*/
-  Viscous = ((Kind_Solver == NAVIER_STOKES) ||
-             (Kind_Solver == ADJ_NAVIER_STOKES) ||
-             (Kind_Solver == RANS) ||
-             (Kind_Solver == ADJ_RANS));
+  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
+		cout << "You must define a viscous numerical method for the TNE2 Navier-Stokes equations!!" << endl;
+		exit(1);
+	}
   
-  if ((Kind_Solver == TNE2_EULER)             ||
-      (Kind_Solver == TNE2_NAVIER_STOKES)     ||
-      (Kind_Solver == ADJ_TNE2_EULER)         ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
+  if ((Kind_Solver == ADJ_TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
+		cout << "You must define a viscous numerical method for the adjoint TNE2 Navier-Stokes equations!!" << endl;
+		exit(1);
+	}
+
+  /*--- Set a flag for viscous simulations ---*/
+  Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+             ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+             ( Kind_Solver == RANS                   ) ||
+             ( Kind_Solver == ADJ_RANS               ) ||
+             ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
+  
+  if (( Kind_Solver == TNE2_EULER             ) ||
+      ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+      ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
     
     Kappa_1st_TNE2    = Kappa_TNE2[0];
     Kappa_2nd_TNE2    = Kappa_TNE2[1];
@@ -4589,7 +4600,9 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 	}
 }
 
-void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_system, unsigned long val_extiter) {
+void CConfig::SetGlobalParam(unsigned short val_solver,
+                             unsigned short val_system,
+                             unsigned long val_extiter) {
 
 	/*--- Set the simulation global time ---*/
 	Current_UnstTime = static_cast<double>(val_extiter)*Delta_UnstTime;

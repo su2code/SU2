@@ -1116,6 +1116,11 @@ public:
 	virtual void SetPressure(void);
   
   /*!
+   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
+   */
+  virtual double CalcEve(double *V, CConfig *config, unsigned short val_Species);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
@@ -3071,6 +3076,11 @@ public:
    * \brief Sets gas mixture quantities (\f$\rho C^{trans-rot}_v\f$ & \f$\rho C^{vib-el}_v\f$)
    */
   void SetGasProperties(CConfig *config);
+
+  /*!
+   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
+   */
+  double CalcEve(double *V, CConfig *config, unsigned short val_Species);
   
   /*!
    * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$

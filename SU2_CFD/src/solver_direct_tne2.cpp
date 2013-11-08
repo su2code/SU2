@@ -1951,13 +1951,13 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
-//		/*--- Update the implicit Jacobian ---*/
-//		if (implicit) {
-//			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
-//			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
-//			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
-//		}
+		/*--- Update the implicit Jacobian ---*/
+		if (implicit) {
+			Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+			Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+			Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+		}
 	}
 }
 
@@ -2926,6 +2926,8 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+      conv_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+      conv_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
       
 			/*--- Compute the convective residual (and Jacobian) ---*/
       // Note: This uses the specified boundary num. method specified in definition_structure.cpp
