@@ -158,7 +158,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
     
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 999, true);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -322,11 +322,6 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
     
 	}
   
-#ifndef NO_MPI
-  double MinLength_Local = MinLength; MinLength = 0.0;
-  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
-#endif
-  
   /*--- Compute min volume in the entire mesh. ---*/
   Scale = Check_Grid(geometry);
   
@@ -383,6 +378,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
   /*--- If there are no degenerate cells, use the minimum volume instead ---*/
   if (ElemCounter == 0) MinLength = Scale;
+  
+#ifndef NO_MPI
+  double MinLength_Local = MinLength; MinLength = 0.0;
+  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
+#endif
       
 	return MinLength;
 }
