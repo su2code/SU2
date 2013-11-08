@@ -319,6 +319,8 @@ inline double *CVariable::GetdTdU() { return NULL; }
 
 inline double *CVariable::GetdTvedU() { return NULL; }
 
+inline double CVariable::CalcEve(double *V, CConfig *config, unsigned short val_Species) { return 0; }
+
 inline void CVariable::CalcdPdU(double *V, CConfig *config, double *dPdU) { }
 
 inline void CVariable::CalcdTdU(double *V, CConfig *config, double *dTdU) { }

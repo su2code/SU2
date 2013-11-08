@@ -3853,9 +3853,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           /*--- Adjoint solution coefficients ---*/
           
-          Total_Sens_Geo  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
-          Total_Sens_Mach = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
-          Total_Sens_AoA  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_AoA();
+          Total_Sens_Geo   = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
+          Total_Sens_Mach  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
+          Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_AoA();
           Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Temp();
           
@@ -4168,7 +4168,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             
-            cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)";
+            cout << "     Res[Rho]" << "     Res[RhoE]" << " Res[RhoEve]" << "   CDrag(Total)";
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
               cout << "   Max qdot" << endl;
             else cout << endl;
@@ -4261,6 +4261,19 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
             }
+            break;
+            
+          case ADJ_TNE2_EULER :              case ADJ_TNE2_NAVIER_STOKES :
+            
+            /*--- Visualize the maximum residual ---*/
+            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0))
+            <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0) << "." << endl;
+            
+            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+            else cout << endl << " IntIter" << "  ExtIter";
+            
+            cout << "   Res[Psi_Rho]" << "     Res[Psi_E]" << "     Res[Psi_Eve]" << "     Sens_Geo" << "    Sens_Mach" << endl;
+            
             break;
             
         }
@@ -4546,6 +4559,24 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           }
           
           break;
+          
+        case ADJ_TNE2_EULER :              case ADJ_TNE2_NAVIER_STOKES :
+          
+          cout.precision(6);
+          cout.setf(ios::fixed,ios::floatfield);
+          cout.width(15); cout << log10(residual_adjflow[0]);
+          cout.width(15); cout << log10(residual_adjflow[nSpecies+nDim]);
+          cout.width(15); cout << log10(residual_adjflow[nSpecies+nDim]);
+
+          cout.precision(4);
+          cout.setf(ios::scientific,ios::floatfield);
+          cout.width(14); cout << Total_Sens_Geo;
+          cout.width(14); cout << Total_Sens_Mach;
+          cout << endl;
+          cout.unsetf(ios_base::floatfield);
+          
+          break;
+
           
       }
       cout.unsetf(ios::fixed);
