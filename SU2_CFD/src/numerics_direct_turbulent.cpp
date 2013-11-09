@@ -268,9 +268,33 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
   beta = 0.5;
   s1   = 2.0;
   
+  /* Create values for interfacing with the functions */
+  SAInputs = new SpalartAllmarasInputs(nDim);
+  SAConstants = new SpalartAllmarasConstants;
+  
+  nResidual = 4;
+  nJacobian = 1;
+  testResidual = new double[nResidual];
+  testJacobian = new double[nJacobian];
+  DUiDXj = new double*[nDim];
+  for(int i=0; i < nDim; i++){
+    DUiDXj[i] = new double[nDim];
+  }
+  DNuhatDXj = new double[nDim];
+  
 }
 
-CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) { }
+CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) {
+  delete SAInputs;
+  delete SAConstants;
+  delete testResidual;
+  delete testJacobian;
+  for (int i=0; i < nDim; i++){
+    delete DUiDXj[i];
+  }
+  delete DUiDXj;
+  delete DNuhatDXj;
+}
 
 void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
@@ -326,8 +350,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
     inv_Shat = 1.0/max(Shat, 1.0e-10);
     
-    /*--- Production term ---*/
-    
+    /*--- Production term ---*/;
     if (!transition) Production = cb1*Shat*TurbVar_i[0]*Volume;
     else Production = cb1*Shat*TurbVar_i[0]*Volume*intermittency;
     
@@ -367,32 +390,18 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
   }
-  
-  // Compute the spalart allmaras term
-  SpalartAllmarasInputs* inputs = new SpalartAllmarasInputs(nDim);
-  SpalartAllmarasConstants* constants = new SpalartAllmarasConstants;
-  
-  int nResidual = 4;
-  int nJacobian = 1;
-  double* testResidual = new double[nResidual];
-  double* testJacobian = new double[nJacobian];
-  double** DUiDXj = new double*[nDim];
-  for(int i=0; i < nDim; i++){
-    DUiDXj[i] = new double[nDim];
-  }
-  
-  double* DNuhatDXj = new double[nDim];
+
   for (int i =0; i < nDim; i++){
     for (int j=0; j < nDim; j++){
       DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
     }
     DNuhatDXj[i] = TurbVar_Grad_i[0][i];
   }
+
+  SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
-  inputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
-  
-  SpalartAllmarasSourceTerm(inputs, constants, testResidual, testJacobian);
+  SpalartAllmarasSourceTerm(SAInputs, SAConstants, testResidual, testJacobian);
   
   for (int i=0; i < nResidual; i++){
     testResidual[i] *= Volume;
@@ -403,19 +412,25 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   }
   
   // Check if the old and new match
-  for (int i = 0; i < nResidual; i++){
-    cout << "resid val is: " << val_residual[0] << " " << " test resid: "<<testResidual[3] << endl;
+  //for (int i = 0; i < nResidual; i++){
+  if (abs(Production - testResidual[0]) > 1e-14){
+    cout << "Production doesn't match" << endl;
+    exit(10);
   }
-  
-  delete inputs;
-  delete constants;
-  delete testResidual;
-  delete testJacobian;
-  for (int i=0; i < nDim; i++){
-    delete DUiDXj[i];
+  if (abs(Destruction - testResidual[1]) > 1e-14){
+    cout << "Destruction doesn't match" << endl;
+        exit(10);
   }
-  delete DUiDXj;
-  delete DNuhatDXj;
+  if (abs(CrossProduction - testResidual[2]) > 1e-14){
+    cout << "cpp Cross " <<  CrossProduction << endl;
+    cout << "Func cross " << testResidual[2] << endl;
+    cout << "dist_i " << dist_i << endl;
+    cout << "Cross production doesn't match" << endl;
+        exit(10);
+  }
+  if (abs(val_residual[0]-testResidual[3]) > 1e-14){
+    cout << "Full residual doesn't match" << endl;
+  }
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
