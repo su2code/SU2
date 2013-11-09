@@ -223,26 +223,6 @@ public:
 	CNumerics(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
     
 	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, CConfig *config);
-    
-    
-	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species of the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species of the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species of the problem.
-	 * \param[in] config - Definition of the particular problem.	 */
-	CNumerics(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nSpecies, unsigned short val_nDiatomics, unsigned short val_nMonatomics, CConfig *config);
-    
-	/*!
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CNumerics(void);
@@ -1393,23 +1373,6 @@ public:
 	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
 	 */
     void GetPMatrix_inv(double *val_density, double *val_velocity, double *val_energy_ve, double *val_soundspeed, double *val_dPdrhos, double val_dPdrhoE, double val_dPdrhoEve, double *val_normal, double *l, double *m, double **val_invp_tensor);
-    
-	/*!
-	 * \overload
-	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
-	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
-	 * \param[in] val_density - Value of the density.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] val_soundspeed - Value of the sound speed.
-	 * \param[in] val_energy_vib - Value of the vibrational energy.
-	 * \param[in] val_energy_el - Value of the electronic/electron energy.
-	 * \param[in] config - Pointer to the problem configuration definitions.
-	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-	 */
-	void GetPMatrix_inv_(double *val_density, double **val_velocity, double *val_soundspeed,
-                         double *val_energy_vib, double *val_energy_el, CConfig *config,
-                         double *val_normal, double **val_invp_tensor);
     
 	/*!
 	 * \overload
