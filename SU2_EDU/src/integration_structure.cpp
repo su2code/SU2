@@ -57,7 +57,6 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			break;
 	}
     
-    
 	/*--- Compute viscous residuals ---*/
 	switch (config->GetKind_ViscNumScheme()) {
         case AVG_GRAD: case AVG_GRAD_CORRECTED:
@@ -100,42 +99,6 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
 			case SYMMETRY_PLANE:
 				solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-      case NACELLE_EXHAUST:
-				solver_container[MainSolver]->BC_Nacelle_Exhaust(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-				break;
-			case NACELLE_INFLOW:
-				solver_container[MainSolver]->BC_Nacelle_Inflow(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-				break;
-			case INTERFACE_BOUNDARY:
-				solver_container[MainSolver]->BC_Interface_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case NEARFIELD_BOUNDARY:
-				solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case ELECTRODE_BOUNDARY:
-				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case DIELEC_BOUNDARY:
-				solver_container[MainSolver]->BC_Dielec(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case DISPLACEMENT_BOUNDARY:
-				solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case FLOWLOAD_BOUNDARY:
-				solver_container[MainSolver]->BC_Flow_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case LOAD_BOUNDARY:
-				solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-      case PRESSURE_BOUNDARY:
-				solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-			case NEUMANN:
-				solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-      case DIRICHLET:
-				solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
-				break;
 		}
 	}
     
@@ -148,43 +111,8 @@ void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_conta
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-			case DIRICHLET:
-				solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
-				break;
-			case CUSTOM_BOUNDARY:
-				solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
 		}
   
-}
-
-void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-		unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-
-	unsigned short iMGLevel;
-
-	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) || (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) )
-		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
-
-			/*--- Set the time step in all the MG levels ---*/
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
-
-			/*--- Set the force coefficients ---*/
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CDrag(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CLift(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
-
-			/*--- Restrict solution and gradients to the coarse levels ---*/
-			if (iMGLevel != config[iZone]->GetMGLevels()) {
-				SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel], solver_container[iZone][iMGLevel+1], 
-						geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-				SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel], solver_container[iZone][iMGLevel+1], 
-						geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-			}
-
-		}
-
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

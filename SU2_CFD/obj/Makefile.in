@@ -65,14 +65,12 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-iteration_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT) \
-	../src/___bin_SU2_CFD-numerics_adjoint_plasma.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_tne2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_mean.$(OBJEXT) \
-	../src/___bin_SU2_CFD-numerics_direct_plasma.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_tne2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_transition.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_turbulent.$(OBJEXT) \
@@ -88,14 +86,12 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-output_paraview.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_adjoint_levelset.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_adjoint_mean.$(OBJEXT) \
-	../src/___bin_SU2_CFD-solver_adjoint_plasma.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_adjoint_tne2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_mean.$(OBJEXT) \
-	../src/___bin_SU2_CFD-solver_direct_plasma.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_tne2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_transition.$(OBJEXT) \
 	../src/___bin_SU2_CFD-solver_direct_turbulent.$(OBJEXT) \
@@ -107,14 +103,12 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-SU2_CFD.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_adjoint_levelset.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_adjoint_mean.$(OBJEXT) \
-	../src/___bin_SU2_CFD-variable_adjoint_plasma.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_adjoint_tne2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_adjoint_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_poisson.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_elasticity.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_heat.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_mean.$(OBJEXT) \
-	../src/___bin_SU2_CFD-variable_direct_plasma.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_tne2.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_transition.$(OBJEXT) \
 	../src/___bin_SU2_CFD-variable_direct_turbulent.$(OBJEXT) \
@@ -255,6 +249,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
+		../include/functions_turbulent.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
 		../include/solver_structure.hpp \
@@ -268,14 +263,12 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/iteration_structure.cpp \
 		../src/numerics_adjoint_levelset.cpp \
 		../src/numerics_adjoint_mean.cpp \
-		../src/numerics_adjoint_plasma.cpp \
 		../src/numerics_adjoint_tne2.cpp \
 		../src/numerics_adjoint_turbulent.cpp \
 		../src/numerics_direct_poisson.cpp \
 		../src/numerics_direct_elasticity.cpp \
 		../src/numerics_direct_heat.cpp \
 		../src/numerics_direct_mean.cpp \
-		../src/numerics_direct_plasma.cpp \
 		../src/numerics_direct_tne2.cpp \
 		../src/numerics_direct_transition.cpp \
 		../src/numerics_direct_turbulent.cpp \
@@ -284,6 +277,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_linearized_mean.cpp \
 		../src/numerics_linearized_turbulent.cpp \
 		../src/numerics_structure.cpp \
+		../src/functions_turbulent.hpp \
 		../src/numerics_template.cpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
@@ -291,14 +285,12 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/output_paraview.cpp \
 		../src/solver_adjoint_levelset.cpp \
 		../src/solver_adjoint_mean.cpp \
-		../src/solver_adjoint_plasma.cpp \
 		../src/solver_adjoint_tne2.cpp \
 		../src/solver_adjoint_turbulent.cpp \
 		../src/solver_direct_poisson.cpp \
 		../src/solver_direct_elasticity.cpp \
 		../src/solver_direct_heat.cpp \
 		../src/solver_direct_mean.cpp \
-		../src/solver_direct_plasma.cpp \
 		../src/solver_direct_tne2.cpp \
 		../src/solver_direct_transition.cpp \
 		../src/solver_direct_turbulent.cpp \
@@ -310,14 +302,12 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/SU2_CFD.cpp \
 		../src/variable_adjoint_levelset.cpp \
 		../src/variable_adjoint_mean.cpp \
-		../src/variable_adjoint_plasma.cpp \
 		../src/variable_adjoint_tne2.cpp \
 		../src/variable_adjoint_turbulent.cpp \
 		../src/variable_direct_poisson.cpp \
 		../src/variable_direct_elasticity.cpp \
 		../src/variable_direct_heat.cpp \
 		../src/variable_direct_mean.cpp \
-		../src/variable_direct_plasma.cpp \
 		../src/variable_direct_tne2.cpp \
 		../src/variable_direct_transition.cpp \
 		../src/variable_direct_turbulent.cpp \
@@ -416,8 +406,6 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-numerics_adjoint_plasma.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_adjoint_tne2.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_adjoint_turbulent.$(OBJEXT):  \
@@ -429,8 +417,6 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD-numerics_direct_heat.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_direct_mean.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-numerics_direct_plasma.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_direct_tne2.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -462,8 +448,6 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-solver_adjoint_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-solver_adjoint_plasma.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-solver_adjoint_tne2.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-solver_adjoint_turbulent.$(OBJEXT):  \
@@ -475,8 +459,6 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD-solver_direct_heat.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-solver_direct_mean.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-solver_direct_plasma.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-solver_direct_tne2.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -500,8 +482,6 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-variable_adjoint_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-variable_adjoint_plasma.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-variable_adjoint_tne2.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-variable_adjoint_turbulent.$(OBJEXT):  \
@@ -513,8 +493,6 @@ clean-binPROGRAMS:
 ../src/___bin_SU2_CFD-variable_direct_heat.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-variable_direct_mean.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-variable_direct_plasma.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-variable_direct_tne2.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -549,13 +527,11 @@ mostlyclean-compile:
 	-rm -f ../src/___bin_SU2_CFD-nnet.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_plasma.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_tne2.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_turbulent.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_elasticity.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_heat.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-numerics_direct_plasma.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_poisson.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_tne2.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_transition.$(OBJEXT)
@@ -571,13 +547,11 @@ mostlyclean-compile:
 	-rm -f ../src/___bin_SU2_CFD-output_tecplot.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_adjoint_levelset.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_adjoint_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-solver_adjoint_plasma.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_adjoint_tne2.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_adjoint_turbulent.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_direct_elasticity.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_direct_heat.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_direct_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-solver_direct_plasma.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_direct_poisson.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_direct_tne2.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-solver_direct_transition.$(OBJEXT)
@@ -589,13 +563,11 @@ mostlyclean-compile:
 	-rm -f ../src/___bin_SU2_CFD-solver_template.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_adjoint_levelset.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_adjoint_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-variable_adjoint_plasma.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_adjoint_tne2.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_adjoint_turbulent.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_direct_elasticity.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_direct_heat.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_direct_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-variable_direct_plasma.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_direct_poisson.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_direct_tne2.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-variable_direct_transition.$(OBJEXT)
@@ -617,13 +589,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_tne2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_heat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_poisson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_tne2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_transition.Po@am__quote@
@@ -639,13 +609,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_tecplot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_tne2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_heat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_poisson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_tne2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_transition.Po@am__quote@
@@ -657,13 +625,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-solver_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_tne2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_heat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_poisson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_tne2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_transition.Po@am__quote@
@@ -774,20 +740,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_adjoint_mean.obj `if test -f '../src/numerics_adjoint_mean.cpp'; then $(CYGPATH_W) '../src/numerics_adjoint_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_adjoint_mean.cpp'; fi`
 
-../src/___bin_SU2_CFD-numerics_adjoint_plasma.o: ../src/numerics_adjoint_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_adjoint_plasma.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_adjoint_plasma.o `test -f '../src/numerics_adjoint_plasma.cpp' || echo '$(srcdir)/'`../src/numerics_adjoint_plasma.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_adjoint_plasma.cpp' object='../src/___bin_SU2_CFD-numerics_adjoint_plasma.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_adjoint_plasma.o `test -f '../src/numerics_adjoint_plasma.cpp' || echo '$(srcdir)/'`../src/numerics_adjoint_plasma.cpp
-
-../src/___bin_SU2_CFD-numerics_adjoint_plasma.obj: ../src/numerics_adjoint_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_adjoint_plasma.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_adjoint_plasma.obj `if test -f '../src/numerics_adjoint_plasma.cpp'; then $(CYGPATH_W) '../src/numerics_adjoint_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_adjoint_plasma.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_adjoint_plasma.cpp' object='../src/___bin_SU2_CFD-numerics_adjoint_plasma.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_adjoint_plasma.obj `if test -f '../src/numerics_adjoint_plasma.cpp'; then $(CYGPATH_W) '../src/numerics_adjoint_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_adjoint_plasma.cpp'; fi`
-
 ../src/___bin_SU2_CFD-numerics_adjoint_tne2.o: ../src/numerics_adjoint_tne2.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_adjoint_tne2.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_tne2.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_adjoint_tne2.o `test -f '../src/numerics_adjoint_tne2.cpp' || echo '$(srcdir)/'`../src/numerics_adjoint_tne2.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_tne2.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_tne2.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_tne2.Tpo"; exit 1; fi
@@ -871,20 +823,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_mean.cpp' object='../src/___bin_SU2_CFD-numerics_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_direct_mean.obj `if test -f '../src/numerics_direct_mean.cpp'; then $(CYGPATH_W) '../src/numerics_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_mean.cpp'; fi`
-
-../src/___bin_SU2_CFD-numerics_direct_plasma.o: ../src/numerics_direct_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_direct_plasma.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_direct_plasma.o `test -f '../src/numerics_direct_plasma.cpp' || echo '$(srcdir)/'`../src/numerics_direct_plasma.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_plasma.cpp' object='../src/___bin_SU2_CFD-numerics_direct_plasma.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_direct_plasma.o `test -f '../src/numerics_direct_plasma.cpp' || echo '$(srcdir)/'`../src/numerics_direct_plasma.cpp
-
-../src/___bin_SU2_CFD-numerics_direct_plasma.obj: ../src/numerics_direct_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_direct_plasma.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_direct_plasma.obj `if test -f '../src/numerics_direct_plasma.cpp'; then $(CYGPATH_W) '../src/numerics_direct_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_plasma.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_plasma.cpp' object='../src/___bin_SU2_CFD-numerics_direct_plasma.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_direct_plasma.obj `if test -f '../src/numerics_direct_plasma.cpp'; then $(CYGPATH_W) '../src/numerics_direct_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_plasma.cpp'; fi`
 
 ../src/___bin_SU2_CFD-numerics_direct_tne2.o: ../src/numerics_direct_tne2.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_direct_tne2.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_tne2.Tpo" -c -o ../src/___bin_SU2_CFD-numerics_direct_tne2.o `test -f '../src/numerics_direct_tne2.cpp' || echo '$(srcdir)/'`../src/numerics_direct_tne2.cpp; \
@@ -1096,20 +1034,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-solver_adjoint_mean.obj `if test -f '../src/solver_adjoint_mean.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_mean.cpp'; fi`
 
-../src/___bin_SU2_CFD-solver_adjoint_plasma.o: ../src/solver_adjoint_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-solver_adjoint_plasma.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-solver_adjoint_plasma.o `test -f '../src/solver_adjoint_plasma.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_plasma.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_adjoint_plasma.cpp' object='../src/___bin_SU2_CFD-solver_adjoint_plasma.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-solver_adjoint_plasma.o `test -f '../src/solver_adjoint_plasma.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_plasma.cpp
-
-../src/___bin_SU2_CFD-solver_adjoint_plasma.obj: ../src/solver_adjoint_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-solver_adjoint_plasma.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-solver_adjoint_plasma.obj `if test -f '../src/solver_adjoint_plasma.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_plasma.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_adjoint_plasma.cpp' object='../src/___bin_SU2_CFD-solver_adjoint_plasma.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-solver_adjoint_plasma.obj `if test -f '../src/solver_adjoint_plasma.cpp'; then $(CYGPATH_W) '../src/solver_adjoint_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_adjoint_plasma.cpp'; fi`
-
 ../src/___bin_SU2_CFD-solver_adjoint_tne2.o: ../src/solver_adjoint_tne2.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-solver_adjoint_tne2.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_tne2.Tpo" -c -o ../src/___bin_SU2_CFD-solver_adjoint_tne2.o `test -f '../src/solver_adjoint_tne2.cpp' || echo '$(srcdir)/'`../src/solver_adjoint_tne2.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_tne2.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_tne2.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_adjoint_tne2.Tpo"; exit 1; fi
@@ -1193,20 +1117,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_mean.cpp' object='../src/___bin_SU2_CFD-solver_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-solver_direct_mean.obj `if test -f '../src/solver_direct_mean.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean.cpp'; fi`
-
-../src/___bin_SU2_CFD-solver_direct_plasma.o: ../src/solver_direct_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-solver_direct_plasma.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-solver_direct_plasma.o `test -f '../src/solver_direct_plasma.cpp' || echo '$(srcdir)/'`../src/solver_direct_plasma.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_plasma.cpp' object='../src/___bin_SU2_CFD-solver_direct_plasma.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-solver_direct_plasma.o `test -f '../src/solver_direct_plasma.cpp' || echo '$(srcdir)/'`../src/solver_direct_plasma.cpp
-
-../src/___bin_SU2_CFD-solver_direct_plasma.obj: ../src/solver_direct_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-solver_direct_plasma.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-solver_direct_plasma.obj `if test -f '../src/solver_direct_plasma.cpp'; then $(CYGPATH_W) '../src/solver_direct_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_plasma.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_plasma.cpp' object='../src/___bin_SU2_CFD-solver_direct_plasma.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-solver_direct_plasma.obj `if test -f '../src/solver_direct_plasma.cpp'; then $(CYGPATH_W) '../src/solver_direct_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_plasma.cpp'; fi`
 
 ../src/___bin_SU2_CFD-solver_direct_tne2.o: ../src/solver_direct_tne2.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-solver_direct_tne2.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-solver_direct_tne2.Tpo" -c -o ../src/___bin_SU2_CFD-solver_direct_tne2.o `test -f '../src/solver_direct_tne2.cpp' || echo '$(srcdir)/'`../src/solver_direct_tne2.cpp; \
@@ -1362,20 +1272,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-variable_adjoint_mean.obj `if test -f '../src/variable_adjoint_mean.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_mean.cpp'; fi`
 
-../src/___bin_SU2_CFD-variable_adjoint_plasma.o: ../src/variable_adjoint_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-variable_adjoint_plasma.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-variable_adjoint_plasma.o `test -f '../src/variable_adjoint_plasma.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_plasma.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_adjoint_plasma.cpp' object='../src/___bin_SU2_CFD-variable_adjoint_plasma.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-variable_adjoint_plasma.o `test -f '../src/variable_adjoint_plasma.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_plasma.cpp
-
-../src/___bin_SU2_CFD-variable_adjoint_plasma.obj: ../src/variable_adjoint_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-variable_adjoint_plasma.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-variable_adjoint_plasma.obj `if test -f '../src/variable_adjoint_plasma.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_plasma.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_adjoint_plasma.cpp' object='../src/___bin_SU2_CFD-variable_adjoint_plasma.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-variable_adjoint_plasma.obj `if test -f '../src/variable_adjoint_plasma.cpp'; then $(CYGPATH_W) '../src/variable_adjoint_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_adjoint_plasma.cpp'; fi`
-
 ../src/___bin_SU2_CFD-variable_adjoint_tne2.o: ../src/variable_adjoint_tne2.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-variable_adjoint_tne2.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_tne2.Tpo" -c -o ../src/___bin_SU2_CFD-variable_adjoint_tne2.o `test -f '../src/variable_adjoint_tne2.cpp' || echo '$(srcdir)/'`../src/variable_adjoint_tne2.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_tne2.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_tne2.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_adjoint_tne2.Tpo"; exit 1; fi
@@ -1459,20 +1355,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_mean.cpp' object='../src/___bin_SU2_CFD-variable_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-variable_direct_mean.obj `if test -f '../src/variable_direct_mean.cpp'; then $(CYGPATH_W) '../src/variable_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_mean.cpp'; fi`
-
-../src/___bin_SU2_CFD-variable_direct_plasma.o: ../src/variable_direct_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-variable_direct_plasma.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-variable_direct_plasma.o `test -f '../src/variable_direct_plasma.cpp' || echo '$(srcdir)/'`../src/variable_direct_plasma.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_plasma.cpp' object='../src/___bin_SU2_CFD-variable_direct_plasma.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-variable_direct_plasma.o `test -f '../src/variable_direct_plasma.cpp' || echo '$(srcdir)/'`../src/variable_direct_plasma.cpp
-
-../src/___bin_SU2_CFD-variable_direct_plasma.obj: ../src/variable_direct_plasma.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-variable_direct_plasma.obj -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Tpo" -c -o ../src/___bin_SU2_CFD-variable_direct_plasma.obj `if test -f '../src/variable_direct_plasma.cpp'; then $(CYGPATH_W) '../src/variable_direct_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_plasma.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Tpo" "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Po"; else rm -f "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_plasma.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_plasma.cpp' object='../src/___bin_SU2_CFD-variable_direct_plasma.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-variable_direct_plasma.obj `if test -f '../src/variable_direct_plasma.cpp'; then $(CYGPATH_W) '../src/variable_direct_plasma.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_plasma.cpp'; fi`
 
 ../src/___bin_SU2_CFD-variable_direct_tne2.o: ../src/variable_direct_tne2.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-variable_direct_tne2.o -MD -MP -MF "../src/$(DEPDIR)/___bin_SU2_CFD-variable_direct_tne2.Tpo" -c -o ../src/___bin_SU2_CFD-variable_direct_tne2.o `test -f '../src/variable_direct_tne2.cpp' || echo '$(srcdir)/'`../src/variable_direct_tne2.cpp; \

@@ -324,8 +324,12 @@ void CPoissonSolver::Source_Template(CGeometry *geometry, CSolver **solver_conta
  * \brief Copy solution from solver 1 into solver 2
  * \author A. Lonkar
  */
-void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config,
-                                        CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {
+void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution,
+                                        CGeometry **solver1_geometry,
+                                        CConfig *solver1_config,
+                                        CSolver ***solver2_solution,
+                                        CGeometry **solver2_geometry,
+                                        CConfig *solver2_config) {
 	unsigned long iPoint;
 	unsigned short iDim;
 	double neg_EFvalue;
@@ -336,7 +340,6 @@ void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 			neg_EFvalue = solver1_solution[MESH_0][POISSON_SOL]->node[iPoint]->GetGradient(0,iDim);
 			E_field[iDim] = -1.0*neg_EFvalue;
 		}
-		solver2_solution[MESH_0][PLASMA_SOL]->node[iPoint]->SetpoissonField(E_field);
 	}
 };
 

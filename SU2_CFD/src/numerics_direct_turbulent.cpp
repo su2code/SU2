@@ -22,6 +22,7 @@
  */
 
 #include "../include/numerics_structure.hpp"
+#include "../include/functions_turbulent.hpp"
 #include <limits>
 
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
@@ -277,13 +278,15 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   else { Density_i = U_i[0]; }
   
   val_residual[0] = 0.0;
+  Production = 0;
+  Destruction = 0;
+  CrossProduction = 0;
   val_Jacobian_i[0][0] = 0.0;
   
   /*--- Computation of vorticity ---*/
   Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
   if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
   Omega = sqrt(Vorticity);
-  dist_i = max(dist_i, 1.0e-10);
   
   /*--- Rotational correction term ---*/
   if (rotating_frame) {
@@ -304,7 +307,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     Omega += 2.0*min(0.0,StrainMag-Omega);
   }
   
-  if (dist_i > 0.0) {
+  if (dist_i > 1e-10) {
     
     /*--- Production term ---*/
     dist_i_2 = dist_i*dist_i;
@@ -360,9 +363,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
-    
   }
-  
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
@@ -623,12 +624,19 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
+  if (incompressible) { Density_i = DensityInc_i; }
+  else { Density_i = U_i[0]; }
+  val_Jacobian_i[0][0] = 0.0;
+
   if (dist_i > 0.0) {
     // Call turbulence model
     // Get all the variables
     int nInputMLVariables = 9;
     int nOutputMLVariables = 1;
     double * input = new double[nInputMLVariables];
+    for (int i = 0; i < nInputMLVariables; i++){
+      input[i] = 0;
+    }
     int ctr = 0;
     input[ctr] = Laminar_Viscosity_i/Density_i;
     ctr++;
@@ -651,8 +659,39 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       exit(1);
     }
     double *output = new double[nOutputMLVariables];
+    for (int i=0; i < nOutputMLVariables; i++){
+      output[i] = 0;
+    }
+    /*
+    cout << "Input ";
+    for (int i=0; i < nInputMLVariables; i++){
+      cout << input[i] << " ";
+    }
+    cout << endl;
+    */
     this->MLModel->Predict(input, output);
+//    cout << "output "<<output[0]<<endl;
     val_residual[0] = output[0];
+    if (dist_i <= 0.0){
+      val_residual[0] = 0;
+    }
+    
+    cout << "Inputs: ";
+    for (int i=0; i< nInputMLVariables; i++){
+      cout << input[i] << " ";
+    }
+    cout << endl;
+    
+    cout << "Scaled inputs: ";
+    this->MLModel->inputScaler->Scale(input);
+    for (int i=0; i< nInputMLVariables; i++){
+      cout << input[i] << " ";
+    }
+    cout << endl;
+    
+    cout << "TurbML Source residual " << val_residual[0] << endl;
+//    exit(1);
+    
     delete input;
     delete output;
   }

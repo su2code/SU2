@@ -630,7 +630,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   
   /*--- Compute the dual time-stepping source term for static meshes ---*/
   
-  if (true) {
+  if (grid_movement) {
     
     /*--- Loop over all nodes (excluding halos) ---*/
     
@@ -676,10 +676,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       }
     }
     
-  }
-  
-#ifdef DEBUG_TDE
-  else {
+  } else {
     
     /*--- For unsteady flows on dynamic meshes (rigidly transforming or
      dynamically deforming), the Geometric Conservation Law (GCL) should be
@@ -760,11 +757,12 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
-      /*--- Retrieve the solution at time levels n-1 and n+1. Note that
-       we are currently iterating on U^n+1 and that U^n-1 is a fixed,
-       previous solution that is stored in memory. ---*/
+      /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
+       we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
+       previous solutions that are stored in memory. ---*/
       
       U_time_nM1 = node[iPoint]->GetSolution_time_n1();
+      U_time_n   = node[iPoint]->GetSolution_time_n();
       U_time_nP1 = node[iPoint]->GetSolution();
       
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
@@ -780,10 +778,10 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       for(iVar = 0; iVar < nVar; iVar++) {
         if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])* (Volume_nP1/TimeStep);
+          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Residual[iVar] = (U_time_nP1[iVar]-U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-          + (U_time_nM1[iVar]-U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
       }
       
       /*--- Store the residual and compute the Jacobian contribution due
@@ -794,16 +792,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
+            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
+            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
         }
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
-    }
-    
+    }    
   }
-#endif
   
 }
 

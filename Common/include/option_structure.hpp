@@ -185,8 +185,6 @@ enum ENUM_SOLVER {
 	NAVIER_STOKES = 2,			/*!< \brief Definition of the Navier-Stokes' solver. */
 	RANS = 3,				/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
 	POISSON_EQUATION = 4,       	/*!< \brief Definition of the poisson potential solver. */
-	PLASMA_EULER = 8,	/*!< \brief Definition of the plasma solver. */
-	PLASMA_NAVIER_STOKES = 9,	/*!< \brief Definition of the plasma solver. */
 	WAVE_EQUATION = 10,	/*!< \brief Definition of the wave solver. */
 	HEAT_EQUATION = 29,								/*!< \brief Definition of the heat solver. */
 	LINEAR_ELASTICITY = 11,	/*!< \brief Definition of the FEA solver. */
@@ -198,8 +196,6 @@ enum ENUM_SOLVER {
 	ADJ_RANS = 20,				/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
 	LIN_EULER = 21,			/*!< \brief Definition of the linear Euler's solver. */
 	LIN_NAVIER_STOKES = 22,		/*!< \brief Definition of the linear Navier-Stokes' solver. */
-	ADJ_PLASMA_NAVIER_STOKES = 26,	/*!< \brief Definition of the adjoint plasma solver. */
-	ADJ_PLASMA_EULER = 27,	/*!< \brief Definition of the adjoint plasma solver. */
 	TEMPLATE_SOLVER = 30,                  /*!< \brief Definition of template solver. */
   TNE2_EULER = 31,
   TNE2_NAVIER_STOKES = 32,
@@ -222,8 +218,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("TNE2_NAVIER_STOKES", TNE2_NAVIER_STOKES)
 ("ADJ_TNE2_EULER", ADJ_TNE2_EULER)
 ("ADJ_TNE2_NAVIER_STOKES", ADJ_TNE2_NAVIER_STOKES)
-("PLASMA_NAVIER_STOKES", PLASMA_NAVIER_STOKES)
-("PLASMA_EULER", PLASMA_EULER)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
@@ -260,8 +254,6 @@ enum RUNTIME_TYPE {
   RUNTIME_LINPOT_SYS = 9,		/*!< \brief One-physics case, the code is solving the linear potential flow equations. */
 	RUNTIME_LINFLOW_SYS = 10,		/*!< \brief One-physics case, the code is solving the linear equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
-  RUNTIME_PLASMA_SYS = 15,		/*!< \brief One-physics case, the code is solving the plasma equations. */
-  RUNTIME_ADJPLASMA_SYS = 19,		/*!< \brief One-physics case, the code is solving the plasma equations. */
 	RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
 	RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
@@ -280,10 +272,6 @@ const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence mod
 const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
 const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
 const int LINTNE2_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
-
-const int PLASMA_SOL = 0;	/*!< \brief Position of the plasma solution in the solution container array. */
-const int ADJPLASMA_SOL = 1;	/*!< \brief Position of the continuous adjoint plasma solution in the solution container array. */
-const int LINPLASMA_SOL = 1;	/*!< \brief Position of the linearized plasma solution in the solution container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
