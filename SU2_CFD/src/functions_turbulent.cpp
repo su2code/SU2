@@ -68,6 +68,7 @@ void SpalartAllmarasInputs::Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, boo
   this->transition = transition;
   this->dist = dist;
   this->Laminar_Viscosity = Laminar_Viscosity;
+  this -> Density = Density;
   this->Turbulent_Kinematic_Viscosity = Turbulent_Kinematic_Viscosity;
   this->intermittency = intermittency;
   return;
@@ -86,17 +87,23 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   int nDim = inputs->GetNumDim();
   // Limit if too close to the wall
   double limiter = inputs->GetLimiter();
+  int nResidOutputs = 4;
+  int nJacOutputs = 1;
   if (dist < limiter){
-    for (int iDim = 0; iDim < nDim; iDim++ ){
-      output_residual[iDim] = 0;
-      output_jacobian[0] = 0;
+    for (int i = 0; i < nResidOutputs; i++){
+      output_residual[i] = 0;
+      
+    }
+    for (int i = 0; i < nJacOutputs; i++){
+      output_jacobian[i] = 0;
     }
     return;
   }
   
-    double **DUiDXj = inputs->GetMeanFlowGradient();
+  double **DUiDXj = inputs->GetMeanFlowGradient();
   double Vorticity = ComputeVorticity(nDim,DUiDXj);
   double Omega = sqrt(Vorticity);
+  
   double StrainMag;
   double Laminar_Viscosity = inputs->Laminar_Viscosity;
   double Density = inputs->Density;
@@ -141,10 +148,8 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   fv2 = 1.0 - J/(1.0+J*fv1);
   S = Omega;
   inv_k2_d2 = 1.0/(constants->k2*dist_2);
-  
   Shat = S + Turbulent_Kinematic_Viscosity*fv2*inv_k2_d2;
   inv_Shat = 1.0/max(Shat, 1.0e-10);
-  
   Production = constants->cb1*Shat*Turbulent_Kinematic_Viscosity;
   if (transition){
     Production *= intermittency;

@@ -33,6 +33,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "nnet.hpp"
+#include "../include/functions_turbulent.hpp"
 #include "variable_structure.hpp"
 
 using namespace std;
@@ -3753,7 +3754,7 @@ private:
 	double cb1;
 	double cw2;
 	double cw3_6;
-    double cb2_sigma;
+  double cb2_sigma;
 	double sigma;
 	double cb2;
 	double cw1;
@@ -3768,13 +3769,21 @@ private:
 	double grad_nu_hat;
 	double prod_grads;
 	bool incompressible;
-    bool transition;
-    bool rotating_frame;
-    double div, StrainMag;
-    double beta, gamma_sep, gamma_eff, intermittency;
-    double Freattach, r_t, s1;
-    double Production, Destruction, CrossProduction;
-    
+  bool transition;
+  bool rotating_frame;
+  double div, StrainMag;
+  double beta, gamma_sep, gamma_eff, intermittency;
+  double Freattach, r_t, s1;
+  double Production, Destruction, CrossProduction;
+  
+  SpalartAllmarasInputs* SAInputs;
+  SpalartAllmarasConstants* SAConstants;
+  int nResidual;
+  int nJacobian;
+  double* testResidual;
+  double* testJacobian;
+  double** DUiDXj;
+  double* DNuhatDXj;
 public:
     
 	/*!
