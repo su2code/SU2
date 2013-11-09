@@ -1672,7 +1672,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
+  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_TNE2 == NONE)) {
 		cout << "You must define a viscous numerical method for the TNE2 Navier-Stokes equations!!" << endl;
 		exit(1);
 	}

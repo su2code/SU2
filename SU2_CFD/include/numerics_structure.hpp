@@ -191,6 +191,7 @@ public:
   double *dTvedU_i, *dTvedU_j;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  CVariable *var;
     
 	/*!
 	 * \brief Constructor of the class.
@@ -4847,7 +4848,7 @@ private:
 	double Proj_ModJac_Tensor_ij, R;
   double *RoedPdU;
  	unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
-  CVariable *var;
+//  CVariable *var;
   
 public:
     
@@ -4898,7 +4899,7 @@ private:
 	double **P_Tensor, **invP_Tensor;
   unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
   
-  CVariable *var;
+//  CVariable *var;
   
 public:
   
@@ -5048,7 +5049,7 @@ private:
 	bool stretching;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad, nDim;
   
-  CVariable *var;
+//  CVariable *var;
     
 public:
     
@@ -5211,7 +5212,7 @@ private:
   double **RxnConstantTable;
   double *dkf, *dkb, *dRfok, *dRbok, *A;
   double *eves, *Cvvs, *Cves;
-  CVariable *var;
+//  CVariable *var;
 
 public:
   

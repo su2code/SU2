@@ -3821,7 +3821,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         
         break;
         
-      case TNE2_EULER:  case TNE2_NAVIER_STOKES:
+      case TNE2_EULER:     case TNE2_NAVIER_STOKES:
+      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
         
         /*--- Coefficients ---*/
         
@@ -3861,7 +3862,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           /*--- Adjoint flow residuals ---*/
           
-          for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
+          for (iVar = 0; iVar < nVar_AdjTNE2; iVar++) {
             residual_adjTNE2[iVar] = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_RMS(iVar);
           }
         }
@@ -4168,7 +4169,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             
-            cout << "     Res[Rho]" << "     Res[RhoE]" << " Res[RhoEve]" << "   CDrag(Total)";
+            cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)";
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
               cout << "   Max qdot" << endl;
             else cout << endl;
@@ -4272,7 +4273,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             
-            cout << "   Res[Psi_Rho]" << "     Res[Psi_E]" << "     Res[Psi_Eve]" << "     Sens_Geo" << "    Sens_Mach" << endl;
+            cout << "   Res[Psi_Rho]" << "     Res[Psi_E]" << "   Res[Psi_Eve]" << "     Sens_Geo" << "    Sens_Mach" << endl;
             
             break;
             
@@ -4564,9 +4565,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
           cout.precision(6);
           cout.setf(ios::fixed,ios::floatfield);
-          cout.width(15); cout << log10(residual_adjflow[0]);
-          cout.width(15); cout << log10(residual_adjflow[nSpecies+nDim]);
-          cout.width(15); cout << log10(residual_adjflow[nSpecies+nDim]);
+          cout.width(15); cout << log10(residual_adjTNE2[0]);
+          cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
+          cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
 
           cout.precision(4);
           cout.setf(ios::scientific,ios::floatfield);

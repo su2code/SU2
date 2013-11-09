@@ -1625,8 +1625,10 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 #endif
 	
   unsigned long iPoint, ErrorCounter = 0;
+  bool adjoint    = config->GetAdjoint();
 	bool implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  bool center     = (config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED);
+  bool center     = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
+                     (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
                      (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
                      (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
@@ -2937,38 +2939,7 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       LinSysRes.AddBlock(iPoint, Residual);
 			if (implicit)
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-/*      unsigned short iVar, jVar;
-      cout << "TNE2 BC Far Field: " << endl;
-      cout << "dPdrhos[0]: " << node[iPoint]->GetdPdrhos()[0] << endl;
-      cout << "dPdrhos_inf[0]: " << node_infty->GetdPdrhos()[0] << endl;
-      cout << "ConsVarDomain: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << U_domain[iVar] << endl;
-      cout << endl << endl << "PrimVarDomain: " << endl;
-      for (iVar = 0; iVar < nPrimVar; iVar++)
-        cout << V_domain[iVar] << endl;
-      cout << endl << endl << "ConsVarInfty: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << U_infty[iVar] << endl;
-      cout << endl << endl << "PrimVarInfty: " << endl;
-      for (iVar = 0; iVar < nPrimVar; iVar++)
-        cout << V_infty[iVar] << endl;
-      
-      cout << endl << endl << "Residual: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << Residual[iVar] << endl;
-      cout << endl << endl << "Jacobian: " << endl;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          cout << Jacobian_i[iVar][jVar] << "\t";
-        }
-        cout << endl;
-      }
-      cin.get();*/
- 
-      
-      
+
 			/*--- Viscous contribution ---*/
 			if (viscous) {
         cout << "WARNING!!!  BC_Far_Field: Viscous contribution to boundary not implemented!" << endl;
@@ -4608,12 +4579,12 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
-    if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-    }
+//    if (implicit) {
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+//    }
     
     /*--- Error checking ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {

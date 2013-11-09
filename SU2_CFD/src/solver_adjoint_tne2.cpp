@@ -1368,7 +1368,7 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 		LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
     LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
     LinSysRes.SubtractBlock(jPoint, Res_Visc_j);
-    
+
 		/*--- Implicit contribution to the residual ---*/
 		if (implicit) {
 			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
@@ -1507,17 +1507,17 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
       }
     }
     
-//		/*--- Add and Subtract Residual ---*/
-//    LinSysRes.SubtractBlock(iPoint, Residual_i);
-//    LinSysRes.SubtractBlock(jPoint, Residual_j);
-//    
-//    /*--- Implicit contribution to the residual ---*/
-//    if (implicit) {
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
-//      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ji);
-//      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
-//    }
+		/*--- Add and Subtract Residual ---*/
+    LinSysRes.SubtractBlock(iPoint, Residual_i);
+    LinSysRes.SubtractBlock(jPoint, Residual_j);
+    
+    /*--- Implicit contribution to the residual ---*/
+    if (implicit) {
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
+      Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ji);
+      Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
+    }
 	}
 }
 
@@ -1755,7 +1755,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
 		/*--- Read the residual ---*/
-		local_Res_TruncError = node[iPoint]->GetResTruncError();
+//		local_Res_TruncError = node[iPoint]->GetResTruncError();
     
 		/*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
@@ -1763,17 +1763,20 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / solver_container[TNE2_SOL]->node[iPoint]->GetDelta_Time();
 		Jacobian.AddVal2Diag(iPoint, Delta);
-    if (Delta != Delta) {
+    if (Delta <= 0 || Delta != Delta) {
       cout << "NaN in Timestep" << endl;
     }
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
+			LinSysRes[total_index] = -(LinSysRes[total_index]);// + local_Res_TruncError[iVar]);
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      
+      if (LinSysRes[total_index] != LinSysRes[total_index])
+        cout << "Linsysres NaN!" << endl;
 		}
     
 	}
