@@ -28,7 +28,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   bool StopCalc = false;
   unsigned long StartTime, StopTime, TimeUsed = 0, ExtIter = 0;
-  unsigned short iMesh, iZone, iSol, nZone, nDim;
+  unsigned short iMesh, iSol, nZone, nDim;
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
   
@@ -64,13 +64,13 @@ int main(int argc, char *argv[]) {
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   CFreeFormDefBox*** FFDBox             = NULL;
-  
+
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
   char config_file_name[200];
-  if (argc == 2){ strcpy(config_file_name,argv[1]); }
-  else{ strcpy(config_file_name, "default.cfg"); }
+  if (argc == 2) { strcpy(config_file_name,argv[1]); }
+  else { strcpy(config_file_name, "default.cfg"); }
   
   /*--- Read the name and format of the input mesh file ---*/
   
@@ -94,48 +94,37 @@ int main(int argc, char *argv[]) {
   grid_movement         = new CVolumetricMovement *[nZone];
   FFDBox                = new CFreeFormDefBox**[nZone];
   
-  for (iZone = 0; iZone < nZone; iZone++) {
-    solver_container[iZone]       = NULL;
-    integration_container[iZone]  = NULL;
-    numerics_container[iZone]     = NULL;
-    config_container[iZone]       = NULL;
-    geometry_container[iZone]     = NULL;
-    surface_movement[iZone]       = NULL;
-    grid_movement[iZone]          = NULL;
-    FFDBox[iZone]                 = NULL;
-  }
+  solver_container[ZONE_0]       = NULL;
+  integration_container[ZONE_0]  = NULL;
+  numerics_container[ZONE_0]     = NULL;
+  config_container[ZONE_0]       = NULL;
+  geometry_container[ZONE_0]     = NULL;
+  surface_movement[ZONE_0]       = NULL;
+  grid_movement[ZONE_0]          = NULL;
+  FFDBox[ZONE_0]                 = NULL;
+    
+  /*--- Definition of the configuration option class for all zones. In this
+   constructor, the input configuration file is parsed and all options are
+   read and stored. ---*/
   
-  /*--- Loop over all zones to initialize the various classes. In most
-   cases, nZone is equal to one. This represents the solution of a partial
-   differential equation on a single block, unstructured mesh. ---*/
+  config_container[ZONE_0] = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, VERB_HIGH);
   
-  for (iZone = 0; iZone < nZone; iZone++) {
-    
-    /*--- Definition of the configuration option class for all zones. In this
-     constructor, the input configuration file is parsed and all options are
-     read and stored. ---*/
-    
-    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
-    
 #ifndef NO_MPI
-    /*--- Change the name of the input-output files for a parallel computation ---*/
-    config_container[iZone]->SetFileNameDomain(rank+1);
+  /*--- Change the name of the input-output files for a parallel computation ---*/
+  config_container[ZONE_0]->SetFileNameDomain(rank+1);
 #endif
-    
-    /*--- Perform the non-dimensionalization for the flow equations using the
-     specified reference values. ---*/
-    
-    config_container[iZone]->SetNondimensionalization(nDim, iZone);
-    
-    /*--- Definition of the geometry class. Within this constructor, the
-     mesh file is read and the primal grid is stored (node coords, connectivity,
-     & boundary markers. MESH_0 is the index of the finest mesh. ---*/
-    
-    geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone],
-                                                              iZone+1, nZone);
-    
-  }
+  
+  /*--- Perform the non-dimensionalization for the flow equations using the
+   specified reference values. ---*/
+  
+  config_container[ZONE_0]->SetNondimensionalization(nDim, ZONE_0);
+  
+  /*--- Definition of the geometry class. Within this constructor, the
+   mesh file is read and the primal grid is stored (node coords, connectivity,
+   & boundary markers. MESH_0 is the index of the finest mesh. ---*/
+  
+  geometry_container[ZONE_0] = new CGeometry *[config_container[ZONE_0]->GetMGLevels()+1];
+  geometry_container[ZONE_0][MESH_0] = new CPhysicalGeometry(config_container[ZONE_0],ZONE_1, nZone);
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
@@ -155,85 +144,100 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Preprocessing --------------------------" << endl;
   
-  for (iZone = 0; iZone < nZone; iZone++) {
-    
-    /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
-     The solver classes are specific to a particular set of governing equations,
-     and they contain the subroutines with instructions for computing each spatial
-     term of the PDE, i.e. loops over the edges to compute convective and viscous
-     fluxes, loops over the nodes to compute source terms, and routines for
-     imposing various boundary condition type for the PDE. ---*/
-    
-    solver_container[iZone] = new CSolver** [config_container[iZone]->GetMGLevels()+1];
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++)
-      solver_container[iZone][iMesh] = NULL;
-    
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-      solver_container[iZone][iMesh] = new CSolver* [MAX_SOLS];
-      for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        solver_container[iZone][iMesh][iSol] = NULL;
-    }
-    Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
-                         config_container[iZone], iZone);
-    
-#ifndef NO_MPI
-    /*--- Synchronization point after the solution preprocessing subroutine ---*/
-    MPI::COMM_WORLD.Barrier();
-#endif
-    
-    if (rank == MASTER_NODE)
-      cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
-    
-    /*--- Definition of the integration class: integration_container[#ZONES][#EQ_SYSTEMS].
-     The integration class orchestrates the execution of the spatial integration
-     subroutines contained in the solver class (including multigrid) for computing
-     the residual at each node, R(U) and then integrates the equations to a
-     steady state or time-accurately. ---*/
-    
-    integration_container[iZone] = new CIntegration*[MAX_SOLS];
-    Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
-                              config_container[iZone], iZone);
-    
-#ifndef NO_MPI
-    /*--- Synchronization point after the integration definition subroutine ---*/
-    MPI::COMM_WORLD.Barrier();
-#endif
-    
-    /*--- Definition of the numerical method class:
-     numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
-     The numerics class contains the implementation of the numerical methods for
-     evaluating convective or viscous fluxes between any two nodes in the edge-based
-     data structure (centered, upwind, galerkin), as well as any source terms
-     (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
-    
-    numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetMGLevels()+1];
-    Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
-                           geometry_container[iZone], config_container[iZone], iZone);
-    
-#ifndef NO_MPI
-    /*--- Synchronization point after the solver definition subroutine ---*/
-    MPI::COMM_WORLD.Barrier();
-#endif
-    
-    /*--- Computation of wall distances for turbulence modeling ---*/
-    
-    if ( (config_container[iZone]->GetKind_Solver() == RANS)     ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS)    )
-      geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
-    
-    /*--- Computation of positive surface area in the z-plane which is used for
-     the calculation of force coefficient (non-dimensionalization). ---*/
-    
-    geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
-    
-    /*--- Set the near-field and interface boundary conditions, if necessary. ---*/
-    
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-      geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
-      geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
-    }
-    
+  /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
+   The solver classes are specific to a particular set of governing equations,
+   and they contain the subroutines with instructions for computing each spatial
+   term of the PDE, i.e. loops over the edges to compute convective and viscous
+   fluxes, loops over the nodes to compute source terms, and routines for
+   imposing various boundary condition type for the PDE. ---*/
+  
+  solver_container[ZONE_0] = new CSolver** [config_container[ZONE_0]->GetMGLevels()+1];
+  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++)
+    solver_container[ZONE_0][iMesh] = NULL;
+  
+  for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++) {
+    solver_container[ZONE_0][iMesh] = new CSolver* [MAX_SOLS];
+    for (iSol = 0; iSol < MAX_SOLS; iSol++)
+      solver_container[ZONE_0][iMesh][iSol] = NULL;
   }
+  
+  Solver_Preprocessing(solver_container[ZONE_0], geometry_container[ZONE_0],
+                       config_container[ZONE_0], ZONE_0);
+  
+#ifndef NO_MPI
+  /*--- Synchronization point after the solution preprocessing subroutine ---*/
+  MPI::COMM_WORLD.Barrier();
+#endif
+  
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
+  
+  /*--- Definition of the integration class: integration_container[#ZONES][#EQ_SYSTEMS].
+   The integration class orchestrates the execution of the spatial integration
+   subroutines contained in the solver class (including multigrid) for computing
+   the residual at each node, R(U) and then integrates the equations to a
+   steady state or time-accurately. ---*/
+  
+  integration_container[ZONE_0] = new CIntegration*[MAX_SOLS];
+  Integration_Preprocessing(integration_container[ZONE_0], geometry_container[ZONE_0],
+                            config_container[ZONE_0], ZONE_0);
+  
+#ifndef NO_MPI
+  /*--- Synchronization point after the integration definition subroutine ---*/
+  MPI::COMM_WORLD.Barrier();
+#endif
+  
+  /*--- Definition of the numerical method class:
+   numerics_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS][#EQ_TERMS].
+   The numerics class contains the implementation of the numerical methods for
+   evaluating convective or viscous fluxes between any two nodes in the edge-based
+   data structure (centered, upwind, galerkin), as well as any source terms
+   (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
+  
+  numerics_container[ZONE_0] = new CNumerics***[config_container[ZONE_0]->GetMGLevels()+1];
+  Numerics_Preprocessing(numerics_container[ZONE_0], solver_container[ZONE_0],
+                         geometry_container[ZONE_0], config_container[ZONE_0], ZONE_0);
+  
+#ifndef NO_MPI
+  /*--- Synchronization point after the solver definition subroutine ---*/
+  MPI::COMM_WORLD.Barrier();
+#endif
+  
+  /*--- Computation of wall distances for turbulence modeling ---*/
+  
+  if ( (config_container[ZONE_0]->GetKind_Solver() == RANS)     ||
+      (config_container[ZONE_0]->GetKind_Solver() == ADJ_RANS) )
+    geometry_container[ZONE_0][MESH_0]->ComputeWall_Distance(config_container[ZONE_0]);
+  
+  /*--- Computation of positive surface area in the z-plane which is used for
+   the calculation of force coefficient (non-dimensionalization). ---*/
+  
+  geometry_container[ZONE_0][MESH_0]->SetPositive_ZArea(config_container[ZONE_0]);
+  
+  /*--- Surface grid deformation using design variables ---*/
+  if (rank == MASTER_NODE) cout << endl << "------------------------- Surface grid deformation ----------------------" << endl;
+  
+  /*--- Definition and initialization of the surface deformation class ---*/
+  surface_movement[ZONE_0]->CopyBoundary(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+  
+  /*--- Surface grid deformation ---*/
+  if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
+  surface_movement[ZONE_0]->SetAirfoil(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+  
+#ifndef NO_MPI
+  /*--- MPI syncronization point ---*/
+  MPI::COMM_WORLD.Barrier();
+#endif
+  
+  /*--- Volumetric grid deformation ---*/
+  if (rank == MASTER_NODE) cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;
+  
+  /*--- Definition of the Class for grid movement ---*/
+  
+  if (rank == MASTER_NODE) cout << "Performing the deformation of the volumetric grid." << endl;
+  grid_movement[ZONE_0] = new CVolumetricMovement(geometry_container[ZONE_0][MESH_0]);
+  grid_movement[ZONE_0]->SetVolume_Deformation(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], true);
+  grid_movement[ZONE_0]->UpdateMultiGrid(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -263,10 +267,8 @@ int main(int argc, char *argv[]) {
      in the config class. ---*/
     
     StartTime = clock();
-    for (iZone = 0; iZone < nZone; iZone++) {
-      config_container[iZone]->SetExtIter(ExtIter);
-      config_container[iZone]->UpdateCFL(ExtIter);
-    }
+    config_container[ZONE_0]->SetExtIter(ExtIter);
+    config_container[ZONE_0]->UpdateCFL(ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     MeanFlowIteration(output, integration_container, geometry_container,
@@ -329,27 +331,23 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Solver class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+  //    for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++) {
   //      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-  //        if (solver_container[iZone][iMesh][iSol] != NULL) {
-  //          delete solver_container[iZone][iMesh][iSol];
+  //        if (solver_container[ZONE_0][iMesh][iSol] != NULL) {
+  //          delete solver_container[ZONE_0][iMesh][iSol];
   //        }
   //      }
-  //      delete solver_container[iZone][iMesh];
+  //      delete solver_container[ZONE_0][iMesh];
   //    }
-  //    delete solver_container[iZone];
-  //  }
+  //    delete solver_container[ZONE_0];
   //  delete [] solver_container;
   //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
   
   /*--- Geometry class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      delete geometry_container[iZone][iMesh];
+  //    for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetMGLevels(); iMesh++) {
+  //      delete geometry_container[ZONE_0][iMesh];
   //    }
-  //    delete geometry_container[iZone];
-  //  }
+  //    delete geometry_container[ZONE_0];
   //  delete [] geometry_container;
   //  cout <<"Geometry container, deallocated." << endl;
   
