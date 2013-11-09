@@ -900,6 +900,30 @@ double CTNE2EulerVariable::CalcEve(double *V, CConfig *config, unsigned short va
 }
 
 
+double CTNE2EulerVariable::CalcHs(double *V, CConfig *config,
+                                  unsigned short val_Species) {
+
+  double Ru, *xi, *Ms, *hf, T, eve, hs;
+  
+  /*--- Read from config ---*/
+  xi = config->GetRotationModes();
+  Ms = config->GetMolar_Mass();
+  hf = config->GetEnthalpy_Formation();
+  
+  /*--- Rename for convenience ---*/
+  Ru = UNIVERSAL_GAS_CONSTANT;
+  T = V[T_INDEX];
+  
+  /*--- Calculate vibrational-electronic energy per unit mass ---*/
+  eve = CalcEve(V, config, val_Species);
+  
+  hs = Ru/Ms[val_Species]*T
+     + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]
+     + hf[val_Species] + eve;
+  
+  return hs;
+}
+
 void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
                                   double *val_dTdU) {
   
@@ -960,15 +984,15 @@ void CTNE2EulerVariable::CalcdTvedU(double *V, CConfig *config,
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     eve = CalcEve(V, config, iSpecies);
-    dTvedU[iSpecies] = -eve/rhoCvve;
+    val_dTvedU[iSpecies] = -eve/rhoCvve;
   }
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     val_dTvedU[nSpecies+iDim] = 0.0;
   
   /*--- Energy derivatives ---*/
-  dTvedU[nSpecies+nDim]   = 0.0;
-  dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
+  val_dTvedU[nSpecies+nDim]   = 0.0;
+  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
   
 }
 
@@ -1025,6 +1049,24 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 }
 
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }
+
+
+CTNE2NSVariable::CTNE2NSVariable(unsigned short val_ndim,
+                                 unsigned short val_nvar,
+                                 unsigned short val_nprimvar,
+                                 unsigned short val_nprimvargrad,
+                                 CConfig *config) : CTNE2EulerVariable(val_ndim,
+                                                                       val_nvar,
+                                                                       val_nprimvar,
+                                                                       val_nprimvargrad,
+                                                                       config) {
+  
+  Temperature_Ref = config->GetTemperature_Ref();
+	Viscosity_Ref   = config->GetViscosity_Ref();
+	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+	Prandtl_Lam     = config->GetPrandtl_Lam();
+  DiffusionCoeff  = new double[nSpecies];
+}
 
 
 CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
@@ -1187,9 +1229,6 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
-  
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    DiffusionCoeff[iSpecies] = 0.0;
 }
 
 

@@ -557,4 +557,12 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
 			val_Jacobian_jj[iVar][iVar] -= Epsilon_0*StretchingFactor*MeanLambda;
 		}
 	}
+  
+//  cout << "Res_i: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    cout << val_resvisc_i[iVar] << endl;
+//  cout << endl << endl << "Res_j: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    cout << val_resvisc_j[iVar] << endl;
+//  cin.get();
 }

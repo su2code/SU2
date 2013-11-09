@@ -1121,6 +1121,11 @@ public:
   virtual double CalcEve(double *V, CConfig *config, unsigned short val_Species);
   
   /*!
+   * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
+   */
+  virtual double CalcHs(double *V, CConfig *config, unsigned short val_Species);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
@@ -3083,6 +3088,11 @@ public:
   double CalcEve(double *V, CConfig *config, unsigned short val_Species);
   
   /*!
+   * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
+   */
+  double CalcHs(double *V, CConfig *config, unsigned short val_Species);
+  
+  /*!
    * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
    * \param[in] config - Configuration settings
    * \param[in] dPdU - Passed-by-reference array to assign the derivatives
@@ -3366,6 +3376,19 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CTNE2NSVariable(void);
+  
+  
+  /*!
+	 * \overload
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of conserved variables.
+   * \param[in] val_nvarprim - Number of primitive variables.
+   * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  CTNE2NSVariable(unsigned short val_ndim, unsigned short val_nvar,
+                  unsigned short val_nprimvar, unsigned short val_nprimvargrad,
+                  CConfig *config);
   
 	/*!
 	 * \overload

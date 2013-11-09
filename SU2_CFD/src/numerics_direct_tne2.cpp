@@ -60,7 +60,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   Proj_flux_tensor_i = new double [nVar];
 	Proj_flux_tensor_j = new double [nVar];
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
@@ -80,7 +80,7 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
 	delete [] invP_Tensor;
   delete [] Proj_flux_tensor_i;
 	delete [] Proj_flux_tensor_j;
-  delete [] var;
+//  delete [] var;
 }
 
 void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
@@ -236,7 +236,7 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
 		invP_Tensor[iVar] = new double [nVar];
 	}
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwMSW_TNE2::~CUpwMSW_TNE2(void) {
@@ -268,7 +268,7 @@ CUpwMSW_TNE2::~CUpwMSW_TNE2(void) {
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
-  delete [] var;
+//  delete [] var;
 }
 
 void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
@@ -1314,7 +1314,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
   MeandPdU = new double[nVar];
 	Proj_flux_tensor = new double [nVar];
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CCentLax_TNE2::~CCentLax_TNE2(void) {
@@ -1719,7 +1719,7 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   dRfok  = new double[nVar];
   dRbok  = new double[nVar];
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   
 }
 
@@ -1741,7 +1741,7 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] dRfok;
   delete [] dRbok;
   
-  delete [] var;
+//  delete [] var;
   
 }
 
