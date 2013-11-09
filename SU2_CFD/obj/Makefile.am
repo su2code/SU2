@@ -19,6 +19,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
+		../include/functions_turbulent.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
 		../include/solver_structure.hpp \
@@ -32,14 +33,12 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/iteration_structure.cpp \
 		../src/numerics_adjoint_levelset.cpp \
 		../src/numerics_adjoint_mean.cpp \
-		../src/numerics_adjoint_plasma.cpp \
 		../src/numerics_adjoint_tne2.cpp \
 		../src/numerics_adjoint_turbulent.cpp \
 		../src/numerics_direct_poisson.cpp \
 		../src/numerics_direct_elasticity.cpp \
 		../src/numerics_direct_heat.cpp \
 		../src/numerics_direct_mean.cpp \
-		../src/numerics_direct_plasma.cpp \
 		../src/numerics_direct_tne2.cpp \
 		../src/numerics_direct_transition.cpp \
 		../src/numerics_direct_turbulent.cpp \
@@ -48,6 +47,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_linearized_mean.cpp \
 		../src/numerics_linearized_turbulent.cpp \
 		../src/numerics_structure.cpp \
+		../src/functions_turbulent.hpp \
 		../src/numerics_template.cpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
@@ -55,14 +55,12 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/output_paraview.cpp \
 		../src/solver_adjoint_levelset.cpp \
 		../src/solver_adjoint_mean.cpp \
-		../src/solver_adjoint_plasma.cpp \
 		../src/solver_adjoint_tne2.cpp \
 		../src/solver_adjoint_turbulent.cpp \
 		../src/solver_direct_poisson.cpp \
 		../src/solver_direct_elasticity.cpp \
 		../src/solver_direct_heat.cpp \
 		../src/solver_direct_mean.cpp \
-		../src/solver_direct_plasma.cpp \
 		../src/solver_direct_tne2.cpp \
 		../src/solver_direct_transition.cpp \
 		../src/solver_direct_turbulent.cpp \
@@ -74,14 +72,12 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/SU2_CFD.cpp \
 		../src/variable_adjoint_levelset.cpp \
 		../src/variable_adjoint_mean.cpp \
-		../src/variable_adjoint_plasma.cpp \
 		../src/variable_adjoint_tne2.cpp \
 		../src/variable_adjoint_turbulent.cpp \
 		../src/variable_direct_poisson.cpp \
 		../src/variable_direct_elasticity.cpp \
 		../src/variable_direct_heat.cpp \
 		../src/variable_direct_mean.cpp \
-		../src/variable_direct_plasma.cpp \
 		../src/variable_direct_tne2.cpp \
 		../src/variable_direct_transition.cpp \
 		../src/variable_direct_turbulent.cpp \

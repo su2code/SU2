@@ -3,6 +3,12 @@
 *.lo
 *.o
 
+# Autoconf/Automake
+*.Po
+*.dirstamp
+*.log
+*.status
+
 # Compiled Dynamic libraries
 *.so
 *.dylib
@@ -17,6 +23,7 @@
 
 # Mac files
 *.DS_Store
+*.xcuserdatad
 
 # Compiled Makefiles
 Makefile

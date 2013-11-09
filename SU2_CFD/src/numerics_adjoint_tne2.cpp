@@ -220,12 +220,12 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
 
 	/*--- Calculate Projected Flux Jacobians (inviscid) ---*/
   // Note: Scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal
-  GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
-                     dPdU_i, dPdrhoE_i, dPdrhoEve_i, Normal, 0.5,
-                     Proj_Jac_Tensor_i);
-  GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
-                     dPdU_j, dPdrhoE_j, dPdrhoEve_j, Normal, 0.5,
-                     Proj_Jac_Tensor_j);
+//  GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
+//                     dPdU_i, dPdrhoE_i, dPdrhoEve_i, Normal, 0.5,
+//                     Proj_Jac_Tensor_i);
+//  GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
+//                     dPdU_j, dPdrhoE_j, dPdrhoEve_j, Normal, 0.5,
+//                     Proj_Jac_Tensor_j);
   
 	for (iVar = 0; iVar < nVar; iVar++) {
 		val_residual_i[iVar] = 0.0; val_residual_j[iVar] = 0.0;
@@ -699,12 +699,12 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
   dPdrhoEve_j = -dPdrhoE_j + rho_el_j * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_j;
   
 	/*--- Calculate Projected Flux Jacobians (inviscid) ---*/
-  GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
-                     dPdU_i, dPdrhoE_i, dPdrhoEve_i, Normal_ij, 1.0,
-                     Proj_Jac_Tensor_i);
-  GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
-                     dPdU_j, dPdrhoE_j, dPdrhoEve_j, Normal_ji, 1.0,
-                     Proj_Jac_Tensor_j);
+//  GetInviscidProjJac(Density_i, Velocity_i, &Enthalpy_i, &Energy_ve_i,
+//                     dPdU_i, dPdrhoE_i, dPdrhoEve_i, Normal_ij, 1.0,
+//                     Proj_Jac_Tensor_i);
+//  GetInviscidProjJac(Density_j, Velocity_j, &Enthalpy_j, &Energy_ve_j,
+//                     dPdU_j, dPdrhoE_j, dPdrhoEve_j, Normal_ji, 1.0,
+//                     Proj_Jac_Tensor_j);
 	
   
   /*--- Compute inviscid residual at point i ---*/

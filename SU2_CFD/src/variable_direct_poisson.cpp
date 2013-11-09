@@ -27,12 +27,15 @@ CPotentialVariable::CPotentialVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
 	Charge_Density = NULL;
-	PlasmaRhoUGradient = NULL;
   
 }
 
-CPotentialVariable::CPotentialVariable(double val_potential, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+CPotentialVariable::CPotentialVariable(double val_potential,
+                                       unsigned short val_ndim,
+                                       unsigned short val_nvar,
+                                       CConfig *config) : CVariable(val_ndim,
+                                                                    val_nvar,
+                                                                    config) {
 	unsigned short iVar;
   
 	Residual_Old = new double [nVar];
@@ -45,20 +48,10 @@ CPotentialVariable::CPotentialVariable(double val_potential, unsigned short val_
 	}
 	Charge_Density = new double [2];
   
-	PlasmaRhoUGradient = new double* [3];
-	for (iVar = 0; iVar < 3; iVar++)
-		PlasmaRhoUGradient[iVar] = new double [nDim];
-  
 }
 
 CPotentialVariable::~CPotentialVariable(void) {
-  unsigned short iVar;
   
 	if (Charge_Density != NULL) delete [] Charge_Density;
-  if (PlasmaRhoUGradient != NULL) {
-    for (iVar = 0; iVar < 3; iVar++)
-      delete PlasmaRhoUGradient[iVar];
-    delete [] PlasmaRhoUGradient;
-  }
   
 }

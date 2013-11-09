@@ -468,10 +468,17 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;
+  double Tmin, Tmax, Tvemin, Tvemax;
   
   /*--- Set tolerance for Newton-Raphson method ---*/
   tol     = 1.0E-4;
   maxIter = 100;
+  
+  /*--- Set temperature clipping values ---*/
+  Tmin   = 100.0;
+  Tmax   = 6E4;
+  Tvemin = 100.0;
+  Tvemax = 4E4;
   
   /*--- Determine the number of heavy species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -497,6 +504,12 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   rhoCvtr  = 0.0;                              // Mix spec. heat @ const. volume [J/(kg*K)]
   sqvel    = 0.0;                              // Velocity^2 [m2/s2]
   
+  /*--- Error checking ---*/
+  if (rhoE < 0.0)
+    rhoE = EPS;
+  if (rhoEve < 0.0)
+    rhoEve = EPS;
+  
   /*--- Calculate mixture properties (heavy particles only) ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     rhoCvtr  += Solution[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
@@ -515,8 +528,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   // NOTE: Use T as an initial guess
   Tve   = Primitive[TVE_INDEX];
   Tve_o = Primitive[TVE_INDEX];
-//  Tve   = Primitive[T_INDEX];
-//  Tve_o = Primitive[T_INDEX];
   
   for (iIter = 0; iIter < maxIter; iIter++) {
     rhoEve_t = 0.0;
@@ -575,7 +586,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     
     /*--- Check for non-physical conditions ---*/
     if ((Tve2 != Tve2) || (Tve2 < 0))
-      Tve2 = Primitive[T_INDEX];
+      Tve2 = 1.4*Primitive[T_INDEX];
     
     /*--- Check for convergence ---*/
     if (fabs(Tve2-Tve) < tol) break;
@@ -593,6 +604,23 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   }
   
   Primitive[TVE_INDEX] = Tve2;
+  
+  /*--- Error checking ---*/
+  if (Primitive[T_INDEX] <= Tmin) {
+    cout << "WARNING: T = " << Primitive[T_INDEX] << "\t -- Clipping at: " << Tmin << endl;
+    Primitive[T_INDEX] = Tmin;
+  } else if (Primitive[T_INDEX] >= Tmax) {
+    cout << "WARNING: T = " << Primitive[T_INDEX] << "\t -- Clipping at: " << Tmax << endl;
+    Primitive[T_INDEX] = Tmax;
+  }
+  if (Primitive[TVE_INDEX] <= Tvemin) {
+    cout << "WARNING: Tve = " << Primitive[TVE_INDEX] << "\t -- Clipping at: " << Tvemin << endl;
+    Primitive[TVE_INDEX] = Tvemin;
+  } else if (Primitive[TVE_INDEX] >= Tvemax) {
+    cout << "WARNING: Tve = " << Primitive[TVE_INDEX] << "\t -- Clipping at: " << Tvemax << endl;
+    Primitive[TVE_INDEX] = Tvemax;
+  }
+    
   
   /*--- Assign Gas Properties ---*/
   Primitive[RHOCVTR_INDEX] = rhoCvtr;
@@ -803,7 +831,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   }
   // Momentum
   for (iDim = 0; iDim < nDim; iDim++)
-    val_dPdU[nSpecies+iDim] = -conc*V[VEL_INDEX+iDim]/rhoCvtr;
+    val_dPdU[nSpecies+iDim] = -conc*Ru*V[VEL_INDEX+iDim]/rhoCvtr;
   
   // Total energy
   val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;

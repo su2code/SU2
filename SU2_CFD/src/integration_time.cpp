@@ -27,17 +27,26 @@ CMultiGridIntegration::CMultiGridIntegration(CConfig *config) : CIntegration(con
 
 CMultiGridIntegration::~CMultiGridIntegration(void) { }
 
-void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config,
-                                                unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
+                                                CSolver ****solver_container,
+                                                CNumerics *****numerics_container,
+                                                CConfig **config,
+                                                unsigned short RunTime_EqSystem,
+                                                unsigned long Iteration,
+                                                unsigned short iZone) {
 	unsigned short FinestMesh, iMGLevel;
 	double monitor = 1.0;
     
 	const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
-	const bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
-	const bool direct = ((config[iZone]->GetKind_Solver() == EULER) || (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                   (config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) ||
-                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) ||
-                   (config[iZone]->GetKind_Solver() == PLASMA_EULER) || (config[iZone]->GetKind_Solver() == PLASMA_NAVIER_STOKES));
+	const bool startup_multigrid = ((config[iZone]->GetRestart_Flow())     &&
+                                  (RunTime_EqSystem == RUNTIME_FLOW_SYS) &&
+                                  (Iteration == 0));
+	const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
+                       (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
+                       (config[iZone]->GetKind_Solver() == RANS)                          ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER)         ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
     const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
     /*--- If low fidelity simulation ---*/

@@ -1586,7 +1586,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- In case there is no restart file ---*/
   if (restart_file.fail()) {
-    cout << "There is no SU2 restart file!!" << endl;
+    cout << "SU2 flow file " << filename << " not found" << endl;
     exit(1);
   }
   

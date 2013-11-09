@@ -48,8 +48,6 @@ def main():
     options.compute     = options.compute.upper() == 'TRUE'
     options.divide_grid = options.divide_grid.upper() == 'TRUE'
 
-    print "here2"
-    print options.filename
     if options.filename == None:
         raise Exception("No config file provided. Use -f flag")
     if options.partitions <= 0:
