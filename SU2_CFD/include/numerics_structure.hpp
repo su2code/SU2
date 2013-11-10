@@ -33,7 +33,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "nnet.hpp"
-#include "../include/functions_turbulent.hpp"
+#include "functions_turbulent.hpp"
 #include "variable_structure.hpp"
 
 using namespace std;
@@ -3741,7 +3741,7 @@ public:
 };
 
 /*!
- * \class CSourcePieceWise_TurbML
+ * \class CSourcePieceWise_TurbSA
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
@@ -3889,7 +3889,14 @@ private:
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
   CNeurNet * MLModel;
-  
+  SpalartAllmarasInputs* SAInputs;
+  SpalartAllmarasConstants* SAConstants;
+  int nResidual;
+  int nJacobian;
+  double* testResidual;
+  double* testJacobian;
+  double** DUiDXj;
+  double* DNuhatDXj;
 public:
 	/*!
 	 * \brief Constructor of the class.
