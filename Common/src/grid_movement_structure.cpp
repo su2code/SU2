@@ -92,12 +92,18 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
   double MinVolume, NumError;
+  bool Screen_Output = true;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
+  /*--- Decide if there is going to be a screen output ---*/
+  
+  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_EDU) Screen_Output = false;
+
   /*--- Initialize the number of spatial dimensions, length of the state
    vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
   
@@ -158,8 +164,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
-    
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
+
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, Screen_Output);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -178,7 +184,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     MinVolume = Check_Grid(geometry);
     
-    if (rank == MASTER_NODE) {
+    if ((rank == MASTER_NODE) && Screen_Output) {
       cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
       << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVolume
       << ". Error: " << NumError << "." <<endl;
@@ -1386,9 +1392,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_EDU))) {
+		if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -4450,10 +4455,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   vector<double> Svalue, Xcoord, Ycoord, Xcoord2, Ycoord2, Xcoord_Aux, Ycoord_Aux;
   bool AddBegin = true, AddEnd = true;
   double x_i, x_ip1, y_i, y_ip1;
-
-  
-  
-  if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
+  char AirfoilFile[256];
   
   /*--- Read in the airfoil coordinates from file. It is assumed that the 
    airfoil coordinates are given in order starting from the trailing edge, 
@@ -4464,7 +4466,10 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   /*--- Open the restart file, throw an error if this fails. ---*/
   
-  airfoil_file.open("airfoil.dat", ios::in);
+  cout << "Enter the name of file with the airfoil information: ";
+  cin.get(AirfoilFile,256);
+
+  airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
     exit(1);
@@ -4554,7 +4559,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   double TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]-1; iVertex++) {
         Coord_i = boundary->vertex[iMarker][iVertex]->GetCoord();
         Coord_ip1 = boundary->vertex[iMarker][iVertex+1]->GetCoord();
@@ -4577,7 +4582,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     Arch = 0.0;
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
       VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-      if (config->GetMarker_All_DV(iMarker) == YES) {
+      if (config->GetMarker_All_Moving(iMarker) == YES) {
         Point = boundary->vertex[iMarker][iVertex]->GetNode();
         Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
         
