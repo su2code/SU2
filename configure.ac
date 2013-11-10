@@ -72,6 +72,9 @@ AC_ARG_ENABLE(GDC,
 AC_ARG_ENABLE(UMC,
    	AS_HELP_STRING([--disable-UMC], [build the SU2_UMC executable (default = yes)]), 
 	[build_UMC=$enableval], [build_UMC="yes"])
+AC_ARG_ENABLE(EDU,
+   	AS_HELP_STRING([--disable-EDU], [build the SU2_EDU executable (default = yes)]), 
+	[build_EDU=$enableval], [build_EDU="yes"])
 
 ##########################
 
@@ -286,6 +289,7 @@ AM_CONDITIONAL([BUILD_PBC],[test $build_PBC != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GDC],[test $build_GDC != "no"])
 AM_CONDITIONAL([BUILD_UMC],[test $build_UMC != "no"])
+AM_CONDITIONAL([BUILD_EDU],[test $build_EDU != "no"])
 
 ###########################
 
@@ -305,6 +309,7 @@ AC_OUTPUT(Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GDC/obj/Makefile \
 	SU2_UMC/obj/Makefile \
+	SU2_EDU/obj/Makefile \
 	SU2_PY/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
@@ -337,6 +342,7 @@ Build Configuration Summary:
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
     Build SU2_UMC:        $build_UMC
+    Build SU2_EDU:        $build_EDU
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, and update your [\$]PATH with [\$]SU2_RUN
 

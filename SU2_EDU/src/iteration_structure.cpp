@@ -25,15 +25,9 @@
 
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+                       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement) {
   
-	unsigned short iZone;
-  
-	bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	if (time_spectral){
-    nZone = config_container[ZONE_0]->GetnTimeInstances();
-  }
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
@@ -41,51 +35,33 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 	int rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
-	for (iZone = 0; iZone < nZone; iZone++) {
+  /*--- Set the value of the internal iteration ---*/
+  
+  IntIter = ExtIter;
+  
+  /*--- Set the initial condition ---*/
+  
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0], solver_container[ZONE_0], config_container[ZONE_0], ExtIter);
+  
+  /*--- Update global parameters ---*/
+  
+  if (config_container[ZONE_0]->GetKind_Solver() == EULER) { config_container[ZONE_0]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); }
+  if (config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) { config_container[ZONE_0]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); }
+  if (config_container[ZONE_0]->GetKind_Solver() == RANS) { config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); }
+  
+  /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+  
+  integration_container[ZONE_0][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                               config_container, RUNTIME_FLOW_SYS, IntIter, ZONE_0);
+  
+  /*--- Solve the turbulence model ---*/
+  
+  if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
     
-		/*--- Set the value of the internal iteration ---*/
+    config_container[ZONE_0]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
+    integration_container[ZONE_0][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                  config_container, RUNTIME_TURB_SYS, IntIter, ZONE_0);
     
-		IntIter = ExtIter;
-    
-		/*--- Set the initial condition ---*/
-    
-		solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
-    
-		/*--- Update global parameters ---*/
-    
-		if (config_container[iZone]->GetKind_Solver() == EULER){
-      config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-    }
-		if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES){
-      config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-    }
-		if (config_container[iZone]->GetKind_Solver() == RANS){
-      config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
-    }
-    
-		/*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-    
-		integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                config_container, RUNTIME_FLOW_SYS, IntIter, iZone);
-    
-		if (config_container[iZone]->GetKind_Solver() == RANS) {
-      
-      /*--- Solve the turbulence model ---*/
-      
-			config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
-			integration_container[iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                   config_container, RUNTIME_TURB_SYS, IntIter, iZone);
-      
-			/*--- Solve transition model ---*/
-      
-			if (config_container[iZone]->GetKind_Trans_Model() == LM) {
-				config_container[iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
-				integration_container[iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                      config_container, RUNTIME_TRANS_SYS, IntIter, iZone);
-			}
-      
-		}
-    
-	}
+  }
   
 }

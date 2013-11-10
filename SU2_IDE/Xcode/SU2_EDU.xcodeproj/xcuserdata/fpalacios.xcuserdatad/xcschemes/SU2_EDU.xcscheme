@@ -61,6 +61,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "Euler_Basic_ConfigFile.cfg"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "RANS_Basic_ConfigFile.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

@@ -147,27 +147,6 @@ public:
 	 */
 	void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone);
 
-	/*! 
-	 * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] AdjSolution - Adjoint solution.
-	 * \param[in] FlowSolution - Flow solution.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 * \param[in] val_iZone - Current zone number in the grid file.
-	 */
-	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
-
-	/*! 
-	 * \brief Create and write the file with linearized coefficient on the surface for serial computations
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] LinSolution - Linearized solution.
-	 * \param[in] val_filename - Name of the output file.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
-	void SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSolver *LinSolution, string val_filename, unsigned long iExtIter);
-
   /*!
 	 * \brief Merge the geometry into a data structure used for output file writing.
 	 * \param[in] config - Definition of the particular problem.
@@ -207,15 +186,6 @@ public:
 	 * \param[in] val_nZone - iZone index.
 	 */
 	void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-	 * \brief Merge the solution into a data structure used for output file writing.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution - Flow, adjoint or linearized solution.
-	 * \param[in] val_nZone - iZone index.
-	 */
-	void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
   
   /*!
 	 * \brief Write a native SU2 restart file.

@@ -452,7 +452,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Start up iterations using the fine grid only */
 	AddScalarOption("START_UP_ITER", nStartUpIter, 0);
 	/* DESCRIPTION: Multi-grid Levels */
-	AddScalarOption("MGLEVEL", nMultiLevel, 0);
+	AddScalarOption("MGLEVEL", nMultiLevel, 3);
 	/* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
 	AddScalarOption("MGCYCLE", MGCycle, 0);
 	/* DESCRIPTION: Multi-grid pre-smoothing level */
@@ -476,9 +476,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* CONFIG_CATEGORY: Spatial Discretization */
   
 	/* DESCRIPTION: Numerical method for spatial gradients */
-	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "GREEN_GAUSS");
+	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "WEIGHTED_LEAST_SQUARES");
 	/* DESCRIPTION: Coefficient for the limiter */
-	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
+	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
 	AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
@@ -490,7 +490,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "NONE");
+	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "VENKATAKRISHNAN");
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
@@ -509,7 +509,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
 	
 	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
+	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "VENKATAKRISHNAN");
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 	/* DESCRIPTION: Viscous numerical method */
@@ -966,7 +966,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     exit(1);
     }
-    
+  }
+  
+  /*--- Set default values for the grid based in the Reynolds number for SU2_EDU ---*/
+  
+  if (Kind_SU2 == SU2_EDU) {
+    if (Kind_Solver == EULER) Mesh_FileName = "naca0012_inviscid.su2";
+    else {
+      if (Reynolds < 1E5) Mesh_FileName = "naca0012_re1e5.su2";
+      if ((Reynolds >= 1E5) && (Reynolds <= 1E7)) Mesh_FileName = "naca0012_re1e6.su2";
+      if (Reynolds > 1E7) Mesh_FileName = "naca0012_re1e7.su2";
+    }
   }
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
@@ -978,7 +988,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL) || (Kind_SU2 == SU2_EDU))) Mesh_FileFormat = SU2;
 
-//  /*--- Divide grid if runnning SU2_MDC ---*/
+  /*--- Divide grid if runnning SU2_MDC ---*/
 //  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
@@ -1533,13 +1543,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 	// make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
 	unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
+  
 	if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
 		if (nMG_PreSmooth > nMultiLevel+1) {
+      
 			// truncate by removing unnecessary elements at the end
 			for (unsigned int i = 0; i <= nMultiLevel; i++)
 				tmp_smooth[i] = MG_PreSmooth[i];
 			delete [] MG_PreSmooth;
 		} else {
+      
 			// add additional elements equal to last element
 			for (unsigned int i = 0; i < nMG_PreSmooth; i++)
 				tmp_smooth[i] = MG_PreSmooth[i];
@@ -1547,12 +1560,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 				tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
 			delete [] MG_PreSmooth;
 		}
+    
 		nMG_PreSmooth = nMultiLevel+1;
 		MG_PreSmooth = new unsigned short[nMG_PreSmooth];
 		for (unsigned int i = 0; i < nMG_PreSmooth; i++)
 			MG_PreSmooth[i] = tmp_smooth[i];
 	}
-
+	if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
+    delete [] MG_PreSmooth;
+		nMG_PreSmooth = nMultiLevel+1;
+		MG_PreSmooth = new unsigned short[nMG_PreSmooth];
+		for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+			MG_PreSmooth[i] = i+1;
+  }
+  
 	if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
 		if (nMG_PostSmooth > nMultiLevel+1) {
 			// truncate by removing unnecessary elements at the end
@@ -1572,6 +1593,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		for (unsigned int i = 0; i < nMG_PostSmooth; i++)
 			MG_PostSmooth[i] = tmp_smooth[i];
 	}
+  if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
+    delete [] MG_PostSmooth;
+		nMG_PostSmooth = nMultiLevel+1;
+		MG_PostSmooth = new unsigned short[nMG_PostSmooth];
+		for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+			MG_PostSmooth[i] = 0;
+  }
 
 	if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
 		if (nMG_CorrecSmooth > nMultiLevel+1) {
@@ -1592,7 +1620,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
 			MG_CorrecSmooth[i] = tmp_smooth[i];
 	}
-
+  if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
+    delete [] MG_CorrecSmooth;
+		nMG_CorrecSmooth = nMultiLevel+1;
+		MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
+		for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+			MG_CorrecSmooth[i] = 0;
+  }
+  
 	// override MG Smooth parameters
 	if (nMG_PreSmooth != 0)
 		MG_PreSmooth[MESH_0] = 1;
