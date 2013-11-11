@@ -3890,6 +3890,8 @@ private:
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
   CNeurNet * MLModel;
+  
+  
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
   int nResidual;

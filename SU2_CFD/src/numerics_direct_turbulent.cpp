@@ -298,8 +298,6 @@ CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) {
 
 void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  // WHEN CHANGE, REMEMBER TO MULTIPLY BY THE VOLUME
-  
   
   if (incompressible) { Density_i = DensityInc_i; }
   else { Density_i = U_i[0]; }
@@ -413,22 +411,26 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   
   // Check if the old and new match
   //for (int i = 0; i < nResidual; i++){
-  if (abs(Production - testResidual[0]) > 1e-14){
+  if (abs(Production - testResidual[0]) > 1e-15){
     cout << "Production doesn't match" << endl;
+    cout << "diff is " << Production - testResidual[0] << endl;
     exit(10);
   }
-  if (abs(Destruction - testResidual[1]) > 1e-14){
+  if (abs(Destruction - testResidual[1]) > 1e-15){
     cout << "Destruction doesn't match" << endl;
         exit(10);
   }
-  if (abs(CrossProduction - testResidual[2]) > 1e-14){
+  if (abs(CrossProduction - testResidual[2]) > 1e-15){
     cout << "cpp Cross " <<  CrossProduction << endl;
     cout << "Func cross " << testResidual[2] << endl;
     cout << "dist_i " << dist_i << endl;
     cout << "Cross production doesn't match" << endl;
         exit(10);
   }
-  if (abs(val_residual[0]-testResidual[3]) > 1e-14){
+  if (abs(val_residual[0]-testResidual[3]) > 1e-15){
+    cout << "Val residual is " << val_residual[0] << endl;
+    cout << "Test residual is " << testResidual[3] << endl;
+    cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
     cout << "Full residual doesn't match" << endl;
   }
 }
@@ -702,8 +704,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   if (incompressible) { Density_i = DensityInc_i; }
   else { Density_i = U_i[0]; }
   val_Jacobian_i[0][0] = 0.0;
-
-  if (dist_i > 0.0) {
+  
     // Call turbulence model
     // Get all the variables
     int nInputMLVariables = 9;
@@ -739,10 +740,30 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     
     this->MLModel->Predict(input, output);
-    val_residual[0] = output[0];
+    val_residual[0] = output[0]*Volume;
     if (dist_i <= 0.0){
       val_residual[0] = 0;
     }
+    this->MLModel->inputScaler->Scale(input);
+    
+    /*
+    // Compute the SA prediction
+    SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
+    
+    
+    SpalartAllmarasSourceTerm(SAInputs, SAConstants, testResidual, testJacobian);
+    
+    for (int i=0; i < nResidual; i++){
+      testResidual[i] *= Volume;
+    }
+    
+    for (int i=0; i < nJacobian; i++){
+      testJacobian[i] *= Volume;
+    }
+     */
+    
+    
+    
     /*
     cout << "Inputs: ";
     for (int i=0; i< nInputMLVariables; i++){
@@ -752,7 +773,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     cout << "Scaled inputs: ";
      */
-    this->MLModel->inputScaler->Scale(input);
     /*
     for (int i=0; i< nInputMLVariables; i++){
       cout << input[i] << " ";
@@ -765,7 +785,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     delete input;
     delete output;
-  }
   
 }
 

@@ -215,7 +215,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
 double ComputeVorticity(int nDim, double** DUiDXj){
   double Vorticity = (DUiDXj[1][0]-DUiDXj[0][1])*(DUiDXj[1][0]-DUiDXj[0][1]);
   if (nDim == 3){
-    Vorticity += ( (DUiDXj[2][1]-DUiDXj[1][2])*(DUiDXj[2][1]-DUiDXj[1][2]) + (DUiDXj[0][2]-DUiDXj[1][0])*(DUiDXj[0][2]-DUiDXj[1][0]));
+    Vorticity += ( (DUiDXj[2][1]-DUiDXj[1][2])*(DUiDXj[2][1]-DUiDXj[1][2]) + (DUiDXj[0][2]-DUiDXj[2][0])*(DUiDXj[0][2]-DUiDXj[2][0]));
   }
   return Vorticity;
 };
