@@ -737,20 +737,13 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     for (int i=0; i < nOutputMLVariables; i++){
       output[i] = 0;
     }
-    /*
-    cout << "Input ";
-    for (int i=0; i < nInputMLVariables; i++){
-      cout << input[i] << " ";
-    }
-    cout << endl;
-    */
+    
     this->MLModel->Predict(input, output);
-//    cout << "output "<<output[0]<<endl;
     val_residual[0] = output[0];
     if (dist_i <= 0.0){
       val_residual[0] = 0;
     }
-    
+    /*
     cout << "Inputs: ";
     for (int i=0; i< nInputMLVariables; i++){
       cout << input[i] << " ";
@@ -758,13 +751,16 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     cout << endl;
     
     cout << "Scaled inputs: ";
+     */
     this->MLModel->inputScaler->Scale(input);
+    /*
     for (int i=0; i< nInputMLVariables; i++){
       cout << input[i] << " ";
     }
     cout << endl;
     
     cout << "TurbML Source residual " << val_residual[0] << endl;
+     */
 //    exit(1);
     
     delete input;
