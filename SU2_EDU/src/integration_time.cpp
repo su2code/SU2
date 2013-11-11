@@ -36,8 +36,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
 	const bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
 	const bool direct = ((config[iZone]->GetKind_Solver() == EULER) || (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
                    (config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) ||
-                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) ||
-                   (config[iZone]->GetKind_Solver() == PLASMA_EULER) || (config[iZone]->GetKind_Solver() == PLASMA_NAVIER_STOKES));
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
     const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
     /*--- If low fidelity simulation ---*/
@@ -104,9 +103,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry, CSolver ****s
                 
 				/*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
 				solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, Iteration);
-                
-				/*--- Restrict the solution and gradient for the adjoint problem ---*/
-				Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
                 
 			}
             
@@ -615,18 +611,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
             
 			if (config->GetConvCriteria() == RESIDUAL)
 				(*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-            
-			break;
-            
-		case RUNTIME_PLASMA_SYS:
-            
-			/*--- Calculate the inviscid and viscous forces ---*/
-			solver_container[FinestMesh][PLASMA_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
-			if (config->GetKind_ViscNumScheme() != NONE) solver_container[FinestMesh][PLASMA_SOL]->Viscous_Forces(geometry[FinestMesh], config);
-            
-			/*--- Evaluate convergence monitor ---*/
-			if (config->GetConvCriteria() == RESIDUAL)
-				(*monitor) = log10(solver_container[FinestMesh][PLASMA_SOL]->GetRes_RMS(0));
             
 			break;
             

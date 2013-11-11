@@ -443,7 +443,7 @@ if __name__=="__main__":
   ramc.cfg_dir   = "TestCases/tne2/ramc"
   ramc.cfg_file  = "ramc61km.cfg"
   ramc.test_iter = 25
-  ramc.test_vals = [-4.638119,2.854417,-4.439634,0.000000]
+  ramc.test_vals = [-4.637399,2.855148,-4.438914,0.000177]
   ramc.su2_exec  = "SU2_CFD"
   ramc.timeout   = 1600
   ramc.tol       = 0.00001

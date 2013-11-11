@@ -831,7 +831,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   }
   // Momentum
   for (iDim = 0; iDim < nDim; iDim++)
-    val_dPdU[nSpecies+iDim] = -conc*V[VEL_INDEX+iDim]/rhoCvtr;
+    val_dPdU[nSpecies+iDim] = -conc*Ru*V[VEL_INDEX+iDim]/rhoCvtr;
   
   // Total energy
   val_dPdU[nSpecies+nDim]   = conc*Ru / rhoCvtr;
@@ -839,6 +839,89 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   // Vib.-el energy
   val_dPdU[nSpecies+nDim+1] = -val_dPdU[nSpecies+nDim]
                             + rho_el*Ru/Ms[nSpecies-1]*1.0/rhoCvve;
+}
+
+double CTNE2EulerVariable::CalcEve(double *V, CConfig *config, unsigned short val_Species) {
+
+  unsigned short iEl, *nElStates;
+  double *Ms, *thetav, **thetae, **g, *hf, *Tref, Ru;
+  double Tve, Ev, Eel, Ef;
+  double num, denom;
+  
+  /*--- Read gas mixture properties from config ---*/
+  Ms        = config->GetMolar_Mass();
+  
+  /*--- Rename for convenience ---*/
+  Ru  = UNIVERSAL_GAS_CONSTANT;
+  Tve = V[TVE_INDEX];
+  
+  /*--- Electron species energy ---*/
+  if ((ionization) && (val_Species == nSpecies-1)) {
+    
+    /*--- Get quantities from CConfig ---*/
+    Tref = config->GetRefTemperature();
+    hf   = config->GetEnthalpy_Formation();
+    
+    /*--- Calculate formation energy ---*/
+    Ef = hf[val_Species] - Ru/Ms[val_Species] * Tref[val_Species];
+    
+    /*--- Electron t-r mode contributes to mixture vib-el energy ---*/
+    Eel = (3.0/2.0) * Ru/Ms[val_Species] * (Tve - Tref[val_Species]) + Ef;
+    Ev  = 0.0;
+    
+  }
+
+  /*--- Heavy particle energy ---*/
+  else {
+    
+    /*--- Read from CConfig ---*/
+    thetav    = config->GetCharVibTemp();
+    thetae    = config->GetCharElTemp();
+    g         = config->GetElDegeneracy();
+    nElStates = config->GetnElStates();
+    
+    /*--- Calculate vibrational energy (harmonic-oscillator model) ---*/
+    if (thetav[val_Species] != 0.0)
+      Ev = Ru/Ms[val_Species] * thetav[val_Species] / (exp(thetav[val_Species]/Tve)-1.0);
+    else
+      Ev = 0.0;
+    
+    /*--- Calculate electronic energy ---*/
+    num = 0.0;
+    denom = g[val_Species][0] * exp(thetae[val_Species][0]/Tve);
+    for (iEl = 1; iEl < nElStates[val_Species]; iEl++) {
+      num   += g[val_Species][iEl] * thetae[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
+      denom += g[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
+    }
+    Eel = Ru/Ms[val_Species] * (num/denom);
+  }
+  
+  return Ev + Eel;
+}
+
+
+double CTNE2EulerVariable::CalcHs(double *V, CConfig *config,
+                                  unsigned short val_Species) {
+
+  double Ru, *xi, *Ms, *hf, T, eve, hs;
+  
+  /*--- Read from config ---*/
+  xi = config->GetRotationModes();
+  Ms = config->GetMolar_Mass();
+  hf = config->GetEnthalpy_Formation();
+  
+  /*--- Rename for convenience ---*/
+  Ru = UNIVERSAL_GAS_CONSTANT;
+  T = V[T_INDEX];
+  
+  /*--- Calculate vibrational-electronic energy per unit mass ---*/
+  eve = CalcEve(V, config, val_Species);
+  
+  hs = Ru/Ms[val_Species]*T
+     + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]
+     + hf[val_Species] + eve;
+  
+  return hs;
 }
 
 void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
@@ -891,52 +974,25 @@ void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
 void CTNE2EulerVariable::CalcdTvedU(double *V, CConfig *config,
                                     double *val_dTvedU) {
   
-  unsigned short iDim, iSpecies, nHeavy, iEl, nEl, *nElStates;
-  double *Ms, *thv, **the, **g;
-  double Tve, evibs, eels, Ru, num, denom, rhoCvve;
-  
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
-  
-  /*--- Get gas properties from config settings ---*/
-  Ms        = config->GetMolar_Mass();
-  thv       = config->GetCharVibTemp();
-  the       = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
-  nElStates = config->GetnElStates();
+  unsigned short iDim, iSpecies;
+  double rhoCvve;
+  double eve;
   
   /*--- Rename for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;
-  Tve     = V[TVE_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
   
-  
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    if (thv[iSpecies]!= 0.0)
-      evibs = Ru/Ms[iSpecies] * thv[iSpecies] / (exp(thv[iSpecies]/Tve) - 1.0);
-    else
-      evibs = 0.0;
-    num   = 0.0;
-    denom = g[iSpecies][0] * exp(the[iSpecies][0]/Tve);
-    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-      num   += g[iSpecies][iEl] * the[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
-      denom += g[iSpecies][iEl] * exp(-the[iSpecies][iEl]/Tve);
-    }
-    eels = Ru/Ms[iSpecies] * (num/denom);
-    val_dTvedU[iSpecies] = -(evibs+eels)/rhoCvve;
+  /*--- Species density derivatives ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    eve = CalcEve(V, config, iSpecies);
+    val_dTvedU[iSpecies] = -eve/rhoCvve;
   }
-  if (ionization) {
-    cout << "CTNE2Variable: IONIZATION FOR dTvedU" << endl;
-    exit(1);
-  }
-  
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     val_dTvedU[nSpecies+iDim] = 0.0;
   
   /*--- Energy derivatives ---*/
-  dTvedU[nSpecies+nDim]   = 0.0;
-  dTvedU[nSpecies+nDim+1] = 1.0 / V[RHOCVVE_INDEX];
+  val_dTvedU[nSpecies+nDim]   = 0.0;
+  val_dTvedU[nSpecies+nDim+1] = 1.0 / rhoCvve;
   
 }
 
@@ -958,11 +1014,6 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   // GradPrim:  [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
   SetDensity();                             // Compute species & mixture density
 	SetVelocity2();                           // Compute the square of the velocity (req. mixture density).
-  
-  /*--- Calculate velocities (req. density calculation) ---*/
-//	for (iDim = 0; iDim < nDim; iDim++)
-//		Primitive[nSpecies+iDim+2] = Solution[nSpecies+iDim] / Primitive[nSpecies+nDim+3];
-  
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
   check_temp  = SetTemperature(config);     // Compute temperatures (T & Tve) (req. mixture density).
@@ -998,6 +1049,24 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 }
 
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }
+
+
+CTNE2NSVariable::CTNE2NSVariable(unsigned short val_ndim,
+                                 unsigned short val_nvar,
+                                 unsigned short val_nprimvar,
+                                 unsigned short val_nprimvargrad,
+                                 CConfig *config) : CTNE2EulerVariable(val_ndim,
+                                                                       val_nvar,
+                                                                       val_nprimvar,
+                                                                       val_nprimvargrad,
+                                                                       config) {
+  
+  Temperature_Ref = config->GetTemperature_Ref();
+	Viscosity_Ref   = config->GetViscosity_Ref();
+	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+	Prandtl_Lam     = config->GetPrandtl_Lam();
+  DiffusionCoeff  = new double[nSpecies];
+}
 
 
 CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
@@ -1160,9 +1229,6 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
-  
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    DiffusionCoeff[iSpecies] = 0.0;
 }
 
 

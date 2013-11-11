@@ -44,6 +44,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
 	const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
                        (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
+                       (config[iZone]->GetKind_Solver() == TNE2_EULER)                    ||
+                       (config[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)            ||
                        (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER)         ||
                        (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
                        (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
@@ -77,17 +79,25 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                   Iteration, iZone);
     
 	/*--- Compute non-dimensional parameters and the convergence monitor ---*/
-	NonDimensional_Parameters(geometry[iZone], solver_container[iZone], numerics_container[iZone], config[iZone],
-                              FinestMesh, RunTime_EqSystem, Iteration, &monitor);
+	NonDimensional_Parameters(geometry[iZone], solver_container[iZone],
+                            numerics_container[iZone], config[iZone],
+                            FinestMesh, RunTime_EqSystem, Iteration, &monitor);
     
 	/*--- Convergence strategy ---*/
 	Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor);
     
 }
 
-void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                                                CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                                                unsigned long Iteration, unsigned short iZone) {
+void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
+                                            CSolver ****solver_container,
+                                            CNumerics *****numerics_container,
+                                            CConfig **config,
+                                            unsigned short iMesh,
+                                            unsigned short mu,
+                                            unsigned short RunTime_EqSystem,
+                                            unsigned long Iteration,
+                                            unsigned short iZone) {
+  
 	unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
     
 	bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));

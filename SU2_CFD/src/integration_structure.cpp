@@ -39,8 +39,12 @@ CIntegration::~CIntegration(void) {
 	delete [] Cauchy_Serie;
 }
 
-void CIntegration::Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CIntegration::Space_Integration(CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CNumerics **numerics,
+                                     CConfig *config, unsigned short iMesh,
+                                     unsigned short iRKStep,
+                                     unsigned short RunTime_EqSystem) {
 	unsigned short iMarker;
     
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -163,7 +167,8 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 
 	unsigned short iMGLevel;
 
-	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) || (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) )
+	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) ||
+          (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ){
 		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
 
 			/*--- Set the time step in all the MG levels ---*/
@@ -184,7 +189,30 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			}
 
 		}
-
+  } else if ((RunTime_EqSystem == RUNTIME_ADJTNE2_SYS) && (Iteration == 0)) {
+    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetMGLevels(); iMGLevel++) {
+      
+			/*--- Set the time step in all the MG levels ---*/
+			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTime_Step(geometry[iZone][iMGLevel],
+                                                                solver_container[iZone][iMGLevel],
+                                                                config[iZone], iMGLevel, Iteration);
+      
+			/*--- Set the force coefficients ---*/
+			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CDrag(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CDrag());
+			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CLift(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CLift());
+			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CT());
+			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
+      
+			/*--- Restrict solution and gradients to the coarse levels ---*/
+			if (iMGLevel != config[iZone]->GetMGLevels()) {
+				SetRestricted_Solution(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel], solver_container[iZone][iMGLevel+1],
+                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+				SetRestricted_Gradient(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel], solver_container[iZone][iMGLevel+1],
+                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+			}
+      
+		}
+  }
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

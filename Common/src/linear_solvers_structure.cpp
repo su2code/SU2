@@ -1,4 +1,4 @@
-/*!
+ /*!
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.

@@ -280,17 +280,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
 	AddScalarOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -462,11 +462,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Jacobi implicit smoothing of the correction */
 	AddListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
 	/* DESCRIPTION: Damping factor for the residual restriction */
-	AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
+	AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
 	/* DESCRIPTION: Damping factor for the correction prolongation */
-	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
+	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
 	/* DESCRIPTION: CFL reduction factor on the coarse levels */
-	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.75);
+	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
 	/* DESCRIPTION: Maximum number of children in the agglomeration stage */
 	AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
 	/* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
@@ -483,9 +483,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
 	/* DESCRIPTION: Convective numerical method */
+  Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE_2ND;
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "AVG_GRAD_CORRECTED");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
@@ -495,6 +496,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
   
 	/* DESCRIPTION: Convective numerical method */
+  Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE_2ND;
 	AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_ADJ", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
@@ -511,9 +513,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "AVG_GRAD_CORRECTED");
 	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "NONE");
+	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "PIECEWISE_CONSTANT");
   
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "NONE");
@@ -1672,16 +1674,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-  /*--- Set a flag for viscous simulations ---*/
-  Viscous = ((Kind_Solver == NAVIER_STOKES) ||
-             (Kind_Solver == ADJ_NAVIER_STOKES) ||
-             (Kind_Solver == RANS) ||
-             (Kind_Solver == ADJ_RANS));
+  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_TNE2 == NONE)) {
+		cout << "You must define a viscous numerical method for the TNE2 Navier-Stokes equations!!" << endl;
+		exit(1);
+	}
   
-  if ((Kind_Solver == TNE2_EULER)             ||
-      (Kind_Solver == TNE2_NAVIER_STOKES)     ||
-      (Kind_Solver == ADJ_TNE2_EULER)         ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
+  if ((Kind_Solver == ADJ_TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
+		cout << "You must define a viscous numerical method for the adjoint TNE2 Navier-Stokes equations!!" << endl;
+		exit(1);
+	}
+
+  /*--- Set a flag for viscous simulations ---*/
+  Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+             ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+             ( Kind_Solver == RANS                   ) ||
+             ( Kind_Solver == ADJ_RANS               ) ||
+             ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
+  
+  if (( Kind_Solver == TNE2_EULER             ) ||
+      ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+      ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
     
     Kappa_1st_TNE2    = Kappa_TNE2[0];
     Kappa_2nd_TNE2    = Kappa_TNE2[1];
@@ -2727,14 +2740,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
         }
     
-    
-    cout << "Surface(s) where the objective function is evaluated: ";
-		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
-			cout << Marker_Designing[iMarker_Designing];
-			if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
-			else cout <<".";
-		}
-    cout<<endl;
+    if (nMarker_Designing != 0) {
+      cout << "Surface(s) where the objective function is evaluated: ";
+      for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
+        cout << Marker_Designing[iMarker_Designing];
+        if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
     cout << "Surface(s) plotted in the output file: ";
 		for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
@@ -2744,13 +2758,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
     cout<<endl;
     
-    cout << "Surface(s) affected by the design variables: ";
-		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
-			cout << Marker_DV[iMarker_DV];
-			if (iMarker_DV < nMarker_DV-1) cout << ", ";
-			else cout <<".";
-		}
-    cout<<endl;
+    if (nMarker_DV != 0) {
+      cout << "Surface(s) affected by the design variables: ";
+      for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+        cout << Marker_DV[iMarker_DV];
+        if (iMarker_DV < nMarker_DV-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
     if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
       cout << "Surface(s) in motion: ";
@@ -4589,7 +4605,9 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 	}
 }
 
-void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_system, unsigned long val_extiter) {
+void CConfig::SetGlobalParam(unsigned short val_solver,
+                             unsigned short val_system,
+                             unsigned long val_extiter) {
 
 	/*--- Set the simulation global time ---*/
 	Current_UnstTime = static_cast<double>(val_extiter)*Delta_UnstTime;
@@ -5365,11 +5383,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Reynolds number (non-dimensional): " << Reynolds << endl;
 			cout << "Reynolds length (m): "       << Length_Reynolds     << endl;
 		}
-		cout << "Froude number (non-dimensional): " << Froude << endl;
-		cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    if (GravityForce) {
+      cout << "Froude number (non-dimensional): " << Froude << endl;
+      cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    }
     
 		if (compressible) {
-			cout << "Negative pressure, temperature or density is not allowed!" << endl;
 			cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
 			cout << "Freestream temperature (non-dimensional): "  << Temperature_FreeStreamND << endl;
 		}
@@ -5401,6 +5420,10 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
 		if (Grid_Movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
+    
+    if (compressible) {
+      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
+    }
 	}
   
 }
