@@ -432,6 +432,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     cout << "Test residual is " << testResidual[3] << endl;
     cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
     cout << "Full residual doesn't match" << endl;
+    exit(10);
   }
 }
 
