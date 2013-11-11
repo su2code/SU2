@@ -433,7 +433,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 	unsigned short iMesh, iZone, nZone;
   unsigned long IntIter, ExtIter;
   int rank;
-  
+
   /*--- Initialize parameters ---*/
   nZone   = geometry_container[ZONE_0][MESH_0]->GetnZone();
   IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -450,20 +450,33 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 		/*--- Continuous adjoint two-temperature equations  ---*/
 		if (ExtIter == 0) {
       
+      /*--- Set the value of the internal iteration ---*/
+      IntIter = ExtIter;
+      
+      /*--- Set the initial condition ---*/
+      solver_container[iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone],
+                                                                     solver_container[iZone],
+                                                                     config_container[iZone], ExtIter);
+      
+      /*--- Update global parameters ---*/
 			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
-        config_container[iZone]->SetGlobalParam(ADJ_TNE2_EULER,
+        config_container[iZone]->SetGlobalParam(TNE2_EULER,
                                                 RUNTIME_TNE2_SYS, ExtIter);
-			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
+			else if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
         config_container[iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
                                                 RUNTIME_TNE2_SYS, ExtIter);
       
       /*--- Perform one iteration of the gov. eqns. to store data ---*/
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+				cout << " Single iteration of the direct solver to store flow data...";
 			integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container,
                                                                   solver_container,
                                                                   numerics_container,
                                                                   config_container,
                                                                   RUNTIME_TNE2_SYS,
-                                                                  0, iZone);
+                                                                  IntIter, iZone);
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+        cout << " Done." << endl;
       
 			/*--- Compute gradients of the flow variables, this is necessary for
        sensitivity computation, note that in the direct Euler problem we

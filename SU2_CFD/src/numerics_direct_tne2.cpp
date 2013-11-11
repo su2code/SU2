@@ -49,8 +49,6 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   RoeU        = new double[nVar];
   RoeV        = new double[nPrimVar];
   RoedPdU     = new double [nVar];
-  l           = new double [nDim];
-  m           = new double [nDim];
 	Lambda      = new double [nVar];
 	Epsilon     = new double [nVar];
 	P_Tensor    = new double* [nVar];
@@ -62,7 +60,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   Proj_flux_tensor_i = new double [nVar];
 	Proj_flux_tensor_j = new double [nVar];
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
@@ -72,8 +70,6 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
   delete [] RoeU;
   delete [] RoeV;
   delete [] RoedPdU;
-  delete [] l;
-  delete [] m;
 	delete [] Lambda;
 	delete [] Epsilon;
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -84,7 +80,7 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
 	delete [] invP_Tensor;
   delete [] Proj_flux_tensor_i;
 	delete [] Proj_flux_tensor_j;
-  delete [] var;
+//  delete [] var;
 }
 
 void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
@@ -143,25 +139,25 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   Lambda[nSpecies+nDim]   = ProjVelocity - RoeSoundSpeed;
   Lambda[nSpecies+nDim+1] = ProjVelocity;
   
-//  /*--- Harten and Hyman (1983) entropy correction ---*/
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-//                                         ProjVelocity_j-Lambda[iDim] ));
-//  for (iDim = 0; iDim < nDim-1; iDim++)
-//    Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-//                                              ProjVelocity_j-Lambda[iDim] ));
-//  Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
-//                                              (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
-//  Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
-//                                              (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
-//  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
-//                                              ProjVelocity_j-Lambda[iDim] ));
-//  
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-//      Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
-//    else
-//      Lambda[iVar] = fabs(Lambda[iVar]);
+  
+  /*--- Harten and Hyman (1983) entropy correction ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                         ProjVelocity_j-Lambda[iDim] ));
+  for (iDim = 0; iDim < nDim-1; iDim++)
+    Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
+  Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
+                                              (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
+  Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
+                                              (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
+  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
+                                              ProjVelocity_j-Lambda[iDim] ));
+  for (iVar = 0; iVar < nVar; iVar++)
+    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+      Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+    else
+      Lambda[iVar] = fabs(Lambda[iVar]);
   
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
@@ -170,6 +166,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
   GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
   GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
+  
   
   /*--- Difference of conserved variables at iPoint and jPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -239,7 +236,7 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
 		invP_Tensor[iVar] = new double [nVar];
 	}
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CUpwMSW_TNE2::~CUpwMSW_TNE2(void) {
@@ -271,7 +268,7 @@ CUpwMSW_TNE2::~CUpwMSW_TNE2(void) {
   }
   delete [] P_Tensor;
   delete [] invP_Tensor;
-  delete [] var;
+//  delete [] var;
 }
 
 void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
@@ -352,20 +349,6 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   var->CalcdPdU(Vst_i, config, dPdUst_i);
   var->CalcdPdU(Vst_j, config, dPdUst_j);
   
-//  cout << "U_i:" << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << U_i[iVar] << endl;
-//  cout << "V_i: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << V_i[iVar] << endl;
-//  cout << "Ust_i: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << Ust_i[iVar] << endl;
-//  cout << "dPdUst_i: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << dPdUst_i[iVar] << endl;
-//  cin.get();
-  
   /*--- Flow eigenvalues at i (Lambda+) --- */
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
     Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
@@ -415,7 +398,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
       val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
     }
   }
-  
+    
 	/*--- Flux splitting ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		val_residual[iVar] = Fc_i[iVar]+Fc_j[iVar];
@@ -1331,7 +1314,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
   MeandPdU = new double[nVar];
 	Proj_flux_tensor = new double [nVar];
   
-  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
 
 CCentLax_TNE2::~CCentLax_TNE2(void) {
@@ -1425,7 +1408,7 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
 	if (implicit) {
 		cte = Epsilon_0*StretchingFactor*MeanLambda;
     
-		for (iVar = 0; iVar < (nVar-1); iVar++) {
+		for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
 			val_Jacobian_i[iVar][iVar] += cte;
 			val_Jacobian_j[iVar][iVar] -= cte;
 		}
@@ -1434,18 +1417,18 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_i[nSpecies+nDim][iSpecies] += cte*dPdU_i[iSpecies];
 		for (iDim = 0; iDim < nDim; iDim++)
-			val_Jacobian_i[nSpecies+nDim][nSpecies+iDim] += cte*dPdU_i[nSpecies+iDim];
-		val_Jacobian_i[nSpecies+nDim][nSpecies+nDim] += cte*(1+dPdU_i[nSpecies+nDim]);
-    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1] += cte*dPdU_i[nSpecies+nDim+1];
+			val_Jacobian_i[nSpecies+nDim][nSpecies+iDim]   += cte*dPdU_i[nSpecies+iDim];
+		val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]     += cte*(1+dPdU_i[nSpecies+nDim]);
+    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1]   += cte*dPdU_i[nSpecies+nDim+1];
     val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += cte;
     
 		/*--- Last row of Jacobian_j ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_j[nSpecies+nDim][iSpecies] -= cte*dPdU_j[iSpecies];
 		for (iDim = 0; iDim < nDim; iDim++)
-			val_Jacobian_j[nSpecies+nDim][nSpecies+iDim] -= cte*dPdU_j[nSpecies+nDim];
-		val_Jacobian_j[nSpecies+nDim][nSpecies+nDim] -= cte*(1+dPdU_j[nSpecies+nDim]);
-    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1] -= cte*dPdU_j[nSpecies+nDim+1];
+			val_Jacobian_j[nSpecies+nDim][nSpecies+iDim]   -= cte*dPdU_j[nSpecies+nDim];
+		val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]     -= cte*(1+dPdU_j[nSpecies+nDim]);
+    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1]   -= cte*dPdU_j[nSpecies+nDim+1];
     val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
 	}
 }
@@ -1702,17 +1685,22 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                            unsigned short val_nVar,
+                           unsigned short val_nPrimVar,
+                           unsigned short val_nPrimVarGrad,
                            CConfig *config) : CNumerics(val_nDim,
                                                         val_nVar,
                                                         config) {
 
   /*--- Assign booleans from CConfig ---*/
   implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  ionization = config->GetIonization();
   
   /*--- Define useful constants ---*/
-  nVar     = val_nVar;
-  nDim     = val_nDim;
-  nSpecies = config->GetnSpecies();
+  nVar         = val_nVar;
+  nPrimVar     = val_nPrimVar;
+  nPrimVarGrad = val_nPrimVarGrad;
+  nDim         = val_nDim;
+  nSpecies     = config->GetnSpecies();
   
   X = new double[nSpecies];
   RxnConstantTable = new double*[6];
@@ -1720,17 +1708,18 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
 		RxnConstantTable[iVar] = new double[5];
 
   /*--- Allocate arrays ---*/
-  alphak    = new int[nSpecies];
-  betak     = new int[nSpecies];
-  A         = new double[5];
-  evibs     = new double[nSpecies];
-  eels      = new double[nSpecies];
-  Cvvs      = new double[nSpecies];
-  Cves      = new double[nSpecies];
-  dkf       = new double[nVar];
-  dkb       = new double[nVar];
-  dRfok     = new double[nVar];
-  dRbok     = new double[nVar];
+  alphak = new int[nSpecies];
+  betak  = new int[nSpecies];
+  A      = new double[5];
+  eves   = new double[nSpecies];
+  Cvvs   = new double[nSpecies];
+  Cves   = new double[nSpecies];
+  dkf    = new double[nVar];
+  dkb    = new double[nVar];
+  dRfok  = new double[nVar];
+  dRbok  = new double[nVar];
+  
+//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   
 }
 
@@ -1742,8 +1731,7 @@ CSource_TNE2::~CSource_TNE2(void) {
   
   /*--- Deallocate arrays ---*/
   delete [] A;
-  delete [] evibs;
-  delete [] eels;
+  delete [] eves;
   delete [] Cvvs;
   delete [] Cves;
   delete [] alphak;
@@ -1752,6 +1740,9 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] dkb;
   delete [] dRfok;
   delete [] dRbok;
+  
+//  delete [] var;
+  
 }
 
 void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
@@ -1799,20 +1790,17 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                                     CConfig *config) {
   
   /*--- Nonequilibrium chemistry ---*/
-  bool ionization;
-  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar, iEl, iDim;
+  unsigned short iSpecies, jSpecies, ii, iReaction, nReactions, iVar, jVar;
   unsigned short *nElStates, nHeavy, nEl, nEve;
   int ***RxnMap;
   double T_min, epsilon;
   double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
-  double rho, u, v, w, rhoCvtr, rhoCvve, P, sqvel;
-  double num, num2, num3, denom;
+  double rho, u, v, w, rhoCvtr, rhoCvve, P;
   double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
   double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
-  double *hf, *Tref, *xi, Cvtrs, ef;
+  double *hf, *Tref, *xi;
   double af, bf, ab, bb, coeff;
   double dThf, dThb;
-  double thoTve, exptv;
   
 //  double *wdot = new double[nSpecies];
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1837,13 +1825,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   /*--- Define preferential dissociation coefficient ---*/
   alpha = 0.3;
   
-  /*--- Determine if Jacobian calculation is required ---*/
-  // NOTE: Need to take derivatives of relaxation time (not currently implemented).
-  //       For now, we de-activate the Jacobian and return to it at a later date.
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  
   /*--- Determine the number of heavy particle species ---*/
-  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
@@ -1858,6 +1840,10 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   w       = V_i[VEL_INDEX+2];
   rhoCvtr = V_i[RHOCVTR_INDEX];
   rhoCvve = V_i[RHOCVVE_INDEX];
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    eves[iSpecies] = var->CalcEve(V_i, config, iSpecies);
+  }
   
   /*--- Acquire parameters from the configuration file ---*/
   nReactions = config->GetnReactions();
@@ -1926,14 +1912,14 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                       * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+                                       * eves[iSpecies] * Volume;
       }
 			/*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                       * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+                                       * eves[iSpecies] * Volume;
       }
     }
     
@@ -2014,7 +2000,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
             val_Jacobian_i[nEve][iVar] +=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                             * (evibs[iSpecies]+eels[iSpecies]) * Volume;
+                             * eves[iSpecies] * Volume;
           }
 
           for (jVar = 0; jVar < nVar; jVar++) {
@@ -2034,7 +2020,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
             val_Jacobian_i[nEve][iVar] -=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                             * (evibs[iSpecies] + eels[iSpecies]) * Volume;
+                             * eves[iSpecies] * Volume;
             
           }
 
@@ -2060,9 +2046,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
-  
-  bool ionization, implicit;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
   double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
   double Qtv, estar, tau, tauMW, tauP;
@@ -2079,14 +2063,8 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       val_Jacobian_i[iVar][jVar] = 0.0;
     }
   }
-  
-  /*--- Determine if Jacobian calculation is required ---*/
-  // NOTE: Need to take derivatives of relaxation time (not currently implemented).
-  //       For now, we de-activate the Jacobian and return to it at a later date.
-  implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  
+
   /*--- Determine the number of heavy particle species ---*/
-  ionization = config->GetIonization();
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   

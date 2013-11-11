@@ -68,15 +68,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
-  
-	if (Kind_Solver == PLASMA_EULER) {
-		if (val_iZone == 0) Kind_Solver = PLASMA_EULER;
-		if (val_iZone == 1) Kind_Solver = POISSON_EQUATION;
-	}
-	if (Kind_Solver == PLASMA_NAVIER_STOKES) {
-		if (val_iZone == 0) Kind_Solver = PLASMA_NAVIER_STOKES;
-		if (val_iZone == 1) Kind_Solver = POISSON_EQUATION;
-	}
     
 #ifndef NO_MPI
 	/*--- Remove the domain number from the surface csv filename ---*/
@@ -98,13 +89,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		sprintf (buffer, "_%d", int(val_iZone));
-		strcat(cstr,buffer);
-	}
-    
-    /*--- Special cases where a number needs to be appended to the file name. ---*/
-	if (((Kind_Solver == POISSON_EQUATION) &&( (Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) )
-        && config->GetUnsteady_Simulation()) {
-		sprintf (buffer, "_%d", int(iExtIter));
 		strcat(cstr,buffer);
 	}
     
@@ -643,8 +627,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     }
     
-    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) ||
-        (Kind_Solver == ADJ_PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+    if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
       
       Paraview_File << "\nSCALARS Surface_Sensitivity float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";

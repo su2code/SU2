@@ -1003,25 +1003,12 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
-	/*--- Acquire free stream velocity ---*/
+	/*--- Acquire free stream velocity & density ---*/
   RefVel2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     RefVel2  += solver_container[TNE2_SOL]->GetVelocity_Inf(iDim)
                *solver_container[TNE2_SOL]->GetVelocity_Inf(iDim);
-  
-  /*--- Calculate mixture density from supplied primitive quantities ---*/
-  MassFrac_Inf = config->GetMassFrac_FreeStream();
-  T            = config->GetTemperature_FreeStream();
-  Tve          = config->GetTemperature_ve_FreeStream();
-  P            = config->GetPressure_FreeStream();
-  Ms           = config->GetMolar_Mass();
-  Ru           = UNIVERSAL_GAS_CONSTANT;
-  denom        = 0.0;
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    denom += MassFrac_Inf[iSpecies] * (Ru/Ms[iSpecies]) * T;
-  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-    denom += MassFrac_Inf[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
-  RefDensity = P / denom;
+  RefDensity = solver_container[TNE2_SOL]->node_infty->GetDensity();
   
 	/*--- In parallel computations the Cd, and Cl must be recomputed using all the processors ---*/
 #ifdef NO_MPI
@@ -1220,9 +1207,15 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
                                         unsigned short iRKStep,
                                         unsigned short RunTime_EqSystem) {
 
-  bool implicit, upwind_2nd, center, center_jst, limiter;
-	unsigned long iPoint;
-  double adj_limit;
+  bool implicit, upwind_2nd, center, center_jst, limiter, RightSol;
+	unsigned long iPoint, ErrorCounter = 0;
+  double SharpEdge_Distance;
+  
+#ifdef NO_MPI
+	int rank = MASTER_NODE;
+#else
+	int rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the direct problem may use different methods). ---*/
@@ -1234,18 +1227,21 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   center_jst = (config->GetKind_Centered_AdjTNE2()      == JST            );
   implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT );
   limiter    = (config->GetKind_SlopeLimit()            != NONE           );
-  adj_limit  = config->GetAdjointLimit();
   
 	/*--- Residual initialization ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
+    /*--- Get the distance form a sharp edge ---*/
+    SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
+    
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
-    //		node[iPoint]->SetPrimVar_Compressible(adj_limit);
+    RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance,
+                                                     false, config);
+    if (!RightSol) ErrorCounter++;
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
-    
 	}
   
   /*--- Upwind second order reconstruction ---*/
@@ -1273,6 +1269,15 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   
 	/*--- Implicit solution ---*/
 	if (implicit) Jacobian.SetValZero();
+  
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  
 }
 
 void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
@@ -1319,7 +1324,17 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                               solver_container[TNE2_SOL]->node[jPoint]->GetSolution());
     numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
                            solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());    
-		numerics->SetLambda(solver_container[TNE2_SOL]->node[iPoint]->GetLambda(),
+
+    /*--- Pass supplementary information to CNumerics ---*/
+    numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetdPdU());
+    numerics->SetdTdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetdTdU());
+    numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetdTvedU());
+    
+    /*--- Set the value of the largest eigenvalue ---*/
+    numerics->SetLambda(solver_container[TNE2_SOL]->node[iPoint]->GetLambda(),
                         solver_container[TNE2_SOL]->node[jPoint]->GetLambda());
     
 		if (high_order_diss) {
@@ -1334,26 +1349,26 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji,
                               Jacobian_jj, config);
     
+    /*--- Error checking ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      if ((Res_Conv_i[iVar] != Res_Conv_i[iVar]) ||
+          (Res_Visc_i[iVar] != Res_Visc_i[iVar])) {
+        cout << "NaN in Centered Residual" << endl;
+      }
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        if (Jacobian_ii[iVar][jVar] != Jacobian_ii[iVar][jVar])
+          cout << "NaN in Centered Jacobian i" << endl;
+        if (Jacobian_jj[iVar][jVar] != Jacobian_jj[iVar][jVar])
+          cout << "NaN in Centered Jacobian j" << endl;
+      }
+    }
+    
 		/*--- Update convective and artificial dissipation residuals ---*/
 		LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
     LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
     LinSysRes.SubtractBlock(jPoint, Res_Visc_j);
-    
-//    unsigned short iVar, jVar;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      cout << "Residual[" << iVar << "]: " << Res_Conv_i[iVar] << endl;
-//    
-//    cout << endl << endl << "Jacobian_ii: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_ii[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
-    
-    
+
 		/*--- Implicit contribution to the residual ---*/
 		if (implicit) {
 			Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
@@ -1429,6 +1444,10 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
                       solver_container[TNE2_SOL]->node[jPoint]->GetdPdU());
+    numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                      solver_container[TNE2_SOL]->node[jPoint]->GetdTdU());
+    numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetdTvedU());
     
     /*--- Adjoint variables w/o reconstruction ---*/
     Psi_i = solver_container[ADJTNE2_SOL]->node[iPoint]->GetSolution();
@@ -1436,59 +1455,61 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->SetAdjointVar(Psi_i, Psi_j);    
     
 		/*--- High order reconstruction using MUSCL strategy ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Vector_i[iDim] = 0.5*(  geometry->node[jPoint]->GetCoord(iDim)
-                            - geometry->node[iPoint]->GetCoord(iDim));
-      Vector_j[iDim] = 0.5*(  geometry->node[iPoint]->GetCoord(iDim)
-                            - geometry->node[jPoint]->GetCoord(iDim));
-    }
-    Gradient_i = node[iPoint]->GetGradient();
-    Gradient_j = node[jPoint]->GetGradient();
-    if (limiter) {
-      Limiter_i = node[iPoint]->GetLimiter();
-      Limiter_j = node[jPoint]->GetLimiter();
-    }
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Project_Grad_i = 0; Project_Grad_j = 0;
+    if (high_order_diss){
       for (iDim = 0; iDim < nDim; iDim++) {
-        Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-        Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+        Vector_i[iDim] = 0.5*(  geometry->node[jPoint]->GetCoord(iDim)
+                              - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(  geometry->node[iPoint]->GetCoord(iDim)
+                              - geometry->node[jPoint]->GetCoord(iDim));
       }
+      Gradient_i = node[iPoint]->GetGradient();
+      Gradient_j = node[jPoint]->GetGradient();
       if (limiter) {
-        Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i*Limiter_i[iDim];
-        Solution_j[iVar] = Psi_j[iVar] + Project_Grad_j*Limiter_j[iDim];
+        Limiter_i = node[iPoint]->GetLimiter();
+        Limiter_j = node[jPoint]->GetLimiter();
       }
-      else {
-        Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i;
-        Solution_j[iVar] = Psi_j[iVar] + Project_Grad_j;
-        
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Project_Grad_i = 0; Project_Grad_j = 0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+        }
+        if (limiter) {
+          Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i*Limiter_i[iDim];
+          Solution_j[iVar] = Psi_j[iVar] + Project_Grad_j*Limiter_j[iDim];
+        }
+        else {
+          Solution_i[iVar] = Psi_i[iVar] + Project_Grad_i;
+          Solution_j[iVar] = Psi_j[iVar] + Project_Grad_j;
+          
+        }
       }
+      /*--- Set conservative variables with reconstruction ---*/
+      numerics->SetAdjointVar(Solution_i, Solution_j);
     }
-    /*--- Set conservative variables with reconstruction ---*/
-    numerics->SetAdjointVar(Solution_i, Solution_j);
     
     
 		/*--- Compute the residual---*/
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
                               Jacobian_ji, Jacobian_jj, config);
     
+    /*--- Error checking ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      if (Residual_i[iVar] != Residual_i[iVar]) {
+        cout << "NaN in Convective Residual" << endl;
+      }
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        if (Jacobian_ii[iVar][jVar] != Jacobian_ii[iVar][jVar])
+          cout << "NaN in Convective Jacobian i" << endl;
+        if (Jacobian_jj[iVar][jVar] != Jacobian_jj[iVar][jVar])
+          cout << "NaN in Convective Jacobian j" << endl;
+      }
+    }
+    
 		/*--- Add and Subtract Residual ---*/
     LinSysRes.SubtractBlock(iPoint, Residual_i);
     LinSysRes.SubtractBlock(jPoint, Residual_j);
-    
-    unsigned short iVar, jVar;
-    for (iVar = 0; iVar < nVar; iVar++)
-      cout << "Residual[" << iVar << "]: " << Residual_i[iVar] << endl;
-    
-    cout << endl << endl << "Jacobian_ii: " << endl;
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        cout << Jacobian_ii[iVar][jVar] << "\t";
-      }
-      cout << endl;
-    }
-    cin.get();
     
     /*--- Implicit contribution to the residual ---*/
     if (implicit) {
@@ -1549,6 +1570,10 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
                       solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
+    numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                      solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
+    numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
     
     /*--- Set adjoint variables at point i ---*/
     numerics->SetAdjointVar(node[iPoint]->GetSolution(),
@@ -1560,30 +1585,16 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Compute chemistry source terms ---*/
     numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
     
-    
-//    cout << endl << endl << "Jacobian Chem: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_i[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
-    
-    
-    /*--- Compute vibrational relaxation source terms ---*/
-    numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
-    
-//    cout << endl << endl << "Jacobian Chem+Vib: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_i[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
-    
-    
+    /*--- Error checking ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      if (Residual_i[iVar] != Residual_i[iVar]) {
+        cout << "NaN in Chemistry Residual" << endl;
+      }
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+          cout << "NaN in Chemistry Jacobian i" << endl;
+      }
+    }
     
     /*--- Take the transpose of the source Jacobian matrix ---*/
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1595,18 +1606,35 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
       for (jVar = 0; jVar < nVar; jVar++)
         Residual[iVar] = Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
     
-//    unsigned short iVar, jVar;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      cout << "Residual[" << iVar << "]: " << Residual[iVar] << endl;
-//    
-//    cout << endl << endl << "Jacobian_ii: " << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_ii[iVar][jVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//    cin.get();
+    /*--- Subtract Residual (and Jacobian) ---*/
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    if (implicit)
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+    
+    
+    /*--- Compute vibrational relaxation source terms ---*/
+    numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
+    
+    /*--- Error checking ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      if (Residual_i[iVar] != Residual_i[iVar]) {
+        cout << "NaN in Energy Exchange Residual" << endl;
+      }
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+          cout << "NaN in Energy Exchange Jacobian i" << endl;
+      }
+    }
+    
+    /*--- Take the transpose of the source Jacobian matrix ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+    
+    /*--- Compute the adjoint source term residual (dQ/dU^T * Psi) ---*/
+    for (iVar = 0; iVar < nVar; iVar ++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        Residual[iVar] = Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
     
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -1714,7 +1742,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
                                                   CSolver **solver_container,
                                                   CConfig *config) {
 	unsigned short iVar;
-	unsigned long iPoint, total_index;
+	unsigned long iPoint, total_index, IterLinSol=0;
 	double Delta, *local_Res_TruncError, Vol;
   
 	/*--- Set maximum residual to zero ---*/
@@ -1727,23 +1755,28 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
 		/*--- Read the residual ---*/
-		local_Res_TruncError = node[iPoint]->GetResTruncError();
+//		local_Res_TruncError = node[iPoint]->GetResTruncError();
     
 		/*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
     
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / solver_container[TNE2_SOL]->node[iPoint]->GetDelta_Time();
-    
 		Jacobian.AddVal2Diag(iPoint, Delta);
+    if (Delta <= 0 || Delta != Delta) {
+      cout << "NaN in Timestep" << endl;
+    }
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
+			LinSysRes[total_index] = -(LinSysRes[total_index]);// + local_Res_TruncError[iVar]);
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      
+      if (LinSysRes[total_index] != LinSysRes[total_index])
+        cout << "Linsysres NaN!" << endl;
 		}
     
 	}
@@ -1776,12 +1809,16 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
   CSysSolve system;
   if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                   config->GetLinear_Solver_Iter(), false);
+    IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                                config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == FGMRES)
-    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                  config->GetLinear_Solver_Iter(), false);
+    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
+                               config->GetLinear_Solver_Iter(), false);
   
+  /*--- The the number of iterations of the linear solver ---*/
+  SetIterLinSolver(IterLinSol);
+  
+  /*--- Deallocate memory ---*/
   delete mat_vec;
   delete precond;
   
@@ -1917,14 +1954,13 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
   // NOTE: Verify that the "GetVelocity" routine is working.
 	
   bool implicit, ionization;
-  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
-  unsigned short RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short iDim, iVar, jVar;
+  unsigned short VEL_INDEX;
   unsigned long iVertex, iPoint;
 	double *d, *Normal, Area, *UnitNormal, *Coord;
-  double *Psi, *Psi_Aux, phin;
-  double *U, *Density, *Velocity, ProjVel, bcn, vn, sq_vel, *dPdU, *Ms;
-  double Enthalpy, Energy_ve, Ru, rho_el, conc, rhoCvtr, rhoCvve;
-  double dPdrhoE, dPdrhoEve;
+  double *Psi, *Psi_Aux, phin, bcn, vn;
+  double *U, *V, *dPdU;
+  double ProjVel;
   
   /*--- Set booleans from config ---*/
 	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
@@ -1945,40 +1981,26 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
   /*--- Initialize ---*/
   d        = NULL;
   ProjVel  = 0.0;
-  vn       = 0.0;
-  Enthalpy = 0.0;
   
   /*--- Allocate arrays ---*/
 	UnitNormal    = new double[nDim];
-	Velocity      = new double[nDim];
-  Density       = new double[nSpecies];
 	Psi           = new double[nVar];
   
-  /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
-  
   /*--- Acquire parameters from config ---*/
-  Ms = config->GetMolar_Mass();
-  RHOCVTR_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex();
-  RHOCVVE_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex();
+  VEL_INDEX     = solver_container[TNE2_SOL]->node[0]->GetVelIndex();
   
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Initialize the residual ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = 0.0;
+      
+      /*--- Get node information ---*/
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 			Coord = geometry->node[iPoint]->GetCoord();
-      
-      /*--- Create a copy of the adjoint solution ---*/
-      Psi_Aux = node[iPoint]->GetSolution();
-      for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
-      
-			/*--- Set the direct solution ---*/
-			U = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-      
-      /*--- Get the force projection vector, d ---*/
-      d = node[iPoint]->GetForceProj_Vector();
       
       /*--- Compute geometry parameters ---*/
 			Area = 0.0;
@@ -1988,37 +2010,24 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
 			for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
       
-      /*--- Get the flow quantities ---*/
-      Ru = UNIVERSAL_GAS_CONSTANT;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Density[iSpecies] = U[iSpecies];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim);
-      Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
-      Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
-      sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
-      dPdU      = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
-      rhoCvtr   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
-      rhoCvve   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+      /*--- Create a copy of the adjoint solution ---*/
+      Psi_Aux = node[iPoint]->GetSolution();
+      for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
       
-      if (ionization)
-        rho_el   = U[nSpecies-1];
-      else
-        rho_el   = 0.0;
+			/*--- Set the direct solution ---*/
+			U    = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
+      V    = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
-      /*--- Calculate quantities using Roe variables ---*/
-      conc = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        conc   += Density[iSpecies] / Ms[iSpecies];
-      dPdrhoE   = conc*Ru / rhoCvtr;
-      dPdrhoEve = -dPdrhoE + rho_el * Ru/Ms[nSpecies-1] * 1.0/rhoCvve;
+      /*--- Get the force projection vector, d ---*/
+      d = node[iPoint]->GetForceProj_Vector();
       
       /*--- Compute projections ---*/
       ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel -= Velocity[iDim]*Normal[iDim];
+        ProjVel -= V[VEL_INDEX+iDim]*Normal[iDim];
         bcn     += d[iDim]*UnitNormal[iDim];
-        vn      += Velocity[iDim]*UnitNormal[iDim];
+        vn      += V[VEL_INDEX+iDim]*UnitNormal[iDim];
         phin    += Psi[nSpecies+iDim]*UnitNormal[iDim];
       }
       
@@ -2026,16 +2035,12 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         Psi[nSpecies+iDim] -= ( phin - bcn ) * UnitNormal[iDim];
       
-//      numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
-//                                   dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
-//                                   1.0, Jacobian_i);
+      numerics->GetInviscidProjJac(U, V, dPdU, UnitNormal, 1.0, Jacobian_i);
       
       /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
           Residual[iVar] += Jacobian_i[jVar][iVar]*Psi[jVar]*Area;
-        }
-      }
       
       if (implicit)
         for (iVar = 0; iVar < nVar; iVar++)
@@ -2049,8 +2054,6 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       
 		}
 	}
-  delete [] Density;
-	delete [] Velocity;
 	delete [] UnitNormal;
 	delete [] Psi;
 }
@@ -2065,50 +2068,39 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
   // NOTE: Verify that the "GetVelocity" routine is working.
 	
   bool implicit, ionization;
-  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
-  unsigned short RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short iDim, iVar, jVar;
+  unsigned short VEL_INDEX;
   unsigned long iVertex, iPoint;
 	double *Normal, Area, *UnitNormal, *Coord;
-  double *Psi, *Psi_Aux, phin;
-  double *U, *Density, *Velocity, ProjVel, vn, sq_vel, *dPdU, *Ms;
-  double Enthalpy, Energy_ve, Ru, rho_el, conc, rhoCvtr, rhoCvve;
-  double dPdrhoE, dPdrhoEve;
+  double *Psi, *Psi_Aux, phin, vn, ProjVel;
+  double *U, *V, *dPdU;
   
   /*--- Set booleans from config ---*/
 	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
   ionization = (config->GetIonization());
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  conv_numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
-  conv_numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
-  conv_numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
-  conv_numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
-  conv_numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
-  conv_numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
-  conv_numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
-  conv_numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
-  conv_numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
-  conv_numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
+  conv_numerics->SetRhosIndex   (solver_container[TNE2_SOL]->node[0]->GetRhosIndex()   );
+  conv_numerics->SetRhoIndex    (solver_container[TNE2_SOL]->node[0]->GetRhoIndex()    );
+  conv_numerics->SetPIndex      (solver_container[TNE2_SOL]->node[0]->GetPIndex()      );
+  conv_numerics->SetTIndex      (solver_container[TNE2_SOL]->node[0]->GetTIndex()      );
+  conv_numerics->SetTveIndex    (solver_container[TNE2_SOL]->node[0]->GetTveIndex()    );
+  conv_numerics->SetVelIndex    (solver_container[TNE2_SOL]->node[0]->GetVelIndex()    );
+  conv_numerics->SetHIndex      (solver_container[TNE2_SOL]->node[0]->GetHIndex()      );
+  conv_numerics->SetAIndex      (solver_container[TNE2_SOL]->node[0]->GetAIndex()      );
+  conv_numerics->SetRhoCvtrIndex(solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex());
+  conv_numerics->SetRhoCvveIndex(solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex());
   
   /*--- Initialize ---*/
   ProjVel  = 0.0;
   vn       = 0.0;
-  Enthalpy = 0.0;
   
   /*--- Allocate arrays ---*/
 	UnitNormal    = new double[nDim];
-	Velocity      = new double[nDim];
-  Density       = new double[nSpecies];
 	Psi           = new double[nVar];
   
-  /*--- Determine the number of heavy particle species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
-  
   /*--- Acquire parameters from config ---*/
-  Ms = config->GetMolar_Mass();
-  RHOCVTR_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex();
-  RHOCVVE_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex();
+  VEL_INDEX = solver_container[TNE2_SOL]->node[0]->GetVelIndex();
   
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2123,6 +2115,8 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       
 			/*--- Set the direct solution ---*/
 			U = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
+      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
       /*--- Compute geometry parameters ---*/
 			Area = 0.0;
@@ -2132,36 +2126,11 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
 			for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
       
-      /*--- Get the flow quantities ---*/
-      Ru = UNIVERSAL_GAS_CONSTANT;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        Density[iSpecies] = U[iSpecies];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim);
-      Enthalpy  = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
-      Energy_ve = U[nSpecies+nDim+1]/solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
-      sq_vel    = 0.5*solver_container[TNE2_SOL]->node[iPoint]->GetVelocity2();
-      dPdU      = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
-      rhoCvtr   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
-      rhoCvve   = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
-      
-      if (ionization)
-        rho_el   = U[nSpecies-1];
-      else
-        rho_el   = 0.0;
-      
-      /*--- Calculate quantities using Roe variables ---*/
-      conc = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        conc   += Density[iSpecies] / Ms[iSpecies];
-      dPdrhoE   = conc*Ru / rhoCvtr;
-      dPdrhoEve = -dPdrhoE + rho_el * Ru/Ms[nSpecies-1] * 1.0/rhoCvve;
-      
       /*--- Compute projections ---*/
       ProjVel = 0.0; vn = 0.0, phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel -= Velocity[iDim]*Normal[iDim];
-        vn      += Velocity[iDim]*UnitNormal[iDim];
+        ProjVel -= V[VEL_INDEX+iDim]*Normal[iDim];
+        vn      += V[VEL_INDEX+iDim]*UnitNormal[iDim];
         phin    += Psi[nSpecies+iDim]*UnitNormal[iDim];
       }
       
@@ -2169,16 +2138,12 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++)
         Psi[nSpecies+iDim] -= phin * UnitNormal[iDim];
       
-//      conv_numerics->GetInviscidProjJac(Density, Velocity, &Enthalpy, &Energy_ve,
-//                                        dPdU, dPdrhoE, dPdrhoEve, UnitNormal,
-//                                        1.0, Jacobian_i);
+      conv_numerics->GetInviscidProjJac(U, V, dPdU, UnitNormal, 1.0, Jacobian_i);
       
       /*--- Flux of the Euler wall: (Adotn)^T * Psi ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
           Residual[iVar] += Jacobian_i[jVar][iVar]*Psi[jVar]*Area;
-        }
-      }
       
       if (implicit)
         for (iVar = 0; iVar < nVar; iVar++)
@@ -2192,8 +2157,6 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       
 		}
 	}
-  delete [] Density;
-	delete [] Velocity;
 	delete [] UnitNormal;
 	delete [] Psi;
 }
@@ -2216,7 +2179,20 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
   
   /*--- Allocate arrays ---*/
 	Normal     = new double[nDim];
-	Psi_domain = new double[nVar]; Psi_infty = new double[nVar];
+	Psi_domain = new double[nVar];
+  Psi_infty  = new double[nVar];
+  
+  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+  conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2249,6 +2225,10 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
       /*--- Pass supplementary information to CNumerics ---*/
       conv_numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
                              solver_container[TNE2_SOL]->node_infty->GetdPdU());
+      conv_numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                             solver_container[TNE2_SOL]->node_infty->GetdTdU());
+      conv_numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
+                               solver_container[TNE2_SOL]->node_infty->GetdTvedU());
       
       /*--- Pass adjoint solution to CNumerics ---*/
       conv_numerics->SetAdjointVar(Psi_domain, Psi_infty);
@@ -2266,7 +2246,8 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
     }
   }
 	delete [] Normal;
-	delete [] Psi_domain; delete [] Psi_infty;
+	delete [] Psi_domain;
+  delete [] Psi_infty;
 }
 
 CAdjTNE2NSSolver::CAdjTNE2NSSolver(void) : CAdjTNE2EulerSolver() { }

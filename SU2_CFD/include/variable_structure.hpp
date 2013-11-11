@@ -1116,6 +1116,16 @@ public:
 	virtual void SetPressure(void);
   
   /*!
+   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
+   */
+  virtual double CalcEve(double *V, CConfig *config, unsigned short val_Species);
+  
+  /*!
+   * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
+   */
+  virtual double CalcHs(double *V, CConfig *config, unsigned short val_Species);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
@@ -3071,6 +3081,16 @@ public:
    * \brief Sets gas mixture quantities (\f$\rho C^{trans-rot}_v\f$ & \f$\rho C^{vib-el}_v\f$)
    */
   void SetGasProperties(CConfig *config);
+
+  /*!
+   * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
+   */
+  double CalcEve(double *V, CConfig *config, unsigned short val_Species);
+  
+  /*!
+   * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
+   */
+  double CalcHs(double *V, CConfig *config, unsigned short val_Species);
   
   /*!
    * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
@@ -3357,6 +3377,19 @@ public:
 	 */
 	CTNE2NSVariable(void);
   
+  
+  /*!
+	 * \overload
+	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of conserved variables.
+   * \param[in] val_nvarprim - Number of primitive variables.
+   * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  CTNE2NSVariable(unsigned short val_ndim, unsigned short val_nvar,
+                  unsigned short val_nprimvar, unsigned short val_nprimvargrad,
+                  CConfig *config);
+  
 	/*!
 	 * \overload
 	 * \param[in] val_density - Value of the flow density (initialization value).
@@ -3518,7 +3551,9 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	void SetPrimVar_Compressible(double val_adjlimit);
+	bool SetPrimVar_Compressible(double SharpEdge_Distance,
+                               bool check,
+                               CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
