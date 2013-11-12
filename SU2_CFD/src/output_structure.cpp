@@ -4567,7 +4567,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.setf(ios::fixed,ios::floatfield);
           cout.width(15); cout << log10(residual_adjTNE2[0]);
           cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
-          cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
+          cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim+1]);
 
           cout.precision(4);
           cout.setf(ios::scientific,ios::floatfield);
