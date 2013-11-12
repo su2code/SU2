@@ -93,5 +93,5 @@ public:
 	int NumInputs();
 	int NumOutputs();
 	void Predict(double *, double *);
-	bool CheckPredictions(string);
+	bool CheckPredictions(ifstream&);
 };
