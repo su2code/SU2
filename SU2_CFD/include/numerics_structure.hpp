@@ -3850,7 +3850,6 @@ public:
 	 * \param[in] val_crossproduction - Value of the CrossProduction.
 	 */
     double GetCrossProduction(void);
-    
 };
 
 
@@ -3964,7 +3963,6 @@ public:
 	 * \param[in] val_crossproduction - Value of the CrossProduction.
 	 */
   double GetCrossProduction(void);
-  
 };
 
 
