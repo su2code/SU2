@@ -36,8 +36,6 @@ parser.add_option("-p", "--partitions", dest="partitions", default=2,
                   help="number of PARTITIONS", metavar="PARTITIONS")
 parser.add_option("-i", "--iterations", dest="iterations", default=99999,
                   help="number of ITERATIONS", metavar="ITERATIONS")
-parser.add_option("-r", "--restart",     dest="restart",     default="True",
-                  help="RESTART from previous solution", metavar="RESTART")
 
 (options, args)=parser.parse_args()
 options.partitions = int( options.partitions )
@@ -50,10 +48,6 @@ state  = SU2.io.State()
 # prepare config
 config.NUMBER_PART = options.partitions
 config.EXT_ITER    = options.iterations
-if options.restart:
-  config.RESTART_SOL == 'YES'
-else:
-  config.RESTART_SOL == 'NO'
 
 # find solution files if they exist
 state.find_files(config)
