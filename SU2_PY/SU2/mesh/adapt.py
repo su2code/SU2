@@ -6,82 +6,97 @@ from ..run import decompose as su2decomp
 from ..run import CFD as SU2_CFD
 from ..run import MAC as SU2_MAC
 
-def Full(config):
+def full(config):
+    config = copy.deepcopy(config)
+    
+    config.KIND_ADAPT = 'FULL'
+    
+    raise NotImplementedError
+
+ 
+def full_flow(config):
+    
+    # local copy
+    konfig = copy.deepcopy(config)
+
+    # decompose
+    su2decomp(konfig)    
+    
+    # set config
+    konfig.KIND_ADAPT = 'FULL_FLOW'
+    
+    # run MAC
+    SU2_MAC(konfig)
+    
+    return
+    
+    
+def full_adjoint(config):
+    config = copy.deepcopy(config)
+    
+    raise NotImplementedError
+
+def grad_flow(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def FullFlow(config):
+def grad_adjoint(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def GradFlow(config):
+def grad_flow_adj(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def FullAdjoint(config):
+def robust(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def GradAdjoint(config):
+def full_linear(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def GradFlowAdj(config):
-    config = copy.deepcopy(config)
-    
-    raise NotImplementedError
- 
-def Robust(config):
-    config = copy.deepcopy(config)
-    
-    raise NotImplementedError
- 
-def FullLinear(config):
-    config = copy.deepcopy(config)
-    
-    raise NotImplementedError
- 
-def Computable(config):
+def computable(config):
     config = copy.deepcopy(config)
     
     pass
  
-def ComputableRobust():
+def computable_robust():
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def Remaining(config):
+def remaining(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def Wake(config):
+def wake(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
  
-def HorizontalPlane(config):
+def horizontal_plane(config):
     config = copy.deepcopy(config)
     
     raise NotImplementedError
 
 # config name map
-name_map = { 'FULL'              : Full             ,
-             'FULL_FLOW'         : FullFlow         ,
-             'GRAD_FLOW'         : GradFlow         ,
-             'FULL_ADJOINT'      : FullAdjoint      ,
-             'GRAD_ADJOINT'      : GradAdjoint      ,
-             'GRAD_FLOW_ADJ'     : GradFlowAdj      ,
-             'ROBUST'            : Robust           ,
-             'FULL_LINEAR'       : FullLinear       ,
-             'COMPUTABLE'        : Computable       ,
-             'COMPUTABLE_ROBUST' : ComputableRobust ,
-             'REMAINING'         : Remaining        ,
-             'WAKE'              : Wake             ,
-             'HORIZONTAL_PLANE'  : HorizontalPlane   }
+name_map = { 'FULL'              : full              ,
+             'FULL_FLOW'         : full_adjoint      ,
+             'GRAD_FLOW'         : grad_flow         ,
+             'FULL_ADJOINT'      : full_adjoint      ,
+             'GRAD_ADJOINT'      : grad_adjoint      ,
+             'GRAD_FLOW_ADJ'     : grad_flow_adj     ,
+             'ROBUST'            : robust            ,
+             'FULL_LINEAR'       : full_linear       ,
+             'COMPUTABLE'        : computable        ,
+             'COMPUTABLE_ROBUST' : computable_robust ,
+             'REMAINING'         : remaining         ,
+             'WAKE'              : wake              ,
+             'HORIZONTAL_PLANE'  : horizontal_plane   }

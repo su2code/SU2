@@ -220,10 +220,10 @@ CNeurNet::CNeurNet(string filename, string predFilename){
 		this -> neurons[lastLayer][j] = new Neuron(activator, this->parameterIdx[lastLayer][j], this->nParametersPerNeuron[lastLayer][j]);
 	}
 
-	f.close();
-
 	// Check predictions
-	this->CheckPredictions(predFilename);
+	this->CheckPredictions(f);
+  
+  f.close();
 	return;
 }
 
@@ -393,20 +393,29 @@ int CNeurNet::NumOutputs(){
 	return nOutputs;
 }
 
-bool CNeurNet::CheckPredictions(string filename){
-	ifstream f;
-	int position;
+bool CNeurNet::CheckPredictions(ifstream& f){
+  int position;
+  string text_line;
+  bool lineFound = false;
+  // Rewind to top
+  f.clear();
+	f.seekg(0, ios::beg);
+  
+  while (getline(f,text_line)){
+		position = text_line.find("\"PredictionCheck\":");
+		if (position != string::npos){
+      lineFound = true;
+      break;
+		}
+  }
+  if (!lineFound){
+    cout << "PredictionCheck line not found" << endl;
+    exit(10);
+  }
+  
 	// Check that the predictions from this net match the predictions 
-	// from the file 
-	f.open(filename.c_str(), ios::in);
+	// from the file
 	// Should be a "["
-	string text_line;
-	getline(f,text_line);
-	position = text_line.find("[");
-	if (position == string::npos){
-		cout <<"No bracket on first line of pred file"<<endl;
-		throw 10;
-	}
 	double * input = new double[this->nInputs];
 	double * output = new double[this->nOutputs];
 	double * predOutput = new double[this->nOutputs];
@@ -422,11 +431,11 @@ bool CNeurNet::CheckPredictions(string filename){
 		}
 		// Read inputs line
 		getline(f, text_line);
-		position = text_line.find("\"Inputs\": [");
+		position = text_line.find("\"Input\":");
 		if (position == string::npos){
-			cout <<"No Inputs line"<<endl;
+			cout <<"No Input line"<<endl;
 			cout << "Line is: " << text_line<<endl;
-			throw 10;
+			exit(10);
 		}
 		for (int i = 0; i < this->nInputs; i++){
 			getline(f,text_line);
@@ -439,9 +448,9 @@ bool CNeurNet::CheckPredictions(string filename){
 		getline(f,text_line);
 		// Read outputs line
 		getline(f,text_line);
-		position = text_line.find("\"Outputs\": [");
+		position = text_line.find("\"Output\":");
 		if (position == string::npos){
-			cout <<"No Outputs line"<<endl;
+			cout <<"No Output line"<<endl;
 			cout << "Line is: " << text_line<<endl;
 			throw 10;
 		}
@@ -464,13 +473,12 @@ bool CNeurNet::CheckPredictions(string filename){
 				cout << "real output " << output[i] << endl;
 			cout << "pred output " << predOutput[i] << endl;
 			cout << "diff = "<< output[i] - predOutput[i]<<endl;
-			throw 10;
+			exit(10);
 			}
 		}
 	}
 	delete input;
 	delete output;
 	delete predOutput;
-	f.close();
 	return true;
 }
