@@ -3850,7 +3850,6 @@ public:
 	 * \param[in] val_crossproduction - Value of the CrossProduction.
 	 */
     double GetCrossProduction(void);
-    
 };
 
 
@@ -3890,6 +3889,8 @@ private:
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
   CNeurNet * MLModel;
+  
+  
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
   int nResidual;
@@ -3962,7 +3963,6 @@ public:
 	 * \param[in] val_crossproduction - Value of the CrossProduction.
 	 */
   double GetCrossProduction(void);
-  
 };
 
 
