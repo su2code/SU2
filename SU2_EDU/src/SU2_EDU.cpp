@@ -1,6 +1,6 @@
 /*!
- * \file SU2_CFD.cpp
- * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
+ * \file SU2_EDU.cpp
+ * \brief Main file of Computational Fluid Dynamics Code (SU2_EDU).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 2.0.8
  *
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   /*--- Create pointers to all of the classes that may be used throughout
-   the SU2_CFD code. In general, the pointers are instantiated down a
+   the SU2_EDU code. In general, the pointers are instantiated down a
    heirarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
   
@@ -63,28 +63,21 @@ int main(int argc, char *argv[]) {
   CConfig **config_container            = NULL;
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
-  CFreeFormDefBox*** FFDBox             = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
   
-  char config_file_name[200];
-  if (argc == 2) { strcpy(config_file_name,argv[1]); }
-  else { strcpy(config_file_name, "default.cfg"); }
+  char config_file_name[200], InputKey[80];
+  do {
+    cout << "Set inviscid (Inv) or viscous (Visc) simulation: ";
+    fgets (InputKey,80,stdin);
+    if (strcmp (InputKey,"Inv\n") == 0) { strcpy(config_file_name, "Inviscid_ConfigFile.cfg"); }
+    if (strcmp (InputKey,"Visc\n") == 0) { strcpy(config_file_name, "Viscous_ConfigFile.cfg"); }
+  } while ((strcmp (InputKey,"Inv\n") != 0) && (strcmp (InputKey,"Visc\n") != 0));
   
-  /*--- Read the name and format of the input mesh file ---*/
-  
-  CConfig *config = NULL;
-  config = new CConfig(config_file_name);
-  
-  /*--- Get the number of zones and dimensions from the numerical grid
-   (required for variables allocation) ---*/
-  
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
-  /*--- Definition and of the containers for all possible zones. ---*/
-  
+  /*--- Definition and of the containers for a zone. ---*/
+  nZone = 1; nDim  = 2;
+
   solver_container      = new CSolver***[nZone];
   integration_container = new CIntegration**[nZone];
   numerics_container    = new CNumerics****[nZone];
@@ -92,7 +85,6 @@ int main(int argc, char *argv[]) {
   geometry_container    = new CGeometry **[nZone];
   surface_movement      = new CSurfaceMovement *[nZone];
   grid_movement         = new CVolumetricMovement *[nZone];
-  FFDBox                = new CFreeFormDefBox**[nZone];
   
   solver_container[ZONE_0]       = NULL;
   integration_container[ZONE_0]  = NULL;
@@ -101,13 +93,12 @@ int main(int argc, char *argv[]) {
   geometry_container[ZONE_0]     = NULL;
   surface_movement[ZONE_0]       = NULL;
   grid_movement[ZONE_0]          = NULL;
-  FFDBox[ZONE_0]                 = NULL;
-    
+  
   /*--- Definition of the configuration option class for all zones. In this
    constructor, the input configuration file is parsed and all options are
    read and stored. ---*/
   
-  config_container[ZONE_0] = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, VERB_HIGH);
+  config_container[ZONE_0] = new CConfig(config_file_name, SU2_EDU, ZONE_0, nZone, VERB_HIGH);
   
 #ifndef NO_MPI
   /*--- Change the name of the input-output files for a parallel computation ---*/
@@ -205,8 +196,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Computation of wall distances for turbulence modeling ---*/
   
-  if ( (config_container[ZONE_0]->GetKind_Solver() == RANS)     ||
-      (config_container[ZONE_0]->GetKind_Solver() == ADJ_RANS) )
+  if ((config_container[ZONE_0]->GetKind_Solver() == RANS))
     geometry_container[ZONE_0][MESH_0]->ComputeWall_Distance(config_container[ZONE_0]);
   
   /*--- Computation of positive surface area in the z-plane which is used for
@@ -273,7 +263,7 @@ int main(int argc, char *argv[]) {
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     MeanFlowIteration(output, integration_container, geometry_container,
                       solver_container, numerics_container, config_container,
-                      surface_movement, grid_movement, FFDBox);
+                      surface_movement, grid_movement);
     
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -291,23 +281,15 @@ int main(int argc, char *argv[]) {
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
     
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-      case EULER: case NAVIER_STOKES: case RANS:
-        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-    }
-    
+    StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence();
+
     /*--- Solution output. Determine whether a solution needs to be written
      after the current iteration, and if so, execute the output file writing
      routines. ---*/
     
     if ((ExtIter+1 == config_container[ZONE_0]->GetnExtIter()) ||
-        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-         !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-           (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
-        (StopCalc) ||
-        (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-          (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
-         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
+        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0)) ||
+        (StopCalc)) {
           
           /*--- Execute the routine for writing restart, volume solution,
            surface solution, and surface comma-separated value files. ---*/
@@ -376,7 +358,7 @@ int main(int argc, char *argv[]) {
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
+    cout << endl <<"------------------------- Exit Success (SU2_EDU) ------------------------" << endl << endl;
   
   return EXIT_SUCCESS;
 }
