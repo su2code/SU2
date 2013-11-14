@@ -21,6 +21,7 @@ bin_SCRIPTS = \
     3DChannel.py \
     config_gui.py \
     filter_adjoint.py \
+    compute_polar.py \
     mesh_adaptation.py
 		      
 mypkgdir = $(prefix)/bin

@@ -54,4 +54,4 @@ using namespace std;
  */
 void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
 											 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
-											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+											 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement);
