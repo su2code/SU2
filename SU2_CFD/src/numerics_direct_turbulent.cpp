@@ -706,9 +706,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   else { Density_i = U_i[0]; }
   
   val_residual[0] = 0.0;
-  Production = 0;
-  Destruction = 0;
-  CrossProduction = 0;
+  SAProduction = 0;
+  SADestruction = 0;
+  SACrossProduction = 0;
   val_Jacobian_i[0][0] = 0.0;
   
   for (int i =0; i < nDim; i++){
