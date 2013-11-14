@@ -268,10 +268,10 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   unsigned short iMGlevel;
   bool euler, ns, turbulent, spalart_allmaras, menter_sst;
   
-  
   /*--- Initialize some useful booleans ---*/
-  euler            = false;  ns              = false;  turbulent = false;
-  
+  euler = false;  ns = false;  turbulent = false;
+  menter_sst = false;  spalart_allmaras = false;
+
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case EULER : euler = true; break;
@@ -279,13 +279,14 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case RANS : ns = true; turbulent = true; break;
   }
   /*--- Assign turbulence model booleans --- */
-  if (turbulent)
-    switch (config->GetKind_Turb_Model()){
+  if (turbulent) {
+    switch (config->GetKind_Turb_Model()) {
       case SA: spalart_allmaras = true; break;
       case SST: menter_sst = true; break;
         
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
     }
+  }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
@@ -356,9 +357,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   unsigned short iMGlevel, iSol, nDim,
   
   nVar_Flow         = 0,
-  nVar_Turb         = 0,
-  
-  nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
+  nVar_Turb         = 0;
   
   double *constants = NULL;
   
@@ -382,12 +381,13 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   }
   
   /*--- Assign turbulence model booleans --- */
-  if (turbulent)
+  if (turbulent) {
     switch (config->GetKind_Turb_Model()){
       case SA: spalart_allmaras = true; break;
       case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
     }
+  }
   
   /*--- Number of variables for direct problem ---*/
   if (euler)				nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();

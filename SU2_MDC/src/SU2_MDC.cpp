@@ -31,12 +31,14 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- MPI initialization ---*/
+  
   MPI::Init(argc,argv);
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
 #endif
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
+  
   CConfig **config = NULL;
   CPhysicalGeometry **geometry = NULL;
   CSurfaceMovement *surface_movement = NULL;
@@ -44,13 +46,16 @@ int main(int argc, char *argv[]) {
   
   /*--- Definition of the containers by zone (currently only one zone is
    allowed, but this can be extended if necessary). ---*/
+  
   config   = new CConfig*[nZone];
   geometry = new CPhysicalGeometry*[nZone];
   
   /*--- Instantiate the config and geometry objects. ---*/
+  
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Definition of the configuration class, and open the config file ---*/
+    
     if (argc == 2) config[iZone] = new CConfig(argv[1], SU2_MDC, iZone, nZone, VERB_HIGH);
     else {
       strcpy (mesh_file, "default.cfg");
@@ -59,40 +64,49 @@ int main(int argc, char *argv[]) {
     
 #ifndef NO_MPI
     /*--- Change the name of the input-output files for the parallel computation ---*/
+    
     config[iZone]->SetFileNameDomain(rank+1);
 #endif
     
     /*--- Definition of the geometry class ---*/
+    
     geometry[iZone] = new CPhysicalGeometry(config[iZone], iZone+1, nZone);
     
   }
   
   /*--- Computational grid preprocesing ---*/
+  
   if (rank == MASTER_NODE) cout << endl << "----------------------- Preprocessing computations ----------------------" << endl;
   
   /*--- Compute elements surrounding points, points surrounding points ---*/
+  
   if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." <<endl;
   geometry[ZONE_0]->SetEsuP();
   geometry[ZONE_0]->SetPsuP();
   
   /*--- Check the orientation before computing geometrical quantities ---*/
+  
   if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
   geometry[ZONE_0]->SetBoundVolume();
   geometry[ZONE_0]->Check_Orientation(config[ZONE_0]);
   
   /*--- Create the edge structure ---*/
+  
   if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
   geometry[ZONE_0]->SetEdges(); geometry[ZONE_0]->SetVertex(config[ZONE_0]);
   
   /*--- Compute center of gravity ---*/
+  
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
   geometry[ZONE_0]->SetCG();
   
   /*--- Create the dual control volume structures ---*/
+  
   if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
   geometry[ZONE_0]->SetBoundControlVolume(config[ZONE_0], ALLOCATE);
   
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
+  
   if (config[ZONE_0]->GetVisualize_Deformation()) {
     
     if (rank == MASTER_NODE) cout << "Writing original grid in Tecplot format." << endl;
@@ -111,25 +125,31 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Surface grid deformation using design variables ---*/
+  
   if (rank == MASTER_NODE) cout << endl << "------------------------- Surface grid deformation ----------------------" << endl;
   
   /*--- Definition and initialization of the surface deformation class ---*/
+  
   surface_movement = new CSurfaceMovement();
   surface_movement->CopyBoundary(geometry[ZONE_0], config[ZONE_0]);
   
   /*--- Surface grid deformation ---*/
+  
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
   surface_movement->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
   
 #ifndef NO_MPI
   /*--- MPI syncronization point ---*/
+  
   MPI::COMM_WORLD.Barrier();
 #endif
   
   /*--- Volumetric grid deformation ---*/
+  
   if (rank == MASTER_NODE) cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;
 
   /*--- Definition of the Class for grid movement ---*/
+  
   grid_movement = new CVolumetricMovement(geometry[ZONE_0]);
   
   if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
@@ -138,9 +158,11 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Computational grid preprocesing ---*/
+  
   if (rank == MASTER_NODE) cout << endl << "----------------------- Write deformed grid files -----------------------" << endl;
   
   /*--- Output deformed grid for visualization, if requested (surface and volumetric) ---*/
+  
   if (config[ZONE_0]->GetVisualize_Deformation()) {
     
     if (rank == MASTER_NODE) cout << "Writing deformed grid in Tecplot format." << endl;
@@ -158,6 +180,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Write the new SU2 native mesh after deformation. ---*/
+  
   if (rank == MASTER_NODE) cout << "Writing the new .su2 mesh after deformation." << endl;
   
   if (size > 1) sprintf (buffer_char, "_%d.su2", rank+1);
@@ -177,10 +200,12 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- Finalize MPI parallelization ---*/
+  
   MPI::Finalize();
 #endif
   
   /*--- End solver ---*/
+  
   if (rank == MASTER_NODE)
   cout << endl << "------------------------- Exit Success (SU2_MDC) ------------------------" << endl << endl;
   

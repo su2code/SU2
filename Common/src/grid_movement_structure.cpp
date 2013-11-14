@@ -92,12 +92,18 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
   double MinVolume, NumError;
+  bool Screen_Output = true;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
+  /*--- Decide if there is going to be a screen output ---*/
+  
+  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_EDU) Screen_Output = false;
+
   /*--- Initialize the number of spatial dimensions, length of the state
    vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
   
@@ -132,7 +138,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinVolume * 1.0;
+    NumError = MinVolume * 0.001;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
@@ -158,8 +164,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
-    
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, true);
+
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, Screen_Output);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -178,7 +184,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     MinVolume = Check_Grid(geometry);
     
-    if (rank == MASTER_NODE) {
+    if ((rank == MASTER_NODE) && Screen_Output) {
       cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
       << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVolume
       << ". Error: " << NumError << "." <<endl;
@@ -1341,7 +1347,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
+		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE)
+        && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++) {
@@ -1386,9 +1393,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_EDU))) {
+		if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -1401,6 +1407,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 			}
     }
   }
+  
   /*--- Don't move the nearfield plane ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4450,64 +4457,147 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   vector<double> Svalue, Xcoord, Ycoord, Xcoord2, Ycoord2, Xcoord_Aux, Ycoord_Aux;
   bool AddBegin = true, AddEnd = true;
   double x_i, x_ip1, y_i, y_ip1;
-
-  
-  
-  if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
-  
-  /*--- Read in the airfoil coordinates from file. It is assumed that the 
-   airfoil coordinates are given in order starting from the trailing edge, 
-   over the upper surface, nose, lower surface, and back to the trailing edge. ---*/
-  
+  char AirfoilFile[256];
+  char AirfoilFormat[15];
+  char MeshOrientation[15];
+  char AirfoilClose[15];
+  double AirfoilScale;
+  unsigned short nUpper, nLower, iUpper, iLower;
   ifstream airfoil_file;
   string text_line;
   
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+  
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+  
+  /*--- Read the coordinates. Two main formats:
+   - Selig are in an x,y format starting from trailing edge, along the upper surface to the leading
+   edge and back around the lower surface to trailing edge.
+   - Lednicer are upper surface points leading edge to trailing edge and then lower surface leading
+   edge to trailing edge.
+   ---*/
+  
   /*--- Open the restart file, throw an error if this fails. ---*/
   
-  airfoil_file.open("airfoil.dat", ios::in);
+  cout << "Enter the name of file with the airfoil information: ";
+  scanf ("%s", AirfoilFile);
+  airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
     exit(1);
   }
+  cout << "Enter the format of the airfoil (Selig or Lednicer): ";
+  scanf ("%s", AirfoilFormat);
+
+  cout << "Thickness scaling (1.0 means no scaling)?: ";
+  scanf ("%lf", &AirfoilScale);
+  
+  cout << "Close the airfoil (Yes or No)?: ";
+  scanf ("%s", AirfoilClose);
+  
+  cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
+  scanf ("%s", MeshOrientation);
   
   /*--- The first line is the header ---*/
   
   getline (airfoil_file, text_line);
+  cout << "File info: " << text_line << endl;
   
-  /*--- Read the coordinates from the rest of the file ---*/
-  
-  while (getline (airfoil_file, text_line)) {
+  if (strcmp (AirfoilFormat,"Selig") == 0) {
+
+    while (getline (airfoil_file, text_line)) {
+      istringstream point_line(text_line);
+      
+      /*--- Read the x & y coordinates from this line of the file (anticlockwise) ---*/
+      
+      point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+      
+      /*--- Store the coordinates in vectors ---*/
+      
+      Xcoord.push_back(Airfoil_Coord[0]);
+      Ycoord.push_back(Airfoil_Coord[1]*AirfoilScale);
+    }
+    
+  }
+  if (strcmp (AirfoilFormat,"Lednicer") == 0) {
+    
+    /*--- The second line is the number of points ---*/
+
+    getline(airfoil_file, text_line);
     istringstream point_line(text_line);
+    double Upper, Lower;
+    point_line >> Upper >> Lower;
     
-    /*--- Read the x & y coordinates from this line of the file ---*/
+    nUpper = int(Upper);
+    nLower = int(Lower);
+  
+    Xcoord.resize(nUpper+nLower-2);
+    Ycoord.resize(nUpper+nLower-2);
     
-    point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+    /*--- White line ---*/
+
+    getline (airfoil_file, text_line);
+
+    for (iUpper = 0; iUpper < nUpper; iUpper++) {
+      getline (airfoil_file, text_line);
+      istringstream point_line(text_line);
+      point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+      Xcoord[nUpper-iUpper-1] = Airfoil_Coord[0];
+      
+      double factor;
+      if (strcmp (AirfoilClose,"Yes") == 0) {
+        double x = (Airfoil_Coord[0] - 0.95) / 0.05;
+        factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
+        if (x < 0.95) factor = 1.0;
+      }
+      else factor = 1.0;
+      
+      Ycoord[nUpper-iUpper-1] = Airfoil_Coord[1]*AirfoilScale*factor;
+    }
     
-    /*--- Store the coordinates in vectors ---*/
-    
-    Xcoord.push_back(Airfoil_Coord[0]);
-    Ycoord.push_back(Airfoil_Coord[1]);
+    getline (airfoil_file, text_line);
+
+    for (iLower = 0; iLower < nLower-1; iLower++) {
+      getline (airfoil_file, text_line);
+      istringstream point_line(text_line);
+      point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+      
+      double factor;
+      if (strcmp (AirfoilClose,"Yes") == 0) {
+        double x = (Airfoil_Coord[0] - 0.95) / 0.05;
+        factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
+        if (x < 0.95) factor = 1.0;
+      }
+      else factor = 1.0;
+      
+      Xcoord[nUpper+iLower-1] = Airfoil_Coord[0];
+      Ycoord[nUpper+iLower-1] = Airfoil_Coord[1]*AirfoilScale*factor;
+    }
+      
   }
   
   /*--- Check the coordinate (1,0) at the beginning and end of the file ---*/
   
   if (Xcoord[0] == 1.0) AddBegin = false;
   if (Xcoord[Xcoord.size()-1] == 1.0) AddEnd = false;
-
-  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Xcoord.begin(), 0.0);}
-  if (AddEnd) {   Xcoord.push_back(1.0);                Ycoord.push_back(0.0);}
   
+  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Ycoord.begin(), 0.0);}
+  if (AddEnd) { Xcoord.push_back(1.0);                Ycoord.push_back(0.0);}
   
   /*--- Change the orientation (depend on the input file, and the mesh file) ---*/
-
-  for (iVar = 0; iVar < Xcoord.size(); iVar++) {
-    Xcoord_Aux.push_back(Xcoord[iVar]);
-    Ycoord_Aux.push_back(Ycoord[iVar]);
-  }
   
-  for (iVar = 0; iVar < Xcoord.size(); iVar++) {
-    Xcoord[iVar] = Xcoord_Aux[Xcoord.size()-iVar-1];
-    Ycoord[iVar] = Ycoord_Aux[Xcoord.size()-iVar-1];
+  if (strcmp (MeshOrientation,"clockwise") == 0) {
+    for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+      Xcoord_Aux.push_back(Xcoord[iVar]);
+      Ycoord_Aux.push_back(Ycoord[iVar]);
+    }
+    
+    for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+      Xcoord[iVar] = Xcoord_Aux[Xcoord.size()-iVar-1];
+      Ycoord[iVar] = Ycoord_Aux[Xcoord.size()-iVar-1];
+    }
   }
   
   /*--- Compute the total arch length ---*/
@@ -4549,26 +4639,26 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   Ycoord2.resize(n_Airfoil+1);
   boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
   
-  NewXCoord = 0.0;
-  NewYCoord = 0.0;
+  NewXCoord = 0.0; NewYCoord = 0.0;
   
   double TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-    for (iVertex = 0; iVertex < boundary->nVertex[iMarker]-1; iVertex++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]-1; iVertex++) {
         Coord_i = boundary->vertex[iMarker][iVertex]->GetCoord();
         Coord_ip1 = boundary->vertex[iMarker][iVertex+1]->GetCoord();
         
         x_i = Coord_i[0]; x_ip1 = Coord_ip1[0];
         y_i = Coord_i[1]; y_ip1 = Coord_ip1[1];
-      
+        
         TotalArch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
       }
-    Coord_i = boundary->vertex[iMarker][boundary->nVertex[iMarker]-1]->GetCoord();
-    Coord_ip1 = boundary->vertex[iMarker][0]->GetCoord();
-    x_i = Coord_i[0]; x_ip1 = Coord_ip1[0];
-    y_i = Coord_i[1]; y_ip1 = Coord_ip1[1];
-    TotalArch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
+      Coord_i = boundary->vertex[iMarker][boundary->nVertex[iMarker]-1]->GetCoord();
+      Coord_ip1 = boundary->vertex[iMarker][0]->GetCoord();
+      x_i = Coord_i[0]; x_ip1 = Coord_ip1[0];
+      y_i = Coord_i[1]; y_ip1 = Coord_ip1[1];
+      TotalArch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
     }
   }
   
@@ -4577,7 +4667,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     Arch = 0.0;
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
       VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-      if (config->GetMarker_All_DV(iMarker) == YES) {
+      if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
         Point = boundary->vertex[iMarker][iVertex]->GetNode();
         Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
         
@@ -4596,8 +4687,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
         /*--- Store the delta change in the x & y coordinates ---*/
         VarCoord[0] = NewXCoord - Coord[0];
         VarCoord[1] = NewYCoord - Coord[1];
-        
       }
+//      cout << iMarker <<" "<< iVertex <<" "<< VarCoord[0] <<" "<< VarCoord[1] << endl;
       boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
     }
   }
