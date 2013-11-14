@@ -25,7 +25,7 @@
 
 string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned short nVar_Consv, unsigned short *NVar);
 
-void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
   /*--- Local variables and initialization ---*/
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
@@ -219,8 +219,17 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned sh
     }
     
     if (config->GetExtraOutput()) {
+      string *headings = NULL;
+      //if (Kind_Solver == RANS){
+      headings = solver[TURB_SOL]->OutputHeadingNames;
+      //}
       for (iVar = 0; iVar < nVar_Extra; iVar++) {
-        Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+        //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+        if (headings == NULL){
+          Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
+        }else{
+          Tecplot_File << ", \""<< headings[iVar] <<"\"";
+        }
       }
     }
     

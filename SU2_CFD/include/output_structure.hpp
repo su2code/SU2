@@ -223,7 +223,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,unsigned short val_iZone);
 
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -265,7 +265,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry,CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
 	 * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
