@@ -59,10 +59,7 @@ CUpwRoe_AdjTNE2::CUpwRoe_AdjTNE2(unsigned short val_nDim,
     P[iVar]      = new double [nVar];
     invP[iVar]   = new double [nVar];
     PLPinv[iVar] = new double [nVar];
-  }
-  
-//  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
-  
+  }  
 }
 
 CUpwRoe_AdjTNE2::~CUpwRoe_AdjTNE2(void) {
@@ -86,7 +83,6 @@ CUpwRoe_AdjTNE2::~CUpwRoe_AdjTNE2(void) {
   delete [] invP;
   delete [] PLPinv;
   
-//  delete [] var;
 }
 
 void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
@@ -101,7 +97,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   double Area, ProjVel;
   double MeanSoundSpeed;
   
-  /*--- Roe flux: F = (Fi + Fj)/2 - 1/2*P|Lam|P^-1 * (Uj - Ui) ---*/
+  /*--- Roe flux: Fij = (Fi + Fj)/2 - 1/2*P|Lam|P^-1 * (Uj - Ui) ---*/
   // Notes:
   // 1) Non-conservative method, so for Fij -> Fi = A_i*Psi_i & Fj = A_i*Psi_j
   //    and Fji -> Fi = A_j*Psi_i & Fj = A_j*Psi_j
@@ -173,17 +169,6 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   GetPMatrix(MeanU, MeanV, MeandPdU, UnitNormal, l, m, P);
   GetPMatrix_inv(MeanU, MeanV, MeandPdU, UnitNormal, l, m, invP);
   
-  cout << "Lambda: " << endl;
-  for (iVar = 0; iVar < nVar; iVar++)
-    cout << Lambda[iVar] << endl;
-  cout << endl << endl << "l: " << l[0] << ", " << l[1] << ", " << l[2] << endl;
-  cout << "m: " << m[0] << ", " << m[1] << ", " << m[2] << endl;
-  cout << "Mean sound speed: " << MeanSoundSpeed << endl;
-  cout << "dPdU: " << endl;
-  for (iVar = 0; iVar < nVar; iVar++)
-    cout << MeandPdU[iVar] << "\t" << dPdU_i[iVar] << "\t" << dPdU_j[iVar] << endl;
-  cin.get();
-  
   /*--- Calculate eigenvalue/eigenvector decomposition ---*/
   // |PLPinv| = P x |Lambda| x inverse P
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -195,22 +180,240 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   }
   
   /*--- Calculate the 'viscous' portion of the flux ---*/
+  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*DiffPsi[jVar]*Area;
-      val_residual_j[iVar] -= 0.5*PLPinv[jVar][iVar]*DiffPsi[jVar]*Area;
+      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+      val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
     }
   }
   
   /*--- Populate Jacobian matrices ---*/
+  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
+  //       Only multiply PLP by area to properly account for integration.
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
-        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
-        val_Jacobian_ji[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
-        val_Jacobian_jj[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+        val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+        val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
       }
+    }
+  }
+}
+
+CUpwSW_AdjTNE2::CUpwSW_AdjTNE2(unsigned short val_nDim,
+                                 unsigned short val_nVar,
+                                 unsigned short val_nPrimVar,
+                                 unsigned short val_nPrimVarGrad,
+                                 CConfig *config) : CNumerics(val_nDim,
+                                                              val_nVar,
+                                                              config) {
+  
+  /*--- Read configuration parameters ---*/
+	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  
+  /*--- Define useful constants ---*/
+  nVar         = val_nVar;
+  nPrimVar     = val_nPrimVar;
+  nPrimVarGrad = val_nPrimVarGrad;
+  nDim         = val_nDim;
+  nSpecies     = config->GetnSpecies();
+  
+  UnitNormal = new double[nDim];
+  DiffPsi    = new double[nVar];
+  Lambda_i   = new double[nVar];
+  Lambda_j   = new double[nVar];
+  P      = new double* [nVar];
+  invP   = new double* [nVar];
+  PLPinv = new double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    P[iVar]      = new double [nVar];
+    invP[iVar]   = new double [nVar];
+    PLPinv[iVar] = new double [nVar];
+  }
+  
+}
+
+CUpwSW_AdjTNE2::~CUpwSW_AdjTNE2(void) {
+  
+  delete [] UnitNormal;
+  delete [] DiffPsi;
+	delete [] Lambda_i;
+  delete [] Lambda_j;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] P[iVar];
+    delete [] invP[iVar];
+    delete [] PLPinv[iVar];
+  }
+  delete [] P;
+  delete [] invP;
+  delete [] PLPinv;
+}
+
+void CUpwSW_AdjTNE2::ComputeResidual (double *val_residual_i,
+                                      double *val_residual_j,
+                                      double **val_Jacobian_ii,
+                                      double **val_Jacobian_ij,
+                                      double **val_Jacobian_ji,
+                                      double **val_Jacobian_jj,
+                                      CConfig *config) {
+  
+  unsigned short iDim, iSpecies, iVar, jVar, kVar;
+  double Area, ProjVel_i, ProjVel_j;
+  
+  /*--- SW flux: Fij = (F^+i + F^-j) ---*/
+  
+  /*--- Initialize the residuals (and Jacobians) ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual_i[iVar] = 0.0;
+    val_residual_j[iVar] = 0.0;
+  }
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ii[iVar][jVar] = 0.0;
+        val_Jacobian_ij[iVar][jVar] = 0.0;
+        val_Jacobian_ji[iVar][jVar] = 0.0;
+        val_Jacobian_jj[iVar][jVar] = 0.0;
+      }
+  }
+  
+  /*--- Calculate geometric quantities ---*/
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
+  CreateBasis(UnitNormal);
+  
+  /*--- Calculate projected velocties ---*/
+  ProjVel_i = 0.0; ProjVel_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVel_i += V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
+    ProjVel_j += V_j[VEL_INDEX+iDim]*UnitNormal[iDim];
+  }
+  
+  /*--- Flow eigenvalues at i (Lambda+) --- */
+  for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
+    Lambda_i[iSpecies]      = 0.5*(ProjVel_i + fabs(ProjVel_i));
+  Lambda_i[nSpecies+nDim-1] = 0.5*(     ProjVel_i + V_i[A_INDEX] +
+                                   fabs(ProjVel_i + V_i[A_INDEX])  );
+  Lambda_i[nSpecies+nDim]   = 0.5*(     ProjVel_i - V_i[A_INDEX] +
+                                   fabs(ProjVel_i - V_i[A_INDEX])  );
+  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVel_i + fabs(ProjVel_i));
+  
+  /*--- Compute projected P, invP, and Lambda ---*/
+  GetPMatrix    (U_i, V_i, dPdU_i, UnitNormal, l, m, P   );
+  GetPMatrix_inv(U_i, V_i, dPdU_i, UnitNormal, l, m, invP);
+  
+  /*--- Projected flux (f+) at i ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      PLPinv[iVar][jVar] = 0.0;
+      /*--- Compute Proj_ModJac_Tensor = P x Lambda+ x inverse P ---*/
+      for (kVar = 0; kVar < nVar; kVar++)
+        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_i[kVar]*invP[kVar][jVar];
+    }
+  }
+  
+  /*--- Calculate i+ fluxes ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_residual_i[iVar] += PLPinv[jVar][iVar]*Psi_i[jVar]*Area;
+      val_Jacobian_ii[iVar][jVar] = PLPinv[jVar][iVar]*Area;
+    }
+  }
+  
+  /*--- Flow eigenvalues at i (Lambda-) --- */
+  for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
+    Lambda_i[iSpecies]      = 0.5*(ProjVel_i - fabs(ProjVel_i));
+  Lambda_i[nSpecies+nDim-1] = 0.5*(     ProjVel_i + V_i[A_INDEX] -
+                                   fabs(ProjVel_i + V_i[A_INDEX])  );
+  Lambda_i[nSpecies+nDim]   = 0.5*(     ProjVel_i - V_i[A_INDEX] -
+                                   fabs(ProjVel_i - V_i[A_INDEX])  );
+  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVel_i - fabs(ProjVel_i));
+  
+  /*--- Projected flux (f-) at i ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      PLPinv[iVar][jVar] = 0.0;
+      /*--- Compute Proj_ModJac_Tensor = P x Lambda+ x inverse P ---*/
+      for (kVar = 0; kVar < nVar; kVar++)
+        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_i[kVar]*invP[kVar][jVar];
+    }
+  }
+  
+  /*--- Calculate i- fluxes ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_residual_i[iVar] += PLPinv[jVar][iVar]*Psi_j[jVar]*Area;
+      val_Jacobian_ij[iVar][jVar] = PLPinv[jVar][iVar]*Area;
+    }
+  }
+  
+  //////// j -> i ////////
+  /*--- Flow eigenvalues at j (Lambda+) --- */
+  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+    Lambda_j[iVar]          = -0.5*(ProjVel_j + fabs(ProjVel_j));
+  Lambda_j[nSpecies+nDim-1] = -0.5*(     ProjVel_j + V_j[A_INDEX] +
+                                    fabs(ProjVel_j + V_j[A_INDEX])  );
+  Lambda_j[nSpecies+nDim]   = -0.5*(     ProjVel_j - V_j[A_INDEX] +
+                                    fabs(ProjVel_j - V_j[A_INDEX])  );
+  Lambda_j[nSpecies+nDim+1] = -0.5*(ProjVel_i + fabs(ProjVel_i));
+  
+  /*--- Compute projected P, invP, and Lambda ---*/
+  GetPMatrix(U_j, V_j, dPdU_j, UnitNormal, l, m, P);
+  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invP);
+  
+	/*--- Projected flux (f-) ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      PLPinv[iVar][jVar] = 0.0;
+      /*--- Compute Proj_ModJac_Tensor = P x Lambda- x inverse P ---*/
+      for (kVar = 0; kVar < nVar; kVar++)
+        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_j[kVar]*invP[kVar][jVar];
+    }
+  }
+  
+  /*--- Calculate j+ fluxes ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_residual_j[iVar] += PLPinv[jVar][iVar]*Psi_j[jVar]*Area;
+      val_Jacobian_jj[iVar][jVar] = PLPinv[jVar][iVar]*Area;
+    }
+  }
+  
+  /*--- Flow eigenvalues at j (Lambda-) --- */
+  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+    Lambda_j[iVar]          = -0.5*(ProjVel_j - fabs(ProjVel_j));
+  Lambda_j[nSpecies+nDim-1] = -0.5*(     ProjVel_j + V_j[A_INDEX] -
+                                    fabs(ProjVel_j + V_j[A_INDEX])  );
+  Lambda_j[nSpecies+nDim]   = -0.5*(     ProjVel_j - V_j[A_INDEX] -
+                                    fabs(ProjVel_j - V_j[A_INDEX])  );
+  Lambda_j[nSpecies+nDim+1] = -0.5*(ProjVel_j - fabs(ProjVel_j));
+  
+  /*--- Compute projected P, invP, and Lambda ---*/
+  GetPMatrix(U_j, V_j, dPdU_j, UnitNormal, l, m, P);
+  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invP);
+  
+	/*--- Projected flux (f-) ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      PLPinv[iVar][jVar] = 0.0;
+      /*--- Compute Proj_ModJac_Tensor = P x Lambda- x inverse P ---*/
+      for (kVar = 0; kVar < nVar; kVar++)
+        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_j[kVar]*invP[kVar][jVar];
+    }
+  }
+  
+  /*--- Calculate j- fluxes ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_residual_j[iVar] += PLPinv[jVar][iVar]*Psi_i[jVar]*Area;
+      val_Jacobian_ji[iVar][jVar] = PLPinv[jVar][iVar]*Area;
     }
   }
 }
