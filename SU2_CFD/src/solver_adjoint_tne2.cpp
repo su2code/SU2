@@ -297,7 +297,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 }
 
 CAdjTNE2EulerSolver::~CAdjTNE2EulerSolver(void) {
-  unsigned short iVar, iMarker;
+  unsigned short iMarker;
   
   if (PsiRho_Inf  != NULL) delete [] PsiRho_Inf;
   if (Phi_Inf     != NULL) delete [] Phi_Inf;
@@ -984,7 +984,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
                                               CSolver **solver_container,
                                               CConfig *config) {
   bool ionization;
-	unsigned short iMarker, iDim, iSpecies, nHeavy, nEl;
+	unsigned short iMarker, iDim, nHeavy, nEl;
 	unsigned long iVertex, iPoint;
 	double Alpha      = (config->GetAoA()*PI_NUMBER)/180.0;
 	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
@@ -994,7 +994,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
 	double x_origin, y_origin, z_origin, WDrag, Area;
 	double RefVel2, RefDensity;
-  double T, Tve, P, *MassFrac_Inf, *Ms, Ru, denom;
   
 	ForceProj_Vector = new double[nDim];
   
@@ -1348,23 +1347,6 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 		numerics->ComputeResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji,
                               Jacobian_jj, config);
-    
-//    if (iPoint == 17) {
-//      cout << "Convective residual" << endl;
-//      cout << "Psi_i: " << endl;
-//      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-//        cout << node[iPoint]->GetSolution()[iVar] << endl;
-//      cout << "Psi_j: " << endl;
-//      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-//        cout << node[jPoint]->GetSolution()[iVar] << endl;
-//      cout << "Res conv: " << endl;
-//      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-//        cout << Res_Conv_i[iVar] << endl;
-//      cout << endl << endl << "Res visc: " << endl;
-//      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-//        cout << Res_Visc_i[iVar] << endl;
-//      cin.get();
-//    }
     
     /*--- Error checking ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -2196,16 +2178,16 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
   Psi_infty  = new double[nVar];
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-  conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-  conv_numerics->SetPIndex      ( node[0]->GetPIndex()       );
-  conv_numerics->SetTIndex      ( node[0]->GetTIndex()       );
-  conv_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-  conv_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-  conv_numerics->SetHIndex      ( node[0]->GetHIndex()       );
-  conv_numerics->SetAIndex      ( node[0]->GetAIndex()       );
-  conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-  conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  conv_numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
   
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2255,25 +2237,6 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
       LinSysRes.SubtractBlock(iPoint, Residual_i);
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      
-//      if (iVertex == 17) {
-//        unsigned short iVar, jVar;
-//        cout << "BC FAR" << endl;
-//        cout << "Psi: " << endl;
-//        for (iVar = 0; iVar < nVar; iVar++)
-//          cout << Psi_domain[iVar] << endl;
-//        cout << endl << endl << "Residual: " << endl;
-//        for (iVar = 0; iVar < nVar; iVar++)
-//          cout << Residual[iVar] << endl;
-//        cout << endl << endl << "Jacobian: " << endl;
-//        for (iVar = 0; iVar < nVar; iVar++) {
-//          for (jVar = 0; jVar < nVar; jVar++) {
-//            cout << Jacobian_ii[iVar][jVar] << "\t";
-//          }
-//          cout << endl;
-//        }
-//        cin.get();
-//      }
     }
   }
 	delete [] Normal;
