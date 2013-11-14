@@ -3963,6 +3963,8 @@ public:
 	 * \param[in] val_crossproduction - Value of the CrossProduction.
 	 */
   double GetCrossProduction(void);
+  
+  double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
 };
 
 
