@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
@@ -113,8 +114,9 @@ public:
   
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
-    CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
-
+  CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
+  string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
+  
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
   
@@ -3354,7 +3356,7 @@ public:
 	 */
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
-  
+  double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
 };
 
 

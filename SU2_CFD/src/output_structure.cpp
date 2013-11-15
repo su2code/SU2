@@ -3196,7 +3196,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
 }
 
-void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
   /*--- Local variables ---*/
   unsigned short Kind_Solver  = config->GetKind_Solver();
@@ -3302,8 +3302,17 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   }
   
   if (config->GetExtraOutput()) {
+    string *headings = NULL;
+    //if (Kind_Solver == RANS){
+      headings = solver[TURB_SOL]->OutputHeadingNames;
+    //}
+    
     for (iVar = 0; iVar < nVar_Extra; iVar++) {
-      restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
+      if (headings == NULL){
+        restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
+      }else{
+        restart_file << "\t\""<< headings[iVar] <<"\"";
+      }
     }
   }
   
@@ -4567,7 +4576,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.setf(ios::fixed,ios::floatfield);
           cout.width(15); cout << log10(residual_adjTNE2[0]);
           cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
-          cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim]);
+          cout.width(15); cout << log10(residual_adjTNE2[nSpecies+nDim+1]);
 
           cout.precision(4);
           cout.setf(ios::scientific,ios::floatfield);
@@ -4707,7 +4716,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Write a native restart file ---*/
       if (Wrt_Rst)
-        SetRestart(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
       
       if (Wrt_Vol) {
         
@@ -4716,7 +4725,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
@@ -4752,7 +4761,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
             
@@ -4852,7 +4861,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
+            SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone], false);
             break;
             
@@ -4891,7 +4900,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
+            SetTecplot_ASCII(config[iZone], geometry[iZone],solver, iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone], true);
             break;
             
