@@ -388,14 +388,14 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
   }
-
+  
   for (int i =0; i < nDim; i++){
     for (int j=0; j < nDim; j++){
       DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
     }
     DNuhatDXj[i] = TurbVar_Grad_i[0][i];
   }
-
+  
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
   
@@ -406,7 +406,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   }
   
   for (int i=0; i < nJacobian; i++){
-     testJacobian[i] *= Volume;
+    testJacobian[i] *= Volume;
   }
   
   // Check if the old and new match
@@ -418,14 +418,14 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   }
   if (abs(Destruction - testResidual[1]) > 1e-15){
     cout << "Destruction doesn't match" << endl;
-        exit(10);
+    exit(10);
   }
   if (abs(CrossProduction - testResidual[2]) > 1e-15){
     cout << "cpp Cross " <<  CrossProduction << endl;
     cout << "Func cross " << testResidual[2] << endl;
     cout << "dist_i " << dist_i << endl;
     cout << "Cross production doesn't match" << endl;
-        exit(10);
+    exit(10);
   }
   if (abs(val_residual[0]-testResidual[3]) > 1e-15){
     cout << "Val residual is " << val_residual[0] << endl;
@@ -705,10 +705,18 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   if (incompressible) { Density_i = DensityInc_i; }
   else { Density_i = U_i[0]; }
   
+  /* Intialize */
+  // Note that the Production, destruction, etc. are all volume independent
   val_residual[0] = 0.0;
   SAProduction = 0;
   SADestruction = 0;
   SACrossProduction = 0;
+  SASource = 0;
+  MLProduction = 0;
+  MLDestruction = 0;
+  MLCrossProduction = 0;
+  MLSource = 0;
+  SourceDiff = 0;
   val_Jacobian_i[0][0] = 0.0;
   
   for (int i =0; i < nDim; i++){
@@ -718,11 +726,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     DNuhatDXj[i] = TurbVar_Grad_i[0][i];
   }
   
-  
+  /* Call Spalart-Allmaras (for comparison) */
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
   SpalartAllmarasSourceTerm(SAInputs, SAConstants, testResidual, testJacobian);
   
+  SAProduction = testResidual[0];
+  SADestruction = testResidual[1];
+  SACrossProduction = testResidual[2];
+  SASource = testResidual[3];
   
   for (int i=0; i < nResidual; i++){
     testResidual[i] *= Volume;
@@ -732,68 +744,70 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     testJacobian[i] *= Volume;
   }
   
-    // Call turbulence model
-    // Get all the variables
-    int nInputMLVariables = 9;
-    int nOutputMLVariables = 1;
-    double * input = new double[nInputMLVariables];
-    for (int i = 0; i < nInputMLVariables; i++){
-      input[i] = 0;
-    }
-    int ctr = 0;
-    input[ctr] = Laminar_Viscosity_i/Density_i;
+  /* Call turbulence model */
+  // Get all the variables
+  int nInputMLVariables = 9;
+  int nOutputMLVariables = 1;
+  double * input = new double[nInputMLVariables];
+  for (int i = 0; i < nInputMLVariables; i++){
+    input[i] = 0;
+  }
+  int ctr = 0;
+  input[ctr] = Laminar_Viscosity_i/Density_i;
+  ctr++;
+  input[ctr] = TurbVar_i[0];
+  ctr++;
+  input[ctr] = dist_i;
+  ctr++;
+  for (iDim = 0; iDim < nDim; iDim++){
+    input[ctr] = TurbVar_Grad_i[0][iDim];
     ctr++;
-    input[ctr] = TurbVar_i[0];
-    ctr++;
-    input[ctr] = dist_i;
-    ctr++;
-    for (iDim = 0; iDim < nDim; iDim++){
-      input[ctr] = TurbVar_Grad_i[0][iDim];
+  }
+  for (iDim = 0; iDim < nDim; iDim ++){
+    for (int jDim = 0; jDim < nDim; jDim++){
+      input[ctr] = PrimVar_Grad_i[iDim+1][iDim];
       ctr++;
     }
-    for (iDim = 0; iDim < nDim; iDim ++){
-      for (int jDim = 0; jDim < nDim; jDim++){
-        input[ctr] = PrimVar_Grad_i[iDim+1][iDim];
-        ctr++;
-      }
-    }
-    if (ctr != nInputMLVariables){
-      cout << "Improper number of variables put into ctr"<< endl;
-      exit(1);
-    }
-    double *output = new double[nOutputMLVariables];
-    for (int i=0; i < nOutputMLVariables; i++){
-      output[i] = 0;
-    }
-  
-    this->MLModel->inputScaler->Scale(input);
-    this->MLModel->Predict(input, output);
-    this->MLModel->inputScaler->Unscale(input);
-  if (dist_i < SAInputs->GetLimiter()){
-    output[0] = 0;
   }
+  if (ctr != nInputMLVariables){
+    cout << "Improper number of variables put into ctr"<< endl;
+    exit(1);
+  }
+  double *output = new double[nOutputMLVariables];
+  for (int i=0; i < nOutputMLVariables; i++){
+    output[i] = 0;
+  }
+  
+  this->MLModel->Predict(input, output);
+  
+  // Should add some sort of switch in the future
+  MLSource = output[0];
+  SourceDiff = MLSource - SASource;
+  
+  // Rescale by volume
   output[0] = output[0]*Volume;
   
+  /*
   double slideIter = 500.0;
   double extiter = double(config->GetExtIter());
   if (extiter > slideIter){
     extiter = slideIter;
   }
   val_residual[0] = testResidual[3]*(slideIter - extiter)/slideIter + output[0] * extiter/slideIter;
-  
-//  cout.precision(15);
+  */
+  //  cout.precision(15);
   /*
-  cout <<"ml pred is " << output[0] << endl;
-  cout << "real SA is " << testResidual[3] << endl;
-  cout << "val resid is " << val_residual[0] << endl;
+   cout <<"ml pred is " << output[0] << endl;
+   cout << "real SA is " << testResidual[3] << endl;
+   cout << "val resid is " << val_residual[0] << endl;
    */
   
-  
-  //val_residual[0] = testResidual[3];
+  val_residual[0] = output[0];
+  val_residual[0] = testResidual[3];
   //val_Jacobian_i[0][0] = testJacobian[0];
-    
-    delete input;
-    delete output;
+  
+  delete input;
+  delete output;
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,

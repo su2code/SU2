@@ -2699,9 +2699,10 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim == 2){ nOutputVariables = 12; }
-      else if (nDim == 3){ nOutputVariables = 18; }
+      if (nDim == 2){ nOutputVariables = 18; }
+      else if (nDim == 3){ nOutputVariables = 24; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+      OutputHeadingNames = new string[nOutputVariables];
     }
     
     /*--- Computation of gradients by least squares ---*/
@@ -3132,32 +3133,63 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Compute the source term ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
+    CSourcePieceWise_TurbML *mynum = (CSourcePieceWise_TurbML*)numerics;
+    
     unsigned long idx = 0;
     if (config->GetExtraOutput()) {
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetProduction()/numerics->Volume;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAProduction;
+      OutputHeadingNames[idx] = "SAProduction";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetDestruction()/numerics->Volume;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SADestruction;
+      OutputHeadingNames[idx] = "SADestruction";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetCrossProduction()/numerics->Volume;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SACrossProduction;
+      OutputHeadingNames[idx] = "SACrossProduction";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SASource;
+      OutputHeadingNames[idx] = "SASource";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLProduction;
+      OutputHeadingNames[idx] = "MLProduction";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLDestruction;
+      OutputHeadingNames[idx] = "MLDestruction";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLCrossProduction;
+      OutputHeadingNames[idx] = "MLCrossProduction";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLSource;
+      OutputHeadingNames[idx] = "MLSource";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SourceDiff;
+      OutputHeadingNames[idx] = "SourceDiff";
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->Laminar_Viscosity_i/numerics->Density_i;
+      OutputHeadingNames[idx] = "KinematicViscosity";
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_i[0];
+      OutputHeadingNames[idx] = "NuTilde";
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->dist_i;
+      OutputHeadingNames[idx] = "WallDist";
       idx++;
       for (iDim = 0; iDim<nDim;iDim++){
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_Grad_i[0][iDim];
+        stringstream intstr;
+        intstr << iDim;
+        OutputHeadingNames[idx] = "DNuTildeDX_" + intstr.str();
         idx++;
       }
       for (iDim = 0; iDim<nDim; iDim++){
         for (jDim = 0; jDim<nDim; jDim++){
           OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->PrimVar_Grad_i[iDim + 1][jDim];
+          stringstream intstr;
+          intstr << "DU_" << iDim << "DX_"<< jDim;
+          OutputHeadingNames[idx] = intstr.str();
           idx++;
         }
       }
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->GetProduction()/numerics->Volume - numerics->GetDestruction()/numerics->Volume + numerics->GetCrossProduction()/numerics->Volume;
-      idx++;
+      // cout << "in solver source resid" << endl;
     }
     
     
