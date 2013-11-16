@@ -1365,6 +1365,14 @@ public:
 	 */
 	virtual double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	virtual double GetLimiter_Primitive(unsigned short val_var);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_var - Index of the variable.
@@ -1373,11 +1381,25 @@ public:
 	 */
 	virtual void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	virtual void SetLimiter_Primitive(unsigned short val_var, double val_value);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double **GetGradient_Primitive(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the primitive variables gradient.
+	 */
+	virtual double *GetLimiter_Primitive(void);
 
 	/*!
 	 * \brief Set the blending function for the blending of k-w and k-eps.
@@ -1856,6 +1878,14 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double GetLimiter_Primitive(unsigned short val_var);
 
 	/*!
 	 * \brief Set the gradient of the primitive variables.
@@ -1865,11 +1895,25 @@ public:
 	 */
 	void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
 
+  /*!
+	 * \brief Set the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetLimiter_Primitive(unsigned short val_var, double val_value);
+  
 	/*!
 	 * \brief Get the value of the primitive variables gradient.
 	 * \return Value of the primitive variables gradient.
 	 */
 	double **GetGradient_Primitive(void);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double *GetLimiter_Primitive(void);
 
 	/*!
 	 * \brief Set the value of the velocity*velocity for the incompressible solver.

@@ -105,19 +105,12 @@ public:
 	 */
 	void ScaleVals(double val_scale);
   
-	/*!
-	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 */
-	void GetBlock(unsigned long block_i, unsigned long block_j);
-  
   /*!
 	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
-	double *GetPointerBlock(unsigned long block_i, unsigned long block_j);
+	double *GetBlock(unsigned long block_i, unsigned long block_j);
   
   /*!
 	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
