@@ -36,10 +36,10 @@ SpalartAllmarasInputs::SpalartAllmarasInputs(int nDim, double limiter){
 
 SpalartAllmarasInputs::~SpalartAllmarasInputs(){
   for (int i = 0; i < nDim; i++){
-    delete DUiDXj[i];
+    delete [] DUiDXj[i];
   }
-  delete DUiDXj;
-  delete DTurb_Kin_Visc_DXj;
+  delete [] DUiDXj;
+  delete [] DTurb_Kin_Visc_DXj;
 }
 
 int SpalartAllmarasInputs::GetNumDim(){

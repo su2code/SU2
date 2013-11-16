@@ -165,7 +165,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
 
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, Screen_Output);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1000, Screen_Output);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -4462,6 +4462,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   char MeshOrientation[15];
   char AirfoilClose[15];
   double AirfoilScale;
+  double TrailingEdge = 0.95;
   unsigned short nUpper, nLower, iUpper, iLower;
   ifstream airfoil_file;
   string text_line;
@@ -4533,8 +4534,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     nUpper = int(Upper);
     nLower = int(Lower);
   
-    Xcoord.resize(nUpper+nLower-2);
-    Ycoord.resize(nUpper+nLower-2);
+    Xcoord.resize(nUpper+nLower-1);
+    Ycoord.resize(nUpper+nLower-1);
     
     /*--- White line ---*/
 
@@ -4548,9 +4549,9 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
       
       double factor;
       if (strcmp (AirfoilClose,"Yes") == 0) {
-        double x = (Airfoil_Coord[0] - 0.95) / 0.05;
+        double x = (Airfoil_Coord[0] - TrailingEdge) / (1.0-TrailingEdge);
         factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
-        if (x < 0.95) factor = 1.0;
+        if (x < TrailingEdge) factor = 1.0;
       }
       else factor = 1.0;
       
@@ -4559,16 +4560,16 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     
     getline (airfoil_file, text_line);
 
-    for (iLower = 0; iLower < nLower-1; iLower++) {
+    for (iLower = 0; iLower < nLower; iLower++) {
       getline (airfoil_file, text_line);
       istringstream point_line(text_line);
       point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
       
       double factor;
       if (strcmp (AirfoilClose,"Yes") == 0) {
-        double x = (Airfoil_Coord[0] - 0.95) / 0.05;
+        double x = (Airfoil_Coord[0] - TrailingEdge) / (1.0-TrailingEdge);
         factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
-        if (x < 0.95) factor = 1.0;
+        if (x < TrailingEdge) factor = 1.0;
       }
       else factor = 1.0;
       
@@ -4685,11 +4686,13 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
         NewYCoord = boundary->GetSpline(Svalue, Ycoord, Ycoord2, n_Airfoil, Arch);
         
         /*--- Store the delta change in the x & y coordinates ---*/
+        
         VarCoord[0] = NewXCoord - Coord[0];
         VarCoord[1] = NewYCoord - Coord[1];
       }
-//      cout << iMarker <<" "<< iVertex <<" "<< VarCoord[0] <<" "<< VarCoord[1] << endl;
+
       boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+      
     }
   }
 

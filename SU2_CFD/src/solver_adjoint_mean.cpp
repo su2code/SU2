@@ -2266,8 +2266,9 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++)
+		for (iVar = 0; iVar < nVar; iVar++) {
 			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+    }
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -3184,7 +3185,6 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 
 			/*--- Update residual ---*/
 			LinSysRes.SubtractBlock(iPoint, Residual);
-
 
 			/*--- Implicit stuff ---*/
 			if (implicit) {
