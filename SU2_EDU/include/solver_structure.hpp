@@ -2108,13 +2108,6 @@ public:
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
     
-    /*!
-	 * \brief Compute the pressure forces and all the adimensional coefficients.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
-    
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coefficient is going to be computed.
