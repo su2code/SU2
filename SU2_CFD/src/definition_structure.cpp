@@ -271,8 +271,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   lin_euler, lin_ns, lin_turb,
   tne2_euler, tne2_ns,
   adj_tne2_euler, adj_tne2_ns,
-  plasma_euler, plasma_ns, plasma_monatomic, plasma_diatomic,
-  adj_plasma_euler, adj_plasma_ns,
   poisson, wave, fea, heat,
   spalart_allmaras, menter_sst, machine_learning, transition,
   template_solver;
@@ -284,9 +282,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
   lin_euler        = false;	 lin_ns          = false;  lin_turb  = false;
   tne2_euler       = false;  tne2_ns         = false;
   adj_tne2_euler   = false;  adj_tne2_ns     = false;
-  plasma_euler     = false;  plasma_ns       = false;
-  adj_plasma_euler = false;	 adj_plasma_ns   = false;
-  plasma_monatomic = false;  plasma_diatomic = false;
   spalart_allmaras = false;  menter_sst      = false;   machine_learning = false;
   poisson          = false;
   wave             = false;
@@ -315,23 +310,7 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
-    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-    case PLASMA_EULER:
-      if (iZone == ZONE_0) {
-        plasma_euler = true;
-      } else if (iZone == ZONE_1) {
-        poisson = true;
-      }
-      break;
-    case PLASMA_NAVIER_STOKES:
-      if (iZone == ZONE_0) {
-        plasma_ns = true;
-      } else if (iZone == ZONE_1) {
-        poisson = true;
-      }
-      break;
   }
   /*--- Assign turbulence model booleans --- */
   if (turbulent)
@@ -342,18 +321,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
         
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
     }
-  
-  if (plasma_euler || plasma_ns) {
-    switch (config->GetKind_GasModel()){
-      case AIR7: plasma_diatomic = true; break;
-      case O2: plasma_diatomic = true; break;
-      case N2: plasma_diatomic = true; break;
-      case AIR5: plasma_diatomic = true; break;
-      case ARGON: plasma_monatomic = true; break;
-      case ARGON_SID: plasma_diatomic = true; break;
-      default: cout << "Specified plasma model unavailable or none selected" << endl; exit(1); break;
-    }
-  }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
@@ -402,9 +369,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     if (poisson) {
       solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
     }
-    if (plasma_euler || plasma_ns) {
-      solver_container[iMGlevel][PLASMA_SOL] = new CPlasmaSolver(geometry[iMGlevel], config);
-    }
     if (wave) {
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
     }
@@ -431,9 +395,6 @@ void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
     if (adj_turb) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config);
     }
-    if (adj_plasma_euler || adj_plasma_ns) {
-      solver_container[iMGlevel][ADJPLASMA_SOL] = new CAdjPlasmaSolver(geometry[iMGlevel], config);
-    }
     
     /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
     if (lin_euler) {
@@ -458,9 +419,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
   spalart_allmaras, menter_sst,machine_learning,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
-  plasma_euler, adj_plasma_euler,
-  plasma_ns,   adj_plasma_ns,
-  plasma_monatomic, plasma_diatomic,
   poisson, wave, fea, heat, template_solver, transition;
   
   /*--- Initialize some useful booleans ---*/
@@ -470,9 +428,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
   spalart_allmaras = false; menter_sst       = false; machine_learning  = false;
   tne2_euler       = false; adj_tne2_euler   = false;
   tne2_ns          = false; adj_tne2_ns      = false;
-  plasma_euler     = false; adj_plasma_euler = false;
-  plasma_ns        = false; adj_plasma_ns    = false;
-  plasma_monatomic = false;	plasma_diatomic  = false;
   poisson          = false;
   wave             = false;
   heat             = false;
@@ -500,23 +455,7 @@ void Integration_Preprocessing(CIntegration **integration_container,
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-    case PLASMA_EULER:
-      if (iZone == ZONE_0) {
-        plasma_euler = true;
-      } else if (iZone == ZONE_1) {
-        poisson = true;
-      }
-      break;
-    case PLASMA_NAVIER_STOKES:
-      if (iZone == ZONE_0) {
-        plasma_ns = true;
-      } else if (iZone == ZONE_1) {
-        poisson = true;
-      }
-      break;
   }
   
   /*--- Assign turbulence model booleans --- */
@@ -526,19 +465,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
       case SST: menter_sst = true; break;
       case ML: machine_learning = true; break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
-    }
-  }
-  
-  if (plasma_euler || plasma_ns) {
-    switch (config->GetKind_GasModel()) {
-      case AIR7: plasma_diatomic = true; break;
-      case O2: plasma_diatomic = true; break;
-      case N2: plasma_diatomic = true; break;
-      case AIR5: plasma_diatomic = true; break;
-      case ARGON: plasma_monatomic = true; break;
-      case AIR21: plasma_diatomic = true; break;
-      case ARGON_SID: plasma_diatomic = true; break;
-      default: cout << "Specified plasma model unavailable or none selected" << endl; exit(1); break;
     }
   }
   
@@ -553,8 +479,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
   if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
-  if (plasma_euler) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
-  if (plasma_ns) integration_container[PLASMA_SOL] = new CMultiGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
   if (fea) integration_container[FEA_SOL] = new CSingleGridIntegration(config);
@@ -565,8 +489,6 @@ void Integration_Preprocessing(CIntegration **integration_container,
   if (adj_tne2_euler) integration_container[ADJTNE2_SOL] = new CMultiGridIntegration(config);
   if (adj_tne2_ns) integration_container[ADJTNE2_SOL] = new CMultiGridIntegration(config);
   if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
-  if (adj_plasma_euler) integration_container[ADJPLASMA_SOL] = new CMultiGridIntegration(config);
-  if (adj_plasma_ns) integration_container[ADJPLASMA_SOL] = new CMultiGridIntegration(config);
   
   /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
   if (lin_euler) integration_container[LINFLOW_SOL] = new CMultiGridIntegration(config);
@@ -580,25 +502,23 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   unsigned short iMGlevel, iSol, nDim,
   
-  nVar_Template     = 0,
-  nVar_Flow         = 0,
-  nVar_Trans        = 0,
-  nVar_TNE2         = 0,
-  nPrimVar_TNE2     = 0,
-  nPrimVarGrad_TNE2 = 0,
-  nVar_Plasma       = 0,
-  nVar_Turb         = 0,
-  nVar_Adj_Flow     = 0,
-  nVar_Adj_Turb     = 0,
-  nVar_Adj_TNE2     = 0,
-  nVar_Adj_Plasma   = 0,
-  nVar_Poisson      = 0,
-  nVar_FEA          = 0,
-  nVar_Wave         = 0,
-  nVar_Heat         = 0,
-  nVar_Lin_Flow     = 0,
-  
-  nSpecies = 0, nDiatomics = 0, nMonatomics = 0;
+  nVar_Template         = 0,
+  nVar_Flow             = 0,
+  nVar_Trans            = 0,
+  nVar_TNE2             = 0,
+  nPrimVar_TNE2         = 0,
+  nPrimVarGrad_TNE2     = 0,
+  nVar_Turb             = 0,
+  nVar_Adj_Flow         = 0,
+  nVar_Adj_Turb         = 0,
+  nVar_Adj_TNE2         = 0,
+  nPrimVar_Adj_TNE2     = 0,
+  nPrimVarGrad_Adj_TNE2 = 0,
+  nVar_Poisson          = 0,
+  nVar_FEA              = 0,
+  nVar_Wave             = 0,
+  nVar_Heat             = 0,
+  nVar_Lin_Flow         = 0;
   
   double *constants = NULL;
   
@@ -608,9 +528,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   turbulent, adj_turb, lin_turb,
   tne2_euler, adj_tne2_euler,
   tne2_ns, adj_tne2_ns,
-  plasma_euler, adj_plasma_euler,
-  plasma_ns, adj_plasma_ns,
-  plasma_monatomic, plasma_diatomic,
   spalart_allmaras, menter_sst, machine_learning,
   poisson,
   wave,
@@ -625,9 +542,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   
   /*--- Initialize some useful booleans ---*/
   euler            = false;   ns               = false;   turbulent        = false;
-  poisson          = false;   plasma_monatomic = false;   plasma_diatomic  = false;  plasma_euler     = false;
-  plasma_ns        = false;   adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
-  adj_plasma_euler = false;   adj_plasma_ns    = false;
+  poisson          = false;
+  adj_euler        = false;	  adj_ns           = false;	 adj_turb         = false;
   wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false;
   tne2_euler       = false;   tne2_ns          = false;
   adj_tne2_euler   = false;	  adj_tne2_ns      = false;
@@ -655,23 +571,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
     case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; adj_tne2_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-    case ADJ_PLASMA_EULER : plasma_euler = true; adj_plasma_euler = true; break;
-    case ADJ_PLASMA_NAVIER_STOKES : plasma_ns = true; adj_plasma_ns = true; break;
     case LIN_EULER: euler = true; lin_euler = true; break;
-    case PLASMA_EULER:
-      if (iZone == ZONE_0) {
-        plasma_euler = true;
-      } else if (iZone == ZONE_1) {
-        poisson = true;
-      }
-      break;
-    case PLASMA_NAVIER_STOKES:
-      if (iZone == ZONE_0) {
-        plasma_ns = true;
-      } else if (iZone == ZONE_1) {
-        poisson = true;
-      }
-      break;
   }
   
   /*--- Assign turbulence model booleans --- */
@@ -682,20 +582,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case SST: menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(1); break;
     }
-  
-  if (plasma_euler || plasma_ns) {
-    switch (config->GetKind_GasModel()){
-      case AIR7: plasma_diatomic = true; break;
-      case O2: plasma_diatomic = true; break;
-      case N2: plasma_diatomic = true; break;
-      case AIR5: plasma_diatomic = true; break;
-      case ARGON: plasma_monatomic = true; break;
-      case AIR21: plasma_diatomic = true; break;
-      case ARGON_SID: plasma_diatomic = true; break;
-      default: cout << "Specified plasma model unavailable or none selected" << endl; exit(1); break;
-    }
-    //if (config->GetPoissonSolver()) poisson  = true;
-  }
   
   /*--- Number of variables for the template ---*/
   if (template_solver) nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
@@ -711,12 +597,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     nPrimVarGrad_TNE2 = solver_container[MESH_0][TNE2_SOL]->GetnPrimVarGrad();
   }
   if (poisson)			nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
-  if (plasma_euler || plasma_ns)	{
-    nVar_Plasma = solver_container[MESH_0][PLASMA_SOL]->GetnVar();
-    nSpecies    = solver_container[MESH_0][PLASMA_SOL]->GetnSpecies();
-    nDiatomics  = solver_container[MESH_0][PLASMA_SOL]->GetnDiatomics();
-    nMonatomics = solver_container[MESH_0][PLASMA_SOL]->GetnMonatomics();
-  }
   
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
   if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
@@ -726,10 +606,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (adj_euler)    	  nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)			      nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)		      nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
-  if (adj_tne2_euler)   nVar_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
-  if (adj_tne2_ns)      nVar_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
-  if (adj_plasma_euler) nVar_Adj_Plasma = solver_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
-  if (adj_plasma_ns)	  nVar_Adj_Plasma = solver_container[MESH_0][ADJPLASMA_SOL]->GetnVar();
+  if ((adj_tne2_euler) || (adj_tne2_ns)) {
+    nVar_Adj_TNE2         = solver_container[MESH_0][ADJTNE2_SOL]->GetnVar();
+    nPrimVar_Adj_TNE2     = solver_container[MESH_0][ADJTNE2_SOL]->GetnPrimVar();
+    nPrimVarGrad_Adj_TNE2 = solver_container[MESH_0][ADJTNE2_SOL]->GetnPrimVarGrad();
+  }
   
   /*--- Number of variables for the linear problem ---*/
   if (lin_euler)	nVar_Lin_Flow = solver_container[MESH_0][LINFLOW_SOL]->GetnVar();
@@ -988,10 +869,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
           else if (config->GetGravityForce() == YES)
             numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
-          else if (config->GetMagnetic_Force() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_Magnet(nDim, nVar_Flow, config);
-          else if (config->GetJouleHeating() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSource_JouleHeating(nDim, nVar_Flow, config);
           else if (config->GetWind_Gust() == YES)
             numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceWindGust(nDim, nVar_Flow, config);
           else
@@ -1023,8 +900,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case NO_CENTERED : cout << "No centered scheme." << endl; break;
           case LAX :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
           default : cout << "Centered scheme not implemented." << endl; exit(1); break;
@@ -1037,8 +914,15 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
           case ROE_1ST : case ROE_2ND :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+            }
+            break;
+            
+          case MSW_1ST : case MSW_2ND :
+            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
             
@@ -1116,7 +1000,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case PIECEWISE_CONSTANT :
         
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
         }
         
         break;
@@ -1263,169 +1147,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
       numerics_container[iMGlevel][TRANS_SOL][CONV_BOUND_TERM] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
-    }
-  }
-  
-  /*--- Solver definition for the multi species plasma model problem ---*/
-  if (plasma_euler || plasma_ns) {
-    
-    /*--- Definition of the convective scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ConvNumScheme_Plasma()) {
-      case NONE :
-        break;
-      case SPACE_UPWIND :
-        
-        switch (config->GetKind_Upwind_Plasma()) {
-          case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-          case ROE_1ST : case ROE_2ND :
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              switch (config->GetKind_GasModel()) {
-                case ARGON:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-                case O2: case N2:	case AIR5:	case AIR7: case ARGON_SID:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-              }
-            }
-            break;
-          case HLLC_1ST :
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              switch (config->GetKind_GasModel()) {
-                case O2 : case N2 : case AIR5 : case AIR7 : case ARGON_SID:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwHLLC_PlasmaDiatomic(nDim, nVar_Flow, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwHLLC_PlasmaDiatomic(nDim, nVar_Flow, config);
-                  break;
-                default:
-                  cout << "HLLC Upwind scheme not implemented for the selected gas chemistry model..." << endl; exit(1); break;
-              }
-            }
-            break;
-          case ROE_TURKEL_1ST : case ROE_TURKEL_2ND :
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwRoe_Turkel_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-              numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-            }
-            break;
-          case SW_1ST : case SW_2ND :
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              switch (config->GetKind_GasModel()) {
-                case O2 : case N2 : case AIR5 : case AIR7 : case ARGON_SID:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-                default:
-                  cout << "Steger-Warming Upwind scheme not implemented for the selected gas chemistry model..." << endl; exit(1); break;
-              }
-            }
-            break;
-          case MSW_1ST : case MSW_2ND :
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              switch (config->GetKind_GasModel()) {
-                case O2 : case N2 : case AIR5 : case AIR7 : case ARGON_SID:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM]  = new CUpwMSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwMSW_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-                default:
-                  cout << "Modified Steger-Warming Upwind scheme not implemented for the selected gas chemistry model..." << endl; exit(1); break;
-              }
-            }
-            break;
-          default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
-        }
-        break;
-        
-      case SPACE_CENTERED :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          switch (config->GetKind_Centered_Plasma()) {
-            case JST:
-              switch (config->GetKind_GasModel()) {
-                case ARGON:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentJST_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-                case O2: case N2: case AIR5: case AIR7: case ARGON_SID:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentJST_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-                default:
-                  break;
-              }
-              break;
-              
-            case LAX:
-              switch (config->GetKind_GasModel()) {
-                case ARGON:
-                  cout << "Not implemented..." << endl; exit(1);
-                  break;
-                case O2: case N2: case AIR5: case AIR7: case ARGON_SID:
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_TERM] = new CCentLax_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  numerics_container[iMGlevel][PLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_PlasmaDiatomic(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-                  break;
-                default:
-                  break;
-              }
-              break;
-          }
-        }
-        break;
-    }
-    
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    if (plasma_ns) {
-      switch (config->GetKind_ViscNumScheme_Plasma()) {
-        case NONE :
-          break;
-        case AVG_GRAD :
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-            numerics_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-          }
-          break;
-        case AVG_GRAD_CORRECTED :
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][PLASMA_SOL][VISC_TERM] = new CAvgGradCorrected_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-            numerics_container[iMGlevel][PLASMA_SOL][VISC_BOUND_TERM] = new CAvgGrad_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics,config);
-          }
-          break;
-        default :
-          cout << "Viscous scheme not implemented." << endl; exit(1);
-          break;
-      }
-    }
-    
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Plasma()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          if (config->GetKind_GasModel() == ARGON)
-            numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          if (config->GetKind_GasModel() == AIR7) {
-            numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          }
-          if (config->GetKind_GasModel() == AIR21)
-            cout << "ERROR: 21 Species air gas chemistry model not implemented!!!" << endl;
-          if (config->GetKind_GasModel() == O2)
-            numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          if (config->GetKind_GasModel() == N2)
-            numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          if (config->GetKind_GasModel() == AIR5)
-            numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          if (config->GetKind_GasModel() == ARGON_SID)
-            numerics_container[iMGlevel][PLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          
-          
-          
-          numerics_container[iMGlevel][PLASMA_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Plasma, config);
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
     }
   }
   
@@ -1659,24 +1380,24 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case SPACE_CENTERED :
         switch (config->GetKind_Centered_AdjTNE2()) {
           case NO_CENTERED : cout << "No centered scheme." << endl; break;
-          case LAX : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, config); break;
+          case LAX : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config); break;
           case JST : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentJST_AdjTNE2(nDim, nVar_Adj_TNE2, config); break;
           default : cout << "Centered scheme not implemented." << endl; exit(1); break;
         }
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
         
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
         break;
       case SPACE_UPWIND :
         switch (config->GetKind_Upwind_AdjTNE2()) {
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
           case ROE_1ST : case ROE_2ND :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
             }
             break;
           default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
@@ -1735,61 +1456,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         break;
       case PIECEWISE_CONSTANT :
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
           
           //numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
-    }
-  }
-  
-  /*--- Solver definition for the multi species plasma model problem ---*/
-  if (adj_plasma_euler || adj_plasma_ns) {
-    
-    /*--- Definition of the convective scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ConvNumScheme_AdjPlasma()) {
-      case NONE :
-        break;
-      case SPACE_UPWIND :
-        
-        switch (config->GetKind_Upwind_AdjPlasma()) {
-          case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-          case ROE_1ST :
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-              numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-            }
-            break;
-          case SW_1ST:
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CUpwSW_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-              numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwSW_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-            }
-            break;
-        }
-        break;
-      case SPACE_CENTERED :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_TERM] = new CCentLax_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-          numerics_container[iMGlevel][ADJPLASMA_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjPlasmaDiatomic(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
-        }
-        break;
-      default :
-        cout << "Convective scheme not implemented (adj_plasma_euler and adj_plasma_ns)." << endl; exit(1);
-        break;
-    }
-    
-    
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_AdjPlasma()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJPLASMA_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_Plasma(nDim, nVar_Adj_Plasma, nSpecies, nDiatomics, nMonatomics, config);
         }
         break;
       default :

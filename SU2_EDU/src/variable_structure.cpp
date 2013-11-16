@@ -369,14 +369,3 @@ void CVariable::GetResTruncError(double *val_trunc_error) {
 		val_trunc_error[iVar] = Res_TruncError[iVar];
   
 }
-
-CBaselineVariable::CBaselineVariable(void) : CVariable() { }
-
-CBaselineVariable::CBaselineVariable(double *val_solution, unsigned short val_nvar, CConfig *config) : CVariable(val_nvar, config) {
-  
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution[iVar] = val_solution[iVar];
-  
-}
-
-CBaselineVariable::~CBaselineVariable(void) { }

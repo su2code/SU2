@@ -69,7 +69,7 @@ CConfig::CConfig(char case_filename[200]) {
 	case_file.open(case_filename, ios::in);
   
 	if (case_file.fail()) {
-		cout << "There is no configuration file!!" << endl;
+		cout << "Configuration file " << case_filename << " not found." << endl;
 		exit(1);
 	}
   
@@ -126,6 +126,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
+  /* DESCRIPTION: Location of the turb model itself */
+	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: Location of the check for the proper loading of the turbulence model */
+	AddScalarOption("ML_TURB_MODEL_CHECK_FILE", ML_Turb_Model_Check_File, string("check_model.txt"));
+  /* DESCRIPTION:  */
+	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
@@ -151,12 +157,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
-	/* DESCRIPTION: Adiabatic wall boundary condition */
-	AddSpecialOption("ADIABATIC_WALL", AdiabaticWall, SetBoolOption, true);
-	/* DESCRIPTION: Isothermal wall boundary condition */
-	AddSpecialOption("ISOTHERMAL_WALL", IsothermalWall, SetBoolOption, false);
-	/* DESCRIPTION: Catalytic wall boundary condition */
-	AddSpecialOption("CATALYTIC_WALL", CatalyticWall, SetBoolOption, false);
 	/* DESCRIPTION: Far-field boundary marker(s) */
 	AddMarkerOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
 	/* DESCRIPTION: Symmetry boundary condition */
@@ -280,21 +280,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
 	AddScalarOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_PLASMA", Kind_TimeIntScheme_Plasma, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJPLASMA", Kind_TimeIntScheme_AdjPlasma, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
-	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
-	/* DESCRIPTION: Time discretization */
-	AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "RUNGE-KUTTA_EXPLICIT");
+	AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
 	AddEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, "EULER_IMPLICIT");
 	/* DESCRIPTION: Time discretization */
@@ -456,7 +452,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Start up iterations using the fine grid only */
 	AddScalarOption("START_UP_ITER", nStartUpIter, 0);
 	/* DESCRIPTION: Multi-grid Levels */
-	AddScalarOption("MGLEVEL", nMultiLevel, 0);
+	AddScalarOption("MGLEVEL", nMultiLevel, 3);
 	/* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
 	AddScalarOption("MGCYCLE", MGCycle, 0);
 	/* DESCRIPTION: Multi-grid pre-smoothing level */
@@ -466,11 +462,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Jacobi implicit smoothing of the correction */
 	AddListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
 	/* DESCRIPTION: Damping factor for the residual restriction */
-	AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
+	AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
 	/* DESCRIPTION: Damping factor for the correction prolongation */
-	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
+	AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
 	/* DESCRIPTION: CFL reduction factor on the coarse levels */
-	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.75);
+	AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
 	/* DESCRIPTION: Maximum number of children in the agglomeration stage */
 	AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
 	/* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
@@ -480,25 +476,27 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* CONFIG_CATEGORY: Spatial Discretization */
   
 	/* DESCRIPTION: Numerical method for spatial gradients */
-	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "GREEN_GAUSS");
+	AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "WEIGHTED_LEAST_SQUARES");
 	/* DESCRIPTION: Coefficient for the limiter */
-	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.3);
+	AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
 	AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
 	/* DESCRIPTION: Convective numerical method */
+  Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE_2ND;
 	AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "AVG_GRAD_CORRECTED");
 	/* DESCRIPTION: Source term numerical method */
 	AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "NONE");
+	AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "VENKATAKRISHNAN");
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
   
 	/* DESCRIPTION: Convective numerical method */
+  Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE_2ND;
 	AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_ADJ", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
@@ -511,13 +509,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
 	
 	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
+	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "VENKATAKRISHNAN");
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "NONE");
+	AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "AVG_GRAD_CORRECTED");
 	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "NONE");
+	AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "PIECEWISE_CONSTANT");
   
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "NONE");
@@ -555,6 +553,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "NONE");
+  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+	AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
@@ -567,32 +568,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
-  
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_PLASMA", Kind_ConvNumScheme_Plasma, Kind_Centered_Plasma, Kind_Upwind_Plasma);
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_PLASMA", Kind_ViscNumScheme_Plasma, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_PLASMA", Kind_SourNumScheme_Plasma, Source_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_JAC_METHOD_PLASMA", Kind_SourJac_Plasma, SourceJac_Map, "FINITE_DIFF");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_PLASMA", Kind_SlopeLimit_Plasma, Limiter_Map, "NONE");
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_PLASMA", 3, Kappa_Plasma, default_vec_3d);
-  
-	/* DESCRIPTION: Convective numerical method */
-	AddConvectOption("CONV_NUM_METHOD_ADJPLASMA", Kind_ConvNumScheme_AdjPlasma, Kind_Centered_AdjPlasma, Kind_Upwind_AdjPlasma);
-	/* DESCRIPTION: Viscous numerical method */
-	AddEnumOption("VISC_NUM_METHOD_ADJPLASMA", Kind_ViscNumScheme_AdjPlasma, Viscous_Map, "NONE");
-	/* DESCRIPTION: Source term numerical method */
-	AddEnumOption("SOUR_NUM_METHOD_ADJPLASMA", Kind_SourNumScheme_AdjPlasma, Source_Map, "NONE");
-	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_ADJPLASMA", Kind_SlopeLimit_AdjPlasma, Limiter_Map, "NONE");
-	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-	AddArrayOption("AD_COEFF_ADJPLASMA", 3, Kappa_AdjPlasma, default_vec_3d);
   
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
@@ -745,11 +720,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("GAS_CONSTANT", Gas_Constant, 287.87);
 	/* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
 	AddScalarOption("GAMMA_VALUE", Gamma, 1.4);
-	/* DESCRIPTION: Ratio of specific heats for monatomic gas */
-	AddScalarOption("GAMMA_MONATOMIC_VALUE", GammaMonatomic, 5.0/3.0);
-	/* DESCRIPTION: Ratio of specific heats for diatomic gas */
-	AddScalarOption("GAMMA_DIATOMIC_VALUE", GammaDiatomic, 7.0/5.0);
-	/* DESCRIPTION:  */
 	/* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
 	AddScalarOption("REYNOLDS_NUMBER", Reynolds, 0.0);
 	/* DESCRIPTION: Reynolds length (1 m by default) */
@@ -830,53 +800,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Specify chemical model for multi-species simulations */
 	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
 	/* DESCRIPTION:  */
-	AddScalarOption("CHARGE_COEFF", ChargeCoeff, -1.0);
-	/* DESCRIPTION:  */
-	AddListOption("CFL_MS", nSpeciesCFL, CFL_FineGrid_Species);
-	/* DESCRIPTION:  */
-	AddListOption("CFL_RATE_MS", nSpeciesCFL, CFL_Rate_Species);
-	/* DESCRIPTION:  */
-	AddListOption("CFL_ITER_MS", nSpeciesCFL, CFL_Iter_Species);
-	/* DESCRIPTION:  */
-	AddListOption("CFL_MAX_MS", nSpeciesCFL, CFL_Max_Species);
-	/* DESCRIPTION:  */
-	AddListOption("FREESTREAM_SPECIES_TEMPERATURE", nTemp, Species_Temperature_FreeStream);
-	/* DESCRIPTION:  */
-	AddListOption("INLET_SPECIES_TEMPERATURE", nTemp, Species_Temperature_Inlet);
-	/* DESCRIPTION:  */
-	AddListOption("OUTLET_SPECIES_TEMPERATURE", nTemp, Species_Temperature_Outlet);
-	/* DESCRIPTION:  */
-	AddListOption("INLET_SPECIES_PRESSURE", nTemp, Species_Pressure_Inlet);
-	/* DESCRIPTION:  */
-	AddListOption("OUTLET_SPECIES_PRESSURE", nTemp, Species_Pressure_Outlet);
-	/* DESCRIPTION:  */
-	AddListOption("INLET_SPECIES_VELOCITY", nTemp, Species_Velocity_Inlet);
-	/* DESCRIPTION:  */
-	AddListOption("OUTLET_SPECIES_VELOCITY", nTemp, Species_Velocity_Outlet);
-	/* DESCRIPTION:  */
 	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
-	/* DESCRIPTION:  */
-	AddListOption("PARTICLE_REFERENCE_TEMPERATURE", nRef_Temperature, Species_Ref_Temperature);
-	/* DESCRIPTION:  */
-	AddListOption("PARTICLE_REFERENCE_VISCOSITY", nRef_Viscosity, Species_Ref_Viscosity);
-	/* DESCRIPTION: Magnetic simulation */
-	AddSpecialOption("MAGNET", MagneticForce, SetBoolOption, false);
-	/* DESCRIPTION: Joule heating simulation */
-	AddSpecialOption("JOULE_HEAT", JouleHeating, SetBoolOption, false);
-	/* DESCRIPTION: Flag for running the poisson potential solver as part of the plasma solver */
-	AddSpecialOption("poisson_SOLVER", PoissonSolver, SetBoolOption, false);
-	/* DESCRIPTION:  */
-	AddSpecialOption("MACCORMACK_RELAXATION", MacCormackRelaxation, SetBoolOption, false);
-	/* DESCRIPTION: Time stepping of the various species in a steady plasma solution */
-	AddSpecialOption("PLASMA_MULTI_TIME_STEP", PlasmaMultiTimeSteps, SetBoolOption, false);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("STAGNATION_BFIELD", Stagnation_B, 0.2);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("poissonAL_CONDUCTIVITY", poisson_Cond, 2000.0);
-	/* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-	AddScalarOption("DIPOLE_DIST", DipoleDist, 1E-6);
-	/* DESCRIPTION: Restart a Plasma solution from an Euler native solution file */
-	AddSpecialOption("RESTART_PLASMA_FROM_EULER", Restart_Euler2Plasma, SetBoolOption, false);
   
 	/*--- Options related to free surface simulation ---*/
 	/* CONFIG_CATEGORY: Free surface simulation */
@@ -935,7 +859,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 10);
+	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -1042,7 +966,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     exit(1);
     }
-    
+  }
+  
+  /*--- Set default values for the grid based in the Reynolds number for SU2_EDU ---*/
+  
+  if (Kind_SU2 == SU2_EDU) {
+    if (Kind_Solver == EULER) Mesh_FileName = "naca0012_inviscid.su2";
+    else {
+      if (Reynolds < 1E5) Mesh_FileName = "naca0012_re1e5.su2";
+      if ((Reynolds >= 1E5) && (Reynolds <= 1E7)) Mesh_FileName = "naca0012_re1e6.su2";
+      if (Reynolds > 1E7) Mesh_FileName = "naca0012_re1e7.su2";
+    }
   }
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
@@ -1054,7 +988,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL) || (Kind_SU2 == SU2_EDU))) Mesh_FileFormat = SU2;
 
-//  /*--- Divide grid if runnning SU2_MDC ---*/
+  /*--- Divide grid if runnning SU2_MDC ---*/
 //  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
@@ -1607,22 +1541,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Kappa_1st_LinFlow = Kappa_AdjFlow[0];
 	Kappa_4th_LinFlow = Kappa_AdjFlow[1];
 
-	Kappa_1st_Plasma = Kappa_Plasma[0];
-	Kappa_2nd_Plasma = Kappa_Plasma[1];
-	Kappa_4th_Plasma = Kappa_Plasma[2];   
-	Kappa_1st_AdjPlasma = Kappa_AdjPlasma[0];
-	Kappa_2nd_AdjPlasma = Kappa_AdjPlasma[1];
-	Kappa_4th_AdjPlasma = Kappa_AdjPlasma[2];
-
 	// make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth arrays consistent with nMultiLevel
 	unsigned short * tmp_smooth = new unsigned short[nMultiLevel+1];
+  
 	if ((nMG_PreSmooth != nMultiLevel+1) && (nMG_PreSmooth != 0)) {
 		if (nMG_PreSmooth > nMultiLevel+1) {
+      
 			// truncate by removing unnecessary elements at the end
 			for (unsigned int i = 0; i <= nMultiLevel; i++)
 				tmp_smooth[i] = MG_PreSmooth[i];
 			delete [] MG_PreSmooth;
 		} else {
+      
 			// add additional elements equal to last element
 			for (unsigned int i = 0; i < nMG_PreSmooth; i++)
 				tmp_smooth[i] = MG_PreSmooth[i];
@@ -1630,12 +1560,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 				tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
 			delete [] MG_PreSmooth;
 		}
+    
 		nMG_PreSmooth = nMultiLevel+1;
 		MG_PreSmooth = new unsigned short[nMG_PreSmooth];
 		for (unsigned int i = 0; i < nMG_PreSmooth; i++)
 			MG_PreSmooth[i] = tmp_smooth[i];
 	}
-
+	if ((nMultiLevel != 0) && (nMG_PreSmooth == 0)) {
+    delete [] MG_PreSmooth;
+		nMG_PreSmooth = nMultiLevel+1;
+		MG_PreSmooth = new unsigned short[nMG_PreSmooth];
+		for (unsigned int i = 0; i < nMG_PreSmooth; i++)
+			MG_PreSmooth[i] = i+1;
+  }
+  
 	if ((nMG_PostSmooth != nMultiLevel+1) && (nMG_PostSmooth != 0)) {
 		if (nMG_PostSmooth > nMultiLevel+1) {
 			// truncate by removing unnecessary elements at the end
@@ -1655,6 +1593,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		for (unsigned int i = 0; i < nMG_PostSmooth; i++)
 			MG_PostSmooth[i] = tmp_smooth[i];
 	}
+  if ((nMultiLevel != 0) && (nMG_PostSmooth == 0)) {
+    delete [] MG_PostSmooth;
+		nMG_PostSmooth = nMultiLevel+1;
+		MG_PostSmooth = new unsigned short[nMG_PostSmooth];
+		for (unsigned int i = 0; i < nMG_PostSmooth; i++)
+			MG_PostSmooth[i] = 0;
+  }
 
 	if ((nMG_CorrecSmooth != nMultiLevel+1) && (nMG_CorrecSmooth != 0)) {
 		if (nMG_CorrecSmooth > nMultiLevel+1) {
@@ -1675,7 +1620,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
 			MG_CorrecSmooth[i] = tmp_smooth[i];
 	}
-
+  if ((nMultiLevel != 0) && (nMG_CorrecSmooth == 0)) {
+    delete [] MG_CorrecSmooth;
+		nMG_CorrecSmooth = nMultiLevel+1;
+		MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
+		for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
+			MG_CorrecSmooth[i] = 0;
+  }
+  
 	// override MG Smooth parameters
 	if (nMG_PreSmooth != 0)
 		MG_PreSmooth[MESH_0] = 1;
@@ -1694,8 +1646,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
     if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
 		if (Kind_Solver == TNE2_NAVIER_STOKES) Kind_Solver = ADJ_TNE2_NAVIER_STOKES;
-		if (Kind_Solver == PLASMA_EULER) Kind_Solver = ADJ_PLASMA_EULER;
-		if (Kind_Solver == PLASMA_NAVIER_STOKES) Kind_Solver = ADJ_PLASMA_NAVIER_STOKES;
 	}
 
 	if (Linearized) {
@@ -1727,12 +1677,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		Kind_SourNumScheme_AdjFlow  = PIECEWISE_CONSTANT;
 	}
   
-	nCFL = nMultiLevel+1; 
-	CFL = new double[nCFL];
-	CFL[0] = CFLFineGrid;
-	if (Adjoint) CFL[0] = CFL[0] * Adj_CFLRedCoeff;
-	for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++) 
-		CFL[iCFL] = CFL[iCFL-1]*MG_CFLRedCoeff;
+	nCFL = nMultiLevel+1;
+  CFL = new double[nCFL];
+  CFL[0] = CFLFineGrid;
+  if (Adjoint) CFL[0] = CFL[0] * Adj_CFLRedCoeff;
+  for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
+    CFL[iCFL] = CFL[iCFL-1]*MG_CFLRedCoeff;
 
 	if (nRKStep == 0) {
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
@@ -1759,18 +1709,34 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		exit(1);
 	}
 
-  /*--- Set a flag for viscous simulations ---*/
-  Viscous = ((Kind_Solver == NAVIER_STOKES) ||
-             (Kind_Solver == PLASMA_NAVIER_STOKES) ||
-             (Kind_Solver == ADJ_NAVIER_STOKES) ||
-             (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES) ||
-             (Kind_Solver == RANS) ||
-             (Kind_Solver == ADJ_RANS));
+  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_TNE2 == NONE)) {
+		cout << "You must define a viscous numerical method for the TNE2 Navier-Stokes equations!!" << endl;
+		exit(1);
+	}
   
-  if ((Kind_Solver == TNE2_EULER)             ||
-      (Kind_Solver == TNE2_NAVIER_STOKES)     ||
-      (Kind_Solver == ADJ_TNE2_EULER)         ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
+  if ((Kind_Solver == ADJ_TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
+		cout << "You must define a viscous numerical method for the adjoint TNE2 Navier-Stokes equations!!" << endl;
+		exit(1);
+	}
+
+  /*--- Set a flag for viscous simulations ---*/
+  Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
+             ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+             ( Kind_Solver == RANS                   ) ||
+             ( Kind_Solver == ADJ_RANS               ) ||
+             ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
+  
+  if (( Kind_Solver == TNE2_EULER             ) ||
+      ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+      ( Kind_Solver == ADJ_TNE2_EULER         ) ||
+      ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+    
+    Kappa_1st_TNE2    = Kappa_TNE2[0];
+    Kappa_2nd_TNE2    = Kappa_TNE2[1];
+    Kappa_4th_TNE2    = Kappa_TNE2[2];
+    Kappa_1st_AdjTNE2 = Kappa_AdjTNE2[0];
+    Kappa_2nd_AdjTNE2 = Kappa_AdjTNE2[1];
+    Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
     
 		if (val_izone == ZONE_1 ) {
 			Divide_Element = true;
@@ -1784,9 +1750,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		switch (Kind_GasModel) {
       case ONESPECIES:
         /*--- Define parameters of the gas model ---*/
-        nMonatomics = 0;
-        nDiatomics  = 1;
-        nSpecies    = nMonatomics + nDiatomics;
+        nSpecies    = 1;
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
@@ -1831,9 +1795,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case N2:
         
         /*--- Define parameters of the gas model ---*/
-        nMonatomics = 1;
-        nDiatomics  = 1;
-        nSpecies    = nMonatomics + nDiatomics;
+        nSpecies    = 2;
         nReactions  = 2;
         ionization  = false;
         
@@ -2013,9 +1975,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
       case AIR5:
         /*--- Define parameters of the gas model ---*/
-        nMonatomics = 2;
-        nDiatomics  = 3;
-        nSpecies    = nMonatomics + nDiatomics;
+        nSpecies    = 5;
         nReactions  = 17;
         ionization  = false;
         
@@ -2408,6 +2368,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
     }
   }
+<<<<<<< HEAD
   
 	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) ||
 			(Kind_Solver == PLASMA_NAVIER_STOKES) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
@@ -3360,9 +3321,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		}
 
 	}
+=======
+>>>>>>> 412088c00ad97809919e144670ac1297e4e07e4e
 
 	delete [] tmp_smooth;
-
 
 }
 
@@ -3678,42 +3640,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case TNE2_NAVIER_STOKES:
         cout << "Compressible TNE2 Laminar Navier-Stokes' equations." << endl;
         break;
-			case PLASMA_EULER:
-				cout << "Plasma equations (without viscosity)." << endl;
-				if (Kind_GasModel == ARGON) cout << "Using 3 species Argon gas model." << endl;
-				if (Kind_GasModel == AIR7) cout << "Using 7 species Air gas model." << endl;
-				if (Kind_GasModel == AIR5) cout << "Using 5 species Air gas model." << endl;
-				if (Kind_GasModel == O2) cout << "Using 2 species Oxygen gas model." << endl;
-				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
-				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
-				break;
-			case ADJ_PLASMA_EULER:
-				cout << "Plasma adjoint equations (without viscosity)." << endl;
-				if (Kind_GasModel == ARGON) cout << "Using 3 species Argon gas model." << endl;
-				if (Kind_GasModel == AIR7) cout << "Using 7 species Air gas model." << endl;
-				if (Kind_GasModel == AIR5) cout << "Using 5 species Air gas model." << endl;
-				if (Kind_GasModel == O2) cout << "Using 2 species Oxygen gas model." << endl;
-				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
-				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
-				break;
-			case PLASMA_NAVIER_STOKES:
-				cout << "Plasma equations (with viscosity)." << endl;
-				if (Kind_GasModel == ARGON) cout << "Using 3 species Argon gas model." << endl;
-				if (Kind_GasModel == AIR7) cout << "Using 7 species Air gas model." << endl;
-				if (Kind_GasModel == AIR5) cout << "Using 5 species Air gas model." << endl;
-				if (Kind_GasModel == O2) cout << "Using 2 species Oxygen gas model." << endl;
-				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
-				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
-				break;
-			case ADJ_PLASMA_NAVIER_STOKES:
-				cout << "Plasma continuous adjoint equations (with viscosity)." << endl;
-				if (Kind_GasModel == ARGON) cout << "Using 3 species Argon gas model." << endl;
-				if (Kind_GasModel == AIR7) cout << "Using 7 species Air gas model." << endl;
-				if (Kind_GasModel == AIR5) cout << "Using 5 species Air gas model." << endl;
-				if (Kind_GasModel == O2) cout << "Using 2 species Oxygen gas model." << endl;
-				if (Kind_GasModel == N2) cout << "Using 2 species Nitrogen gas model." << endl;
-				if (Kind_GasModel == ARGON_SID) cout << "Using 2 species Sid gas model." << endl;
-				break;
 			case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
 			case WAVE_EQUATION: cout << "Wave equation." << endl; break;
 			case HEAT_EQUATION: cout << "Heat equation." << endl; break;
@@ -3804,14 +3730,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
         }
     
-    
-    cout << "Surface(s) where the objective function is evaluated: ";
-		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
-			cout << Marker_Designing[iMarker_Designing];
-			if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
-			else cout <<".";
-		}
-    cout<<endl;
+    if (nMarker_Designing != 0) {
+      cout << "Surface(s) where the objective function is evaluated: ";
+      for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
+        cout << Marker_Designing[iMarker_Designing];
+        if (iMarker_Designing < nMarker_Designing-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
     cout << "Surface(s) plotted in the output file: ";
 		for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
@@ -3821,13 +3748,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
     cout<<endl;
     
-    cout << "Surface(s) affected by the design variables: ";
-		for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
-			cout << Marker_DV[iMarker_DV];
-			if (iMarker_DV < nMarker_DV-1) cout << ", ";
-			else cout <<".";
-		}
-    cout<<endl;
+    if (nMarker_DV != 0) {
+      cout << "Surface(s) affected by the design variables: ";
+      for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+        cout << Marker_DV[iMarker_DV];
+        if (iMarker_DV < nMarker_DV-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
     
     if ((Kind_GridMovement[ZONE_0] == DEFORMING) || (Kind_GridMovement[ZONE_0] == MOVING_WALL)) {
       cout << "Surface(s) in motion: ";
@@ -4104,52 +4033,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             }
           }
 		}
-    
-		if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-			if (Kind_ConvNumScheme_Plasma == SPACE_CENTERED) {
-				if (Kind_Centered_Plasma == JST)
-					cout << "Jameson-Schmidt-Turkel scheme for the plasma inviscid terms."<< endl;
-				if (Kind_Centered_Plasma == LAX)
-					cout << "Lax-Friedrich scheme for the plasma inviscid terms."<< endl;
-			}
-
-			if (Kind_ConvNumScheme_Plasma == SPACE_UPWIND) {
-				if (Kind_Upwind_Plasma == ROE_1ST)	cout << "1st order Roe solver for the plasma inviscid terms."<< endl;
-				if (Kind_Upwind_Plasma == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Plasma == ROE_TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
-
-				if (Kind_Upwind_Plasma == ROE_2ND) {
-					cout << "2nd order Roe solver for the plasma inviscid terms."<< endl;
-					switch (Kind_SlopeLimit_Plasma) {
-					case NONE: cout << "Without slope-limiting method." << endl; break;
-					case VENKATAKRISHNAN: cout << "Venkatakrishnan slope-limiting method." << endl; break;
-					case MINMOD: cout << "Minmod slope-limiting method." << endl; break;
-					}
-				}
-				if (Kind_Upwind_Plasma == SW_1ST) {
-					cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
-				}
-				if (Kind_Upwind_Plasma == SW_2ND) {
-					cout << "2nd order Steger-Warming solver for the plasma inviscid terms."<< endl;
-					switch (Kind_SlopeLimit_Plasma) {
-					case NONE: cout << "Without slope-limiting method." << endl; break;
-					case VENKATAKRISHNAN: cout << "Venkatakrishnan slope-limiting method." << endl; break;
-					case MINMOD: cout << "Minmod slope-limiting method." << endl; break;
-					}
-				}
-				if (Kind_Upwind_Plasma == MSW_1ST) {
-					cout << "1st order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-				}
-				if (Kind_Upwind_Plasma == MSW_2ND) {
-					cout << "2nd order Modified Steger-Warming solver for the plasma inviscid terms."<< endl;
-					switch (Kind_SlopeLimit_Plasma) {
-					case NONE: cout << "Without slope-limiting method." << endl; break;
-					case VENKATAKRISHNAN: cout << "Venkatakrishnan slope-limiting method." << endl; break;
-					case MINMOD: cout << "Minmod slope-limiting method." << endl; break;
-					}
-				}
-			}
-		}
 
 		if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
 			if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST)) {
@@ -4234,22 +4117,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 		}
     
-		if (Kind_Solver == PLASMA_NAVIER_STOKES) {
-			switch (Kind_ViscNumScheme_Plasma) {
-			case AVG_GRAD: cout << "Average of gradients (1st order) for computation of viscous flow terms." << endl; break;
-			case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (2nd order) for computation of viscous flow terms." << endl; break;
-			}
-		}
 		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 			if (Kind_SourNumScheme_Flow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the flow source terms." << endl;
 		}
 
 		if (Kind_Solver == ADJ_EULER) {
 			if (Kind_SourNumScheme_AdjFlow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the adjoint source terms." << endl;
-		}
-
-		if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES) ){
-			if (Kind_SourNumScheme_Plasma == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the plasma source terms." << endl;
 		}
 
 		if (Kind_Solver == RANS) {
@@ -4271,13 +4144,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			case AVG_GRAD: cout << "Average of gradients (viscous adjoint terms)." << endl; break;
 			case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous adjoint terms)." << endl; break;
 			}
-		}		
-
-		if (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES) {
-			switch (Kind_ViscNumScheme_AdjPlasma) {
-			case AVG_GRAD: cout << "Average of gradients (1st order) for computation of viscous adjoint terms." << endl; break;
-			case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (2nd order) for computation of viscous adjoint terms." << endl; break;
-			}
 		}
 
 		if (Kind_Solver == RANS) {
@@ -4286,7 +4152,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Kind_SourNumScheme_Turb == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the turbulence model source terms." << endl;
 		}
 
-		if ((Kind_Solver == POISSON_EQUATION) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
+		if (Kind_Solver == POISSON_EQUATION) {
 			if (Kind_ViscNumScheme_Poisson == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
 		}
 
@@ -4390,22 +4256,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               break;
           }
           break;
-			}
-		}
-
-		if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == PLASMA_NAVIER_STOKES)) {
-			switch (Kind_TimeIntScheme_Plasma) {
-			case RUNGE_KUTTA_EXPLICIT:
-				cout << "Runge-Kutta explicit method for the plasma equations." << endl;
-				cout << "Number of steps: " << nRKStep << endl;
-				cout << "Alpha coefficients: ";
-				for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-					cout << "\t" << RK_Alpha_Step[iRKStep];
-				}
-				cout << endl;
-				break;
-			case EULER_EXPLICIT: cout << "Euler explicit method for the plasma equations." << endl; break;
-			case EULER_IMPLICIT: cout << "Euler implicit method for the plasma equations." << endl; break;
 			}
 		}
 
@@ -5410,13 +5260,8 @@ CConfig::~CConfig(void)
 	delete [] U_FreeStreamND;
 
 	/*--- If allocated, delete arrays for Plasma solver ---*/
-	if (Species_Gas_Constant != NULL) delete [] Species_Gas_Constant;
-	if (Species_Gamma        != NULL) delete [] Species_Gamma;
-	if (Molar_Mass           != NULL) delete[] Molar_Mass;
-	if (Particle_Mass        != NULL) delete [] Particle_Mass;
-	if (Molecular_Diameter   != NULL) delete [] Molecular_Diameter;
+	if (Molar_Mass           != NULL) delete [] Molar_Mass;
 	if (Gas_Composition      != NULL) delete [] Gas_Composition;
-	if (Charge_Number        != NULL) delete [] Charge_Number;
 	if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
 	if (ArrheniusCoefficient != NULL) delete [] ArrheniusCoefficient;
 	if (ArrheniusEta         != NULL) delete [] ArrheniusEta;
@@ -5679,7 +5524,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 	switch (val_eqsystem) {
-	case RUNTIME_PLASMA_SYS:    return PLASMA_SOL;
 	case RUNTIME_FLOW_SYS:      return FLOW_SOL;
 	case RUNTIME_TURB_SYS:      return TURB_SOL;
   case RUNTIME_TNE2_SYS:      return TNE2_SOL;
@@ -5692,7 +5536,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 	case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
 	case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
   case RUNTIME_ADJTNE2_SYS:   return ADJTNE2_SOL;
-	case RUNTIME_ADJPLASMA_SYS: return ADJPLASMA_SOL;
 	case RUNTIME_LINPOT_SYS:    return LINFLOW_SOL;
 	case RUNTIME_LINFLOW_SYS:   return LINFLOW_SOL;
 	case RUNTIME_MULTIGRID_SYS: return 0;
@@ -5750,51 +5593,11 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
 		}
 #endif
 	}
-
-	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) ||
-			(Kind_Solver == PLASMA_NAVIER_STOKES) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
-		if (CFL_FineGrid_Species != NULL && PlasmaMultiTimeSteps) {
-
-			for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies ++) {
-				if ((val_iter % CFL_Iter_Species[iSpecies] == 0 ) && (val_iter != 0)) {
-					change = false;
-					for (iCFL = 0; iCFL <= nMultiLevel; iCFL++) {
-						coeff = pow(MG_CFLRedCoeff, double(iCFL));
-						if (CFL_MS[iSpecies][iCFL]*CFL_Rate_Species[iSpecies] < CFL_Max_Species[iSpecies]*coeff) {
-							CFL_MS[iSpecies][iCFL] = CFL_MS[iSpecies][iCFL]*CFL_Rate_Species[iSpecies];
-							change = true;
-						}
-					}
-
-#ifdef NO_MPI
-					if (change) {
-						cout <<"\n New value of the CFL number for Species: " << iSpecies << " = ";
-						for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
-							cout << CFL_MS[iSpecies][iCFL] <<", ";
-						cout << CFL_MS[iSpecies][nMultiLevel] <<".\n"<< endl;
-					}
-#else
-					int rank;
-#ifdef WINDOWS
-					MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-					rank = MPI::COMM_WORLD.Get_rank();
-#endif					
-					if ((change) && (rank == MASTER_NODE)) {
-						cout <<"\n New value of the CFL number for Species: " << iSpecies << " = ";
-						for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
-							cout << CFL_MS[iSpecies][iCFL] <<", ";
-						cout << CFL_MS[iSpecies][nMultiLevel] <<".\n"<< endl;
-					}
-#endif
-				}
-			}
-		}
-	}
-
 }
 
-void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_system, unsigned long val_extiter) {
+void CConfig::SetGlobalParam(unsigned short val_solver,
+                             unsigned short val_system,
+                             unsigned long val_extiter) {
 
 	/*--- Set the simulation global time ---*/
 	Current_UnstTime = static_cast<double>(val_extiter)*Delta_UnstTime;
@@ -5861,36 +5664,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver, unsigned short val_syste
         SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
       }
       break;
-	case PLASMA_EULER:
-		if (val_system == RUNTIME_PLASMA_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-					GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-			SetKind_ViscNumScheme(NONE);
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-		}
-		if (val_system == RUNTIME_POISSON_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
-			SetKind_TimeIntScheme(NONE);
-		}
-		break;
-	case PLASMA_NAVIER_STOKES:
-		if (val_system == RUNTIME_PLASMA_SYS) {
-			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Plasma(), GetKind_Centered_Plasma(),
-					GetKind_Upwind_Plasma(), GetKind_SlopeLimit_Plasma());
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Plasma());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Plasma());
-			SetKind_TimeIntScheme(GetKind_TimeIntScheme_Plasma());
-		}
-		if (val_system == RUNTIME_POISSON_SYS) {
-			SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-			SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
-			SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
-			SetKind_TimeIntScheme(NONE);
-		}
-		break;
 	case ADJ_EULER:
 		if (val_system == RUNTIME_FLOW_SYS) {
 			SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
@@ -6600,11 +6373,12 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << "Reynolds number (non-dimensional): " << Reynolds << endl;
 			cout << "Reynolds length (m): "       << Length_Reynolds     << endl;
 		}
-		cout << "Froude number (non-dimensional): " << Froude << endl;
-		cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    if (GravityForce) {
+      cout << "Froude number (non-dimensional): " << Froude << endl;
+      cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    }
     
 		if (compressible) {
-			cout << "Negative pressure, temperature or density is not allowed!" << endl;
 			cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
 			cout << "Freestream temperature (non-dimensional): "  << Temperature_FreeStreamND << endl;
 		}
@@ -6636,6 +6410,10 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
 		if (Grid_Movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
 		else cout << "Force coefficients computed using freestream values." << endl;
+    
+    if (compressible) {
+      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
+    }
 	}
   
 }

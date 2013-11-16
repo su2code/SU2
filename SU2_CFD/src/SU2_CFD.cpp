@@ -342,12 +342,6 @@ int main(int argc, char *argv[]) {
                       surface_movement, grid_movement, FFDBox);
         break;
         
-      case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
-        PlasmaIteration(output, integration_container, geometry_container,
-                        solver_container, numerics_container, config_container,
-                        surface_movement, grid_movement, FFDBox);
-        break;
-        
       case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES:
         FluidStructureIteration(output, integration_container, geometry_container,
                                 solver_container, numerics_container, config_container,
@@ -388,14 +382,7 @@ int main(int argc, char *argv[]) {
         AdjTNE2Iteration(output, integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox);
-        
-        
-      case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
-        AdjPlasmaIteration(output, integration_container, geometry_container,
-                           solver_container, numerics_container, config_container,
-                           surface_movement, grid_movement, FFDBox);
         break;
-        
     }
     
     
@@ -426,8 +413,8 @@ int main(int argc, char *argv[]) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
         StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case PLASMA_EULER: case PLASMA_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][PLASMA_SOL]->GetConvergence(); break;
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
       case WAVE_EQUATION:
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
@@ -436,8 +423,8 @@ int main(int argc, char *argv[]) {
         StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-      case ADJ_PLASMA_EULER: case ADJ_PLASMA_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][ADJPLASMA_SOL]->GetConvergence(); break;
+      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
     }
     
     /*--- Solution output. Determine whether a solution needs to be written
@@ -484,6 +471,18 @@ int main(int argc, char *argv[]) {
     ConvHist_file.close();
     cout << endl <<"History file, closed." << endl;
   }
+  /*
+  if (config->GetKind_Solver() == RANS){
+    if (config->GetKind_Turb_Model() == ML){
+      // Tell the ML code to stop running
+      string mlWriteFilename = config->GetML_Turb_Model_Write();
+      ofstream mlWrite;
+      mlWrite.open(mlWriteFilename.c_str());
+      mlWrite << int(-1) << flush;
+      mlWrite.close();
+    }
+  }
+   */
   
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {

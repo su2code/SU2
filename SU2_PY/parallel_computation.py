@@ -47,6 +47,11 @@ def main():
     options.partitions  = int( options.partitions )
     options.compute     = options.compute.upper() == 'TRUE'
     options.divide_grid = options.divide_grid.upper() == 'TRUE'
+
+    if options.filename == None:
+        raise Exception("No config file provided. Use -f flag")
+    if options.partitions <= 0:
+        raise Exception("Number of partitions must be greater than 0. (-p)")
     
     parallel_computation( options.filename    ,
                           options.partitions  ,
