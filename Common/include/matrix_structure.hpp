@@ -112,15 +112,19 @@ public:
 	 */
 	void GetBlock(unsigned long block_i, unsigned long block_j);
   
-	/*!
-	 * \brief Displays the content of the internal variable <i>*block</i> (for debug purposes).
+  /*!
+	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
-	void DisplayBlock(void);
+	double *GetPointerBlock(unsigned long block_i, unsigned long block_j);
   
-	/*!
-	 * \brief Returns the content of the internal variable <i>*block</i> (for debug purposes).
+  /*!
+	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 */
-	void ReturnBlock(double **val_block);
+	double GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar);
   
   /*!
 	 * \brief Set the value of a block in the sparse matrix.
