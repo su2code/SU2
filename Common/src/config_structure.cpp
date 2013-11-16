@@ -2368,6 +2368,961 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
     }
   }
+<<<<<<< HEAD
+  
+	if ((Kind_Solver == PLASMA_EULER) || (Kind_Solver == ADJ_PLASMA_EULER) ||
+			(Kind_Solver == PLASMA_NAVIER_STOKES) || (Kind_Solver == ADJ_PLASMA_NAVIER_STOKES)) {
+		unsigned short iSpecies, jSpecies, iReaction, ii;
+		double sum, conversionFact;
+		double GammaMonatomic, GammaDiatomic;
+		if (val_izone == ZONE_1 ) {
+			Divide_Element = true;
+			Restart_FlowFileName = "restart_phi.dat";
+			SurfFlowCoeff_FileName = "surface_phi.dat";
+		}
+
+		GammaMonatomic = 5.0/3.0;
+		GammaDiatomic  = 7.0/5.0;
+
+		switch (Kind_GasModel) {
+
+		case ARGON:
+			/*--- Species definitions ---*/
+			// Species ordering: Ar, Ar+, e-
+			nMonatomics = 3;
+			nDiatomics = 0;
+			nSpecies = nMonatomics + nDiatomics;
+			nReactions = 1;
+
+			/*-- Allocation ---*/
+			Molar_Mass         = new double[nSpecies];
+			Particle_Mass      = new double[nSpecies];
+			Species_Gas_Constant = new double[nSpecies];
+			Species_Gamma = new double[nSpecies];
+			//	Gas_Composition    = new double[nSpecies];
+			Charge_Number      = new int[nSpecies];
+			Enthalpy_Formation = new double[nSpecies];
+			Reactions = new int**[nReactions];
+			Molecular_Diameter = new double [nSpecies];
+			for (iReaction = 0; iReaction < nReactions; iReaction++) {
+				Reactions[iReaction] = new int*[2];
+				for (ii = 0; ii < 2; ii++)
+					Reactions[iReaction][ii] = new int[6];
+			}
+			CharVibTemp          = new double[nSpecies];
+
+			/*--- Molecular properties of constituent species ---*/
+			Particle_Mass[0] = 6.63053168E-26;					// [kg/kmol] Ar
+			Particle_Mass[1] = 6.6304405861812E-026;		// [kg/kmol] Ar+
+			Particle_Mass[2] = 9.10938188E-31;					// [kg/kmol] e-
+
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Molar_Mass[iSpecies] = Particle_Mass[iSpecies] * AVOGAD_CONSTANT;
+
+			/* uncomment me to run naca_plasma test run for debug
+				 cout << "Warning - Running the Debug, NACA 0012 case " << endl;
+				 cout << "Warning - Running the Debug, NACA 0012 case " << endl;
+				 cout << "Warning - Running the Debug, NACA 0012 case " << endl;
+				 Molar_Mass[0] = 4.7960842E-26*AVOGAD_CONSTANT;						// [kg/kmol] air
+				 Molar_Mass[1] = 4.7960842E-26*AVOGAD_CONSTANT;			// [kg/kmol] air
+				 Molar_Mass[2] = 4.7960842E-26*AVOGAD_CONSTANT;					// [kg/kmol] air
+				 GammaMonatomic  = 1.4;
+				 cout << "Warning - Running the Debug, NACA 0012 case " << endl;
+				 cout << "Warning - Running the Debug, NACA 0012 case " << endl;
+				 cout << "Warning - Running the Debug, NACA 0012 case " << endl;
+			 */
+
+			Charge_Number[0] = 0;
+			Charge_Number[1] = 1;
+			Charge_Number[2] = -1;
+			Molecular_Diameter[0] = 4E-10;
+			Molecular_Diameter[1] = 4E-10;
+			Molecular_Diameter[2] = 0.0;
+			//  JANAF VALUES [KJ/Kmol]
+			Enthalpy_Formation[0] = 0.0;
+			Enthalpy_Formation[1] = 0.0;
+			Enthalpy_Formation[2] = 0.0;
+
+			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
+			/*		Gas_Composition[0] = 0.98;
+				 Gas_Composition[1] = 0.01;
+				 Gas_Composition[2] = 0.01;
+			 */
+			/*--- Set reaction maps ---*/
+			Reactions[0][0][0]=0;	Reactions[0][0][1]=nSpecies;	Reactions[0][0][2] =nSpecies;		Reactions[0][1][0] =1;	Reactions[0][1][1]=2;	Reactions[0][1][2] =nSpecies;
+
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				CharVibTemp[iSpecies] = 0.0;
+
+			break;
+
+		case AIR7:
+
+
+			/*--- Species definitions ---*/
+			// Species ordering: N2, O2, NO, NO+, N, O, e-
+			nMonatomics = 7;
+			nDiatomics = 0;
+			nSpecies = nMonatomics + nDiatomics;
+			nReactions = 24;
+
+			/*-- Allocation ---*/
+			Species_Gas_Constant = new double[nSpecies];
+			Species_Gamma = new double[nSpecies];
+			Molar_Mass         = new double[nSpecies];
+			Particle_Mass      = new double[nSpecies];
+			Molecular_Diameter = new double[nSpecies];
+			Gas_Composition    = new double[nSpecies];
+			Charge_Number      = new int[nSpecies];
+			Enthalpy_Formation = new double[nSpecies];
+			Reactions = new int**[nReactions];
+			for (iReaction = 0; iReaction < nReactions; iReaction++) {
+				Reactions[iReaction] = new int*[2];
+				for (ii = 0; ii < 2; ii++)
+					Reactions[iReaction][ii] = new int[6];
+			}
+			ArrheniusCoefficient    = new double[nReactions];
+			ArrheniusEta   = new double[nReactions];
+			ArrheniusTheta = new double[nReactions];
+			CharVibTemp = new double[nSpecies];
+
+			/*--- Molecular properties of constituent species ---*/
+			Molar_Mass[0] = 2.0*14.0067;									// [kg/kmol] N2
+			Molar_Mass[1] = 2.0*15.9994;									// [kg/kmol] O2
+			Molar_Mass[2] = (14.0067+15.9994);						// [kg/kmol] NO
+			Molar_Mass[3] = (14.0067+15.9994+5.4858E-4);	// [kg/kmol] NO+
+			Molar_Mass[4] = 14.0067;											// [kg/kmol] N
+			Molar_Mass[5] = 15.9994;											// [kg/kmol] O
+			Molar_Mass[6] = 5.4858E-4;										// [kg/kmol] e-
+
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Particle_Mass[iSpecies] = Molar_Mass[iSpecies] / AVOGAD_CONSTANT;
+
+			Molecular_Diameter[0] = 1.0E-10;
+			Molecular_Diameter[1] = 1.0E-10;
+			Molecular_Diameter[2] = 1.0E-10;
+			Molecular_Diameter[3] = 1.0E-10;
+			Molecular_Diameter[4] = 1.0E-10;
+			Molecular_Diameter[5] = 1.0E-10;
+			Molecular_Diameter[6] = 2.8179402894E-15;
+			Charge_Number[0] = 0;
+			Charge_Number[1] = 0;
+			Charge_Number[2] = 0;
+			Charge_Number[3] = 1;
+			Charge_Number[4] = 0;
+			Charge_Number[5] = 0;
+			Charge_Number[6] = -1;
+			//  JANAF VALUES [KJ/Kmol]
+			Enthalpy_Formation[0] = 0.0;					//N2
+			Enthalpy_Formation[1] = 0.0;					//O2
+			Enthalpy_Formation[2] = 90.291E3;			//NO
+			Enthalpy_Formation[3] = 990.185E3;		//NO+
+			Enthalpy_Formation[4] = 472.683E3;		//N
+			Enthalpy_Formation[5] = 249.173E3;		//O
+			Enthalpy_Formation[6] = 0.0;					//e-
+
+			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
+			/*				Gas_Composition[0] = 0.78;
+				 Gas_Composition[1] = 0.21;
+				 Gas_Composition[2] = 0.002;
+				 Gas_Composition[3] = 0.002;
+				 Gas_Composition[4] = 0.002;
+				 Gas_Composition[5] = 0.002;
+				 Gas_Composition[6] = 0.002;*/
+			Gas_Composition[0] = 0.35;
+			Gas_Composition[1] = 0.35;
+			Gas_Composition[2] = 0.1;
+			Gas_Composition[3] = 0.05;
+			Gas_Composition[4] = 0.05;
+			Gas_Composition[5] = 0.05;
+			Gas_Composition[6] = 0.05;
+
+			/*--- Set reaction maps ---*/
+			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=4;		Reactions[0][1][1]=4;		Reactions[0][1][2] =0;
+			Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=4;		Reactions[1][1][1]=4;		Reactions[1][1][2] =1;
+			Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=4;		Reactions[2][1][1]=4;		Reactions[2][1][2] =2;
+			Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=4;		Reactions[3][1][1]=4;		Reactions[3][1][2] =3;
+			Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=4;		Reactions[4][1][1]=4;		Reactions[4][1][2] =4;
+			Reactions[5][0][0]=0;		Reactions[5][0][1]=5;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =5;
+			Reactions[6][0][0]=0;		Reactions[6][0][1]=6;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =6;
+			Reactions[7][0][0] =1;	Reactions[7][0][1] =0;	Reactions[7][0][2] =nSpecies;		Reactions[7][1][0] =5;	Reactions[7][1][1] =5;	Reactions[7][1][2] =0;
+			Reactions[8][0][0] =1;	Reactions[8][0][1] =1;	Reactions[8][0][2] =nSpecies;		Reactions[8][1][0] =5;	Reactions[8][1][1] =5;	Reactions[8][1][2] =1;
+			Reactions[9][0][0] =1;	Reactions[9][0][1] =2;	Reactions[9][0][2] =nSpecies;		Reactions[9][1][0] =5;	Reactions[9][1][1] =5;	Reactions[9][1][2] =2;
+			Reactions[10][0][0]=1;	Reactions[10][0][1]=3;	Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=5;	Reactions[10][1][1]=5;	Reactions[10][1][2]=3;
+			Reactions[11][0][0]=1;	Reactions[11][0][1]=4;	Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=5;	Reactions[11][1][1]=5;	Reactions[11][1][2]=4;
+			Reactions[12][0][0]=1;	Reactions[12][0][1]=5;	Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=5;	Reactions[12][1][1]=5;	Reactions[12][1][2]=5;
+			Reactions[13][0][0]=1;	Reactions[13][0][1]=6;	Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=5;	Reactions[13][1][1]=5;	Reactions[13][1][2]=6;
+			Reactions[14][0][0]=2;	Reactions[14][0][1]=0;	Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=4;	Reactions[14][1][1]=5;	Reactions[14][1][2]=0;
+			Reactions[15][0][0]=2;	Reactions[15][0][1]=1;	Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=4;	Reactions[15][1][1]=5;	Reactions[15][1][2]=1;
+			Reactions[16][0][0]=2;	Reactions[16][0][1]=2;	Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=4;	Reactions[16][1][1]=5;	Reactions[16][1][2]=2;
+			Reactions[17][0][0]=2;	Reactions[17][0][1]=3;	Reactions[17][0][2]=nSpecies;		Reactions[17][1][0]=4;	Reactions[17][1][1]=5;	Reactions[17][1][2]=3;
+			Reactions[18][0][0]=2;	Reactions[18][0][1]=4;	Reactions[18][0][2]=nSpecies;		Reactions[18][1][0]=4;	Reactions[18][1][1]=5;	Reactions[18][1][2]=4;
+			Reactions[19][0][0]=2;	Reactions[19][0][1]=5;	Reactions[19][0][2]=nSpecies;		Reactions[19][1][0]=4;	Reactions[19][1][1]=5;	Reactions[19][1][2]=5;
+			Reactions[20][0][0]=2;	Reactions[20][0][1]=6;	Reactions[20][0][2]=nSpecies;		Reactions[20][1][0]=4;	Reactions[20][1][1]=5;	Reactions[20][1][2]=6;
+			Reactions[21][0][0]=0;	Reactions[21][0][1]=5;	Reactions[21][0][2]=nSpecies;		Reactions[21][1][0]=2;	Reactions[21][1][1]=4;	Reactions[21][1][2]=nSpecies;
+			Reactions[22][0][0]=2;	Reactions[22][0][1]=5;	Reactions[22][0][2]=nSpecies;		Reactions[22][1][0]=1;	Reactions[22][1][1]=4;	Reactions[22][1][2]=nSpecies;
+			Reactions[23][0][0]=4;	Reactions[23][0][1]=5;	Reactions[23][0][2]=nSpecies;		Reactions[23][1][0]=3;	Reactions[23][1][1]=6;	Reactions[23][1][2]=nSpecies;
+
+			/*--- Set Arrhenius coefficients for reactions ---*/
+			// Pre-exponential factor
+			ArrheniusCoefficient[0]  = 7.0E21;
+			ArrheniusCoefficient[1]  = 7.0E21;
+			ArrheniusCoefficient[2]  = 7.0E21;
+			ArrheniusCoefficient[3]  = 7.0E21;
+			ArrheniusCoefficient[4]  = 3.0E22;
+			ArrheniusCoefficient[5]  = 3.0E22;
+			ArrheniusCoefficient[6]  = 0.0;
+			ArrheniusCoefficient[7]  = 2.0E21;
+			ArrheniusCoefficient[8]  = 2.0E21;
+			ArrheniusCoefficient[9]  = 2.0E21;
+			ArrheniusCoefficient[10] = 2.0E21;
+			ArrheniusCoefficient[11] = 1.0E22;
+			ArrheniusCoefficient[12] = 1.0E22;
+			ArrheniusCoefficient[13] = 0.0;
+			ArrheniusCoefficient[14] = 5.0E15;
+			ArrheniusCoefficient[15] = 5.0E15;
+			ArrheniusCoefficient[16] = 5.0E15;
+			ArrheniusCoefficient[17] = 5.0E15;
+			ArrheniusCoefficient[18] = 1.1E17;
+			ArrheniusCoefficient[19] = 1.1E17;
+			ArrheniusCoefficient[20] = 0.0;
+			ArrheniusCoefficient[21] = 6.4E17;
+			//		ArrheniusCoefficient[22] = 8.4E12;
+			ArrheniusCoefficient[22] = 0.0;
+			ArrheniusCoefficient[23] = 5.3E12;
+			// Rate-controlling temperature exponent
+			ArrheniusEta[0]  = -1.60;
+			ArrheniusEta[1]  = -1.60;
+			ArrheniusEta[2]  = -1.60;
+			ArrheniusEta[3]  = -1.60;
+			ArrheniusEta[4]  = -1.60;
+			ArrheniusEta[5]  = -1.60;
+			ArrheniusEta[6]  = -1.60;
+			ArrheniusEta[7]  = -1.50;
+			ArrheniusEta[8]  = -1.50;
+			ArrheniusEta[9]  = -1.50;
+			ArrheniusEta[10] = -1.50;
+			ArrheniusEta[11] = -1.50;
+			ArrheniusEta[12] = -1.50;
+			ArrheniusEta[13] = -1.50;
+			ArrheniusEta[14] = 0.0;
+			ArrheniusEta[15] = 0.0;
+			ArrheniusEta[16] = 0.0;
+			ArrheniusEta[17] = 0.0;
+			ArrheniusEta[18] = 0.0;
+			ArrheniusEta[19] = 0.0;
+			ArrheniusEta[20] = 0.0;
+			ArrheniusEta[21] = -1.00;
+			ArrheniusEta[22] = 0.0;
+			ArrheniusEta[23] = 0.0;
+			// Characteristic temperature
+			ArrheniusTheta[0] = 113200.0;
+			ArrheniusTheta[1] = 113200.0;
+			ArrheniusTheta[2] = 113200.0;
+			ArrheniusTheta[3] = 113200.0;
+			ArrheniusTheta[4] = 113200.0;
+			ArrheniusTheta[5] = 113200.0;
+			ArrheniusTheta[6] = 113200.0;
+			ArrheniusTheta[7] = 59500.0;
+			ArrheniusTheta[8] = 59500.0;
+			ArrheniusTheta[9] = 59500.0;
+			ArrheniusTheta[10] = 59500.0;
+			ArrheniusTheta[11] = 59500.0;
+			ArrheniusTheta[12] = 59500.0;
+			ArrheniusTheta[13] = 59500.0;
+			ArrheniusTheta[14] = 75500.0;
+			ArrheniusTheta[15] = 75500.0;
+			ArrheniusTheta[16] = 75500.0;
+			ArrheniusTheta[17] = 75500.0;
+			ArrheniusTheta[18] = 75500.0;
+			ArrheniusTheta[19] = 75500.0;
+			ArrheniusTheta[20] = 75500.0;
+			ArrheniusTheta[21] = 38400.0;
+			ArrheniusTheta[22] = 19450.0;
+			ArrheniusTheta[23] = 31900.0;
+
+			//Characteristic vibrational temperatures for calculating e_vib (K)
+			CharVibTemp[0] = 3395.0;
+			CharVibTemp[1] = 2239.0;
+			CharVibTemp[2] = 2817.0;
+			CharVibTemp[3] = 2817.0;
+
+			break;
+
+		case O2:
+			/*--- Species definitions ---*/
+			// Species ordering: N2, O2, NO, NO+, N, O, e-
+			nMonatomics = 1;
+			nDiatomics = 1;
+			nSpecies = nMonatomics + nDiatomics;
+			nReactions = 2;
+
+			/*-- Allocation ---*/
+			Species_Gas_Constant = new double[nSpecies];
+			Species_Gamma = new double[nSpecies];
+			Molar_Mass         = new double[nSpecies];
+			Particle_Mass      = new double[nSpecies];
+			Molecular_Diameter = new double[nSpecies];
+			Gas_Composition    = new double[nSpecies];
+			Charge_Number      = new int[nSpecies];
+			Enthalpy_Formation = new double[nSpecies];
+			Reactions = new int**[nReactions];
+			for (iReaction = 0; iReaction < nReactions; iReaction++) {
+				Reactions[iReaction] = new int*[2];
+				for (ii = 0; ii < 2; ii++)
+					Reactions[iReaction][ii] = new int[6];
+			}
+			ArrheniusCoefficient = new double[nReactions];
+			ArrheniusEta         = new double[nReactions];
+			ArrheniusTheta       = new double[nReactions];
+			CharVibTemp          = new double[nSpecies];
+
+			/*--- Molecular properties of constituent species ---*/
+			Molar_Mass[0] = 2.0*15.9994;									// [kg/kmol] O2
+			Molar_Mass[1] = 15.9994;											// [kg/kmol] O
+
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Particle_Mass[iSpecies] = Molar_Mass[iSpecies] / AVOGAD_CONSTANT;
+
+			Molecular_Diameter[0] = 1.0E-10;
+			Molecular_Diameter[1] = 1.0E-10;
+
+			Charge_Number[0] = 0;
+			Charge_Number[1] = 0;
+
+			//  JANAF VALUES [KJ/Kmol]
+			Enthalpy_Formation[0] = 0.0;					//O2
+			Enthalpy_Formation[1] = 249.173E3;		//O
+
+			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
+			Gas_Composition[0] = 0.95; //O2
+			Gas_Composition[1] = 0.05;  //O
+
+			/*--- Set reaction maps ---*/
+			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+			Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2] =1;
+
+			/*--- Set Arrhenius coefficients for reactions ---*/
+			// Pre-exponential factor
+			ArrheniusCoefficient[0]  = 2.0E21;
+			ArrheniusCoefficient[1] = 1.0E22;
+			// Rate-controlling temperature exponent
+			ArrheniusEta[0]  = -1.50;
+			ArrheniusEta[1] = -1.50;
+			// Characteristic temperature
+			ArrheniusTheta[0] = 59500.0;
+			ArrheniusTheta[1] = 59500.0;
+
+			//Characteristic vibrational temperatures for calculating e_vib (K)
+			CharVibTemp[0] = 2239.0;
+			CharVibTemp[1] = 0.0;
+
+			break;
+
+		case N2:
+			/*--- Species definitions ---*/
+			// Species ordering: N2, N
+			nMonatomics = 1;
+			nDiatomics = 1;
+			nSpecies = nMonatomics + nDiatomics;
+			nReactions = 2;
+
+			/*-- Allocation ---*/
+			Species_Gas_Constant = new double[nSpecies];
+			Species_Gamma = new double[nSpecies];
+			Molar_Mass         = new double[nSpecies];
+			Particle_Mass      = new double[nSpecies];
+			Molecular_Diameter = new double[nSpecies];
+			Gas_Composition    = new double[nSpecies];
+			Charge_Number      = new int[nSpecies];
+			Enthalpy_Formation = new double[nSpecies];
+			Reactions = new int**[nReactions];
+			for (iReaction = 0; iReaction < nReactions; iReaction++) {
+				Reactions[iReaction] = new int*[2];
+				for (ii = 0; ii < 2; ii++)
+					Reactions[iReaction][ii] = new int[6];
+			}
+			ArrheniusCoefficient    = new double[nReactions];
+			ArrheniusEta   = new double[nReactions];
+			ArrheniusTheta = new double[nReactions];
+			CharVibTemp = new double[nSpecies];
+
+			// Omega[iSpecies][jSpecies][iCoeff]
+			Omega00 = new double**[nSpecies];
+			Omega11 = new double**[nSpecies];
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+				Omega00[iSpecies] = new double*[nSpecies];
+				Omega11[iSpecies] = new double*[nSpecies];
+				for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+					Omega00[iSpecies][jSpecies] = new double[4];
+					Omega11[iSpecies][jSpecies] = new double[4];
+				}
+			}
+
+			Blottner = new double*[nSpecies];
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Blottner[iSpecies] = new double[3];
+
+			/*--- Molecular properties of constituent species ---*/
+			Molar_Mass[0] = 2.0*14.0067;									// [kg/kmol] N2
+			Molar_Mass[1] = 14.0067;											// [kg/kmol] N
+
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Particle_Mass[iSpecies] = Molar_Mass[iSpecies] / AVOGAD_CONSTANT;
+
+			Molecular_Diameter[0] = 1.0E-10;
+			Molecular_Diameter[1] = 1.0E-10;
+
+			Charge_Number[0] = 0;
+			Charge_Number[1] = 0;
+
+			/*--- Define formation enthalpy from JANAF tables [KJ/Kmol] ---*/
+			Enthalpy_Formation[0] = 0.0;					//N2
+			Enthalpy_Formation[1] = 472.683E3;		//N
+
+			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
+			Gas_Composition[0] = 0.99;//0.90; //N2
+			Gas_Composition[1] = 0.01;  //N
+
+			/*--- Set reaction maps ---*/
+			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
+			Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2] =1;
+
+			/*--- Set Arrhenius coefficients for chemical reactions ---*/
+			// Pre-exponential factor
+			ArrheniusCoefficient[0]  = 7.0E21;
+			ArrheniusCoefficient[1]  = 3.0E22;
+			// Rate-controlling temperature exponent
+			ArrheniusEta[0]  = -1.60;
+			ArrheniusEta[1]  = -1.60;
+			// Characteristic temperature
+			ArrheniusTheta[0] = 113200.0;
+			ArrheniusTheta[1] = 113200.0;
+
+			//Characteristic vibrational temperatures for calculating e_vib (K)
+			CharVibTemp[0] = 3395.0;
+			CharVibTemp[1] = 0.0;
+
+			/*--- Collision integral data ---*/
+			Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+			Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+			Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+			Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+
+			Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+			Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+			Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+			Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+
+			/*--- Viscosity coefficients for the Blottner et. al. (1971) model ---*/
+			Blottner[0][0] = 0.0268142;
+			Blottner[0][1] = 0.3177838;
+			Blottner[0][2] = -11.3155513;
+
+			Blottner[1][0] = 0.0115572;
+			Blottner[1][1] = 0.6031679;
+			Blottner[1][2] = -12.4327495;
+
+			break;
+
+		case ARGON_SID:
+			/*--- Species definitions ---*/
+			// Species ordering: Ar, Ar+, e-
+			nMonatomics = 3;
+			nDiatomics = 0;
+			nSpecies = nMonatomics + nDiatomics;
+			nReactions = 3;
+
+			/*-- Allocation ---*/
+			Species_Gas_Constant = new double[nSpecies];
+			Species_Gamma      = new double[nSpecies];
+			Molar_Mass         = new double[nSpecies];
+			Particle_Mass      = new double[nSpecies];
+			Molecular_Diameter = new double[nSpecies];
+			Gas_Composition    = new double[nSpecies];
+			Charge_Number      = new int[nSpecies];
+			Enthalpy_Formation = new double[nSpecies];
+			Reactions = new int**[nReactions];
+			for (iReaction = 0; iReaction < nReactions; iReaction++) {
+				Reactions[iReaction] = new int*[2];
+				for (ii = 0; ii < 2; ii++)
+					Reactions[iReaction][ii] = new int[6];
+			}
+			ArrheniusCoefficient    = new double[nReactions];
+			ArrheniusEta   = new double[nReactions];
+			ArrheniusTheta = new double[nReactions];
+			CharVibTemp = new double[nSpecies];
+
+			// Omega[iSpecies][jSpecies][iCoeff]
+			Omega00 = new double**[nSpecies];
+			Omega11 = new double**[nSpecies];
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+				Omega00[iSpecies] = new double*[nSpecies];
+				Omega11[iSpecies] = new double*[nSpecies];
+				for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+					Omega00[iSpecies][jSpecies] = new double[4];
+					Omega11[iSpecies][jSpecies] = new double[4];
+				}
+			}
+
+			Blottner = new double*[nSpecies];
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Blottner[iSpecies] = new double[3];
+
+			/*--- Molecular properties of constituent species ---*/
+			Molar_Mass[0] = 6.63053168E-26*AVOGAD_CONSTANT;									// [kg/kmol] N2
+			Molar_Mass[1] = 6.6304405861812E-026*AVOGAD_CONSTANT;		// [kg/kmol] Ar+
+			Molar_Mass[2] = 9.10938188E-31*AVOGAD_CONSTANT;													// [kg/kmol] N
+
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Particle_Mass[iSpecies] = Molar_Mass[iSpecies] / AVOGAD_CONSTANT;
+
+			Molecular_Diameter[0] = 1.0E-10;
+			Molecular_Diameter[1] = 1.0E-10;
+			Molecular_Diameter[2] = 1.0E-20;
+
+			Charge_Number[0] = 0;
+			Charge_Number[1] = 1;
+			Charge_Number[2] =-1;
+
+			/*--- Define formation enthalpy from JANAF tables [KJ/Kmol] ---*/
+			Enthalpy_Formation[0] = 0.0;					//N2
+			Enthalpy_Formation[1] = 472.683E3;		//N
+			Enthalpy_Formation[2] = 0.0;
+
+			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
+			Gas_Composition[0] = 0.98;//0.90; //N2
+			Gas_Composition[1] = 0.01;  //N
+			Gas_Composition[2] = 0.01;
+
+			/*--- Set reaction maps ---*/
+      //
+			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;
+      Reactions[0][1][0]=1;		Reactions[0][1][1]=2;		Reactions[0][1][2] =0;
+			//
+      Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
+      Reactions[1][1][0]=1;   Reactions[1][1][1]=2;		Reactions[1][1][2] =1;
+			//
+      Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;
+      Reactions[2][1][0]=1;		Reactions[2][1][1]=2;		Reactions[2][1][2] =2;
+
+			/*--- Set Arrhenius coefficients for chemical reactions ---*/
+			// Pre-exponential factor
+			ArrheniusCoefficient[0]  = 7.0E21;
+			ArrheniusCoefficient[1]  = 3.0E22;
+			ArrheniusCoefficient[2]  = 0.0;
+
+			// Rate-controlling temperature exponent
+			ArrheniusEta[0]  = -1.60;
+			ArrheniusEta[1]  = -1.60;
+			ArrheniusEta[2]  =  0.0;
+
+			// Characteristic temperature
+			ArrheniusTheta[0] = 113200.0;
+			ArrheniusTheta[1] = 113200.0;
+			ArrheniusTheta[2] = 113200.0;
+
+			//Characteristic vibrational temperatures for calculating e_vib (K)
+			CharVibTemp[0] = 0.0;
+			CharVibTemp[1] = 0.0;
+			CharVibTemp[2] = 0.0;
+
+			/*--- Collision integral data ---*/
+			Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+			Omega00[0][1][0] = -1.0796249E-02;  Omega00[0][1][1] = 2.2656509E-01;   Omega00[0][1][2] = -1.7910602E+00;  Omega00[0][1][3] = 4.0455218E+03;
+			Omega00[0][2][0] = -1.0796249E-02;  Omega00[0][2][1] = 2.2656509E-01;   Omega00[0][2][2] = -1.7910602E+00;  Omega00[0][2][3] = 4.0455218E+03;
+			Omega00[1][0][0] = -1.0796249E-02;  Omega00[1][0][1] = 2.2656509E-01;   Omega00[1][0][2] = -1.7910602E+00;  Omega00[1][0][3] = 4.0455218E+03;
+			Omega00[1][1][0] = -9.6083779E-03;  Omega00[1][1][1] = 2.0938971E-01;   Omega00[1][1][2] = -1.7386904E+00;  Omega00[1][1][3] = 3.3587983E+03;
+			Omega00[1][2][0] = -9.6083779E-03;  Omega00[1][2][1] = 2.0938971E-01;   Omega00[1][2][2] = -1.7386904E+00;  Omega00[1][2][3] = 3.3587983E+03;
+			Omega00[2][0][0] = -6.0614558E-03;  Omega00[2][0][1] = 1.2689102E-01;   Omega00[2][0][2] = -1.0616948E+00;  Omega00[2][0][3] = 8.0955466E+02;
+			Omega00[2][1][0] = -1.0796249E-02;  Omega00[2][1][1] = 2.2656509E-01;   Omega00[2][1][2] = -1.7910602E+00;  Omega00[2][1][3] = 4.0455218E+03;
+			Omega00[2][2][0] = -1.0796249E-02;  Omega00[2][2][1] = 2.2656509E-01;   Omega00[2][2][2] = -1.7910602E+00;  Omega00[2][2][3] = 4.0455218E+03;
+
+
+			Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+			Omega11[0][1][0] = -8.3493693E-03;  Omega11[0][1][1] = 1.7808911E-01;   Omega11[0][1][2] = -1.4466155E+00;  Omega11[0][1][3] = 1.9324210E+03;
+			Omega11[0][2][0] = -8.3493693E-03;  Omega11[0][2][1] = 1.7808911E-01;   Omega11[0][2][2] = -1.4466155E+00;  Omega11[0][2][3] = 1.9324210E+03;
+			Omega11[1][0][0] = -8.3493693E-03;  Omega11[1][0][1] = 1.7808911E-01;   Omega11[1][0][2] = -1.4466155E+00;  Omega11[1][0][3] = 1.9324210E+03;
+			Omega11[1][1][0] = -7.7439615E-03;  Omega11[1][1][1] = 1.7129007E-01;   Omega11[1][1][2] = -1.4809088E+00;  Omega11[1][1][3] = 2.1284951E+03;
+			Omega11[1][2][0] = -7.7439615E-03;  Omega11[1][2][1] = 1.7129007E-01;   Omega11[1][2][2] = -1.4809088E+00;  Omega11[1][2][3] = 2.1284951E+03;
+			Omega11[2][0][0] = -7.6303990E-03;  Omega11[2][0][1] = 1.6878089E-01;   Omega11[2][0][2] = -1.4004234E+00;  Omega11[2][0][3] = 2.1427708E+03;
+			Omega11[2][1][0] = -8.3493693E-03;  Omega11[2][1][1] = 1.7808911E-01;   Omega11[2][1][2] = -1.4466155E+00;  Omega11[2][1][3] = 1.9324210E+03;
+			Omega11[2][2][0] = -8.3493693E-03;  Omega11[2][2][1] = 1.7808911E-01;   Omega11[2][2][2] = -1.4466155E+00;  Omega11[2][2][3] = 1.9324210E+03;
+
+
+			/*--- Viscosity coefficients for the Blottner et. al. (1971) model ---*/
+			Blottner[0][0] = 0.0268142;
+			Blottner[0][1] = 0.3177838;
+			Blottner[0][2] = -11.3155513;
+
+			Blottner[1][0] = 0.0115572;
+			Blottner[1][1] = 0.6031679;
+			Blottner[1][2] = -12.4327495;
+
+			Blottner[2][0] = 1.0;
+			Blottner[2][1] = 1.0;
+			Blottner[2][2] = 1.0;
+
+			break;
+
+		case AIR5:
+
+
+			/*--- Species definitions ---*/
+			// Species ordering: N2, O2, NO, NO+, N, O, e-
+			nMonatomics = 2;
+			nDiatomics = 3;
+			nSpecies = nMonatomics + nDiatomics;
+			nReactions = 17;
+
+			/*-- Allocation ---*/
+			Species_Gas_Constant = new double[nSpecies];
+			Species_Gamma = new double[nSpecies];
+			Molar_Mass         = new double[nSpecies];
+			Particle_Mass      = new double[nSpecies];
+			Molecular_Diameter = new double[nSpecies];
+			Gas_Composition    = new double[nSpecies];
+			Charge_Number      = new int[nSpecies];
+			Enthalpy_Formation = new double[nSpecies];
+			Reactions = new int**[nReactions];
+			for (iReaction = 0; iReaction < nReactions; iReaction++) {
+				Reactions[iReaction] = new int*[2];
+				for (ii = 0; ii < 2; ii++)
+					Reactions[iReaction][ii] = new int[6];
+			}
+			ArrheniusCoefficient    = new double[nReactions];
+			ArrheniusEta   = new double[nReactions];
+			ArrheniusTheta = new double[nReactions];
+			CharVibTemp = new double[nSpecies];
+
+			// Omega[iSpecies][jSpecies][iCoeff]
+			Omega00 = new double**[nSpecies];
+			Omega11 = new double**[nSpecies];
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+				Omega00[iSpecies] = new double*[nSpecies];
+				Omega11[iSpecies] = new double*[nSpecies];
+				for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+					Omega00[iSpecies][jSpecies] = new double[4];
+					Omega11[iSpecies][jSpecies] = new double[4];
+				}
+			}
+
+			/*--- Molecular properties of constituent species ---*/
+			Molar_Mass[0] = 2.0*14.0067;									// [kg/kmol] N2
+			Molar_Mass[1] = 2.0*15.9994;									// [kg/kmol] O2
+			Molar_Mass[2] = 14.0067 + 15.9994;						// [kg/kmol] NO
+			Molar_Mass[3] = 14.0067;											// [kg/kmol] N
+			Molar_Mass[4] = 15.9994;											// [kg/kmol] O
+			// [kg/kmol] O
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Particle_Mass[iSpecies] = Molar_Mass[iSpecies] / AVOGAD_CONSTANT;
+
+			Molecular_Diameter[0] = 1.0E-10;
+			Molecular_Diameter[1] = 1.0E-10;
+			Molecular_Diameter[2] = 1.0E-10;
+			Molecular_Diameter[3] = 1.0E-10;
+			Molecular_Diameter[4] = 1.0E-10;
+
+			Charge_Number[0] = 0;
+			Charge_Number[1] = 0;
+			Charge_Number[2] = 0;
+			Charge_Number[3] = 0;
+			Charge_Number[4] = 0;
+
+			//  JANAF VALUES [KJ/Kmol]
+			Enthalpy_Formation[0] = 0.0;					//N2
+			Enthalpy_Formation[1] = 0.0;					//O2
+			Enthalpy_Formation[2] = 90.291E3;			//NO
+			Enthalpy_Formation[3] = 472.683E3;		//N
+			Enthalpy_Formation[4] = 249.173E3;		//O
+
+			/*--- Set initial fraction of number density (Ns / Ntotal) ---*/
+			Gas_Composition[0] = 0.788;	//N2
+			Gas_Composition[1] = 0.199;	//O2
+			Gas_Composition[2] = 0.011; //NO
+			Gas_Composition[3] = 0.001; //N
+			Gas_Composition[4] = 0.001;  //O
+
+
+			/*--- Set reaction maps ---*/
+			Reactions[0][0][0]=0;		Reactions[0][0][1]=0;		Reactions[0][0][2]=nSpecies;		Reactions[0][1][0]=3;		Reactions[0][1][1]=3;		Reactions[0][1][2] =0;
+			Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;		Reactions[1][1][0]=3;		Reactions[1][1][1]=3;		Reactions[1][1][2] =1;
+			Reactions[2][0][0]=0;		Reactions[2][0][1]=2;		Reactions[2][0][2]=nSpecies;		Reactions[2][1][0]=3;		Reactions[2][1][1]=3;		Reactions[2][1][2] =2;
+			Reactions[3][0][0]=0;		Reactions[3][0][1]=3;		Reactions[3][0][2]=nSpecies;		Reactions[3][1][0]=3;		Reactions[3][1][1]=3;		Reactions[3][1][2] =3;
+			Reactions[4][0][0]=0;		Reactions[4][0][1]=4;		Reactions[4][0][2]=nSpecies;		Reactions[4][1][0]=3;		Reactions[4][1][1]=3;		Reactions[4][1][2] =4;
+
+			Reactions[5][0][0]=1;		Reactions[5][0][1]=0;		Reactions[5][0][2]=nSpecies;		Reactions[5][1][0]=4;		Reactions[5][1][1]=4;		Reactions[5][1][2] =0;
+			Reactions[6][0][0]=1;		Reactions[6][0][1]=1;		Reactions[6][0][2]=nSpecies;		Reactions[6][1][0]=4;		Reactions[6][1][1]=4;		Reactions[6][1][2] =1;
+			Reactions[7][0][0]=1;		Reactions[7][0][1]=2;		Reactions[7][0][2]=nSpecies;		Reactions[7][1][0]=4;		Reactions[7][1][1]=4;		Reactions[7][1][2] =2;
+			Reactions[8][0][0]=1;		Reactions[8][0][1]=3;		Reactions[8][0][2]=nSpecies;		Reactions[8][1][0]=4;		Reactions[8][1][1]=4;		Reactions[8][1][2] =3;
+			Reactions[9][0][0]=1;		Reactions[9][0][1]=4;		Reactions[9][0][2]=nSpecies;		Reactions[9][1][0]=4;		Reactions[9][1][1]=4;		Reactions[9][1][2] =4;
+
+			Reactions[10][0][0]=2;		Reactions[10][0][1]=0;		Reactions[10][0][2]=nSpecies;		Reactions[10][1][0]=3;		Reactions[10][1][1]=4;		Reactions[10][1][2] =0;
+			Reactions[11][0][0]=2;		Reactions[11][0][1]=1;		Reactions[11][0][2]=nSpecies;		Reactions[11][1][0]=3;		Reactions[11][1][1]=4;		Reactions[11][1][2] =1;
+			Reactions[12][0][0]=2;		Reactions[12][0][1]=2;		Reactions[12][0][2]=nSpecies;		Reactions[12][1][0]=3;		Reactions[12][1][1]=4;		Reactions[12][1][2] =2;
+			Reactions[13][0][0]=2;		Reactions[13][0][1]=3;		Reactions[13][0][2]=nSpecies;		Reactions[13][1][0]=3;		Reactions[13][1][1]=4;		Reactions[13][1][2] =3;
+			Reactions[14][0][0]=2;		Reactions[14][0][1]=4;		Reactions[14][0][2]=nSpecies;		Reactions[14][1][0]=3;		Reactions[14][1][1]=4;		Reactions[14][1][2] =4;
+
+			Reactions[15][0][0]=0;		Reactions[15][0][1]=3;		Reactions[15][0][2]=nSpecies;		Reactions[15][1][0]=2;		Reactions[15][1][1]=4;		Reactions[15][1][2]= nSpecies;
+			Reactions[16][0][0]=2;		Reactions[16][0][1]=3;		Reactions[16][0][2]=nSpecies;		Reactions[16][1][0]=1;		Reactions[16][1][1]=4;		Reactions[16][1][2]= nSpecies;
+
+			/*--- Set Arrhenius coefficients for reactions ---*/
+			// Pre-exponential factor
+			ArrheniusCoefficient[0]  = 7.0E21;
+			ArrheniusCoefficient[1]  = 7.0E21;
+			ArrheniusCoefficient[2]  = 7.0E21;
+			ArrheniusCoefficient[3]  = 3.0E22;
+			ArrheniusCoefficient[4]  = 3.0E22;
+			ArrheniusCoefficient[5]  = 2.0E21;
+			ArrheniusCoefficient[6]  = 2.0E21;
+			ArrheniusCoefficient[7]  = 2.0E21;
+			ArrheniusCoefficient[8] = 1.0E22;
+			ArrheniusCoefficient[9] = 1.0E22;
+			ArrheniusCoefficient[10] = 5.0E15;
+			ArrheniusCoefficient[11] = 5.0E15;
+			ArrheniusCoefficient[12] = 5.0E15;
+			ArrheniusCoefficient[13] = 1.1E17;
+			ArrheniusCoefficient[14] = 1.1E17;
+			ArrheniusCoefficient[15] = 5.7E12;
+			ArrheniusCoefficient[16] = 8.4E12;
+
+			// Rate-controlling temperature exponent
+			ArrheniusEta[0]  = -1.60;
+			ArrheniusEta[1]  = -1.60;
+			ArrheniusEta[2]  = -1.60;
+			ArrheniusEta[3]  = -1.60;
+			ArrheniusEta[4]  = -1.60;
+			ArrheniusEta[5]  = -1.50;
+			ArrheniusEta[6]  = -1.50;
+			ArrheniusEta[7]  = -1.50;
+			ArrheniusEta[8] = -1.50;
+			ArrheniusEta[9] = -1.50;
+			ArrheniusEta[10] = 0.0;
+			ArrheniusEta[11] = 0.0;
+			ArrheniusEta[12] = 0.0;
+			ArrheniusEta[13] = 0.0;
+			ArrheniusEta[14] = 0.0;
+			ArrheniusEta[15] = 0.42;
+			ArrheniusEta[16] = 0.00;
+
+			// Characteristic temperature
+			ArrheniusTheta[0] = 113200.0;
+			ArrheniusTheta[1] = 113200.0;
+			ArrheniusTheta[2] = 113200.0;
+			ArrheniusTheta[3] = 113200.0;
+			ArrheniusTheta[4] = 113200.0;
+			ArrheniusTheta[5] = 59500.0;
+			ArrheniusTheta[6] = 59500.0;
+			ArrheniusTheta[7] = 59500.0;
+			ArrheniusTheta[8] = 59500.0;
+			ArrheniusTheta[9] = 59500.0;
+			ArrheniusTheta[10] = 75500.0;
+			ArrheniusTheta[11] = 75500.0;
+			ArrheniusTheta[12] = 75500.0;
+			ArrheniusTheta[13] = 75500.0;
+			ArrheniusTheta[14] = 75500.0;
+			ArrheniusTheta[15] = 42938.0;
+			ArrheniusTheta[16] = 19400.0;
+
+			//Characteristic vibrational temperatures for calculating e_vib (K)
+			CharVibTemp[0] = 3395.0;
+			CharVibTemp[1] = 2239.0;
+			CharVibTemp[2] = 2817.0;
+
+			/*--- Collision integral data ---*/
+			// Omega(0,0) ----------------------
+			//N2
+			Omega00[0][0][0] = -6.0614558E-03;  Omega00[0][0][1] = 1.2689102E-01;   Omega00[0][0][2] = -1.0616948E+00;  Omega00[0][0][3] = 8.0955466E+02;
+			Omega00[0][1][0] = -3.7959091E-03;  Omega00[0][1][1] = 9.5708295E-02;   Omega00[0][1][2] = -1.0070611E+00;  Omega00[0][1][3] = 8.9392313E+02;
+			Omega00[0][2][0] = -1.9295666E-03;  Omega00[0][2][1] = 2.7995735E-02;   Omega00[0][2][2] = -3.1588514E-01;  Omega00[0][2][3] = 1.2880734E+02;
+			Omega00[0][3][0] = -1.0796249E-02;  Omega00[0][3][1] = 2.2656509E-01;   Omega00[0][3][2] = -1.7910602E+00;  Omega00[0][3][3] = 4.0455218E+03;
+			Omega00[0][4][0] = -2.7244269E-03;  Omega00[0][4][1] = 6.9587171E-02;   Omega00[0][4][2] = -7.9538667E-01;  Omega00[0][4][3] = 4.0673730E+02;
+			//O2
+			Omega00[1][0][0] = -3.7959091E-03;  Omega00[1][0][1] = 9.5708295E-02;   Omega00[1][0][2] = -1.0070611E+00;  Omega00[1][0][3] = 8.9392313E+02;
+			Omega00[1][1][0] = -8.0682650E-04;  Omega00[1][1][1] = 1.6602480E-02;   Omega00[1][1][2] = -3.1472774E-01;  Omega00[1][1][3] = 1.4116458E+02;
+			Omega00[1][2][0] = -6.4433840E-04;  Omega00[1][2][1] = 8.5378580E-03;   Omega00[1][2][2] = -2.3225102E-01;  Omega00[1][2][3] = 1.1371608E+02;
+			Omega00[1][3][0] = -1.1453028E-03;  Omega00[1][3][1] = 1.2654140E-02;   Omega00[1][3][2] = -2.2435218E-01;  Omega00[1][3][3] = 7.7201588E+01;
+			Omega00[1][4][0] = -4.8405803E-03;  Omega00[1][4][1] = 1.0297688E-01;   Omega00[1][4][2] = -9.6876576E-01;  Omega00[1][4][3] = 6.1629812E+02;
+			//NO
+			Omega00[2][0][0] = -1.9295666E-03;  Omega00[2][0][1] = 2.7995735E-02;   Omega00[2][0][2] = -3.1588514E-01;  Omega00[2][0][3] = 1.2880734E+02;
+			Omega00[2][1][0] = -6.4433840E-04;  Omega00[2][1][1] = 8.5378580E-03;   Omega00[2][1][2] = -2.3225102E-01;  Omega00[2][1][3] = 1.1371608E+02;
+			Omega00[2][2][0] = -0.0000000E+00;  Omega00[2][2][1] = -1.1056066E-02;  Omega00[2][2][2] = -5.9216250E-02;  Omega00[2][2][3] = 7.2542367E+01;
+			Omega00[2][3][0] = -1.5770918E-03;  Omega00[2][3][1] = 1.9578381E-02;   Omega00[2][3][2] = -2.7873624E-01;  Omega00[2][3][3] = 9.9547944E+01;
+			Omega00[2][4][0] = -1.0885815E-03;  Omega00[2][4][1] = 1.1883688E-02;   Omega00[2][4][2] = -2.1844909E-01;  Omega00[2][4][3] = 7.5512560E+01;
+			//N
+			Omega00[3][0][0] = -1.0796249E-02;  Omega00[3][0][1] = 2.2656509E-01;   Omega00[3][0][2] = -1.7910602E+00;  Omega00[3][0][3] = 4.0455218E+03;
+			Omega00[3][1][0] = -1.1453028E-03;  Omega00[3][1][1] = 1.2654140E-02;   Omega00[3][1][2] = -2.2435218E-01;  Omega00[3][1][3] = 7.7201588E+01;
+			Omega00[3][2][0] = -1.5770918E-03;  Omega00[3][2][1] = 1.9578381E-02;   Omega00[3][2][2] = -2.7873624E-01;  Omega00[3][2][3] = 9.9547944E+01;
+			Omega00[3][3][0] = -9.6083779E-03;  Omega00[3][3][1] = 2.0938971E-01;   Omega00[3][3][2] = -1.7386904E+00;  Omega00[3][3][3] = 3.3587983E+03;
+			Omega00[3][4][0] = -7.8147689E-03;  Omega00[3][4][1] = 1.6792705E-01;   Omega00[3][4][2] = -1.4308628E+00;  Omega00[3][4][3] = 1.6628859E+03;
+			//O
+			Omega00[4][0][0] = -2.7244269E-03;  Omega00[4][0][1] = 6.9587171E-02;   Omega00[4][0][2] = -7.9538667E-01;  Omega00[4][0][3] = 4.0673730E+02;
+			Omega00[4][1][0] = -4.8405803E-03;  Omega00[4][1][1] = 1.0297688E-01;   Omega00[4][1][2] = -9.6876576E-01;  Omega00[4][1][3] = 6.1629812E+02;
+			Omega00[4][2][0] = -1.0885815E-03;  Omega00[4][2][1] = 1.1883688E-02;   Omega00[4][2][2] = -2.1844909E-01;  Omega00[4][2][3] = 7.5512560E+01;
+			Omega00[4][3][0] = -7.8147689E-03;  Omega00[4][3][1] = 1.6792705E-01;   Omega00[4][3][2] = -1.4308628E+00;  Omega00[4][3][3] = 1.6628859E+03;
+			Omega00[4][4][0] = -6.4040535E-03;  Omega00[4][4][1] = 1.4629949E-01;   Omega00[4][4][2] = -1.3892121E+00;  Omega00[4][4][3] = 2.0903441E+03;
+
+			// Omega(1,1) ----------------------
+			//N2
+			Omega11[0][0][0] = -7.6303990E-03;  Omega11[0][0][1] = 1.6878089E-01;   Omega11[0][0][2] = -1.4004234E+00;  Omega11[0][0][3] = 2.1427708E+03;
+			Omega11[0][1][0] = -8.0457321E-03;  Omega11[0][1][1] = 1.9228905E-01;   Omega11[0][1][2] = -1.7102854E+00;  Omega11[0][1][3] = 5.2213857E+03;
+			Omega11[0][2][0] = -6.8237776E-03;  Omega11[0][2][1] = 1.4360616E-01;   Omega11[0][2][2] = -1.1922240E+00;  Omega11[0][2][3] = 1.2433086E+03;
+			Omega11[0][3][0] = -8.3493693E-03;  Omega11[0][3][1] = 1.7808911E-01;   Omega11[0][3][2] = -1.4466155E+00;  Omega11[0][3][3] = 1.9324210E+03;
+			Omega11[0][4][0] = -8.3110691E-03;  Omega11[0][4][1] = 1.9617877E-01;   Omega11[0][4][2] = -1.7205427E+00;  Omega11[0][4][3] = 4.0812829E+03;
+			//O2
+			Omega11[1][0][0] = -8.0457321E-03;  Omega11[1][0][1] = 1.9228905E-01;   Omega11[1][0][2] = -1.7102854E+00;  Omega11[1][0][3] = 5.2213857E+03;
+			Omega11[1][1][0] = -6.2931612E-03;  Omega11[1][1][1] = 1.4624645E-01;   Omega11[1][1][2] = -1.3006927E+00;  Omega11[1][1][3] = 1.8066892E+03;
+			Omega11[1][2][0] = -6.8508672E-03;  Omega11[1][2][1] = 1.5524564E-01;   Omega11[1][2][2] = -1.3479583E+00;  Omega11[1][2][3] = 2.0037890E+03;
+			Omega11[1][3][0] = -1.0608832E-03;  Omega11[1][3][1] = 1.1782595E-02;   Omega11[1][3][2] = -2.1246301E-01;  Omega11[1][3][3] = 8.4561598E+01;
+			Omega11[1][4][0] = -3.7969686E-03;  Omega11[1][4][1] = 7.6789981E-02;   Omega11[1][4][2] = -7.3056809E-01;  Omega11[1][4][3] = 3.3958171E+02;
+			//NO
+			Omega11[2][0][0] = -6.8237776E-03;  Omega11[2][0][1] = 1.4360616E-01;   Omega11[2][0][2] = -1.1922240E+00;  Omega11[2][0][3] = 1.2433086E+03;
+			Omega11[2][1][0] = -6.8508672E-03;  Omega11[2][1][1] = 1.5524564E-01;   Omega11[2][1][2] = -1.3479583E+00;  Omega11[2][1][3] = 2.0037890E+03;
+			Omega11[2][2][0] = -7.4942466E-03;  Omega11[2][2][1] = 1.6626193E-01;   Omega11[2][2][2] = -1.4107027E+00;  Omega11[2][2][3] = 2.3097604E+03;
+			Omega11[2][3][0] = -1.4719259E-03;  Omega11[2][3][1] = 1.8446968E-02;   Omega11[2][3][2] = -2.6460411E-01;  Omega11[2][3][3] = 1.0911124E+02;
+			Omega11[2][4][0] = -1.0066279E-03;  Omega11[2][4][1] = 1.1029264E-02;   Omega11[2][4][2] = -2.0671266E-01;  Omega11[2][4][3] = 8.2644384E+01;
+			//N
+			Omega11[3][0][0] = -8.3493693E-03;  Omega11[3][0][1] = 1.7808911E-01;   Omega11[3][0][2] = -1.4466155E+00;  Omega11[3][0][3] = 1.9324210E+03;
+			Omega11[3][1][0] = -1.0608832E-03;  Omega11[3][1][1] = 1.1782595E-02;   Omega11[3][1][2] = -2.1246301E-01;  Omega11[3][1][3] = 8.4561598E+01;
+			Omega11[3][2][0] = -1.4719259E-03;  Omega11[3][2][1] = 1.8446968E-02;   Omega11[3][2][2] = -2.6460411E-01;  Omega11[3][2][3] = 1.0911124E+02;
+			Omega11[3][3][0] = -7.7439615E-03;  Omega11[3][3][1] = 1.7129007E-01;   Omega11[3][3][2] = -1.4809088E+00;  Omega11[3][3][3] = 2.1284951E+03;
+			Omega11[3][4][0] = -5.0478143E-03;  Omega11[3][4][1] = 1.0236186E-01;   Omega11[3][4][2] = -9.0058935E-01;  Omega11[3][4][3] = 4.4472565E+02;
+			//O
+			Omega11[4][0][0] = -8.3110691E-03;  Omega11[4][0][1] = 1.9617877E-01;   Omega11[4][0][2] = -1.7205427E+00;  Omega11[4][0][3] = 4.0812829E+03;
+			Omega11[4][1][0] = -3.7969686E-03;  Omega11[4][1][1] = 7.6789981E-02;   Omega11[4][1][2] = -7.3056809E-01;  Omega11[4][1][3] = 3.3958171E+02;
+			Omega11[4][2][0] = -1.0066279E-03;  Omega11[4][2][1] = 1.1029264E-02;   Omega11[4][2][2] = -2.0671266E-01;  Omega11[4][2][3] = 8.2644384E+01;
+			Omega11[4][3][0] = -5.0478143E-03;  Omega11[4][3][1] = 1.0236186E-01;   Omega11[4][3][2] = -9.0058935E-01;  Omega11[4][3][3] = 4.4472565E+02;
+			Omega11[4][4][0] = -4.2451096E-03;  Omega11[4][4][1] = 9.6820337E-02;   Omega11[4][4][2] = -9.9770795E-01;  Omega11[4][4][3] = 8.3320644E+02;
+			break;
+
+		}
+
+
+		/*--- Check for consistency ---*/
+		sum = 0;
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+			sum += Gas_Composition[iSpecies];
+		if ( fabs(sum - 1.0) > 1E-10)
+			cout << "WARNING: Sum of ratios of initial number density fractions != 1.0, sum = " << sum << endl;
+
+
+		Mixture_Molar_mass = 0.0;
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+			Mixture_Molar_mass += Molar_Mass[iSpecies]*Gas_Composition[iSpecies];
+
+
+		for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+			/*--- Convert formation enthalpy from KJ/Kmol -> J/kg ---*/
+			conversionFact = 1000 / Molar_Mass[iSpecies];
+			Enthalpy_Formation[iSpecies] = Enthalpy_Formation[iSpecies] * conversionFact;
+
+			/*--- Array of gas constants [J/kmol] / [kg/kmol] = [J/kg] ---*/
+			Species_Gas_Constant[iSpecies] = UNIVERSAL_GAS_CONSTANT / Molar_Mass[iSpecies];
+
+			/*--- Array of ratios of specific heat ---*/
+			if (iSpecies < nDiatomics)
+				Species_Gamma[iSpecies] = GammaDiatomic;
+			else
+				Species_Gamma[iSpecies] = GammaMonatomic;
+		}    
+
+		if (Species_Temperature_FreeStream == NULL) {
+#ifdef NO_MPI
+			cout << "WARNING: No species temperature specified, using mean flow freestream value for all species." << endl;
+#else
+			int rank;
+#ifdef WINDOWS
+			MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+			rank = MPI::COMM_WORLD.Get_rank();
+#endif
+			if (rank == MASTER_NODE)
+				cout << "WARNING: No species temperature specified, using mean flow freestream value for all species." << endl;
+#endif
+			Species_Temperature_FreeStream = new double[nSpecies];
+			for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+				Species_Temperature_FreeStream[iSpecies] = Temperature_FreeStream;
+		}
+
+		Inlet_Outlet_Defined = false;
+		if (Species_Temperature_Inlet != NULL || Species_Pressure_Inlet != NULL || Species_Pressure_Outlet != NULL )
+			Inlet_Outlet_Defined = true;
+
+		if (PlasmaMultiTimeSteps) {
+
+			nCFL = nMultiLevel+1;
+			CFL_MS = new double*[nSpecies];
+
+			if (CFL_FineGrid_Species == NULL) {
+#ifdef NO_MPI
+				cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#else
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();				
+#endif
+				if (rank == MASTER_NODE)
+					cout << "WARNING: No species CFL numbers specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#endif
+				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+					CFL_MS[iSpecies] = new double[nCFL];
+					CFL_MS[iSpecies][0] = CFL[0];
+					for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
+						CFL_MS[iSpecies][iCFL] = CFL_MS[iSpecies][iCFL-1]*MG_CFLRedCoeff;
+				}
+			} else {
+				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+					CFL_MS[iSpecies] = new double[nCFL];
+					CFL_MS[iSpecies][0] = CFL_FineGrid_Species[iSpecies];
+					for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
+						CFL_MS[iSpecies][iCFL] = CFL_MS[iSpecies][iCFL-1]*MG_CFLRedCoeff;
+				}
+			}
+
+			if (CFL_Iter_Species == NULL) {
+#ifdef NO_MPI
+				cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#else
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();
+#endif
+				if (rank == MASTER_NODE)
+					cout << "WARNING: No species CFL ramp iteration specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#endif
+				CFL_Iter_Species = new unsigned short[nSpecies];
+				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+					CFL_Iter_Species[iSpecies] = short(CFLRamp[1]);
+				}
+			}
+
+			if (CFL_Max_Species == NULL) {
+#ifdef NO_MPI
+				cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#else
+				int rank;
+#ifdef WINDOWS
+				MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+				rank = MPI::COMM_WORLD.Get_rank();
+#endif
+				if (rank == MASTER_NODE)
+					cout << "WARNING: No maximum CFL specified for plasma multi-timestepping, using mean flow CFL parameters" << endl;
+#endif
+				CFL_Max_Species = new double[nSpecies];
+				for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+					CFL_Max_Species[iSpecies] = CFLRamp[2];
+				}
+			}
+		}
+
+	}
+=======
+>>>>>>> 412088c00ad97809919e144670ac1297e4e07e4e
 
 	delete [] tmp_smooth;
 

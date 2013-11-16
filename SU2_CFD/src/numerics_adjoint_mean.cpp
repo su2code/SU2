@@ -436,7 +436,6 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
 				val_Jacobian_jj[jVar][iVar] = -(Proj_Jac_Tensor_j[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar]);
 			}
 		}
-    
 	}
 }
 

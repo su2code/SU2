@@ -3963,6 +3963,8 @@ public:
 	 * \param[in] val_crossproduction - Value of the CrossProduction.
 	 */
   double GetCrossProduction(void);
+  
+  double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
 };
 
 
@@ -5285,17 +5287,16 @@ public:
  */
 class CUpwRoe_AdjTNE2 : public CNumerics {
 private:
-  bool implicit, ionization;
-  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
-	double *Residual_Roe;
-  double *RoeU, *RoeV, *RoedPdU, RoeSoundSpeed;
+  bool implicit;
+  unsigned short nVar, nPrimVar, nPrimVarGrad, nSpecies;
+  double *MeanU, *MeanV, *MeandPdU;
+  double *DiffPsi;
+  double *UnitNormal;
   double *Lambda;
-  double **Proj_flux_tensor_i, **Proj_flux_tensor_j;
-  double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
-  double Proj_ModJac_Tensor_ij, **Proj_ModJac_Tensor;
-  double **P_Tensor, **invP_Tensor;
+  double **Ai, **Aj;
+  double **P, **invP, **PLPinv;
   
-  CVariable *var;
+//  CVariable *var;
   
 public:
     
@@ -5324,8 +5325,62 @@ public:
 	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                         double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config);
+	void ComputeResidual(double *val_residual_i, double *val_residual_j,
+                       double **val_Jacobian_ii, double **val_Jacobian_ij,
+                       double **val_Jacobian_ji, double **val_Jacobian_jj,
+                       CConfig *config);
+};
+
+/*!
+ * \class CUpwSW_AdjTNE2
+ * \brief Class for solving an approximate Riemann solver of Roe
+ *        for the adjoint flow equations.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 2.0.6
+ */
+class CUpwSW_AdjTNE2 : public CNumerics {
+private:
+  bool implicit;
+  unsigned short nVar, nPrimVar, nPrimVarGrad, nSpecies;
+  double *DiffPsi;
+  double *UnitNormal;
+  double *Lambda_i, *Lambda_j;
+  double **P, **invP, **PLPinv;
+  
+  //  CVariable *var;
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwSW_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar,
+                  unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                  CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwSW_AdjTNE2(void);
+  
+	/*!
+	 * \brief Compute the adjoint Roe's flux between two nodes i and j.
+	 * \param[out] val_residual_i - Pointer to the total residual at point i.
+	 * \param[out] val_residual_j - Pointer to the total residual at point j.
+	 * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation) from node i.
+	 * \param[out] val_Jacobian_ij - Jacobian of the numerical method at node i (implicit computation) from node j.
+	 * \param[out] val_Jacobian_ji - Jacobian of the numerical method at node j (implicit computation) from node i.
+	 * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation) from node j.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual_i, double *val_residual_j,
+                       double **val_Jacobian_ii, double **val_Jacobian_ij,
+                       double **val_Jacobian_ji, double **val_Jacobian_jj,
+                       CConfig *config);
 };
 
 
@@ -5389,8 +5444,8 @@ public:
  */
 class CCentLax_AdjTNE2 : public CNumerics {
 private:
-  bool implicit, ionization;
-  double *Normal_ij, *Normal_ji;
+  bool implicit;
+  unsigned short nVar, nPrimVar, nPrimVarGrad, nSpecies, nDim;
 	double *DiffPsi, *MeanPsi;
   double Param_p, Param_Kappa_0;
   double **Proj_Jac_Tensor_i, **Proj_Jac_Tensor_j;
@@ -5403,7 +5458,9 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CCentLax_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CCentLax_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar,
+                   unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
+                   CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.

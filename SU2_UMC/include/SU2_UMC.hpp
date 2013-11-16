@@ -34,3 +34,10 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
+
+/*--- function prototypes ---*/
+void Tracked_Points_to_Coords(CBoundaryGeometry *boundary);
+void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary);
+void clean_up(const char *filename);
+bool fexists(const char *filename);
+

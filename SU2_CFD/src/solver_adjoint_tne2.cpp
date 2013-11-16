@@ -297,7 +297,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 }
 
 CAdjTNE2EulerSolver::~CAdjTNE2EulerSolver(void) {
-  unsigned short iVar, iMarker;
+  unsigned short iMarker;
   
   if (PsiRho_Inf  != NULL) delete [] PsiRho_Inf;
   if (Phi_Inf     != NULL) delete [] Phi_Inf;
@@ -984,7 +984,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
                                               CSolver **solver_container,
                                               CConfig *config) {
   bool ionization;
-	unsigned short iMarker, iDim, iSpecies, nHeavy, nEl;
+	unsigned short iMarker, iDim, nHeavy, nEl;
 	unsigned long iVertex, iPoint;
 	double Alpha      = (config->GetAoA()*PI_NUMBER)/180.0;
 	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
@@ -994,7 +994,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
 	double x_origin, y_origin, z_origin, WDrag, Area;
 	double RefVel2, RefDensity;
-  double T, Tve, P, *MassFrac_Inf, *Ms, Ru, denom;
   
 	ForceProj_Vector = new double[nDim];
   
@@ -1763,6 +1762,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
 		Delta = Vol / solver_container[TNE2_SOL]->node[iPoint]->GetDelta_Time();
 		Jacobian.AddVal2Diag(iPoint, Delta);
+    
     if (Delta <= 0 || Delta != Delta) {
       cout << "NaN in Timestep" << endl;
     }
@@ -1824,8 +1824,9 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
 	/*--- Update solution (system written in terms of increments) ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++)
+		for (iVar = 0; iVar < nVar; iVar++) {
 			node[iPoint]->AddSolution(iVar, config->GetLinear_Solver_Relax()*LinSysSol[iPoint*nVar+iVar]);
+    }
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -1839,11 +1840,12 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
                                                CSolver **solver_container,
                                                CNumerics *numerics,
                                                CConfig *config) {
-	unsigned long iVertex, iPoint, Neigh;
+	unsigned long iVar, iVertex, iPoint, Neigh;
 	unsigned short iDim, iMarker, iNeigh;
+  unsigned short P_INDEX, VEL_INDEX;
 	double *d, *Normal, *UnitNormal;
   double *Psi, *U;
-  double Enthalpy, conspsi, Area;
+  double Enthalpy, rho, conspsi, Area;
   double **PrimVar_Grad, **ConsVar_Grad, *ConsPsi_Grad;
   double ConsPsi, d_press, grad_v, v_gradconspsi;
   
@@ -1867,6 +1869,9 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   Total_Sens_Temp  = 0.0;
 	//	Total_Sens_Far = 0.0;
   
+  P_INDEX   = solver_container[TNE2_SOL]->node[0]->GetPIndex();
+  VEL_INDEX = solver_container[TNE2_SOL]->node[0]->GetVelIndex();
+  
 	/*--- Compute surface sensitivity ---*/
   
   /*--- Loop over boundary markers to select those for Euler walls ---*/
@@ -1880,8 +1885,12 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
           Psi      = node[iPoint]->GetSolution();
           U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
           Enthalpy = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
-          conspsi  = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
-          for (iDim = 0; iDim < nDim; iDim++) conspsi += U[iDim+1]*Psi[iDim+1];
+          rho = solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
+          conspsi = 0.0;
+          for (iVar = 0; iVar < nSpecies+nDim; iVar++)
+            conspsi += U[iVar]*Psi[iVar];
+          conspsi   += rho*Enthalpy*Psi[nSpecies+nDim];
+          conspsi   += U[nSpecies+nDim+1]*Psi[nSpecies+nDim+1];
           
           node[iPoint]->SetAuxVar(conspsi);
           
@@ -1891,8 +1900,13 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
             Psi = node[Neigh]->GetSolution();
             U = solver_container[TNE2_SOL]->node[Neigh]->GetSolution();
             Enthalpy = solver_container[TNE2_SOL]->node[Neigh]->GetEnthalpy();
-            conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
-            for (iDim = 0; iDim < nDim; iDim++) conspsi += U[iDim+1]*Psi[iDim+1];
+            
+            rho = solver_container[TNE2_SOL]->node[Neigh]->GetDensity();
+            conspsi = 0.0;
+            for (iVar = 0; iVar < nSpecies+nDim; iVar++)
+              conspsi += U[iVar]*Psi[iVar];
+            conspsi   += rho*Enthalpy*Psi[nSpecies+nDim];
+            conspsi   += U[nSpecies+nDim+1]*Psi[nSpecies+nDim+1];
             node[Neigh]->SetAuxVar(conspsi);
           }
         }
@@ -1928,10 +1942,10 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
           for (iDim = 0; iDim < nDim; iDim++) {
             
             /*-- Retrieve the value of the pressure gradient ---*/
-            d_press += d[iDim]*PrimVar_Grad[nDim+1][iDim];
+            d_press += d[iDim]*PrimVar_Grad[P_INDEX][iDim];
             
             /*-- Retrieve the value of the velocity gradient ---*/
-            grad_v += PrimVar_Grad[iDim+1][iDim]*ConsPsi;
+            grad_v += PrimVar_Grad[VEL_INDEX+iDim][iDim]*ConsPsi;
             
             /*-- Retrieve the value of the theta gradient ---*/
             v_gradconspsi += solver_container[TNE2_SOL]->node[iPoint]->GetVelocity(iDim) * ConsPsi_Grad[iDim];
@@ -1951,43 +1965,35 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
                                         CSolver **solver_container,
                                         CNumerics *numerics, CConfig *config,
                                         unsigned short val_marker) {
-  // NOTE: Verify that the "GetVelocity" routine is working.
-	
-  bool implicit, ionization;
+  
+  bool implicit;
   unsigned short iDim, iVar, jVar;
-  unsigned short VEL_INDEX;
   unsigned long iVertex, iPoint;
 	double *d, *Normal, Area, *UnitNormal, *Coord;
-  double *Psi, *Psi_Aux, phin, bcn, vn;
+  double *Psi, *Psi_Aux, phin, bcn;
   double *U, *V, *dPdU;
-  double ProjVel;
   
   /*--- Set booleans from config ---*/
 	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-  ionization = (config->GetIonization());
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
-  numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
-  numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
-  numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
-  numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
-  numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
-  numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
-  numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
-  numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
-  numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
+  numerics->SetRhosIndex   (solver_container[TNE2_SOL]->node[0]->GetRhosIndex()   );
+  numerics->SetRhoIndex    (solver_container[TNE2_SOL]->node[0]->GetRhoIndex()    );
+  numerics->SetPIndex      (solver_container[TNE2_SOL]->node[0]->GetPIndex()      );
+  numerics->SetTIndex      (solver_container[TNE2_SOL]->node[0]->GetTIndex()      );
+  numerics->SetTveIndex    (solver_container[TNE2_SOL]->node[0]->GetTveIndex()    );
+  numerics->SetVelIndex    (solver_container[TNE2_SOL]->node[0]->GetVelIndex()    );
+  numerics->SetHIndex      (solver_container[TNE2_SOL]->node[0]->GetHIndex()      );
+  numerics->SetAIndex      (solver_container[TNE2_SOL]->node[0]->GetAIndex()      );
+  numerics->SetRhoCvtrIndex(solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex());
+  numerics->SetRhoCvveIndex(solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex());
   
   /*--- Initialize ---*/
   d        = NULL;
-  ProjVel  = 0.0;
   
   /*--- Allocate arrays ---*/
 	UnitNormal    = new double[nDim];
 	Psi           = new double[nVar];
-  
-  /*--- Acquire parameters from config ---*/
-  VEL_INDEX     = solver_container[TNE2_SOL]->node[0]->GetVelIndex();
   
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2023,11 +2029,10 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       d = node[iPoint]->GetForceProj_Vector();
       
       /*--- Compute projections ---*/
-      ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
+      bcn = 0.0;
+      phin = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel -= V[VEL_INDEX+iDim]*Normal[iDim];
         bcn     += d[iDim]*UnitNormal[iDim];
-        vn      += V[VEL_INDEX+iDim]*UnitNormal[iDim];
         phin    += Psi[nSpecies+iDim]*UnitNormal[iDim];
       }
       
@@ -2045,13 +2050,12 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       if (implicit)
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+            Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar]*Area;
       
       /*--- Update residual ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      
 		}
 	}
 	delete [] UnitNormal;
@@ -2064,20 +2068,16 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
                                        CNumerics *visc_numerics,
                                        CConfig *config,
                                        unsigned short val_marker) {
-  
-  // NOTE: Verify that the "GetVelocity" routine is working.
 	
-  bool implicit, ionization;
+  bool implicit;
   unsigned short iDim, iVar, jVar;
-  unsigned short VEL_INDEX;
   unsigned long iVertex, iPoint;
 	double *Normal, Area, *UnitNormal, *Coord;
-  double *Psi, *Psi_Aux, phin, vn, ProjVel;
+  double *Psi, *Psi_Aux, phin;
   double *U, *V, *dPdU;
   
   /*--- Set booleans from config ---*/
 	implicit   = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-  ionization = (config->GetIonization());
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   conv_numerics->SetRhosIndex   (solver_container[TNE2_SOL]->node[0]->GetRhosIndex()   );
@@ -2091,23 +2091,30 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
   conv_numerics->SetRhoCvtrIndex(solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex());
   conv_numerics->SetRhoCvveIndex(solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex());
   
-  /*--- Initialize ---*/
-  ProjVel  = 0.0;
-  vn       = 0.0;
-  
   /*--- Allocate arrays ---*/
 	UnitNormal    = new double[nDim];
 	Psi           = new double[nVar];
-  
-  /*--- Acquire parameters from config ---*/
-  VEL_INDEX = solver_container[TNE2_SOL]->node[0]->GetVelIndex();
   
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
 		if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Initialize the residual ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = 0.0;
+      
+      /*--- Get node information ---*/
 			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 			Coord = geometry->node[iPoint]->GetCoord();
+      
+      /*--- Compute geometry parameters ---*/
+			Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+			Area = sqrt(Area);
+			for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
       
       /*--- Create a copy of the adjoint solution ---*/
       Psi_Aux = node[iPoint]->GetSolution();
@@ -2118,22 +2125,11 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
-      /*--- Compute geometry parameters ---*/
-			Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt(Area);
-			for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-      
       /*--- Compute projections ---*/
-      ProjVel = 0.0; vn = 0.0, phin = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        ProjVel -= V[VEL_INDEX+iDim]*Normal[iDim];
-        vn      += V[VEL_INDEX+iDim]*UnitNormal[iDim];
+      phin = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
         phin    += Psi[nSpecies+iDim]*UnitNormal[iDim];
-      }
-      
+
       /*--- Introduce the boundary condition ---*/
       for (iDim = 0; iDim < nDim; iDim++)
         Psi[nSpecies+iDim] -= phin * UnitNormal[iDim];
@@ -2148,13 +2144,12 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       if (implicit)
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+            Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar]*Area;
       
       /*--- Update residual ---*/
       LinSysRes.SubtractBlock(iPoint, Residual);
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      
 		}
 	}
 	delete [] UnitNormal;
@@ -2183,16 +2178,16 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
   Psi_infty  = new double[nVar];
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
-  conv_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-  conv_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-  conv_numerics->SetPIndex      ( node[0]->GetPIndex()       );
-  conv_numerics->SetTIndex      ( node[0]->GetTIndex()       );
-  conv_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-  conv_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-  conv_numerics->SetHIndex      ( node[0]->GetHIndex()       );
-  conv_numerics->SetAIndex      ( node[0]->GetAIndex()       );
-  conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-  conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  conv_numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
+  conv_numerics->SetRhoIndex    ( solver_container[TNE2_SOL]->node[0]->GetRhoIndex()     );
+  conv_numerics->SetPIndex      ( solver_container[TNE2_SOL]->node[0]->GetPIndex()       );
+  conv_numerics->SetTIndex      ( solver_container[TNE2_SOL]->node[0]->GetTIndex()       );
+  conv_numerics->SetTveIndex    ( solver_container[TNE2_SOL]->node[0]->GetTveIndex()     );
+  conv_numerics->SetVelIndex    ( solver_container[TNE2_SOL]->node[0]->GetVelIndex()     );
+  conv_numerics->SetHIndex      ( solver_container[TNE2_SOL]->node[0]->GetHIndex()       );
+  conv_numerics->SetAIndex      ( solver_container[TNE2_SOL]->node[0]->GetAIndex()       );
+  conv_numerics->SetRhoCvtrIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvtrIndex() );
+  conv_numerics->SetRhoCvveIndex( solver_container[TNE2_SOL]->node[0]->GetRhoCvveIndex() );
   
 	/*--- Loop over all the vertices ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2242,7 +2237,6 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
       LinSysRes.SubtractBlock(iPoint, Residual_i);
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      
     }
   }
 	delete [] Normal;

@@ -26,6 +26,7 @@
 CSolver::CSolver(void) {
 
   /*--- Array initialization ---*/
+  OutputHeadingNames = NULL;
 	Residual_RMS = NULL;
   Residual_Max = NULL;
 	Residual = NULL;
@@ -59,6 +60,10 @@ CSolver::CSolver(void) {
 }
 
 CSolver::~CSolver(void) {
+  if( OutputHeadingNames != NULL){
+    delete []OutputHeadingNames;
+  }
+//  delete [] OutputHeadingNames;
 /*  unsigned short iVar, iDim;
   unsigned long iPoint;
   
