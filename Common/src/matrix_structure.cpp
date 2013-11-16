@@ -192,25 +192,27 @@ void CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
   
 }
 
-void CSysMatrix::DisplayBlock(void) {
+double *CSysMatrix::GetPointerBlock(unsigned long block_i, unsigned long block_j) {
   
-  unsigned short iVar, jVar;
+  unsigned long step = 0, index;
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nEqn; jVar++)
-      cout << block[iVar*nEqn+jVar] << "  ";
-    cout << endl;
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) { return &(matrix[(row_ptr[block_i]+step-1)*nVar*nEqn]); }
   }
+  return NULL;
   
 }
 
-void CSysMatrix::ReturnBlock(double **val_block) {
+double CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar, unsigned short jVar) {
   
-  unsigned short iVar, jVar;
+  unsigned long step = 0, index;
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nEqn; jVar++)
-      val_block[iVar][jVar] = block[iVar*nEqn+jVar];
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) { return matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar]; }
+  }
+  return 0;
   
 }
 
@@ -349,10 +351,16 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
   short iVar;
   double weight, aux;
   
-  GetBlock(block_i, block_i);
+  double *Block = GetPointerBlock(block_i, block_i);
   
+  /*--- Copy block matrix, note that the original matrix
+   is modified by the algorithm---*/
+  for (kVar = 0; kVar < nVar; kVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      block[kVar*nVar+jVar] = Block[kVar*nVar+jVar];
+  
+  /*--- Gauss elimination ---*/
   if (nVar == 1) {
-    if (fabs(block[0]) < EPS) cout <<"Gauss' elimination error, value:" << abs(block[0]) << "." << endl;
     rhs[0] /= block[0];
   }
   else {
@@ -360,7 +368,6 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
     /*--- Transform system in Upper Matrix ---*/
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
-        if (fabs(block[jVar*nVar+jVar]) < EPS) cout <<"Gauss' elimination error, value:" << fabs(block[jVar*nVar+jVar]) << "." << endl;
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
         for (kVar = jVar; kVar < nVar; kVar++)
           block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
@@ -369,13 +376,11 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
     }
     
     /*--- Backwards substitution ---*/
-    if (fabs(block[nVar*nVar-1]) < EPS) cout <<"Gauss' elimination error, value:" << fabs(block[nVar*nVar-1]) << "." << endl;
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = nVar-2; iVar >= 0; iVar--) {
       aux = 0.0;
       for (jVar = iVar+1; jVar < nVar; jVar++)
         aux += block[iVar*nVar+jVar]*rhs[jVar];
-      if (fabs(block[iVar*nVar+iVar]) < EPS) cout <<"Gauss' elimination error, value:" << fabs(block[iVar*nVar+iVar]) << "." << endl;
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
       if (iVar == 0) break;
     }
@@ -397,14 +402,12 @@ void CSysMatrix::Gauss_Elimination(double* Block, double* rhs) {
   
   
   if (nVar == 1) {
-    if (fabs(block[0]) < EPS) cout <<"Gauss' elimination error." << endl;
     rhs[0] /= block[0];
   }
   else {
     /*--- Transform system in Upper Matrix ---*/
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
-        if (fabs(block[jVar*nVar+jVar]) < EPS) cout <<"Gauss' elimination error." << endl;
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
         for (kVar = jVar; kVar < nVar; kVar++)
           block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
@@ -413,13 +416,11 @@ void CSysMatrix::Gauss_Elimination(double* Block, double* rhs) {
     }
     
     /*--- Backwards substitution ---*/
-    if (fabs(block[nVar*nVar-1]) < EPS) cout <<"Gauss' elimination error." << endl;
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = nVar-2; iVar >= 0; iVar--) {
       aux = 0.0;
       for (jVar = iVar+1; jVar < nVar; jVar++)
         aux += block[iVar*nVar+jVar]*rhs[jVar];
-      if (fabs(block[iVar*nVar+iVar]) < EPS) cout <<"Gauss' elimination error." << endl;
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
       if (iVar == 0) break;
     }
@@ -432,7 +433,9 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   unsigned long j = block_j*nVar;
   unsigned short iVar, jVar;
   
-  GetBlock(block_i, block_j);
+  double *block = GetPointerBlock(block_i, block_j);
+  
+//  GetBlock(block_i, block_j);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     prod_block_vector[iVar] = 0;
@@ -955,6 +958,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
   
   unsigned long iVar, jVar, max_nElem, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
   long iElemLoop;
+  double *block;
   
 #ifndef NO_MPI
   MPI::Status status;
@@ -1015,7 +1019,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
     /*--- Initialization (iElem = 0) ---*/
     
     iPoint = LineletPoint[iLinelet][0];
-    GetBlock(iPoint, iPoint);
+    block = GetPointerBlock(iPoint, iPoint);
     for (iVar = 0; iVar < nVar; iVar++) {
       yVector[0][iVar] = rVector[0][iVar];
       for (jVar = 0; jVar < nVar; jVar++)
@@ -1030,9 +1034,9 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
       iPoint = LineletPoint[iLinelet][iElem];
       
       InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
-      GetBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
-      GetBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
-      GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
+      block = GetPointerBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
+      block = GetPointerBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
+      block = GetPointerBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
       
       /*--- Forward substituton ---*/
       
@@ -1049,7 +1053,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
     for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
       iPoint = LineletPoint[iLinelet][iElemLoop];
       ip1Point = LineletPoint[iLinelet][iElemLoop+1];
-      GetBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
+      block = GetPointerBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
       GetSubsVector(AuxVector, yVector[iElemLoop], FzVector);
       GetMultBlockVector(zVector[iElemLoop], invUBlock[iElemLoop], AuxVector);
     }
