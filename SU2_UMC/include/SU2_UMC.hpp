@@ -36,7 +36,8 @@
 using namespace std;
 
 /*--- function prototypes ---*/
-void tracked_points_to_coords(CBoundaryGeometry *boundary);
-
-
+void Tracked_Points_to_Coords(CBoundaryGeometry *boundary);
+void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary);
+void clean_up(const char *filename);
+bool fexists(const char *filename);
 

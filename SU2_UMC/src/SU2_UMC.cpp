@@ -26,20 +26,8 @@
 int main(int argc, char *argv[]) {
 		  
   /*--- Local variables ---*/
-  unsigned short nZone = 1, nDim, nMarker, nSection, 
-                 iDim, iMarker, iSection;
-  unsigned long iNode, nNode;
-  vector<unsigned long> **point1_Airfoil, **point2_Airfoil;
-  double root, tip, minPlane, maxPlane, radial_station, interval,
-         starting_angle, starting_rad, rotation, magnitude;
-  double starting_vec [3]; 
-  double *Plane_P0, *Plane_Normal;
-  vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, 
-                 **weight1_Airfoil;
-  bool Boundary, Monitoring;
-  string Marker_Tag, filename;
+  unsigned short mode, nZone = 1;
   char grid_filename[200];
-  ofstream span, tracked_points;
 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -52,6 +40,96 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   CBoundaryGeometry *boundary = NULL;
   
+  /*--- Instatiate an object of the config class
+        based on the name of the config file given ---*/
+  strcpy(grid_filename, argv[1]);
+  config = new CConfig(grid_filename, SU2_GDC, ZONE_0, nZone, 
+                         VERB_HIGH);
+
+  /*--- Instantiate an object of the boundary-geometry class ---*/
+  boundary = new CBoundaryGeometry(config, 
+                                   config->GetMesh_FileName(), 
+                                   config->GetMesh_FileFormat());
+  
+  /*--- determine the mode of operation ---*/
+  mode = atoi(argv[2]);
+  cout << endl;
+  
+  switch (mode) {
+  
+    case 1:
+      cout << "\t ------------------------------------ \t" << endl;
+      cout << "\t *** AIRFOIL-SECTION-CUTTING MODE *** \t" << endl;
+      cout << "\t ------------------------------------ \t" << endl;
+      
+      /*--- if they exist, delete old versions of files "span," 
+            "tracked_points," "Airfoil_Sections.plt," and
+            "coordinates.csv" ---*/
+      cout << endl;
+      clean_up("span");
+      clean_up("tracked_points");
+      clean_up("Airfoil_Sections.plt");
+      clean_up("coordinates.csv");
+      
+      /*--- Make the sectional cuts along the surfaces of interest and
+            write the files "span," "tracked points," and 
+            "Airfoil_Sections.plt" to the current directory ---*/
+      Make_Sectional_Cuts(config, boundary);
+  
+      /*--- find the coordinates of the sections and 
+            print to the "coordinate.csv" file ---*/
+      Tracked_Points_to_Coords(boundary);
+      
+      break;
+      
+    case 2:
+      cout << "\t ------------------------------------------ \t" << endl;
+      cout << "\t *** SECTIONAL-FORCES MODE (SU2->UMARC) *** \t" << endl;
+      cout << "\t ------------------------------------------ \t" << endl;
+
+      break;
+      
+    case 3:
+      cout << "\t --------------------------------------------------- \t" << endl;
+      cout << "\t *** DEFORMATION-COMMUNICATION MODE (UMARC->SU2) *** \t" << endl;
+      cout << "\t --------------------------------------------------- \t" << endl;
+
+      break;
+      
+    default:
+      cout << "\t -------------------------------------------- \t" << endl;
+      cout << "\t *** ERROR! PLEASE RUN IN MODE 1, 2, OR 3 *** \t" << endl;
+      cout << "\t -------------------------------------------- \t" << endl;
+      return EXIT_SUCCESS;
+  }
+                                   
+  /*--- Delete dynamically allocated memory ---*/
+	if (config != NULL) {delete config;}
+	if (boundary != NULL) {delete boundary;}
+	
+	/*--- End routine ---*/
+	cout << endl <<"------------------------- Exit Success (SU2_UMC) ------------------------" << endl << endl;
+  
+	return EXIT_SUCCESS;
+	
+}
+
+void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
+  
+  /*--- Local variables ---*/
+  unsigned short nDim, nMarker, nSection, iDim, iMarker, iSection;
+  unsigned long iNode, nNode;
+  vector<unsigned long> **point1_Airfoil, **point2_Airfoil;
+  double root, tip, minPlane, maxPlane, radial_station, interval,
+         starting_angle, starting_rad, rotation, magnitude;
+  double starting_vec [3]; 
+  double *Plane_P0, *Plane_Normal;
+  vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, 
+                 **weight1_Airfoil;
+  bool Boundary, Monitoring;
+  string Marker_Tag, filename;
+  ofstream span, tracked_points;
+  
   /*--- intialize the various pointers to null ---*/
   Xcoord_Airfoil = NULL;
   Ycoord_Airfoil = NULL;
@@ -62,25 +140,6 @@ int main(int argc, char *argv[]) {
   Plane_P0 = NULL;
   Plane_Normal = NULL;
   
-  /*--- Instatiate an object of the config class
-        based on the name of the config file given ---*/
-  if (argc == 2) { 
-    strcpy(grid_filename, argv[1]);
-    config = new CConfig(grid_filename, SU2_GDC, ZONE_0, nZone, 
-                         VERB_HIGH);
-  }
-  else {
-    /*--- if no config has been provided, look for default.cfg ---*/
-    strcpy (grid_filename, "default.cfg");
-    config = new CConfig(grid_filename, SU2_GDC, ZONE_0, nZone, 
-                         VERB_HIGH);
-  }
-
-  /*--- Instantiate an object of the boundary-geometry class ---*/
-  boundary = new CBoundaryGeometry(config, 
-                                   config->GetMesh_FileName(), 
-                                   config->GetMesh_FileFormat());
-
   /*--- find the number of dimensions in the problem ---*/
   nDim = boundary->GetnDim();
   
@@ -103,7 +162,6 @@ int main(int argc, char *argv[]) {
           be the same as the root and tip locations) ---*/
     minPlane = root;
     maxPlane = tip;
-		
 		
 		/*--- initialize coordinate vectors --*/
     Xcoord_Airfoil = new vector<double> [nSection];
@@ -232,7 +290,7 @@ int main(int argc, char *argv[]) {
 	        
 	        /*--- print marker information to the screen ---*/
           cout << endl << "Marker: " << Marker_Tag << endl;
-          cout << "  Points along:\t{";
+          cout << "  Points along: {";
           cout << Plane_Normal[0] << ", ";
           cout << Plane_Normal[1] << ", ";
           cout << Plane_Normal[2] << "}" << endl;
@@ -247,7 +305,7 @@ int main(int argc, char *argv[]) {
 	                             (double)iSection*interval);
 	          }
 	          
-	          cout << "    Section #" << iSection << ":\t{";
+	          cout << "    Section #" << iSection << ": {";
 	          cout << Plane_P0[0] << ", "; 
 	          cout << Plane_P0[1] << ", ";
 	          cout << Plane_P0[2] << "}" << endl;
@@ -298,24 +356,11 @@ int main(int argc, char *argv[]) {
             tracked_points.close();
             
           } /*--- end loop over sections ---*/
-            
           
 	      }  
       }    	    
     }
-    
-    /*--- find the coordinates of the sections and 
-          print to the "coordinate.csv" file ---*/
-    tracked_points_to_coords(boundary);
-	  
-	  
-	
-	
-	
-	
-	
-	
-	
+
     /*--- delete the dynamically allocated memory  ---*/
     if (Xcoord_Airfoil != NULL) {delete [] Xcoord_Airfoil;}
     if (Ycoord_Airfoil != NULL) {delete [] Ycoord_Airfoil;}
@@ -349,31 +394,15 @@ int main(int argc, char *argv[]) {
 		  }
 		  delete [] weight1_Airfoil;
     }
-	
-		
-	
-	
-	}
+    
+  }
 	else {
 		cout << "WARNING: SU2_UMC cannot be run for one- or two-dimensional problems" << endl;
-		return EXIT_SUCCESS;
 	}
-
-
-			
-
-	/*--- Delete dynamically allocated memory ---*/
-	if (config != NULL) {delete config;}
-	if (boundary != NULL) {delete boundary;}
-	
-	/*--- End routine ---*/
-	cout << endl <<"------------------------- Exit Success (SU2_UMC) ------------------------" << endl << endl;
-  
-	return EXIT_SUCCESS;
 	
 }
 
-void tracked_points_to_coords(CBoundaryGeometry *boundary) {
+void Tracked_Points_to_Coords(CBoundaryGeometry *boundary) {
   
   /*--- local variables ---*/
   fstream tp_file;
@@ -398,15 +427,11 @@ void tracked_points_to_coords(CBoundaryGeometry *boundary) {
   tp_file.open("tracked_points");
   coords_file.open("coordinates.csv", ios::out | ios::app);
   coords_file.precision(15);
-
-//cout << "tp_file.is_open() = " << tp_file.is_open() << endl;
-//cout << "coords_file.is_open() = " << coords_file.is_open() << endl;
   
   if (tp_file.is_open() && coords_file.is_open()) {
     
     /*--- read the header ---*/
     getline(tp_file,line);
-    //cout << line << endl;
     
     /*--- read through each line ---*/
     while (getline(tp_file,line)) {
@@ -415,32 +440,26 @@ void tracked_points_to_coords(CBoundaryGeometry *boundary) {
       /*--- turn it into a char array ---*/
       char tmp [500];
       strcpy(tmp,line.c_str());
-      //cout << tmp << endl;
+      
       /*--- read the line, storing point1, point2, and weight1 ---*/
       char *pointer_to = NULL;
       pointer_to = strtok(tmp," (,)\r\n");
-      //cout << "\t"<<pointer_to << endl;
       
       counter = 1;
       while (pointer_to != NULL) {
-      //cout << "\t"<<pointer_to << endl;
+        
         switch (counter) {
           case 4:
             point1 = strtoul(pointer_to,NULL,0);
-           // cout << "point1 = " << point1 << endl;
             break;
           case 5:
             point2 = strtoul(pointer_to,NULL,0);
-            //cout << "point2 = " << point2 << endl;
             break;
           case 6:
             weight1 = strtod(pointer_to,NULL);
-            //cout << "weight1 = " << weight1 << endl;
             break;
           default:
             dummy = 0;
-            //continue;
-            //cout << "default: case = " << counter << endl;
         }
         pointer_to = strtok(NULL," (,)\r\n");
         counter++;
@@ -452,10 +471,9 @@ void tracked_points_to_coords(CBoundaryGeometry *boundary) {
         coord1[iDim] = boundary->node[point1]->GetCoord(iDim);
         coord2[iDim] = boundary->node[point2]->GetCoord(iDim);
       }
-            
+      
       /*--- retreive & compute the weight of the second node ---*/
       weight2 = 1.0 - weight1;
-      //cout << "weight2 = " << weight2 << endl;
       
       /*--- find the new coordinates of the section---*/
       x_coord = weight1*coord1[0] + weight2*coord2[0];
@@ -485,5 +503,29 @@ void tracked_points_to_coords(CBoundaryGeometry *boundary) {
   if (coord1 != NULL) {delete [] coord1;}
   if (coord2 != NULL) {delete [] coord2;}
   
+}
+
+void clean_up(const char *filename) {
+
+  /*--- if the exists, delete it ---*/
+  if (fexists(filename) == true) {
+    if(remove(filename) != 0) {
+      cout << "Error: Old copy of \"" << filename; 
+      cout << "\" not deleted!" << endl;
+    }
+    else {
+      cout << "N.B. Old copy of \"" << filename;
+      cout << "\" deleted." << endl;
+    }
+  }
+
+}
+
+bool fexists(const char *filename) {
+
+  /*--- TRUE if the file exists ---*/
+  ifstream ifile(filename);
+  return ifile;
+
 }
 
