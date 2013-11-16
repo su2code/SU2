@@ -135,9 +135,12 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
         
 				/*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
         
-				if (config_container[iZone]->GetKind_Solver() == EULER)         config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-				if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-				if (config_container[iZone]->GetKind_Solver() == RANS)          config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
+				if (config_container[iZone]->GetKind_Solver() == EULER)
+          config_container[iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
+				if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES)
+          config_container[iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
+				if (config_container[iZone]->GetKind_Solver() == RANS)
+          config_container[iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
         
         /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
         
@@ -430,7 +433,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 	unsigned short iMesh, iZone, nZone;
   unsigned long IntIter, ExtIter;
   int rank;
-  
+
   /*--- Initialize parameters ---*/
   nZone   = geometry_container[ZONE_0][MESH_0]->GetnZone();
   IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
@@ -447,20 +450,33 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 		/*--- Continuous adjoint two-temperature equations  ---*/
 		if (ExtIter == 0) {
       
+      /*--- Set the value of the internal iteration ---*/
+      IntIter = ExtIter;
+      
+      /*--- Set the initial condition ---*/
+      solver_container[iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone],
+                                                                     solver_container[iZone],
+                                                                     config_container[iZone], ExtIter);
+      
+      /*--- Update global parameters ---*/
 			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
-        config_container[iZone]->SetGlobalParam(ADJ_TNE2_EULER,
+        config_container[iZone]->SetGlobalParam(TNE2_EULER,
                                                 RUNTIME_TNE2_SYS, ExtIter);
-			if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
+			else if (config_container[iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
         config_container[iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
                                                 RUNTIME_TNE2_SYS, ExtIter);
       
       /*--- Perform one iteration of the gov. eqns. to store data ---*/
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+				cout << " Single iteration of the direct solver to store flow data...";
 			integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container,
                                                                   solver_container,
                                                                   numerics_container,
                                                                   config_container,
                                                                   RUNTIME_TNE2_SYS,
-                                                                  0, iZone);
+                                                                  IntIter, iZone);
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+        cout << " Done." << endl;
       
 			/*--- Compute gradients of the flow variables, this is necessary for
        sensitivity computation, note that in the direct Euler problem we
@@ -507,110 +523,6 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
                                                                    RUNTIME_ADJTNE2_SYS,
                                                                    IntIter, iZone);
 	}
-}
-
-
-void PlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                     CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-  
-	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-	/*--- Set the value of the internal iteration ---*/
-	IntIter = ExtIter;
-	if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-			(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-  
-	/*--- Plasma solver with poisson potential ---*/
-	if (nZone > 1)
-		solver_container[ZONE_1][MESH_0][POISSON_SOL]->Copy_Zone_Solution(solver_container[ZONE_1], geometry_container[ZONE_1], config_container[ZONE_1],
-                                                                      solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0]);
-  
-	/*--- Plasma solver ---*/
-	if (config_container[ZONE_0]->GetKind_Solver() == PLASMA_EULER) config_container[ZONE_0]->SetGlobalParam(PLASMA_EULER, RUNTIME_PLASMA_SYS, ExtIter);
-	if (config_container[ZONE_0]->GetKind_Solver() == PLASMA_NAVIER_STOKES) config_container[ZONE_0]->SetGlobalParam(PLASMA_NAVIER_STOKES, RUNTIME_PLASMA_SYS, ExtIter);
-	integration_container[ZONE_0][PLASMA_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                 config_container, RUNTIME_PLASMA_SYS, IntIter, ZONE_0);
-  
-	/*--- poisson potential solver ---*/
-	if (nZone > 1) {
-    
-		if (config_container[ZONE_1]->GetKind_GasModel() == ARGON || config_container[ZONE_1]->GetKind_GasModel() == AIR21) {
-      
-			if (config_container[ZONE_1]->GetPoissonSolver()) {
-				solver_container[ZONE_0][MESH_0][PLASMA_SOL]->Copy_Zone_Solution(solver_container[ZONE_0], geometry_container[ZONE_0], config_container[ZONE_0],
-                                                                         solver_container[ZONE_1], geometry_container[ZONE_1], config_container[ZONE_1]);
-				config_container[ZONE_1]->SetGlobalParam(PLASMA_NAVIER_STOKES, RUNTIME_POISSON_SYS, ExtIter);
-				integration_container[ZONE_1][POISSON_SOL]->SetPotential_Solver(geometry_container, solver_container, numerics_container,
-                                                                        config_container, RUNTIME_POISSON_SYS, MESH_0, ZONE_1);
-        
-			}
-      
-		}
-	}
-  
-  /*--- Dual time stepping strategy ---*/
-  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-			(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for(IntIter = 1; IntIter < config_container[ZONE_0]->GetUnst_nIntIter(); IntIter++) {
-      
-      /*--- Set the value of the internal iteration ---*/
-      config_container[ZONE_0]->SetIntIter(IntIter);
-      
-      /*--- Plasma solver ---*/
-      if (config_container[ZONE_0]->GetKind_Solver() == PLASMA_EULER) config_container[ZONE_0]->SetGlobalParam(PLASMA_EULER, RUNTIME_PLASMA_SYS, ExtIter);
-      if (config_container[ZONE_0]->GetKind_Solver() == PLASMA_NAVIER_STOKES) config_container[ZONE_0]->SetGlobalParam(PLASMA_NAVIER_STOKES, RUNTIME_PLASMA_SYS, ExtIter);
-      integration_container[ZONE_0][PLASMA_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,config_container, RUNTIME_PLASMA_SYS, IntIter, ZONE_0);
-      
-      if (integration_container[ZONE_0][PLASMA_SOL]->GetConvergence()) break;
-    }
-    
-    /*--- Update dual time solver on all mesh levels ---*/
-    integration_container[ZONE_0][PLASMA_SOL]->SetDualTime_Solver(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0][PLASMA_SOL], config_container[ZONE_0]);
-    integration_container[ZONE_0][PLASMA_SOL]->SetConvergence(false);
-    
-    /*    Physical_dt = config_container[ZONE_0]->GetDelta_UnstTime();
-     Physical_t  = (ExtIter+1)*Physical_dt;
-     if (Physical_t >=  config_container[ZONE_0]->GetTotal_UnstTime())
-     integration_container[ZONE_0][FLOW_SOL]->SetConvergence(true);*/
-    
-  }
-}
-
-void AdjPlasmaIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                        CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
-  
-	int rank = MASTER_NODE;
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-#ifndef NO_MPI
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
-  
-	/*--- Continuous adjoint Euler equations ---*/
-	if (ExtIter == 0 || config_container[ZONE_0]->GetUnsteady_Simulation()) {
-    
-		if (rank == MASTER_NODE) cout << "Iteration over the direct problem to store all flow information." << endl;
-    
-		/*--- Plasma equations ---*/
-		if (config_container[ZONE_0]->GetKind_Solver() == ADJ_PLASMA_EULER) config_container[ZONE_0]->SetGlobalParam(ADJ_PLASMA_EULER, RUNTIME_PLASMA_SYS, ExtIter);
-		if (config_container[ZONE_0]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) config_container[ZONE_0]->SetGlobalParam(ADJ_PLASMA_NAVIER_STOKES, RUNTIME_PLASMA_SYS, ExtIter);
-		integration_container[ZONE_0][PLASMA_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                   config_container, RUNTIME_PLASMA_SYS, ExtIter, ZONE_0);
-    solver_container[ZONE_0][MESH_0][ADJPLASMA_SOL]->SetForceProj_Vector(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-    
-	}
-  
-	/*--- Adjoint Plasma equations ---*/
-	if (config_container[ZONE_0]->GetKind_Solver() == ADJ_PLASMA_EULER) config_container[ZONE_0]->SetGlobalParam(ADJ_PLASMA_EULER, RUNTIME_ADJPLASMA_SYS, ExtIter);
-	if (config_container[ZONE_0]->GetKind_Solver() == ADJ_PLASMA_NAVIER_STOKES) config_container[ZONE_0]->SetGlobalParam(ADJ_PLASMA_NAVIER_STOKES, RUNTIME_ADJPLASMA_SYS, ExtIter);
-	integration_container[ZONE_0][ADJPLASMA_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                    config_container, RUNTIME_ADJPLASMA_SYS, ExtIter, ZONE_0);
 }
 
 void WaveIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,

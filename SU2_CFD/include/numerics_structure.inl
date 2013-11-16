@@ -33,8 +33,6 @@ inline void CNumerics::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double Co
 
 inline void CNumerics::ComputeResidual(double *val_residual, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual_MacCormack(double *val_residual, CConfig *config) { }
-
 inline void CNumerics::ComputeResidual(double *val_residual_i, double *val_residual_j) { }
 
 inline void CNumerics::ComputeResidual(double *val_residual_i, double *val_residual_j, CConfig *config) { }
@@ -78,50 +76,7 @@ inline void CNumerics::ComputeChemistry(double *val_residual, double **val_Jacob
 
 inline void CNumerics::GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config) { } 
 
-inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_Chemistry_ad(double *val_residual, double *val_residuald, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_Chemistry(double *val_residual, double **val_Jacobian, CConfig *config) { }
-
-inline void CNumerics::SetJacobian_Chemistry(double **val_Jacobian_i, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_ElecForce(double *val_residual, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_ElecForce(double *val_residual, double **val_Jacobian, CConfig *config) { }
-
-inline void CNumerics::SetJacobian_ElecForce(double **val_Jacobian_i, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_MomentumExch(double *val_residual, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_MomentumExch_ad(double *val_residual, double *val_residuald, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_MomentumExch(double *val_residual, double **val_Jacobian, CConfig *config) { }
-
-inline void CNumerics::SetJacobian_MomentumExch(double **val_Jacobian_i, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_EnergyExch(double *val_residual, double **val_Jacobian, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_EnergyExch(double *val_residual, double *val_residual_ElecForce, double **val_Jacobian, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_EnergyExch(double *val_residual, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_EnergyExch_ad(double *val_residual, double *val_residuald, CConfig *config) { }
-
-inline void CNumerics::SetJacobian_EnergyExch(double **val_Jacobian_i, CConfig *config) { }
-
-inline void CNumerics::SetSensor( double val_sensor_i, double val_sensor_j, unsigned short iSpecies) {}
-
-inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies) { }
-
-inline void CNumerics::SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies) { }
-
-inline void CNumerics::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies) { }
-
-inline void CNumerics::SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies) { }
-
 inline double CNumerics::GetPrecond_Beta() { return 0; }
-
 
 inline void CNumerics::SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
 
@@ -143,11 +98,11 @@ inline void CNumerics::SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX
 
 inline void CNumerics::SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
 
-inline void CNumerics::SetdPdrhos(double *val_dPdrhos_i, double *val_dPdrhos_j) { dPdrhos_i = val_dPdrhos_i; dPdrhos_j = val_dPdrhos_j; }
+inline void CNumerics::SetdPdU(double *val_dPdU_i, double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
 
-inline void CNumerics::SetdTdrhos(double *val_dTdrhos_i, double *val_dTdrhos_j) { dTdrhos_i = val_dTdrhos_i; dTdrhos_j = val_dTdrhos_j; }
+inline void CNumerics::SetdTdU(double *val_dTdU_i, double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
 
-inline void CNumerics::SetdTvedrhos(double *val_dTvedrhos_i, double *val_dTvedrhos_j) { dTvedrhos_i = val_dTvedrhos_i; dTvedrhos_j = val_dTvedrhos_j; }
+inline void CNumerics::SetdTvedU(double *val_dTvedU_i, double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
 	
 inline void CNumerics::SetUndivided_Laplacian(double *val_und_lapl_i, double *val_und_lapl_j) {
 	Und_Lapl_i = val_und_lapl_i; 
@@ -157,26 +112,6 @@ inline void CNumerics::SetUndivided_Laplacian(double *val_und_lapl_i, double *va
 inline void CNumerics::SetSensor( double val_sensor_i, double val_sensor_j) {
 	Sensor_i = val_sensor_i;
 	Sensor_j = val_sensor_j;
-}
-
-inline void CCentJST_Plasma::SetSensor( double val_sensor_i, double val_sensor_j, unsigned short iSpecies) {
-	Sensor_i[iSpecies] = val_sensor_i;
-	Sensor_j[iSpecies] = val_sensor_j;
-}
-
-inline void CCentJST_PlasmaDiatomic::SetSensor( double val_sensor_i, double val_sensor_j, unsigned short iSpecies) {
-	Sensor_i[iSpecies] = val_sensor_i;
-	Sensor_j[iSpecies] = val_sensor_j;
-}
-
-inline void CCentLax_PlasmaDiatomic::SetSensor( double val_sensor_i, double val_sensor_j, unsigned short iSpecies) {
-	Sensor_i[iSpecies] = val_sensor_i;
-	Sensor_j[iSpecies] = val_sensor_j;
-}
-
-inline void CCentLax_AdjPlasmaDiatomic::SetSensor( double val_sensor_i, double val_sensor_j, unsigned short iSpecies) {
-	Sensor_i[iSpecies] = val_sensor_i;
-	Sensor_j[iSpecies] = val_sensor_j;
 }
 
 inline void CNumerics::SetConservative(double *val_u_i, double *val_u_j) {
@@ -192,11 +127,6 @@ inline void CNumerics::SetConservative_ZeroOrder(double *val_u_i, double *val_u_
 inline void CNumerics::SetPrimitive(double *val_v_i, double *val_v_j) {
 	V_i = val_v_i;
 	V_j = val_v_j;
-}
-
-inline void CNumerics::SetPrimitive(double **val_v_i, double**val_v_j) {
-  Varray_i = val_v_i;
-  Varray_j = val_v_j;
 }
 
 inline void CNumerics::SetConservative(double *val_u_0, double *val_u_1, double *val_u_2) {
@@ -216,31 +146,13 @@ inline void CNumerics::SetVelocity2_Inf(double velocity2) {
 	vel2_inf = velocity2;
 }
 
-inline void CNumerics::SetChargeDensity(double *val_u_0, double *val_u_1, double *val_u_2, double *val_u_3) {
-	U_0 = val_u_0;
-	U_1 = val_u_1;
-	U_2 = val_u_2;
-	U_3 = val_u_3;
-}
-
-inline void CNumerics::SetElecField(double *val_Efield) {}
-
 inline void CNumerics::SetTimeStep(double val_timestep) {TimeStep = val_timestep;}
-
-inline double* CNumerics::GetMagneticField() {return 0;}
-
-inline double CNumerics::GetMagneticForce(unsigned short val_Species, unsigned short val_dim) {return 0;}
 
 inline void CNumerics::SetElec_Cond() {}
 
 inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j) {
 	Laminar_Viscosity_i = val_lam_viscosity_i;
 	Laminar_Viscosity_j = val_lam_viscosity_j;
-}
-
-inline void CNumerics::SetLaminarViscosity(double val_lam_viscosity_i, double val_lam_viscosity_j, unsigned short iSpecies) {
-	Laminar_Viscosity_MultipleSpecies_i[iSpecies] = val_lam_viscosity_i;
-	Laminar_Viscosity_MultipleSpecies_j[iSpecies] = val_lam_viscosity_j;
 }
 
 inline void CNumerics::SetThermalConductivity(double val_therm_conductivity_i, double val_therm_conductivity_j) {
@@ -256,16 +168,6 @@ inline void CNumerics::SetThermalConductivity_ve(double val_therm_conductivity_v
 inline void CNumerics::SetDiffusionCoeff(double* val_diffusioncoeff_i, double* val_diffusioncoeff_j) {
 	Diffusion_Coeff_i = val_diffusioncoeff_i;
 	Diffusion_Coeff_j = val_diffusioncoeff_j;
-}
-
-inline void CNumerics::SetThermalConductivity_vib(double val_therm_conductivity_vib_i, double val_therm_conductivity_vib_j, unsigned short iSpecies) {
-	Thermal_Conductivity_vib_MultipleSpecies_i[iSpecies] = val_therm_conductivity_vib_i;
-	Thermal_Conductivity_vib_MultipleSpecies_j[iSpecies] = val_therm_conductivity_vib_j;
-}
-
-inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j, unsigned short iSpecies) {
-	Eddy_Viscosity_MultipleSpecies_i[iSpecies] = val_eddy_viscosity_i;
-	Eddy_Viscosity_MultipleSpecies_j[iSpecies] = val_eddy_viscosity_j;
 }
 
 inline void CNumerics::SetEddyViscosity(double val_eddy_viscosity_i, double val_eddy_viscosity_j) {
@@ -347,11 +249,6 @@ inline void CNumerics::SetPrimVarGradient(double **val_primvar_grad_i, double **
 	PrimVar_Grad_j = val_primvar_grad_j;
 }
 
-inline void CNumerics::SetPrimVarGradient(double ***val_primvar_grad_i, double ***val_primvar_grad_j) {
-  PrimVar_Grad_i_array = val_primvar_grad_i;
-  PrimVar_Grad_j_array = val_primvar_grad_j;
-}
-
 inline void CNumerics::SetConsVarGradient(double **val_consvar_grad_i, double **val_consvar_grad_j) {
 	ConsVar_Grad_i = val_consvar_grad_i;
 	ConsVar_Grad_j = val_consvar_grad_j;
@@ -414,26 +311,6 @@ inline void CNumerics::SetPressure(double val_pressure_i, double val_pressure_j)
 	Pressure_j = val_pressure_j;
 }
 
-inline void CCentJST_Plasma::SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies) {
-	Pressure_i[iSpecies] = val_pressure_i;
-	Pressure_j[iSpecies] = val_pressure_j;
-}
-
-inline void CCentJST_PlasmaDiatomic::SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies) {
-	Pressure_i[iSpecies] = val_pressure_i;
-	Pressure_j[iSpecies] = val_pressure_j;
-}
-
-inline void CCentLax_PlasmaDiatomic::SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies) {
-	Pressure_i[iSpecies] = val_pressure_i;
-	Pressure_j[iSpecies] = val_pressure_j;
-}
-
-inline void CCentLax_AdjPlasmaDiatomic::SetPressure(double val_pressure_i, double val_pressure_j, unsigned short iSpecies) {
-	Pressure_i[iSpecies] = val_pressure_i;
-	Pressure_j[iSpecies] = val_pressure_j;
-}
-
 inline void CNumerics::SetDensityInc(double val_densityinc_i, double val_densityinc_j) {
 	DensityInc_i = val_densityinc_i;
 	DensityInc_j = val_densityinc_j;
@@ -449,74 +326,14 @@ inline void CNumerics::SetSoundSpeed(double val_soundspeed_i, double val_soundsp
 	SoundSpeed_j = val_soundspeed_j;
 }
 
-inline void CCentJST_Plasma::SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies) {
-	SoundSpeed_i[iSpecies] = val_soundspeed_i;
-	SoundSpeed_j[iSpecies] = val_soundspeed_j;
-}
-
-inline void CCentJST_PlasmaDiatomic::SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies) {
-	SoundSpeed_i[iSpecies] = val_soundspeed_i;
-	SoundSpeed_j[iSpecies] = val_soundspeed_j;
-}
-
-inline void CCentLax_PlasmaDiatomic::SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies) {
-	SoundSpeed_i[iSpecies] = val_soundspeed_i;
-	SoundSpeed_j[iSpecies] = val_soundspeed_j;
-}
-
-inline void CCentLax_AdjPlasmaDiatomic::SetSoundSpeed(double val_soundspeed_i, double val_soundspeed_j, unsigned short iSpecies) {
-	SoundSpeed_i[iSpecies] = val_soundspeed_i;
-	SoundSpeed_j[iSpecies] = val_soundspeed_j;
-}
-
 inline void CNumerics::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j) {
 	Enthalpy_i = val_enthalpy_i;
 	Enthalpy_j = val_enthalpy_j;
 }
 
-inline void CCentJST_Plasma::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies) {
-	Enthalpy_i[iSpecies] = val_enthalpy_i;
-	Enthalpy_j[iSpecies] = val_enthalpy_j;
-}
-
-inline void CCentJST_PlasmaDiatomic::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies) {
-	Enthalpy_i[iSpecies] = val_enthalpy_i;
-	Enthalpy_j[iSpecies] = val_enthalpy_j;
-}
-
-inline void CCentLax_PlasmaDiatomic::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies) {
-	Enthalpy_i[iSpecies] = val_enthalpy_i;
-	Enthalpy_j[iSpecies] = val_enthalpy_j;
-}
-
-inline void CCentLax_AdjPlasmaDiatomic::SetEnthalpy(double val_enthalpy_i, double val_enthalpy_j, unsigned short iSpecies) {
-	Enthalpy_i[iSpecies] = val_enthalpy_i;
-	Enthalpy_j[iSpecies] = val_enthalpy_j;
-}
-
 inline void CNumerics::SetLambda(double val_lambda_i, double val_lambda_j) {
 	Lambda_i = val_lambda_i;
 	Lambda_j = val_lambda_j;
-}
-
-inline void CCentJST_Plasma::SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies) {
-	Lambda_i[iSpecies] = val_lambda_i;
-	Lambda_j[iSpecies] = val_lambda_j;
-}
-
-inline void CCentJST_PlasmaDiatomic::SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies) {
-	Lambda_i[iSpecies] = val_lambda_i;
-	Lambda_j[iSpecies] = val_lambda_j;
-}
-
-inline void CCentLax_PlasmaDiatomic::SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies) {
-	Lambda_i[iSpecies] = val_lambda_i;
-	Lambda_j[iSpecies] = val_lambda_j;
-}
-
-inline void CCentLax_AdjPlasmaDiatomic::SetLambda(double val_lambda_i, double val_lambda_j, unsigned short iSpecies) {
-	Lambda_i[iSpecies] = val_lambda_i;
-	Lambda_j[iSpecies] = val_lambda_j;
 }
 
 inline void CNumerics::SetNeighbor(unsigned short val_neighbor_i, unsigned short val_neighbor_j) {
@@ -537,21 +354,6 @@ inline void CNumerics::SetTurbAdjointGradient(double **val_turbpsivar_grad_i, do
 inline void CNumerics::SetTemperature(double val_temp_i, double val_temp_j) {
 	Temp_i = val_temp_i;
 	Temp_j = val_temp_j;
-}
-
-inline void CNumerics::SetTemperature_tr(double* val_temp_i, double* val_temp_j) {
-	Temp_tr_i = val_temp_i;
-	Temp_tr_j = val_temp_j;
-}
-
-inline void CNumerics::SetTemperature_vib(double* val_temp_i, double* val_temp_j) {
-	Temp_vib_i = val_temp_i;
-	Temp_vib_j = val_temp_j;
-}
-
-inline void CNumerics::SetPressure(double* val_pressure_i, double* val_pressure_j) {
-	SpeciesPressure_i = val_pressure_i;
-	SpeciesPressure_j = val_pressure_j;
 }
 
 inline void CNumerics::SetAuxVarGrad(double *val_auxvargrad_i, double *val_auxvargrad_j) {
@@ -610,12 +412,6 @@ inline double CSourcePieceWise_TurbML::GetProduction(void) { return Production; 
 inline double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction; }
 
 inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
-
-inline void CSourcePieceWise_Plasma::SetElecField(double *val_Efield) { poissonField = val_Efield; }
-
-inline double* CSourcePieceWise_Plasma::GetMagneticField() { return JcrossB; }
-
-inline double CSourcePieceWise_Plasma::GetMagneticForce(unsigned short val_Species, unsigned short val_dim) { return Mag_Force[val_Species][val_dim]; }
 
 inline double CUpwRoe_Turkel_Flow::GetPrecond_Beta() { return Beta; }
 

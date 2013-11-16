@@ -27,17 +27,28 @@ CMultiGridIntegration::CMultiGridIntegration(CConfig *config) : CIntegration(con
 
 CMultiGridIntegration::~CMultiGridIntegration(void) { }
 
-void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config,
-                                                unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
+                                                CSolver ****solver_container,
+                                                CNumerics *****numerics_container,
+                                                CConfig **config,
+                                                unsigned short RunTime_EqSystem,
+                                                unsigned long Iteration,
+                                                unsigned short iZone) {
 	unsigned short FinestMesh, iMGLevel;
 	double monitor = 1.0;
     
 	const bool restart = (config[iZone]->GetRestart() || config[iZone]->GetRestart_Flow());
-	const bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
-	const bool direct = ((config[iZone]->GetKind_Solver() == EULER) || (config[iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-                   (config[iZone]->GetKind_Solver() == RANS) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER) ||
-                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) || (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS) ||
-                   (config[iZone]->GetKind_Solver() == PLASMA_EULER) || (config[iZone]->GetKind_Solver() == PLASMA_NAVIER_STOKES));
+	const bool startup_multigrid = ((config[iZone]->GetRestart_Flow())     &&
+                                  (RunTime_EqSystem == RUNTIME_FLOW_SYS) &&
+                                  (Iteration == 0));
+	const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
+                       (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
+                       (config[iZone]->GetKind_Solver() == RANS)                          ||
+                       (config[iZone]->GetKind_Solver() == TNE2_EULER)                    ||
+                       (config[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)            ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_EULER)         ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_NAVIER_STOKES) ||
+                       (config[iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
     const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
     /*--- If low fidelity simulation ---*/
@@ -68,17 +79,25 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry, CSolver *
                   Iteration, iZone);
     
 	/*--- Compute non-dimensional parameters and the convergence monitor ---*/
-	NonDimensional_Parameters(geometry[iZone], solver_container[iZone], numerics_container[iZone], config[iZone],
-                              FinestMesh, RunTime_EqSystem, Iteration, &monitor);
+	NonDimensional_Parameters(geometry[iZone], solver_container[iZone],
+                            numerics_container[iZone], config[iZone],
+                            FinestMesh, RunTime_EqSystem, Iteration, &monitor);
     
 	/*--- Convergence strategy ---*/
 	Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor);
     
 }
 
-void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                                                CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                                                unsigned long Iteration, unsigned short iZone) {
+void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
+                                            CSolver ****solver_container,
+                                            CNumerics *****numerics_container,
+                                            CConfig **config,
+                                            unsigned short iMesh,
+                                            unsigned short mu,
+                                            unsigned short RunTime_EqSystem,
+                                            unsigned long Iteration,
+                                            unsigned short iZone) {
+  
 	unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1;
     
 	bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
@@ -617,17 +636,23 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 				(*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
             
 			break;
-            
-		case RUNTIME_PLASMA_SYS:
-            
+      
+    case RUNTIME_TNE2_SYS:
+      
 			/*--- Calculate the inviscid and viscous forces ---*/
-			solver_container[FinestMesh][PLASMA_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
-			if (config->GetKind_ViscNumScheme() != NONE) solver_container[FinestMesh][PLASMA_SOL]->Viscous_Forces(geometry[FinestMesh], config);
-            
+			solver_container[FinestMesh][TNE2_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
+			if ((config->GetKind_Solver() == TNE2_NAVIER_STOKES) && (config->GetKind_ViscNumScheme() != NONE))
+        solver_container[FinestMesh][TNE2_SOL]->Viscous_Forces(geometry[FinestMesh], config);
+      
 			/*--- Evaluate convergence monitor ---*/
+			if (config->GetConvCriteria() == CAUCHY) {
+				if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CDrag();
+				if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CLift();
+			}
+      
 			if (config->GetConvCriteria() == RESIDUAL)
-				(*monitor) = log10(solver_container[FinestMesh][PLASMA_SOL]->GetRes_RMS(0));
-            
+				(*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
+      
 			break;
             
 		case RUNTIME_ADJFLOW_SYS:

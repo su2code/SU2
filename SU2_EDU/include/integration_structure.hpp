@@ -94,17 +94,6 @@ public:
 	 */
 	void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 						  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
-	
-	/*! 
-	 * \brief Initialize the adjoint solution using the primal problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 * \param[in] Iteration - Current iteration.
-	 */
-	void Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                     unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 	/*! 
 	 * \brief Do the convergence analisys to determine if the code must stop the execution.

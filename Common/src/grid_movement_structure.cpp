@@ -83,20 +83,27 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
     geometry[iMGlevel]->SetControlVolume(config,geometry[iMGfine], UPDATE);
     geometry[iMGlevel]->SetBoundControlVolume(config,geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
-    geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine],config);
+    if (config->GetGrid_Movement())
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine],config);
   }
  
 }
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
 	unsigned long IterLinSol, iGridDef_Iter;
-  double MinLength, NumError, MinVol;
+  double MinVolume, NumError;
+  bool Screen_Output = true;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
   
+  /*--- Decide if there is going to be a screen output ---*/
+  
+  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_EDU) Screen_Output = false;
+
   /*--- Initialize the number of spatial dimensions, length of the state
    vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
   
@@ -127,11 +134,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
-    MinLength = SetFEAMethodContributions_Elem(geometry);
+    MinVolume = SetFEAMethodContributions_Elem(geometry);
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinLength * 1E-3;
+    NumError = MinVolume * 0.001;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
@@ -157,8 +164,8 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
-    
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 100, false);
+
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1000, Screen_Output);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -175,11 +182,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    MinVol = Check_Grid(geometry);
+    MinVolume = Check_Grid(geometry);
     
-    if (rank == MASTER_NODE) {
+    if ((rank == MASTER_NODE) && Screen_Output) {
       cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
-      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVol
+      << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVolume
       << ". Error: " << NumError << "." <<endl;
     }
     
@@ -322,11 +329,6 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
     
 	}
   
-#ifndef NO_MPI
-  double MinLength_Local = MinLength; MinLength = 0.0;
-  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
-#endif
-  
   /*--- Compute min volume in the entire mesh. ---*/
   Scale = Check_Grid(geometry);
   
@@ -352,7 +354,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
-    /*--- Create a list with the degenerated elements ---*/
+    /*--- Create a list with the degenerate elements ---*/
 
     if (!RightVol) ElemCounter++;
       
@@ -381,6 +383,14 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
   delete [] Edge_Vector;
   
+  /*--- If there are no degenerate cells, use the minimum volume instead ---*/
+  if (ElemCounter == 0) MinLength = Scale;
+  
+#ifndef NO_MPI
+  double MinLength_Local = MinLength; MinLength = 0.0;
+  MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
+#endif
+      
 	return MinLength;
 }
 
@@ -1337,7 +1347,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE) && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
+		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE)
+        && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++) {
@@ -1382,7 +1393,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+		if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1396,6 +1407,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 			}
     }
   }
+  
   /*--- Don't move the nearfield plane ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -2904,7 +2916,8 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
   Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(0.1524);
   Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(0.1524);
   Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(0.1524);
-  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(1.41372);   Radius_Spline.push_back(0.1524);
+//  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(0.1524);
   
   
   /*--- Read the baseline spline ---*/
@@ -2971,7 +2984,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
         
         x = 0.1524 - Coord[0];	// HARD-CODED VALUE; needs to be fixed (MC)
         
-        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.128559))  {
+        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.12855939))  {
           
           /*--- Compute the coordinate variation due to a surface modification, given
            ControlPoint_Index, Theta, Radius, and Ampl ---*/
@@ -4436,348 +4449,253 @@ void CSurfaceMovement::SetObstacle(CGeometry *boundary, CConfig *config) {
 void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   unsigned long iVertex, Point;
   unsigned short iMarker;
-  double VarCoord[3], *Coord, NewYCoord, NewXCoord;
-  unsigned long n_Upper, n_Lower, n_Nose;
-  vector<double> Xcoord_Upper, Ycoord_Upper, Y2coord_Upper, Xcoord_Lower, Ycoord_Lower, Y2coord_Lower;
-  vector<double> Xcoord_Nose, Ycoord_Nose, X2coord_Nose;
-  double yp1, ypn, xp1, xpn;
-  
-  
+  double VarCoord[3], *Coord, NewYCoord, NewXCoord, *Coord_i, *Coord_ip1;
+  double yp1, ypn;
   unsigned short iVar;
   unsigned long n_Airfoil = 0;
   double Airfoil_Coord[2];
-  double c = 1.0, angle, x, y, r;
-  vector<double> Xcoord, Ycoord, Theta, Radius, Radius2;
-  
-  if (config->GetnDV() != 1) { cout << "This kind of design variable is not prepared for multiple deformations."; cin.get();	}
-  
-  /*--- Read in the airfoil coordinates from file. It is assumed that the 
-   airfoil coordinates are given in order starting from the trailing edge, 
-   over the upper surface, nose, lower surface, and back to the trailing edge. ---*/
-  
+  vector<double> Svalue, Xcoord, Ycoord, Xcoord2, Ycoord2, Xcoord_Aux, Ycoord_Aux;
+  bool AddBegin = true, AddEnd = true;
+  double x_i, x_ip1, y_i, y_ip1;
+  char AirfoilFile[256];
+  char AirfoilFormat[15];
+  char MeshOrientation[15];
+  char AirfoilClose[15];
+  double AirfoilScale;
+  double TrailingEdge = 0.95;
+  unsigned short nUpper, nLower, iUpper, iLower;
   ifstream airfoil_file;
   string text_line;
   
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+  
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+  
+  /*--- Read the coordinates. Two main formats:
+   - Selig are in an x,y format starting from trailing edge, along the upper surface to the leading
+   edge and back around the lower surface to trailing edge.
+   - Lednicer are upper surface points leading edge to trailing edge and then lower surface leading
+   edge to trailing edge.
+   ---*/
+  
   /*--- Open the restart file, throw an error if this fails. ---*/
-  airfoil_file.open("naca0015.dat", ios::in);
+  
+  cout << "Enter the name of file with the airfoil information: ";
+  scanf ("%s", AirfoilFile);
+  airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
     exit(1);
   }
+  cout << "Enter the format of the airfoil (Selig or Lednicer): ";
+  scanf ("%s", AirfoilFormat);
+
+  cout << "Thickness scaling (1.0 means no scaling)?: ";
+  scanf ("%lf", &AirfoilScale);
+  
+  cout << "Close the airfoil (Yes or No)?: ";
+  scanf ("%s", AirfoilClose);
+  
+  cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
+  scanf ("%s", MeshOrientation);
   
   /*--- The first line is the header ---*/
+  
   getline (airfoil_file, text_line);
+  cout << "File info: " << text_line << endl;
   
-  /*--- Read the coordinates from the rest of the file ---*/
-  while (getline (airfoil_file, text_line)) {
+  if (strcmp (AirfoilFormat,"Selig") == 0) {
+
+    while (getline (airfoil_file, text_line)) {
+      istringstream point_line(text_line);
+      
+      /*--- Read the x & y coordinates from this line of the file (anticlockwise) ---*/
+      
+      point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+      
+      /*--- Store the coordinates in vectors ---*/
+      
+      Xcoord.push_back(Airfoil_Coord[0]);
+      Ycoord.push_back(Airfoil_Coord[1]*AirfoilScale);
+    }
+    
+  }
+  if (strcmp (AirfoilFormat,"Lednicer") == 0) {
+    
+    /*--- The second line is the number of points ---*/
+
+    getline(airfoil_file, text_line);
     istringstream point_line(text_line);
+    double Upper, Lower;
+    point_line >> Upper >> Lower;
     
-    /*--- Read the x & y coordinates from this line of the file ---*/
-    point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+    nUpper = int(Upper);
+    nLower = int(Lower);
+  
+    Xcoord.resize(nUpper+nLower-1);
+    Ycoord.resize(nUpper+nLower-1);
     
-    /*--- Store the coordinates in vectors ---*/
-    Xcoord.push_back(Airfoil_Coord[0]);
-    Ycoord.push_back(Airfoil_Coord[1]);
+    /*--- White line ---*/
+
+    getline (airfoil_file, text_line);
+
+    for (iUpper = 0; iUpper < nUpper; iUpper++) {
+      getline (airfoil_file, text_line);
+      istringstream point_line(text_line);
+      point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+      Xcoord[nUpper-iUpper-1] = Airfoil_Coord[0];
+      
+      double factor;
+      if (strcmp (AirfoilClose,"Yes") == 0) {
+        double x = (Airfoil_Coord[0] - TrailingEdge) / (1.0-TrailingEdge);
+        factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
+        if (x < TrailingEdge) factor = 1.0;
+      }
+      else factor = 1.0;
+      
+      Ycoord[nUpper-iUpper-1] = Airfoil_Coord[1]*AirfoilScale*factor;
+    }
+    
+    getline (airfoil_file, text_line);
+
+    for (iLower = 0; iLower < nLower; iLower++) {
+      getline (airfoil_file, text_line);
+      istringstream point_line(text_line);
+      point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
+      
+      double factor;
+      if (strcmp (AirfoilClose,"Yes") == 0) {
+        double x = (Airfoil_Coord[0] - TrailingEdge) / (1.0-TrailingEdge);
+        factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
+        if (x < TrailingEdge) factor = 1.0;
+      }
+      else factor = 1.0;
+      
+      Xcoord[nUpper+iLower-1] = Airfoil_Coord[0];
+      Ycoord[nUpper+iLower-1] = Airfoil_Coord[1]*AirfoilScale*factor;
+    }
+      
   }
   
-  /*--- Map the x & y coordinates into polar coordinates as if the airfoil
-   makes up a circle around x = chord/2 (for now c is constant at 1.0). ---*/
+  /*--- Check the coordinate (1,0) at the beginning and end of the file ---*/
   
-  for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+  if (Xcoord[0] == 1.0) AddBegin = false;
+  if (Xcoord[Xcoord.size()-1] == 1.0) AddEnd = false;
+  
+  if (AddBegin) { Xcoord.insert(Xcoord.begin(), 1.0);   Ycoord.insert(Ycoord.begin(), 0.0);}
+  if (AddEnd) { Xcoord.push_back(1.0);                Ycoord.push_back(0.0);}
+  
+  /*--- Change the orientation (depend on the input file, and the mesh file) ---*/
+  
+  if (strcmp (MeshOrientation,"clockwise") == 0) {
+    for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+      Xcoord_Aux.push_back(Xcoord[iVar]);
+      Ycoord_Aux.push_back(Ycoord[iVar]);
+    }
     
-    x = Xcoord[iVar] - c/2.0;
-    y = Ycoord[iVar];
-    r = sqrt(x*x + y*y);
-    angle =  atan2(y, x);
-    
-    /*--- Add 2*pi to negative angles in order to make fitting easier,
-     i.e. 0 <= Theta <= 2*pi. ---*/
-    if (angle < 0.0) angle += 2.0*PI_NUMBER;
-    
-    Radius.push_back(r);
-    Theta.push_back(angle);
-    //cout << Radius[iVar] << " " << Theta[iVar] << endl;
+    for (iVar = 0; iVar < Xcoord.size(); iVar++) {
+      Xcoord[iVar] = Xcoord_Aux[Xcoord.size()-iVar-1];
+      Ycoord[iVar] = Ycoord_Aux[Xcoord.size()-iVar-1];
+    }
   }
   
+  /*--- Compute the total arch length ---*/
+  
+  double Arch = 0.0;
+  Svalue.push_back(Arch);
+
+  for (iVar = 0; iVar < Xcoord.size()-1; iVar++) {
+    x_i = Xcoord[iVar];  x_ip1 = Xcoord[iVar+1];
+    y_i = Ycoord[iVar];  y_ip1 = Ycoord[iVar+1];
+    Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
+    Svalue.push_back(Arch);
+  }
+  x_i = Xcoord[Xcoord.size()-1];  x_ip1 = Xcoord[0];
+  y_i = Ycoord[Xcoord.size()-1];  y_ip1 = Ycoord[0];
+  Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
+  
+  /*--- Non dimensionalization ---*/
+  
+  for (iVar = 0; iVar < Svalue.size(); iVar++) { Svalue[iVar] /= Arch; }
+
   /*--- Close the restart file ---*/
+  
   airfoil_file.close();
   
+  /*--- Create a spline for X and Y coordiantes using the arch length ---*/
   
-  //  double SurfaceNose[24]={
-  //    0.2530661E-02,0.5214167E-02
-  //    ,0.1563217E-02,0.4076173E-02
-  //    ,0.8322645E-03,0.2988511E-02
-  //    ,0.3316348E-03,0.1958269E-02
-  //    ,0.5729375E-04,0.9763469E-03
-  //    ,0.1019368E-04,0.1822260E-04
-  //    ,0.2045149E-03,-0.9430565E-03
-  //    ,0.6654488E-03,-0.1916868E-02
-  //    ,0.1440709E-02,-0.2891670E-02
-  //    ,0.2555926E-02,-0.3843460E-02
-  //    ,0.3990158E-02,-0.4757584E-02
-  //    ,0.5714127E-02,-0.5625263E-02
-  //  };
-  //
-  //
-  //  double SurfaceUpper[164]={
-  //    0.9999999,-0.2491084E-03
-  //    ,0.9918991,0.9365876E-03
-  //    ,0.9807974,0.2511087E-02
-  //    ,0.9680250,0.4265705E-02
-  //    ,0.9540503,0.6126390E-02
-  //    ,0.9392941,0.8036156E-02
-  //    ,0.9240856,0.9959271E-02
-  //    ,0.9086373,0.1187350E-01
-  //    ,0.8930740,0.1376431E-01
-  //    ,0.8774481,0.1562638E-01
-  //    ,0.8617803,0.1745765E-01
-  //    ,0.8460882,0.1925645E-01
-  //    ,0.8303867,0.2102067E-01
-  //    ,0.8146843,0.2274803E-01
-  //    ,0.7989840,0.2443693E-01
-  //    ,0.7832827,0.2608652E-01
-  //    ,0.7675788,0.2769612E-01
-  //    ,0.7518733,0.2926473E-01
-  //    ,0.7361701,0.3079099E-01
-  //    ,0.7204739,0.3227288E-01
-  //    ,0.7047866,0.3370847E-01
-  //    ,0.6891075,0.3509608E-01
-  //    ,0.6734334,0.3643441E-01
-  //    ,0.6577614,0.3772255E-01
-  //    ,0.6420905,0.3895947E-01
-  //    ,0.6264214,0.4014402E-01
-  //    ,0.6107559,0.4127485E-01
-  //    ,0.5950962,0.4235041E-01
-  //    ,0.5794436,0.4336921E-01
-  //    ,0.5637982,0.4432987E-01
-  //    ,0.5481589,0.4523106E-01
-  //    ,0.5325251,0.4607162E-01
-  //    ,0.5168974,0.4685029E-01
-  //    ,0.5012768,0.4756583E-01
-  //    ,0.4856656,0.4821691E-01
-  //    ,0.4700658,0.4880213E-01
-  //    ,0.4544781,0.4932012E-01
-  //    ,0.4389019,0.4976954E-01
-  //    ,0.4233350,0.5014910E-01
-  //    ,0.4077758,0.5045772E-01
-  //    ,0.3922261,0.5069433E-01
-  //    ,0.3766911,0.5085787E-01
-  //    ,0.3611794,0.5094726E-01
-  //    ,0.3457003,0.5096043E-01
-  //    ,0.3302560,0.5089460E-01
-  //    ,0.3148428,0.5074789E-01
-  //    ,0.2994567,0.5051910E-01
-  //    ,0.2841039,0.5020768E-01
-  //    ,0.2688212,0.4981396E-01
-  //    ,0.2536651,0.4933343E-01
-  //    ,0.2386756,0.4875812E-01
-  //    ,0.2238800,0.4807835E-01
-  //    ,0.2093064,0.4728408E-01
-  //    ,0.1949814,0.4636303E-01
-  //    ,0.1809183,0.4530245E-01
-  //    ,0.1671018,0.4408741E-01
-  //    ,0.1534824,0.4270363E-01
-  //    ,0.1400305,0.4114566E-01
-  //    ,0.1267515,0.3941199E-01
-  //    ,0.1136444,0.3750140E-01
-  //    ,0.1007307,0.3542566E-01
-  //    ,0.8812914E-01,0.3321750E-01
-  //    ,0.7608656E-01,0.3093479E-01
-  //    ,0.6490525E-01,0.2863815E-01
-  //    ,0.5480972E-01,0.2637713E-01
-  //    ,0.4593079E-01,0.2419394E-01
-  //    ,0.3828108E-01,0.2210981E-01
-  //    ,0.3176194E-01,0.2012844E-01
-  //    ,0.2623813E-01,0.1824764E-01
-  //    ,0.2156484E-01,0.1646547E-01
-  //    ,0.1760671E-01,0.1477901E-01
-  //    ,0.1424349E-01,0.1318274E-01
-  //    ,0.1138616E-01,0.1167198E-01
-  //    ,0.8964834E-02,0.1024517E-01
-  //    ,0.6919064E-02,0.8898116E-02
-  //    ,0.5194428E-02,0.7619480E-02
-  //    ,0.3740570E-02,0.6395260E-02
-  //    ,0.2530661E-02,0.5214167E-02
-  //    ,0.1563217E-02,0.4076173E-02
-  //    ,0.8322645E-03,0.2988511E-02
-  //    ,0.3316348E-03,0.1958269E-02
-  //    ,1.15755e-05, 0.0  };
-  //
-  //  double SurfaceLower[156]={
-  //     1.15755e-05, 0.0
-  //    ,0.2045149E-03,-0.9430565E-03
-  //    ,0.6654488E-03,-0.1916868E-02
-  //    ,0.1440709E-02,-0.2891670E-02
-  //    ,0.2555926E-02,-0.3843460E-02
-  //    ,0.3990158E-02,-0.4757584E-02
-  //    ,0.5714127E-02,-0.5625263E-02
-  //    ,0.7736213E-02,-0.6451506E-02
-  //    ,0.1007945E-01,-0.7247711E-02
-  //    ,0.1276587E-01,-0.8023284E-02
-  //    ,0.1584185E-01,-0.8779585E-02
-  //    ,0.1936523E-01,-0.9520845E-02
-  //    ,0.2342322E-01,-0.1024916E-01
-  //    ,0.2813296E-01,-0.1096327E-01
-  //    ,0.3363958E-01,-0.1166049E-01
-  //    ,0.4012395E-01,-0.1233193E-01
-  //    ,0.4779375E-01,-0.1296830E-01
-  //    ,0.5684470E-01,-0.1355978E-01
-  //    ,0.6737892E-01,-0.1409094E-01
-  //    ,0.7937749E-01,-0.1454535E-01
-  //    ,0.9265041E-01,-0.1492356E-01
-  //    ,0.1068000,-0.1521960E-01
-  //    ,0.1215279,-0.1542541E-01
-  //    ,0.1366532,-0.1554682E-01
-  //    ,0.1520281,-0.1559083E-01
-  //    ,0.1675627,-0.1556318E-01
-  //    ,0.1832468,-0.1546826E-01
-  //    ,0.1990957,-0.1531805E-01
-  //    ,0.2150661,-0.1512539E-01
-  //    ,0.2311248,-0.1489586E-01
-  //    ,0.2472858,-0.1463641E-01
-  //    ,0.2635509,-0.1435651E-01
-  //    ,0.2798936,-0.1406454E-01
-  //    ,0.2962691,-0.1376673E-01
-  //    ,0.3126479,-0.1346288E-01
-  //    ,0.3290385,-0.1315323E-01
-  //    ,0.3454517,-0.1284268E-01
-  //    ,0.3618815,-0.1253374E-01
-  //    ,0.3783194,-0.1222450E-01
-  //    ,0.3947605,-0.1191412E-01
-  //    ,0.4112030,-0.1160335E-01
-  //    ,0.4276454,-0.1129297E-01
-  //    ,0.4440887,-0.1098372E-01
-  //    ,0.4605341,-0.1067562E-01
-  //    ,0.4769824,-0.1036815E-01
-  //    ,0.4934336,-0.1006076E-01
-  //    ,0.5098863,-0.9752984E-02
-  //    ,0.5263394,-0.9444835E-02
-  //    ,0.5427916,-0.9136708E-02
-  //    ,0.5592429,-0.8828991E-02
-  //    ,0.5756934,-0.8522025E-02
-  //    ,0.5921443,-0.8215726E-02
-  //    ,0.6085962,-0.7909696E-02
-  //    ,0.6250496,-0.7603546E-02
-  //    ,0.6415042,-0.7296926E-02
-  //    ,0.6579600,-0.6989801E-02
-  //    ,0.6744171,-0.6682294E-02
-  //    ,0.6908755,-0.6374541E-02
-  //    ,0.7073354,-0.6066657E-02
-  //    ,0.7237964,-0.5758745E-02
-  //    ,0.7402567,-0.5450925E-02
-  //    ,0.7567131,-0.5143346E-02
-  //    ,0.7731617,-0.4836465E-02
-  //    ,0.7896016,-0.4531061E-02
-  //    ,0.8060347,-0.4227862E-02
-  //    ,0.8224665,-0.3927124E-02
-  //    ,0.8389008,-0.3627864E-02
-  //    ,0.8553367,-0.3328958E-02
-  //    ,0.8717662,-0.3029519E-02
-  //    ,0.8881675,-0.2729255E-02
-  //    ,0.9044990,-0.2428215E-02
-  //    ,0.9206909,-0.2124476E-02
-  //    ,0.9366255,-0.1814706E-02
-  //    ,0.9521102,-0.1496142E-02
-  //    ,0.9667604,-0.1169115E-02
-  //    ,0.9800752,-0.8375850E-03
-  //    ,0.9916053,-0.5108843E-03
-  //    ,0.9999999,-0.2491084E-03
-  //  };
-  //
-  //
-  //  for (iVar = 0; iVar < 82; iVar++) {
-  //    Xcoord_Upper.push_back (SurfaceUpper[162-iVar*2]-1.15755e-05);
-  //    Ycoord_Upper.push_back (SurfaceUpper[162-iVar*2+1]);
-  //  }
-  //
-  //  for (iVar = 0; iVar < 78; iVar++) {
-  //    Xcoord_Lower.push_back(SurfaceLower[iVar*2]-1.15755e-05);
-  //    Ycoord_Lower.push_back(SurfaceLower[iVar*2+1]);
-  //  }
-  //
-  //  for (iVar = 0; iVar < 12; iVar++) {
-  //    Xcoord_Nose.push_back(SurfaceNose[22-iVar*2]-1.15755e-05);
-  //    Ycoord_Nose.push_back(SurfaceNose[22-iVar*2+1]);
-  //  }
-  //
-  //  for (iVar = 0; iVar < Xcoord.size(); iVar++) {
-  //    cout << Xcoord[iVar] <<" " << Ycoord[iVar] <<" " << endl;
-  //
-  //  }
-  //
-  //  /*--- Read the upper surface ---*/
-  //  n_Upper = Xcoord_Upper.size();
-  //  yp1 = (Ycoord_Upper[1]-Ycoord_Upper[0])/(Xcoord_Upper[1]-Xcoord_Upper[0]);
-  //  ypn = (Ycoord_Upper[n_Upper-1]-Ycoord_Upper[n_Upper-2])/(Xcoord_Upper[n_Upper-1]-Xcoord_Upper[n_Upper-2]);
-  //  Y2coord_Upper.resize(n_Upper+1);
-  //  boundary->SetSpline(Xcoord_Upper, Ycoord_Upper, n_Upper, yp1, ypn, Y2coord_Upper);
-  //
-  //  /*--- Read the lower surface ---*/
-  //  n_Lower = Xcoord_Lower.size();
-  //  yp1 = (Ycoord_Lower[1]-Ycoord_Lower[0])/(Xcoord_Lower[1]-Xcoord_Lower[0]);
-  //  ypn = (Ycoord_Lower[n_Lower-1]-Ycoord_Lower[n_Lower-2])/(Xcoord_Lower[n_Lower-1]-Xcoord_Lower[n_Lower-2]);
-  //  Y2coord_Lower.resize(n_Lower+1);
-  //  boundary->SetSpline(Xcoord_Lower, Ycoord_Lower, n_Lower, yp1, ypn, Y2coord_Lower);
-  //
-  //  /*--- Read the nose surface ---*/
-  //  n_Nose = Ycoord_Nose.size();
-  //  xp1 = (Xcoord_Nose[1]-Xcoord_Nose[0])/(Ycoord_Nose[1]-Ycoord_Nose[0]);
-  //  xpn = (Xcoord_Nose[n_Nose-1]-Xcoord_Nose[n_Nose-2])/(Ycoord_Nose[n_Nose-1]-Ycoord_Nose[n_Nose-2]);
-  //  X2coord_Nose.resize(n_Nose+1);
-  //  boundary->SetSpline(Ycoord_Nose, Xcoord_Nose, n_Nose, xp1, xpn, X2coord_Nose);
+  n_Airfoil = Svalue.size();
+  yp1 = (Xcoord[1]-Xcoord[0])/(Svalue[1]-Svalue[0]);
+  ypn = (Xcoord[n_Airfoil-1]-Xcoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
   
-  /*--- Create a spline for the (R,Theta) representation of the airfoil ---*/
-  n_Airfoil = Theta.size();
-  yp1 = (Radius[1]-Radius[0])/(Theta[1]-Theta[0]);
-  ypn = (Radius[n_Airfoil-1]-Radius[n_Airfoil-2])/(Theta[n_Airfoil-1]-Theta[n_Airfoil-2]);
-  Radius2.resize(n_Airfoil+1);
-  boundary->SetSpline(Theta, Radius, n_Airfoil, yp1, ypn, Radius2);
+  Xcoord2.resize(n_Airfoil+1);
+  boundary->SetSpline(Svalue, Xcoord, n_Airfoil, yp1, ypn, Xcoord2);
   
-  NewXCoord = 0.0;
-  NewYCoord = 0.0;
+  n_Airfoil = Svalue.size();
+  yp1 = (Ycoord[1]-Ycoord[0])/(Svalue[1]-Svalue[0]);
+  ypn = (Ycoord[n_Airfoil-1]-Ycoord[n_Airfoil-2])/(Svalue[n_Airfoil-1]-Svalue[n_Airfoil-2]);
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-  for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-    VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
-    if (config->GetMarker_All_DV(iMarker) == YES) {
-      Point = boundary->vertex[iMarker][iVertex]->GetNode();
-      Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-      
-      
-      /*--- Compute the theta angle for this airfoil point. We
-       are assuming that the theta angle will remain fixed. ---*/
-      angle =  atan2(Coord[1], Coord[0] - c/2.0);
-      if (angle < 0.0) angle += 2.0*PI_NUMBER;
-      
-      /*--- Sample the spline to get the radius value ---*/
-      r = boundary->GetSpline(Theta, Radius, Radius2, n_Airfoil, angle);
-      
-      /*--- Convert the polar coordinates to x & y ---*/
-      NewXCoord = r * cos(angle) + c/2.0;
-      NewYCoord = r * sin(angle);
-      
-      /*--- Store the delta change in the x & y coordinates ---*/
-      VarCoord[0] = NewXCoord - Coord[0];
-      VarCoord[1] = NewYCoord - Coord[1];
-      
-      //cout << y_new << " " << Coord[1] << "  " << r << "   " << x << "   " <<Coord[0] << "   " << angle << endl;
-      
-      //        if (Coord[1] > 0) NewYCoord = boundary->GetSpline(Xcoord_Upper, Ycoord_Upper, Y2coord_Upper, n_Upper, Coord[0]);
-      //        else NewYCoord = boundary->GetSpline(Xcoord_Lower, Ycoord_Lower, Y2coord_Lower, n_Lower, Coord[0]);
-      //
-      //        VarCoord[0] = 0.0;
-      //        VarCoord[1] = NewYCoord - Coord[1];
-      //        
-      //        if (Coord[0] < 0.002) {
-      //          NewXCoord = boundary->GetSpline(Ycoord_Nose, Xcoord_Nose, X2coord_Nose, n_Nose, Coord[1]);
-      //          
-      //          VarCoord[0] = NewXCoord - Coord[0];
-      //          VarCoord[1] = 0.0;
-      //        }
+  Ycoord2.resize(n_Airfoil+1);
+  boundary->SetSpline(Svalue, Ycoord, n_Airfoil, yp1, ypn, Ycoord2);
+  
+  NewXCoord = 0.0; NewYCoord = 0.0;
+  
+  double TotalArch = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]-1; iVertex++) {
+        Coord_i = boundary->vertex[iMarker][iVertex]->GetCoord();
+        Coord_ip1 = boundary->vertex[iMarker][iVertex+1]->GetCoord();
+        
+        x_i = Coord_i[0]; x_ip1 = Coord_ip1[0];
+        y_i = Coord_i[1]; y_ip1 = Coord_ip1[1];
+        
+        TotalArch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
+      }
+      Coord_i = boundary->vertex[iMarker][boundary->nVertex[iMarker]-1]->GetCoord();
+      Coord_ip1 = boundary->vertex[iMarker][0]->GetCoord();
+      x_i = Coord_i[0]; x_ip1 = Coord_ip1[0];
+      y_i = Coord_i[1]; y_ip1 = Coord_ip1[1];
+      TotalArch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i));
+    }
+  }
+  
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Arch = 0.0;
+    for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+      VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      if (((config->GetMarker_All_Moving(iMarker) == YES) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU))) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+        Point = boundary->vertex[iMarker][iVertex]->GetNode();
+        Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+        
+        if (iVertex == 0) Arch = 0.0;
+        else {
+          Coord_i = boundary->vertex[iMarker][iVertex-1]->GetCoord();
+          Coord_ip1 = boundary->vertex[iMarker][iVertex]->GetCoord();
+          x_i = Coord_i[0]; x_ip1 = Coord_ip1[0];
+          y_i = Coord_i[1]; y_ip1 = Coord_ip1[1];
+          Arch += sqrt((x_ip1-x_i)*(x_ip1-x_i)+(y_ip1-y_i)*(y_ip1-y_i))/TotalArch;
+        }
+        
+        NewXCoord = boundary->GetSpline(Svalue, Xcoord, Xcoord2, n_Airfoil, Arch);
+        NewYCoord = boundary->GetSpline(Svalue, Ycoord, Ycoord2, n_Airfoil, Arch);
+        
+        /*--- Store the delta change in the x & y coordinates ---*/
+        
+        VarCoord[0] = NewXCoord - Coord[0];
+        VarCoord[1] = NewYCoord - Coord[1];
+      }
+
+      boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
       
     }
-    boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
   }
+
 }
 
 void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh) {

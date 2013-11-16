@@ -37,7 +37,9 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_psirho,
                                              double val_psieve,
                                              unsigned short val_ndim,
                                              unsigned short val_nvar,
-                                             CConfig *config) : CVariable(val_ndim,val_nvar, config) {
+                                             CConfig *config) : CVariable(val_ndim,
+                                                                          val_nvar,
+                                                                          config) {
 
 	unsigned short iDim, iMesh, iSpecies, iVar, nMGSmooth = 0;
   
@@ -180,20 +182,29 @@ CAdjTNE2EulerVariable::~CAdjTNE2EulerVariable(void) {
   
 }
 
-void CAdjTNE2EulerVariable::SetPrimVar_Compressible(double val_adjlimit) {
+bool CAdjTNE2EulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance,
+                                                    bool check,
+                                                    CConfig *config) {
 	unsigned short iVar;
-  bool check_dens = false;
+  bool check_dens = false, RightVol = true;
   
-  check_dens = (fabs(Solution[0]) > val_adjlimit);             // Check the adjoint density
+  double adj_limit = config->GetAdjointLimit();
   
-  /*--- Check that the solution has a physical meaning ---*/
+  check_dens = (fabs(Solution[0]) > adj_limit);
+  
+  /*--- Check that the adjoint solution is bounded ---*/
+  
   if (check_dens) {
     
     /*--- Copy the old solution ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     
+    RightVol = false;
+    
   }
+  
+  return RightVol;
   
 }
 

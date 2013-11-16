@@ -431,6 +431,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             Read_NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
             break;
         default:
+            cout << "geometry_structure.cpp" << endl;
             cout << "Unrecognized mesh format specified!!" << endl;
 #ifdef NO_MPI
             exit(1);

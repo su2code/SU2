@@ -272,7 +272,7 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    # info = update_mesh(config,state)
+    info = update_mesh(config,state)
 
 
     # ----------------------------------------------------    
