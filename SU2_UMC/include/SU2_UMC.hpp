@@ -34,3 +34,9 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
+
+/*--- function prototypes ---*/
+void tracked_points_to_coords(CBoundaryGeometry *boundary);
+
+
+
