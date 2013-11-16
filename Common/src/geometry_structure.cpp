@@ -10321,9 +10321,10 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
     	if (original_surface == true) {
       		
             ofstream Tecplot_File;
-      		if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-      		else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-            
+      		//if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
+      		//else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
+          Tecplot_File.open("Airfoil_Sections.plt", ios::app);
+              
       		if (iSection == 0) {
         		Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
         		Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;

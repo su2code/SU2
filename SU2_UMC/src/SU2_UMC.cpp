@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 	
   /*--- Declare pointers to class objects ---*/
   CConfig *config = NULL;
-  CGeometry *boundary = NULL;
+  CBoundaryGeometry *boundary = NULL;
   
   /*--- intialize the various pointers to null ---*/
   Xcoord_Airfoil = NULL;
@@ -104,18 +104,6 @@ int main(int argc, char *argv[]) {
     minPlane = root;
     maxPlane = tip;
 		
-    /*--- comupte the distance between sections ---*/
-    interval = (maxPlane-minPlane)/double(nSection-1);
-
-    /*--- write the span file, listing the radial 
-          stations along the geometry being sliced ---*/
-    span.precision(15);
-    span.open("span", ios::out);
-    for (iSection = nSection; iSection > 0; iSection--) {
-      radial_station = minPlane + (iSection-1)*interval;
-      span << radial_station/(tip-root) << endl;
-    }
-    span.close();
 		
 		/*--- initialize coordinate vectors --*/
     Xcoord_Airfoil = new vector<double> [nSection];
@@ -149,9 +137,10 @@ int main(int argc, char *argv[]) {
           
           /*--- retreive the name of the current marker ---*/
           Marker_Tag = config->GetMarker_All_Tag(iMarker);
-          
+
           /*--- USER-DEFINED: angle (in degrees) 
-                the blade/wing is originally at ---*/
+                the blade/wing is originally at 
+                N.B. This only works if you're in the X-Y plane---*/
           
           /*--- ONERA M6 WING ---*/
 	        if (Marker_Tag == "WING") {starting_angle = 90.0;}
@@ -169,12 +158,36 @@ int main(int argc, char *argv[]) {
 	        if (Marker_Tag == "Blade4") {starting_angle = 270.0;}
 	        
 	        /*--- Caradonna-Tung FIRST blade ---*/
-          if (Marker_Tag == "Blade1") {starting_angle = 0.0;}
+          if (Marker_Tag == "blade_1") {
+            starting_angle = 90.0;
+            root = 0.15;
+            tip = 1.14;
+            minPlane = root;
+            maxPlane = tip;
+          }
           
 	        /*--- Caradonna-Tung SECOND blade ---*/
-	        if (Marker_Tag == "Blade2") {starting_angle = 180.0;}
-	         
+	        if (Marker_Tag == "blade_2") {
+            starting_angle = 270.0;
+            root = 0.15;
+            tip = 1.14;
+            minPlane = root;
+            maxPlane = tip;
+          }
+	        
 	        /*--- USER INPUTS ABOUT GEOMETRY END HERE ---*/
+          /*--- comupte the distance between sections ---*/
+          interval = (maxPlane-minPlane)/double(nSection-1);
+          
+          /*--- write the span file, listing the radial 
+                stations along the geometry being sliced ---*/
+          span.precision(15);
+          span.open("span", ios::out);
+          for (iSection = nSection; iSection > 0; iSection--) {
+            radial_station = minPlane + (iSection-1)*interval;
+            span << radial_station/(tip-root) << endl;
+          }
+          span.close();
           
           /*--- using the user-defined inputs, compute the
                 points and planes that define the sections ---*/
@@ -205,7 +218,7 @@ int main(int argc, char *argv[]) {
 	        Plane_Normal[2] = 0.0*starting_vec[0] + 
 	                          0.0*starting_vec[1] + 
 	                          1.0*starting_vec[2];
-	                          
+	        
           /*--- turn it into a unit vector ---*/
 	        magnitude = sqrt(pow(Plane_Normal[0],2.0) + 
 	                         pow(Plane_Normal[1],2.0) + 
@@ -216,6 +229,14 @@ int main(int argc, char *argv[]) {
 	            Plane_Normal[iDim] = 0.0;
 	          }
 	        }
+	        
+	        /*--- print marker information to the screen ---*/
+          cout << endl << "Marker: " << Marker_Tag << endl;
+          cout << "  Points along:\t{";
+          cout << Plane_Normal[0] << ", ";
+          cout << Plane_Normal[1] << ", ";
+          cout << Plane_Normal[2] << "}" << endl;
+          cout << "  Sectional cuts pass through the points:" << endl;
           
           /*--- walk along each marker, making sectional cuts ---*/
           for (iSection = 0; iSection < nSection; iSection++) {
@@ -225,7 +246,12 @@ int main(int argc, char *argv[]) {
 	            Plane_P0[iDim] = Plane_Normal[iDim]*(minPlane +
 	                             (double)iSection*interval);
 	          }
-          
+	          
+	          cout << "    Section #" << iSection << ":\t{";
+	          cout << Plane_P0[0] << ", "; 
+	          cout << Plane_P0[1] << ", ";
+	          cout << Plane_P0[2] << "}" << endl;
+            
             /*--- find the points defining the airfoil section --*/
 	          boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal,
 	                                          iSection, config,
@@ -236,44 +262,53 @@ int main(int argc, char *argv[]) {
                                    point2_Airfoil[iMarker][iSection],
                                   weight1_Airfoil[iMarker][iSection],
                                                                true);
-          
-           
-            /*--- writing of the tracked-points file ---*/
+            
+            /*--- writing of the tracked-points file.this file 
+                  records the node number of the edges being 
+                  interescted as well as the correspond "weight" of 
+                  the first point, based on distance. ---*/
             
             /*--- write the header ---*/    
 	          if (iMarker == 0 && iSection == 0) {  
               tracked_points.precision(15);
 	            filename = "tracked_points";
 	            tracked_points.open(filename.c_str(), ios::out);
-	            tracked_points <<  "Marker_Name, Marker_Number, Section, point1, point2, weight1" << endl;
+	            tracked_points <<  "Marker_Name, Marker_Number, ";
+	            tracked_points << "Section, ";
+	            tracked_points << "point1, point2, weight1" << endl;
+	            tracked_points.close();
             }
-
+            
 	          /*--- find the number of nodes for 
                   the current airfoil section ---*/ 
 	          nNode = point1_Airfoil[iMarker][iSection].size();
-                
+            
 	          /*--- print information to file for a given node 
                       at a given section on a given marker ---*/
+            tracked_points.open(filename.c_str(), ios::out | ios::app);
 	          for (iNode = 0; iNode < nNode; iNode++) {
 	            tracked_points << Marker_Tag << ", " << iMarker << ", ";
 	            tracked_points << iSection << ", ";
-	            //tracked_points << geometry->node[point1_Airfoil[iMarker][iSection].at(iNode)]->GetGlobalIndex() << ", ";
 	            tracked_points << point1_Airfoil[iMarker][iSection].at(iNode) << ", ";
               tracked_points << point2_Airfoil[iMarker][iSection].at(iNode) << ", ";
 	            tracked_points << weight1_Airfoil[iMarker][iSection].at(iNode) << endl;
             }
-          } /*--- end loop over sections ---*/
             
             /*--- close the file tracking points---*/
             tracked_points.close();
             
+          } /*--- end loop over sections ---*/
             
-            
+          
 	      }  
       }    	    
     }
     
-    
+    /*--- find the coordinates of the sections and 
+          print to the "coordinate.csv" file ---*/
+    tracked_points_to_coords(boundary);
+	  
+	  
 	
 	
 	
@@ -281,41 +316,39 @@ int main(int argc, char *argv[]) {
 	
 	
 	
-	
-	
-  /*--- delete the dynamically allocated memory  ---*/
-  if (Xcoord_Airfoil != NULL) {delete [] Xcoord_Airfoil;}
-  if (Ycoord_Airfoil != NULL) {delete [] Ycoord_Airfoil;}
-  if (Zcoord_Airfoil != NULL) {delete [] Zcoord_Airfoil;}
-  if (Plane_P0 != NULL) {delete [] Plane_P0;}
-  if (Plane_Normal != NULL) {delete [] Plane_Normal;}
-  if (point1_Airfoil != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iSection = 0; iSection < nSection; iSection++) {
-        point1_Airfoil[iMarker][iSection].clear();
+    /*--- delete the dynamically allocated memory  ---*/
+    if (Xcoord_Airfoil != NULL) {delete [] Xcoord_Airfoil;}
+    if (Ycoord_Airfoil != NULL) {delete [] Ycoord_Airfoil;}
+    if (Zcoord_Airfoil != NULL) {delete [] Zcoord_Airfoil;}
+    if (Plane_P0 != NULL) {delete [] Plane_P0;}
+    if (Plane_Normal != NULL) {delete [] Plane_Normal;}
+    if (point1_Airfoil != NULL) {
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        for (iSection = 0; iSection < nSection; iSection++) {
+          point1_Airfoil[iMarker][iSection].clear();
+        }
+        delete [] point1_Airfoil[iMarker];
       }
-      delete [] point1_Airfoil[iMarker];
+      delete [] point1_Airfoil;
     }
-    delete [] point1_Airfoil;
-  }
-  if (point2_Airfoil != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iSection = 0; iSection < nSection; iSection++) {
-        point2_Airfoil[iMarker][iSection].clear();
+    if (point2_Airfoil != NULL) {
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        for (iSection = 0; iSection < nSection; iSection++) {
+          point2_Airfoil[iMarker][iSection].clear();
+        }
+        delete [] point2_Airfoil[iMarker];
       }
-      delete [] point2_Airfoil[iMarker];
+      delete [] point2_Airfoil;
     }
-    delete [] point2_Airfoil;
-  }
-  if (weight1_Airfoil != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iSection = 0; iSection < nSection; iSection++) {
-        weight1_Airfoil[iMarker][iSection].clear();
-      }
-			delete [] weight1_Airfoil[iMarker];
-		}
-		delete [] weight1_Airfoil;
-  }
+    if (weight1_Airfoil != NULL) {
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
+        for (iSection = 0; iSection < nSection; iSection++) {
+          weight1_Airfoil[iMarker][iSection].clear();
+        }
+			  delete [] weight1_Airfoil[iMarker];
+		  }
+		  delete [] weight1_Airfoil;
+    }
 	
 		
 	
@@ -333,9 +366,124 @@ int main(int argc, char *argv[]) {
 	if (config != NULL) {delete config;}
 	if (boundary != NULL) {delete boundary;}
 	
-	/*--- End solver ---*/
+	/*--- End routine ---*/
 	cout << endl <<"------------------------- Exit Success (SU2_UMC) ------------------------" << endl << endl;
   
 	return EXIT_SUCCESS;
 	
 }
+
+void tracked_points_to_coords(CBoundaryGeometry *boundary) {
+  
+  /*--- local variables ---*/
+  fstream tp_file;
+  ofstream coords_file;
+  string line;
+  unsigned short counter, iDim, nDim;
+  unsigned long point1, point2;
+  double weight1, weight2, x_coord, y_coord, z_coord;
+  double *coord1, *coord2;
+  bool dummy;
+  
+  /*--- preliminaries ---*/
+  nDim = boundary->GetnDim();
+  coord1 = NULL;
+  coord2 = NULL;
+  
+  /*--- dynamically allocate memory ---*/
+  coord1 = new double [nDim];
+  coord2 = new double [nDim];
+  
+  /*--- read the tracked points file ---*/
+  tp_file.open("tracked_points");
+  coords_file.open("coordinates.csv", ios::out | ios::app);
+  coords_file.precision(15);
+
+//cout << "tp_file.is_open() = " << tp_file.is_open() << endl;
+//cout << "coords_file.is_open() = " << coords_file.is_open() << endl;
+  
+  if (tp_file.is_open() && coords_file.is_open()) {
+    
+    /*--- read the header ---*/
+    getline(tp_file,line);
+    //cout << line << endl;
+    
+    /*--- read through each line ---*/
+    while (getline(tp_file,line)) {
+    
+      
+      /*--- turn it into a char array ---*/
+      char tmp [500];
+      strcpy(tmp,line.c_str());
+      //cout << tmp << endl;
+      /*--- read the line, storing point1, point2, and weight1 ---*/
+      char *pointer_to = NULL;
+      pointer_to = strtok(tmp," (,)\r\n");
+      //cout << "\t"<<pointer_to << endl;
+      
+      counter = 1;
+      while (pointer_to != NULL) {
+      //cout << "\t"<<pointer_to << endl;
+        switch (counter) {
+          case 4:
+            point1 = strtoul(pointer_to,NULL,0);
+           // cout << "point1 = " << point1 << endl;
+            break;
+          case 5:
+            point2 = strtoul(pointer_to,NULL,0);
+            //cout << "point2 = " << point2 << endl;
+            break;
+          case 6:
+            weight1 = strtod(pointer_to,NULL);
+            //cout << "weight1 = " << weight1 << endl;
+            break;
+          default:
+            dummy = 0;
+            //continue;
+            //cout << "default: case = " << counter << endl;
+        }
+        pointer_to = strtok(NULL," (,)\r\n");
+        counter++;
+      }
+        
+      /*--- convert the points to coordinates ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        coord1[iDim] = boundary->node[point1]->GetCoord(iDim);
+        coord2[iDim] = boundary->node[point2]->GetCoord(iDim);
+      }
+            
+      /*--- retreive & compute the weight of the second node ---*/
+      weight2 = 1.0 - weight1;
+      //cout << "weight2 = " << weight2 << endl;
+      
+      /*--- find the new coordinates of the section---*/
+      x_coord = weight1*coord1[0] + weight2*coord2[0];
+      y_coord = weight1*coord1[1] + weight2*coord2[1];
+      z_coord = weight1*coord1[2] + weight2*coord2[2];
+        
+      /*--- write to the coordinates file ---*/
+      coords_file << x_coord << ", ";
+      coords_file << y_coord << ", ";
+      coords_file << z_coord << endl;
+        
+    }
+    
+    /*--- close the files ---*/
+    tp_file.close();
+    coords_file.close();
+    
+  }
+  else {
+    if (tp_file.is_open())
+      cout << "Unable to open coordinates.csv file!" << endl;
+    if (coords_file.is_open())
+      cout << "Unable to open tracked points file!" << endl;
+  }
+  
+  /*--- delete dynamically allocated memory ---*/
+  if (coord1 != NULL) {delete [] coord1;}
+  if (coord2 != NULL) {delete [] coord2;}
+  
+}
+
