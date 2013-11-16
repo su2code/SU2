@@ -37,6 +37,8 @@ inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) 
 
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
+
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
 inline double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return 0; }

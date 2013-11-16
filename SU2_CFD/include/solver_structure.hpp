@@ -158,13 +158,20 @@ public:
 	 */
 	virtual void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Get number of linear solver iterations.
 	 * \return Number of linear solver iterations.
@@ -1796,6 +1803,10 @@ protected:
   vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
   vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
   
+  double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
+	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+	*Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  
 public:
     
 	/*!
@@ -1836,13 +1847,20 @@ public:
 	 */
 	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the density at the inlet.
 	 * \return Value of the density at the infinity.
@@ -2649,18 +2667,18 @@ private:
 	*CFx_Visc,			/*!< \brief Force x coefficient (viscous contribution) for each boundary. */
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
-    *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-    *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-    *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-    
+  *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
+  *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
@@ -2677,11 +2695,11 @@ private:
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-    AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-    AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
-    
+  AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  
 public:
-    
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -2891,13 +2909,13 @@ public:
 	 */
 	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5110,13 +5128,13 @@ public:
 	 */
 	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.

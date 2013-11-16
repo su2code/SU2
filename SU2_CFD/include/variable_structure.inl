@@ -385,9 +385,15 @@ inline void CVariable::SubtractGradient_Primitive(unsigned short val_var, unsign
 
 inline double CVariable::GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) { return 0; }
 
+inline double CVariable::GetLimiter_Primitive(unsigned short val_var) { return 0; }
+
 inline void CVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { }
 
+inline void CVariable::SetLimiter_Primitive(unsigned short val_var, double val_value) { }
+
 inline double **CVariable::GetGradient_Primitive(void) { return NULL; }
+
+inline double *CVariable::GetLimiter_Primitive(void) { return NULL; }
 
 inline void CVariable::SetBlendingFunc(double val_viscosity, double val_dist, double val_density) { }
 
@@ -525,9 +531,15 @@ inline void CEulerVariable::SubtractGradient_Primitive(unsigned short val_var, u
 
 inline double CEulerVariable::GetGradient_Primitive(unsigned short val_var, unsigned short val_dim) { return Gradient_Primitive[val_var][val_dim]; }
 
+inline double CEulerVariable::GetLimiter_Primitive(unsigned short val_var) { return Limiter_Primitive[val_var]; }
+
 inline void CEulerVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] = val_value; }
 
+inline void CEulerVariable::SetLimiter_Primitive(unsigned short val_var, double val_value) { Limiter_Primitive[val_var] = val_value; }
+
 inline double **CEulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
+
+inline double *CEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
 
 inline void CEulerVariable::SetTimeSpectral_Source(unsigned short val_var, double val_source) { TS_Source[val_var] = val_source; }
 

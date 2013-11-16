@@ -177,22 +177,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
 }
 
-void CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
-  
-  unsigned long step = 0, index, iVar;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar*nEqn; iVar++)
-        block[iVar] = matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar];
-      break;
-    }
-  }
-  
-}
-
-double *CSysMatrix::GetPointerBlock(unsigned long block_i, unsigned long block_j) {
+double *CSysMatrix::GetBlock(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
   
@@ -351,7 +336,7 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
   short iVar;
   double weight, aux;
   
-  double *Block = GetPointerBlock(block_i, block_i);
+  double *Block = GetBlock(block_i, block_i);
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -433,9 +418,7 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   unsigned long j = block_j*nVar;
   unsigned short iVar, jVar;
   
-  double *block = GetPointerBlock(block_i, block_j);
-  
-//  GetBlock(block_i, block_j);
+  double *block = GetBlock(block_i, block_j);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     prod_block_vector[iVar] = 0;
@@ -1019,7 +1002,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
     /*--- Initialization (iElem = 0) ---*/
     
     iPoint = LineletPoint[iLinelet][0];
-    block = GetPointerBlock(iPoint, iPoint);
+    block = GetBlock(iPoint, iPoint);
     for (iVar = 0; iVar < nVar; iVar++) {
       yVector[0][iVar] = rVector[0][iVar];
       for (jVar = 0; jVar < nVar; jVar++)
@@ -1034,9 +1017,9 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
       iPoint = LineletPoint[iLinelet][iElem];
       
       InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
-      block = GetPointerBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
-      block = GetPointerBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
-      block = GetPointerBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
+      block = GetBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
+      block = GetBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
+      block = GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
       
       /*--- Forward substituton ---*/
       
@@ -1053,7 +1036,7 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
     for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
       iPoint = LineletPoint[iLinelet][iElemLoop];
       ip1Point = LineletPoint[iLinelet][iElemLoop+1];
-      block = GetPointerBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
+      block = GetBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
       GetSubsVector(AuxVector, yVector[iElemLoop], FzVector);
       GetMultBlockVector(zVector[iElemLoop], invUBlock[iElemLoop], AuxVector);
     }

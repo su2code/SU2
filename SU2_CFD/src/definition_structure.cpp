@@ -724,7 +724,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE_1ST : case ROE_2ND :
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+#ifndef PRIMITIVE_RECONSTRUCTION
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+#else
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoePrim_Flow(nDim, nVar_Flow, config);
+#endif
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
               }
               break;
