@@ -454,7 +454,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
   double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   double Cvtrs;
-  double Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
+  double Ru, rho_el_i, rho_el_j, *Ms, *xi;
 //  double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   double e_ve_i, e_ve_j;
   

@@ -228,8 +228,8 @@ CNeurNet::CNeurNet(string filename, string predFilename){
 }
 
 CNeurNet::~CNeurNet(){
-	delete this->inputScaler;
-	delete this->outputScaler;
+//	delete this->inputScaler;
+//	delete this->outputScaler;
 	delete this->parameters;
 	for (int i=0; i < this->nLayers; i++){
 		delete [] this->parameterIdx[i];

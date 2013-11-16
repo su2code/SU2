@@ -2242,7 +2242,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
                                                CSolver **solution_container,
                                                CConfig *config) {
-	unsigned short iVar, jVar;
+	unsigned short iVar;
 	unsigned long iPoint, total_index, IterLinSol = 0;
 	double Delta, *local_Res_TruncError, Vol;
   
@@ -3817,7 +3817,7 @@ CTNE2NSSolver::CTNE2NSSolver(void) : CTNE2EulerSolver() {
 
 CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
                              unsigned short iMesh) : CTNE2EulerSolver() {
-  bool restart, check_infty, check, check_temp, check_press;
+  bool restart, check_infty, check;
   unsigned short iDim, iMarker, iSpecies, iVar, nZone;
 	unsigned long iPoint, index, counter_local, counter_global;
   double *Mvec_Inf, Alpha, Beta, dull_val;
@@ -4361,7 +4361,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
   double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
   double Mean_LaminarVisc, Mean_Density;
   double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
-	double ProjVel, ProjVel_i, ProjVel_j;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -4524,8 +4523,6 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                                      unsigned short iRKStep) {
 	unsigned long iPoint, jPoint, iEdge;
   
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
   numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
@@ -4603,7 +4600,7 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
 
 void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	
-  unsigned short Boundary, Monitoring, iMarker, iDim, jDim, iSpecies;
+  unsigned short Boundary, Monitoring, iMarker, iDim, jDim;
   unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, iPointNormal;
   double **Grad_PrimVar;
@@ -4836,9 +4833,7 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
   bool implicit;
-  unsigned short iDim;
-  unsigned long iPoint, jPoint, iVertex;
-  double *Normal, *UnitNormal, Area;
+  double *UnitNormal;
   
   /*--- Allocate arrays ---*/
   UnitNormal = new double[3];

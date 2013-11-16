@@ -27,7 +27,6 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                        CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement) {
   
-	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   

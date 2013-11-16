@@ -452,12 +452,8 @@ distdir: $(DISTFILES)
 	      || exit 1; \
 	  fi; \
 	done
-<<<<<<< HEAD
-	-find $(distdir) -type d ! -perm -755 -exec chmod a+rwx,go+rx {} \; -o \
-=======
 	-test -n "$(am__skip_mode_fix)" \
 	|| find "$(distdir)" -type d ! -perm -777 -exec chmod a+rwx {} \; -o \
->>>>>>> 412088c00ad97809919e144670ac1297e4e07e4e
 	  ! -type d ! -perm -444 -links 1 -exec chmod a+r {} \; -o \
 	  ! -type d ! -perm -400 -exec chmod a+r {} \; -o \
 	  ! -type d ! -perm -444 -exec $(install_sh) -c -m a+r {} {} \; \

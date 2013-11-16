@@ -1742,7 +1742,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
                                                   CConfig *config) {
 	unsigned short iVar;
 	unsigned long iPoint, total_index, IterLinSol=0;
-	double Delta, *local_Res_TruncError, Vol;
+	double Delta, Vol;
   
 	/*--- Set maximum residual to zero ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
@@ -1752,9 +1752,6 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
-		/*--- Read the residual ---*/
-//		local_Res_TruncError = node[iPoint]->GetResTruncError();
     
 		/*--- Read the volume ---*/
 		Vol = geometry->node[iPoint]->GetVolume();
@@ -1770,7 +1767,7 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = -(LinSysRes[total_index]);// + local_Res_TruncError[iVar]);
+			LinSysRes[total_index] = -(LinSysRes[total_index]);
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
