@@ -51,7 +51,3 @@ endif
 if BUILD_UMC
 SUBDIRS +=SU2_UMC/obj
 endif
-
-if BUILD_EDU
-SUBDIRS +=SU2_EDU/obj
-endif
