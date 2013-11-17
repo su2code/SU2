@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -29,7 +29,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "../../Common/include/config_structure.hpp"
+#include "config_structure.hpp"
 
 using namespace std;
 
@@ -37,7 +37,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CVariable {
 protected:
@@ -1660,7 +1660,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -2002,7 +2002,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2151,7 +2151,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -2195,7 +2195,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2241,7 +2241,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSSTVariable : public CTurbVariable {

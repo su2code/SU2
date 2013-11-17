@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -389,15 +389,6 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     /*--- Update total number of surface elements after merge. ---*/
     
     nSurf_Elem = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
-    
-    /*--- Write the connectivity to the base binary output file, then
-     clear the memory immediately for the rest of the computation. ---*/
-    
-    unsigned short FileFormat = config->GetOutput_FileFormat();
-    if (rank == MASTER_NODE && FileFormat == CGNS_SOL) {
-      SetCGNS_Connectivity(config, geometry, val_iZone);
-      DeallocateConnectivity(config, geometry, false);
-    }
     
   }
 }
@@ -3671,22 +3662,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     MergeCoordinates(config[iZone], geometry[iZone][MESH_0]);
     
-    if (rank == MASTER_NODE) {
-      
-      if (FileFormat == CGNS_SOL) {
-        SetCGNS_Coordinates(config[iZone], geometry[iZone][MESH_0], iZone);
-        if (!wrote_base_file || dynamic_mesh)
-          DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-      } else if (FileFormat == TECPLOT_BINARY) {
-        SetTecplot_Mesh(config[iZone], geometry[iZone][MESH_0], iZone);
-        SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-        if (!wrote_base_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-        if (!wrote_surf_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], wrote_surf_file);
-      }
-    }
-    
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
     if (Wrt_Vol || Wrt_Rst)
@@ -3714,18 +3689,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
-          case TECPLOT_BINARY:
-            
-            /*--- Write a Tecplot binary solution file ---*/
-            SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-            break;
-            
-          case CGNS_SOL:
-            
-            /*--- Write a CGNS solution file ---*/
-            SetCGNS_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
-            break;
-            
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
@@ -3748,12 +3711,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
-            break;
-            
-          case TECPLOT_BINARY:
-            
-            /*--- Write a Tecplot binary solution file ---*/
-            SetTecplot_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
           case PARAVIEW:
