@@ -585,8 +585,6 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
-BUILD_EDU_FALSE
-BUILD_EDU_TRUE
 BUILD_UMC_FALSE
 BUILD_UMC_TRUE
 BUILD_GDC_FALSE
@@ -704,7 +702,6 @@ enable_PBC
 enable_SOL
 enable_GDC
 enable_UMC
-enable_EDU
 enable_dependency_tracking
 '
       ac_precious_vars='build_alias
@@ -1341,7 +1338,6 @@ Optional Features:
   --disable-SOL           build the SU2_SOL executable (default = yes)
   --disable-GDC           build the SU2_GDC executable (default = yes)
   --disable-UMC           build the SU2_UMC executable (default = yes)
-  --disable-EDU           build the SU2_EDU executable (default = yes)
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
 
@@ -2499,13 +2495,6 @@ else
   build_UMC="yes"
 fi
 
-# Check whether --enable-EDU was given.
-if test "${enable_EDU+set}" = set; then :
-  enableval=$enable_EDU; build_EDU=$enableval
-else
-  build_EDU="yes"
-fi
-
 
 ##########################
 
@@ -3035,14 +3024,6 @@ fi
 else
   BUILD_UMC_TRUE='#'
   BUILD_UMC_FALSE=
-fi
-
- if test $build_EDU != "no"; then
-  BUILD_EDU_TRUE=
-  BUILD_EDU_FALSE='#'
-else
-  BUILD_EDU_TRUE='#'
-  BUILD_EDU_FALSE=
 fi
 
 
@@ -3839,7 +3820,7 @@ else
   RANLIB="$ac_cv_prog_RANLIB"
 fi
 
-ac_config_files="$ac_config_files Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DDC/obj/Makefile SU2_GPC/obj/Makefile SU2_MAC/obj/Makefile SU2_MDC/obj/Makefile SU2_PBC/obj/Makefile SU2_SOL/obj/Makefile SU2_GDC/obj/Makefile SU2_UMC/obj/Makefile SU2_EDU/obj/Makefile SU2_PY/Makefile"
+ac_config_files="$ac_config_files Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DDC/obj/Makefile SU2_GPC/obj/Makefile SU2_MAC/obj/Makefile SU2_MDC/obj/Makefile SU2_PBC/obj/Makefile SU2_SOL/obj/Makefile SU2_GDC/obj/Makefile SU2_UMC/obj/Makefile SU2_PY/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -4060,10 +4041,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_UMC_TRUE}" && test -z "${BUILD_UMC_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_UMC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_EDU_TRUE}" && test -z "${BUILD_EDU_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_EDU\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
@@ -4671,7 +4648,6 @@ do
     "SU2_SOL/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_SOL/obj/Makefile" ;;
     "SU2_GDC/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_GDC/obj/Makefile" ;;
     "SU2_UMC/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_UMC/obj/Makefile" ;;
-    "SU2_EDU/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_EDU/obj/Makefile" ;;
     "SU2_PY/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_PY/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -5266,7 +5242,6 @@ Build Configuration Summary:
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
     Build SU2_UMC:        $build_UMC
-    Build SU2_EDU:        $build_EDU
 
 Please be sure to add the \$SU2_HOME and \$SU2_RUN environment variables, and update your \$PATH with \$SU2_RUN
 
@@ -5304,7 +5279,6 @@ Build Configuration Summary:
     Build SU2_SOL:        $build_SOL
     Build SU2_GDC:        $build_GDC
     Build SU2_UMC:        $build_UMC
-    Build SU2_EDU:        $build_EDU
 
 Please be sure to add the \$SU2_HOME and \$SU2_RUN environment variables, and update your \$PATH with \$SU2_RUN
 
