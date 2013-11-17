@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -31,8 +31,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
-    WindGust = NULL;
-    WindGustDer = NULL;
+  WindGust = NULL;
+  WindGustDer = NULL;
   
 }
 
@@ -54,12 +54,11 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
-    WindGust = NULL;
-    WindGustDer = NULL;
+  WindGust = NULL;
+  WindGustDer = NULL;
 
-  
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
   if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
   if (freesurface) { nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
 
@@ -84,14 +83,27 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 		Undivided_Laplacian = new double [nVar];
 	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
 			(config->GetKind_SlopeLimit_Flow() != NONE)) {
-		Limiter = new double [nVar];
+    
+    Limiter = new double [nVar];
+		for (iVar = 0; iVar < nVar; iVar++)
+			Limiter[iVar] = 0.0;
+      
+#ifndef PRIMITIVE_RECONSTRUCTION
 		Solution_Max = new double [nVar];
 		Solution_Min = new double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
-			Limiter[iVar] = 0.0;
 			Solution_Max[iVar] = 0.0;
 			Solution_Min[iVar] = 0.0;
 		}
+#else
+		Solution_Max = new double [nPrimVarGrad];
+		Solution_Min = new double [nPrimVarGrad];
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+			Solution_Max[iVar] = 0.0;
+			Solution_Min[iVar] = 0.0;
+		}
+#endif
+    
 	}
   
 	/*--- Solution and old solution initialization ---*/
@@ -142,12 +154,12 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}
     
-    /*--- Allocate vector for wind gust and wind gust derivative field ---*/
+  /*--- Allocate vector for wind gust and wind gust derivative field ---*/
 	if (windgust) {
-        WindGust = new double [nDim];
-        WindGustDer = new double [nDim+1];
-       }
-    
+    WindGust = new double [nDim];
+    WindGustDer = new double [nDim+1];
+  }
+  
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
@@ -158,7 +170,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
   /*--- Incompressible flow, gradients primitive variables nDim+2, (rho,vx,vy,vz,beta),
-   compressible flow, gradients primitive variables nDim+3, (T,vx,vy,vz,P,rho)
+   compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
    We need P, and rho for running the adjoint problem ---*/
   Gradient_Primitive = new double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -167,6 +179,8 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
+  /*--- Allocate the limiter for the primitive variables ---*/
+  Limiter_Primitive = new double [nPrimVarGrad];
   
 }
 
@@ -187,8 +201,13 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
-    WindGust = NULL;
-    WindGustDer = NULL;
+  WindGust = NULL;
+  WindGustDer = NULL;
+  
+	/*--- Allocate and initialize the primitive variables and gradients ---*/
+  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
+  if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (freesurface) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -201,7 +220,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity) {
+	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
 		Residual_Sum = new double [nVar];
 		Residual_Old = new double [nVar];
 	}
@@ -211,14 +230,27 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 		Undivided_Laplacian = new double [nVar];
 	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
 			(config->GetKind_SlopeLimit_Flow() != NONE)) {
-		Limiter = new double [nVar];
+    
+    Limiter = new double [nVar];
+		for (iVar = 0; iVar < nVar; iVar++)
+			Limiter[iVar] = 0.0;
+    
+#ifndef PRIMITIVE_RECONSTRUCTION
 		Solution_Max = new double [nVar];
 		Solution_Min = new double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
-			Limiter[iVar] = 0.0;
 			Solution_Max[iVar] = 0.0;
 			Solution_Min[iVar] = 0.0;
 		}
+#else
+		Solution_Max = new double [nPrimVarGrad];
+		Solution_Min = new double [nPrimVarGrad];
+		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+			Solution_Max[iVar] = 0.0;
+			Solution_Min[iVar] = 0.0;
+		}
+#endif
+    
 	}
   
 	/*--- Solution initialization ---*/
@@ -247,17 +279,12 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
 	if (windgust) {
-        WindGust = new double [nDim];
-        WindGustDer = new double [nDim+1];
-    }
+    WindGust = new double [nDim];
+    WindGustDer = new double [nDim+1];
+  }
   
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
-  
-	/*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  if (freesurface) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
 
   /*--- Incompressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta)
    compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
@@ -274,6 +301,8 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
+  /*--- Allocate the limiter for the primitive variables ---*/
+  Limiter_Primitive = new double [nPrimVarGrad];
   
 }
 

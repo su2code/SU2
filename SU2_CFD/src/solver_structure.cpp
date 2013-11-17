@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -26,6 +26,7 @@
 CSolver::CSolver(void) {
 
   /*--- Array initialization ---*/
+  OutputHeadingNames = NULL;
 	Residual_RMS = NULL;
   Residual_Max = NULL;
 	Residual = NULL;
@@ -59,6 +60,10 @@ CSolver::CSolver(void) {
 }
 
 CSolver::~CSolver(void) {
+  if( OutputHeadingNames != NULL){
+    delete []OutputHeadingNames;
+  }
+//  delete [] OutputHeadingNames;
 /*  unsigned short iVar, iDim;
   unsigned long iPoint;
   

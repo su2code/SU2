@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -1884,8 +1884,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   // NOTE: Jacobian i & j should have the dVdU terms wrt i & j, but instead calculated using the mean
   
   bool ionization;
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, nHeavy, nEl, kVar;
-  unsigned short *nElStates;
+  unsigned short iDim, iSpecies, iVar, jVar, nHeavy, nEl;
   double rho, u, v, w, T, Tve, rhoCvtr, rhoCvve;
   double rho_i, rho_j, u_i, u_j, v_i, v_j, w_i, w_j;
   double mu, ktr, kve, *Ds, dij, Ru;
@@ -1893,7 +1892,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   double etax, etay, etaz;
   double pix, piy, piz;
   double pix_i, piy_i, piz_i, pix_j, piy_j, piz_j;
-  double *Ys, sumY, hs, eve;
+  double *Ys;
   double **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
 
   if (nDim == 2) {

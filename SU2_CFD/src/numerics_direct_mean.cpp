@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -51,6 +51,7 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
 		P_Tensor[iVar] = new double [nVar];
 		invP_Tensor[iVar] = new double [nVar];
 	}
+  
 }
 
 CUpwRoe_Flow::~CUpwRoe_Flow(void) {
@@ -78,18 +79,21 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
 void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
 	/*--- Face area (norm or the normal vector) ---*/
+  
 	Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
   
 	/*-- Unit Normal ---*/
+  
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitNormal[iDim] = Normal[iDim]/Area;
   
 	/*--- Conserved variables at point i,
    Need to recompute SoundSpeed / Pressure / Enthalpy in
    case of 2nd order reconstruction ---*/
+  
 	Density_i = U_i[0];
 	sq_vel = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -101,6 +105,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
   /*--- If it is not a physical solution, then
    use the zero order reconstruction ---*/
+  
   if (((Density_i < 0.0) || (Pressure_i < 0.0)) &&  UZeroOrder_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
       U_i[iVar] = UZeroOrder_i[iVar];
@@ -364,7 +369,8 @@ void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 	Pressure_i = V_i[nDim+1];
 	Density_i = V_i[nDim+2];
 	Enthalpy_i = V_i[nDim+3];
-  
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+
 	/*--- Conserved variables at point j,
 	 Need to recompute SoundSpeed / Pressure / Enthalpy in
 	 case of 2nd order reconstruction ---*/
@@ -373,6 +379,7 @@ void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 	Pressure_j = V_j[nDim+1];
 	Density_j = V_j[nDim+2];
 	Enthalpy_j = V_j[nDim+3];
+  Energy_j = Enthalpy_j - Pressure_j/Density_j;
   
 	/*--- Roe-averaged variables at interface between i & j ---*/
 	R = sqrt(fabs(Density_j/Density_i));
@@ -400,8 +407,8 @@ void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 		ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 		ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
 	}
-
-	/*--- Adjustment due to mesh motion ---*/
+  
+	/*--- Projected velocity adjustment due to mesh motion ---*/
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -418,18 +425,21 @@ void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 	Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
 	Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
-	/*--- Harten and Hyman entropy correction ---*/
-	SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i); SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
-	for (iDim = 0; iDim < nDim; iDim++)
-		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
-	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
-	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+//	/*--- Harten and Hyman entropy correction ---*/
+//	SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i); SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
+//	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
+//	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+//  
+//	for (iVar = 0; iVar < nVar; iVar++)
+//		if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+//			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+//		else
+//			Lambda[iVar] = fabs(Lambda[iVar]);
   
-	for (iVar = 0; iVar < nVar; iVar++)
-		if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
-		else
-			Lambda[iVar] = fabs(Lambda[iVar]);
+  for (iVar = 0; iVar < nVar; iVar++)
+    Lambda[iVar] = fabs(Lambda[iVar]);
   
 	/*--- Compute wave amplitudes (characteristics) ---*/
 	proj_delta_vel = 0.0;
@@ -460,16 +470,18 @@ void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 		for (jVar = 0; jVar < nVar; jVar++)
 			val_residual[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
 	}
-
-	/*--- Flux contribution due to grid motion ---*/
-	if (grid_movement) {
-		ProjVelocity = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-		for (iVar = 0; iVar < nVar; iVar++) {
-			val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
-		}
-	}
+  
+  /*--- Flux contribution due to grid motion ---*/
+  if (grid_movement) {
+    ProjVelocity = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    
+    val_residual[0] -= ProjVelocity * 0.5 * (Density_i+Density_j);
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[iDim+1] -= ProjVelocity * 0.5 * (Density_i*Velocity_i[iDim]+Density_j*Velocity_j[iDim]);
+    val_residual[nDim+1] -= ProjVelocity * 0.5 * (Density_i*Energy_i+Density_j*Energy_j);
+  }
   
 	if (implicit) {
     
@@ -477,7 +489,6 @@ void CUpwRoePrim_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
     
 		/*--- Jacobians of the inviscid flux ---*/
-		Energy_i = Enthalpy_i - Pressure_i/Density_i; Energy_j = Enthalpy_j - Pressure_j/Density_j;
 		GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, val_Jacobian_i);
 		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, val_Jacobian_j);
     

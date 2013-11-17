@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_CFD.
  *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -27,19 +27,16 @@
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
-#ifndef NO_MUTATIONPP
-#include "mutation++.h"
-#endif
 #include <ctime>
 
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
+#include "geometry_structure.hpp"
+#include "grid_movement_structure.hpp"
+#include "config_structure.hpp"
+#include "definition_structure.hpp"
+#include "iteration_structure.hpp"
 
 using namespace std;

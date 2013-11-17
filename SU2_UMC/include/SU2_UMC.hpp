@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_GDC.
  *        The subroutines and functions are in the <i>SU2_GDC.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -34,3 +34,10 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
+
+/*--- function prototypes ---*/
+void Tracked_Points_to_Coords(CBoundaryGeometry *boundary);
+void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary);
+void clean_up(const char *filename);
+bool fexists(const char *filename);
+

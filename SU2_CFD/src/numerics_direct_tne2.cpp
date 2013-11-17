@@ -2,7 +2,7 @@
  * \file numerics_direct_tne2.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -454,7 +454,7 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
   double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   double Cvtrs;
-  double Ru, rho_el_i, rho_el_j, conc_i, conc_j, *Ms, *xi;
+  double Ru, rho_el_i, rho_el_j, *Ms, *xi;
 //  double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   double e_ve_i, e_ve_j;
   

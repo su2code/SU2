@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -1532,7 +1532,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar, jVar, iSpecies, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
   unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
-  iVar_Tempv = 0,iVar_MagF = 0, iVar_EF =0, iVar_Temp = 0, iVar_Lam =0, iVar_Mach = 0, iVar_Press = 0,
+  iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0,
   iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
@@ -3196,7 +3196,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   
 }
 
-void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
   /*--- Local variables ---*/
   unsigned short Kind_Solver  = config->GetKind_Solver();
@@ -3302,8 +3302,17 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, unsigned short va
   }
   
   if (config->GetExtraOutput()) {
+    string *headings = NULL;
+    //if (Kind_Solver == RANS){
+      headings = solver[TURB_SOL]->OutputHeadingNames;
+    //}
+    
     for (iVar = 0; iVar < nVar_Extra; iVar++) {
-      restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
+      if (headings == NULL){
+        restart_file << "\t\"ExtraOutput_" << iVar+1<<"\"";
+      }else{
+        restart_file << "\t\""<< headings[iVar] <<"\"";
+      }
     }
   }
   
@@ -3580,7 +3589,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     fea_resid[1000], end[1000];
     double dummy = 0.0;
     unsigned short iVar, iMarker, iMarker_Monitoring;
-    unsigned short iSpecies, loc;
     
     unsigned long LinSolvIter = 0;
     double timeiter = double(timeused)/double(iExtIter+1);
@@ -3617,7 +3625,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, PressureDrag = 0.0, ViscDrag = 0.0, MagDrag = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
+    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -4707,7 +4715,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Write a native restart file ---*/
       if (Wrt_Rst)
-        SetRestart(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
       
       if (Wrt_Vol) {
         
@@ -4716,7 +4724,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
             
@@ -4752,7 +4760,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+            SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
             
@@ -4852,7 +4860,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
+            SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone], false);
             break;
             
@@ -4891,7 +4899,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
-            SetTecplot_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
+            SetTecplot_ASCII(config[iZone], geometry[iZone],solver, iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone], true);
             break;
             

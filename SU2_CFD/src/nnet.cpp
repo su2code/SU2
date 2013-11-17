@@ -5,8 +5,8 @@ Scaler::Scaler(){}
 Scaler::~Scaler(){}
 
 NormalScaler::NormalScaler(){
-	delete mu;
-	delete sigma;
+	delete [] mu;
+	delete [] sigma;
 }
 NormalScaler::NormalScaler(int nInputs, double *mu, double *sigma){
 	this->nInputs = nInputs;
@@ -228,23 +228,23 @@ CNeurNet::CNeurNet(string filename, string predFilename){
 }
 
 CNeurNet::~CNeurNet(){
-	delete this->inputScaler;
-	delete this->outputScaler;
+//	delete this->inputScaler;
+//	delete this->outputScaler;
 	delete this->parameters;
 	for (int i=0; i < this->nLayers; i++){
-		delete this->parameterIdx[i];
-		delete this->nParametersPerNeuron[i];
+		delete [] this->parameterIdx[i];
+		delete [] this->nParametersPerNeuron[i];
 		for (int j = 0; j < this -> nNeuronsPerLayer[i]; j++){
-			delete this -> neurons[i][j];
+			delete [] this -> neurons[i][j];
 		}
 	}
 	for (int i= 0; i < this->nLayers; i++){
-		delete this->neurons[i];
+		delete [] this->neurons[i];
 	}
-	delete this->nNeuronsPerLayer;
-	delete this->parameterIdx;
-	delete this->nParametersPerNeuron;
-	delete this->neurons;
+	delete [] this->nNeuronsPerLayer;
+	delete [] this->parameterIdx;
+	delete [] this->nParametersPerNeuron;
+	delete [] this->neurons;
 }
 
 int CNeurNet::LoadInteger(ifstream& f, string name){
@@ -327,8 +327,8 @@ Scaler* CNeurNet::LoadScaler(ifstream& f, int nVals){
 
 		Scaler * s = new NormalScaler(nVals,mus,sigmas);
 
-		delete mus;
-		delete sigmas;
+		delete [] mus;
+		delete [] sigmas;
 
 		return s;
 	}
@@ -379,9 +379,9 @@ void CNeurNet::Predict(double * input, double * output){
 
 	for (int i=0; i < this->nLayers; i++){
 		//delete neuronSums[i];
-		delete neuronOutputs[i];
+		delete [] neuronOutputs[i];
 	}
-	delete neuronOutputs;
+	delete [] neuronOutputs;
 	return;
 }
 
@@ -477,8 +477,8 @@ bool CNeurNet::CheckPredictions(ifstream& f){
 			}
 		}
 	}
-	delete input;
-	delete output;
-	delete predOutput;
+	delete [] input;
+	delete [] output;
+	delete [] predOutput;
 	return true;
 }

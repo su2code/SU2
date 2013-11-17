@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -40,12 +40,12 @@
 
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/matrix_structure.hpp"
-#include "../../Common/include/vector_structure.hpp"
-#include "../../Common/include/linear_solvers_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
+#include "geometry_structure.hpp"
+#include "config_structure.hpp"
+#include "matrix_structure.hpp"
+#include "vector_structure.hpp"
+#include "linear_solvers_structure.hpp"
+#include "grid_movement_structure.hpp"
 
 
 using namespace std;
@@ -55,7 +55,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, Plasma, etc.)
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CSolver {
 protected:
@@ -1584,7 +1584,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -2108,13 +2108,6 @@ public:
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
     
-    /*!
-	 * \brief Compute the pressure forces and all the adimensional coefficients.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
-    
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coefficient is going to be computed.
@@ -2462,7 +2455,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -2671,7 +2664,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -2775,7 +2768,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -2939,7 +2932,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSSTSolver: public CTurbSolver {
