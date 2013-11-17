@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -31,16 +31,8 @@
 
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-
-#ifndef NO_CGNS
-#include "cgnslib.h"
-#endif
-
-#ifndef NO_TECIO
-#include "TECIO.h"
-#endif
+#include "geometry_structure.hpp"
+#include "config_structure.hpp"
 
 using namespace std;
 
@@ -49,7 +41,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class COutput {
 
@@ -194,30 +186,6 @@ public:
    * \param[in] val_iZone - iZone index.
 	 */
 	void SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
-	 * \brief Write the x, y, & z coordinates to a CGNS output file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-	 * \brief Write the element connectivity to a CGNS output file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-	 * \brief Write solution data to a CGNS output file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
 	 * \brief Write a Paraview ASCII solution file.
@@ -236,38 +204,6 @@ public:
    * \param[in] val_nZone - Total number of zones.
 	 */
 	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-  
-  /*!
-	 * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-	 * \brief Write the coordinates and connectivity to a Tecplot binary surface mesh file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
-  /*!
-	 * \brief Write solution data to a Tecplot binary volume solution file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-
-  /*!
-	 * \brief Write solution data to a Tecplot binary surface solution file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
-	 */
-	void SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
 	 * \brief Deallocate temporary memory needed for merging and writing coordinates.

@@ -33,7 +33,6 @@ ___bin_SU2_EDU_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_direct_mean.cpp \
 		../src/numerics_direct_turbulent.cpp \
 		../src/numerics_structure.cpp \
-		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
 		../src/output_tecplot.cpp \
 		../src/output_paraview.cpp \
@@ -43,27 +42,12 @@ ___bin_SU2_EDU_SOURCES = ../include/definition_structure.hpp \
 		../src/SU2_EDU.cpp \
 		../src/variable_direct_mean.cpp \
 		../src/variable_direct_turbulent.cpp \
-		../src/variable_structure.cpp
-
-___bin_SU2_EDU_CXXFLAGS =
-___bin_SU2_EDU_LDADD = ../../Common/lib/libSU2.a
-
-# if BUILD_CGNS
-___bin_SU2_EDU_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_EDU_LDADD += @CGNS_LD@
-# endif
-
-# if BUILD_METIS
-___bin_SU2_EDU_CXXFLAGS += @METIS_CXX@
-___bin_SU2_EDU_LDADD += @METIS_LD@
-# endif
-
-# if BUILD_TECIO
-___bin_SU2_EDU_CXXFLAGS += @TECIO_CXX@
-___bin_SU2_EDU_LDADD += @TECIO_LD@
-# endif
-
-# if BUILD_MUTATIONPP
-___bin_SU2_EDU_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_EDU_LDADD += @MUTATIONPP_LD@
-# endif
+		../src/config_structure.cpp \
+		../src/dual_grid_structure.cpp \
+		../src/grid_movement_structure.cpp \
+		../src/geometry_structure.cpp \
+		../src/matrix_structure.cpp \
+		../src/primal_grid_structure.cpp \
+		../src/linear_solvers_structure.cpp \
+		../src/variable_structure.cpp \
+		../src/vector_structure.cpp
