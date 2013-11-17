@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <iostream>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
@@ -60,7 +61,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CSolver {
 protected:
@@ -113,8 +114,9 @@ public:
   
 	CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
 
-    CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
-
+  CSysVector OutputVariables;		/*!< \brief vector to store the extra variables to be written. */
+  string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
+  
 	CVariable** node;	/*!< \brief Vector which the define the variables for each problem. */
   CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */
   
@@ -158,13 +160,20 @@ public:
 	 */
 	virtual void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Get number of linear solver iterations.
 	 * \return Number of linear solver iterations.
@@ -1630,7 +1639,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -1675,7 +1684,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -1796,6 +1805,10 @@ protected:
   vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
   vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
   
+  double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
+	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+	*Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  
 public:
     
 	/*!
@@ -1836,13 +1849,20 @@ public:
 	 */
 	void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the density at the inlet.
 	 * \return Value of the density at the infinity.
@@ -2633,7 +2653,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -2649,18 +2669,18 @@ private:
 	*CFx_Visc,			/*!< \brief Force x coefficient (viscous contribution) for each boundary. */
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
-    *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
-    *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CLift_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CDrag_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-    *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-    *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-    
+  *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
+  *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
@@ -2677,11 +2697,11 @@ private:
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-    AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-    AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
-    
+  AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  
 public:
-    
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -2842,7 +2862,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -2891,13 +2911,13 @@ public:
 	 */
 	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2946,7 +2966,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -3154,7 +3174,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -3354,7 +3374,7 @@ public:
 	 */
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
-  
+  double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
 };
 
 
@@ -3364,7 +3384,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -3541,7 +3561,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -3702,7 +3722,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -4125,7 +4145,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -4218,7 +4238,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -4361,7 +4381,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -4484,7 +4504,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios.
- *  \version 2.0.8
+ *  \version 2.0.9
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -4621,7 +4641,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 2.0.8
+ *  \version 2.0.9
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -4776,7 +4796,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 2.0.8
+ *  \version 2.0.9
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -4894,7 +4914,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 2.0.8
+ *  \version 2.0.9
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -5074,7 +5094,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -5110,13 +5130,13 @@ public:
 	 */
 	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-    
+  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5253,7 +5273,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CTemplateSolver : public CSolver {
 private:

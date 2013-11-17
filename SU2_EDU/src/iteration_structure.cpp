@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -27,7 +27,6 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
                        CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                        CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement) {
   
-	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   

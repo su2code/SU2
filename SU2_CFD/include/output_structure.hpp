@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class COutput {
 
@@ -223,7 +223,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
 	 */
-	void SetRestart(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,unsigned short val_iZone);
 
   /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -265,7 +265,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+	void SetTecplot_ASCII(CConfig *config, CGeometry *geometry,CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
 	 * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.

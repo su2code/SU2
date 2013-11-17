@@ -3,7 +3,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).

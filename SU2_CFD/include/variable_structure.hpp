@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.8
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -37,7 +37,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CVariable {
 protected:
@@ -1365,6 +1365,14 @@ public:
 	 */
 	virtual double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	virtual double GetLimiter_Primitive(unsigned short val_var);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_var - Index of the variable.
@@ -1373,11 +1381,25 @@ public:
 	 */
 	virtual void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	virtual void SetLimiter_Primitive(unsigned short val_var, double val_value);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double **GetGradient_Primitive(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the primitive variables gradient.
+	 */
+	virtual double *GetLimiter_Primitive(void);
 
 	/*!
 	 * \brief Set the blending function for the blending of k-w and k-eps.
@@ -1539,7 +1561,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -1569,7 +1591,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CPotentialVariable : public CVariable {
 	double *Charge_Density;
@@ -1613,7 +1635,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -1659,7 +1681,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -1705,7 +1727,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -1779,7 +1801,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -1856,6 +1878,14 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double GetLimiter_Primitive(unsigned short val_var);
 
 	/*!
 	 * \brief Set the gradient of the primitive variables.
@@ -1865,11 +1895,25 @@ public:
 	 */
 	void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value);
 
+  /*!
+	 * \brief Set the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetLimiter_Primitive(unsigned short val_var, double val_value);
+  
 	/*!
 	 * \brief Get the value of the primitive variables gradient.
 	 * \return Value of the primitive variables gradient.
 	 */
 	double **GetGradient_Primitive(void);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double *GetLimiter_Primitive(void);
 
 	/*!
 	 * \brief Set the value of the velocity*velocity for the incompressible solver.
@@ -2121,7 +2165,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -2270,7 +2314,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -2314,7 +2358,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -2361,7 +2405,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -2407,7 +2451,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -2464,7 +2508,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -2526,7 +2570,7 @@ public:
  * \brief Main class for defining the variables of the adjoint potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjPotentialVariable : public CVariable {
 private:
@@ -2561,7 +2605,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -2680,7 +2724,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -2752,7 +2796,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -2802,7 +2846,7 @@ public:
  * \brief Main class for defining the variables of the linearized potential equation.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CLinPotentialVariable : public CVariable {
 public:	
@@ -2813,7 +2857,7 @@ public:
  * \brief Main class for defining the variables of the linearized Euler's equations.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CLinEulerVariable : public CVariable {
 private:
@@ -2890,7 +2934,7 @@ public:
  * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CLinNSVariable : public CLinEulerVariable {
 public:
@@ -2901,7 +2945,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3678,7 +3722,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios.
- * \version 2.0.8
+ * \version 2.0.9
  */
 class CTemplateVariable : public CVariable {
 public:

@@ -56,29 +56,32 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am____bin_SU2_EDU_OBJECTS =  \
-	../src/___bin_SU2_EDU-definition_structure.$(OBJEXT) \
-	../src/___bin_SU2_EDU-integration_structure.$(OBJEXT) \
-	../src/___bin_SU2_EDU-integration_time.$(OBJEXT) \
-	../src/___bin_SU2_EDU-iteration_structure.$(OBJEXT) \
-	../src/___bin_SU2_EDU-numerics_direct_mean.$(OBJEXT) \
-	../src/___bin_SU2_EDU-numerics_direct_turbulent.$(OBJEXT) \
-	../src/___bin_SU2_EDU-numerics_structure.$(OBJEXT) \
-	../src/___bin_SU2_EDU-output_cgns.$(OBJEXT) \
-	../src/___bin_SU2_EDU-output_structure.$(OBJEXT) \
-	../src/___bin_SU2_EDU-output_tecplot.$(OBJEXT) \
-	../src/___bin_SU2_EDU-output_paraview.$(OBJEXT) \
-	../src/___bin_SU2_EDU-solver_direct_mean.$(OBJEXT) \
-	../src/___bin_SU2_EDU-solver_direct_turbulent.$(OBJEXT) \
-	../src/___bin_SU2_EDU-solver_structure.$(OBJEXT) \
-	../src/___bin_SU2_EDU-SU2_EDU.$(OBJEXT) \
-	../src/___bin_SU2_EDU-variable_direct_mean.$(OBJEXT) \
-	../src/___bin_SU2_EDU-variable_direct_turbulent.$(OBJEXT) \
-	../src/___bin_SU2_EDU-variable_structure.$(OBJEXT)
+am____bin_SU2_EDU_OBJECTS = ../src/definition_structure.$(OBJEXT) \
+	../src/integration_structure.$(OBJEXT) \
+	../src/integration_time.$(OBJEXT) \
+	../src/iteration_structure.$(OBJEXT) \
+	../src/numerics_direct_mean.$(OBJEXT) \
+	../src/numerics_direct_turbulent.$(OBJEXT) \
+	../src/numerics_structure.$(OBJEXT) \
+	../src/output_structure.$(OBJEXT) \
+	../src/output_tecplot.$(OBJEXT) \
+	../src/output_paraview.$(OBJEXT) \
+	../src/solver_direct_mean.$(OBJEXT) \
+	../src/solver_direct_turbulent.$(OBJEXT) \
+	../src/solver_structure.$(OBJEXT) ../src/SU2_EDU.$(OBJEXT) \
+	../src/variable_direct_mean.$(OBJEXT) \
+	../src/variable_direct_turbulent.$(OBJEXT) \
+	../src/config_structure.$(OBJEXT) \
+	../src/dual_grid_structure.$(OBJEXT) \
+	../src/grid_movement_structure.$(OBJEXT) \
+	../src/geometry_structure.$(OBJEXT) \
+	../src/matrix_structure.$(OBJEXT) \
+	../src/primal_grid_structure.$(OBJEXT) \
+	../src/linear_solvers_structure.$(OBJEXT) \
+	../src/variable_structure.$(OBJEXT) \
+	../src/vector_structure.$(OBJEXT)
 ___bin_SU2_EDU_OBJECTS = $(am____bin_SU2_EDU_OBJECTS)
-___bin_SU2_EDU_DEPENDENCIES = ../../Common/lib/libSU2.a
-___bin_SU2_EDU_LINK = $(CXXLD) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+___bin_SU2_EDU_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -211,7 +214,6 @@ ___bin_SU2_EDU_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_direct_mean.cpp \
 		../src/numerics_direct_turbulent.cpp \
 		../src/numerics_structure.cpp \
-		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
 		../src/output_tecplot.cpp \
 		../src/output_paraview.cpp \
@@ -221,23 +223,16 @@ ___bin_SU2_EDU_SOURCES = ../include/definition_structure.hpp \
 		../src/SU2_EDU.cpp \
 		../src/variable_direct_mean.cpp \
 		../src/variable_direct_turbulent.cpp \
-		../src/variable_structure.cpp
+		../src/config_structure.cpp \
+		../src/dual_grid_structure.cpp \
+		../src/grid_movement_structure.cpp \
+		../src/geometry_structure.cpp \
+		../src/matrix_structure.cpp \
+		../src/primal_grid_structure.cpp \
+		../src/linear_solvers_structure.cpp \
+		../src/variable_structure.cpp \
+		../src/vector_structure.cpp
 
-
-# if BUILD_CGNS
-# endif
-
-# if BUILD_METIS
-# endif
-
-# if BUILD_TECIO
-# endif
-
-# if BUILD_MUTATIONPP
-___bin_SU2_EDU_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @TECIO_CXX@ \
-	@MUTATIONPP_CXX@ $(am__empty)
-___bin_SU2_EDU_LDADD = ../../Common/lib/libSU2.a @CGNS_LD@ @METIS_LD@ \
-	@TECIO_LD@ @MUTATIONPP_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:
@@ -315,91 +310,119 @@ clean-binPROGRAMS:
 ../src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) ../src/$(DEPDIR)
 	@: > ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-definition_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-integration_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-integration_time.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-iteration_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-numerics_direct_mean.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-numerics_direct_turbulent.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-numerics_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-output_cgns.$(OBJEXT): ../src/$(am__dirstamp) \
+../src/definition_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-output_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-output_tecplot.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-output_paraview.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-solver_direct_mean.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-solver_direct_turbulent.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-solver_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-SU2_EDU.$(OBJEXT): ../src/$(am__dirstamp) \
+../src/integration_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-variable_direct_mean.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-variable_direct_turbulent.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_EDU-variable_structure.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/integration_time.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/iteration_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/numerics_direct_mean.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/numerics_direct_turbulent.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/numerics_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/output_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/output_tecplot.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/output_paraview.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/solver_direct_mean.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/solver_direct_turbulent.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/solver_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/SU2_EDU.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/variable_direct_mean.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/variable_direct_turbulent.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/config_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/dual_grid_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/grid_movement_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/geometry_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/matrix_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/primal_grid_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/linear_solvers_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/variable_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/vector_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../bin/$(am__dirstamp):
 	@$(MKDIR_P) ../bin
 	@: > ../bin/$(am__dirstamp)
 ../bin/SU2_EDU$(EXEEXT): $(___bin_SU2_EDU_OBJECTS) $(___bin_SU2_EDU_DEPENDENCIES) ../bin/$(am__dirstamp)
 	@rm -f ../bin/SU2_EDU$(EXEEXT)
-	$(___bin_SU2_EDU_LINK) $(___bin_SU2_EDU_OBJECTS) $(___bin_SU2_EDU_LDADD) $(LIBS)
+	$(CXXLINK) $(___bin_SU2_EDU_OBJECTS) $(___bin_SU2_EDU_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-SU2_EDU.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-definition_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-integration_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-integration_time.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-iteration_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-numerics_direct_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-numerics_direct_turbulent.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-numerics_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-output_cgns.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-output_paraview.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-output_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-output_tecplot.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-solver_direct_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-solver_direct_turbulent.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-solver_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-variable_direct_mean.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-variable_direct_turbulent.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_EDU-variable_structure.$(OBJEXT)
+	-rm -f ../src/SU2_EDU.$(OBJEXT)
+	-rm -f ../src/config_structure.$(OBJEXT)
+	-rm -f ../src/definition_structure.$(OBJEXT)
+	-rm -f ../src/dual_grid_structure.$(OBJEXT)
+	-rm -f ../src/geometry_structure.$(OBJEXT)
+	-rm -f ../src/grid_movement_structure.$(OBJEXT)
+	-rm -f ../src/integration_structure.$(OBJEXT)
+	-rm -f ../src/integration_time.$(OBJEXT)
+	-rm -f ../src/iteration_structure.$(OBJEXT)
+	-rm -f ../src/linear_solvers_structure.$(OBJEXT)
+	-rm -f ../src/matrix_structure.$(OBJEXT)
+	-rm -f ../src/numerics_direct_mean.$(OBJEXT)
+	-rm -f ../src/numerics_direct_turbulent.$(OBJEXT)
+	-rm -f ../src/numerics_structure.$(OBJEXT)
+	-rm -f ../src/output_paraview.$(OBJEXT)
+	-rm -f ../src/output_structure.$(OBJEXT)
+	-rm -f ../src/output_tecplot.$(OBJEXT)
+	-rm -f ../src/primal_grid_structure.$(OBJEXT)
+	-rm -f ../src/solver_direct_mean.$(OBJEXT)
+	-rm -f ../src/solver_direct_turbulent.$(OBJEXT)
+	-rm -f ../src/solver_structure.$(OBJEXT)
+	-rm -f ../src/variable_direct_mean.$(OBJEXT)
+	-rm -f ../src/variable_direct_turbulent.$(OBJEXT)
+	-rm -f ../src/variable_structure.$(OBJEXT)
+	-rm -f ../src/vector_structure.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/SU2_EDU.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/config_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/definition_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/geometry_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/grid_movement_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/integration_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/integration_time.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/iteration_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/linear_solvers_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/matrix_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/numerics_direct_mean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/numerics_direct_turbulent.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/numerics_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/output_paraview.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/output_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/output_tecplot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/solver_direct_mean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/solver_direct_turbulent.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/solver_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/variable_direct_mean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/variable_direct_turbulent.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/variable_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/vector_structure.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -416,258 +439,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-../src/___bin_SU2_EDU-definition_structure.o: ../src/definition_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-definition_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Tpo -c -o ../src/___bin_SU2_EDU-definition_structure.o `test -f '../src/definition_structure.cpp' || echo '$(srcdir)/'`../src/definition_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/definition_structure.cpp' object='../src/___bin_SU2_EDU-definition_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-definition_structure.o `test -f '../src/definition_structure.cpp' || echo '$(srcdir)/'`../src/definition_structure.cpp
-
-../src/___bin_SU2_EDU-definition_structure.obj: ../src/definition_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-definition_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Tpo -c -o ../src/___bin_SU2_EDU-definition_structure.obj `if test -f '../src/definition_structure.cpp'; then $(CYGPATH_W) '../src/definition_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/definition_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-definition_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/definition_structure.cpp' object='../src/___bin_SU2_EDU-definition_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-definition_structure.obj `if test -f '../src/definition_structure.cpp'; then $(CYGPATH_W) '../src/definition_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/definition_structure.cpp'; fi`
-
-../src/___bin_SU2_EDU-integration_structure.o: ../src/integration_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-integration_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Tpo -c -o ../src/___bin_SU2_EDU-integration_structure.o `test -f '../src/integration_structure.cpp' || echo '$(srcdir)/'`../src/integration_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/integration_structure.cpp' object='../src/___bin_SU2_EDU-integration_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-integration_structure.o `test -f '../src/integration_structure.cpp' || echo '$(srcdir)/'`../src/integration_structure.cpp
-
-../src/___bin_SU2_EDU-integration_structure.obj: ../src/integration_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-integration_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Tpo -c -o ../src/___bin_SU2_EDU-integration_structure.obj `if test -f '../src/integration_structure.cpp'; then $(CYGPATH_W) '../src/integration_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-integration_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/integration_structure.cpp' object='../src/___bin_SU2_EDU-integration_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-integration_structure.obj `if test -f '../src/integration_structure.cpp'; then $(CYGPATH_W) '../src/integration_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_structure.cpp'; fi`
-
-../src/___bin_SU2_EDU-integration_time.o: ../src/integration_time.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-integration_time.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Tpo -c -o ../src/___bin_SU2_EDU-integration_time.o `test -f '../src/integration_time.cpp' || echo '$(srcdir)/'`../src/integration_time.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/integration_time.cpp' object='../src/___bin_SU2_EDU-integration_time.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-integration_time.o `test -f '../src/integration_time.cpp' || echo '$(srcdir)/'`../src/integration_time.cpp
-
-../src/___bin_SU2_EDU-integration_time.obj: ../src/integration_time.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-integration_time.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Tpo -c -o ../src/___bin_SU2_EDU-integration_time.obj `if test -f '../src/integration_time.cpp'; then $(CYGPATH_W) '../src/integration_time.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_time.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-integration_time.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/integration_time.cpp' object='../src/___bin_SU2_EDU-integration_time.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-integration_time.obj `if test -f '../src/integration_time.cpp'; then $(CYGPATH_W) '../src/integration_time.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/integration_time.cpp'; fi`
-
-../src/___bin_SU2_EDU-iteration_structure.o: ../src/iteration_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-iteration_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Tpo -c -o ../src/___bin_SU2_EDU-iteration_structure.o `test -f '../src/iteration_structure.cpp' || echo '$(srcdir)/'`../src/iteration_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/iteration_structure.cpp' object='../src/___bin_SU2_EDU-iteration_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-iteration_structure.o `test -f '../src/iteration_structure.cpp' || echo '$(srcdir)/'`../src/iteration_structure.cpp
-
-../src/___bin_SU2_EDU-iteration_structure.obj: ../src/iteration_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-iteration_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Tpo -c -o ../src/___bin_SU2_EDU-iteration_structure.obj `if test -f '../src/iteration_structure.cpp'; then $(CYGPATH_W) '../src/iteration_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/iteration_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-iteration_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/iteration_structure.cpp' object='../src/___bin_SU2_EDU-iteration_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-iteration_structure.obj `if test -f '../src/iteration_structure.cpp'; then $(CYGPATH_W) '../src/iteration_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/iteration_structure.cpp'; fi`
-
-../src/___bin_SU2_EDU-numerics_direct_mean.o: ../src/numerics_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-numerics_direct_mean.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Tpo -c -o ../src/___bin_SU2_EDU-numerics_direct_mean.o `test -f '../src/numerics_direct_mean.cpp' || echo '$(srcdir)/'`../src/numerics_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_mean.cpp' object='../src/___bin_SU2_EDU-numerics_direct_mean.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-numerics_direct_mean.o `test -f '../src/numerics_direct_mean.cpp' || echo '$(srcdir)/'`../src/numerics_direct_mean.cpp
-
-../src/___bin_SU2_EDU-numerics_direct_mean.obj: ../src/numerics_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-numerics_direct_mean.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Tpo -c -o ../src/___bin_SU2_EDU-numerics_direct_mean.obj `if test -f '../src/numerics_direct_mean.cpp'; then $(CYGPATH_W) '../src/numerics_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_mean.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_mean.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_mean.cpp' object='../src/___bin_SU2_EDU-numerics_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-numerics_direct_mean.obj `if test -f '../src/numerics_direct_mean.cpp'; then $(CYGPATH_W) '../src/numerics_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_mean.cpp'; fi`
-
-../src/___bin_SU2_EDU-numerics_direct_turbulent.o: ../src/numerics_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-numerics_direct_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Tpo -c -o ../src/___bin_SU2_EDU-numerics_direct_turbulent.o `test -f '../src/numerics_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_turbulent.cpp' object='../src/___bin_SU2_EDU-numerics_direct_turbulent.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-numerics_direct_turbulent.o `test -f '../src/numerics_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_direct_turbulent.cpp
-
-../src/___bin_SU2_EDU-numerics_direct_turbulent.obj: ../src/numerics_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-numerics_direct_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Tpo -c -o ../src/___bin_SU2_EDU-numerics_direct_turbulent.obj `if test -f '../src/numerics_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_turbulent.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_direct_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_direct_turbulent.cpp' object='../src/___bin_SU2_EDU-numerics_direct_turbulent.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-numerics_direct_turbulent.obj `if test -f '../src/numerics_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_turbulent.cpp'; fi`
-
-../src/___bin_SU2_EDU-numerics_structure.o: ../src/numerics_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-numerics_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Tpo -c -o ../src/___bin_SU2_EDU-numerics_structure.o `test -f '../src/numerics_structure.cpp' || echo '$(srcdir)/'`../src/numerics_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_structure.cpp' object='../src/___bin_SU2_EDU-numerics_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-numerics_structure.o `test -f '../src/numerics_structure.cpp' || echo '$(srcdir)/'`../src/numerics_structure.cpp
-
-../src/___bin_SU2_EDU-numerics_structure.obj: ../src/numerics_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-numerics_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Tpo -c -o ../src/___bin_SU2_EDU-numerics_structure.obj `if test -f '../src/numerics_structure.cpp'; then $(CYGPATH_W) '../src/numerics_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-numerics_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_structure.cpp' object='../src/___bin_SU2_EDU-numerics_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-numerics_structure.obj `if test -f '../src/numerics_structure.cpp'; then $(CYGPATH_W) '../src/numerics_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_structure.cpp'; fi`
-
-../src/___bin_SU2_EDU-output_cgns.o: ../src/output_cgns.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_cgns.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Tpo -c -o ../src/___bin_SU2_EDU-output_cgns.o `test -f '../src/output_cgns.cpp' || echo '$(srcdir)/'`../src/output_cgns.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_cgns.cpp' object='../src/___bin_SU2_EDU-output_cgns.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_cgns.o `test -f '../src/output_cgns.cpp' || echo '$(srcdir)/'`../src/output_cgns.cpp
-
-../src/___bin_SU2_EDU-output_cgns.obj: ../src/output_cgns.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_cgns.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Tpo -c -o ../src/___bin_SU2_EDU-output_cgns.obj `if test -f '../src/output_cgns.cpp'; then $(CYGPATH_W) '../src/output_cgns.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_cgns.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_cgns.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_cgns.cpp' object='../src/___bin_SU2_EDU-output_cgns.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_cgns.obj `if test -f '../src/output_cgns.cpp'; then $(CYGPATH_W) '../src/output_cgns.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_cgns.cpp'; fi`
-
-../src/___bin_SU2_EDU-output_structure.o: ../src/output_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Tpo -c -o ../src/___bin_SU2_EDU-output_structure.o `test -f '../src/output_structure.cpp' || echo '$(srcdir)/'`../src/output_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_structure.cpp' object='../src/___bin_SU2_EDU-output_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_structure.o `test -f '../src/output_structure.cpp' || echo '$(srcdir)/'`../src/output_structure.cpp
-
-../src/___bin_SU2_EDU-output_structure.obj: ../src/output_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Tpo -c -o ../src/___bin_SU2_EDU-output_structure.obj `if test -f '../src/output_structure.cpp'; then $(CYGPATH_W) '../src/output_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_structure.cpp' object='../src/___bin_SU2_EDU-output_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_structure.obj `if test -f '../src/output_structure.cpp'; then $(CYGPATH_W) '../src/output_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_structure.cpp'; fi`
-
-../src/___bin_SU2_EDU-output_tecplot.o: ../src/output_tecplot.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_tecplot.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Tpo -c -o ../src/___bin_SU2_EDU-output_tecplot.o `test -f '../src/output_tecplot.cpp' || echo '$(srcdir)/'`../src/output_tecplot.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_tecplot.cpp' object='../src/___bin_SU2_EDU-output_tecplot.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_tecplot.o `test -f '../src/output_tecplot.cpp' || echo '$(srcdir)/'`../src/output_tecplot.cpp
-
-../src/___bin_SU2_EDU-output_tecplot.obj: ../src/output_tecplot.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_tecplot.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Tpo -c -o ../src/___bin_SU2_EDU-output_tecplot.obj `if test -f '../src/output_tecplot.cpp'; then $(CYGPATH_W) '../src/output_tecplot.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_tecplot.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_tecplot.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_tecplot.cpp' object='../src/___bin_SU2_EDU-output_tecplot.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_tecplot.obj `if test -f '../src/output_tecplot.cpp'; then $(CYGPATH_W) '../src/output_tecplot.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_tecplot.cpp'; fi`
-
-../src/___bin_SU2_EDU-output_paraview.o: ../src/output_paraview.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_paraview.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Tpo -c -o ../src/___bin_SU2_EDU-output_paraview.o `test -f '../src/output_paraview.cpp' || echo '$(srcdir)/'`../src/output_paraview.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_paraview.cpp' object='../src/___bin_SU2_EDU-output_paraview.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_paraview.o `test -f '../src/output_paraview.cpp' || echo '$(srcdir)/'`../src/output_paraview.cpp
-
-../src/___bin_SU2_EDU-output_paraview.obj: ../src/output_paraview.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-output_paraview.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Tpo -c -o ../src/___bin_SU2_EDU-output_paraview.obj `if test -f '../src/output_paraview.cpp'; then $(CYGPATH_W) '../src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_paraview.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-output_paraview.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/output_paraview.cpp' object='../src/___bin_SU2_EDU-output_paraview.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-output_paraview.obj `if test -f '../src/output_paraview.cpp'; then $(CYGPATH_W) '../src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/output_paraview.cpp'; fi`
-
-../src/___bin_SU2_EDU-solver_direct_mean.o: ../src/solver_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-solver_direct_mean.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Tpo -c -o ../src/___bin_SU2_EDU-solver_direct_mean.o `test -f '../src/solver_direct_mean.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_mean.cpp' object='../src/___bin_SU2_EDU-solver_direct_mean.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-solver_direct_mean.o `test -f '../src/solver_direct_mean.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean.cpp
-
-../src/___bin_SU2_EDU-solver_direct_mean.obj: ../src/solver_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-solver_direct_mean.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Tpo -c -o ../src/___bin_SU2_EDU-solver_direct_mean.obj `if test -f '../src/solver_direct_mean.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_mean.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_mean.cpp' object='../src/___bin_SU2_EDU-solver_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-solver_direct_mean.obj `if test -f '../src/solver_direct_mean.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean.cpp'; fi`
-
-../src/___bin_SU2_EDU-solver_direct_turbulent.o: ../src/solver_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-solver_direct_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Tpo -c -o ../src/___bin_SU2_EDU-solver_direct_turbulent.o `test -f '../src/solver_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_turbulent.cpp' object='../src/___bin_SU2_EDU-solver_direct_turbulent.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-solver_direct_turbulent.o `test -f '../src/solver_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/solver_direct_turbulent.cpp
-
-../src/___bin_SU2_EDU-solver_direct_turbulent.obj: ../src/solver_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-solver_direct_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Tpo -c -o ../src/___bin_SU2_EDU-solver_direct_turbulent.obj `if test -f '../src/solver_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_turbulent.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-solver_direct_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_direct_turbulent.cpp' object='../src/___bin_SU2_EDU-solver_direct_turbulent.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-solver_direct_turbulent.obj `if test -f '../src/solver_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/solver_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_turbulent.cpp'; fi`
-
-../src/___bin_SU2_EDU-solver_structure.o: ../src/solver_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-solver_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Tpo -c -o ../src/___bin_SU2_EDU-solver_structure.o `test -f '../src/solver_structure.cpp' || echo '$(srcdir)/'`../src/solver_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_structure.cpp' object='../src/___bin_SU2_EDU-solver_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-solver_structure.o `test -f '../src/solver_structure.cpp' || echo '$(srcdir)/'`../src/solver_structure.cpp
-
-../src/___bin_SU2_EDU-solver_structure.obj: ../src/solver_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-solver_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Tpo -c -o ../src/___bin_SU2_EDU-solver_structure.obj `if test -f '../src/solver_structure.cpp'; then $(CYGPATH_W) '../src/solver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-solver_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/solver_structure.cpp' object='../src/___bin_SU2_EDU-solver_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-solver_structure.obj `if test -f '../src/solver_structure.cpp'; then $(CYGPATH_W) '../src/solver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_structure.cpp'; fi`
-
-../src/___bin_SU2_EDU-SU2_EDU.o: ../src/SU2_EDU.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-SU2_EDU.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Tpo -c -o ../src/___bin_SU2_EDU-SU2_EDU.o `test -f '../src/SU2_EDU.cpp' || echo '$(srcdir)/'`../src/SU2_EDU.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/SU2_EDU.cpp' object='../src/___bin_SU2_EDU-SU2_EDU.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-SU2_EDU.o `test -f '../src/SU2_EDU.cpp' || echo '$(srcdir)/'`../src/SU2_EDU.cpp
-
-../src/___bin_SU2_EDU-SU2_EDU.obj: ../src/SU2_EDU.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-SU2_EDU.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Tpo -c -o ../src/___bin_SU2_EDU-SU2_EDU.obj `if test -f '../src/SU2_EDU.cpp'; then $(CYGPATH_W) '../src/SU2_EDU.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_EDU.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-SU2_EDU.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/SU2_EDU.cpp' object='../src/___bin_SU2_EDU-SU2_EDU.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-SU2_EDU.obj `if test -f '../src/SU2_EDU.cpp'; then $(CYGPATH_W) '../src/SU2_EDU.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_EDU.cpp'; fi`
-
-../src/___bin_SU2_EDU-variable_direct_mean.o: ../src/variable_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-variable_direct_mean.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Tpo -c -o ../src/___bin_SU2_EDU-variable_direct_mean.o `test -f '../src/variable_direct_mean.cpp' || echo '$(srcdir)/'`../src/variable_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_mean.cpp' object='../src/___bin_SU2_EDU-variable_direct_mean.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-variable_direct_mean.o `test -f '../src/variable_direct_mean.cpp' || echo '$(srcdir)/'`../src/variable_direct_mean.cpp
-
-../src/___bin_SU2_EDU-variable_direct_mean.obj: ../src/variable_direct_mean.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-variable_direct_mean.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Tpo -c -o ../src/___bin_SU2_EDU-variable_direct_mean.obj `if test -f '../src/variable_direct_mean.cpp'; then $(CYGPATH_W) '../src/variable_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_mean.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_mean.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_mean.cpp' object='../src/___bin_SU2_EDU-variable_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-variable_direct_mean.obj `if test -f '../src/variable_direct_mean.cpp'; then $(CYGPATH_W) '../src/variable_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_mean.cpp'; fi`
-
-../src/___bin_SU2_EDU-variable_direct_turbulent.o: ../src/variable_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-variable_direct_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Tpo -c -o ../src/___bin_SU2_EDU-variable_direct_turbulent.o `test -f '../src/variable_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/variable_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_turbulent.cpp' object='../src/___bin_SU2_EDU-variable_direct_turbulent.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-variable_direct_turbulent.o `test -f '../src/variable_direct_turbulent.cpp' || echo '$(srcdir)/'`../src/variable_direct_turbulent.cpp
-
-../src/___bin_SU2_EDU-variable_direct_turbulent.obj: ../src/variable_direct_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-variable_direct_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Tpo -c -o ../src/___bin_SU2_EDU-variable_direct_turbulent.obj `if test -f '../src/variable_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/variable_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_turbulent.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-variable_direct_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_direct_turbulent.cpp' object='../src/___bin_SU2_EDU-variable_direct_turbulent.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-variable_direct_turbulent.obj `if test -f '../src/variable_direct_turbulent.cpp'; then $(CYGPATH_W) '../src/variable_direct_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_direct_turbulent.cpp'; fi`
-
-../src/___bin_SU2_EDU-variable_structure.o: ../src/variable_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-variable_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Tpo -c -o ../src/___bin_SU2_EDU-variable_structure.o `test -f '../src/variable_structure.cpp' || echo '$(srcdir)/'`../src/variable_structure.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_structure.cpp' object='../src/___bin_SU2_EDU-variable_structure.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-variable_structure.o `test -f '../src/variable_structure.cpp' || echo '$(srcdir)/'`../src/variable_structure.cpp
-
-../src/___bin_SU2_EDU-variable_structure.obj: ../src/variable_structure.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_EDU-variable_structure.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Tpo -c -o ../src/___bin_SU2_EDU-variable_structure.obj `if test -f '../src/variable_structure.cpp'; then $(CYGPATH_W) '../src/variable_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_structure.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_EDU-variable_structure.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/variable_structure.cpp' object='../src/___bin_SU2_EDU-variable_structure.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_EDU_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_EDU-variable_structure.obj `if test -f '../src/variable_structure.cpp'; then $(CYGPATH_W) '../src/variable_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/variable_structure.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -870,7 +641,6 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS
 
-# endif
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/debug"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/NACA_ADJ"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "structure_ONERAM6.cfg"
+            argument = "inv_NACA0012.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
