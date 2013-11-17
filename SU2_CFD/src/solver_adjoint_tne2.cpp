@@ -1548,17 +1548,17 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
   /*--- Loop over points in the domain ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    /*--- Initialize the Residual and Jacobian arrays ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      Residual[iVar] = 0.0;
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          Jacobian_i[iVar][jVar] = 0.0;
-          Jacobian_ii[iVar][jVar] = 0.0;
-        }
-      }
-    }
+//    /*--- Initialize the Residual and Jacobian arrays ---*/
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      Residual[iVar] = 0.0;
+//    if (implicit) {
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          Jacobian_i[iVar][jVar] = 0.0;
+//          Jacobian_ii[iVar][jVar] = 0.0;
+//        }
+//      }
+//    }
     
     /*--- Set conserved & primitive variables at point i ---*/
     numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
@@ -1603,13 +1603,12 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Compute the adjoint source term residual (dQ/dU^T * Psi) ---*/
     for (iVar = 0; iVar < nVar; iVar ++)
       for (jVar = 0; jVar < nVar; jVar++)
-        Residual[iVar] = Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
+        Residual[iVar] += Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
     
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-    
     
     /*--- Compute vibrational relaxation source terms ---*/
     numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
@@ -1639,6 +1638,7 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
   }
 }
 
@@ -1840,12 +1840,14 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
                                                CSolver **solver_container,
                                                CNumerics *numerics,
                                                CConfig *config) {
-	unsigned long iVar, iVertex, iPoint, Neigh;
+	unsigned long iSpecies, iVar, jVar, iVertex, iPoint, Neigh;
 	unsigned short iDim, iMarker, iNeigh;
-  unsigned short P_INDEX, VEL_INDEX;
+  unsigned short P_INDEX, VEL_INDEX, RHO_INDEX, H_INDEX;
 	double *d, *Normal, *UnitNormal;
-  double *Psi, *U;
-  double Enthalpy, rho, conspsi, Area;
+  double *Psi, *U, *V, *dPdU, *USens;
+  double rho, rhou, rhov, rhow, rhoE, rhoEve, H, p;
+  double conspsi, Area;
+  double Mach_Inf;
   double **PrimVar_Grad, **ConsVar_Grad, *ConsPsi_Grad;
   double ConsPsi, d_press, grad_v, v_gradconspsi;
   
@@ -1854,12 +1856,14 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   Normal       = NULL;
   Psi          = NULL;
   U            = NULL;
+  USens        = NULL;
   PrimVar_Grad = NULL;
   ConsVar_Grad = NULL;
   ConsPsi_Grad = NULL;
   
   /*--- Allocate arrays ---*/
   UnitNormal = new double[nDim];
+  USens      = new double[nVar];
   
 	/*--- Initialize sensitivities to zero ---*/
 	Total_Sens_Geo   = 0.0;
@@ -1869,6 +1873,8 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   Total_Sens_Temp  = 0.0;
 	//	Total_Sens_Far = 0.0;
   
+  RHO_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhoIndex();
+  H_INDEX   = solver_container[TNE2_SOL]->node[0]->GetHIndex();
   P_INDEX   = solver_container[TNE2_SOL]->node[0]->GetPIndex();
   VEL_INDEX = solver_container[TNE2_SOL]->node[0]->GetVelIndex();
   
@@ -1882,14 +1888,14 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          Psi      = node[iPoint]->GetSolution();
-          U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-          Enthalpy = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
-          rho = solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
+          Psi     = node[iPoint]->GetSolution();
+          U       = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
+          H       = solver_container[TNE2_SOL]->node[iPoint]->GetEnthalpy();
+          rho     = solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
           conspsi = 0.0;
           for (iVar = 0; iVar < nSpecies+nDim; iVar++)
             conspsi += U[iVar]*Psi[iVar];
-          conspsi   += rho*Enthalpy*Psi[nSpecies+nDim];
+          conspsi   += rho*H*Psi[nSpecies+nDim];
           conspsi   += U[nSpecies+nDim+1]*Psi[nSpecies+nDim+1];
           
           node[iPoint]->SetAuxVar(conspsi);
@@ -1897,15 +1903,15 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
           /*--- Also load the auxiliary variable for first neighbors ---*/
           for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
             Neigh = geometry->node[iPoint]->GetPoint(iNeigh);
-            Psi = node[Neigh]->GetSolution();
-            U = solver_container[TNE2_SOL]->node[Neigh]->GetSolution();
-            Enthalpy = solver_container[TNE2_SOL]->node[Neigh]->GetEnthalpy();
+            Psi   = node[Neigh]->GetSolution();
+            U     = solver_container[TNE2_SOL]->node[Neigh]->GetSolution();
+            H     = solver_container[TNE2_SOL]->node[Neigh]->GetEnthalpy();
             
-            rho = solver_container[TNE2_SOL]->node[Neigh]->GetDensity();
+            rho     = solver_container[TNE2_SOL]->node[Neigh]->GetDensity();
             conspsi = 0.0;
             for (iVar = 0; iVar < nSpecies+nDim; iVar++)
               conspsi += U[iVar]*Psi[iVar];
-            conspsi   += rho*Enthalpy*Psi[nSpecies+nDim];
+            conspsi   += rho*H*Psi[nSpecies+nDim];
             conspsi   += U[nSpecies+nDim+1]*Psi[nSpecies+nDim+1];
             node[Neigh]->SetAuxVar(conspsi);
           }
@@ -1959,6 +1965,198 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
       Total_Sens_Geo += Sens_Geo[iMarker];
     }
   }
+  
+  /*--- Farfield Sensitivity (Mach, AoA, Press, Temp) ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+      
+      Sens_Mach[iMarker]  = 0.0;
+      Sens_AoA[iMarker]   = 0.0;
+      Sens_Press[iMarker] = 0.0;
+      Sens_Temp[iMarker]  = 0.0;
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          Psi      = node[iPoint]->GetSolution();
+          U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
+          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+          dPdU     = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
+          Normal   = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Mach_Inf = config->GetMach_FreeStreamND();
+          
+          rho = V[RHO_INDEX];
+          rhou = U[nSpecies];
+          rhov = U[nSpecies+1];
+          if (nDim == 2) {
+            rhow   = 0.0;
+            rhoE   = U[nSpecies+nDim];
+            rhoEve = U[nSpecies+nDim+1];
+          }
+          else {
+            rhow   = U[nSpecies+2];
+            rhoE   = U[nSpecies+nDim];
+            rhoEve = U[nSpecies+nDim+1];
+          }
+          p = V[P_INDEX];
+          H = V[H_INDEX];
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = -Normal[iDim]/Area;
+          
+          /*--- Get the inviscid projected Jacobian ---*/
+          numerics->GetInviscidProjJac(U, V, dPdU, UnitNormal, 1.0, Jacobian_j);
+          
+          /*--- Take the transpose & integrate over dual-face area ---*/
+          for (iVar = 0; iVar < nVar; iVar++)
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_jj[iVar][jVar] = Jacobian_j[jVar][iVar]*Area;
+          
+          
+          /*--- Mach number sensitivity ---*/
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+            USens[iSpecies] = 0.0;
+          USens[nSpecies]   = rhou/Mach_Inf;
+          USens[nSpecies+1] = rhov/Mach_Inf;
+          if (nDim == 2)
+            USens[nSpecies+2] = Gamma*Mach_Inf*p;
+          else {
+            USens[nSpecies+2] = rhow/Mach_Inf;
+            USens[nSpecies+3] = Gamma*Mach_Inf*p; }
+          for (iVar = 0; iVar < nVar; iVar++) {
+            for (jVar = 0; jVar < nVar; jVar++) {
+              Sens_Mach[iMarker] += Psi[iVar]*Jacobian_j[jVar][iVar]*USens[jVar];
+            }
+          }
+          
+          /*--- AoA sensitivity ---*/
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+            USens[iSpecies] = 0.0;
+          if (nDim == 2) {
+            USens[nSpecies]   = -rhov;
+            USens[nSpecies+1] = rhou;
+            USens[nSpecies+2] = 0.0;
+          } else {
+            USens[nSpecies]   = -rhow;
+            USens[nSpecies+1] = 0.0;
+            USens[nSpecies+2] = rhou;
+            USens[nSpecies+3] = 0.0;
+          }
+          for (iVar = 0; iVar < nVar; iVar++) {
+            for (jVar = 0; jVar < nVar; jVar++) {
+              Sens_AoA[iMarker] += Psi[iVar]*Jacobian_j[jVar][iVar]*USens[jVar];
+            }
+          }
+          
+//          /*--- Pressure sensitivity ---*/
+//          USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
+//          if (nDim == 2) { USens[3] = rE/p; }
+//          else { USens[3] = rw/p; USens[4] = rE/p; }
+//          for (iPos = 0; iPos < nVar; iPos++) {
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//              Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+//            }
+//          }
+//          
+//          /*--- Temperature sensitivity ---*/
+//          T = p/(r*Gas_Constant);
+//          USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
+//          if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+//          else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+//          for (iPos = 0; iPos < nVar; iPos++) {
+//            for (jPos = 0; jPos < nVar; jPos++) {
+//              Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+//            }
+//          }
+        }
+      }
+      Total_Sens_Mach -= Sens_Mach[iMarker];
+      Total_Sens_AoA -= Sens_AoA[iMarker];
+      Total_Sens_Press -= Sens_Press[iMarker];
+      Total_Sens_Temp -= Sens_Temp[iMarker];
+    }
+  }
+  
+  /*--- Explicit contribution from objective function quantity ---*/
+//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//    
+//    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+//      
+//      Sens_Mach[iMarker]  = 0.0;
+//      Sens_AoA[iMarker]   = 0.0;
+//      Sens_Press[iMarker] = 0.0;
+//      Sens_Temp[iMarker]  = 0.0;
+//      
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        
+//        if (geometry->node[iPoint]->GetDomain()) {
+//          
+//          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+//          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+//          
+//          Mach_Inf   = config->GetMach_FreeStreamND();
+//          if (grid_movement) Mach_Inf = config->GetMach_Motion();
+//          
+//          d = node[iPoint]->GetForceProj_Vector();
+//          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//          Area = sqrt(Area);
+//          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//          
+//          /*--- Mach number sensitivity ---*/
+//          for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2/Mach_Inf)*d[iPos];
+//          for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+//          
+//          /*--- AoA sensitivity ---*/
+//          if (nDim == 2) {
+//            D[0][0] = 0.0; D[0][1] = -1.0;
+//            D[1][0] = 1.0; D[1][1] = 0.0;
+//          }
+//          else {
+//            D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
+//            D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
+//            D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+//          }
+//          
+//          for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
+//          for (iPos = 0; iPos < nDim; iPos++) {
+//            for (jPos = 0; jPos < nDim; jPos++)
+//              Dd[iPos] += D[iPos][jPos]*d[jPos];
+//          }
+//          
+//          for (iPos = 0; iPos < nDim; iPos++)
+//            Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+//          
+//          /*--- Pressure sensitivity ---*/
+//          for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
+//          for (iPos = 0; iPos<nDim; iPos++)
+//            Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+//          
+//          /*--- Temperature sensitivity ---*/
+//          for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
+//          for (iPos = 0; iPos<nDim; iPos++)
+//            Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+//          
+//        }
+//      }
+//      
+//      Total_Sens_Mach   += Sens_Mach[iMarker];
+//      Total_Sens_AoA    += Sens_AoA[iMarker];
+//      Total_Sens_Press  += Sens_Press[iMarker];
+//      Total_Sens_Temp   += Sens_Temp[iMarker];
+//      
+//    }
+//  }
+  
+  delete [] USens;
+  delete [] UnitNormal;
 }
 
 void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
