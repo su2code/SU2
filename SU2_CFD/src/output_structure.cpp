@@ -63,7 +63,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
-  double PressCoeff = 0.0, SkinFrictionCoeff, HeatFlux, xCoord, yCoord, zCoord, Mach, Pressure;
+  double PressCoeff = 0.0, SkinFrictionCoeff, HeatFlux;
+  double xCoord, yCoord, zCoord, Mach, Pressure;
   char cstr[200];
   
   unsigned short solver = config->GetKind_Solver();
@@ -149,14 +150,17 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #else
   
-  int rank = MPI::COMM_WORLD.Get_rank(), iProcessor, nProcessor = MPI::COMM_WORLD.Get_size();
+  int rank = MPI::COMM_WORLD.Get_rank();
+  int iProcessor, nProcessor = MPI::COMM_WORLD.Get_size();
 
-  unsigned long Buffer_Send_nVertex[1], nVertex_Surface = 0, nLocalVertex_Surface = 0,
-  MaxLocalVertex_Surface = 0, nBuffer_Scalar, *Buffer_Receive_nVertex = NULL, position;
-  ofstream SurfFlow_file;
+  unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
+  unsigned long nVertex_Surface = 0, nLocalVertex_Surface = 0;
+  unsigned long MaxLocalVertex_Surface = 0;
   
-  /*--- Write the surface .csv file, the information of all the vertices is
-   sent to the MASTER_NODE for writing ---*/
+  /*--- Find the max number of surface vertices among all
+   partitions and set up buffers. The master node will handle the
+   writing of the CSV file after gathering all of the data. ---*/
+  
   nLocalVertex_Surface = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_Plotting(iMarker) == YES)
@@ -165,23 +169,59 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface++;
       }
   
-  if (rank == MASTER_NODE)
-    Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  /*--- Communicate the number of local vertices on each partition
+   to the master node ---*/
   
   Buffer_Send_nVertex[0] = nLocalVertex_Surface;
-  
+  if (rank == MASTER_NODE) Buffer_Recv_nVertex = new unsigned long [nProcessor];
   MPI::COMM_WORLD.Barrier();
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface, 1, MPI::UNSIGNED_LONG, MPI::MAX);
-  MPI::COMM_WORLD.Gather(&Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
+  MPI::COMM_WORLD.Allreduce(&nLocalVertex_Surface, &MaxLocalVertex_Surface,
+                            1, MPI::UNSIGNED_LONG, MPI::MAX);
+  MPI::COMM_WORLD.Gather(&Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG,
+                        Buffer_Recv_nVertex, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
+  
+  /*--- Send and Recv buffers ---*/
   
   double *Buffer_Send_Coord_x = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_Coord_x = NULL;
+  
   double *Buffer_Send_Coord_y = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_Coord_y = NULL;
+  
   double *Buffer_Send_Coord_z = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_Coord_z = NULL;
+  
   double *Buffer_Send_Press = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_Press = NULL;
+  
   double *Buffer_Send_CPress = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_CPress = NULL;
+  
   double *Buffer_Send_Mach = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_Mach = NULL;
+  
   double *Buffer_Send_SkinFriction = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_SkinFriction = NULL;
+  
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
+  unsigned long *Buffer_Recv_GlobalIndex = NULL;
+
+  /*--- Prepare the receive buffers on the master node only. ---*/
+  
+  if (rank == MASTER_NODE) {
+    Buffer_Recv_Coord_x = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Coord_y = new double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3) Buffer_Recv_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Press   = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_CPress  = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Mach    = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_SkinFriction = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
+  }
+  
+  /*--- Loop over all vertices in this partition and load the
+   data of the specified type into the buffer to be sent to
+   the master node. ---*/
   
   nVertex_Surface = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -195,59 +235,45 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
           Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
           if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2);
-          if (config->GetKind_Solver() == EULER)
+          if (solver == EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
-          if ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver() == RANS))
+          if ((solver == NAVIER_STOKES) || (solver == RANS))
             Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
           nVertex_Surface++;
         }
       }
   
-  double *Buffer_Receive_Coord_x = NULL, *Buffer_Receive_Coord_y = NULL, *Buffer_Receive_Coord_z = NULL, *Buffer_Receive_Press = NULL, *Buffer_Receive_CPress = NULL,
-  *Buffer_Receive_Mach = NULL, *Buffer_Receive_SkinFriction = NULL;
-  unsigned long *Buffer_Receive_GlobalIndex = NULL;
+  /*--- Send the information to the master node ---*/
   
-  if (rank == MASTER_NODE) {
-    Buffer_Receive_Coord_x = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Coord_y = new double [nProcessor*MaxLocalVertex_Surface];
-    if (nDim == 3) Buffer_Receive_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Press = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_CPress = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_Mach = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_SkinFriction = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_GlobalIndex = new  unsigned long [nProcessor*MaxLocalVertex_Surface];
-  }
-  
-  nBuffer_Scalar = MaxLocalVertex_Surface;
-  
-  /*--- Send the information to the Master node ---*/
   MPI::COMM_WORLD.Barrier();
-  MPI::COMM_WORLD.Gather(Buffer_Send_Coord_x, nBuffer_Scalar, MPI::DOUBLE,
-                         Buffer_Receive_Coord_x, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  MPI::COMM_WORLD.Gather(Buffer_Send_Coord_y, nBuffer_Scalar, MPI::DOUBLE,
-                         Buffer_Receive_Coord_y, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  if (nDim == 3) MPI::COMM_WORLD.Gather(Buffer_Send_Coord_z, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Receive_Coord_z, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  MPI::COMM_WORLD.Gather(Buffer_Send_Press, nBuffer_Scalar, MPI::DOUBLE,
-                         Buffer_Receive_Press, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  MPI::COMM_WORLD.Gather(Buffer_Send_CPress, nBuffer_Scalar, MPI::DOUBLE,
-                         Buffer_Receive_CPress, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  if (config->GetKind_Solver() == EULER)
-    MPI::COMM_WORLD.Gather(Buffer_Send_Mach, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Receive_Mach, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
-  if ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver() == RANS))
-    MPI::COMM_WORLD.Gather(Buffer_Send_SkinFriction, nBuffer_Scalar, MPI::DOUBLE,
-                           Buffer_Receive_SkinFriction, nBuffer_Scalar, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Gather(Buffer_Send_Coord_x, MaxLocalVertex_Surface, MPI::DOUBLE,
+                         Buffer_Recv_Coord_x, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Gather(Buffer_Send_Coord_y, MaxLocalVertex_Surface, MPI::DOUBLE,
+                         Buffer_Recv_Coord_y, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  if (nDim == 3) MPI::COMM_WORLD.Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Gather(Buffer_Send_Press, MaxLocalVertex_Surface, MPI::DOUBLE,
+                         Buffer_Recv_Press, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  MPI::COMM_WORLD.Gather(Buffer_Send_CPress, MaxLocalVertex_Surface, MPI::DOUBLE,
+                         Buffer_Recv_CPress, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  if (solver == EULER)
+    MPI::COMM_WORLD.Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  if ((solver == NAVIER_STOKES) || (solver == RANS))
+    MPI::COMM_WORLD.Gather(Buffer_Send_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
   
-  MPI::COMM_WORLD.Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI::UNSIGNED_LONG,
-                         Buffer_Receive_GlobalIndex, nBuffer_Scalar, MPI::UNSIGNED_LONG, MASTER_NODE);
+  MPI::COMM_WORLD.Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI::UNSIGNED_LONG,
+                         Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI::UNSIGNED_LONG, MASTER_NODE);
   
-  /*--- The master node writes the surface files ---*/
+  /*--- The master node unpacks the data and writes the surface CSV file ---*/
+  
   if (rank == MASTER_NODE) {
     
     /*--- Write file name with extension if unsteady ---*/
     char buffer[50];
     string filename = config->GetSurfFlowCoeff_FileName();
+    ofstream SurfFlow_file;
     
     /*--- Remove the domain number from the surface csv filename ---*/
     if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
@@ -284,44 +310,59 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
     }
     
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Plotting(iMarker) == YES) {
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          Global_Index = Buffer_Receive_GlobalIndex[position];
-          xCoord = Buffer_Receive_Coord_x[position];
-          yCoord = Buffer_Receive_Coord_y[position];
-          if (nDim == 3) zCoord = Buffer_Receive_Coord_z[position];
-          Pressure = Buffer_Receive_Press[position];
-          PressCoeff = Buffer_Receive_CPress[position];
-          SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
-          if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
-          SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
-          switch (solver) {
-            case EULER :
-              Mach = Buffer_Receive_Mach[position];
-              SurfFlow_file << scientific << Mach << endl;
-              break;
-            case NAVIER_STOKES: case RANS:
-              SkinFrictionCoeff = Buffer_Receive_SkinFriction[position];
-              SurfFlow_file << scientific << SkinFrictionCoeff << endl;
-              break;
-          }
+    /*--- Loop through all of the collected data and write each node's values ---*/
+    
+    unsigned long Total_Index;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
+        
+        /*--- Current index position and global index ---*/
+        Total_Index  = iProcessor*MaxLocalVertex_Surface+iVertex;
+        Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
+        
+        /*--- Retrieve the merged data for this node ---*/
+        xCoord = Buffer_Recv_Coord_x[Total_Index];
+        yCoord = Buffer_Recv_Coord_y[Total_Index];
+        if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
+        Pressure   = Buffer_Recv_Press[Total_Index];
+        PressCoeff = Buffer_Recv_CPress[Total_Index];
+        
+        /*--- Write the first part of the data ---*/
+        SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
+        if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
+        SurfFlow_file << scientific << Pressure << ", " << PressCoeff << ", ";
+        
+        /*--- Write the solver-dependent part of the data ---*/
+        switch (solver) {
+          case EULER :
+          Mach = Buffer_Recv_Mach[Total_Index];
+          SurfFlow_file << scientific << Mach << endl;
+          break;
+          case NAVIER_STOKES: case RANS:
+          SkinFrictionCoeff = Buffer_Recv_SkinFriction[Total_Index];
+          SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+          break;
         }
       }
     }
 
+    /*--- Close the CSV file ---*/
+    SurfFlow_file.close();
+   
+    /*--- Release the recv buffers on the master node ---*/
+    
+    delete [] Buffer_Recv_Coord_x;
+    delete [] Buffer_Recv_Coord_y;
+    if (nDim == 3) delete [] Buffer_Recv_Coord_z;
+    delete [] Buffer_Recv_Press;
+    delete [] Buffer_Recv_CPress;
+    delete [] Buffer_Recv_Mach;
+    delete [] Buffer_Recv_SkinFriction;
+    delete [] Buffer_Recv_GlobalIndex;
+    
   }
   
-  if (rank == MASTER_NODE) {
-    delete [] Buffer_Receive_Coord_x;
-    delete [] Buffer_Receive_Coord_y;
-    if (nDim == 3) delete [] Buffer_Receive_Coord_z;
-    delete [] Buffer_Receive_Press;
-    delete [] Buffer_Receive_CPress;
-    delete [] Buffer_Receive_Mach;
-    delete [] Buffer_Receive_SkinFriction;
-    delete [] Buffer_Receive_GlobalIndex;
-  }
+  /*--- Release the memory for the remaining buffers and exit ---*/
   
   delete [] Buffer_Send_Coord_x;
   delete [] Buffer_Send_Coord_y;
@@ -332,9 +373,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   delete [] Buffer_Send_SkinFriction;
   delete [] Buffer_Send_GlobalIndex;
   
-  SurfFlow_file.close();
-  
 #endif
+  
 }
 
 void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {
@@ -1732,6 +1772,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- In serial, the single process has access to all solution data,
    so it is simple to retrieve and store inside Solution_Data. ---*/
+  
   nGlobal_Poin = geometry->GetnPointDomain();
   Data = new double*[nVar_Total];
   for (iVar = 0; iVar < nVar_Total; iVar++) {
