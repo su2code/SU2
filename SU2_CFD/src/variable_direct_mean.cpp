@@ -87,22 +87,13 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
     Limiter = new double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
 			Limiter[iVar] = 0.0;
-      
-#ifndef PRIMITIVE_RECONSTRUCTION
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Solution_Max[iVar] = 0.0;
-			Solution_Min[iVar] = 0.0;
-		}
-#else
+    
 		Solution_Max = new double [nPrimVarGrad];
 		Solution_Min = new double [nPrimVarGrad];
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			Solution_Max[iVar] = 0.0;
 			Solution_Min[iVar] = 0.0;
 		}
-#endif
     
 	}
   
@@ -235,21 +226,12 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 		for (iVar = 0; iVar < nVar; iVar++)
 			Limiter[iVar] = 0.0;
     
-#ifndef PRIMITIVE_RECONSTRUCTION
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Solution_Max[iVar] = 0.0;
-			Solution_Min[iVar] = 0.0;
-		}
-#else
 		Solution_Max = new double [nPrimVarGrad];
 		Solution_Min = new double [nPrimVarGrad];
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			Solution_Max[iVar] = 0.0;
 			Solution_Min[iVar] = 0.0;
 		}
-#endif
     
 	}
   

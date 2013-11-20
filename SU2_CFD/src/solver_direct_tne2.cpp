@@ -4835,7 +4835,7 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
   bool implicit;
   unsigned short iDim, jDim, iVar;
   unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
-  unsigned long iVertex, iPoint, jPoint;
+  unsigned long iVertex, iPoint;
   double *UnitNormal, *Normal, Area;
   double **PrimVarGrad, *U, *V, **tau, proj_vel, div_vel, mu, ktr, kve;
   
