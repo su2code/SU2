@@ -1488,52 +1488,6 @@ public:
 };
 
 /*!
- * \class CUpwRoePrim_Flow
- * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
- * \ingroup ConvDiscr
- * \author A. Bueno (UPM) & F. Palacios (Stanford University).
- * \version 2.0.9
- */
-class CUpwRoePrim_Flow : public CNumerics {
-private:
-	bool implicit, grid_movement;
-	double *Diff_U;
-	double *Velocity_i, *Velocity_j, *RoeVelocity;
-	double *Proj_flux_tensor_i, *Proj_flux_tensor_j;
-	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
-	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
-	unsigned short iDim, iVar, jVar, kVar;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CUpwRoePrim_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CUpwRoePrim_Flow(void);
-    
-	/*!
-	 * \brief Compute the Roe's flux between two nodes i and j.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
  * \class CUpwRoe_Turkel_Flow
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
@@ -1550,10 +1504,13 @@ private:
 	double **absPeJac,**invRinvPe,**R_Tensor,**Matrix,**Art_Visc;
 	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
 	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoePressure, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-	ProjVelocity;
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j;
 	unsigned short iDim, iVar, jVar, kVar;
 	double Beta, Beta_min, Beta_max;
-    
+  double r_hat, s_hat, t_hat, rhoB2a2, sqr_one_m_Betasqr_Lam1;
+	double Beta2, one_m_Betasqr, one_p_Betasqr, sqr_two_Beta_c_Area;
+	double local_Mach;
+  
 public:
     
 	/*!
@@ -1586,13 +1543,13 @@ public:
 };
 
 /*!
- * \class CUpwRoeArtComp_Flow
+ * \class CUpwArtComp_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios.
  * \version 2.0.9
  */
-class CUpwRoeArtComp_Flow : public CNumerics {
+class CUpwArtComp_Flow : public CNumerics {
 private:
 	bool implicit;
 	bool gravity;
@@ -1615,12 +1572,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoeArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CUpwRoeArtComp_Flow(void);
+	~CUpwArtComp_Flow(void);
     
 	/*!
 	 * \brief Compute the Roe's flux between two nodes i and j.
@@ -1633,13 +1590,13 @@ public:
 };
 
 /*!
- * \class CUpwRoeArtComp_FreeSurf_Flow
+ * \class CUpwArtComp_FreeSurf_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios.
  * \version 2.0.9
  */
-class CUpwRoeArtComp_FreeSurf_Flow : public CNumerics {
+class CUpwArtComp_FreeSurf_Flow : public CNumerics {
 private:
 	bool implicit;
 	bool gravity;
@@ -1662,12 +1619,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoeArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CUpwRoeArtComp_FreeSurf_Flow(void);
+	~CUpwArtComp_FreeSurf_Flow(void);
     
 	/*!
 	 * \brief Compute the Roe's flux between two nodes i and j.
@@ -1795,7 +1752,8 @@ private:
 	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
 	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
 	unsigned short iDim, iVar, jVar, kVar;
-    
+  double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+
 public:
     
 	/*!
@@ -1837,11 +1795,13 @@ private:
 	double *delta_wave, *delta_vel;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
-	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	double sq_vel, sq_vel_i, sq_vel_j, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
 	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
 	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
 	unsigned short iDim, iVar, jVar, kVar;
-    
+  double Rrho, tmp, velRoe[3], uRoe, gamPdivRho, sq_velRoe, cRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
+  eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR;
+  
 public:
     
 	/*!
