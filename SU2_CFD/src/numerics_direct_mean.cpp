@@ -920,7 +920,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
 }
 
-CUpwRoe_Turkel_Flow::CUpwRoe_Turkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwRoeTurkel_Flow::CUpwRoeTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -953,7 +953,7 @@ CUpwRoe_Turkel_Flow::CUpwRoe_Turkel_Flow(unsigned short val_nDim, unsigned short
   }
 }
 
-CUpwRoe_Turkel_Flow::~CUpwRoe_Turkel_Flow(void) {
+CUpwRoeTurkel_Flow::~CUpwRoeTurkel_Flow(void) {
   
   delete [] Diff_U;
   delete [] Velocity_i;
@@ -978,7 +978,7 @@ CUpwRoe_Turkel_Flow::~CUpwRoe_Turkel_Flow(void) {
   
 }
 
-void CUpwRoe_Turkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwRoeTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   /*--- Face area (norm or the normal vector) ---*/
   Area = 0.0;
@@ -1178,8 +1178,10 @@ CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
 
 void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  /*--- Compute face area ---*/
-  Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+  /*--- Face area (norm or the normal vector) ---*/
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
   
   /*--- Compute and unitary normal vector ---*/
