@@ -413,7 +413,7 @@ inline double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction
 
 inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
 
-inline double CUpwRoe_Turkel_Flow::GetPrecond_Beta() { return Beta; }
+inline double CUpwRoeTurkel_Flow::GetPrecond_Beta() { return Beta; }
 
 inline double* CSource_Magnet::GetMagneticField() { return Current_Density; }
 

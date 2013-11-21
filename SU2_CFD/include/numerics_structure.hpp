@@ -1488,13 +1488,13 @@ public:
 };
 
 /*!
- * \class CUpwRoe_Turkel_Flow
+ * \class CUpwRoeTurkel_Flow
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
  * \author A. K. Lonkar (Stanford University)
  * \version 2.0.9
  */
-class CUpwRoe_Turkel_Flow : public CNumerics {
+class CUpwRoeTurkel_Flow : public CNumerics {
 private:
 	bool implicit, grid_movement;
 	double *Diff_U;
@@ -1519,12 +1519,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoe_Turkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwRoeTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CUpwRoe_Turkel_Flow(void);
+	~CUpwRoeTurkel_Flow(void);
     
 	/*!
 	 * \brief Compute the Roe's flux between two nodes i and j.
