@@ -58,9 +58,9 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   WindGustDer = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
-  if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  if (freesurface) { nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
+  if (incompressible) { nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
+  if (freesurface)    { nPrimVar = nDim+4; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
 
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -154,15 +154,16 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
   
-  /*--- Incompressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta),
-   FreeSurface Incompressible flow, primitive variables nDim+3, (rho,vx,vy,vz,beta,dist),
-   compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+  /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
+        FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
+        Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (rho,vx,vy,vz,beta),
-   compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
-   We need P, and rho for running the adjoint problem ---*/
+  /*--- Incompressible flow, gradients primitive variables nDim+2, (P,vx,vy,vz,rho),
+        FreeSurface Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,dist),
+        Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
+        We need P, and rho for running the adjoint problem ---*/
   Gradient_Primitive = new double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new double [nDim];
@@ -196,9 +197,9 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   WindGustDer = NULL;
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (compressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
-  if (incompressible) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
-  if (freesurface) { nPrimVar = nDim+2; nPrimVarGrad = nDim+2; }
+  if (incompressible) { nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
+  if (freesurface)    { nPrimVar = nDim+4; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -255,8 +256,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	/*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
+		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
@@ -268,14 +268,16 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	/*--- Allocate auxiliar vector for free surface source term ---*/
 	if (freesurface) Grad_AuxVar = new double [nDim];
 
-  /*--- Incompressible flow, primitive variables nDim+2, (rho,vx,vy,vz,beta)
-   compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+  /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
+        FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
+        Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (rho,vx,vy,vz,beta)
-   Compressible flow, gradients primitive variables nDim+3, (T,vx,vy,vz,P,rho)
-   We need P, and rho for running the adjoint problem ---*/
+  /*--- Incompressible flow, gradients primitive variables nDim+2, (P,vx,vy,vz,rho),
+        FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
+        Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
+        We need P, and rho for running the adjoint problem ---*/
   Gradient_Primitive = new double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new double [nDim];
@@ -377,7 +379,6 @@ bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
 }
 
 bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) {
-	unsigned short iDim;
   
   double ArtComp_Factor = config->GetArtComp_Factor();
   
@@ -387,40 +388,28 @@ bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *conf
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
   
+  /*--- Set the value of the pressure ---*/
+	SetPressureInc();
+  
   /*--- Set the value of the artificial compressibility factor ---*/
   SetBetaInc2(ArtComp_Factor);
   
   /*--- Set the value of the velocity ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
+	SetVelocityInc();
   
   return true;
   
 }
 
 bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
-	unsigned short iDim, iVar;
-  double epsilon, Heaviside, lambda, DensityInc, levelset;
-  bool check_level = false, RightVol = true;
+  
+  double Heaviside, lambda, DensityInc;
 
   double ArtComp_Factor = config->GetArtComp_Factor();
+  double levelset = GetPrimVar(nDim+3);
+  double epsilon = config->GetFreeSurface_Thickness();
   
-  check_level = (abs(Solution[nDim+1]) > 1.0);   // Check the LevelSet
-
-  /*--- Check that the solution has a physical meaning ---*/
-  if (check_level) {
-    
-    /*--- Copy the old solution ---*/
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
-        
-    RightVol = false;
-    
-  }
-
   /*--- Set the value of the density ---*/
-  levelset = GetPrimVar(nDim+2);
-  epsilon = config->GetFreeSurface_Thickness();
   Heaviside = 0.0;
   if (levelset < -epsilon) Heaviside = 1.0;
   if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
@@ -433,18 +422,16 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
   
-  /*--- Compute artificial compressibility factor (this should work)---*/
-//  ArtComp_Factor = 5.0*max(Velocity2*DensityInc, 0.3);
+  /*--- Set the value of the pressure ---*/
+	SetPressureInc();
   
   /*--- Set the value of the artificial compressibility factor ---*/
   SetBetaInc2(ArtComp_Factor);
   
   /*--- Set the value of the velocity ---*/
-  for (iDim = 0; iDim < nDim; iDim++)
-    Primitive[iDim+1] = Solution[iDim+1] / Primitive[0];
+	SetVelocityInc();
   
-  
-  return RightVol;
+  return true;
   
 }
 
@@ -595,7 +582,6 @@ bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
 }
 
 bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) {
-	unsigned short iDim;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
   
@@ -606,23 +592,25 @@ bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
   
+  /*--- Set the value of the pressure ---*/
+	SetPressureInc();
+  
   /*--- Set the value of the artificial compressibility factor ---*/
   SetBetaInc2(ArtComp_Factor);
   
   /*--- Set the value of the velocity ---*/
-	for (iDim = 0; iDim < nDim; iDim++) 
-		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
+  SetVelocityInc();
   
   return true;
   
 }
 
 bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
-	unsigned short iDim;
+
   double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
-  double levelset = GetPrimVar(nDim+2);
+  double levelset = GetPrimVar(nDim+3);
 
   /*--- Set the value of the density and viscosity ---*/
   epsilon = config->GetFreeSurface_Thickness();
@@ -642,16 +630,15 @@ bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
   /*--- Set the value of the velocity squared (requires density) ---*/
 	SetVelocityInc2();
   
-  /*--- Compute artificial compressibility factor (this should work) ---*/
-//  ArtComp_Factor = 5.0*max(Velocity2*DensityInc, 0.3);
+  /*--- Set the value of the pressure ---*/
+	SetPressureInc();
   
   /*--- Set the value of the artificial compressibility factor ---*/
   SetBetaInc2(ArtComp_Factor);
   
   /*--- Set the value of the velocity ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[iDim+1] = Solution[iDim+1] / GetDensityInc();
-  
+  SetVelocityInc();
+
   return true;
   
 }

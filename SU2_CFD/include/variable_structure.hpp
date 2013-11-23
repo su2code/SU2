@@ -1080,7 +1080,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetDensityInc(double val_densityinc);
+	virtual void SetDensityInc(double val_density);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetPressureInc(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetVelocityInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1982,7 +1992,17 @@ public:
 	/*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
-	void SetDensityInc(double val_densityinc);
+	void SetDensityInc(double val_density);
+  
+  /*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
+	void SetPressureInc(void);
+  
+  /*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
+	void SetVelocityInc(void);
 
 	/*!
 	 * \brief Set the value of the beta coeffient for incompressible flows.
