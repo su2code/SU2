@@ -630,7 +630,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   
   /*--- Compute the dual time-stepping source term for static meshes ---*/
   
-  if (grid_movement) {
+  if (!grid_movement) {
     
     /*--- Loop over all nodes (excluding halos) ---*/
     
