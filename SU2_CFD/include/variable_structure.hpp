@@ -1126,6 +1126,11 @@ public:
   virtual double CalcHs(double *V, CConfig *config, unsigned short val_Species);
   
   /*!
+   * \brief Calculates enthalpy per mass, \f$Cv_s\f$, for input species (not including KE)
+   */
+  virtual double CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
@@ -3136,6 +3141,11 @@ public:
    */
   double CalcHs(double *V, CConfig *config, unsigned short val_Species);
   
+  /*!
+   * \brief Calculates enthalpy per mass, \f$C^{vib-el}_{v_s}\f$, for input species (not including KE)
+   */
+  double CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species);
+
   /*!
    * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
    * \param[in] config - Configuration settings

@@ -903,12 +903,13 @@ double CTNE2EulerVariable::CalcEve(double *V, CConfig *config, unsigned short va
 double CTNE2EulerVariable::CalcHs(double *V, CConfig *config,
                                   unsigned short val_Species) {
 
-  double Ru, *xi, *Ms, *hf, T, eve, hs;
+  double Ru, *xi, *Ms, *hf, *Tref, T, eve, ef, hs;
   
   /*--- Read from config ---*/
-  xi = config->GetRotationModes();
-  Ms = config->GetMolar_Mass();
-  hf = config->GetEnthalpy_Formation();
+  xi   = config->GetRotationModes();
+  Ms   = config->GetMolar_Mass();
+  hf   = config->GetEnthalpy_Formation();
+  Tref = config->GetRefTemperature();
   
   /*--- Rename for convenience ---*/
   Ru = UNIVERSAL_GAS_CONSTANT;
@@ -917,12 +918,80 @@ double CTNE2EulerVariable::CalcHs(double *V, CConfig *config,
   /*--- Calculate vibrational-electronic energy per unit mass ---*/
   eve = CalcEve(V, config, val_Species);
   
-  hs = Ru/Ms[val_Species]*T
-     + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]
-     + hf[val_Species] + eve;
+  /*--- Calculate formation energy ---*/
+  ef = hf[val_Species] - Ru/Ms[val_Species]*Tref[val_Species];
+  
+//  hs = Ru/Ms[val_Species]*T
+//     + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]
+//     + hf[val_Species] + eve;
+  
+  hs = (3.0/2.0+xi[val_Species]/2.0) * Ru/Ms[val_Species] * (T-Tref[val_Species])
+   + eve + ef;
   
   return hs;
 }
+
+double CTNE2EulerVariable::CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species) {
+  
+  unsigned short iEl, *nElStates;
+  double *Ms, *thetav, **thetae, **g, Ru;
+  double thoTve, exptv, thsqr, Cvvs, Cves;
+  double Tve;
+  double num, num2, num3, denom;
+  
+  /*--- Read from config ---*/
+  thetav    = config->GetCharVibTemp();
+  thetae    = config->GetCharElTemp();
+  g         = config->GetElDegeneracy();
+  Ms        = config->GetMolar_Mass();
+  nElStates = config->GetnElStates();
+  
+  /*--- Rename for convenience ---*/
+  Ru  = UNIVERSAL_GAS_CONSTANT;
+  Tve = val_Tve;
+  
+  /*--- Initialize ---*/
+  Cves = 0.0;
+  Cvvs = 0.0;
+  
+  /*--- If requesting electron specific heat ---*/
+  if (ionization && val_Species == nSpecies-1) {
+    Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
+    return Cves;
+  }
+  
+  /*--- Heavy particle specific heat ---*/
+  else {
+    
+    /*--- Vibrational energy ---*/
+    if (thetav[val_Species] != 0.0) {
+      thoTve = thetav[val_Species]/Tve;
+      exptv = exp(thetav[val_Species]/Tve);
+      thsqr = thetav[val_Species]*thetav[val_Species];
+      Cvvs  = Ru/Ms[val_Species] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+    }
+    
+    /*--- Electronic energy ---*/
+    if (nElStates[val_Species] != 0) {
+      num = 0.0; num2 = 0.0;
+      denom = g[val_Species][0] * exp(thetae[val_Species][0]/Tve);
+      num3  = g[val_Species][0] * (thetae[val_Species][0]/(Tve*Tve))*exp(-thetae[val_Species][0]/Tve);
+      for (iEl = 1; iEl < nElStates[val_Species]; iEl++) {
+        thoTve = thetae[val_Species][iEl]/Tve;
+        exptv = exp(-thetae[val_Species][iEl]/Tve);
+        
+        num   += g[val_Species][iEl] * thetae[val_Species][iEl] * exptv;
+        denom += g[val_Species][iEl] * exptv;
+        num2  += g[val_Species][iEl] * (thoTve*thoTve) * exptv;
+        num3  += g[val_Species][iEl] * thoTve/Tve * exptv;
+      }
+      Cves = Ru/Ms[val_Species] * (num2/denom - num*num3/(denom*denom));
+    }
+  }
+  return Cvvs + Cves;
+}
+
+
 
 void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
                                   double *val_dTdU) {
@@ -1230,9 +1299,9 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
                              / denom;
   }
   
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    DiffusionCoeff[iSpecies] = 0.0;
-  }
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    DiffusionCoeff[iSpecies] = 0.0;
+//  }
 }
 
 
