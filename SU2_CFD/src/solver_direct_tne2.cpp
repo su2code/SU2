@@ -1887,8 +1887,12 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iEdge, iPoint, jPoint;
+  unsigned short iDim, iVar;
   bool implicit, high_order_diss, limiter;
   double *U_i, *U_j, *V_i, *V_j;
+  double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
+  double *Limiter_i, *Limiter_j;
+  double *Primitive_i, *Primitive_j;
   
 	/*--- Set booleans based on config settings ---*/
 	implicit        = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -1896,10 +1900,14 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 	high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
                       (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
                       (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
+                      (config->GetKind_Upwind_TNE2() == MSW_2ND)  ||
                       (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
                      && (iMesh == MESH_0));
   
-  if (high_order_diss) cout << "WARNING!!! Upwind_Residual: 2nd order accuracy not in place!" << endl;
+  /*--- Allocate arrays ---*/
+  Primitive_i = new double[nPrimVar];
+  Primitive_j = new double[nPrimVar];
+  
   if (limiter) cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
@@ -1922,10 +1930,49 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     jPoint = geometry->edge[iEdge]->GetNode(1);
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-    /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
+    /*--- Get conserved & primitive variables from CVariable ---*/
     U_i = node[iPoint]->GetSolution(); U_j = node[jPoint]->GetSolution();
     V_i = node[iPoint]->GetPrimVar();  V_j = node[jPoint]->GetPrimVar();
-    numerics->SetPrimitive(V_i, V_j);
+    
+    
+    /*--- High order reconstruction using MUSCL strategy ---*/
+    if (high_order_diss) {
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+      
+      GradV_i = node[iPoint]->GetGradient_Primitive();
+      GradV_j = node[jPoint]->GetGradient_Primitive();
+      if (limiter) { Limiter_i = node[iPoint]->GetLimiter_Primitive(); Limiter_j = node[jPoint]->GetLimiter_Primitive(); }
+      
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
+          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
+        }
+        if (limiter) {
+          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
+          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
+        }
+        else {
+          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
+          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
+        }
+      }
+      
+      /*--- Set conservative variables with reconstruction ---*/
+      numerics->SetPrimitive(Primitive_i, Primitive_j);
+      
+    } else {
+      
+      /*--- Set conservative variables without reconstruction ---*/
+      numerics->SetPrimitive(V_i, V_j);
+      
+    }
+    
     numerics->SetConservative(U_i, U_j);
     
     /*--- Pass supplementary information to CNumerics ---*/
@@ -1961,6 +2008,9 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 			Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
 		}
 	}
+  
+  delete [] Primitive_i;
+  delete [] Primitive_j;
 }
 
 void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
@@ -4521,7 +4571,11 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                                      CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
+  bool implicit;
 	unsigned long iPoint, jPoint, iEdge;
+  
+  /*--- Determine time integration scheme ---*/
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
@@ -4546,6 +4600,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Primitive variables, and gradient ---*/
+    numerics->SetConservative(node[iPoint]->GetSolution(),
+                              node[jPoint]->GetSolution() );
     numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
                            node[jPoint]->GetPrimVar() );
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
@@ -4576,12 +4632,12 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
-//    if (implicit) {
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-//    }
+    if (implicit) {
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    }
     
     /*--- Error checking ---*/
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -4970,7 +5026,7 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
       
       /*--- Apply to the linear system ---*/
 //      LinSysRes.AddBlock(iPoint, Res_Conv);
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
 //      if (implicit) {
 //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 //        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
