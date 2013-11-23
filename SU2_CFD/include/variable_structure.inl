@@ -41,8 +41,6 @@ inline void CVariable::SetFlow_Pressure(double val_pressure) { }
 
 inline double CVariable::GetFlow_Pressure(void) { return 0; }
 
-inline void CVariable::SetPressureInc(double val_pressure) { }
-
 inline double CVariable::GetBetaInc2(void) { return 0; }
 
 inline double CVariable::GetDiffLevelSet(void) { return 0; }
@@ -511,8 +509,6 @@ inline void CEulerVariable::SetVelocity(double *val_velocity, unsigned short val
 inline void CEulerVariable::SetVelocity2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += Solution[iDim+1]*Solution[iDim+1]/(Solution[0]*Solution[0]); }
 
 inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[0])*(Solution[iDim+1]/Primitive[0]); }
-
-inline void CEulerVariable::SetPressureInc(double val_pressure) { Solution[0] = val_pressure; }
 
 inline void CEulerVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) { 
 	if (val_incomp == COMPRESSIBLE) {
