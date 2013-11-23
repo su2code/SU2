@@ -1179,24 +1179,29 @@ CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
 void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   /*--- Face area (norm or the normal vector) ---*/
+  
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
   
   /*--- Compute and unitary normal vector ---*/
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     UnitNormal[iDim] = Normal[iDim]/Area;
     if (fabs(UnitNormal[iDim]) < EPS) UnitNormal[iDim] = EPS;
   }
   
   /*--- Set velocity and pressure variables at points iPoint and jPoint ---*/
-  Pressure_i = U_i[0]; Pressure_j = U_j[0];
+  
+  Pressure_i =    V_i[0];       Pressure_j = V_j[0];
+  DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
+  BetaInc2_i =    V_i[nDim+2];  BetaInc2_j = V_j[nDim+2];
   
   ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-    Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+    Velocity_i[iDim] = V_i[iDim+1];
+    Velocity_j[iDim] = V_j[iDim+1];
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
     ProjVelocity += MeanVelocity[iDim]*Normal[iDim];
   }
@@ -1243,8 +1248,9 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
   }
   
   /*--- Diference variables iPoint and jPoint ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    Diff_U[iVar] = U_j[iVar] - U_i[iVar];
+  Diff_U[0] = Pressure_j - Pressure_i;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Diff_U[iDim+1] = Velocity_j[iDim]*DensityInc_i - Velocity_i[iDim]*DensityInc_j;
   
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1260,6 +1266,19 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
       }
     }
   }
+  
+  
+  
+//  cout << Diff_U[0] <<" "<< Diff_U[1] <<" "<< Diff_U[2] <<endl;
+//  cout << val_residual[0] <<" "<< val_residual[1] <<" "<< val_residual[2] <<endl;
+//  cout << Pressure_i <<" "<< Pressure_j <<endl;
+//  cout << Velocity_i[0] <<" "<< Velocity_j[0] <<endl;
+//  cout << Velocity_i[1] <<" "<< Velocity_j[1] <<endl;
+//  cout << DensityInc_i <<" "<< DensityInc_j <<endl;
+//  cout << BetaInc2_i <<" "<< BetaInc2_j <<endl;
+//  
+//  cin.get();
+  
   
 }
 
@@ -1320,7 +1339,9 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   }
   
   /*--- Set velocity and pressure and level set variables at points iPoint and jPoint ---*/
-  Pressure_i = U_i[0];      Pressure_j = U_j[0];
+  Pressure_i = V_i[0]; Pressure_j = V_j[0];
+  DensityInc_i = V_i[nDim+1]; DensityInc_j = V_j[nDim+1];
+  BetaInc2_i = V_i[nDim+2]; BetaInc2_j = V_j[nDim+2];
   LevelSet_i = U_i[nDim+1]; LevelSet_j = U_j[nDim+1];
   
   if (fabs(LevelSet_i) < EPS) LevelSet_i = EPS;

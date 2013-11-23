@@ -297,7 +297,11 @@ inline double *CVariable::GetPrimVar(void) { return NULL; }
 
 inline void CVariable::SetBetaInc2(double val_betainc2) { }
 
-inline void CVariable::SetDensityInc(double val_densityinc) { }
+inline void CVariable::SetDensityInc(double val_density) { }
+
+inline void CVariable::SetPressureInc(void) { }
+
+inline void CVariable::SetVelocityInc(void) { }
 
 inline void CVariable::SetPhi_Old(double *val_phi) { }
 
@@ -433,11 +437,11 @@ inline double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return
 
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
-inline double CEulerVariable::GetDensityInc(void) { return Primitive[0]; }
+inline double CEulerVariable::GetDensityInc(void) { return Primitive[nDim+1]; }
 
-inline double CEulerVariable::GetLevelSet(void) { return Solution[nDim+1]; }
+inline double CEulerVariable::GetLevelSet(void) { return Solution[nDim+3]; }
 
-inline double CEulerVariable::GetBetaInc2(void) { return Primitive[nDim+1]; }
+inline double CEulerVariable::GetBetaInc2(void) { return Primitive[nDim+2]; }
 
 inline double CEulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution[0]; };
 
@@ -457,7 +461,7 @@ inline double CEulerVariable::GetTemperature(void) { return Primitive[0]; }
 inline double CEulerVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) {
 double velocity;
    if (val_incomp == COMPRESSIBLE) velocity = Solution[val_dim+1]/Solution[0]; 
-   if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) velocity = Solution[val_dim+1]/Primitive[0];
+   if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) velocity = Solution[val_dim+1]/Primitive[nDim+1];
 return velocity;
 }
 
@@ -465,9 +469,16 @@ inline double CEulerVariable::GetVelocity2(void) { return Velocity2; }
 
 inline void CEulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
 
-inline void CEulerVariable::SetDensityInc(double val_density) { Primitive[0] = val_density; }
+inline void CEulerVariable::SetDensityInc(double val_density) { Primitive[nDim+1] = val_density; }
 
-inline void CEulerVariable::SetBetaInc2(double val_betainc2) { Primitive[nDim+1] = val_betainc2; }
+inline void CEulerVariable::SetPressureInc(void) { Primitive[0] = Solution[0]; }
+
+inline void CEulerVariable::SetVelocityInc(void) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Primitive[iDim+1] = Solution[iDim+1] / Primitive[nDim+1];
+}
+
+inline void CEulerVariable::SetBetaInc2(double val_betainc2) { Primitive[nDim+2] = val_betainc2; }
 
 inline bool CEulerVariable::SetSoundSpeed(double Gamma) {
    double radical = Gamma*Primitive[nDim+1]/Solution[0];
@@ -502,13 +513,13 @@ inline void CEulerVariable::SetVelocity(double *val_velocity, unsigned short val
 	}
 	if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) {
 		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-			Solution[iDim+1] = val_velocity[iDim]*Primitive[0]; 
+			Solution[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
 	}
 }
 
 inline void CEulerVariable::SetVelocity2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += Solution[iDim+1]*Solution[iDim+1]/(Solution[0]*Solution[0]); }
 
-inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[0])*(Solution[iDim+1]/Primitive[0]); }
+inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[nDim+1])*(Solution[iDim+1]/Primitive[nDim+1]); }
 
 inline void CEulerVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) { 
 	if (val_incomp == COMPRESSIBLE) {
@@ -517,7 +528,7 @@ inline void CEulerVariable::SetVelocity_Old(double *val_velocity, unsigned short
 	}
 	if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) {
 		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
-			Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[0];
+			Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
 	}
 }
 
