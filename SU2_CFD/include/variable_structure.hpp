@@ -1243,11 +1243,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetVelocityInc2(void);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressureInc(double val_pressure);
   
 	/*!
 	 * \brief A virtual member.
@@ -1919,11 +1914,6 @@ public:
 	 * \brief Set the value of the velocity*velocity for the incompressible solver.
 	 */
 	void SetVelocityInc2(void);
-
-	/*!
-	 * \brief Set the value of the pressure for the incompressible solver.
-	 */
-	void SetPressureInc(double val_pressure);
 
 	/*!
 	 * \brief Set the value of the velocity*velocity.
