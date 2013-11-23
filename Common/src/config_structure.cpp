@@ -128,10 +128,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
   /* DESCRIPTION: Location of the turb model itself */
 	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
-  /* DESCRIPTION: Location of the check for the proper loading of the turbulence model */
-	AddScalarOption("ML_TURB_MODEL_CHECK_FILE", ML_Turb_Model_Check_File, string("check_model.txt"));
-  /* DESCRIPTION:  */
-	AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   

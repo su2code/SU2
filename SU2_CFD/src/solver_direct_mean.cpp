@@ -4184,24 +4184,27 @@ void CEulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) 
 }
 
 void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+  
   unsigned short iVar, iDim, jDim, iNeigh;
   unsigned long iPoint, jPoint;
   double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
-  r23_b, r33, weight, product;
-  
-  /*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho, h)
-   Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
-  PrimVar_i = new double [nPrimVarGrad];
-  PrimVar_j = new double [nPrimVarGrad];
-  
+  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
+  bool singular = false;
+
   /*--- Loop over points of the grid ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Get coordinates ---*/
+
     Coord_i = geometry->node[iPoint]->GetCoord();
     
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+    /*--- Get primitives from CVariable ---*/
+
+    PrimVar_i = node[iPoint]->GetPrimVar();
     
     /*--- Inizialization of variables ---*/
+    
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
         cvector[iVar][iDim] = 0.0;
@@ -4213,67 +4216,88 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+      PrimVar_j = node[jPoint]->GetPrimVar();
       
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-      
+
       /*--- Sumations for entries of upper triangular matrix R ---*/
-      r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/(weight);
-      r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/(weight);
-      r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/(weight);
-      if (nDim == 3) {
-        r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/(weight);
-        r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/(weight);
-        r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/(weight);
+      
+      if (fabs(weight) > EPS){
+        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+        if (nDim == 3) {
+          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+        }
+        
+        /*--- Entries of c:= transpose(A)*b ---*/
+        
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+        
       }
       
-      /*--- Entries of c:= transpose(A)*b ---*/
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/(weight);
     }
     
     /*--- Entries of upper triangular matrix R ---*/
+    
+    if (fabs(r11) < EPS) r11 = EPS;
     r11 = sqrt(r11);
-    r12 = r12/(r11);
+    r12 = r12/r11;
     r22 = sqrt(r22-r12*r12);
+    if (fabs(r22) < EPS) r22 = EPS;
     if (nDim == 3) {
-      r13 = r13/(r11);
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
+      r13 = r13/r11;
+      r23 = r23_a/r22 - r23_b*r12/(r11*r22);
       r33 = sqrt(r33-r23*r23-r13*r13);
     }
+    
+    /*--- Compute determinant ---*/
+    
+    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
+    else detR2 = (r11*r22*r33)*(r11*r22*r33);
+    
+    /*--- Detect singular matrices ---*/
+    
+    if (fabs(detR2) < EPS) singular = true;
+    
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-    if (nDim == 2) {
-      double detR2 = (r11*r22)*(r11*r22);
-      Smatrix[0][0] = (r12*r12+r22*r22)/(detR2);
-      Smatrix[0][1] = -r11*r12/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = r11*r11/(detR2);
+
+    if (singular) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          Smatrix[iDim][jDim] = 0.0;
     }
     else {
-      double detR2 = (r11*r22*r33)*(r11*r22*r33);
-      double z11, z12, z13, z22, z23, z33;
-      z11 = r22*r33;
-      z12 = -r12*r33;
-      z13 = r12*r23-r13*r22;
-      z22 = r11*r33;
-      z23 = -r11*r23;
-      z33 = r11*r22;
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/(detR2);
-      Smatrix[0][1] = (z12*z22+z13*z23)/(detR2);
-      Smatrix[0][2] = (z13*z33)/(detR2);
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = (z22*z22+z23*z23)/(detR2);
-      Smatrix[1][2] = (z23*z33)/(detR2);
-      Smatrix[2][0] = Smatrix[0][2];
-      Smatrix[2][1] = Smatrix[1][2];
-      Smatrix[2][2] = (z33*z33)/(detR2);
+      if (nDim == 2) {
+        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+        Smatrix[0][1] = -r11*r12/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = r11*r11/detR2;
+      }
+      else {
+        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
+        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
+        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+        Smatrix[0][2] = (z13*z33)/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+        Smatrix[1][2] = (z23*z33)/detR2;
+        Smatrix[2][0] = Smatrix[0][2];
+        Smatrix[2][1] = Smatrix[1][2];
+        Smatrix[2][2] = (z33*z33)/detR2;
+      }
     }
+    
     /*--- Computation of the gradient: S*c ---*/
+    
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
@@ -4282,10 +4306,8 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
         node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
+    
   }
-  
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
   
   Set_MPI_PrimVar_Gradient(geometry, config);
   
