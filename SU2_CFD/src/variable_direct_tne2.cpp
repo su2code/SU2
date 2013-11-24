@@ -1299,9 +1299,9 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
                              / denom;
   }
   
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    DiffusionCoeff[iSpecies] = 0.0;
-//  }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    DiffusionCoeff[iSpecies] = 0.0;
+  }
 }
 
 
