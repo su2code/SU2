@@ -1679,6 +1679,7 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
                        dist_ij, UnitNormal, Area,
                        Proj_Flux_Tensor, val_Jacobian_i,
                        val_Jacobian_j, config);
+    
 	}
 }
 
