@@ -325,6 +325,8 @@ inline double CVariable::CalcEve(double *V, CConfig *config, unsigned short val_
 
 inline double CVariable::CalcHs(double *V, CConfig *config, unsigned short val_Species) { return 0; }
 
+inline double CVariable::CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species) { return 0; }
+
 inline void CVariable::CalcdPdU(double *V, CConfig *config, double *dPdU) { }
 
 inline void CVariable::CalcdTdU(double *V, CConfig *config, double *dTdU) { }

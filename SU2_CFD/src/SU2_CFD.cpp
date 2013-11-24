@@ -461,6 +461,7 @@ int main(int argc, char *argv[]) {
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
     
     if (StopCalc) break;
+    
     ExtIter++;
     
   }
