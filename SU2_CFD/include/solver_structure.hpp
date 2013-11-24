@@ -1314,6 +1314,14 @@ public:
 	 * \return Value of the pressure coefficient.
 	 */
 	virtual double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	virtual double *GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex);
     
 	/*!
 	 * \brief A virtual member.
@@ -1734,6 +1742,7 @@ protected:
 	**CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
 	**CHeatTransfer,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
 	**YPlus,		/*!< \brief Yplus for each boundary and vertex. */
+  ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
 	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
 	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
 	*FanFace_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
@@ -2586,6 +2595,14 @@ public:
 	 */
 	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
   
+  /*!
+	 * \brief Value of the characteristic variables at the boundaries.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	double *GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex);
+  
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Free Surface coefficient.
 	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
@@ -2866,8 +2883,8 @@ public:
  */
 class CTurbSolver : public CSolver {
 protected:
-	double *FlowSolution_i,	/*!< \brief Store the flow solution at point i. */
-	*FlowSolution_j,        /*!< \brief Store the flow solution at point j. */
+	double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
+	*FlowPrimVar_j,        /*!< \brief Store the flow solution at point j. */
 	*lowerlimit,            /*!< \brief contains lower limits for turbulence variables. */
 	*upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
@@ -2917,6 +2934,30 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+	/*!
+	 * \brief Compute the spatial integration using a upwind scheme.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+  
+	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                       unsigned short iMesh);
+  
+	/*!
+	 * \brief Compute the viscous residuals for the turbulent equation.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 */
+	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
 	/*!
 	 * \brief Impose the Symmetry Plane boundary condition.
@@ -3010,30 +3051,6 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh);
-    
-	/*!
-	 * \brief Compute the spatial integration using a upwind scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-    
-	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh);
-    
-	/*!
-	 * \brief Compute the viscous residuals for the turbulent equation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
 	 * \brief Source term computation.
@@ -3173,7 +3190,7 @@ public:
  * \class CTurbMLSolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \author B. Tracey.
  * \version 2.0.9
  */
 
@@ -3218,30 +3235,6 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh);
-  
-	/*!
-	 * \brief Compute the spatial integration using a upwind scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-  
-	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short iMesh);
-  
-	/*!
-	 * \brief Compute the viscous residuals for the turbulent equation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
 	/*!
 	 * \brief Source term computation.
@@ -3322,50 +3315,6 @@ public:
                  unsigned short val_marker);
   
   /*!
-	 * \brief Impose the nacelle inflow boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
-  
-	/*!
-	 * \brief Impose the ancelle exhaust boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker);
-  
-  /*!
-	 * \brief Impose the interface boundary condition using the residual.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
-  
-	/*!
-	 * \brief Impose the near-field boundary condition using the residual.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short val_marker);
-  
-  /*!
 	 * \brief Load a solution from a restart file.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -3383,7 +3332,7 @@ public:
  * \class CTransLMSolver
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \author A. Aranake.
  * \version 2.0.9
  */
 
@@ -3434,7 +3383,7 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh);
-    
+  
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3443,10 +3392,9 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-    
-	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh);
-    
+	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
+                       CNumerics *numerics, CConfig *config, unsigned short iMesh);
+  
 	/*!
 	 * \brief Compute the viscous residuals for the turbulent equation.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3457,8 +3405,8 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
 	 */
 	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-    
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  
 	/*!
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3607,30 +3555,7 @@ public:
 	 */
 	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh);
-    
-	/*!
-	 * \brief Compute the spatial integration using a upwind scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
-                         CNumerics *numerics, CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief Compute the viscous residuals for the turbulent equation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-    
+  
 	/*!
 	 * \brief Source term computation.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5520,6 +5445,7 @@ protected:
 	*MomentInviscid,	        /*!< \brief Inviscid moments at domain boundaries. */
 	**CPressure,		          /*!< \brief Cp at each node on domain boundaries . */
 	**CHeatTransfer,		      /*!< \brief Cq at each node on domain boundaries . */
+	**CharacPrimVar,		      /*!< \brief Value of the characteristic variables at the boundary . */
   AllBound_CDrag_Inv,	      /*!< \brief Sum of CDrag_Inv from all boundaries. */
 	AllBound_CLift_Inv,			  /*!< \brief Sum of CLift_Inv from all boundaries. */
 	AllBound_CSideForce_Inv,	/*!< \brief Sum of CSideForce_Inv from all boundaries. */

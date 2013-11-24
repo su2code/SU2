@@ -54,7 +54,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		Residual     = new double[nVar]; Residual_RMS = new double[nVar];
 		Residual_i   = new double[nVar]; Residual_j   = new double[nVar];
     Residual_Max = new double[nVar]; Point_Max    = new unsigned long[nVar];
-    
 
 		/*--- Define some auxiliar vector related with the solution ---*/
 		Solution   = new double[nVar];
@@ -62,10 +61,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		
 		/*--- Define some auxiliar vector related with the geometry ---*/
 		Vector_i = new double[nDim]; Vector_j = new double[nDim];
-		
-		/*--- Define some auxiliar vector related with the flow solution ---*/
-		FlowSolution_i = new double [nDim+2]; FlowSolution_j = new double [nDim+2];
-		
+				
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
@@ -172,7 +168,6 @@ CTransLMSolver::~CTransLMSolver(void){
 	delete [] Solution;
 	delete [] Solution_i; delete [] Solution_j;
 	delete [] Vector_i; delete [] Vector_j;
-	delete [] FlowSolution_i; delete [] FlowSolution_j;
 	
 	for (iVar = 0; iVar < nVar; iVar++) {
 		delete [] Jacobian_i[iVar];
