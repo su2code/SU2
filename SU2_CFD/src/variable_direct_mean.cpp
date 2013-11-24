@@ -370,8 +370,11 @@ bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
   
   SetEnthalpy();                                // Requires pressure computation.
   
+  /*--- Set velocity ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
+  
+  /*--- Set density ---*/
 	Primitive[nDim+2] = Solution[0];
   
   return RightVol;
@@ -573,8 +576,11 @@ bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
 	SetEnthalpy();                                  // Requires pressure computation.
 	SetLaminarViscosity();                          // Requires temperature computation.
   
+  /*--- Set velocity ---*/
 	for (iDim = 0; iDim < nDim; iDim++)
 		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
+  
+  /*--- Set density ---*/
 	Primitive[nDim+2] = Solution[0];
   
   return RightVol;
