@@ -5889,6 +5889,14 @@ public:
 	 */
 	void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+	 * \brief Update the solution using an explicit Euler scheme.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
 	/*!
 	 * \brief Update the solution using an implicit Euler scheme.
