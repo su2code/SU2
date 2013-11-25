@@ -2204,12 +2204,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
 void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool high_order_diss = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
@@ -2217,19 +2217,21 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
     
     /*--- Set conservative variables w/o reconstruction ---*/
+    
     numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     
+    /*--- Set primitive variables w/o reconstruction ---*/
+    
+    numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
+    
     /*--- Set some precomputed flow cuantities ---*/
-    if (compressible) {
-      numerics->SetPressure(node[iPoint]->GetPressure(COMPRESSIBLE), node[jPoint]->GetPressure(COMPRESSIBLE));
-      numerics->SetSoundSpeed(node[iPoint]->GetSoundSpeed(), node[jPoint]->GetSoundSpeed());
-      numerics->SetEnthalpy(node[iPoint]->GetEnthalpy(), node[jPoint]->GetEnthalpy());
-    }
+    
     if (incompressible || freesurface) {
       numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
       numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
@@ -2237,27 +2239,30 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     }
     
     /*--- Set the largest convective eigenvalue ---*/
+    
     numerics->SetLambda(node[iPoint]->GetLambda(), node[jPoint]->GetLambda());
     
     /*--- Set undivided laplacian an pressure based sensor ---*/
+    
     if ((high_order_diss || low_fidelity)) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
     
-    /*--- Grid Movement ---*/
+    /*--- Grid movement ---*/
+    
     if (grid_movement) {
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     }
     
     /*--- Compute residuals, and jacobians ---*/
-    numerics->ComputeResidual(Res_Conv, Res_Visc, Jacobian_i, Jacobian_j, config);
+    
+    numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
     /*--- Update convective and artificial dissipation residuals ---*/
+    
     LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
-    LinSysRes.AddBlock(iPoint, Res_Visc);
-    LinSysRes.SubtractBlock(jPoint, Res_Visc);
     
     /*--- Set implicit computation ---*/
     if (implicit) {
@@ -2267,6 +2272,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
       Jacobian.SubtractBlock(jPoint,jPoint,Jacobian_j);
     }
   }
+  
 }
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -2301,7 +2307,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVelocity2_Inf(sqvel);
     }
     
-    /*--- Grid Movement ---*/
+    /*--- Grid movement ---*/
     
     if (grid_movement)
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
