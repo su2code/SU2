@@ -2237,7 +2237,7 @@ public:
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                          CConfig *config);
 };
 
@@ -2467,7 +2467,7 @@ private:
 	Epsilon_0, cte; /*!< \brief Artificial dissipation values. */
 	bool implicit, /*!< \brief Implicit calculation. */
 	grid_movement, /*!< \brief Modification for grid movement. */
-	stretching;
+	stretching, ProjGridVel;
     
 public:
     
@@ -2492,7 +2492,7 @@ public:
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                          CConfig *config);
 };
 
