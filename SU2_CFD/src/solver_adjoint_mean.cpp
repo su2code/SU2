@@ -1326,7 +1326,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 						break;
 
 					case NEARFIELD_PRESSURE :
-						DerivativeOF = factor*WeightSB*(solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE)
+						DerivativeOF = factor*WeightSB*(solver_container[FLOW_SOL]->node[iPoint]->GetPressure()
 								- solver_container[FLOW_SOL]->GetPressure_Inf());
 						break;
 					}
@@ -2390,8 +2390,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             
             /*-- Retrieve the value of the theta gradient ---*/
             
-            if (compressible) v_gradconspsi += solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, COMPRESSIBLE) * ConsPsi_Grad[iDim];
-            if (incompressible || freesurface) v_gradconspsi += solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, INCOMPRESSIBLE) * ConsPsi_Grad[iDim];
+            v_gradconspsi += solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim) * ConsPsi_Grad[iDim];
 
             /*--- Additional sensitivity term for grid movement ---*/
             
@@ -2596,7 +2595,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
             
             Mach_Inf   = config->GetMach_FreeStreamND();
             if (grid_movement) Mach_Inf = config->GetMach_Motion();
@@ -3867,8 +3866,8 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 
 					/*--- Get primitives from current inlet state. ---*/
 					for (iDim = 0; iDim < nDim; iDim++)
-						Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, COMPRESSIBLE);
-					Pressure    = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+						Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
+					Pressure    = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 					SoundSpeed2 = Gamma*Pressure/U_domain[0];
 
 					/*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -5326,9 +5325,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Psi = node[iPoint]->GetSolution();
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Density = U[0];
-            if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
-            if (incompressible) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE);
-            if (freesurface)    Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(FREESURFACE);
+            if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+            if (incompressible || freesurface) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressureInc();
             Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
             d = node[iPoint]->GetForceProj_Vector();
             
@@ -5632,7 +5630,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
             
             Mach_Inf   = config->GetMach_FreeStreamND();
             if (grid_movement) Mach_Inf = config->GetMach_Motion();
@@ -5837,9 +5835,8 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           
           /*--- Get some additional quantities from the flow solution ---*/
           Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
-          if (incompressible) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE);
-          if (freesurface)    Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(FREESURFACE);
+          if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+          if (incompressible || freesurface) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressureInc();
 					Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
           Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
           Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
@@ -6217,7 +6214,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         
         /*--- Imposition of residuals ---*/
         rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-        pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+        pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
         Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
         
         /*--- Flux contribution and Jacobian contributions for moving

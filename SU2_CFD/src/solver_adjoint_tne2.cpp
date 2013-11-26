@@ -2097,7 +2097,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
 //          
 //          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
 //          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-//          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
+//          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 //          
 //          Mach_Inf   = config->GetMach_FreeStreamND();
 //          if (grid_movement) Mach_Inf = config->GetMach_Motion();
@@ -3137,7 +3137,7 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
       
       /*--- Imposition of residuals ---*/
       rho = solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
-      pressure = solver_container[TNE2_SOL]->node[iPoint]->GetPressure(false);
+      pressure = solver_container[TNE2_SOL]->node[iPoint]->GetPressure();
       Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
       Res_Conv_i[nVar-1] -= Sigma_5/rho;
       

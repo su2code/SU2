@@ -322,44 +322,37 @@ double CEulerVariable::GetProjVel(double *val_vector) {
   
 	ProjVel = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
-		ProjVel += Solution[iDim+1]*val_vector[iDim]/Solution[0];
-  
-	return ProjVel;
-}
-
-double CEulerVariable::GetProjVelInc(double *val_vector) {
-	double ProjVel;
-	unsigned short iDim;
-  
-	ProjVel = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++)
 		ProjVel += Primitive[iDim+1]*val_vector[iDim];
   
 	return ProjVel;
 }
 
 bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
-	unsigned short iDim, iVar;
+	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
   
-	SetVelocity2();                               // Compute the modulus of the velocity.
-  check_dens = (Solution[0] < 0.0);             // Check the density
-	check_press = SetPressure(Gamma);							// Requires Velocity2 computation.
+  SetVelocity();                                // Computes velocity and velocity^2
+  check_dens = SetDensity();                    // Check the density
+	check_press = SetPressure(Gamma);							// Requires velocity2 computation.
 	check_sos = SetSoundSpeed(Gamma);             // Requires pressure computation.
 	check_temp = SetTemperature(Gas_Constant);		// Requires pressure computation.
   
   /*--- Check that the solution has a physical meaning ---*/
+  
   if (check_dens || check_press || check_sos || check_temp) {
     
     /*--- Copy the old solution ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     
     /*--- Recompute the primitive variables ---*/
-    SetVelocity2();
+    
+    SetVelocity();
+    check_dens = SetDensity();
     check_press = SetPressure(Gamma);
     check_sos = SetSoundSpeed(Gamma);
     check_temp = SetTemperature(Gas_Constant);
@@ -368,14 +361,9 @@ bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
     
   }
   
+  /*--- Set enthalpy ---*/
+  
   SetEnthalpy();                                // Requires pressure computation.
-  
-  /*--- Set velocity ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
-  
-  /*--- Set density ---*/
-	Primitive[nDim+2] = Solution[0];
   
   return RightVol;
   
@@ -386,19 +374,20 @@ bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *conf
   double ArtComp_Factor = config->GetArtComp_Factor();
   
   /*--- Set the value of the density ---*/
+  
   SetDensityInc(Density_Inf);
   
-  /*--- Set the value of the velocity squared (requires density) ---*/
-	SetVelocityInc2();
+  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
+  
+  SetVelocityInc();
   
   /*--- Set the value of the pressure ---*/
+  
 	SetPressureInc();
   
   /*--- Set the value of the artificial compressibility factor ---*/
-  SetBetaInc2(ArtComp_Factor);
   
-  /*--- Set the value of the velocity ---*/
-	SetVelocityInc();
+  SetBetaInc2(ArtComp_Factor);
   
   return true;
   
@@ -413,6 +402,7 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   double epsilon = config->GetFreeSurface_Thickness();
   
   /*--- Set the value of the density ---*/
+  
   Heaviside = 0.0;
   if (levelset < -epsilon) Heaviside = 1.0;
   if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
@@ -422,17 +412,17 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
   SetDensityInc(DensityInc);
   
-  /*--- Set the value of the velocity squared (requires density) ---*/
-	SetVelocityInc2();
+  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
+  
+  SetVelocityInc();
   
   /*--- Set the value of the pressure ---*/
+  
 	SetPressureInc();
   
   /*--- Set the value of the artificial compressibility factor ---*/
-  SetBetaInc2(ArtComp_Factor);
   
-  /*--- Set the value of the velocity ---*/
-	SetVelocityInc();
+  SetBetaInc2(ArtComp_Factor);
   
   return true;
   
@@ -544,27 +534,31 @@ void CNSVariable::SetStrainMag(void) {
 }
 
 bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
-	unsigned short iDim, iVar;
+	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
   double Gas_Constant = config->GetGas_ConstantND();
 	double Gamma = config->GetGamma();
   
-	SetVelocity2();                                 // Compute the modulus of the velocity.
-  check_dens = (Solution[0] < 0.0);               // Check the density
-	check_press = SetPressure(Gamma, turb_ke);      // Requires Velocity2 computation.
+  SetVelocity();                                  // Computes velocity and velocity^2
+  check_dens = SetDensity();                      // Check the density
+	check_press = SetPressure(Gamma, turb_ke);      // Requires velocity2 computation.
 	check_sos = SetSoundSpeed(Gamma);               // Requires pressure computation.
 	check_temp = SetTemperature(Gas_Constant);      // Requires pressure computation.
   
   /*--- Check that the solution has a physical meaning ---*/
+  
   if (check_dens || check_press || check_sos || check_temp) {
     
     /*--- Copy the old solution ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     
     /*--- Recompute the primitive variables ---*/
-    SetVelocity2();
+    
+    SetVelocity();
+    check_dens = SetDensity();
     check_press = SetPressure(Gamma, turb_ke);
     check_sos = SetSoundSpeed(Gamma);
     check_temp = SetTemperature(Gas_Constant);
@@ -573,15 +567,13 @@ bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
     
   }
   
+  /*--- Set enthalpy ---*/
+  
 	SetEnthalpy();                                  // Requires pressure computation.
+  
+  /*--- Set laminar viscosity ---*/
+  
 	SetLaminarViscosity();                          // Requires temperature computation.
-  
-  /*--- Set velocity ---*/
-	for (iDim = 0; iDim < nDim; iDim++)
-		Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
-  
-  /*--- Set density ---*/
-	Primitive[nDim+2] = Solution[0];
   
   return RightVol;
   
@@ -592,20 +584,21 @@ bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
 	double ArtComp_Factor = config->GetArtComp_Factor();
   
   /*--- Set the value of the density and viscosity ---*/
+  
   SetDensityInc(Density_Inf);
   SetLaminarViscosityInc(Viscosity_Inf);
   
-  /*--- Set the value of the velocity squared (requires density) ---*/
-	SetVelocityInc2();
+  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
+  
+  SetVelocityInc();
   
   /*--- Set the value of the pressure ---*/
+  
 	SetPressureInc();
   
   /*--- Set the value of the artificial compressibility factor ---*/
-  SetBetaInc2(ArtComp_Factor);
   
-  /*--- Set the value of the velocity ---*/
-  SetVelocityInc();
+  SetBetaInc2(ArtComp_Factor);
   
   return true;
   
@@ -619,6 +612,7 @@ bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
   double levelset = GetPrimVar(nDim+3);
 
   /*--- Set the value of the density and viscosity ---*/
+  
   epsilon = config->GetFreeSurface_Thickness();
   Heaviside = 0.0;
   if (levelset < -epsilon) Heaviside = 1.0;
@@ -632,18 +626,18 @@ bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
   lambda = config->GetRatioViscosity();
   ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
   SetLaminarViscosityInc(ViscosityInc);
+
+  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
   
-  /*--- Set the value of the velocity squared (requires density) ---*/
-	SetVelocityInc2();
+  SetVelocityInc();
   
   /*--- Set the value of the pressure ---*/
+  
 	SetPressureInc();
   
   /*--- Set the value of the artificial compressibility factor ---*/
-  SetBetaInc2(ArtComp_Factor);
   
-  /*--- Set the value of the velocity ---*/
-  SetVelocityInc();
+  SetBetaInc2(ArtComp_Factor);
 
   return true;
   

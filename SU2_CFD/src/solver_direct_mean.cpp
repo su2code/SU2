@@ -2044,13 +2044,13 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
     }
     if (incompressible) {
-      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
+      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
       Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
       Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
     }
     if (freesurface) {
-      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
+      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
       Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
       Mean_LevelSet = 0.5 * (node[iPoint]->GetLevelSet() + node[jPoint]->GetLevelSet());
@@ -2101,13 +2101,13 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
         Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
       }
       if (incompressible) {
-        Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
+        Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
         Mean_DensityInc = node[iPoint]->GetDensityInc();
         Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
       }
       if (freesurface) {
-        Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
+        Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
         Mean_DensityInc = node[iPoint]->GetDensityInc();
         Mean_LevelSet = node[iPoint]->GetLevelSet();
@@ -2675,7 +2675,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
     }
     if (incompressible || freesurface) {
-      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
+      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
       Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
       Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
@@ -2715,7 +2715,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
         Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
       }
       if (incompressible || freesurface) {
-        Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
+        Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
         Mean_DensityInc = node[iPoint]->GetDensityInc();
         Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
@@ -2766,8 +2766,8 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
     
     /*--- Correction for compressible flows which use the enthalpy ---*/
     if (compressible) {
-      Pressure_i = node[iPoint]->GetPressure(COMPRESSIBLE);
-      Pressure_j = node[jPoint]->GetPressure(COMPRESSIBLE);
+      Pressure_i = node[iPoint]->GetPressure();
+      Pressure_j = node[jPoint]->GetPressure();
       Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + Pressure_i) - (node[jPoint]->GetSolution(nVar-1) + Pressure_j);
     }
     
@@ -2832,8 +2832,8 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
           
           /*--- Correction for compressible flows ---*/
           if (compressible) {
-            Pressure_mirror = 2.0*node[iPoint]->GetPressure(COMPRESSIBLE) - node[Point_Normal]->GetPressure(COMPRESSIBLE);
-            Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + node[iPoint]->GetPressure(COMPRESSIBLE)) - (U_mirror[nVar-1] + Pressure_mirror);
+            Pressure_mirror = 2.0*node[iPoint]->GetPressure() - node[Point_Normal]->GetPressure();
+            Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + node[iPoint]->GetPressure()) - (U_mirror[nVar-1] + Pressure_mirror);
           }
           
           /*--- Subtract contribution at the boundary node only ---*/
@@ -2876,8 +2876,8 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
     
     /*--- Get the pressure, or density for incompressible solvers ---*/
     if (compressible) {
-      Pressure_i = node[iPoint]->GetPressure(COMPRESSIBLE);
-      Pressure_j = node[jPoint]->GetPressure(COMPRESSIBLE);
+      Pressure_i = node[iPoint]->GetPressure();
+      Pressure_j = node[jPoint]->GetPressure();
     }
     if (incompressible || freesurface) {
       Pressure_i = node[iPoint]->GetDensityInc();
@@ -2941,13 +2941,13 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
           
           Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
           
-          if (compressible) Pressure_i = node[iPoint]->GetPressure(COMPRESSIBLE);
+          if (compressible) Pressure_i = node[iPoint]->GetPressure();
           if (incompressible || freesurface) Pressure_i = node[iPoint]->GetDensityInc();
           
           /*--- Interpolate & compute difference in the conserved variables ---*/
           if (compressible) {
-            Pressure_i = node[iPoint]->GetPressure(COMPRESSIBLE);
-            Press_mirror = 2.0*Pressure_i - node[Point_Normal]->GetPressure(COMPRESSIBLE);
+            Pressure_i = node[iPoint]->GetPressure();
+            Press_mirror = 2.0*Pressure_i - node[Point_Normal]->GetPressure();
           }
           if (incompressible || freesurface) {
             Pressure_i = node[iPoint]->GetDensityInc();
@@ -3266,11 +3266,11 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
                the pressures at the two nodes of the edge it sits on ---*/
               double pressure_endpoint1_p1, pressure_endpoint1_p2;
               if (compressible) {
-                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(COMPRESSIBLE);
-                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(COMPRESSIBLE);
+                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure();
+                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure();
               } else {
-                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressure(INCOMPRESSIBLE);
-                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressure(INCOMPRESSIBLE);
+                pressure_endpoint1_p1 = node[point1_around.at(iSegment)]->GetPressureInc();
+                pressure_endpoint1_p2 = node[point2_around.at(iSegment)]->GetPressureInc();
               }
               
               deltaX = endpoint1_p1[0] - segments[iSegment].endpoint1[0];
@@ -3290,11 +3290,11 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
                the pressures at the two nodes of the edge it sits on ---*/
               double pressure_endpoint2_p1, pressure_endpoint2_p2;
               if (compressible) {
-                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(COMPRESSIBLE);
-                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(COMPRESSIBLE);
+                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure();
+                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure();
               } else {
-                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressure(INCOMPRESSIBLE);
-                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressure(INCOMPRESSIBLE);
+                pressure_endpoint2_p1 = node[point1_around.at(iSegment+1)]->GetPressureInc();
+                pressure_endpoint2_p2 = node[point2_around.at(iSegment+1)]->GetPressureInc();
               }
               
               deltaX = endpoint2_p1[0] - segments[iSegment].endpoint2[0];
@@ -3575,9 +3575,8 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
-        if (compressible)   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
-        if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
-        if (freesurface)    Pressure = node[iPoint]->GetPressure(FREESURFACE);
+        if (compressible)   Pressure = node[iPoint]->GetPressure();
+        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
         
         CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
         
@@ -4694,8 +4693,8 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
       
       /*--- Set the residual using the pressure ---*/
-      if (compressible)                   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
-      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
+      if (compressible)                   Pressure = node[iPoint]->GetPressure();
+      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
       
       Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4736,7 +4735,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
           for (iDim = 0; iDim < nDim; iDim++) {
             Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
             for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim, COMPRESSIBLE)*Normal[iDim];
+              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
             Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
           }
           if (grid_movement) {
@@ -4746,7 +4745,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
               ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
             Jacobian_i[nDim+1][0] = phi*ProjGridVel;
             for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[nDim+1][jDim+1] = -a2*node[iPoint]->GetVelocity(jDim, incompressible)*ProjGridVel;
+              Jacobian_i[nDim+1][jDim+1] = -a2*node[iPoint]->GetVelocity(jDim)*ProjGridVel;
             Jacobian_i[nDim+1][nDim+1] = a2*ProjGridVel;
           }
           Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
@@ -4849,7 +4848,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
           Vel2_Bound     += Vel_Bound[iDim]*Vel_Bound[iDim];
           Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
         }
-        Pressure_Bound   = node[iPoint]->GetPressure(COMPRESSIBLE);
+        Pressure_Bound   = node[iPoint]->GetPressure();
         SoundSpeed_Bound = sqrt(Gamma*Pressure_Bound/Density_Bound);
         Entropy_Bound    = pow(Density_Bound,Gamma)/Pressure_Bound;
         
@@ -5203,8 +5202,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             
             /*--- Get primitives from current inlet state. ---*/
             for (iDim = 0; iDim < nDim; iDim++)
-              Velocity[iDim] = node[iPoint]->GetVelocity(iDim, COMPRESSIBLE);
-            Pressure    = node[iPoint]->GetPressure(COMPRESSIBLE);
+              Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+            Pressure    = node[iPoint]->GetPressure();
             SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
             
             /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -5245,7 +5244,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           V_inlet[iDim+1] = GetVelocity_Inf(iDim);
         
         /*--- Neumann condition for pressure ---*/
-        V_inlet[0] = node[iPoint]->GetPressure(INCOMPRESSIBLE);
+        V_inlet[0] = node[iPoint]->GetPressureInc();
         
         /*--- Constant value of density ---*/
         V_inlet[nDim+1] = GetDensity_Inf();
@@ -7708,7 +7707,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
     }
     if (incompressible || freesurface) {
-      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVelInc(Normal) + node[jPoint]->GetProjVelInc(Normal));
+      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
       Mean_DensityInc = 0.5 * (node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
       Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
@@ -7767,7 +7766,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
         Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
       }
       if (incompressible || freesurface) {
-        Mean_ProjVel = node[iPoint]->GetProjVelInc(Normal);
+        Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
         Mean_DensityInc = node[iPoint]->GetDensityInc();
         Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
@@ -8054,11 +8053,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
         WallShearStress = sqrt(WallShearStress);
         
-        for (iDim = 0; iDim < nDim; iDim++) {
-          if (compressible)   Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, COMPRESSIBLE);
-          if (incompressible) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, INCOMPRESSIBLE);
-          if (freesurface)    Vel[iDim] = node[iPointNormal]->GetVelocity(iDim, FREESURFACE);
-        }
+        for (iDim = 0; iDim < nDim; iDim++)
+          Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
         
         VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitNormal[iDim];
         for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
@@ -8346,9 +8342,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
       /*--- Impose the value of the velocity as a strong boundary
        condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
-      if (compressible)   node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
-      if (incompressible) node[iPoint]->SetVelocity_Old(Vector, INCOMPRESSIBLE);
-      if (freesurface)    node[iPoint]->SetVelocity_Old(Vector, FREESURFACE);
+      if (compressible)   node[iPoint]->SetVelocity_Old(Vector);
+      if (incompressible || freesurface) node[iPoint]->SetVelocityInc_Old(Vector);
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
@@ -8370,9 +8365,8 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
         Density  = node[iPoint]->GetSolution(0);
-        if (compressible)   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
-        if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
-        if (freesurface)    Pressure = node[iPoint]->GetPressure(FREESURFACE);
+        if (compressible)   Pressure = node[iPoint]->GetPressure();
+        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
         laminar_viscosity = node[iPoint]->GetLaminarViscosity();
         eddy_viscosity    = node[iPoint]->GetEddyViscosity();
         total_viscosity   = laminar_viscosity + eddy_viscosity;
@@ -8587,9 +8581,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       }
       
       /*--- Set the residual, truncation error and velocity value on the boundary ---*/
-      if (compressible)   node[iPoint]->SetVelocity_Old(Vector, COMPRESSIBLE);
-      if (incompressible) node[iPoint]->SetVelocity_Old(Vector, INCOMPRESSIBLE);
-      if (freesurface)    node[iPoint]->SetVelocity_Old(Vector, FREESURFACE);
+      if (compressible)   node[iPoint]->SetVelocity_Old(Vector);
+      if (incompressible || freesurface) node[iPoint]->SetVelocityInc_Old(Vector);
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
@@ -8652,9 +8645,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
         Density  = node[iPoint]->GetSolution(0);
-        if (compressible)   Pressure = node[iPoint]->GetPressure(COMPRESSIBLE);
-        if (incompressible) Pressure = node[iPoint]->GetPressure(INCOMPRESSIBLE);
-        if (freesurface)    Pressure = node[iPoint]->GetPressure(FREESURFACE);
+        if (compressible)   Pressure = node[iPoint]->GetPressure();
+        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
         laminar_viscosity = node[iPoint]->GetLaminarViscosity();
         eddy_viscosity    = node[iPoint]->GetEddyViscosity();
         total_viscosity   = laminar_viscosity + eddy_viscosity;

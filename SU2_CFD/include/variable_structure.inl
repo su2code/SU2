@@ -23,7 +23,7 @@
 
 #pragma once
 
-inline void CVariable::SetVelocityInc2(void) { }
+inline bool CVariable::SetDensity(void) { return 0; }
 
 inline void CVariable::SetVelSolutionOldDVector(void) { }
 
@@ -50,8 +50,6 @@ inline double CVariable::GetDensityInc(void) { return 0; }
 inline double CVariable::GetLevelSet(void) { return 0; }
 
 inline double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
-
-inline double CVariable::GetProjVelInc(double *val_vector) { return 0; }
 
 inline void CVariable::SetSolution(unsigned short val_var, double val_solution) { Solution[val_var] = val_solution; }
 
@@ -215,9 +213,9 @@ inline double CVariable::GetIntermittency(void) { return 0; }
 
 inline double CVariable::GetEnthalpy(void) { return 0; }
 
-inline double CVariable::GetPressure(unsigned short val_incomp) { return 0; }
-
 inline double CVariable::GetPressure(void) { return 0; }
+
+inline double CVariable::GetPressureInc(void) { return 0; }
 
 inline double CVariable::GetDeltaPressure(void) { return 0; }
 
@@ -234,8 +232,6 @@ inline double CVariable::GetTemperature_ve(void) { return 0; }
 inline double CVariable::GetRhoCv_tr(void) { return 0; }
 
 inline double CVariable::GetRhoCv_ve(void) { return 0; }
-
-inline double CVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) { return 0; }
 
 inline double CVariable::GetVelocity(unsigned short val_dim) { return 0; }
 
@@ -333,8 +329,6 @@ inline void CVariable::CalcdTdU(double *V, CConfig *config, double *dTdU) { }
 
 inline void CVariable::CalcdTvedU(double *V, CConfig *config, double *dTvedU) { }
 
-inline void CVariable::SetDensity() { }
-
 inline void CVariable::SetDeltaPressure(double *val_velocity, double Gamma) { }
 
 inline bool CVariable::SetSoundSpeed(CConfig *config) { return false; }
@@ -359,11 +353,13 @@ inline void CVariable::SetWallTemperature(double* Temperature_Wall) { }
 
 inline void CVariable::SetThermalCoeff(CConfig *config) { }
 
-inline void CVariable::SetVelocity(double *val_velocity, unsigned short val_incomp) { }
+inline void CVariable::SetVelocity(void) { }
 
 inline void CVariable::SetVelocity2(void) { }
 
-inline void CVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) { }
+inline void CVariable::SetVelocity_Old(double *val_velocity) { }
+
+inline void CVariable::SetVelocityInc_Old(double *val_velocity) { }
 
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
 
@@ -449,36 +445,51 @@ inline double CEulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution
 
 inline double CEulerVariable::GetEnthalpy(void) { return Primitive[nDim+3]; }
 
-inline double CEulerVariable::GetPressure(unsigned short val_incomp) {
-double pressure;
-   if (val_incomp == COMPRESSIBLE) pressure = Primitive[nDim+1]; 
-   if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) pressure = Solution[0];
-return pressure;
-}
+inline double CEulerVariable::GetPressure(void) { return Primitive[nDim+1]; }
+
+inline double CEulerVariable::GetPressureInc(void) { return Primitive[0]; }
 
 inline double CEulerVariable::GetSoundSpeed(void) { return Primitive[nDim+4]; }
 
 inline double CEulerVariable::GetTemperature(void) { return Primitive[0]; }
 
-inline double CEulerVariable::GetVelocity(unsigned short val_dim, unsigned short val_incomp) {
-double velocity;
-   if (val_incomp == COMPRESSIBLE) velocity = Solution[val_dim+1]/Solution[0]; 
-   if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) velocity = Solution[val_dim+1]/Primitive[nDim+1];
-return velocity;
-}
+inline double CEulerVariable::GetVelocity(unsigned short val_dim) { return Primitive[val_dim+1]; }
 
 inline double CEulerVariable::GetVelocity2(void) { return Velocity2; }
 
-inline void CEulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
+inline bool CEulerVariable::SetDensity(void) {
+  Primitive[nDim+2] = Solution[0];
+  if (Primitive[nDim+2] > 0.0) return false;
+  else return true;
+}
 
 inline void CEulerVariable::SetDensityInc(double val_density) { Primitive[nDim+1] = val_density; }
 
+inline bool CEulerVariable::SetPressure(double Gamma) {
+   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
+   if (Primitive[nDim+1] > 0.0) return false;
+   else return true;
+}
+
 inline void CEulerVariable::SetPressureInc(void) { Primitive[0] = Solution[0]; }
 
-inline void CEulerVariable::SetVelocityInc(void) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Primitive[iDim+1] = Solution[iDim+1] / Primitive[nDim+1];
+inline void CEulerVariable::SetVelocity(void) {
+  Velocity2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Primitive[iDim+1] = Solution[iDim+1] / Solution[0];
+    Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
+  }
 }
+
+inline void CEulerVariable::SetVelocityInc(void) {
+  Velocity2 = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Primitive[iDim+1] = Solution[iDim+1] / Primitive[nDim+1];
+    Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
+  }
+}
+
+inline void CEulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
 
 inline void CEulerVariable::SetBetaInc2(double val_betainc2) { Primitive[nDim+2] = val_betainc2; }
 
@@ -508,30 +519,14 @@ inline void CEulerVariable::SetPrimVar(double *val_prim) {
 
 inline double *CEulerVariable::GetPrimVar(void) { return Primitive; }
 
-inline void CEulerVariable::SetVelocity(double *val_velocity, unsigned short val_incomp) {
-	if (val_incomp == COMPRESSIBLE) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-			Solution[iDim+1] = val_velocity[iDim]*Solution[0]; 
-	}
-	if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-			Solution[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
-	}
+inline void CEulerVariable::SetVelocity_Old(double *val_velocity) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_Old[iDim+1] = val_velocity[iDim]*Solution[0];
 }
 
-inline void CEulerVariable::SetVelocity2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += Solution[iDim+1]*Solution[iDim+1]/(Solution[0]*Solution[0]); }
-
-inline void CEulerVariable::SetVelocityInc2(void) { Velocity2 = 0.0; for (unsigned short iDim = 0; iDim < nDim; iDim++) Velocity2 += (Solution[iDim+1]/Primitive[nDim+1])*(Solution[iDim+1]/Primitive[nDim+1]); }
-
-inline void CEulerVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) { 
-	if (val_incomp == COMPRESSIBLE) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
-			Solution_Old[iDim+1] = val_velocity[iDim]*Solution[0]; 
-	}
-	if ((val_incomp == INCOMPRESSIBLE) || (val_incomp == FREESURFACE)) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++)	
-			Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
-	}
+inline void CEulerVariable::SetVelocityInc_Old(double *val_velocity) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
 }
 
 inline void CEulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
@@ -557,12 +552,6 @@ inline double CEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { r
 inline double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CEulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
-
-inline bool CEulerVariable::SetPressure(double Gamma) {
-   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
-   if (Primitive[nDim+1] > 0.0) return false;
-   else return true;
-}
 
 inline void CEulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
 
@@ -722,12 +711,7 @@ inline double* CTNE2EulerVariable::GetdTdU(void) { return dTdU; }
 
 inline double* CTNE2EulerVariable::GetdTvedU(void) { return dTvedU; }
 
-inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) {
-double velocity;
-   //velocity = Solution[nSpecies+val_dim]/Primitive[RHO_INDEX]; 
-   velocity = Primitive[VEL_INDEX+val_dim];
-return velocity;
-}
+inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) { return Primitive[VEL_INDEX+val_dim]; }
 
 inline double CTNE2EulerVariable::GetVelocity2(void) { return Velocity2; }
 
@@ -744,10 +728,9 @@ inline void CTNE2EulerVariable::SetPrimVar(double *val_prim) {
 
 inline double *CTNE2EulerVariable::GetPrimVar(void) { return Primitive; }
 
-inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity, unsigned short val_incomp) {
+inline void CTNE2EulerVariable::SetVelocity_Old(double *val_velocity) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Solution_Old[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
-
 }
 
 inline void CTNE2EulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
