@@ -603,10 +603,6 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge ---*/
@@ -624,21 +620,6 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(),
                            solver_container[FLOW_SOL]->node[jPoint]->GetPrimVar());
-    
-    /*--- Laminar Viscosity ---*/
-    
-    if (compressible) {
-      numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                    solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
-      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
-    }
-    if (incompressible || freesurface) {
-      numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                    solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc());
-      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosityInc());
-    }
     
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
     
@@ -1537,9 +1518,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new double[nDim];
 
   bool grid_movement  = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -1593,23 +1571,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_inlet);
       
-      /*--- Laminar Viscosity ---*/
-      if (compressible) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
-      }
-      
-      /*--- Eddy Viscosity ---*/
-
-      
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
@@ -1635,9 +1596,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
   unsigned short iVar, iDim;
   double *V_outlet, *V_domain, *Normal;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
   
   Normal = new double[nDim];
@@ -1696,20 +1654,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_outlet);
       
-      /*--- Laminar Viscosity, and density (incompresible solver)  ---*/
-      if (compressible) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
-      }
-      
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
@@ -1733,10 +1677,6 @@ void CTurbSASolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, iVertex, Point_Normal;
   unsigned short iDim;
   double *V_inflow, *V_domain, *Normal;
-  
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   Normal = new double[nDim];
   
@@ -1785,20 +1725,6 @@ void CTurbSASolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_cont
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_inflow);
       
-      /*--- Laminar Viscosity, and density (incompresible solver)  ---*/
-      if (compressible) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
-      }
-      
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
@@ -1826,9 +1752,6 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
   Normal = new double[nDim];
   
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1876,20 +1799,6 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
       
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_exhaust);
-      
-      /*--- Laminar Viscosity, and density (incompresible solver)  ---*/
-      if (compressible) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
-      }
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -2903,9 +2812,6 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -2959,20 +2865,6 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_inlet);
       
-      /*--- Laminar Viscosity  ---*/
-      if (compressible) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
-      }
-      
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
@@ -2998,9 +2890,6 @@ void CTurbMLSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
   unsigned short iVar, iDim;
   double *V_outlet, *V_domain, *Normal;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
   
   Normal = new double[nDim];
@@ -3058,20 +2947,6 @@ void CTurbMLSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Conservative variables w/o reconstruction ---*/
       visc_numerics->SetPrimitive(V_domain, V_outlet);
-      
-      /*--- Laminar Viscosity ---*/
-      if (compressible) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                           solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
-      }
             
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -3534,9 +3409,6 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     if (incompressible || freesurface) {
       numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(), 0.0);
     }
-    
-    /*--- Eddy Viscosity ---*/
-    numerics->SetEddyViscosity(node[iPoint]->GetmuT(), 0.0);
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
     numerics->SetTurbVar(node[iPoint]->GetSolution(), NULL);

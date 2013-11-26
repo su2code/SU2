@@ -2170,9 +2170,6 @@ private:
 	double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
-	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
-	double LaminarViscosityInc;	/*!< \brief Viscosity of the fluid (incompressible flows). */
-	double EddyViscosity;		/*!< \brief Eddy viscosity of the fluid. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
 	double StrainMag;           /*!< \brief Magnitude of rate of strain tensor. */
 public:
