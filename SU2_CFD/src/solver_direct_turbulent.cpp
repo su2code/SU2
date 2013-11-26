@@ -630,16 +630,15 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     if (compressible) {
       numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                     solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
     }
     if (incompressible || freesurface) {
       numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                     solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc());
+      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosityInc());
     }
-    
-    /*--- Eddy Viscosity ---*/
-    
-    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                               solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
     
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
     
@@ -1032,7 +1031,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     Vector_i = new double[nDim]; Vector_j = new double[nDim];
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
-    FlowPrimVar_i = new double [nDim+5]; FlowPrimVar_j = new double [nDim+5];
+    FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     Jacobian_i = new double* [nVar];
@@ -1598,15 +1597,18 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       if (compressible) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       }
       if (incompressible || freesurface) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
       }
       
       /*--- Eddy Viscosity ---*/
-      visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                      solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
+
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -1698,15 +1700,15 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       if (compressible) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       }
       if (incompressible || freesurface) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
       }
-      
-      /*--- Eddy Viscosity ---*/
-      visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                      solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -1787,15 +1789,15 @@ void CTurbSASolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_cont
       if (compressible) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       }
       if (incompressible || freesurface) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
       }
-      
-      /*--- Eddy Viscosity ---*/
-      visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                      solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
@@ -1879,15 +1881,15 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
       if (compressible) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       }
       if (incompressible || freesurface) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
       }
-      
-      /*--- Eddy Viscosity ---*/
-      visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                      solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -2389,7 +2391,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     Vector_i = new double[nDim]; Vector_j = new double[nDim];
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
-    FlowPrimVar_i = new double [nDim+5]; FlowPrimVar_j = new double [nDim+5];
+    FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     Jacobian_i = new double* [nVar];
@@ -2961,15 +2963,15 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       if (compressible) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       }
       if (incompressible || freesurface) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
       }
-      
-      /*--- Eddy Viscosity ---*/
-      visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                      solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
@@ -3061,16 +3063,16 @@ void CTurbMLSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       if (compressible) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
       }
       if (incompressible || freesurface) {
         visc_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
                                            solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc());
+        visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                        solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc());
       }
-      
-      /*--- Eddy Viscosity ---*/
-      visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                      solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
-      
+            
       /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
       visc_numerics->SetTurbVar(Solution_i, Solution_j);
       visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
@@ -3256,7 +3258,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     Vector_i = new double[nDim]; Vector_j = new double[nDim];
     
     /*--- Define some auxiliary vector related with the flow solution ---*/
-    FlowPrimVar_i = new double [nDim+5]; FlowPrimVar_j = new double [nDim+5];
+    FlowPrimVar_i = new double [nDim+7]; FlowPrimVar_j = new double [nDim+7];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     Jacobian_i = new double* [nVar];

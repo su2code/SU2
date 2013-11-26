@@ -151,14 +151,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  /*--- Define geometry constants in the solver structure 
-   Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
-   FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
-   Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+  /*--- Define geometry constants in the solver structure
+   Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,lamMu,EddyMu),
+   FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,lamMu,EddyMu, dist),
+   Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c,lamMu,EddyMu) ---*/
   nDim = geometry->GetnDim();
-  if (incompressible) { nVar = nDim+1; nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+4; nPrimVarGrad = nDim+4; }
-  if (compressible)   { nVar = nDim+2; nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
+  if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+6; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -5002,15 +5002,18 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                           node[iPoint]->GetGradient_Primitive());
         
         /*--- Laminar and eddy viscosity ---*/
-        if (compressible)
+        if (compressible) {
           visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
                                              node[iPoint]->GetLaminarViscosity());
-        if (incompressible || freesurface)
+          visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(),
+                                          node[iPoint]->GetEddyViscosity());
+        }
+        if (incompressible || freesurface) {
           visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(),
                                              node[iPoint]->GetLaminarViscosityInc());
-        
-        visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(),
-                                        node[iPoint]->GetEddyViscosity());
+          visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosityInc(),
+                                          node[iPoint]->GetEddyViscosityInc());
+        }
         
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
@@ -5301,11 +5304,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetPrimitive(V_domain, V_inlet);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
-        /*--- Laminar and eddy viscosity ---*/
-        if (compressible) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-        if (incompressible || freesurface) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
-        
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
@@ -5530,9 +5528,14 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
         /*--- Laminar and eddy viscosity ---*/
-        if (compressible) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-        if (incompressible || freesurface) visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
-        visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+        if (compressible) {
+          visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
+          visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
+        }
+        if (incompressible || freesurface) {
+          visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[iPoint]->GetLaminarViscosityInc());
+          visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosityInc(), node[iPoint]->GetEddyViscosityInc());
+        }
         
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
@@ -5659,10 +5662,6 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_inlet);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Laminar and eddy viscosity ---*/
-        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
@@ -5985,10 +5984,6 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_exhaust);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-        
-        /*--- Laminar and eddy viscosity ---*/
-        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[iPoint]->GetLaminarViscosity());
-        visc_numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[iPoint]->GetEddyViscosity());
         
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
@@ -7140,13 +7135,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Define geometry constants in the solver structure
-   Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
-   FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
-   Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+   Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,lamMu,EddyMu),
+   FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,lamMu,EddyMu, dist),
+   Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c,lamMu,EddyMu) ---*/
   nDim = geometry->GetnDim();
-  if (incompressible) { nVar = nDim+1; nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+4; nPrimVarGrad = nDim+4; }
-  if (compressible)   { nVar = nDim+2; nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
+  if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+6; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -7599,7 +7594,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool tkeNeeded = (turb_model == SST);
-  double turb_ke = 0.0;
+  double eddy_visc = 0.0, turb_ke = 0.0;
   bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
@@ -7610,21 +7605,18 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-    
+    if (turb_model != NONE) {
+      eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+    }
+      
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
-    if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(turb_ke, config);
-    if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, turb_ke, config);
-    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(turb_ke, config);
+    if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, config);
+    if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
+    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(eddy_visc, turb_ke, config);
     if (!RightSol) ErrorCounter++;
-    
-    /*--- Set the value of the eddy viscosity ---*/
-    if (turb_model != NONE)
-      node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solver_container[TURB_SOL]->node[iPoint]);
-    else
-      node[iPoint]->SetEddyViscosity(NONE, NULL);
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
     LinSysRes.SetBlock_Zero(iPoint);
@@ -7673,7 +7665,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
-  double turb_model = config->GetKind_Turb_Model();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -7683,12 +7674,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     node[iPoint]->SetMax_Lambda_Inv(0.0);
     node[iPoint]->SetMax_Lambda_Visc(0.0);
-    
-    /*--- Set the value of the eddy viscosity ---*/
-    if (turb_model != NONE)
-      node[iPoint]->SetEddyViscosity(config->GetKind_Turb_Model(), solver_container[TURB_SOL]->node[iPoint]);
-    else
-      node[iPoint]->SetEddyViscosity(NONE, NULL);
   }
   
   /*--- Loop interior edges ---*/
@@ -7738,7 +7723,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     }
     if (incompressible || freesurface) {
       Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosityInc() + node[jPoint]->GetLaminarViscosityInc());
-      Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
+      Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosityInc() + node[jPoint]->GetEddyViscosityInc());
       Mean_Density     = 0.5*(node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
     }
     
@@ -7795,7 +7780,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       }
       if (incompressible || freesurface) {
         Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosityInc() + node[jPoint]->GetLaminarViscosityInc());
-        Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
+        Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosityInc() + node[jPoint]->GetEddyViscosityInc());
         Mean_Density     = 0.5*(node[iPoint]->GetDensityInc() + node[jPoint]->GetDensityInc());
       }
       
@@ -7895,12 +7880,12 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Laminar and eddy viscosity ---*/
     if (compressible) {
       numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(), node[jPoint]->GetLaminarViscosity());
+      numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[jPoint]->GetEddyViscosity());
     }
     if (incompressible || freesurface) {
       numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosityInc(), node[jPoint]->GetLaminarViscosityInc());
+      numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosityInc(), node[jPoint]->GetEddyViscosityInc());
     }
-    
-    numerics->SetEddyViscosity(node[iPoint]->GetEddyViscosity(), node[jPoint]->GetEddyViscosity());
     
     /*--- Turbulent kinetic energy ---*/
     if (config->GetKind_Turb_Model() == SST)
@@ -8365,10 +8350,16 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
         Density  = node[iPoint]->GetSolution(0);
-        if (compressible)   Pressure = node[iPoint]->GetPressure();
-        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
-        laminar_viscosity = node[iPoint]->GetLaminarViscosity();
-        eddy_viscosity    = node[iPoint]->GetEddyViscosity();
+        if (compressible) {
+          Pressure = node[iPoint]->GetPressure();
+          laminar_viscosity = node[iPoint]->GetLaminarViscosity();
+          eddy_viscosity    = node[iPoint]->GetEddyViscosity();
+        }
+        if (incompressible || freesurface) {
+          Pressure = node[iPoint]->GetPressureInc();
+          laminar_viscosity = node[iPoint]->GetLaminarViscosityInc();
+          eddy_viscosity    = node[iPoint]->GetEddyViscosityInc();
+        }
         total_viscosity   = laminar_viscosity + eddy_viscosity;
         grad_primvar      = node[iPoint]->GetGradient_Primitive();
         
@@ -8581,7 +8572,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       }
       
       /*--- Set the residual, truncation error and velocity value on the boundary ---*/
-      if (compressible)   node[iPoint]->SetVelocity_Old(Vector);
+      if (compressible) node[iPoint]->SetVelocity_Old(Vector);
       if (incompressible || freesurface) node[iPoint]->SetVelocityInc_Old(Vector);
       
       for (iDim = 0; iDim < nDim; iDim++)
@@ -8645,10 +8636,17 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
         Density  = node[iPoint]->GetSolution(0);
-        if (compressible)   Pressure = node[iPoint]->GetPressure();
-        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
-        laminar_viscosity = node[iPoint]->GetLaminarViscosity();
-        eddy_viscosity    = node[iPoint]->GetEddyViscosity();
+        if (compressible) {
+          Pressure = node[iPoint]->GetPressure();
+          laminar_viscosity = node[iPoint]->GetLaminarViscosity();
+          eddy_viscosity    = node[iPoint]->GetEddyViscosity();
+        }
+        if (incompressible || freesurface) {
+          Pressure = node[iPoint]->GetPressureInc();
+          laminar_viscosity = node[iPoint]->GetLaminarViscosityInc();
+          eddy_viscosity    = node[iPoint]->GetEddyViscosityInc();
+        }
+
         total_viscosity   = laminar_viscosity + eddy_viscosity;
         grad_primvar      = node[iPoint]->GetGradient_Primitive();
         

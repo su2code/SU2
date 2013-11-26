@@ -788,6 +788,12 @@ public:
 	 * \return Value of the eddy viscosity.
 	 */		
 	virtual double GetEddyViscosity(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the eddy viscosity.
+	 */
+	virtual double GetEddyViscosityInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -982,16 +988,15 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */		
-	virtual void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
 	 */		
-	virtual void SetEddyViscosity(double val_eddy_viscosity);
+	virtual void SetEddyViscosity(double eddy_visc);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 */
+	virtual void SetEddyViscosityInc(double eddy_visc);
 
 	/*!
 	 * \brief A virtual member.
@@ -1021,7 +1026,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1036,12 +1041,12 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1291,20 +1296,9 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 */	
-	virtual void SetLaminarViscosity();
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
 	virtual void SetLaminarViscosity(CConfig *config);
-	
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 */		
-	virtual void SetLaminarViscosity(double val_laminar_viscosity);
 
 	/*!
 	 * \brief A virtual member.
@@ -2217,13 +2211,7 @@ public:
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity();
-
-	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 */
-	void SetLaminarViscosity(double val_laminar_viscosity);
+	void SetLaminarViscosity(CConfig *config);
 
 	/*!
 	 * \overload
@@ -2242,17 +2230,16 @@ public:
 	void SetStrainMag(void);
 
 	/*!
-	 * \brief Set the eddy viscosity.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */
-	void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
-
-	/*!
 	 * \overload
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
 	 */
-	void SetEddyViscosity(double val_eddy_viscosity);
+	void SetEddyViscosity(double eddy_visc);
+  
+  /*!
+	 * \overload
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 */
+	void SetEddyViscosityInc(double eddy_visc);
 
 	/*!
 	 * \brief Get the laminar viscosity of the flow.
@@ -2271,6 +2258,12 @@ public:
 	 * \return The eddy viscosity of the flow.
 	 */
 	double GetEddyViscosity(void);
+  
+  /*!
+	 * \brief Get the eddy viscosity of the flow.
+	 * \return The eddy viscosity of the flow.
+	 */
+	double GetEddyViscosityInc(void);
 
 	/*!
 	 * \brief Set the temperature at the wall
@@ -2298,17 +2291,17 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
+	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
+	bool SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config);
 };
 
 /*! 
@@ -3484,12 +3477,6 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	void SetThermalConductivity(CConfig *config);
-  
-	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 */
-	void SetLaminarViscosity(double val_laminar_viscosity);
   
 	/*!
 	 * \brief Set the vorticity value.

@@ -4990,16 +4990,17 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 			if (compressible) {
 				numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                       solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+        numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                   solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
       }
 			if (incompressible || freesurface) {
         numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
                               solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
 				numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
 						solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc());
+        numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                   solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosityInc());
       }
-
-			numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-					solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
 
 			/*--- Compute residual in a non-conservative way, and update ---*/
 			numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
@@ -5835,11 +5836,18 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           
           /*--- Get some additional quantities from the flow solution ---*/
           Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-          if (incompressible || freesurface) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressureInc();
-					Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-          Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
+          if (compressible) {
+            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+            Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+            Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+            Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
+          }
+          if (incompressible || freesurface) {
+            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressureInc();
+            Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+            Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); // Should be zero at the wall
+          }
+          
           ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
           XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
           
