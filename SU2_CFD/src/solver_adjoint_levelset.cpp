@@ -590,7 +590,7 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Projected adjoint velocity ---*/
     ProjAdj = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim, INCOMPRESSIBLE);
+      Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
       ProjAdj += Velocity[iDim]*AdjLevelSetGradient[0][iDim];
     }
     

@@ -794,18 +794,18 @@ public:
 	 * \return Value of the flow enthalpy.
 	 */		
 	virtual double GetEnthalpy(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the flow pressure.
-	 */		
-	virtual double GetPressure(unsigned short val_incomp);
   
   /*!
 	 * \brief A virtual member.
 	 * \return Value of the flow pressure.
 	 */
 	virtual double GetPressure(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the flow pressure.
+	 */
+	virtual double GetPressureInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -827,13 +827,6 @@ public:
 	 * \return Value of the projected velocity.
 	 */		
 	virtual double GetProjVel(double *val_vector, unsigned short val_species);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_vector - Direction of projection.
-	 * \return Value of the projected velocity for the incompressible flow.
-	 */		
-	virtual double GetProjVelInc(double *val_vector);
 
 	/*!
 	 * \brief A virtual member.
@@ -882,13 +875,6 @@ public:
    * \return \f$\rho C^{v-e}_{v} \f$
    */
   virtual double GetRhoCv_ve(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \return Value of the velocity for the dimension <i>val_dim</i>.
-	 */		
-	virtual double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
   
   /*!
 	 * \brief A virtual member.
@@ -1174,7 +1160,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetDensity(void);
+	virtual bool SetDensity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1250,14 +1236,8 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */		
-	virtual void SetVelocity(double *val_velocity, unsigned short val_incomp);
-
-	/*!
-	 * \brief A virtual member.
 	 */
-	virtual void SetVelocityInc2(void);
+	virtual void SetVelocity(void);
   
 	/*!
 	 * \brief A virtual member.
@@ -1301,7 +1281,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
-	virtual void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
+	virtual void SetVelocity_Old(double *val_velocity);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 */
+	virtual void SetVelocityInc_Old(double *val_velocity);
 
 	/*!
 	 * \brief A virtual member.
@@ -1926,16 +1912,6 @@ public:
 	double *GetLimiter_Primitive(void);
 
 	/*!
-	 * \brief Set the value of the velocity*velocity for the incompressible solver.
-	 */
-	void SetVelocityInc2(void);
-
-	/*!
-	 * \brief Set the value of the velocity*velocity.
-	 */
-	void SetVelocity2(void);
-
-	/*!
 	 * \brief Set the value of the pressure.
 	 */
 	bool SetPressure(double Gamma);
@@ -2002,6 +1978,11 @@ public:
   /*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
+	bool SetDensity(void);
+  
+  /*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
 	void SetPressureInc(void);
   
   /*!
@@ -2030,7 +2011,14 @@ public:
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure.
 	 */
-	double GetPressure(unsigned short val_incomp);
+	double GetPressure(void);
+  
+  /*!
+	 * \brief Get the flow pressure.
+	 * \return Value of the flow pressure.
+	 */
+	double GetPressureInc(void);
+  
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
@@ -2084,7 +2072,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
-	double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
+	double GetVelocity(unsigned short val_dim);
 
 	/*!
 	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -2094,23 +2082,22 @@ public:
 	double GetProjVel(double *val_vector);
 
 	/*!
-	 * \brief Get the projected velocity in a unitary vector direction (incompressible solver).
-	 * \param[in] val_vector - Direction of projection.
-	 * \return Value of the projected velocity.
-	 */
-	double GetProjVelInc(double *val_vector);
-
-	/*!
 	 * \brief Set the velocity vector from the solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */	
-	void SetVelocity(double *val_velocity, unsigned short val_incomp);
+	void SetVelocity(void);
 
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
+	void SetVelocity_Old(double *val_velocity);
+  
+  /*!
+	 * \brief Set the velocity vector from the old solution.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 */
+	void SetVelocityInc_Old(double *val_velocity);
 
 	/*!
 	 * \brief Set the time spectral source term.
@@ -3118,7 +3105,7 @@ public:
   /*!
 	 * \brief Set the value of the mixture density.
 	 */
-	void SetDensity(void);
+	bool SetDensity(void);
   
 	/*!
 	 * \brief Set the value of the pressure.  Requires T&Tve calculation.
@@ -3330,16 +3317,10 @@ public:
 	double GetProjVel(double *val_vector);
   
 	/*!
-	 * \brief Set the velocity vector from the solution.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */
-	void SetVelocity(double *val_velocity, bool val_incomp);
-  
-	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
-	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
+	void SetVelocity_Old(double *val_velocity);
   
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
