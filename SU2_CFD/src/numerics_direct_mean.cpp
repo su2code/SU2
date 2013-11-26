@@ -1503,34 +1503,39 @@ CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
   
 }
 
-void CCentJSTArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resvisc,
+void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
                                            double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  /*--- Conservative variables at point i and j ---*/
-  Pressure_i = U_i[0]; Pressure_j = U_j[0];
+  /*--- Primitive variables at point i and j ---*/
+  
+  Pressure_i =    V_i[0];       Pressure_j = V_j[0];
+  DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
+  BetaInc2_i =    V_i[nDim+2];  BetaInc2_j = V_j[nDim+2];
+
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-    Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+    Velocity_i[iDim] = V_i[iDim+1];
+    Velocity_j[iDim] = V_j[iDim+1];
     sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
     sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
   }
   
   /*--- Compute mean values of the variables ---*/
+  
   MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
   MeanPressure = 0.5*(Pressure_i + Pressure_j);
   MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
   
   /*--- Get projected flux tensor ---*/
+  
   GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, Proj_flux_tensor);
   
-  for (iVar = 0; iVar < nVar; iVar++) {
-    val_resconv[iVar] = Proj_flux_tensor[iVar];
-    val_resvisc[iVar] = 0.0;
-  }
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] = Proj_flux_tensor[iVar];
   
   /*--- Jacobians of the inviscid flux ---*/
+  
   if (implicit) {
     GetInviscidArtCompProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1539,12 +1544,14 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
   }
   
   /*--- Computes differences between Laplacians and conservative variables ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
     Diff_U[iVar] = U_i[iVar]-U_j[iVar];
   }
   
   /*--- Compute the local espectral radius and the stretching factor ---*/
+  
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0; Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
@@ -1571,8 +1578,9 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
   Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
   
   /*--- Compute viscous part of the residual ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
-    val_resvisc[iVar] = (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
+    val_residual[iVar] += (Epsilon_2*Diff_U[iVar] - Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
   
   if (implicit) {
     cte_0 = (Epsilon_2 + Epsilon_4*double(Neighbor_i+1))*StretchingFactor*MeanLambda;
@@ -1583,6 +1591,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
       val_Jacobian_j[iVar][iVar] -= cte_1;
     }
   }
+  
 }
 
 CCentLaxArtComp_Flow::CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -1618,25 +1627,24 @@ CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
   
 }
 
-void CCentLaxArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resvisc, double **val_Jacobian_i, double **val_Jacobian_j,
+void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                                            CConfig *config) {
   
   /*--- Conservative variables at point i and j ---*/
-  Pressure_i = U_i[0]; Pressure_j = U_j[0];
+  
+  Pressure_i =    V_i[0];       Pressure_j = V_j[0];
+  DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
+  BetaInc2_i =    V_i[nDim+2];  BetaInc2_j = V_j[nDim+2];
   sq_vel_i = 0.0; sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-    Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+    Velocity_i[iDim] = V_i[iDim+1];
+    Velocity_j[iDim] = V_j[iDim+1];
     sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
     sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
   }
   
-  /*--- Correction ---*/
-  //	double epsilon = - STANDART_GRAVITY * ((0.5*DensityInc_i*(Coord_i[nDim-1]-Coord_j[nDim-1])
-  //																					+ 0.5*DensityInc_j*(Coord_j[nDim-1]-Coord_i[nDim-1]))
-  //																				 /(2.0*config->GetFroude()*config->GetFroude()));
-  
   /*--- Compute mean values of the variables ---*/
+  
   MeanDensity = 0.5*(DensityInc_i+DensityInc_j);
   MeanPressure = 0.5*(Pressure_i+Pressure_j);
   MeanBetaInc2 = 0.5*(BetaInc2_i+BetaInc2_j);
@@ -1644,15 +1652,16 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
   
   /*--- Get projected flux tensor ---*/
+  
   GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, Proj_flux_tensor);
   
   /*--- Compute inviscid residual ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    val_resconv[iVar] = Proj_flux_tensor[iVar];
-    val_resvisc[iVar] = 0.0;
-  }
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] = Proj_flux_tensor[iVar];
   
   /*--- Jacobians of the inviscid flux ---*/
+  
   if (implicit) {
     GetInviscidArtCompProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1661,17 +1670,18 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
   }
   
   /*--- Computes differences btw. conservative variables ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     Diff_U[iVar] = U_i[iVar]-U_j[iVar];
   
   /*--- Compute the local espectral radius and the stretching factor ---*/
+  
   ProjVelocity_i = 0; ProjVelocity_j = 0; Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     ProjVelocity_i += Velocity_i[iDim]*Normal[iDim];
     ProjVelocity_j += Velocity_j[iDim]*Normal[iDim];
     Area += Normal[iDim]*Normal[iDim];
   }
-  
   Area = sqrt(Area);
   
   SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area);
@@ -1690,7 +1700,7 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_resconv, double *val_resv
   
   /*--- Compute viscous part of the residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-    val_resvisc[iVar] = Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
+    val_residual[iVar] += Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
   
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {

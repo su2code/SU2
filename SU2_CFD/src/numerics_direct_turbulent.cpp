@@ -400,31 +400,32 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     testJacobian[i] *= Volume;
   }
   
-  // Check if the old and new match
-  //for (int i = 0; i < nResidual; i++){
-  if (abs(Production - testResidual[0]) > 1e-15){
-    cout << "Production doesn't match" << endl;
-    cout << "diff is " << Production - testResidual[0] << endl;
-    exit(10);
-  }
-  if (abs(Destruction - testResidual[1]) > 1e-15){
-    cout << "Destruction doesn't match" << endl;
-    exit(10);
-  }
-  if (abs(CrossProduction - testResidual[2]) > 1e-15){
-    cout << "cpp Cross " <<  CrossProduction << endl;
-    cout << "Func cross " << testResidual[2] << endl;
-    cout << "dist_i " << dist_i << endl;
-    cout << "Cross production doesn't match" << endl;
-    exit(10);
-  }
-  if (abs(val_residual[0]-testResidual[3]) > 1e-15){
-    cout << "Val residual is " << val_residual[0] << endl;
-    cout << "Test residual is " << testResidual[3] << endl;
-    cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
-    cout << "Full residual doesn't match" << endl;
-    exit(10);
-  }
+//  // Check if the old and new match
+//  //for (int i = 0; i < nResidual; i++){
+//  if (abs(Production - testResidual[0]) > 1e-15){
+//    cout << "Production doesn't match" << endl;
+//    cout << "diff is " << Production - testResidual[0] << endl;
+//    exit(10);
+//  }
+//  if (abs(Destruction - testResidual[1]) > 1e-15){
+//    cout << "Destruction doesn't match" << endl;
+//    exit(10);
+//  }
+//  if (abs(CrossProduction - testResidual[2]) > 1e-15){
+//    cout << "cpp Cross " <<  CrossProduction << endl;
+//    cout << "Func cross " << testResidual[2] << endl;
+//    cout << "dist_i " << dist_i << endl;
+//    cout << "Cross production doesn't match" << endl;
+//    exit(10);
+//  }
+//  if (abs(val_residual[0]-testResidual[3]) > 1e-15){
+//    cout << "Val residual is " << val_residual[0] << endl;
+//    cout << "Test residual is " << testResidual[3] << endl;
+//    cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
+//    cout << "Full residual doesn't match" << endl;
+//    exit(10);
+//  }
+  
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,

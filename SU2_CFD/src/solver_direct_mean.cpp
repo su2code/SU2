@@ -2210,8 +2210,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool high_order_diss = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2229,14 +2227,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Set primitive variables w/o reconstruction ---*/
     
     numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
-    
-    /*--- Set some precomputed flow cuantities ---*/
-    
-    if (incompressible || freesurface) {
-      numerics->SetDensityInc(node[iPoint]->GetDensityInc(), node[jPoint]->GetDensityInc());
-      numerics->SetBetaInc2(node[iPoint]->GetBetaInc2(), node[jPoint]->GetBetaInc2());
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-    }
     
     /*--- Set the largest convective eigenvalue ---*/
     
@@ -8087,6 +8077,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
                 
         /*--- Compute total and max heat flux on the wall (compressible solver only) ---*/
         if (compressible) {
+          
           GradTemperature = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
@@ -8096,6 +8087,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           
           if ((CHeatTransfer[iMarker][iVertex]/Area) > Maxq_Visc[iMarker])
             Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
+          
         }
         
         /*--- Note that y+, and heat are computed at the
