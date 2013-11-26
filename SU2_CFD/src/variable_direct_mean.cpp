@@ -58,9 +58,9 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   WindGustDer = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (incompressible) { nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+4; nPrimVarGrad = nDim+4; }
-  if (compressible)   { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
+  if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (freesurface)    { nPrimVar = nDim+6; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
 
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -197,9 +197,9 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   WindGustDer = NULL;
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (incompressible) { nPrimVar = nDim+3; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+4; nPrimVarGrad = nDim+4; }
-  if (compressible)   { nPrimVar = nDim+5; nPrimVarGrad = nDim+4; }
+  if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
+  if (freesurface)    { nPrimVar = nDim+6; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -398,7 +398,7 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   double Heaviside, lambda, DensityInc;
 
   double ArtComp_Factor = config->GetArtComp_Factor();
-  double levelset = GetPrimVar(nDim+3);
+  double levelset = GetPrimVar(nDim+5);
   double epsilon = config->GetFreeSurface_Thickness();
   
   /*--- Set the value of the density ---*/
@@ -453,27 +453,6 @@ CNSVariable::CNSVariable(double *val_solution, unsigned short val_ndim,
 }
 
 CNSVariable::~CNSVariable(void) { }
-
-void CNSVariable::SetLaminarViscosity() {
-	double Temperature_Dim;
-  
-	/*--- Calculate viscosity from a non-dim. Sutherland's Law ---*/
-	Temperature_Dim = Primitive[0]*Temperature_Ref;
-	LaminarViscosity = 1.853E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3));
-	LaminarViscosity = LaminarViscosity/Viscosity_Ref;
-  
-}
-
-void CNSVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) {
-  
-	switch (val_Kind_Turb_Model) {
-    case NONE :
-      EddyViscosity = 0.0;                     break;
-    case SA : case SST : case ML:
-      EddyViscosity = TurbVariable->GetmuT(); break;
-	}
-  
-}
 
 void CNSVariable::SetVorticity(void) {
 	double u_y = Gradient_Primitive[1][1];
@@ -533,7 +512,7 @@ void CNSVariable::SetStrainMag(void) {
   
 }
 
-bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
+bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
@@ -573,13 +552,17 @@ bool CNSVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) {
   
   /*--- Set laminar viscosity ---*/
   
-	SetLaminarViscosity();                          // Requires temperature computation.
+	SetLaminarViscosity(config);                    // Requires temperature computation.
+  
+  /*--- Set eddy viscosity ---*/
+  
+  SetEddyViscosity(eddy_visc);
   
   return RightVol;
   
 }
 
-bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) {
+bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config) {
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
   
@@ -600,16 +583,20 @@ bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
   
   SetBetaInc2(ArtComp_Factor);
   
+  /*--- Set eddy viscosity ---*/
+  
+  SetEddyViscosityInc(eddy_visc);
+  
   return true;
   
 }
 
-bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
+bool CNSVariable::SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config) {
 
   double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
-  double levelset = GetPrimVar(nDim+3);
+  double levelset = GetPrimVar(nDim+5);
 
   /*--- Set the value of the density and viscosity ---*/
   
@@ -638,6 +625,10 @@ bool CNSVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) {
   /*--- Set the value of the artificial compressibility factor ---*/
   
   SetBetaInc2(ArtComp_Factor);
+  
+  /*--- Set eddy viscosity ---*/
+  
+  SetEddyViscosityInc(eddy_visc);
 
   return true;
   

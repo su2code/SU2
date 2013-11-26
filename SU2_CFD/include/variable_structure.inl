@@ -205,6 +205,8 @@ inline double *CVariable::GetIntBoundary_Jump(void) { return NULL; }
 
 inline double CVariable::GetEddyViscosity(void) { return 0; }
 
+inline double CVariable::GetEddyViscosityInc(void) { return 0; }
+
 inline void CVariable::SetGammaEff(void) { }
 
 inline void CVariable::SetGammaSep(double gamma_sep) { }
@@ -261,8 +263,6 @@ inline void CVariable::SetObjFuncSource(double *val_ObjFuncSource) { }
 
 inline void CVariable::SetIntBoundary_Jump(double *val_IntBoundary_Jump) { }
 
-inline void CVariable::SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable) { }
-
 inline void CVariable::SetEnthalpy(void) { }
 
 inline bool CVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) { return true; }
@@ -273,15 +273,15 @@ inline bool CVariable::SetPrimVar_FreeSurface(double SharpEdge_Distance, bool ch
 
 inline bool CVariable::SetPrimVar_Compressible(CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_Compressible(double turb_ke, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_FreeSurface(CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(double turb_ke, CConfig *config) { return true; }
+inline bool CVariable::SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config) { return true; }
 
 inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
@@ -363,15 +363,13 @@ inline void CVariable::SetVelocityInc_Old(double *val_velocity) { }
 
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
 
-inline void CVariable::SetLaminarViscosity() { }
-
 inline void CVariable::SetLaminarViscosity(CConfig *config) { }
-
-inline void CVariable::SetLaminarViscosity(double val_laminar_viscosity) { }
 
 inline void CVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { }
 
-inline void CVariable::SetEddyViscosity(double val_eddy_viscosity) { }
+inline void CVariable::SetEddyViscosity(double eddy_visc) { }
+
+inline void CVariable::SetEddyViscosityInc(double eddy_visc) { }
 
 inline void CVariable::SetVorticity(void) { }
 
@@ -569,21 +567,28 @@ inline void CEulerVariable::SetWindGustDer( double* val_WindGustDer) {
 
 inline double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
-inline double CNSVariable::GetEddyViscosity(void) { return EddyViscosity; }
+inline double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 
-inline double CNSVariable::GetLaminarViscosity(void) { return LaminarViscosity; }
+inline double CNSVariable::GetEddyViscosityInc(void) { return Primitive[nDim+4]; }
 
-inline double CNSVariable::GetLaminarViscosityInc(void) { return LaminarViscosityInc; }
+inline double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5]; }
+
+inline double CNSVariable::GetLaminarViscosityInc(void) { return Primitive[nDim+3]; }
 
 inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
-inline void CNSVariable::SetLaminarViscosity(double val_laminar_viscosity) { LaminarViscosity = val_laminar_viscosity; }
+inline void CNSVariable::SetLaminarViscosity(CConfig *config) {
+	double Temperature_Dim = Primitive[0]*Temperature_Ref;
+	Primitive[nDim+5] = (1.853E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3)))/Viscosity_Ref;
+}
 
-inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { LaminarViscosityInc = val_laminar_viscosity_inc; }
+inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }
 
-inline void CNSVariable::SetEddyViscosity(double val_eddy_viscosity) { EddyViscosity = val_eddy_viscosity; }
+inline void CNSVariable::SetEddyViscosity(double eddy_visc) { Primitive[nDim+6] = eddy_visc; }
+
+inline void CNSVariable::SetEddyViscosityInc(double eddy_visc) { Primitive[nDim+4] = eddy_visc; }
 
 inline void CNSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
 
@@ -776,8 +781,6 @@ inline double  CTNE2NSVariable::GetThermalConductivity(void) { return ThermalCon
 inline double  CTNE2NSVariable::GetThermalConductivity_ve(void) { return ThermalCond_ve; }
 
 inline double  CTNE2NSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
-
-inline void    CTNE2NSVariable::SetLaminarViscosity(double val_laminar_viscosity) { LaminarViscosity = val_laminar_viscosity; }
 
 inline void    CTNE2NSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[T_INDEX] = Temperature_Wall; }
 

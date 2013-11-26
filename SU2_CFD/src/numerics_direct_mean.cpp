@@ -1300,19 +1300,6 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
     }
   }
   
-  
-  
-//  cout << Diff_U[0] <<" "<< Diff_U[1] <<" "<< Diff_U[2] <<endl;
-//  cout << val_residual[0] <<" "<< val_residual[1] <<" "<< val_residual[2] <<endl;
-//  cout << Pressure_i <<" "<< Pressure_j <<endl;
-//  cout << Velocity_i[0] <<" "<< Velocity_j[0] <<endl;
-//  cout << Velocity_i[1] <<" "<< Velocity_j[1] <<endl;
-//  cout << DensityInc_i <<" "<< DensityInc_j <<endl;
-//  cout << BetaInc2_i <<" "<< BetaInc2_j <<endl;
-//  
-//  cin.get();
-  
-  
 }
 
 CUpwArtComp_FreeSurf_Flow::CUpwArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -1755,6 +1742,10 @@ void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   
+//  /*--- Laminar and Eddy viscosity ---*/
+//  Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+//  Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  
   /*--- Mean Viscosities and turbulent kinetic energy---*/
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity    = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
@@ -1833,6 +1824,10 @@ void CAvgGradArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
+  
+//  /*--- Laminar and Eddy viscosity ---*/
+//  Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+//  Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   
   /*--- Mean Viscosities ---*/
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
@@ -1913,6 +1908,10 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
   }
+  
+//  /*--- Laminar and Eddy viscosity ---*/
+//  Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+//  Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   
   for (iVar = 0; iVar < nDim+3; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
@@ -1999,6 +1998,10 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
     PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
+  
+//  /*--- Laminar and Eddy viscosity ---*/
+//  Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+//  Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   
   /*--- Mean Viscosities ---*/
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
