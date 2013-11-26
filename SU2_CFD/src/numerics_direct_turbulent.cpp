@@ -105,12 +105,14 @@ CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
 void CAvgGrad_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -186,12 +188,14 @@ CAvgGradCorrected_TurbSA::~CAvgGradCorrected_TurbSA(void) {
 void CAvgGradCorrected_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -516,12 +520,14 @@ CAvgGrad_TurbML::~CAvgGrad_TurbML(void) {
 void CAvgGrad_TurbML::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -597,12 +603,14 @@ CAvgGradCorrected_TurbML::~CAvgGradCorrected_TurbML(void) {
 void CAvgGradCorrected_TurbML::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -905,12 +913,14 @@ void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i
   double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute the blended constant for the viscous terms ---*/
@@ -1005,12 +1015,14 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute the blended constant for the viscous terms ---*/
@@ -1089,8 +1101,16 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
   double alfa_blended, beta_blended;
   double diverg, pk, pw, zeta;
   
-  if (incompressible) { Density_i = V_i[nDim+1]; }
-  else { Density_i = V_i[nDim+2]; }
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];
+  }
   
   val_residual[0] = 0.0;
   val_residual[1] = 0.0;
