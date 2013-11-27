@@ -464,26 +464,19 @@ CUpwSca_TurbML::~CUpwSca_TurbML(void) {
 
 void CUpwSca_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
   
-  q_ij = 0;
+  q_ij = 0.0;
+  
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
+      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   } else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j;
+      Velocity_i[iDim] = V_i[iDim+1];
+      Velocity_j[iDim] = V_j[iDim+1];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   }
@@ -496,6 +489,7 @@ void CUpwSca_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian
     val_Jacobian_i[0][0] = a0;
     val_Jacobian_j[0][0] = a1;
   }
+  
   
 }
 
