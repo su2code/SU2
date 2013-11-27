@@ -59,7 +59,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+6; nPrimVarGrad = nDim+4; }
+  if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
 
 	/*--- Allocate residual structures ---*/
@@ -198,7 +198,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+6; nPrimVarGrad = nDim+4; }
+  if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
   
 	/*--- Allocate residual structures ---*/
@@ -395,19 +395,28 @@ bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *conf
 
 bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   
-  double Heaviside, lambda, DensityInc;
+  double Heaviside, lambda, DensityInc, LevelSet, Distance;
 
   double ArtComp_Factor = config->GetArtComp_Factor();
-  double levelset = GetPrimVar(nDim+5);
   double epsilon = config->GetFreeSurface_Thickness();
   
-  /*--- Set the value of the density ---*/
+  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
   
+  LevelSet = Primitive[nDim+5];
+
+  /*--- Set the value of the Distance (already set in SetFreeSurface_Distance(geometry, config)) ---*/
+  
+  Distance = Primitive[nDim+6];
+
+  /*--- Set the value of the Heaviside function ---*/
+
   Heaviside = 0.0;
-  if (levelset < -epsilon) Heaviside = 1.0;
-  if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
-  if (levelset > epsilon) Heaviside = 0.0;
-  
+  if (LevelSet < -epsilon) Heaviside = 1.0;
+  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
+  if (LevelSet > epsilon) Heaviside = 0.0;
+
+  /*--- Set the value of the density ---*/
+
   lambda = config->GetRatioDensity();
   DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
   SetDensityInc(DensityInc);
@@ -593,23 +602,34 @@ bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity
 
 bool CNSVariable::SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config) {
 
-  double epsilon, Heaviside, lambda, DensityInc, ViscosityInc;
+  double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet, Distance;
   
 	double ArtComp_Factor = config->GetArtComp_Factor();
-  double levelset = GetPrimVar(nDim+5);
+  double epsilon = config->GetFreeSurface_Thickness();
 
-  /*--- Set the value of the density and viscosity ---*/
+  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
   
-  epsilon = config->GetFreeSurface_Thickness();
+  LevelSet = Primitive[nDim+5];
+  
+  /*--- Set the value of the Distance (already set in SetFreeSurface_Distance(geometry, config)) ---*/
+  
+  Distance = Primitive[nDim+6];
+  
+  /*--- Set the value of the Heaviside function ---*/
+
   Heaviside = 0.0;
-  if (levelset < -epsilon) Heaviside = 1.0;
-  if (fabs(levelset) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(levelset/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*levelset/epsilon)));
-  if (levelset > epsilon) Heaviside = 0.0;
+  if (LevelSet < -epsilon) Heaviside = 1.0;
+  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
+  if (LevelSet > epsilon) Heaviside = 0.0;
   
+  /*--- Set the value of the density ---*/
+
   lambda = config->GetRatioDensity();
   DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
   SetDensityInc(DensityInc);
   
+  /*--- Set the value of the laminar viscosity ---*/
+
   lambda = config->GetRatioViscosity();
   ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
   SetLaminarViscosityInc(ViscosityInc);
