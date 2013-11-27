@@ -1609,7 +1609,7 @@ private:
 	double **P_Tensor, **invP_Tensor;
 	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Pressure_i, LevelSet_i, dDensityInc_i, dDensityInc_j,
 	Density_j, Pressure_j, LevelSet_j, MeanDensityInc, dMeanDensityInc, MeanPressure, MeanLevelSet, MeanBetaInc2,
-	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel;
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, Distance_i, Distance_j;
 	unsigned short iDim, jDim, iVar, jVar, kVar;
     
 public:

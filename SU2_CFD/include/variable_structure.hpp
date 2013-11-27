@@ -852,6 +852,12 @@ public:
 	 */
 	virtual double GetLevelSet(void);
   
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the distance for the freesurface flows.
+	 */
+	virtual double GetDistance(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the beta for the incompressible flow.
@@ -2030,6 +2036,12 @@ public:
 	 * \return Value of beta squared.
 	 */
 	double GetLevelSet(void);
+  
+  /*!
+	 * \brief Get the value of distance for the freesurface flows
+	 * \return Value of beta squared.
+	 */
+	double GetDistance(void);
   
 	/*!
 	 * \brief Get the value of beta squared for the incompressible flow

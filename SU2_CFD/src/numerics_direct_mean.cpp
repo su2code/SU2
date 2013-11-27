@@ -1349,23 +1349,35 @@ CUpwArtComp_FreeSurf_Flow::~CUpwArtComp_FreeSurf_Flow(void) {
 void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   /*--- Compute face area ---*/
+  
   Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
   
   /*--- Compute and unitary normal vector ---*/
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     UnitNormal[iDim] = Normal[iDim]/Area;
     if (fabs(UnitNormal[iDim]) < EPS) UnitNormal[iDim] = EPS;
   }
   
   /*--- Set velocity and pressure and level set variables at points iPoint and jPoint ---*/
+  
   Pressure_i = V_i[0]; Pressure_j = V_j[0];
   DensityInc_i = V_i[nDim+1]; DensityInc_j = V_j[nDim+1];
   BetaInc2_i = V_i[nDim+2]; BetaInc2_j = V_j[nDim+2];
-  LevelSet_i = U_i[nDim+1]; LevelSet_j = U_j[nDim+1];
-  
+  LevelSet_i = V_i[nDim+5]; LevelSet_j = V_j[nDim+5];
+  Distance_i = V_i[nDim+6]; Distance_j = V_j[nDim+6];
+
   if (fabs(LevelSet_i) < EPS) LevelSet_i = EPS;
   if (fabs(LevelSet_j) < EPS) LevelSet_j = EPS;
+  
+  ProjVelocity = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim] = V_i[iDim+1]; if (fabs(Velocity_i[iDim]) < EPS) Velocity_i[iDim] = EPS;
+    Velocity_j[iDim] = V_j[iDim+1]; if (fabs(Velocity_j[iDim]) < EPS) Velocity_j[iDim] = EPS;
+    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
+    ProjVelocity += MeanVelocity[iDim]*Normal[iDim];
+  }
   
   double epsilon = config->GetFreeSurface_Thickness(), Delta = 0.0;
   if (LevelSet_i < -epsilon) Delta = 0.0;
@@ -1378,15 +1390,8 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   if (LevelSet_j > epsilon) Delta = 0.0;
   dDensityInc_j = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
   
-  ProjVelocity = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-    Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
-    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
-    ProjVelocity += MeanVelocity[iDim]*Normal[iDim];
-  }
-  
   /*--- Mean variables at points iPoint and jPoint ---*/
+  
   MeanDensityInc   = 0.5*(DensityInc_i + DensityInc_j);
   dMeanDensityInc   = 0.5*(dDensityInc_i + dDensityInc_j);
   MeanPressure  = 0.5*(Pressure_i + Pressure_j);
@@ -1394,15 +1399,19 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   MeanBetaInc2  = 0.5*(BetaInc2_i + BetaInc2_j);
   
   /*--- Compute Proj_flux_tensor_i ---*/
+  
   GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &LevelSet_i, Normal, Proj_flux_tensor_i);
   
   /*--- Compute Proj_flux_tensor_j ---*/
+  
   GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &LevelSet_j, Normal, Proj_flux_tensor_j);
   
   /*--- Compute P and Lambda (matrix of eigenvalues) ---*/
+  
   GetPArtComp_FreeSurf_Matrix(&MeanDensityInc, &dMeanDensityInc, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, P_Tensor);
   
   /*--- Flow eigenvalues ---*/
+  
   double a = MeanBetaInc2/MeanDensityInc, b = MeanLevelSet/MeanDensityInc, c = dMeanDensityInc;
   double e = (2.0 - b*c)*ProjVelocity, f = sqrt(4.0*a*Area*Area + e*e);
   
@@ -1421,23 +1430,30 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   }
   
   /*--- Absolute value of the eigenvalues ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
   
   /*--- Compute inverse P ---*/
-  GetPArtComp_FreeSurf_Matrix_inv(&MeanDensityInc, &dMeanDensityInc, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, invP_Tensor);
   
+  GetPArtComp_FreeSurf_Matrix_inv(&MeanDensityInc, &dMeanDensityInc, MeanVelocity, &MeanBetaInc2, &MeanLevelSet, UnitNormal, invP_Tensor);
+
+  /*--- Jacobian of the inviscid flux ---*/
+
   if (implicit) {
-    /*--- Jacobian of the inviscid flux ---*/
     GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_i, &dDensityInc_i, Velocity_i, &BetaInc2_i, &LevelSet_i, Normal, 0.5, val_Jacobian_i);
     GetInviscidArtComp_FreeSurf_ProjJac(&DensityInc_j, &dDensityInc_j, Velocity_j, &BetaInc2_j, &LevelSet_j, Normal, 0.5, val_Jacobian_j);
   }
   
-  /*--- Diference variables iPoint and jPoint ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    Diff_U[iVar] = U_j[iVar] - U_i[iVar];
+  /*--- Diference of conservative iPoint and jPoint ---*/
   
+  Diff_U[0] = V_j[0] - V_i[0];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Diff_U[iDim+1] = Velocity_j[iDim]*DensityInc_j - Velocity_i[iDim]*DensityInc_i;
+  Diff_U[nDim] = LevelSet_j - LevelSet_i;
+
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {

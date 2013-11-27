@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/NACA0012_RANS"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/CHANNEL_EULER"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -61,6 +61,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "naca0012.cfg"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "FreeSurface.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
