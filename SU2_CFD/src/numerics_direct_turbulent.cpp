@@ -294,8 +294,12 @@ CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) {
 
 void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  if (incompressible) { Density_i = V_i[nDim+1]; }
-  else { Density_i = V_i[nDim+2]; }
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+  }
   
   val_residual[0] = 0.0;
   Production = 0;
@@ -384,6 +388,13 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
   }
   
+  
+  // The above could be replaced with the call below to SpalartAllmarasSourceTerm
+  // but I don't know which of the public variables need to be kept
+  // Brendan Tracey
+  
+  
+  /*
   for (int i =0; i < nDim; i++){
     for (int j=0; j < nDim; j++){
       DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
@@ -394,14 +405,14 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
   
-  SpalartAllmarasSourceTerm(SAInputs, SAConstants, testResidual, testJacobian);
+  SpalartAllmarasSourceTerm(SAInputs, SAConstants, val_residual, val_Jacobian_i);
   
   for (int i=0; i < nResidual; i++){
-    testResidual[i] *= Volume;
+    val_residual[i] *= Volume;
   }
   
   for (int i=0; i < nJacobian; i++){
-    testJacobian[i] *= Volume;
+    val_Jacobian_i[i] *= Volume;
   }
   
 //  // Check if the old and new match
@@ -429,7 +440,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
 //    cout << "Full residual doesn't match" << endl;
 //    exit(10);
 //  }
-  
+  */
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
