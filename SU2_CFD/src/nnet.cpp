@@ -358,7 +358,7 @@ void CNeurNet::Predict(double * input, double * output){
 
 	// For all the other layers, the input is the output of the previous layer
 	for (int j = 1; j < this->nLayers; j++){
-		for (int i=0; i < nNeuronsPerLayer[j]; j++){
+		for (int i=0; i < nNeuronsPerLayer[j]; i++){
 			//cout << "Layer " << j << " neuron " << i << endl;
 			double combination = this->neurons[j][i]->Combine(neuronOutputs[j-1], this->parameters);
 			//cout << "combination " << combination <<endl;
