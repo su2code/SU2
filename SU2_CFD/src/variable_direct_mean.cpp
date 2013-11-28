@@ -79,23 +79,26 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
 	}
   
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
+	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
 		Undivided_Laplacian = new double [nVar];
-	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_Flow() != NONE)) {
-    
-    Limiter = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			Limiter[iVar] = 0.0;
-    
-		Solution_Max = new double [nPrimVarGrad];
-		Solution_Min = new double [nPrimVarGrad];
-		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-			Solution_Max[iVar] = 0.0;
-			Solution_Min[iVar] = 0.0;
-		}
-    
-	}
+  }
+  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  Limiter_Primitive = new double [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    Limiter_Primitive[iVar] = 0.0;
+  
+  Limiter = new double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+  
+  Solution_Max = new double [nPrimVarGrad];
+  Solution_Min = new double [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
+  }
   
 	/*--- Solution and old solution initialization ---*/
 	if (compressible) {
@@ -171,9 +174,6 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
-  /*--- Allocate the limiter for the primitive variables ---*/
-  Limiter_Primitive = new double [nPrimVarGrad];
-  
 }
 
 CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
@@ -220,21 +220,23 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
 		Undivided_Laplacian = new double [nVar];
-	if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_Flow() != NONE)) {
-    
-    Limiter = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			Limiter[iVar] = 0.0;
-    
-		Solution_Max = new double [nPrimVarGrad];
-		Solution_Min = new double [nPrimVarGrad];
-		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-			Solution_Max[iVar] = 0.0;
-			Solution_Min[iVar] = 0.0;
-		}
-    
-	}
+  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  Limiter_Primitive = new double [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    Limiter_Primitive[iVar] = 0.0;
+  
+  Limiter = new double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+  
+  Solution_Max = new double [nPrimVarGrad];
+  Solution_Min = new double [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
+  }
   
 	/*--- Solution initialization ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
