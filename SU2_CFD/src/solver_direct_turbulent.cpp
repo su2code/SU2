@@ -1272,8 +1272,6 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim;
   unsigned short jDim;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool transition = (config->GetKind_Trans_Model() == LM);
@@ -1292,7 +1290,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Set intermittency ---*/
     
     if (transition) {
-      numerics->SetIntermittency(solver_container[TRANS_SOL]->node[iPoint]->GetIntermittency() );
+      numerics->SetIntermittency(solver_container[TRANS_SOL]->node[iPoint]->GetIntermittency());
     }
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
@@ -2550,8 +2548,6 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim;
   unsigned short jDim;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool transition = (config->GetKind_Trans_Model() == LM);
@@ -3377,10 +3373,6 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                      CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
