@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/rans/rae2822"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/rans/flatplate"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -73,6 +73,10 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "turb_SA_RAE2822.cfg"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "turb_SA_flatplate_Roe.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
