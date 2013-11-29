@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/navierstokes/flatplate"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/euler/oneram6"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -64,8 +64,16 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "lam_flatplate_Roe.cfg "
+            argument = "default.cfg"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "inv_ONERAM6_JST.cfg "
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "lam_flatplate_Roe.cfg "
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "FreeSurface.cfg"

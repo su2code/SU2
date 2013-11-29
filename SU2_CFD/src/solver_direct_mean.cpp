@@ -2221,10 +2221,6 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
     
-    /*--- Set conservative variables w/o reconstruction ---*/
-    
-    numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-    
     /*--- Set primitive variables w/o reconstruction ---*/
     
     numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
@@ -4958,9 +4954,19 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         V_infty[nDim+1] = Pressure;
         V_infty[nDim+2] = Density;
         V_infty[nDim+3] = Energy + Pressure/Density;
-        
+                
       }
       if (incompressible) {
+        
+        /*--- All the values computed from the infinity ---*/
+        V_infty[0] = GetPressure_Inf();
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_infty[iDim+1] = GetVelocity_Inf(iDim);
+        V_infty[nDim+1] = GetDensity_Inf();
+        V_infty[nDim+2] = config->GetArtComp_Factor();
+        
+      }
+      if (freesurface) {
         
         /*--- All the values computed from the infinity ---*/
         V_infty[0] = GetPressure_Inf();
