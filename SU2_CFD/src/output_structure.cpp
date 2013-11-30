@@ -4406,7 +4406,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(14); cout << log10(residual_turbulent[1]); break;
+              cout.width(15); cout << log10(residual_turbulent[1]); break;
           }
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }

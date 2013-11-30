@@ -433,6 +433,10 @@ inline unsigned short CVariable::GetRhoCvveIndex(void) { return 0; }
 
 inline double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return 0; }
 
+inline void CVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { }
+
+inline double *CVariable::GetEddyViscSens(void) { return NULL; }
+
 inline double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline double CEulerVariable::GetDensityInc(void) { return Primitive[nDim+1]; }
@@ -675,16 +679,16 @@ inline void CTurbMLVariable::SetTimeSpectral_Source(unsigned short val_var, doub
 
 inline double CTurbMLVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
+inline double CTurbSSTVariable::GetF1blending(){ return F1; }
 
+inline double CTurbSSTVariable::GetF2blending(){ return F2; }
 
-inline void CVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { }
+inline double CTurbSSTVariable::GetCrossDiff(){ return CDkw; }
 
 inline void CAdjTurbVariable::SetEddyViscSens(double *val_EddyViscSens, unsigned short numTotalVar) { 
     for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {
         EddyViscSens[iVar] = val_EddyViscSens[iVar];}
          }
-
-inline double *CVariable::GetEddyViscSens(void) { return NULL; }
 
 inline double *CAdjTurbVariable::GetEddyViscSens(void) { return EddyViscSens; }
 

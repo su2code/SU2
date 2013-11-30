@@ -182,6 +182,24 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
+    /*--- Computation of wall distances for turbulence modeling ---*/
+    
+    if ( (config_container[iZone]->GetKind_Solver() == RANS)     ||
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS)    )
+      geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    
+    /*--- Computation of positive surface area in the z-plane which is used for
+     the calculation of force coefficient (non-dimensionalization). ---*/
+    
+    geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
+    
+    /*--- Set the near-field and interface boundary conditions, if necessary. ---*/
+    
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
+      geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
+    }
+    
     /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
      The solver classes are specific to a particular set of governing equations,
      and they contain the subroutines with instructions for computing each spatial
@@ -219,6 +237,8 @@ int main(int argc, char *argv[]) {
     Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
                               config_container[iZone], iZone);
     
+    if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
+
 #ifndef NO_MPI
     /*--- Synchronization point after the integration definition subroutine ---*/
     MPI::COMM_WORLD.Barrier();
@@ -235,28 +255,12 @@ int main(int argc, char *argv[]) {
     Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
                            geometry_container[iZone], config_container[iZone], iZone);
     
+    if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
+
 #ifndef NO_MPI
     /*--- Synchronization point after the solver definition subroutine ---*/
     MPI::COMM_WORLD.Barrier();
 #endif
-    
-    /*--- Computation of wall distances for turbulence modeling ---*/
-    
-    if ( (config_container[iZone]->GetKind_Solver() == RANS)     ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS)    )
-      geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
-    
-    /*--- Computation of positive surface area in the z-plane which is used for
-     the calculation of force coefficient (non-dimensionalization). ---*/
-    
-    geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
-    
-    /*--- Set the near-field and interface boundary conditions, if necessary. ---*/
-    
-    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-      geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
-      geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
-    }
     
     /*--- Instantiate the geometry movement classes for the solution of unsteady
      flows on dynamic meshes, including rigid mesh transformations, dynamically
