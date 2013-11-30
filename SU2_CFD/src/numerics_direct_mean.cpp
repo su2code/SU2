@@ -895,18 +895,18 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
 	Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
 	Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
-  //	/*--- Harten and Hyman (1983) entropy correction ---*/
-  //	for (iDim = 0; iDim < nDim; iDim++)
-  //		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
-  //
-  //	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
-  //	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
-  //
-  //	for (iVar = 0; iVar < nVar; iVar++)
-  //		if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
-  //			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
-  //		else
-  //			Lambda[iVar] = fabs(Lambda[iVar]);
+//	/*--- Harten and Hyman (1983) entropy correction ---*/
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
+//
+//	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
+//	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+//
+//	for (iVar = 0; iVar < nVar; iVar++)
+//		if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+//			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+//		else
+//			Lambda[iVar] = fabs(Lambda[iVar]);
   
 	for (iVar = 0; iVar < nVar; iVar++)
 		Lambda[iVar] = fabs(Lambda[iVar]);

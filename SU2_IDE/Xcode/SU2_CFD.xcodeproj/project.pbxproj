@@ -232,6 +232,7 @@
 		052D517F17A21FAC003BE8B2 /* Solver */ = {
 			isa = PBXGroup;
 			children = (
+				05E6DBEA17EB62A100FA1F7E /* solver_structure.cpp */,
 				05E6DBE217EB62A100FA1F7E /* solver_direct_mean.cpp */,
 				05E6DBE617EB62A100FA1F7E /* solver_direct_turbulent.cpp */,
 				0530E56717FDF79500733CE8 /* solver_direct_poisson.cpp */,
@@ -246,7 +247,6 @@
 				05E6DBDD17EB62A100FA1F7E /* solver_adjoint_turbulent.cpp */,
 				05E6DBE817EB62A100FA1F7E /* solver_linearized_mean.cpp */,
 				05E6DBE917EB62A100FA1F7E /* solver_linearized_turbulent.cpp */,
-				05E6DBEA17EB62A100FA1F7E /* solver_structure.cpp */,
 				05E6DBEB17EB62A100FA1F7E /* solver_template.cpp */,
 			);
 			name = Solver;
