@@ -797,6 +797,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   MLSource = output[0];
   SourceDiff = MLSource - SASource;
   
+  
+  cout << "SASource = " << SASource << " MLSource = " << MLSource << endl;
   // Rescale by volume
   output[0] = output[0]*Volume;
   
@@ -816,7 +818,10 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
    */
   
   val_residual[0] = output[0];
-  val_residual[0] = testResidual[3];
+//  val_residual[0] = testResidual[3];
+  
+//  cout << "SASourceScaled = " << SASource * Volume << " MLSourceScaled = " << MLSource * Volume << endl;
+//  cout << "Val residual = " << output[0] << endl;;
   //val_Jacobian_i[0][0] = testJacobian[0];
   
   delete input;
