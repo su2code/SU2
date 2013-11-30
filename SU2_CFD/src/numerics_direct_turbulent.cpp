@@ -296,9 +296,11 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   
   if (incompressible) {
     Density_i = V_i[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];
   }
   else {
     Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
   }
   
   val_residual[0] = 0.0;
@@ -707,8 +709,14 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  if (incompressible) { Density_i = V_i[nDim+1]; }
-  else { Density_i = V_i[nDim+2]; }
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+  }
   
   /* Intialize */
   // Note that the Production, destruction, etc. are all volume independent
@@ -1114,12 +1122,10 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
-    Eddy_Viscosity_i = V_i[nDim+4];
   }
   else {
     Density_i = V_i[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];
   }
   
   val_residual[0] = 0.0;
