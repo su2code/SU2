@@ -853,14 +853,15 @@ void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobia
     Density_j = V_j[nDim+2];
   }
   
-  q_ij = 0;
+  q_ij = 0.0;
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
       Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
-  } else {
+  }
+  else {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1];
       Velocity_j[iDim] = V_j[iDim+1];
@@ -1054,7 +1055,7 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   diff_omega = 0.5*(diff_i_omega + diff_j_omega);
   
   /*--- Compute vector going from iPoint to jPoint ---*/
-  dist_ij_2 = 0; proj_vector_ij = 0;
+  dist_ij_2 = 0.0; proj_vector_ij = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
@@ -1083,7 +1084,7 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   if (implicit) {
     Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;		Jacobian_i[0][1] = 0.0;
     Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
-    
+  
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 		Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
@@ -1117,14 +1118,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];
   }
   else {
     Density_i = V_i[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];
   }
   
-  val_residual[0] = 0.0;
-  val_residual[1] = 0.0;
+  val_residual[0] = 0.0;        val_residual[1] = 0.0;
   val_Jacobian_i[0][0] = 0.0;		val_Jacobian_i[0][1] = 0.0;
   val_Jacobian_i[1][0] = 0.0;		val_Jacobian_i[1][1] = 0.0;
   
@@ -1137,7 +1139,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     
     /*--- Production ---*/
     
-    diverg = 0;
+    diverg = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       diverg += PrimVar_Grad_i[iDim+1][iDim];
     
@@ -1156,7 +1158,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     
     val_residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
     val_residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
-    
+
     /*--- Cross diffusion ---*/
     
     val_residual[1] += (1.0 - F1_i)*CDkw*Volume;

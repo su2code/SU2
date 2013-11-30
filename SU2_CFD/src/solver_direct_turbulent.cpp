@@ -97,16 +97,6 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       
 #ifndef NO_MPI
       
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_muT, nBufferS_Scalar, MPI::DOUBLE, 1, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_muT, nBufferR_Scalar, MPI::DOUBLE, 1, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
-      
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -189,12 +179,6 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
       
 #ifndef NO_MPI
       
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
-      
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -270,12 +254,6 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
       }
       
 #ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
@@ -397,12 +375,6 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
       }
       
 #ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
@@ -625,6 +597,10 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     
     numerics->SetTurbVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+    
+    /*--- Menter's first blending function (only SST)---*/
+    if (config->GetKind_Turb_Model() == SST)
+      numerics->SetF1blending(node[iPoint]->GetF1blending(),node[jPoint]->GetF1blending());
     
     /*--- Compute residual, and Jacobians ---*/
     
@@ -3331,8 +3307,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     SetSolution_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetSolution_Gradient_LS(geometry, config);
     solver_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config);
+    SetSolution_Gradient_LS(geometry, config);
   }
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -3357,7 +3333,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     dist = geometry->node[iPoint]->GetWall_Distance();
     
-    node[iPoint]->SetBlendingFunc(mu,dist,rho);
+    node[iPoint]->SetBlendingFunc(mu, dist, rho);
     F2 = node[iPoint]->GetF2blending();
     
     /*--- Compute the eddy viscosity ---*/
@@ -3411,6 +3387,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint,iPoint,Jacobian_i);
   }
+  
 }
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -3422,6 +3399,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
   double distance, density, laminar_viscosity, beta_1;
+  
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3439,13 +3420,19 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       distance = sqrt(distance);
       
       /*--- Set wall values ---*/
-      density = solver_container[FLOW_SOL]->node[jPoint]->GetSolution(0);
-      beta_1 = constants[4];
-      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      if (compressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      }
+      if (incompressible || freesurface) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      }
       
+      beta_1 = constants[4];
+
       Solution[0] = 0.0;
       Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      //Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -3468,6 +3455,10 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   unsigned short iDim, iVar;
   double distance, density, laminar_viscosity, beta_1;
   
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3484,13 +3475,19 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       distance = sqrt(distance);
       
       /*--- Set wall values ---*/
-      density = solver_container[FLOW_SOL]->node[jPoint]->GetSolution(0);
+      if (compressible) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
+      }
+      if (incompressible || freesurface) {
+        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
+        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
+      }
+      
       beta_1 = constants[4];
-      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       
       Solution[0] = 0.0;
       Solution[1] = 60.0*laminar_viscosity/(density*beta_1*distance*distance);
-      //Solution[1] = 60.0*laminar_viscosity/(beta_1*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -3538,8 +3535,10 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       /*--- Set turbulent variable at the wall, and at infinity ---*/
       for (iVar = 0; iVar < nVar; iVar++)
         Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+      
       Solution_j[0] = kine_Inf;
       Solution_j[1] = omega_Inf;
+      
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set Normal (it is necessary to change the sign) ---*/
