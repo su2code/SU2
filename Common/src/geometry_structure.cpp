@@ -9528,7 +9528,8 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
                               vector<unsigned long> &point1_Airfoil,
                               vector<unsigned long> &point2_Airfoil, 
                                     vector<double> &weight1_Airfoil, 
-                                             bool original_surface) {
+                                             bool original_surface,
+                                              bool CCW_orientation) {
                                                
   unsigned short iMarker, iNode, jNode, iDim, intersect;
   long MinDist_Point, MinDistAngle_Point;
@@ -9769,11 +9770,46 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
         }
         
         /*--- Find the trailing edge ---*/
-        Trailing_Point = 0; Trailing_Coord = Xcoord[0];
+        Trailing_Point = 0; 
+        Trailing_Coord = Xcoord[0];
         for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
+          
+          /*--- blade parallel to Y-axis, TE has largest X ---*/
+          if ((Plane_Normal[1] ==  1 && CCW_orientation == 1) || 
+              (Plane_Normal[1] == -1 && CCW_orientation == 0)) {
             if (Xcoord[iVertex] > Trailing_Coord) {
-                Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
+              Trailing_Point = iVertex; 
+              Trailing_Coord = Xcoord[iVertex];
             }
+          }
+          
+          /*--- blade parallel to Y-axis, TE has smallest X ---*/
+          if ((Plane_Normal[1] ==  1 && CCW_orientation == 0) || 
+              (Plane_Normal[1] == -1 && CCW_orientation == 1)) {
+            if (Xcoord[iVertex] < Trailing_Coord) {
+              Trailing_Point = iVertex; 
+              Trailing_Coord = Xcoord[iVertex];
+            }
+          }
+          
+          /*--- blade parallel to X-axis, TE has largest Y ---*/
+          if ((Plane_Normal[0] ==  1 && CCW_orientation == 1) || 
+              (Plane_Normal[0] == -1 && CCW_orientation == 0)) {
+            if (Ycoord[iVertex] < Trailing_Coord) {
+              Trailing_Point = iVertex; 
+              Trailing_Coord = Ycoord[iVertex];
+            }
+          }
+          
+          /*--- blade parallel to X-axis, TE has smallest Y ---*/
+          if ((Plane_Normal[0] ==  1 && CCW_orientation == 0) || 
+              (Plane_Normal[0] == -1 && CCW_orientation == 1)) {
+            if (Ycoord[iVertex] > Trailing_Coord) {
+              Trailing_Point = iVertex; 
+              Trailing_Coord = Ycoord[iVertex];
+            }
+          }
+          
         }
         
         /*--- Add the trailing edge to the list, and remove from the original list ---*/
@@ -9843,7 +9879,9 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
                 Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
                 
                 /*--- Compute the angle of the point ---*/
-                Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+                Segment[0] /= Dist_Value; 
+                Segment[1] /= Dist_Value; 
+                Segment[2] /= Dist_Value;
                 
                 /*--- Clip the value of the cosine, this is important due to the round errors ---*/
                 CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
