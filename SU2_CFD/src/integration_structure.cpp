@@ -61,7 +61,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 			break;
 	}
     
-    
+  
 	/*--- Compute viscous residuals ---*/
 	switch (config->GetKind_ViscNumScheme()) {
         case AVG_GRAD: case AVG_GRAD_CORRECTED:

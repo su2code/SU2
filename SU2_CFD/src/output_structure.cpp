@@ -3994,7 +3994,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           case EULER : case NAVIER_STOKES: case RANS:
           case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
           case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-          case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
             
             /*--- Direct coefficients ---*/
             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
@@ -4097,8 +4096,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             }
             
             break;
-            
-          case TNE2_EULER : case TNE2_NAVIER_STOKES:
+          
+          case TNE2_EULER :     case TNE2_NAVIER_STOKES:
+          case ADJ_TNE2_EULER:  case ADJ_TNE2_NAVIER_STOKES:
             
             /*--- Direct coefficients ---*/
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
@@ -4611,6 +4611,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           break;
           
         case ADJ_TNE2_EULER :              case ADJ_TNE2_NAVIER_STOKES :
+          
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            ConvHist_file[0].flush();
+          }
           
           cout.precision(6);
           cout.setf(ios::fixed,ios::floatfield);
