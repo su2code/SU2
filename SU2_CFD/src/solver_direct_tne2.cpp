@@ -109,7 +109,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
   nVar         = nSpecies + nDim + 2;
   nPrimVar     = nSpecies + nDim + 8;
-  nPrimVarGrad = nSpecies + nDim + 3;
+  nPrimVarGrad = nSpecies + nDim + 8;
   
 	/*--- Allocate a CVariable array for each node of the mesh ---*/
 	node = new CVariable*[nPoint];
@@ -2064,6 +2064,13 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
+//    if (iPoint == 31) {
+//      cout << "Source calc: " << endl;
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        cout << Residual[iVar] << endl;
+//      cin.get();
+//    }
+    
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       if (Residual[iVar] != Residual[iVar])
@@ -3041,6 +3048,19 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
+  if (viscous) {
+    visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+    visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+    visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+    visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+    visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+    visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+    visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+    visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+    visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+    visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  }
+  
 	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3085,7 +3105,45 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
 			/*--- Viscous contribution ---*/
 			if (viscous) {
-        cout << "WARNING!!!  BC_Far_Field: Viscous contribution to boundary not implemented!" << endl;
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                                geometry->node[Point_Normal]->GetCoord() );
+        visc_numerics->SetNormal(Normal);
+        
+        /*--- Primitive variables, and gradient ---*/
+        visc_numerics->SetConservative(node[iPoint]->GetSolution(),
+                                       node_infty->GetSolution() );
+        visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
+                                    node_infty->GetPrimVar() );
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                          node_infty->GetGradient_Primitive() );
+        
+        /*--- Pass supplementary information to CNumerics ---*/
+        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
+        
+        /*--- Species diffusion coefficients ---*/
+        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+                                         node_infty->GetDiffusionCoeff() );
+        
+        /*--- Laminar viscosity ---*/
+        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+                                           node_infty->GetLaminarViscosity() );
+        
+        /*--- Thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+                                              node_infty->GetThermalConductivity());
+        
+        /*--- Vib-el. thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+                                                 node_infty->GetThermalConductivity_ve() );
+        
+        /*--- Compute and update residual ---*/
+        visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+        if (implicit) {
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
 			}
 		}
 	}
@@ -4009,7 +4067,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
 	nVar         = nSpecies+nDim+2;
   nPrimVar     = nSpecies+nDim+8;
-  nPrimVarGrad = nSpecies+nDim+3;
+  nPrimVarGrad = nSpecies+nDim+8;
   
 	/*--- Allocate an array of CVariable objects for each node in the  mesh ---*/
 	node = new CVariable*[nPoint];
@@ -4194,6 +4252,10 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
                                    Temperature_ve_Inf, nDim, nVar,
                                    nPrimVar, nPrimVarGrad, config);
   check_infty = node_infty->SetPrimVar_Compressible(config);
+  
+  Velocity_Inf = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim);
   
   
 	/*--- Check for a restart and set up the variables at each node
@@ -5140,7 +5202,7 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
 void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CSolver **solution_container,
                                      CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics,
+                                     CNumerics *sour_numerics,
                                      CConfig *config,
                                      unsigned short val_marker) {
   
@@ -5159,6 +5221,18 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
+//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+//  sour_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+//  sour_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+//  sour_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+//  sour_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+//  sour_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+//  sour_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+//  sour_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+//  sour_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+//  sour_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+//  sour_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  
 	/*--- Loop over all of the vertices on this boundary marker ---*/
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5175,16 +5249,15 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       
 			/*--- Initialize the convective & viscous residuals to zero ---*/
 			for (iVar = 0; iVar < nVar; iVar++) {
-				Res_Conv[iVar] = 0.0;
 				Res_Visc[iVar] = 0.0;
+        Res_Sour[iVar] = 0.0;
 			}
       
-      /*--- Set wall velocity to zero ---*/
+      /*--- Assign wall velocity to "Vector" array ---*/
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
 			node[iPoint]->SetVelocity_Old(Vector, 0);
-      
       for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
@@ -5193,11 +5266,28 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
 			Res_Visc[nSpecies+nDim] = Wall_HeatFlux * Area;
       
-			/*--- Convective contribution to the residual at the wall ---*/
-      LinSysRes.AddBlock(iPoint, Res_Conv);
-      
 			/*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      
+//      /*--- Apply the non-catalytic wall boundary ---*/
+//      // Note: We are re-calculating the chemistry residual and adding it to
+//      //       the linear system to eliminate the contribution from the solution
+//      //       (convention is to subtract sources)
+//      sour_numerics->SetConservative(node[iPoint]->GetSolution(),
+//                                     node[iPoint]->GetSolution() );
+//      sour_numerics->SetPrimitive   (node[iPoint]->GetPrimVar() ,
+//                                     node[iPoint]->GetPrimVar()  );
+//      sour_numerics->SetdPdU        (node[iPoint]->GetdPdU()    ,
+//                                     node[iPoint]->GetdPdU()     );
+//      sour_numerics->SetdTdU        (node[iPoint]->GetdTdU()    ,
+//                                     node[iPoint]->GetdTdU()     );
+//      sour_numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  ,
+//                                     node[iPoint]->GetdTvedU()   );
+//      sour_numerics->SetVolume      (geometry->node[iPoint]->GetVolume());
+//      sour_numerics->ComputeChemistry(Res_Sour, Jacobian_i, config);
+//      LinSysRes.AddBlock(iPoint, Res_Sour);
+//      if (implicit)
+//        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
 			/*--- Only change velocity-rows of the Jacobian (includes 1 in the diagonal)/
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
@@ -5216,7 +5306,7 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                        CSolver **solution_container,
                                        CNumerics *conv_numerics,
-                                       CNumerics *visc_numerics,
+                                       CNumerics *sour_numerics,
                                        CConfig *config,
                                        unsigned short val_marker) {
   

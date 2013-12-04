@@ -1228,7 +1228,7 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     denom = 0.0;
     for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
       if (jSpecies != iSpecies) {
-        Mj    = config->GetMolar_Mass(jSpecies);
+        Mj    = Ms[jSpecies];
         gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
         
         /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
@@ -1242,7 +1242,6 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
         
         /*--- Calculate heavy-particle binary diffusion coefficient ---*/
         D_ij = kb*T/(P*d1_ij);
-        
         denom += gam_j/D_ij;
       }
     }

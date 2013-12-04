@@ -97,7 +97,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     Diffusion_Coeff_i = new double[nSpecies];
     Diffusion_Coeff_j = new double[nSpecies];
     unsigned short nPrimVar     = nSpecies+nDim+8;
-    unsigned short nPrimVarGrad = nSpecies+nDim+3;
+    unsigned short nPrimVarGrad = nSpecies+nDim+8;
     var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   }
   

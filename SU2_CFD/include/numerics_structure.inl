@@ -74,7 +74,9 @@ inline void CNumerics::ComputeVibRelaxation(double *val_residual, double **val_J
 
 inline void CNumerics::ComputeChemistry(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config) { } 
+inline void CNumerics::GetKeqConstants(double *A, unsigned short val_reaction, CConfig *config) { }
+
+inline void CNumerics::ComputeSourceViscous(double *val_residual, CConfig *config) { }
 
 inline double CNumerics::GetPrecond_Beta() { return 0; }
 

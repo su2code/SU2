@@ -5897,7 +5897,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
+
 	/*!
 	 * \brief Update the solution using an implicit Euler scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -6478,6 +6478,14 @@ public:
                     unsigned short val_marker);
   
 	/*!
+	 * \brief Update the solution using an explicit solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+	
+  /*!
 	 * \brief Update the solution using an implicit solver.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
