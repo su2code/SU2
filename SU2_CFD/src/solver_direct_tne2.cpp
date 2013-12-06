@@ -4519,10 +4519,13 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
                                   unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   bool check;
+  bool adjoint    = config->GetAdjoint();
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
                      || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
+  bool center     = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
+                     (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -4547,6 +4550,10 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	/*--- Compute gradient of the primitive variables ---*/
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimVar_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimVar_Gradient_LS(geometry, config);
+  
+  /*--- Artificial dissipation ---*/
+  if (center)
+    SetMax_Eigenvalue(geometry, config);
   
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
