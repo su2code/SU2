@@ -7626,8 +7626,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   bool adjoint = config->GetAdjoint();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                     || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND));
   bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst = center && config->GetKind_Centered_Flow() == JST;
   bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NONE);
@@ -8076,7 +8074,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
-        
+//			WallShearStress = Viscosity*VelTangMod/WallDistMod;
+
         /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
         CSkinFriction[iMarker][iVertex] = WallShearStress / (0.5*RefDensity*RefVel2);
@@ -8110,6 +8109,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           
           for (iDim = 0; iDim < nDim; iDim++) {
             Force[iDim] = TauElem[iDim]*Area*factor;
+//            Force[iDim] = WallShearStress*(VelTang[iDim]/VelTangMod)*Area*factor;
             ForceViscous[iDim] += Force[iDim];
           }
           
