@@ -129,7 +129,8 @@ void CAvgGrad_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i,
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation ---*/
   
@@ -212,7 +213,8 @@ void CAvgGradCorrected_TurbSA::ComputeResidual(double *val_residual, double **Ja
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation. Projection of the mean gradient
    in the direction of the edge ---*/
@@ -964,7 +966,8 @@ void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1066,7 +1069,8 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {

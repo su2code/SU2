@@ -2709,7 +2709,7 @@ public:
  */
 class CAvgGrad_Flow : public CNumerics {
 private:
-	unsigned short iDim, iVar;		/*!< \brief Iterators in dimension an variable. */
+	unsigned short iDim, iVar, jVar;		/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
 	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
@@ -2753,7 +2753,7 @@ public:
  */
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
-	unsigned short iDim, iVar;	/*!< \brief Iterators in dimension an variable. */
+	unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,				/*!< \brief Mean primitive variables. */
 	*PrimVar_i, *PrimVar_j,			/*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,					/*!< \brief Mean value of the gradient. */
@@ -3015,7 +3015,7 @@ public:
  */
 class CAvgGradCorrected_Flow : public CNumerics {
 private:
-	unsigned short iDim, iVar;		/*!< \brief Iterators in dimension an variable. */
+	unsigned short iDim, iVar, jVar;		/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
 	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
 	*Edge_Vector,									/*!< \brief Vector form point i to point j. */
@@ -3060,7 +3060,7 @@ public:
  */
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
-	unsigned short iDim, iVar;	/*!< \brief Iterators in dimension an variable. */
+	unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,				/*!< \brief Mean primitive variables. */
 	*PrimVar_i, *PrimVar_j,			/*!< \brief Primitives variables at point i and 1. */
 	*Edge_Vector,								/*!< \brief Vector form point i to point j. */
