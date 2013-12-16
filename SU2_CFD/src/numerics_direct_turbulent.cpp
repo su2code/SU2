@@ -46,26 +46,18 @@ CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
 
 void CUpwSca_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
-  }
-  else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
-  }
+  q_ij = 0.0;
   
-  q_ij = 0;
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
+      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   } else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j;
+      Velocity_i[iDim] = V_i[iDim+1];
+      Velocity_j[iDim] = V_j[iDim+1];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   }
@@ -113,12 +105,14 @@ CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
 void CAvgGrad_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -135,7 +129,8 @@ void CAvgGrad_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i,
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation ---*/
   
@@ -194,12 +189,14 @@ CAvgGradCorrected_TurbSA::~CAvgGradCorrected_TurbSA(void) {
 void CAvgGradCorrected_TurbSA::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -216,7 +213,8 @@ void CAvgGradCorrected_TurbSA::ComputeResidual(double *val_residual, double **Ja
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation. Projection of the mean gradient
    in the direction of the edge ---*/
@@ -298,9 +296,14 @@ CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) {
 
 void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  
-  if (incompressible) { Density_i = DensityInc_i; }
-  else { Density_i = U_i[0]; }
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+  }
   
   val_residual[0] = 0.0;
   Production = 0;
@@ -389,6 +392,13 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
   }
   
+  
+  // The above could be replaced with the call below to SpalartAllmarasSourceTerm
+  // but I don't know which of the public variables need to be kept
+  // Brendan Tracey
+  
+  
+  /*
   for (int i =0; i < nDim; i++){
     for (int j=0; j < nDim; j++){
       DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
@@ -399,41 +409,42 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
   
-  SpalartAllmarasSourceTerm(SAInputs, SAConstants, testResidual, testJacobian);
+  SpalartAllmarasSourceTerm(SAInputs, SAConstants, val_residual, val_Jacobian_i);
   
   for (int i=0; i < nResidual; i++){
-    testResidual[i] *= Volume;
+    val_residual[i] *= Volume;
   }
   
   for (int i=0; i < nJacobian; i++){
-    testJacobian[i] *= Volume;
+    val_Jacobian_i[i] *= Volume;
   }
   
-  // Check if the old and new match
-  //for (int i = 0; i < nResidual; i++){
-  if (abs(Production - testResidual[0]) > 1e-15){
-    cout << "Production doesn't match" << endl;
-    cout << "diff is " << Production - testResidual[0] << endl;
-    exit(10);
-  }
-  if (abs(Destruction - testResidual[1]) > 1e-15){
-    cout << "Destruction doesn't match" << endl;
-    exit(10);
-  }
-  if (abs(CrossProduction - testResidual[2]) > 1e-15){
-    cout << "cpp Cross " <<  CrossProduction << endl;
-    cout << "Func cross " << testResidual[2] << endl;
-    cout << "dist_i " << dist_i << endl;
-    cout << "Cross production doesn't match" << endl;
-    exit(10);
-  }
-  if (abs(val_residual[0]-testResidual[3]) > 1e-15){
-    cout << "Val residual is " << val_residual[0] << endl;
-    cout << "Test residual is " << testResidual[3] << endl;
-    cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
-    cout << "Full residual doesn't match" << endl;
-    exit(10);
-  }
+//  // Check if the old and new match
+//  //for (int i = 0; i < nResidual; i++){
+//  if (abs(Production - testResidual[0]) > 1e-15){
+//    cout << "Production doesn't match" << endl;
+//    cout << "diff is " << Production - testResidual[0] << endl;
+//    exit(10);
+//  }
+//  if (abs(Destruction - testResidual[1]) > 1e-15){
+//    cout << "Destruction doesn't match" << endl;
+//    exit(10);
+//  }
+//  if (abs(CrossProduction - testResidual[2]) > 1e-15){
+//    cout << "cpp Cross " <<  CrossProduction << endl;
+//    cout << "Func cross " << testResidual[2] << endl;
+//    cout << "dist_i " << dist_i << endl;
+//    cout << "Cross production doesn't match" << endl;
+//    exit(10);
+//  }
+//  if (abs(val_residual[0]-testResidual[3]) > 1e-15){
+//    cout << "Val residual is " << val_residual[0] << endl;
+//    cout << "Test residual is " << testResidual[3] << endl;
+//    cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
+//    cout << "Full residual doesn't match" << endl;
+//    exit(10);
+//  }
+  */
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
@@ -457,26 +468,19 @@ CUpwSca_TurbML::~CUpwSca_TurbML(void) {
 
 void CUpwSca_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
-  }
-  else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
-  }
   
-  q_ij = 0;
+  q_ij = 0.0;
+  
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
+      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   } else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j;
+      Velocity_i[iDim] = V_i[iDim+1];
+      Velocity_j[iDim] = V_j[iDim+1];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   }
@@ -489,6 +493,7 @@ void CUpwSca_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian
     val_Jacobian_i[0][0] = a0;
     val_Jacobian_j[0][0] = a1;
   }
+  
   
 }
 
@@ -524,12 +529,14 @@ CAvgGrad_TurbML::~CAvgGrad_TurbML(void) {
 void CAvgGrad_TurbML::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -605,12 +612,14 @@ CAvgGradCorrected_TurbML::~CAvgGradCorrected_TurbML(void) {
 void CAvgGradCorrected_TurbML::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute mean effective viscosity ---*/
@@ -702,8 +711,14 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  if (incompressible) { Density_i = DensityInc_i; }
-  else { Density_i = U_i[0]; }
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+  }
   
   /* Intialize */
   // Note that the Production, destruction, etc. are all volume independent
@@ -784,6 +799,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   MLSource = output[0];
   SourceDiff = MLSource - SASource;
   
+  
+  cout << "SASource = " << SASource << " MLSource = " << MLSource << endl;
   // Rescale by volume
   output[0] = output[0]*Volume;
   
@@ -803,7 +820,10 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
    */
   
   val_residual[0] = output[0];
-  val_residual[0] = testResidual[3];
+//  val_residual[0] = testResidual[3];
+  
+//  cout << "SASourceScaled = " << SASource * Volume << " MLSourceScaled = " << MLSource * Volume << endl;
+//  cout << "Val residual = " << output[0] << endl;;
   //val_Jacobian_i[0][0] = testJacobian[0];
   
   delete input;
@@ -832,25 +852,26 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 void CUpwSca_TurbSST::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   if (incompressible) {
-    Density_i = DensityInc_i;
-    Density_j = DensityInc_j;
+    Density_i = V_i[nDim+1];
+    Density_j = V_j[nDim+1];
   }
   else {
-    Density_i = U_i[0];
-    Density_j = U_j[0];
+    Density_i = V_i[nDim+2];
+    Density_j = V_j[nDim+2];
   }
   
-  q_ij = 0;
+  q_ij = 0.0;
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i - GridVel_i[iDim];
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j - GridVel_j[iDim];
+      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+      Velocity_j[iDim] = V_j[iDim+1] - GridVel_j[iDim];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
-  } else {
+  }
+  else {
     for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i[iDim] = U_i[iDim+1]/Density_i;
-      Velocity_j[iDim] = U_j[iDim+1]/Density_j;
+      Velocity_i[iDim] = V_i[iDim+1];
+      Velocity_j[iDim] = V_j[iDim+1];
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   }
@@ -912,6 +933,17 @@ void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i
   double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
+  if (incompressible) {
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  }
+  
   /*--- Compute the blended constant for the viscous terms ---*/
   sigma_kine_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
   sigma_kine_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
@@ -934,7 +966,8 @@ void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -952,11 +985,11 @@ void CAvgGrad_TurbSST::ComputeResidual(double *val_residual, double **Jacobian_i
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/U_i[0];		Jacobian_i[0][1] = 0.0;
-    Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/U_i[0];
+    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;		Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
     
-    Jacobian_j[0][0] = diff_kine*proj_vector_ij/U_j[0]; 		Jacobian_j[0][1] = 0.0;
-    Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/U_j[0];
+    Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 		Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
   
 }
@@ -1003,6 +1036,17 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
+  if (incompressible) {
+    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  }
+  
   /*--- Compute the blended constant for the viscous terms ---*/
   sigma_kine_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;
   sigma_kine_j  = F1_j*sigma_k1 + (1.0 - F1_j)*sigma_k2;
@@ -1019,13 +1063,14 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   diff_omega = 0.5*(diff_i_omega + diff_j_omega);
   
   /*--- Compute vector going from iPoint to jPoint ---*/
-  dist_ij_2 = 0; proj_vector_ij = 0;
+  dist_ij_2 = 0.0; proj_vector_ij = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  proj_vector_ij = proj_vector_ij/dist_ij_2;
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  else proj_vector_ij = proj_vector_ij/dist_ij_2;
   
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1046,11 +1091,11 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(double *val_residual, double **J
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/U_i[0];		Jacobian_i[0][1] = 0.0;
-    Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/U_i[0];
-    
-    Jacobian_j[0][0] = diff_kine*proj_vector_ij/U_j[0]; 		Jacobian_j[0][1] = 0.0;
-    Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/U_j[0];
+    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;		Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
+  
+    Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 		Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
   
 }
@@ -1079,8 +1124,18 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
   double alfa_blended, beta_blended;
   double diverg, pk, pw, zeta;
   
-  val_residual[0] = 0.0;
-  val_residual[1] = 0.0;
+  if (incompressible) {
+    Density_i = V_i[nDim+1];
+    Laminar_Viscosity_i = V_i[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];
+  }
+  else {
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+5];
+    Eddy_Viscosity_i = V_i[nDim+6];
+  }
+  
+  val_residual[0] = 0.0;        val_residual[1] = 0.0;
   val_Jacobian_i[0][0] = 0.0;		val_Jacobian_i[0][1] = 0.0;
   val_Jacobian_i[1][0] = 0.0;		val_Jacobian_i[1][1] = 0.0;
   
@@ -1093,12 +1148,12 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     
     /*--- Production ---*/
     
-    diverg = 0;
+    diverg = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       diverg += PrimVar_Grad_i[iDim+1][iDim];
     
-    pk = Eddy_Viscosity_i*StrainMag*StrainMag - 2.0/3.0*U_i[0]*TurbVar_i[0]*diverg;
-    pk = min(pk,20.0*beta_star*U_i[0]*TurbVar_i[1]*TurbVar_i[0]);
+    pk = Eddy_Viscosity_i*StrainMag*StrainMag - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+    pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
     pk = max(pk,0.0);
     
     zeta = max(TurbVar_i[1],StrainMag*F2_i/a1);
@@ -1106,13 +1161,13 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
     pw = max(pw,0.0);
     
     val_residual[0] += pk*Volume;
-    val_residual[1] += alfa_blended*U_i[0]*pw*Volume;
+    val_residual[1] += alfa_blended*Density_i*pw*Volume;
     
     /*--- Dissipation ---*/
     
-    val_residual[0] -= beta_star*U_i[0]*TurbVar_i[1]*TurbVar_i[0]*Volume;
-    val_residual[1] -= beta_blended*U_i[0]*TurbVar_i[1]*TurbVar_i[1]*Volume;
-    
+    val_residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+    val_residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
+
     /*--- Cross diffusion ---*/
     
     val_residual[1] += (1.0 - F1_i)*CDkw*Volume;

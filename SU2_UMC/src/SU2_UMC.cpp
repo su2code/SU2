@@ -127,7 +127,7 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, 
                  **weight1_Airfoil;
   unsigned short Boundary;
-  bool Monitoring;
+  bool Monitoring, CCW_orientation;
   string Marker_Tag, filename;
   ofstream span, tracked_points;
   
@@ -148,7 +148,7 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
   nMarker = boundary->GetnMarker();
   
   if (nDim == 3) {
-  
+    
     /*--- USER-DEFINED: set the total number 
           of slices for all markers ---*/
     nSection = 15;
@@ -164,7 +164,7 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
     minPlane = root;
     maxPlane = tip;
 		
-		/*--- initialize coordinate vectors --*/
+    /*--- initialize coordinate vectors --*/
     Xcoord_Airfoil = new vector<double> [nSection];
     Ycoord_Airfoil = new vector<double> [nSection];
     Zcoord_Airfoil = new vector<double> [nSection];
@@ -202,36 +202,45 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
                 N.B. This only works if you're in the X-Y plane---*/
           
           /*--- ONERA M6 WING ---*/
-	        if (Marker_Tag == "WING") {starting_angle = 90.0;}
+	        if (Marker_Tag == "WING") {
+            starting_angle = 90.0;
+            root = 0.0;
+            tip = 14.0;
+            minPlane = root;
+            maxPlane = tip;
+            CCW_orientation = 1;
+          }
           
-	        /*--- UH-60 FIRST blade ---*/
+          /*--- UH-60 FIRST blade ---*/
 	        if (Marker_Tag == "Blade1") {starting_angle = 0.0;}
           
-	        /*--- UH-60 SECOND blade ---*/
+          /*--- UH-60 SECOND blade ---*/
 	        if (Marker_Tag == "Blade2") {starting_angle = 90.0;}
           
-	        /*--- UH-60 THIRD blade ---*/
+          /*--- UH-60 THIRD blade ---*/
 	        if (Marker_Tag == "Blade3") {starting_angle = 180.0;}
           
-	        /*--- UH-60 FOURTH blade ---*/
+          /*--- UH-60 FOURTH blade ---*/
 	        if (Marker_Tag == "Blade4") {starting_angle = 270.0;}
-	        
-	        /*--- Caradonna-Tung FIRST blade ---*/
+	  
+          /*--- Caradonna-Tung FIRST blade ---*/
           if (Marker_Tag == "blade_1") {
             starting_angle = 90.0;
             root = 0.15;
             tip = 1.14;
             minPlane = root;
             maxPlane = tip;
+            CCW_orientation = 0;
           }
           
-	        /*--- Caradonna-Tung SECOND blade ---*/
+          /*--- Caradonna-Tung SECOND blade ---*/
 	        if (Marker_Tag == "blade_2") {
             starting_angle = 270.0;
             root = 0.15;
             tip = 1.14;
             minPlane = root;
             maxPlane = tip;
+            CCW_orientation = 0;
           }
 	        
 	        /*--- USER INPUTS ABOUT GEOMETRY END HERE ---*/
@@ -299,7 +308,7 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
           
           /*--- walk along each marker, making sectional cuts ---*/
           for (iSection = 0; iSection < nSection; iSection++) {
-              
+            
             /*--- find the point that defines the cutting plane ---*/
 	          for (iDim = 0; iDim < nDim; iDim++) {
 	            Plane_P0[iDim] = Plane_Normal[iDim]*(minPlane +
@@ -320,7 +329,7 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
                                    point1_Airfoil[iMarker][iSection],
                                    point2_Airfoil[iMarker][iSection],
                                   weight1_Airfoil[iMarker][iSection],
-                                                               true);
+                                              true, CCW_orientation);
             
             /*--- writing of the tracked-points file.this file 
                   records the node number of the edges being 

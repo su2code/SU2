@@ -3320,7 +3320,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
           /*--- Get primitives from current inlet state. ---*/
           for (iDim = 0; iDim < nDim; iDim++)
             Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
-          Pressure    = node[iPoint]->GetPressure(false);
+          Pressure    = node[iPoint]->GetPressure();
           SoundSpeed2 = Gamma*Pressure/U_domain[0];
           
           /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -5264,7 +5264,12 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
+<<<<<<< HEAD
 			node[iPoint]->SetVelocity_Old(Vector, 0);
+=======
+			node[iPoint]->SetVelocity_Old(Vector);
+      
+>>>>>>> fae0309ef9c4d92477bdd03a71a721e0ef2223d2
       for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
@@ -5379,7 +5384,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
 			/*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
-			node[iPoint]->SetVelocity_Old(Vector, false);
+			node[iPoint]->SetVelocity_Old(Vector);
 			for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);

@@ -788,24 +788,30 @@ public:
 	 * \return Value of the eddy viscosity.
 	 */		
 	virtual double GetEddyViscosity(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the eddy viscosity.
+	 */
+	virtual double GetEddyViscosityInc(void);
 
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the flow enthalpy.
 	 */		
 	virtual double GetEnthalpy(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the flow pressure.
-	 */		
-	virtual double GetPressure(unsigned short val_incomp);
   
   /*!
 	 * \brief A virtual member.
 	 * \return Value of the flow pressure.
 	 */
 	virtual double GetPressure(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the flow pressure.
+	 */
+	virtual double GetPressureInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -830,13 +836,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_vector - Direction of projection.
-	 * \return Value of the projected velocity for the incompressible flow.
-	 */		
-	virtual double GetProjVelInc(double *val_vector);
-
-	/*!
-	 * \brief A virtual member.
 	 * \return Value of the sound speed.
 	 */		
 	virtual double GetSoundSpeed(void);
@@ -852,6 +851,12 @@ public:
 	 * \return Value of the levelset for the freesurface flows.
 	 */
 	virtual double GetLevelSet(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the distance for the freesurface flows.
+	 */
+	virtual double GetDistance(void);
   
 	/*!
 	 * \brief A virtual member.
@@ -882,13 +887,6 @@ public:
    * \return \f$\rho C^{v-e}_{v} \f$
    */
   virtual double GetRhoCv_ve(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \return Value of the velocity for the dimension <i>val_dim</i>.
-	 */		
-	virtual double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
   
   /*!
 	 * \brief A virtual member.
@@ -996,16 +994,15 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */		
-	virtual void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
 	 */		
-	virtual void SetEddyViscosity(double val_eddy_viscosity);
+	virtual void SetEddyViscosity(double eddy_visc);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 */
+	virtual void SetEddyViscosityInc(double eddy_visc);
 
 	/*!
 	 * \brief A virtual member.
@@ -1035,7 +1032,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1050,12 +1047,12 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
+	virtual bool SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1080,7 +1077,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetDensityInc(double val_densityinc);
+	virtual void SetDensityInc(double val_density);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetPressureInc(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetVelocityInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1164,7 +1171,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetDensity(void);
+	virtual bool SetDensity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1240,19 +1247,8 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */		
-	virtual void SetVelocity(double *val_velocity, unsigned short val_incomp);
-
-	/*!
-	 * \brief A virtual member.
 	 */
-	virtual void SetVelocityInc2(void);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressureInc(double val_pressure);
+	virtual void SetVelocity(void);
   
 	/*!
 	 * \brief A virtual member.
@@ -1296,24 +1292,19 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
-	virtual void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
-
-	/*!
+	virtual void SetVelocity_Old(double *val_velocity);
+  
+  /*!
 	 * \brief A virtual member.
-	 */	
-	virtual void SetLaminarViscosity();
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 */
+	virtual void SetVelocityInc_Old(double *val_velocity);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
 	virtual void SetLaminarViscosity(CConfig *config);
-	
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 */		
-	virtual void SetLaminarViscosity(double val_laminar_viscosity);
 
 	/*!
 	 * \brief A virtual member.
@@ -1921,21 +1912,6 @@ public:
 	double *GetLimiter_Primitive(void);
 
 	/*!
-	 * \brief Set the value of the velocity*velocity for the incompressible solver.
-	 */
-	void SetVelocityInc2(void);
-
-	/*!
-	 * \brief Set the value of the pressure for the incompressible solver.
-	 */
-	void SetPressureInc(double val_pressure);
-
-	/*!
-	 * \brief Set the value of the velocity*velocity.
-	 */
-	void SetVelocity2(void);
-
-	/*!
 	 * \brief Set the value of the pressure.
 	 */
 	bool SetPressure(double Gamma);
@@ -1997,7 +1973,22 @@ public:
 	/*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
-	void SetDensityInc(double val_densityinc);
+	void SetDensityInc(double val_density);
+  
+  /*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
+	bool SetDensity(void);
+  
+  /*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
+	void SetPressureInc(void);
+  
+  /*!
+	 * \brief Set the value of the density for the incompressible flows.
+	 */
+	void SetVelocityInc(void);
 
 	/*!
 	 * \brief Set the value of the beta coeffient for incompressible flows.
@@ -2020,7 +2011,14 @@ public:
 	 * \brief Get the flow pressure.
 	 * \return Value of the flow pressure.
 	 */
-	double GetPressure(unsigned short val_incomp);
+	double GetPressure(void);
+  
+  /*!
+	 * \brief Get the flow pressure.
+	 * \return Value of the flow pressure.
+	 */
+	double GetPressureInc(void);
+  
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
@@ -2038,6 +2036,12 @@ public:
 	 * \return Value of beta squared.
 	 */
 	double GetLevelSet(void);
+  
+  /*!
+	 * \brief Get the value of distance for the freesurface flows
+	 * \return Value of beta squared.
+	 */
+	double GetDistance(void);
   
 	/*!
 	 * \brief Get the value of beta squared for the incompressible flow
@@ -2074,7 +2078,7 @@ public:
 	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the velocity for the dimension <i>val_dim</i>.
 	 */
-	double GetVelocity(unsigned short val_dim, unsigned short val_incomp);
+	double GetVelocity(unsigned short val_dim);
 
 	/*!
 	 * \brief Get the projected velocity in a unitary vector direction (compressible solver).
@@ -2084,23 +2088,22 @@ public:
 	double GetProjVel(double *val_vector);
 
 	/*!
-	 * \brief Get the projected velocity in a unitary vector direction (incompressible solver).
-	 * \param[in] val_vector - Direction of projection.
-	 * \return Value of the projected velocity.
-	 */
-	double GetProjVelInc(double *val_vector);
-
-	/*!
 	 * \brief Set the velocity vector from the solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */	
-	void SetVelocity(double *val_velocity, unsigned short val_incomp);
+	void SetVelocity(void);
 
 	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */		
-	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
+	void SetVelocity_Old(double *val_velocity);
+  
+  /*!
+	 * \brief Set the velocity vector from the old solution.
+	 * \param[in] val_velocity - Pointer to the velocity.
+	 */
+	void SetVelocityInc_Old(double *val_velocity);
 
 	/*!
 	 * \brief Set the time spectral source term.
@@ -2179,9 +2182,6 @@ private:
 	double Temperature_Ref;   /*!< \brief Reference temperature of the fluid. */
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
-	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
-	double LaminarViscosityInc;	/*!< \brief Viscosity of the fluid (incompressible flows). */
-	double EddyViscosity;		/*!< \brief Eddy viscosity of the fluid. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
 	double StrainMag;           /*!< \brief Magnitude of rate of strain tensor. */
 public:
@@ -2220,13 +2220,7 @@ public:
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity();
-
-	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 */
-	void SetLaminarViscosity(double val_laminar_viscosity);
+	void SetLaminarViscosity(CConfig *config);
 
 	/*!
 	 * \overload
@@ -2245,17 +2239,16 @@ public:
 	void SetStrainMag(void);
 
 	/*!
-	 * \brief Set the eddy viscosity.
-	 * \param[in] val_Kind_Turb_Model - Kind of turbulence model.
-	 * \param[in] Turb_Solution - Solution of the turbulence model.
-	 */
-	void SetEddyViscosity(unsigned short val_Kind_Turb_Model, CVariable *TurbVariable);
-
-	/*!
 	 * \overload
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
 	 */
-	void SetEddyViscosity(double val_eddy_viscosity);
+	void SetEddyViscosity(double eddy_visc);
+  
+  /*!
+	 * \overload
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 */
+	void SetEddyViscosityInc(double eddy_visc);
 
 	/*!
 	 * \brief Get the laminar viscosity of the flow.
@@ -2274,6 +2267,12 @@ public:
 	 * \return The eddy viscosity of the flow.
 	 */
 	double GetEddyViscosity(void);
+  
+  /*!
+	 * \brief Get the eddy viscosity of the flow.
+	 * \return The eddy viscosity of the flow.
+	 */
+	double GetEddyViscosityInc(void);
 
 	/*!
 	 * \brief Set the temperature at the wall
@@ -2301,17 +2300,17 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	bool SetPrimVar_Compressible(double turb_ke, CConfig *config);
+	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double turb_ke, CConfig *config);
+	bool SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_FreeSurface(double turb_ke, CConfig *config);
+	bool SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config);
 };
 
 /*! 
@@ -3108,7 +3107,7 @@ public:
   /*!
 	 * \brief Set the value of the mixture density.
 	 */
-	void SetDensity(void);
+	bool SetDensity(void);
   
 	/*!
 	 * \brief Set the value of the pressure.  Requires T&Tve calculation.
@@ -3320,16 +3319,10 @@ public:
 	double GetProjVel(double *val_vector);
   
 	/*!
-	 * \brief Set the velocity vector from the solution.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */
-	void SetVelocity(double *val_velocity, bool val_incomp);
-  
-	/*!
 	 * \brief Set the velocity vector from the old solution.
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
-	void SetVelocity_Old(double *val_velocity, unsigned short val_incomp);
+	void SetVelocity_Old(double *val_velocity);
   
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3493,12 +3486,6 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	void SetThermalConductivity(CConfig *config);
-  
-	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 */
-	void SetLaminarViscosity(double val_laminar_viscosity);
   
 	/*!
 	 * \brief Set the vorticity value.
