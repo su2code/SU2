@@ -1293,6 +1293,7 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                                             unsigned short iMesh,
                                             unsigned short iRKStep) {
   bool implicit, high_order_diss;
+  unsigned short iVar, jVar;
 	unsigned long iEdge, iPoint, jPoint;
   
   /*--- Set booleans from configuration settings ---*/
@@ -1356,12 +1357,12 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                               Jacobian_jj, config);
     
     /*--- Error checking ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       if ((Res_Conv_i[iVar] != Res_Conv_i[iVar]) ||
           (Res_Visc_i[iVar] != Res_Visc_i[iVar])) {
         cout << "NaN in Centered Residual" << endl;
       }
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
         if (Jacobian_ii[iVar][jVar] != Jacobian_ii[iVar][jVar])
           cout << "NaN in Centered Jacobian i" << endl;
         if (Jacobian_jj[iVar][jVar] != Jacobian_jj[iVar][jVar])
@@ -1612,11 +1613,11 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
     
     /*--- Error checking ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       if (Residual_i[iVar] != Residual_i[iVar]) {
         cout << "NaN in Energy Exchange Residual" << endl;
       }
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
         if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
           cout << "NaN in Energy Exchange Jacobian i" << endl;
       }
@@ -3608,16 +3609,16 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       }
       
       /*--- Determine contribution to adjoint density ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Res_Conv_i[iSpecies] = -dn*dPdU[iSpecies];
-      }
-      
-      /*--- Update convective and viscous residuals ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-      LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
-      if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      }
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        Res_Conv_i[iSpecies] = -dn*dPdU[iSpecies];
+//      }
+//      
+//      /*--- Update convective and viscous residuals ---*/
+//      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
+//      if (implicit) {
+//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+//      }
     }
   }
   
