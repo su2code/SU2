@@ -211,6 +211,22 @@ bool CAdjTNE2EulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance,
 
 CAdjTNE2NSVariable::CAdjTNE2NSVariable(void) : CAdjTNE2EulerVariable() { }
 
+CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_psirho,
+                                       double *val_phi,
+                                       double val_psie,
+                                       double val_psieve,
+                                       unsigned short val_ndim,
+                                       unsigned short val_nvar,
+                                       CConfig *config) : CAdjTNE2EulerVariable(val_psirho,
+                                                                                val_phi,
+                                                                                val_psie,
+                                                                                val_psieve,
+                                                                                val_ndim,
+                                                                                val_nvar,
+                                                                                config) {
+
+}
+
 CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_solution,
                                        unsigned short val_ndim,
                                        unsigned short val_nvar,
@@ -219,18 +235,6 @@ CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_solution,
                                                                                 val_nvar,
                                                                                 config) {
   
-}
-
-CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_psirho, double *val_phi,
-                                       double val_psie, double val_psieve, unsigned short val_ndim,
-                                       unsigned short val_nvar, CConfig *config) : CAdjTNE2EulerVariable(val_psirho,
-                                                                                                         val_phi,
-                                                                                                         val_psie,
-                                                                                                         val_psieve,
-                                                                                                         val_ndim,
-                                                                                                         val_nvar,
-                                                                                                         config) {
-
 }
 
 CAdjTNE2NSVariable::~CAdjTNE2NSVariable(void) { }

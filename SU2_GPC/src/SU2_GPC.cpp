@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
         
         if (rank == MASTER_NODE) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
-          cout << "Perform 3D deformation of the surface." << endl;
+          cout << "Spherical DV: Perform 3D deformation of the surface." << endl;
         }
         surface_mov->SetSpherical(boundary, config, iDV, true);
         
