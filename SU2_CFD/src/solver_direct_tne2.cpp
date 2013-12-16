@@ -4113,7 +4113,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   upperlimit = new double[nVar];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     lowerlimit[iSpecies] = 0.0;
-    upperlimit[iSpecies] = INFINITY;
+    upperlimit[iSpecies] = 1E16;
   }
   for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
     lowerlimit[iVar] = -1E16;
@@ -5264,12 +5264,8 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
-<<<<<<< HEAD
-			node[iPoint]->SetVelocity_Old(Vector, 0);
-=======
 			node[iPoint]->SetVelocity_Old(Vector);
-      
->>>>>>> fae0309ef9c4d92477bdd03a71a721e0ef2223d2
+
       for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);

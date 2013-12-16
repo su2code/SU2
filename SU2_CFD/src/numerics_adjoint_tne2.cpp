@@ -890,7 +890,7 @@ CSource_AdjTNE2::~CSource_AdjTNE2(void) {
 void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *config) {
   
 	unsigned short iDim, jDim, iSpecies, iVar, jVar;
-  double rho, sqvel, rhoCvtr, Cvtrs, *Ms, *xi, Ru;
+  double rho, sqvel, rhoCvtr, rhoCvve, Cvtrs, Cvves, *Ms, *xi, Ru;
   double div_vel, div_velorho, velGInvRho, GPhiEta, GPsiEvelPi;
   double mu2, mu3, mu4;
   double **GPsi;
@@ -910,6 +910,7 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   xi      = config->GetRotationModes();
   Ru      = UNIVERSAL_GAS_CONSTANT;
   rhoCvtr = V_i[RHOCVTR_INDEX];
+  rhoCvve = V_i[RHOCVVE_INDEX];
   GPsi    = PsiVar_Grad_i;
   
   /*--- Assign useful values ---*/
@@ -1055,182 +1056,20 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
                                                           PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
   }
   
-  
-  
-  
-//  /*--- Momentum viscous Jacobian (Av2) ---*/
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      Av2[nSpecies][iSpecies]   -= eta[iDim][0]*UnitNormal[iDim];
-//      Av2[nSpecies+1][iSpecies] -= eta[iDim][1]*UnitNormal[iDim];
-//      Av2[nSpecies+2][iSpecies] -= eta[iDim][2]*UnitNormal[iDim];
-//      for (jDim = 0; jDim < nDim; jDim++)
-//        Av2[nSpecies+3][iSpecies] += vel[jDim]*pi[iDim][jDim]*UnitNormal[iDim];
-//    }
-//  }
-//  // X-momentum
-//  Av2[nSpecies][nSpecies]     = 4.0/3.0*GInvRho[0]*nx + GInvRho[1]*ny + GInvRho[2]*nz;
-//  Av2[nSpecies][nSpecies+1]   = GInvRho[0]*ny - 2.0/3.0*GInvRho[1]*nx;
-//  Av2[nSpecies][nSpecies+2]   = GInvRho[0]*nz - 2.0/3.0*GInvRho[2]*nx;
-//  // Y-momentum
-//  Av2[nSpecies+1][nSpecies]   = GInvRho[1]*nx - 2.0/3.0*GInvRho[0]*ny;
-//  Av2[nSpecies+1][nSpecies+1] = GInvRho[0]*nx + 4.0/3.0*GInvRho[1]*ny + GInvRho[2]*nz;
-//  Av2[nSpecies+1][nSpecies+2] = GInvRho[1]*nz - 2.0/3.0*GInvRho[2]*ny;
-//  // Z-momentum
-//  Av2[nSpecies+2][nSpecies]   = GInvRho[2]*nx - 2.0/3.0*GInvRho[0]*nz;
-//  Av2[nSpecies+2][nSpecies+1] = GInvRho[2]*ny - 2.0/3.0*GInvRho[1]*nz;
-//  Av2[nSpecies+2][nSpecies+2] = GInvRho[0]*nx + GInvRho[1]*ny + 4.0/3.0*GInvRho[2]*nz;
-//  // Energy
-//  for (iDim = 0; iDim < nDim; iDim++) {
-//    Av2[nSpecies+3][nSpecies] += (zeta[iDim][0] + 1.0/rho*tau[iDim][0])*UnitNormal[iDim];
-//    Av2[nSpecies+3][nSpecies+1] += (zeta[iDim][1] + 1.0/rho*tau[iDim][1])*UnitNormal[iDim];
-//    Av2[nSpecies+3][nSpecies+2] += (zeta[iDim][2] + 1.0/rho*tau[iDim][2])*UnitNormal[iDim];
-//  }
-//  Av2[nSpecies+3][nSpecies]   += vel[0]*GInvRho[0]*nx;
-//  Av2[nSpecies+3][nSpecies+1] += vel[1]*GInvRho[1]*ny;
-//  Av2[nSpecies+3][nSpecies+2] += vel[2]*GInvRho[2]*nz;
-//  
-//  /*--- Total energy viscous Jacobian (Av3) ---*/
-//  for (iDim = 0; iDim < nDim; iDim++) {
-//    // Species
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      Cvtrs = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
-//      Av3[nSpecies+3][iSpecies] += (1.0/rhoCvtr * (vel[0]*PrimVar_Grad_i[VEL_INDEX][iDim]  +
-//                                                   vel[1]*PrimVar_Grad_i[VEL_INDEX+1][iDim] +
-//                                                   vel[2]*PrimVar_Grad_i[VEL_INDEX+2][iDim] -
-//                                                   Cvtrs*PrimVar_Grad_i[T_INDEX][iDim])
-//                                    - dTdU_i[iSpecies]/rhoCvtr*PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * UnitNormal[iDim];
-//    }
-//    // X-momentum
-//    Av3[nSpecies+3][nSpecies]   += (-1.0/rhoCvtr*PrimVar_Grad_i[VEL_INDEX][iDim] -
-//                                    dTdU_i[nSpecies]/rhoCvtr * PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * UnitNormal[iDim];
-//    // Y-momentum
-//    Av3[nSpecies+3][nSpecies+1] += (-1.0/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+1][iDim] -
-//                                    dTdU_i[nSpecies+1]/rhoCvtr * PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * UnitNormal[iDim];
-//    // Z-momentum
-//    Av3[nSpecies+3][nSpecies+2] += (-1.0/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+2][iDim] -
-//                                    dTdU_i[nSpecies+2]/rhoCvtr * PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * UnitNormal[iDim];
-//    // Total energy
-//    Av3[nSpecies+3][nSpecies+3] += -dTdU_i[nSpecies+3]/rhoCvtr * PrimVar_Grad_i[RHOCVTR_INDEX][iDim] * UnitNormal[iDim];
-//    // Vibrational-electronic energy
-//    Av3[nSpecies+3][nSpecies+4] += -dTdU_i[nSpecies+4]/rhoCvtr * PrimVar_Grad_i[RHOCVTR_INDEX][iDim] * UnitNormal[iDim];
-//  }
-//  
-//  /*--- Compute the residual, Grad(Psi^T)dot(muk * Avk) ---*/
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++) {
-//      val_residual[iVar] += Psi_i[jVar]*(mu2*Av2[jVar][iVar] +
-//                                         mu3*Av3[jVar][iVar] +
-//                                         mu4*Av4[jVar][iVar]  ) * Volume;
-//    }
-//  }
-
-  
-  
-//  cout << "Normal: " << Normal[0] << " " << Normal[1] << " " << Normal[2] << endl;
-//  cout << "UnitNormal: " << UnitNormal[0] << " " << UnitNormal[1] << " " << UnitNormal[2] << endl;
-//  cout << "Area; " << Area << endl;
-//  cout << "Av2: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++) {
-//      cout << Av2[iVar][jVar] << "\t";
-//    }
-//    cout << endl;
-//  }
-//  cout << endl << endl;
-//  cout << "Av3: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++) {
-//      cout << Av2[iVar][jVar] << "\t";
-//    }
-//    cout << endl;
-//  }
-//  cout << endl << endl;
-//  cout << "Av4: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++) {
-//      cout << Av2[iVar][jVar] << "\t";
-//    }
-//    cout << endl;
-//  }
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nDim; jVar++) {
-//      cout << GPsi[iVar][jVar] << "\t";
-//    }
-//    cout << endl;
-//  }
-//  
-//  cout << "Residual" << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << val_residual[iVar] << endl;
-//  cin.get();
-  
-  
-//	/*--- Required gradients of the flow variables, point j ---*/
-//	for (iDim = 0; iDim < nDim; iDim++) {
-//		/*--- grad density ---*/
-//		GradDensity[iDim] = PrimVar_Grad_i[nDim+2][iDim];
-//		/*--- grad (1/rho) ---*/
-//		GradInvDensity[iDim] = -GradDensity[iDim]*invDensitysq;
-//		/*--- Computation of the derivatives of P/(Density^2) ---*/
-//		dPoDensity2[iDim] = (PrimVar_Grad_i[nVar-1][iDim]*Density - 2.0*GradDensity[iDim]*Pressure)*invDensitycube;
-//		/*--- Abbreviations: alpha, beta, sigma_5_vec ---*/
-//		alpha[iDim] = Gamma*mu_tot_2*GradInvDensity[iDim];
-//		beta[iDim] = Gamma/Gamma_Minus_One*mu_tot_2*dPoDensity2[iDim];
-//		Sigma_5_vec[iDim] = Gamma*mu_tot_2*PsiVar_Grad_i[nVar-1][iDim];
-//	}
-  
-//	/*--- Definition of tensors and derivatives of velocity over density ---*/
-//	double div_vel = 0, div_phi = 0, vel_gradpsi5 = 0;
-//	for (iDim = 0; iDim < nDim; iDim++) {
-//		div_vel += PrimVar_Grad_i[iDim+1][iDim];
-//		div_phi += PsiVar_Grad_i[iDim+1][iDim];
-//		vel_gradpsi5 += Velocity[iDim]*PsiVar_Grad_i[nVar-1][iDim];
-//		for (jDim = 0; jDim < nDim; jDim++) {
-//			sigma[iDim][jDim] = mu_tot_1*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]);
-//			Sigma_phi[iDim][jDim] = mu_tot_1*(PsiVar_Grad_i[iDim+1][jDim]+PsiVar_Grad_i[jDim+1][iDim]);
-//			Sigma_5_Tensor[iDim][jDim] = mu_tot_1*(Velocity[jDim]*PsiVar_Grad_i[nVar-1][iDim]+Velocity[iDim]*PsiVar_Grad_i[nVar-1][jDim]);
-//			GradVel_o_Rho[iDim][jDim] = (PrimVar_Grad_i[iDim+1][jDim]*Density - Velocity[iDim]*GradDensity[jDim])*invDensitysq;
-//		}
-//	}
-//	for (iDim = 0; iDim < nDim; iDim++) {
-//		sigma[iDim][iDim] -= TWO3*mu_tot_1*div_vel;
-//		Sigma_phi[iDim][iDim] -= TWO3*mu_tot_1*div_phi;
-//		Sigma_5_Tensor[iDim][iDim] -= TWO3*mu_tot_1*vel_gradpsi5;
-//	}
-//	for (iDim = 0; iDim < nDim; iDim++)
-//		for (jDim = 0; jDim < nDim; jDim++)
-//			Sigma[iDim][jDim] = Sigma_phi[iDim][jDim] + Sigma_5_Tensor[iDim][jDim];
-//  
-//	/*--- Vector-Tensors products ---*/
-//	double gradT_gradpsi5 = 0, sigma_gradpsi = 0, vel_sigma_gradpsi5 = 0;
-//	for (iDim = 0; iDim < nDim; iDim++) {
-//		gradT_gradpsi5 += PrimVar_Grad_i[0][iDim]*PsiVar_Grad_i[nVar-1][iDim];
-//		for (jDim = 0; jDim < nDim; jDim++) {
-//			sigma_gradpsi += sigma[iDim][jDim]*PsiVar_Grad_i[jDim+1][iDim];
-//			vel_sigma_gradpsi5 += Velocity[iDim]*sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim];
-//		}
-//	}
-//  
-//	/*--- Residuals ---*/
-//	double alpha_gradpsi5 = 0, beta_gradpsi5 = 0, Sigma_gradvel_o_rho = 0, Sigma5_vel_gradvel = 0;
-//	for (iDim = 0; iDim < nDim; iDim++) {
-//		alpha_gradpsi5 += alpha[iDim]*PsiVar_Grad_i[nVar-1][iDim];
-//		beta_gradpsi5 += beta[iDim]*PsiVar_Grad_i[nVar-1][iDim];
-//		for (jDim = 0; jDim < nDim; jDim++) {
-//			Sigma_gradvel_o_rho += Sigma[iDim][jDim]*GradVel_o_Rho[iDim][jDim];
-//			Sigma5_vel_gradvel += Sigma_5_vec[iDim]*(Velocity[jDim]*PrimVar_Grad_i[jDim+1][iDim]);
-//		}
-//	}
-//	val_residual[0] = (-vel_sigma_gradpsi5/Density - Sigma_gradvel_o_rho + 0.5*sq_vel*alpha_gradpsi5 -
-//                     beta_gradpsi5 + Sigma5_vel_gradvel/Density) * Volume;
-//	for (iDim = 0; iDim < nDim; iDim++)
-//		for (jDim = 0; jDim < nDim; jDim++)
-//			val_residual[iDim+1] = (sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim]/Density +
-//                              Sigma[iDim][jDim]*GradInvDensity[jDim] - Velocity[iDim]*alpha_gradpsi5 -
-//                              Sigma_5_vec[jDim]*PrimVar_Grad_i[iDim+1][jDim]/Density) * Volume;
-//	val_residual[nVar-1] = alpha_gradpsi5 * Volume;
-  
+  /*--- Contribution to viscous residual from Av4 ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      Cvves = var->CalcCvve(V_i[TVE_INDEX], config, iSpecies);
+      val_residual[iSpecies] += ((GPsi[nSpecies+nDim][iDim]+GPsi[nSpecies+nDim+1][iDim]) *
+                                 (-Cvves/rhoCvve*PrimVar_Grad_i[TVE_INDEX][iDim]
+                                  -dTvedU_i[iSpecies]/rhoCvve*PrimVar_Grad_i[RHOCVVE_INDEX][iDim])) *
+                                mu4 * Volume;
+    }
+    val_residual[nSpecies+nDim+1] += ((GPsi[nSpecies+nDim][iDim]+GPsi[nSpecies+nDim+1][iDim]) *
+                                      (-dTvedU_i[nSpecies+nDim+1]/rhoCvve * PrimVar_Grad_i[RHOCVVE_INDEX][iDim])) *
+                                     mu4 * Volume;
+    
+  }
 }
 
 //CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

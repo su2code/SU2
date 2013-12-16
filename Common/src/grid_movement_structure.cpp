@@ -2902,7 +2902,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 }
 
 void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
-
+  
 	unsigned long iVertex, iPoint, n;
 	unsigned short iMarker, jDV;
 	double VarCoord[3], *Coord, *Normal, Theta_Value, Radius_Value, Delta;
@@ -2912,36 +2912,21 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
 	ofstream File;
   
   /*--- Read the baseline spline ---*/
-  Theta_Spline.push_back(3.14159265);    Radius_Spline.push_back(0.1524);
-  Theta_Spline.push_back(2.15648058);    Radius_Spline.push_back(0.1524);
-//  Theta_Spline.push_back(1.67639206);    Radius_Spline.push_back(0.1526022);
-//  Theta_Spline.push_back(1.26076677);    Radius_Spline.push_back(0.17068482);
-//  Theta_Spline.push_back(0.96437383);    Radius_Spline.push_back(0.21095794);
-//  Theta_Spline.push_back(0.77398519);    Radius_Spline.push_back(0.26343361);
-//  Theta_Spline.push_back(0.64976369);    Radius_Spline.push_back(0.32220389);
-//  Theta_Spline.push_back(0.56474803);    Radius_Spline.push_back(0.38439237);
-//  Theta_Spline.push_back(0.503719);      Radius_Spline.push_back(0.44857966);
-//  Theta_Spline.push_back(0.45809279);    Radius_Spline.push_back(0.51401751);
-//  Theta_Spline.push_back(0.42282701);    Radius_Spline.push_back(0.58028299);
-//  Theta_Spline.push_back(0.39481707);    Radius_Spline.push_back(0.64712191);
-//  Theta_Spline.push_back(0.37206572);    Radius_Spline.push_back(0.71437333);
-//  Theta_Spline.push_back(0.35323732);    Radius_Spline.push_back(0.78193082);
-//  Theta_Spline.push_back(0.33740829);    Radius_Spline.push_back(0.84972139);
-//  Theta_Spline.push_back(0.32392113);    Radius_Spline.push_back(0.91769337);
-//  Theta_Spline.push_back(0.31229593);    Radius_Spline.push_back(0.98580925);
-//  Theta_Spline.push_back(0.30217459);    Radius_Spline.push_back(1.05404113);
-//  Theta_Spline.push_back(0.29328474);    Radius_Spline.push_back(1.12236785);
-//  Theta_Spline.push_back(0.28541571);    Radius_Spline.push_back(1.19077309);
-  
+  Theta_Spline.push_back(0.0);              Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(1.4137166941154);  Radius_Spline.push_back(0.1524);
+  Theta_Spline.push_back(1.65766545);   Radius_Spline.push_back(0.15704997);
   
   
   /*--- Read the baseline spline ---*/
-//  Theta_Spline.push_back(0.0);              Radius_Spline.push_back(5.9);
-//  Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(5.0);
-//  Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(4.0);
-//  Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(3.0);
-//  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(2.6);
-    
+  //  Theta_Spline.push_back(0.0);              Radius_Spline.push_back(5.9);
+  //  Theta_Spline.push_back(0.1963495408494);  Radius_Spline.push_back(5.0);
+  //  Theta_Spline.push_back(0.3926990816987);  Radius_Spline.push_back(4.0);
+  //  Theta_Spline.push_back(0.7853981633974);  Radius_Spline.push_back(3.0);
+  //  Theta_Spline.push_back(1.570796326795);   Radius_Spline.push_back(2.6);
+  
   if (ResetDef == true) { /*--- Only one deformation (iVD), reseting the spline at every design variable ---*/
     
     /*--- Modify the baseline control point positions using the the deformation ---*/
@@ -2960,7 +2945,7 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
           using all the design variables. ---*/
     
     for (jDV = 0; jDV < config->GetnDV(); jDV++) {
-            
+      
       /*--- Modify the baseline control point positions using the the deformation ---*/
       ControlPoint_Index = int(config->GetParamDV(jDV, 0));
       
@@ -2994,12 +2979,12 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
         /*--- Compute the coordinate variation due to a surface modification, given
          ControlPoint_Index, Theta, Radius, and Ampl ---*/
         
- //       x = Coord[0] - (6.5 + 2.9205);	// HARD-CODED VALUE; needs to be fixed (MC)
- //       if (x > 0) {
+        //       x = Coord[0] - (6.5 + 2.9205);	// HARD-CODED VALUE; needs to be fixed (MC)
+        //       if (x > 0) {
         
-        x = Coord[0] - 0.1524;	// HARD-CODED VALUE; needs to be fixed (MC)
-        
-        if ((Coord[0] >= 0.0) && (Coord[0] <= 1.295))  {
+        x = 0.1524 - Coord[0];	// HARD-CODED VALUE; needs to be fixed (MC)
+        //0.12855939
+        if ((Coord[0] >= 0.0) && (Coord[0] <= 0.16602564))  {
           
           /*--- Compute the coordinate variation due to a surface modification, given
            ControlPoint_Index, Theta, Radius, and Ampl ---*/
@@ -3032,12 +3017,12 @@ void CSurfaceMovement::SetSpherical(CGeometry *boundary, CConfig *config, unsign
 			}
 		}
 	}
-
+  
   
   Theta_Spline.clear();
   Radius_Spline.clear();
   Radius2_Spline.clear();
-
+  
 }
 
 void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
