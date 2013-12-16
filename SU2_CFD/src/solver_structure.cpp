@@ -531,6 +531,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
+    /*--- Set the value of the singular ---*/
+    singular = false;
+    
     /*--- Get coordinates ---*/
 
 		Coord_i = geometry->node[iPoint]->GetCoord();
@@ -546,7 +549,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
 				cvector[iVar][iDim] = 0.0;
     
 		r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0; detR2 = 0.0;
 
 		for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
 			jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -560,7 +563,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       
 			/*--- Sumations for entries of upper triangular matrix R ---*/
       
-      if (fabs(weight) > EPS){
+      if (weight != 0.0) {
+        
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
         r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
@@ -576,22 +580,22 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         for (iVar = 0; iVar < nVar; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
             cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
+        
       }
       
 		}
 
 		/*--- Entries of upper triangular matrix R ---*/
     
-    if (fabs(r11) < EPS) r11 = EPS;
-		r11 = sqrt(r11);
-		r12 = r12/(r11);
-		r22 = sqrt(r22-r12*r12);
-    if (fabs(r22) < EPS) r22 = EPS;
-		if (nDim == 3) {
-			r13 = r13/(r11);
-			r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-			r33 = sqrt(r33-r23*r23-r13*r13);
-		}
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+    
+    if (nDim == 3) {
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
+    }
     
     /*--- Compute determinant ---*/
     
@@ -600,7 +604,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Detect singular matrices ---*/
     
-    if (fabs(detR2) < EPS) singular = true;
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
     
 		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     
@@ -636,8 +640,10 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				product = 0.0;
-				for (jDim = 0; jDim < nDim; jDim++)
+				for (jDim = 0; jDim < nDim; jDim++) {
 					product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+        }
+        
 				node[iPoint]->SetGradient(iVar,iDim,product);
 			}
 		}
