@@ -1994,13 +1994,13 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Initialize the jacobian matrices ---*/
   if (implicit) Jacobian.SetValZero();
   
-  /*--- Error message ---*/
-#ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+//  /*--- Error message ---*/
+//#ifndef NO_MPI
+//  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+//  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+//#endif
+//  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+//    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
@@ -4064,11 +4064,14 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
   unsigned long iPoint, jPoint;
   double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
   r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
-  bool singular = false;
-
+  bool singular;
+  
   /*--- Loop over points of the grid ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Set the value of the singular ---*/
+    singular = false;
     
     /*--- Get coordinates ---*/
 
@@ -4084,8 +4087,8 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
       for (iDim = 0; iDim < nDim; iDim++)
         cvector[iVar][iDim] = 0.0;
     
-    r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
+    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0; detR2 = 0.0;
     
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -4096,13 +4099,15 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-
+      
       /*--- Sumations for entries of upper triangular matrix R ---*/
       
-      if (fabs(weight) > EPS){
+      if (weight != 0.0) {
+      
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
         r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+        
         if (nDim == 3) {
           r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
           r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
@@ -4122,15 +4127,14 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
     
     /*--- Entries of upper triangular matrix R ---*/
     
-    if (fabs(r11) < EPS) r11 = EPS;
-    r11 = sqrt(r11);
-    r12 = r12/r11;
-    r22 = sqrt(r22-r12*r12);
-    if (fabs(r22) < EPS) r22 = EPS;
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+    
     if (nDim == 3) {
-      r13 = r13/r11;
-      r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
     }
     
     /*--- Compute determinant ---*/
@@ -4140,7 +4144,7 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
     
     /*--- Detect singular matrices ---*/
     
-    if (fabs(detR2) < EPS) singular = true;
+    if (abs(detR2) != EPS) { detR2 = 1.0; singular = true; }
     
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
@@ -4172,12 +4176,13 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
     }
     
     /*--- Computation of the gradient: S*c ---*/
-    
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++)
+        for (jDim = 0; jDim < nDim; jDim++) {
           product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+        }
+        
         node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
@@ -7684,13 +7689,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Initialize the jacobian matrices ---*/
   if (implicit) Jacobian.SetValZero();
   
-  /*--- Error message ---*/
-#ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+//  /*--- Error message ---*/
+//#ifndef NO_MPI
+//  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+//  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+//#endif
+//  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+//    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
@@ -7925,7 +7930,7 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
-    
+        
     /*--- Implicit part ---*/
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);

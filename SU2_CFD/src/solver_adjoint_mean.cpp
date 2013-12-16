@@ -1633,13 +1633,13 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	/*--- Implicit solution ---*/
 	if (implicit) Jacobian.SetValZero();
   
-  /*--- Error message ---*/
-#ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+//  /*--- Error message ---*/
+//#ifndef NO_MPI
+//  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+//  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+//#endif
+//  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+//    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
@@ -4949,13 +4949,13 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 	/*--- Initialize the Jacobian for implicit integration ---*/
 	if (implicit) Jacobian.SetValZero();
   
-  /*--- Error message ---*/
-#ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
-  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+//  /*--- Error message ---*/
+//#ifndef NO_MPI
+//  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+//  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+//#endif
+//  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+//    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
