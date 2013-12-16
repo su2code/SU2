@@ -109,7 +109,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
   nVar         = nSpecies + nDim + 2;
   nPrimVar     = nSpecies + nDim + 8;
-  nPrimVarGrad = nSpecies + nDim + 3;
+  nPrimVarGrad = nSpecies + nDim + 8;
   
 	/*--- Allocate a CVariable array for each node of the mesh ---*/
 	node = new CVariable*[nPoint];
@@ -1887,7 +1887,7 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, jVar;
   bool implicit, high_order_diss, limiter;
   double *U_i, *U_j, *V_i, *V_j;
   double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
@@ -1984,18 +1984,20 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);    
 		
     /*--- Error checking ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      if (Res_Conv[iVar] != Res_Conv[iVar]) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Res_Conv[iVar] != Res_Conv[iVar])
         cout << "NaN in Convective Residual" << endl;
-      }
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-          cout << "NaN in Convective Jacobian i" << endl;
-        if (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])
-          cout << "NaN in Convective Jacobian j" << endl;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+            cout << "NaN in Convective Jacobian i" << endl;
+          if (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])
+            cout << "NaN in Convective Jacobian j" << endl;
+        }
       }
     }
-    
+  
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
 		LinSysRes.SubtractBlock(jPoint, Res_Conv);
@@ -2062,14 +2064,23 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
+//    if (iPoint == 31) {
+//      cout << "Source calc: " << endl;
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        cout << Residual[iVar] << endl;
+//      cin.get();
+//    }
+    
     /*--- Error checking ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      if (Residual[iVar] != Residual[iVar]) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Residual[iVar] != Residual[iVar])
         cout << "NaN in Chemistry Residual" << endl;
-      }
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-          cout << "NaN in Chemistry Jacobian i" << endl;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+            cout << "NaN in Chemistry Jacobian i" << endl;
+        }
       }
     }
     
@@ -2088,12 +2099,15 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
     /*--- Error checking ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++)
       if (Residual[iVar] != Residual[iVar])
         cout << "NaN in vibrational Residual" << endl;
-      for (jVar = 0; jVar < nVar; jVar++) {
-        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-          cout << "NaN in vibrational Jacobian i" << endl;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+            cout << "NaN in vibrational Jacobian i" << endl;
+        }
       }
     }
     
@@ -2286,6 +2300,45 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFx += AllBound_CFx_Inv;
 	Total_CFy += AllBound_CFy_Inv;
 	Total_CFz += AllBound_CFz_Inv;
+  
+}
+
+void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  unsigned short iVar;
+  unsigned long iPoint;
+  
+  bool adjoint = config->GetAdjoint();
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
+  /*--- Update the solution ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
+    
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+    local_Residual = LinSysRes.GetBlock(iPoint);
+    
+    if (!adjoint) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res = local_Residual[iVar] + local_Res_TruncError[iVar];
+        node[iPoint]->AddSolution(iVar, -Res*Delta);
+        AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      }
+    }
+    
+  }
+  
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
   
 }
 
@@ -2995,6 +3048,19 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
+  if (viscous) {
+    visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+    visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+    visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+    visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+    visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+    visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+    visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+    visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+    visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+    visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  }
+  
 	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3039,7 +3105,45 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 
 			/*--- Viscous contribution ---*/
 			if (viscous) {
-        cout << "WARNING!!!  BC_Far_Field: Viscous contribution to boundary not implemented!" << endl;
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                                geometry->node[Point_Normal]->GetCoord() );
+        visc_numerics->SetNormal(Normal);
+        
+        /*--- Primitive variables, and gradient ---*/
+        visc_numerics->SetConservative(node[iPoint]->GetSolution(),
+                                       node_infty->GetSolution() );
+        visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
+                                    node_infty->GetPrimVar() );
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                          node_infty->GetGradient_Primitive() );
+        
+        /*--- Pass supplementary information to CNumerics ---*/
+        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
+        
+        /*--- Species diffusion coefficients ---*/
+        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+                                         node_infty->GetDiffusionCoeff() );
+        
+        /*--- Laminar viscosity ---*/
+        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+                                           node_infty->GetLaminarViscosity() );
+        
+        /*--- Thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+                                              node_infty->GetThermalConductivity());
+        
+        /*--- Vib-el. thermal conductivity ---*/
+        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+                                                 node_infty->GetThermalConductivity_ve() );
+        
+        /*--- Compute and update residual ---*/
+        visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+        if (implicit) {
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
 			}
 		}
 	}
@@ -3963,7 +4067,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   // GradV: [rho1, ..., rhoNs, T, Tve, u, v, w, P]^T
 	nVar         = nSpecies+nDim+2;
   nPrimVar     = nSpecies+nDim+8;
-  nPrimVarGrad = nSpecies+nDim+3;
+  nPrimVarGrad = nSpecies+nDim+8;
   
 	/*--- Allocate an array of CVariable objects for each node in the  mesh ---*/
 	node = new CVariable*[nPoint];
@@ -4148,6 +4252,10 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
                                    Temperature_ve_Inf, nDim, nVar,
                                    nPrimVar, nPrimVarGrad, config);
   check_infty = node_infty->SetPrimVar_Compressible(config);
+  
+  Velocity_Inf = new double[nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Velocity_Inf[iDim] = node_infty->GetVelocity(iDim);
   
   
 	/*--- Check for a restart and set up the variables at each node
@@ -4411,10 +4519,13 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
                                   unsigned short RunTime_EqSystem) {
 	unsigned long iPoint;
   bool check;
+  bool adjoint    = config->GetAdjoint();
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
                      || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
+  bool center     = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
+                     (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -4439,6 +4550,10 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	/*--- Compute gradient of the primitive variables ---*/
 	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimVar_Gradient_GG(geometry, config);
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimVar_Gradient_LS(geometry, config);
+  
+  /*--- Artificial dissipation ---*/
+  if (center)
+    SetMax_Eigenvalue(geometry, config);
   
 	/*--- Initialize the jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
@@ -4619,6 +4734,7 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
   bool implicit;
+  unsigned short iVar, jVar;
 	unsigned long iPoint, jPoint, iEdge;
   
   /*--- Determine time integration scheme ---*/
@@ -4687,18 +4803,21 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     }
     
     /*--- Error checking ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      if (Res_Visc[iVar] != Res_Visc[iVar]) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Res_Visc[iVar] != Res_Visc[iVar])
         cout << "NaN in viscous Residual" << endl;
+    
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+            cout << "NaN in viscous Jacobian i" << endl;
+          if (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])
+            cout << "NaN in viscous Jacobian j" << endl;
+        }
       }
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-        if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-          cout << "NaN in viscous Jacobian i" << endl;
-        if (Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])
-          cout << "NaN in viscous Jacobian j" << endl;
-      }
-    }
-  }
+    } //implicit
+  } //iEdge
 }
 
 void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
@@ -4935,21 +5054,21 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
-  bool implicit;
-  unsigned short iDim, jDim, iVar;
-  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
-  unsigned long iVertex, iPoint;
-  double *UnitNormal, *Normal, Area;
-  double **PrimVarGrad, *U, *V, **tau, proj_vel, div_vel, mu, ktr, kve;
-  
-  /*--- Allocate arrays ---*/
-  UnitNormal = new double[3];
-  tau = new double *[nDim];
-  for (iDim = 0; iDim < nDim; iDim++ )
-    tau[iDim] = new double[nDim];
-  
-  /*--- Set booleans based on configuration settings ---*/
-  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+//  bool implicit;
+//  unsigned short iDim, jDim, iVar;
+//  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
+//  unsigned long iVertex, iPoint;
+//  double *UnitNormal, *Normal, Area;
+//  double **PrimVarGrad, *U, *V, **tau, proj_vel, div_vel, mu, ktr, kve;
+//  
+//  /*--- Allocate arrays ---*/
+//  UnitNormal = new double[3];
+//  tau = new double *[nDim];
+//  for (iDim = 0; iDim < nDim; iDim++ )
+//    tau[iDim] = new double[nDim];
+//  
+//  /*--- Set booleans based on configuration settings ---*/
+//  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Call the Euler wall routine ---*/
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
@@ -4966,84 +5085,84 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
 //  visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
 //  visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
-  T_INDEX   = node[0]->GetTIndex();
-  TVE_INDEX = node[0]->GetTveIndex();
-  VEL_INDEX = node[0]->GetVelIndex();
+//  T_INDEX   = node[0]->GetTIndex();
+//  TVE_INDEX = node[0]->GetTveIndex();
+//  VEL_INDEX = node[0]->GetVelIndex();
+//  
+//  /*--- Compute the viscous contribution ---*/
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//    if (geometry->node[iPoint]->GetDomain()) {
+//      /*--- Calculate parameters from the geometry ---*/
+//      // Note: The vertex normal points out of the geometry by convention,
+//      //       so to calculate the influence from the boundary condition
+//      //       to the domain, we negate this vector
+//      Area   = 0.0;
+//      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//      Area = sqrt (Area);
+//      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//      
+//      /*--- Load variables ---*/
+//      mu  = node[iPoint]->GetLaminarViscosity();
+//      ktr = node[iPoint]->GetThermalConductivity();
+//      kve = node[iPoint]->GetThermalConductivity_ve();
+//      V   = node[iPoint]->GetPrimVar();
+//      U   = node[iPoint]->GetSolution();
+//      
+//      /*--- Get the gradient of the primitive variables ---*/
+//      PrimVarGrad = node[iPoint]->GetGradient_Primitive();
+//      
+//      /*--- Compute velocity divergence & projected velocity ---*/
+//      div_vel  = 0.0;
+//      proj_vel = 0.0;
+//      for (iDim = 0 ; iDim < nDim; iDim++) {
+//        div_vel += PrimVarGrad[VEL_INDEX+iDim][iDim];
+//        proj_vel += V[VEL_INDEX+iDim] * UnitNormal[iDim];
+//      }
+//      
+//      /*--- Compute the viscous stress tensor ---*/
+//      for (iDim = 0 ; iDim < nDim; iDim++) {
+//        for (jDim = 0 ; jDim < nDim; jDim++) {
+//          tau[iDim][jDim] = mu * (PrimVarGrad[VEL_INDEX+jDim][iDim] +
+//                                  PrimVarGrad[VEL_INDEX+iDim][jDim]  );
+//        }
+//        tau[iDim][iDim] -= TWO3*mu*div_vel;
+//      }
+//      
+//      /*--- Initialize the viscous residual ---*/
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        Res_Visc[iVar] = 0.0;
+//        Res_Conv[iVar] = 0.0;
+//      }
+//      
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Res_Conv[nSpecies+iDim] = U[nSpecies+iDim]*proj_vel*Area;
+//      }
+//      
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        /*--- Shear stress related terms ---*/
+//        for (jDim = 0; jDim < nDim; jDim++) {
+//          Res_Visc[nSpecies+jDim]  = tau[iDim][jDim]*Normal[iDim];
+//          Res_Visc[nSpecies+nDim] += tau[iDim][jDim]*V[VEL_INDEX+jDim]*Normal[iDim];
+//        }
+//        
+//        /*--- Diffusion terms ---*/
+//        //      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//        //        eve = var->CalcEve(val_primvar, config, iSpecies);
+//        //        hs  = var->CalcHs(val_primvar, config, iSpecies);
+//        //        Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs;
+//        //        Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve;
+//        //      }
+//        
+//        /*--- Heat transfer terms ---*/
+//        Res_Visc[nSpecies+nDim]   += (ktr*PrimVarGrad[T_INDEX][iDim]  +
+//                                      kve*PrimVarGrad[TVE_INDEX][iDim] ) * Normal[iDim];
+//        Res_Visc[nSpecies+nDim+1] += kve*PrimVarGrad[TVE_INDEX][iDim]* Normal[iDim];
+//      }
   
-  /*--- Compute the viscous contribution ---*/
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->node[iPoint]->GetDomain()) {
-      /*--- Calculate parameters from the geometry ---*/
-      // Note: The vertex normal points out of the geometry by convention,
-      //       so to calculate the influence from the boundary condition
-      //       to the domain, we negate this vector
-      Area   = 0.0;
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-      
-      /*--- Load variables ---*/
-      mu  = node[iPoint]->GetLaminarViscosity();
-      ktr = node[iPoint]->GetThermalConductivity();
-      kve = node[iPoint]->GetThermalConductivity_ve();
-      V   = node[iPoint]->GetPrimVar();
-      U   = node[iPoint]->GetSolution();
-      
-      /*--- Get the gradient of the primitive variables ---*/
-      PrimVarGrad = node[iPoint]->GetGradient_Primitive();
-      
-      /*--- Compute velocity divergence & projected velocity ---*/
-      div_vel  = 0.0;
-      proj_vel = 0.0;
-      for (iDim = 0 ; iDim < nDim; iDim++) {
-        div_vel += PrimVarGrad[VEL_INDEX+iDim][iDim];
-        proj_vel += V[VEL_INDEX+iDim] * UnitNormal[iDim];
-      }
-      
-      /*--- Compute the viscous stress tensor ---*/
-      for (iDim = 0 ; iDim < nDim; iDim++) {
-        for (jDim = 0 ; jDim < nDim; jDim++) {
-          tau[iDim][jDim] = mu * (PrimVarGrad[VEL_INDEX+jDim][iDim] +
-                                  PrimVarGrad[VEL_INDEX+iDim][jDim]  );
-        }
-        tau[iDim][iDim] -= TWO3*mu*div_vel;
-      }
-      
-      /*--- Initialize the viscous residual ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Visc[iVar] = 0.0;
-        Res_Conv[iVar] = 0.0;
-      }
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Res_Conv[nSpecies+iDim] = U[nSpecies+iDim]*proj_vel*Area;
-      }
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        /*--- Shear stress related terms ---*/
-        for (jDim = 0; jDim < nDim; jDim++) {
-          Res_Visc[nSpecies+jDim]  = tau[iDim][jDim]*Normal[iDim];
-          Res_Visc[nSpecies+nDim] += tau[iDim][jDim]*V[VEL_INDEX+jDim]*Normal[iDim];
-        }
-        
-        /*--- Diffusion terms ---*/
-        //      for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-        //        eve = var->CalcEve(val_primvar, config, iSpecies);
-        //        hs  = var->CalcHs(val_primvar, config, iSpecies);
-        //        Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs;
-        //        Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve;
-        //      }
-        
-        /*--- Heat transfer terms ---*/
-        Res_Visc[nSpecies+nDim]   += (ktr*PrimVarGrad[T_INDEX][iDim]  +
-                                      kve*PrimVarGrad[TVE_INDEX][iDim] ) * Normal[iDim];
-        Res_Visc[nSpecies+nDim+1] += kve*PrimVarGrad[TVE_INDEX][iDim]* Normal[iDim];
-      }
-      
 //      /*--- Determine the nearest normal neighbor ---*/
 //      jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 //      
@@ -5078,19 +5197,19 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
 //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 //        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
 //      }
-    }
-  }
-  
-  delete [] UnitNormal;
-  for (iDim = 0; iDim < nDim; iDim++ )
-    delete [] tau[iDim];
-  delete [] tau;
+//    }
+//  }
+//  
+//  delete [] UnitNormal;
+//  for (iDim = 0; iDim < nDim; iDim++ )
+//    delete [] tau[iDim];
+//  delete [] tau;
 }
 
 void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CSolver **solution_container,
                                      CNumerics *conv_numerics,
-                                     CNumerics *visc_numerics,
+                                     CNumerics *sour_numerics,
                                      CConfig *config,
                                      unsigned short val_marker) {
   
@@ -5109,6 +5228,18 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
+//  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
+//  sour_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+//  sour_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+//  sour_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+//  sour_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+//  sour_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+//  sour_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+//  sour_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+//  sour_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+//  sour_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+//  sour_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+  
 	/*--- Loop over all of the vertices on this boundary marker ---*/
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5125,16 +5256,20 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       
 			/*--- Initialize the convective & viscous residuals to zero ---*/
 			for (iVar = 0; iVar < nVar; iVar++) {
-				Res_Conv[iVar] = 0.0;
 				Res_Visc[iVar] = 0.0;
+        Res_Sour[iVar] = 0.0;
 			}
       
-      /*--- Set wall velocity to zero ---*/
+      /*--- Assign wall velocity to "Vector" array ---*/
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
+<<<<<<< HEAD
+			node[iPoint]->SetVelocity_Old(Vector, 0);
+=======
 			node[iPoint]->SetVelocity_Old(Vector);
       
+>>>>>>> fae0309ef9c4d92477bdd03a71a721e0ef2223d2
       for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
@@ -5143,11 +5278,28 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
 			Res_Visc[nSpecies+nDim] = Wall_HeatFlux * Area;
       
-			/*--- Convective contribution to the residual at the wall ---*/
-      LinSysRes.AddBlock(iPoint, Res_Conv);
-      
 			/*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      
+//      /*--- Apply the non-catalytic wall boundary ---*/
+//      // Note: We are re-calculating the chemistry residual and adding it to
+//      //       the linear system to eliminate the contribution from the solution
+//      //       (convention is to subtract sources)
+//      sour_numerics->SetConservative(node[iPoint]->GetSolution(),
+//                                     node[iPoint]->GetSolution() );
+//      sour_numerics->SetPrimitive   (node[iPoint]->GetPrimVar() ,
+//                                     node[iPoint]->GetPrimVar()  );
+//      sour_numerics->SetdPdU        (node[iPoint]->GetdPdU()    ,
+//                                     node[iPoint]->GetdPdU()     );
+//      sour_numerics->SetdTdU        (node[iPoint]->GetdTdU()    ,
+//                                     node[iPoint]->GetdTdU()     );
+//      sour_numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  ,
+//                                     node[iPoint]->GetdTvedU()   );
+//      sour_numerics->SetVolume      (geometry->node[iPoint]->GetVolume());
+//      sour_numerics->ComputeChemistry(Res_Sour, Jacobian_i, config);
+//      LinSysRes.AddBlock(iPoint, Res_Sour);
+//      if (implicit)
+//        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
 			/*--- Only change velocity-rows of the Jacobian (includes 1 in the diagonal)/
        Note that we need to add a contribution for moving walls to the Jacobian. ---*/
@@ -5166,7 +5318,7 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                        CSolver **solution_container,
                                        CNumerics *conv_numerics,
-                                       CNumerics *visc_numerics,
+                                       CNumerics *sour_numerics,
                                        CConfig *config,
                                        unsigned short val_marker) {
   
@@ -5215,17 +5367,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
 			/*--- Compute closest normal neighbor ---*/
       jPoint = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
-//      double tmp = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        tmp += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
-//      cout << "dTdn: " << tmp << endl;
-//      tmp = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        tmp += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
-//      cout << "dTvedn: " << tmp << endl;
-//      cin.get();
-      
-      
       /*--- Compute distance between wall & normal neighbor ---*/
       dij = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -5260,10 +5401,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       /*--- Calculate useful quantities ---*/
       rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
       rhoCvve = node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
-//      ktr     = 0.5*(node[iPoint]->GetThermalConductivity() +
-//                     node[jPoint]->GetThermalConductivity());
-//      kve     = 0.5*(node[iPoint]->GetThermalConductivity_ve() +
-//                     node[jPoint]->GetThermalConductivity_ve());
       ktr     = node[iPoint]->GetThermalConductivity();
       kve     = node[iPoint]->GetThermalConductivity_ve();
       Ti      = node[iPoint]->GetPrimVar(T_INDEX);
@@ -5274,9 +5411,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       dTvedU = node[iPoint]->GetdTvedU();
       
       
-      /*--- Calculate FD derivative of temperature normal to the surface ---*/
-//      dTdn = (Twall-Tj)/dij;
-//      dTvedn = (Twall-Tvej)/dij;
+      /*--- Calculate projected gradient of temperature normal to the surface ---*/
       dTdn = 0.0; dTvedn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         dTdn += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
@@ -5325,14 +5460,16 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
       }
       
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        if (Res_Visc[iVar] != Res_Visc[iVar]) {
+      /*--- Error checking ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+        if (Res_Visc[iVar] != Res_Visc[iVar])
           cout << "NaN in isothermal term" << endl;
-        }
-        for (unsigned short jVar = 0; jVar < nVar; jVar++)
-          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-            cout << "NaN in isothermal jacobian" << endl;
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+              cout << "NaN in isothermal jacobian" << endl;
       }
-		}
-	}
+    }
+  }
 }

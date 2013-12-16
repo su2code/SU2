@@ -299,11 +299,15 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Fc_i[iVar] = 0.0;
 		Fc_j[iVar] = 0.0;
-		for (jVar = 0; jVar < nVar; jVar++) {
-			val_Jacobian_i[iVar][jVar] = 0.0;
-			val_Jacobian_j[iVar][jVar] = 0.0;
-		}
 	}
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_i[iVar][jVar] = 0.0;
+        val_Jacobian_j[iVar][jVar] = 0.0;
+      }
+    }
+  }
   
   /*--- Load variables from nodes i & j ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -370,7 +374,8 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
       Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
-      val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
+      if (implicit)
+        val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
     }
   }
   
@@ -395,7 +400,8 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_j += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
       Fc_j[iVar] += Proj_ModJac_Tensor_j*U_j[jVar]*Area;
-      val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
+      if (implicit)
+        val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
     }
   }
     
@@ -1810,9 +1816,11 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;
-    for (jVar = 0; jVar < nVar; jVar++) {
-      val_Jacobian_i[iVar][jVar] = 0.0;
-    }
+  }
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_i[iVar][jVar] = 0.0;
   }
   
   
@@ -2060,9 +2068,11 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;
-    for (jVar = 0; jVar < nVar; jVar++) {
-      val_Jacobian_i[iVar][jVar] = 0.0;
-    }
+  }
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_i[iVar][jVar] = 0.0;
   }
 
   /*--- Determine the number of heavy particle species ---*/

@@ -433,7 +433,7 @@ def get_dvMap():
         kind id number to name """
     dv_map = { 1   : "HICKS_HENNE"        ,
                2   : "COSINE_BUMP"        ,
-               3   : "FAIRING"            ,
+               3   : "SPHERICAL"          ,
                4   : "NACA_4DIGITS"       ,
                5   : "DISPLACEMENT"       ,
                6   : "ROTATION"           ,

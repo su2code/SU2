@@ -203,6 +203,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   double *Buffer_Send_SkinFriction = new double [MaxLocalVertex_Surface];
   double *Buffer_Recv_SkinFriction = NULL;
   
+  double *Buffer_Send_HeatTransfer = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_HeatTransfer = NULL;
+  
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
 
@@ -216,6 +219,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     Buffer_Recv_CPress  = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_Mach    = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_SkinFriction = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_HeatTransfer = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
   }
   
@@ -239,6 +243,12 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if ((solver == NAVIER_STOKES) || (solver == RANS))
             Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
+          if (solver == TNE2_EULER)
+            Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
+          if (solver == TNE2_NAVIER_STOKES) {
+            Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
+            Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatTransferCoeff(iMarker,iVertex);
+          }
           nVertex_Surface++;
         }
       }
@@ -262,6 +272,15 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   if ((solver == NAVIER_STOKES) || (solver == RANS))
     MPI::COMM_WORLD.Gather(Buffer_Send_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE,
                            Buffer_Recv_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  if (solver == TNE2_EULER)
+    MPI::COMM_WORLD.Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  if (solver == TNE2_NAVIER_STOKES) {
+    MPI::COMM_WORLD.Gather(Buffer_Send_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+  }
   
   MPI::COMM_WORLD.Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI::UNSIGNED_LONG,
                          Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI::UNSIGNED_LONG, MASTER_NODE);
@@ -308,6 +327,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     switch (solver) {
       case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
       case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
+      case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" << endl; break;
+      case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Transfer\"" << endl; break;
     }
     
     /*--- Loop through all of the collected data and write each node's values ---*/
@@ -342,6 +363,16 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           SkinFrictionCoeff = Buffer_Recv_SkinFriction[Total_Index];
           SurfFlow_file << scientific << SkinFrictionCoeff << endl;
           break;
+          case TNE2_EULER:
+            Mach = Buffer_Recv_Mach[Total_Index];
+            SurfFlow_file << scientific << Mach << endl;
+            break;
+          case TNE2_NAVIER_STOKES:
+            SkinFrictionCoeff = Buffer_Recv_SkinFriction[Total_Index];
+            SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+            HeatFlux = Buffer_Recv_HeatTransfer[Total_Index];
+            SurfFlow_file << scientific << HeatFlux << endl;
+            break;
         }
       }
     }
@@ -358,6 +389,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     delete [] Buffer_Recv_CPress;
     delete [] Buffer_Recv_Mach;
     delete [] Buffer_Recv_SkinFriction;
+    delete [] Buffer_Recv_HeatTransfer;
     delete [] Buffer_Recv_GlobalIndex;
     
   }
@@ -371,6 +403,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   delete [] Buffer_Send_CPress;
   delete [] Buffer_Send_Mach;
   delete [] Buffer_Send_SkinFriction;
+  delete [] Buffer_Send_HeatTransfer;
   delete [] Buffer_Send_GlobalIndex;
   
 #endif
@@ -3992,7 +4025,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           case EULER : case NAVIER_STOKES: case RANS:
           case FLUID_STRUCTURE_EULER: case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
           case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-          case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
             
             /*--- Direct coefficients ---*/
             sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
@@ -4095,8 +4127,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             }
             
             break;
-            
-          case TNE2_EULER : case TNE2_NAVIER_STOKES:
+          
+          case TNE2_EULER :     case TNE2_NAVIER_STOKES:
+          case ADJ_TNE2_EULER:  case ADJ_TNE2_NAVIER_STOKES:
             
             /*--- Direct coefficients ---*/
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
@@ -4610,6 +4643,11 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           
         case ADJ_TNE2_EULER :              case ADJ_TNE2_NAVIER_STOKES :
           
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            ConvHist_file[0].flush();
+          }
+          
           cout.precision(6);
           cout.setf(ios::fixed,ios::floatfield);
           cout.width(15); cout << log10(residual_adjTNE2[0]);
@@ -4697,6 +4735,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
         
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        break;
+        
+      case ADJ_TNE2_EULER : case ADJ_TNE2_NAVIER_STOKES :
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJTNE2_SOL], solver_container[iZone][MESH_0][TNE2_SOL], iExtIter, iZone);
         break;
         
       case LIN_EULER : case LIN_NAVIER_STOKES :

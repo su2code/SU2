@@ -1720,6 +1720,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
+             ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
              ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
   
   if (( Kind_Solver == TNE2_EULER             ) ||

@@ -1362,7 +1362,14 @@ public:
 	 * \brief Set intermittency for numerics (used in SA with LM transition model)
 	 */
 	virtual void SetIntermittency(double intermittency_in);
-    
+  
+  /*!
+	 * \brief Computes the viscous source term for the TNE2 adjoint problem
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[out] val_residual - residual of the source terms
+	 */
+  virtual void ComputeSourceViscous(double *val_residual, CConfig *config);
+  
     /*!
 	 * \brief Residual for source term integration.
 	 * \param[in] val_production - Value of the Production.
@@ -5308,6 +5315,7 @@ private:
   double *UnitNormal;
   double *Lambda_i, *Lambda_j;
   double **P, **invP, **PLPinv;
+  double **Ai, **Aj;
   
   //  CVariable *var;
   
@@ -5445,6 +5453,55 @@ public:
                         double **val_Jacobian_ii, double **val_Jacobian_ij,
                         double **val_Jacobian_ji, double **val_Jacobian_jj,
                         CConfig *config);
+};
+
+/*!
+ * \class CSource_AdjTNE2
+ * \brief Class for adjoint two-temperature model source terms.
+ * \ingroup SourceDiscr
+ * \author S. Copeland
+ * \version 2.0.6
+ */
+class CSource_AdjTNE2 : public CNumerics {
+private:
+  bool   implicit;
+  unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
+  double *rhos, *vel;
+  double *GInvRho, **GVeloRho, **tau, **eta, **pi, **zeta;
+  double *GPhiGInvRho, *GPsiEZetaTau;
+  double **Av2, **Av3, **Av4;
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CSource_AdjTNE2(unsigned short val_nDim,
+                  unsigned short val_nVar,
+                  unsigned short val_nPrimVar,
+                  unsigned short val_nPrimVarGrad,
+                  CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CSource_AdjTNE2(void);
+  
+  /*!
+	 * \brief Source residual of the chemistry.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void ComputeSourceViscous(double *val_residual, CConfig *config);
+  
+	/*!
+	 * \brief Residual of the rotational frame source term.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeSourceConservative(double *val_residual, CConfig *config);
 };
 
 
