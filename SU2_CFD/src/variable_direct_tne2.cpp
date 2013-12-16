@@ -404,7 +404,7 @@ void CTNE2EulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 			Gradient_Primitive[iVar][iDim] = 0.0;
 }
 
-void CTNE2EulerVariable::SetDensity(void) {
+bool CTNE2EulerVariable::SetDensity(void) {
   unsigned short iSpecies;
   double Density;
   
@@ -414,6 +414,8 @@ void CTNE2EulerVariable::SetDensity(void) {
     Density += Solution[iSpecies];
   }
   Primitive[RHO_INDEX] = Density;
+  
+  return true;
 }
 
 double CTNE2EulerVariable::GetProjVel(double *val_vector) {
@@ -428,21 +430,6 @@ double CTNE2EulerVariable::GetProjVel(double *val_vector) {
 		ProjVel += Solution[nSpecies+iDim]*val_vector[iDim]/density;
   
 	return ProjVel;
-}
-
-void CTNE2EulerVariable::SetVelocity(double *val_velocity, bool val_incomp) {
-	if (val_incomp) {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-			Solution[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
-      Primitive[VEL_INDEX+iDim] = val_velocity[iDim];
-    }
-	}
-	else {
-		for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-			Solution[nSpecies+iDim] = val_velocity[iDim]*Primitive[RHO_INDEX];
-      Primitive[VEL_INDEX+iDim] = val_velocity[iDim];
-    }
-	}
 }
 
 void CTNE2EulerVariable::SetVelocity2(void) {

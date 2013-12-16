@@ -330,11 +330,11 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 					
 					/*--- Compute pressure on the boundary ---*/
 					for (iDim = 0; iDim < nDim; iDim++) 
-						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim, COMPRESSIBLE);
+						Velocity[iDim] = solver_container[FLOW_SOL]->node[Point]->GetVelocity(iDim);
 					
 					double rho = solver_container[FLOW_SOL]->node[Point]->GetSolution(0) + node[Point]->GetSolution(0);
 					double rhoE = solver_container[FLOW_SOL]->node[Point]->GetSolution(nVar-1) + node[Point]->GetSolution(nVar-1);
-					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure(COMPRESSIBLE);
+					double Pressure = solver_container[FLOW_SOL]->node[Point]->GetPressure();
 					double rhoVel[3];
 					double sqr_vel = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) {

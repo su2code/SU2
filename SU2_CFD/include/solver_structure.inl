@@ -214,6 +214,8 @@ inline void CSolver::SetTotal_CDrag(double val_Total_CDrag) { }
 
 inline double CSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
+inline double *CSolver::GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+
 inline double CSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
 inline double CSolver::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return 0; }
@@ -473,6 +475,8 @@ inline double CEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
 inline double CEulerSolver::GetPressure_Back(void) { return Pressure_Back; }
 
 inline double CEulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
+
+inline double *CEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
 
 inline double CEulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 

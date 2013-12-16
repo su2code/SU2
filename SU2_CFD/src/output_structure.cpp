@@ -119,7 +119,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         xCoord = geometry->node[iPoint]->GetCoord(0);
         yCoord = geometry->node[iPoint]->GetCoord(1);
         if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
-        Pressure = FlowSolver->node[iPoint]->GetPressure(COMPRESSIBLE);
+        Pressure = FlowSolver->node[iPoint]->GetPressure();
         PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
         SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
         if (nDim == 3) SurfFlow_file << scientific << zCoord << ", ";
@@ -233,7 +233,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
-          Buffer_Send_Press[nVertex_Surface] = FlowSolver->node[iPoint]->GetPressure(COMPRESSIBLE);
+          Buffer_Send_Press[nVertex_Surface] = FlowSolver->node[iPoint]->GetPressure();
           Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker,iVertex);
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
@@ -1916,30 +1916,27 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
           if (compressible) {
-            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           }
           if (incompressible || freesurface) {
             if (freesurface) {
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
-            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
-            
           }
+          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus ---*/
         case NAVIER_STOKES:
           if (compressible) {
-            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
-            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); jVar++;
             Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
@@ -1950,22 +1947,22 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             if (freesurface) {
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
-            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
-            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
             Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
             Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
           }
+          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus, eddy viscosity ---*/
         case RANS:
           if (compressible) {
-            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); jVar++;
@@ -1973,21 +1970,22 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
             Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
           }
           if (incompressible || freesurface) {
             if (freesurface) {
               Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); jVar++;
             }
-            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE); jVar++;
-            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); jVar++;
+            Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
             Data[jVar][jPoint] = 0.0; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); jVar++;
             Data[jVar][jPoint] = Aux_Frict[iPoint]; jVar++;
             Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+            Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); jVar++;
           }
-          Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); jVar++;
           Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
           break;
           /*--- Write poisson field. ---*/
@@ -2358,14 +2356,14 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         
         /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
         if (compressible) {
-          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE);
-          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(COMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff;
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
+          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
           Buffer_Send_Vol[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
         }
         if (incompressible || freesurface) {
-          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE);
-          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure(INCOMPRESSIBLE) - RefPressure)*factor*RefAreaCoeff;
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc();
+          Buffer_Send_Res[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff;
           Buffer_Send_Vol[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
           sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
         }
@@ -2548,7 +2546,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
         }
         if (incompressible || freesurface) {
-          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc();
         }
         jPoint++;
       }
@@ -4441,7 +4439,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(14); cout << log10(residual_turbulent[1]); break;
+              cout.width(15); cout << log10(residual_turbulent[1]); break;
           }
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
@@ -5133,7 +5131,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           }
           
           if (AzimuthalAngle[nVertex_NearField] <= 60) {
-            Pressure[nVertex_NearField] = solver_container->node[iPoint]->GetPressure(COMPRESSIBLE);
+            Pressure[nVertex_NearField] = solver_container->node[iPoint]->GetPressure();
             FaceArea[nVertex_NearField] = fabs(Face_Normal[nDim-1]);
             nVertex_NearField ++;
           }
@@ -5215,7 +5213,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             Buffer_Send_Xcoord[nLocalVertex_NearField] = geometry->node[iPoint]->GetCoord(0);
             Buffer_Send_Ycoord[nLocalVertex_NearField] = geometry->node[iPoint]->GetCoord(1);
             Buffer_Send_Zcoord[nLocalVertex_NearField] = geometry->node[iPoint]->GetCoord(2);
-            Buffer_Send_Pressure[nLocalVertex_NearField] = solver_container->node[iPoint]->GetPressure(COMPRESSIBLE);
+            Buffer_Send_Pressure[nLocalVertex_NearField] = solver_container->node[iPoint]->GetPressure();
             Buffer_Send_FaceArea[nLocalVertex_NearField] = fabs(Face_Normal[nDim-1]);
             nLocalVertex_NearField++;
           }
