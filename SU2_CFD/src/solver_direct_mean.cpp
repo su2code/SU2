@@ -4144,7 +4144,7 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
     
     /*--- Detect singular matrices ---*/
     
-    if (abs(detR2) != EPS) { detR2 = 1.0; singular = true; }
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
     
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
