@@ -1935,7 +1935,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Reactions[0][1][0]=1;		Reactions[0][1][1]=1;		Reactions[0][1][2] =0;
         // N2 + N -> 2N + N
         Reactions[1][0][0]=0;		Reactions[1][0][1]=1;		Reactions[1][0][2]=nSpecies;
-        Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2] =1;
+        Reactions[1][1][0]=1;		Reactions[1][1][1]=1;		Reactions[1][1][2]=1;
         
         /*--- Set rate-controlling temperature exponents ---*/
         //  -----------  Tc = Ttr^a * Tve^b  -----------
