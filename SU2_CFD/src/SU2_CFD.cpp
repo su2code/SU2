@@ -24,9 +24,7 @@
 #include "../include/SU2_CFD.hpp"
 
 /*
- * SU2_CFD.cpp is the main control file for the SU2 tool.
  * Pseudocode:
- *  BEGIN
  *  Initialize data structures
  *  Parse the input file and load settings
  *  Load in the geometry from the mesh
@@ -39,40 +37,27 @@
  *    Make an iteration (problem dependent)
  *    Check Convergence of the flow solution (problem dependent)
  *    Write convergence history
- *    if (converged) {
- *      break
- *    }
  *  }
  *  Write solution files
- *  END
+ *  Deallocate memory
  */
-
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
+  
   bool StopCalc = false;
-  unsigned long StartTime, StopTime, TimeUsed = 0, ExtIter = 0;
+  unsigned long StartTime, StopTime, UsedTime = 0, ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   
 #ifndef NO_MPI
   /*--- MPI initialization, and buffer setting ---*/
-  void *buffer, *old_buffer;
-  int size, bufsize;
-  bufsize = MAX_MPI_BUFFER;
-  buffer = new char[bufsize];
   MPI::Init(argc, argv);
-  MPI::Attach_buffer(buffer, bufsize);
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
-#ifdef TIME
-  /*--- Set up a timer for parallel performance benchmarking ---*/
-  double start, finish, time;
-  MPI::COMM_WORLD.Barrier();
-  start = MPI::Wtime();
-#endif
 #endif
   
   /*--- Create pointers to all of the classes that may be used throughout
@@ -238,7 +223,7 @@ int main(int argc, char *argv[]) {
                               config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
-
+    
 #ifndef NO_MPI
     /*--- Synchronization point after the integration definition subroutine ---*/
     MPI::COMM_WORLD.Barrier();
@@ -256,7 +241,7 @@ int main(int argc, char *argv[]) {
                            geometry_container[iZone], config_container[iZone], iZone);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
-
+    
 #ifndef NO_MPI
     /*--- Synchronization point after the solver definition subroutine ---*/
     MPI::COMM_WORLD.Barrier();
@@ -317,13 +302,22 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
   
+  /*--- Set up a timer for performance benchmarking
+   (preprocessing time is not included) ---*/
+#ifdef NO_MPI
+  StartTime = clock();
+#else
+  MPI::COMM_WORLD.Barrier();
+  StartTime = MPI::Wtime();
+  StartTime = clock();
+#endif
+  
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set a timer for each iteration. Store the current iteration and
      update  the value of the CFL number (if there is CFL ramping specified)
      in the config class. ---*/
     
-    StartTime = clock();
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetExtIter(ExtIter);
       config_container[iZone]->UpdateCFL(ExtIter);
@@ -393,10 +387,15 @@ int main(int argc, char *argv[]) {
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
     
-#ifndef NO_MPI
+#ifdef NO_MPI
+    StopTime = clock();
+#else
     MPI::COMM_WORLD.Barrier();
+    StopTime = MPI::Wtime();
+    StopTime = clock();
 #endif
-    StopTime = clock(); TimeUsed += (StopTime - StartTime);
+    
+    UsedTime = (StopTime - StartTime);
     
     /*--- For specific applications, evaluate and plot the equivalent area or flow rate. ---*/
     
@@ -409,7 +408,7 @@ int main(int argc, char *argv[]) {
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
     output->SetConvergence_History(&ConvHist_file, geometry_container, solver_container,
-                                   config_container, integration_container, false, TimeUsed, ZONE_0);
+                                   config_container, integration_container, false, UsedTime, ZONE_0);
     
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
@@ -476,18 +475,6 @@ int main(int argc, char *argv[]) {
     ConvHist_file.close();
     cout << endl <<"History file, closed." << endl;
   }
-  /*
-  if (config->GetKind_Solver() == RANS){
-    if (config->GetKind_Turb_Model() == ML){
-      // Tell the ML code to stop running
-      string mlWriteFilename = config->GetML_Turb_Model_Write();
-      ofstream mlWrite;
-      mlWrite.open(mlWriteFilename.c_str());
-      mlWrite << int(-1) << flush;
-      mlWrite.close();
-    }
-  }
-   */
   
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {
@@ -517,29 +504,34 @@ int main(int argc, char *argv[]) {
   /*--- Integration class deallocation ---*/
   //  cout <<"Integration container, deallocated." << endl;
   
-#ifndef NO_MPI
-  /*--- Compute/print the total time for parallel performance benchmarking. ---*/
-#ifdef TIME
+  
+  
+#ifdef NO_MPI
+  StopTime = clock();
+#else
   MPI::COMM_WORLD.Barrier();
-  finish = MPI::Wtime();
-  time = finish-start;
+  StopTime = MPI::Wtime();
+  StopTime = clock();
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << time << " seconds on "<< size;
+    cout << "\nCompleted in " << fixed << UsedTime/CLOCKS_PER_SEC << " seconds on "<< size;
     if (size == 1) cout << " core.\n" << endl;
     else cout << " cores.\n" << endl;
   }
-#endif
-  /*--- Finalize MPI parallelization ---*/
-  old_buffer = buffer;
-  MPI::Detach_buffer(old_buffer);
-  //	delete [] buffer;
-  MPI::Finalize();
-#endif
   
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
+  
+  /*--- Finalize MPI parallelization ---*/
+#ifndef NO_MPI
+  MPI::Finalize();
+#endif
   
   return EXIT_SUCCESS;
 }
