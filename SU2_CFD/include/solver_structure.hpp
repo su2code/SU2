@@ -172,7 +172,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  virtual void Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  virtual void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -804,7 +804,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
+	virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief A virtual member.
@@ -1870,7 +1870,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Compute the density at the inlet.
@@ -2093,7 +2093,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
+	void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Compute the limiter of the primitive variables.
@@ -5558,7 +5558,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config);
+  void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
 
   /*!
 	 * \brief Set the maximum value of the eigenvalue.
