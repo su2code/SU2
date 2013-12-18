@@ -1475,7 +1475,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
   
 }
 
-void CTNE2EulerSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
@@ -2533,7 +2533,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
 	delete [] PrimVar_i;
 	delete [] PrimVar_j;
   
-	Set_MPI_PrimVar_Gradient(geometry, config);
+	Set_MPI_Primitive_Gradient(geometry, config);
   
 }
 
@@ -2688,7 +2688,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 	delete [] PrimVar_i;
 	delete [] PrimVar_j;
   
-	Set_MPI_PrimVar_Gradient(geometry, config);
+	Set_MPI_Primitive_Gradient(geometry, config);
   
 }
 

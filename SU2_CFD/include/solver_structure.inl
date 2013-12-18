@@ -37,7 +37,7 @@ inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) 
 
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_PrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
@@ -78,7 +78,7 @@ inline void CSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 
 inline void CSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_PrimVar_Gradient(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
