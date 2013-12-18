@@ -158,13 +158,11 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   return (unsigned short) nDim;
 }
 
-
-
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
-  
   
   unsigned short iMGlevel, iZone;
   unsigned long iPoint;
+  
   int rank = MASTER_NODE;
 #ifndef NO_MPI
   rank = MPI::COMM_WORLD.Get_rank();
@@ -174,35 +172,42 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
     /*--- Compute elements surrounding points, points surrounding points,
      and elements surrounding elements ---*/
+    
     if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
     geometry[iZone][MESH_0]->SetEsuP();
     geometry[iZone][MESH_0]->SetPsuP();
     geometry[iZone][MESH_0]->SetEsuE();
     
     /*--- Check the orientation before computing geometrical quantities ---*/
+    
     if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
     geometry[iZone][MESH_0]->SetBoundVolume();
     geometry[iZone][MESH_0]->Check_Orientation(config[iZone]);
     
     /*--- Create the edge structure ---*/
+    
     if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
     geometry[iZone][MESH_0]->SetEdges();
     geometry[iZone][MESH_0]->SetVertex(config[iZone]);
     
-    /*--- Compute center of gravity ---*/
+    /*--- Compute cell center of gravity ---*/
+    
     if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
     geometry[iZone][MESH_0]->SetCG();
     
     /*--- Create the control volume structures ---*/
+    
     if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
     geometry[iZone][MESH_0]->SetControlVolume(config[iZone], ALLOCATE);
     geometry[iZone][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
     
     /*--- Identify closest normal neighbor ---*/
+    
     if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
     geometry[iZone][MESH_0]->FindNormal_Neighbor(config[iZone]);
     
     /*--- Compute the surface curvature ---*/
+    
     if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
     
@@ -212,49 +217,62 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   }
   
 #ifndef NO_MPI
-  /*--- Synchronization point after the multigrid stuff ---*/
+  /*--- Synchronization point before the multigrid algorithm ---*/
   MPI::COMM_WORLD.Barrier();
 #endif
   
   /*--- Loop over all the new grid ---*/
+  
   for (iMGlevel = 1; iMGlevel <= config[ZONE_0]->GetMGLevels(); iMGlevel++) {
     
     /*--- Loop over all zones at each grid level. ---*/
+    
     for (iZone = 0; iZone < val_nZone; iZone++) {
       
-      /*--- Create main agglomeration structure (including MPI calls) ---*/
+      /*--- Create main agglomeration structure ---*/
+      
       geometry[iZone][iMGlevel] = new CMultiGridGeometry(geometry, config, iMGlevel, iZone);
       
       /*--- Compute points surrounding points. ---*/
+      
       geometry[iZone][iMGlevel]->SetPsuP(geometry[iZone][iMGlevel-1]);
       
       /*--- Create the edge structure ---*/
+      
       geometry[iZone][iMGlevel]->SetEdges();
       geometry[iZone][iMGlevel]->SetVertex(geometry[iZone][iMGlevel-1], config[iZone]);
       
       /*--- Create the control volume structures ---*/
+      
       geometry[iZone][iMGlevel]->SetControlVolume(config[iZone],geometry[iZone][iMGlevel-1], ALLOCATE);
       geometry[iZone][iMGlevel]->SetBoundControlVolume(config[iZone],geometry[iZone][iMGlevel-1], ALLOCATE);
       geometry[iZone][iMGlevel]->SetCoord(geometry[iZone][iMGlevel-1]);
       
       /*--- Find closest neighbor to a surface point ---*/
+      
       geometry[iZone][iMGlevel]->FindNormal_Neighbor(config[iZone]);
       
     }
+    
   }
   
   /*--- For unsteady simulations, initialize the grid volumes
-   and coordinates for previous solutions. Loop over all zones/grids. Is this
-   the best place for this? ---*/
+   and coordinates for previous solutions. Loop over all zones/grids ---*/
+  
   for (iZone = 0; iZone < val_nZone; iZone++) {
     if (config[iZone]->GetUnsteady_Simulation() && config[iZone]->GetGrid_Movement()) {
       for (iMGlevel = 0; iMGlevel <= config[iZone]->GetMGLevels(); iMGlevel++) {
         for (iPoint = 0; iPoint < geometry[iZone][iMGlevel]->GetnPoint(); iPoint++) {
+          
+          /*--- Update cell volume ---*/
+          
           geometry[iZone][iMGlevel]->node[iPoint]->SetVolume_n();
           geometry[iZone][iMGlevel]->node[iPoint]->SetVolume_nM1();
           
+          /*--- Update point coordinates ---*/
           geometry[iZone][iMGlevel]->node[iPoint]->SetCoord_n();
           geometry[iZone][iMGlevel]->node[iPoint]->SetCoord_n1();
+          
         }
       }
     }
