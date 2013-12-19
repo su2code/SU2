@@ -149,8 +149,8 @@ class Config(ordered_bunch):
         dv_old = [ dv_old[i]*dv_scl for i,dv_scl in enumerate(dv_scales) ]
         
         # Change the parameters of the design variables
-        self.update({ 'DV_KIND'      : def_dv['KIND']      ,
-                      'DV_MARKER'    : def_dv['MARKER'][0] ,
+        self['DV_KIND'] = def_dv['KIND']
+        self.update({ 'DV_MARKER'    : def_dv['MARKER'][0] ,
                       'DV_PARAM'     : def_dv['PARAM']     ,
                       'DV_VALUE_OLD' : dv_old              ,
                       'DV_VALUE_NEW' : dv_new              })
