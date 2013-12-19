@@ -2928,6 +2928,13 @@ public:
 	 */
 	void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
   
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.

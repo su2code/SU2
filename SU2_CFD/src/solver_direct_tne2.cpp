@@ -567,11 +567,6 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -696,11 +691,6 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
   *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -820,11 +810,6 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
   Primitive = new double[nPrimVar];
   VEL_INDEX = node_infty->GetVelIndex();
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -935,11 +920,6 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *co
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
 	int send_to, receive_from;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
@@ -1058,11 +1038,6 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry,
   *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1180,11 +1155,6 @@ void CTNE2EulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *confi
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1270,11 +1240,6 @@ void CTNE2EulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1345,11 +1310,6 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
 	int send_to, receive_from;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
   double **Gradient = new double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -1481,11 +1441,6 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
 	int send_to, receive_from;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
   double **Gradient = new double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)

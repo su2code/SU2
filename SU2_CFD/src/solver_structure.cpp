@@ -1735,7 +1735,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   Solution = new double[nVar];
   
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {

@@ -209,6 +209,7 @@
 		052D515817A1D352003BE8B2 /* Variable */ = {
 			isa = PBXGroup;
 			children = (
+				05E6DBFF17EB62A100FA1F7E /* variable_structure.cpp */,
 				05E6DBF717EB62A100FA1F7E /* variable_direct_mean.cpp */,
 				05E6DBFB17EB62A100FA1F7E /* variable_direct_turbulent.cpp */,
 				0530E56B17FDF7BD00733CE8 /* variable_direct_poisson.cpp */,
@@ -223,7 +224,6 @@
 				05E6DBF217EB62A100FA1F7E /* variable_adjoint_turbulent.cpp */,
 				05E6DBFD17EB62A100FA1F7E /* variable_linearized_mean.cpp */,
 				05E6DBFE17EB62A100FA1F7E /* variable_linearized_turbulent.cpp */,
-				05E6DBFF17EB62A100FA1F7E /* variable_structure.cpp */,
 				05E6DC0017EB62A100FA1F7E /* variable_template.cpp */,
 			);
 			name = Variable;

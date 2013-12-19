@@ -505,7 +505,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
 	
 	/* DESCRIPTION: Slope limiter */
-	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "VENKATAKRISHNAN");
+	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
 	/* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
 	/* DESCRIPTION: Viscous numerical method */

@@ -33,8 +33,29 @@ CTurbVariable::CTurbVariable(void) : CVariable() {
 CTurbVariable::CTurbVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_ndim, val_nvar, config) {
   
+  unsigned short iVar;
+
   /*--- Array initialization ---*/
 	TS_Source = NULL;
+  
+	/*--- Allocate space for the time spectral source terms ---*/
+	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		TS_Source = new double[nVar];
+		for (iVar = 0; iVar < nVar; iVar++)
+			TS_Source[iVar] = 0.0;
+	}
+  
+	/*--- Allocate space for the limiter ---*/
+  Limiter = new double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+  
+  Solution_Max = new double [nVar];
+  Solution_Min = new double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
+  }
   
 }
 
@@ -52,7 +73,6 @@ CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
 
 CTurbSAVariable::CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar;
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -68,21 +88,7 @@ CTurbSAVariable::CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned s
 		Solution_time_n[0]  = val_nu_tilde;
 		Solution_time_n1[0] = val_nu_tilde;
 	}
-  
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
-	}
-  
-	/*--- Allocate space for the limiter ---*/
-	if (config->GetKind_SlopeLimit_Turb() != NONE) {
-		Limiter = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
-	}
-  
+
 }
 
 CTurbSAVariable::~CTurbSAVariable(void) {
@@ -95,7 +101,6 @@ CTurbMLVariable::CTurbMLVariable(void) : CTurbVariable() { }
 
 CTurbMLVariable::CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_ndim, val_nvar, config) {
-	unsigned short iVar;
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -110,20 +115,6 @@ CTurbMLVariable::CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned s
 	if (dual_time) {
 		Solution_time_n[0]  = val_nu_tilde;
 		Solution_time_n1[0] = val_nu_tilde;
-	}
-  
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
-	}
-  
-	/*--- Allocate space for the limiter ---*/
-	if (config->GetKind_SlopeLimit_Turb() != NONE) {
-		Limiter = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
 	}
   
 }
@@ -139,7 +130,6 @@ CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() { }
 CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val_muT, unsigned short val_ndim, unsigned short val_nvar,
                                    double *constants, CConfig *config)
 : CTurbVariable(val_ndim, val_nvar,config) {
-  unsigned short iVar;
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -163,21 +153,7 @@ CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val
 		Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
 		Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
 	}
-  
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
-	}
-  
-	/*--- Allocate space for the limiter ---*/
-	if (config->GetKind_SlopeLimit_Turb() != NONE) {
-		Limiter = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
-	}
-  
+    
 }
 
 CTurbSSTVariable::~CTurbSSTVariable(void) { }
