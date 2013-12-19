@@ -47,7 +47,8 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   bool StopCalc = false;
-  unsigned long StartTime, StopTime, UsedTime = 0, ExtIter = 0;
+  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
+  unsigned long ExtIter = 0;
   unsigned short iMesh, iZone, iSol, nZone, nDim;
   ofstream ConvHist_file;
   int rank = MASTER_NODE;
@@ -302,14 +303,13 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
   
-  /*--- Set up a timer for performance benchmarking
-   (preprocessing time is not included) ---*/
+  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
+  
 #ifdef NO_MPI
-  StartTime = clock();
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
   MPI::COMM_WORLD.Barrier();
   StartTime = MPI::Wtime();
-  StartTime = clock();
 #endif
   
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
@@ -388,11 +388,10 @@ int main(int argc, char *argv[]) {
      wall clock time required. ---*/
     
 #ifdef NO_MPI
-    StopTime = clock();
+    StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
     MPI::COMM_WORLD.Barrier();
     StopTime = MPI::Wtime();
-    StopTime = clock();
 #endif
     
     UsedTime = (StopTime - StartTime);
@@ -505,22 +504,22 @@ int main(int argc, char *argv[]) {
   //  cout <<"Integration container, deallocated." << endl;
   
   
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
   
 #ifdef NO_MPI
-  StopTime = clock();
+  StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
   MPI::COMM_WORLD.Barrier();
   StopTime = MPI::Wtime();
-  StopTime = clock();
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
   
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << UsedTime/CLOCKS_PER_SEC << " seconds on "<< size;
-    if (size == 1) cout << " core.\n" << endl;
-    else cout << " cores.\n" << endl;
+    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
   
   /*--- Exit the solver cleanly ---*/

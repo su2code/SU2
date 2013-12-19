@@ -123,11 +123,8 @@ int main(int argc, char *argv[]) {
     MPI::COMM_WORLD.Barrier();
 #endif
     
-    cout << "Domain " << rank <<": Mesh writing done (" << MeshFile_su2 <<")." << endl;
-    
-#ifndef NO_MPI
-    MPI::COMM_WORLD.Barrier();
-#endif
+    if (rank == MASTER_NODE)
+      cout << "Mesh writing done (" << MeshFile <<")." << endl;
     
     /*--- Write the FFD information (3D problems)---*/
     if (domain->GetnDim() == 3) {

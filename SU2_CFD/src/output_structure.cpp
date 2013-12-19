@@ -3639,7 +3639,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 }
 
 
-void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration, bool DualTime_Iteration, unsigned long timeused, unsigned short val_iZone) {
+void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration, bool DualTime_Iteration, double timeused, unsigned short val_iZone) {
   
 #ifndef NO_MPI
   int rank = MPI::COMM_WORLD.Get_rank();
@@ -3663,7 +3663,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     unsigned short iVar, iMarker, iMarker_Monitoring;
     
     unsigned long LinSolvIter = 0;
-    double timeiter = double(timeused)/double(iExtIter+1);
+    double timeiter = timeused/double(iExtIter+1);
     
     unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
     unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
@@ -4017,7 +4017,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         sprintf (begin, "%12d", int(iExtIter));
         
         /*--- Write the end of the history file ---*/
-        sprintf (end, ", %12.10f, %12.10f\n", double(LinSolvIter), double(timeused)/(CLOCKS_PER_SEC*60.0));
+        sprintf (end, ", %12.10f, %12.10f\n", double(LinSolvIter), timeused/60.0);
         
         /*--- Write the solution and residual of the history file ---*/
         switch (config[val_iZone]->GetKind_Solver()) {
@@ -4367,7 +4367,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       
       if (!Unsteady) {
         cout.width(5); cout << iExtIter;
-        cout.width(11); cout << double(timeiter)/CLOCKS_PER_SEC;
+        cout.width(11); cout << timeiter;
         
       } else {
         cout.width(8); cout << iIntIter;
