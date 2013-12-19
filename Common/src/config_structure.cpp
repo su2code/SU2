@@ -4221,6 +4221,9 @@ bool CConfig::GetPython_Option(string & option_name) {
 	if (option_name == "CONST_EQ_SIGN")     isPython_Option = true;
 	if (option_name == "CONST_EQ_VALUE") isPython_Option = true;
 	if (option_name == "DEFINITION_DV") isPython_Option = true;
+  if (option_name == "DV_VALUE_NEW") isPython_Option = true;
+	if (option_name == "DV_VALUE_OLD") isPython_Option = true;
+	if (option_name == "NUMBER_PART") isPython_Option = true;
 	if (option_name == "TASKS") isPython_Option = true;
 	if (option_name == "OPT_OBJECTIVE") isPython_Option = true;
 	if (option_name == "OPT_CONSTRAINT") isPython_Option = true;

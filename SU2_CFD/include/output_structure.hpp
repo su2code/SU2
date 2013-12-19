@@ -339,6 +339,6 @@ public:
 	 * \param[in] val_nZone - iZone index.
 	 */
 	void SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                              CIntegration ***integration, bool DualTime, unsigned long timeused, unsigned short val_iZone);
+                              CIntegration ***integration, bool DualTime, double timeused, unsigned short val_iZone);
 
 };
