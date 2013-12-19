@@ -32,15 +32,11 @@ int main(int argc, char *argv[]) {
 	ofstream ConvHist_file;
 	char file_name[200];
 	int rank = MASTER_NODE;
-	
+  int size = SINGLE_NODE;
+
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
-	void *buffer, *old_buffer;
-	int size, bufsize;
-	bufsize = MAX_MPI_BUFFER;
-	buffer = new char[bufsize];
 	MPI::Init(argc, argv);
-	MPI::Attach_buffer(buffer, bufsize);
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
 #endif
@@ -200,9 +196,6 @@ int main(int argc, char *argv[]) {
 
 #ifndef NO_MPI
   /*--- Finalize MPI parallelization ---*/
-  old_buffer = buffer;
-  MPI::Detach_buffer(old_buffer);
-  //	delete [] buffer;
   MPI::Finalize();
 #endif
   
