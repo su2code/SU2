@@ -486,11 +486,6 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   double *Buffer_Receive = NULL, *Buffer_Send = NULL;
   int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -586,11 +581,6 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod) 
 void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long prod_begin, vec_begin, mat_begin, index, iVar, jVar, row_i;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
   /*--- Some checks for consistency between CSysMatrix and the CSysVectors ---*/
   if ( (nVar != vec.GetNVar()) || (nVar != prod.GetNVar()) ) {
@@ -942,11 +932,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec,
   unsigned long iVar, jVar, max_nElem, nElem = 0, iLinelet, im1Point, iPoint, ip1Point, iElem;
   long iElemLoop;
   double *block;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
   max_nElem = LineletPoint[0].size();
   for (iLinelet = 1; iLinelet < nLinelet; iLinelet++)

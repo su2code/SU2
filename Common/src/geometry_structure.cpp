@@ -5199,7 +5199,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
   
   newCoord = new double[nDim];
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
@@ -5338,7 +5338,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
   
   newGridVel = new double[nDim];
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
@@ -7546,7 +7546,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
    in the same way as the donor nodes. Send the node agglomeration information of the donor
    (parent and children), Sending only occurs with MPI ---*/
   
-  for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {

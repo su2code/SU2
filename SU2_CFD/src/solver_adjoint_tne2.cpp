@@ -332,11 +332,6 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -462,11 +457,6 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta;
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
@@ -595,11 +585,6 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig 
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -725,11 +710,6 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta;
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
   double **Gradient = new double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -864,11 +844,6 @@ void CAdjTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConf
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_Undivided_Laplacian = NULL;
   double *Buffer_Send_Undivided_Laplacian = NULL;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     

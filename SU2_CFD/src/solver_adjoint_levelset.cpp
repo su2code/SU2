@@ -204,12 +204,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
@@ -321,12 +316,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
   *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
@@ -436,17 +426,12 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
 	int send_to, receive_from;
-  
-#ifndef NO_MPI
-  MPI::Status status;
-  MPI::Request send_request, recv_request;
-#endif
-  
+
   double **Gradient = new double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new double[nDim];
   
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
