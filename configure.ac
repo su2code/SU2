@@ -9,7 +9,7 @@
 #
 ##########################
 
-AC_INIT([SU^2], [2.0.9], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [2.0.10], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE([subdir-objects])  # [SU^2], [2.0]
