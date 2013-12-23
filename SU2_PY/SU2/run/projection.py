@@ -1,7 +1,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.9
+#  \version 2.0.10
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory

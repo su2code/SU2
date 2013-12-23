@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  */
 class CGeometry {
 protected:
@@ -798,7 +798,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1205,7 +1205,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1369,7 +1369,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1461,7 +1461,7 @@ public:
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1534,7 +1534,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1580,7 +1580,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 2.0.9
+ * \version 2.0.10
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {
