@@ -54,11 +54,16 @@ private:
 	double *block;             /*!< \brief Internal array to store a subblock of the matrix. */
 	double *prod_block_vector; /*!< \brief Internal array to store the product of a subblock with a vector. */
 	double *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
-	double *aux_vector;		   /*!< \brief Auxilar array to store intermediate results. */
+	double *aux_vector;         /*!< \brief Auxilar array to store intermediate results. */
 	double *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
-	bool *LineletBool;						 /*!< \brief Identify if a point belong to a linelet. */
-	vector<unsigned long> *LineletPoint;	 /*!< \brief Linelet structure. */
-	unsigned long nLinelet;							 /*!< \brief Number of Linelets in the system. */
+  
+	bool *LineletBool;                          /*!< \brief Identify if a point belong to a linelet. */
+	vector<unsigned long> *LineletPoint;        /*!< \brief Linelet structure. */
+	unsigned long nLinelet;                     /*!< \brief Number of Linelets in the system. */
+  double **UBlock, **invUBlock, **LBlock,
+  **yVector, **zVector, **rVector, *LFBlock,
+  *LyVector, *FzVector, *AuxVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
+  unsigned long max_nElem;
   
 public:
   
@@ -326,7 +331,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
+	unsigned short BuildLineletPreconditioner(CGeometry *geometry, CConfig *config);
 	
 	/*!
 	 * \brief Multiply CSysVector by the preconditioner

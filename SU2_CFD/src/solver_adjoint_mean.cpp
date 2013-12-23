@@ -42,7 +42,7 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 	unsigned long iPoint, index, iVertex;
 	string text_line, mesh_filename;
-	unsigned short iDim, iVar, iMarker;
+	unsigned short iDim, iVar, iMarker, nLineLets;
 	ifstream restart_file;
 	string filename, AdjExt;
   double dull_val;
@@ -144,7 +144,12 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
-
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+    
     if (axisymmetric) {
       Jacobian_Axisymmetric = new double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++) 
@@ -2219,7 +2224,6 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -4620,7 +4624,7 @@ CAdjNSSolver::CAdjNSSolver(void) : CAdjEulerSolver() { }
 CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjEulerSolver() {
 	unsigned long iPoint, index, iVertex;
 	string text_line, mesh_filename;
-	unsigned short iDim, iVar, iMarker;
+	unsigned short iDim, iVar, iMarker, nLineLets;
 	ifstream restart_file;
 	string filename, AdjExt;
   double dull_val;
@@ -4701,6 +4705,12 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+    
   } else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;

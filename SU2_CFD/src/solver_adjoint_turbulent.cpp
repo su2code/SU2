@@ -27,7 +27,12 @@ CAdjTurbSolver::CAdjTurbSolver(void) : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned long iPoint;
-	unsigned short nMarker, iDim, iVar;
+	unsigned short nMarker, iDim, iVar, nLineLets;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
 	nDim = geometry->GetnDim();
 	nMarker = config->GetnMarker_All();
@@ -71,6 +76,12 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+  
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+  }
+  
   Jacobian.SetValZero();
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -845,7 +856,6 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
