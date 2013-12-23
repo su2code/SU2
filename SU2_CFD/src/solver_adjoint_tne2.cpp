@@ -44,7 +44,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 
   bool restart;
 	unsigned long iPoint, index, iVertex;
-	unsigned short iDim, iSpecies, iVar, iMarker;
+	unsigned short iDim, iSpecies, iVar, iMarker, nLineLets;
   double dull_val;
   string text_line, mesh_filename;
   string filename, AdjExt;
@@ -145,6 +145,11 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
   
   } else {
     if (rank == MASTER_NODE)
@@ -1717,7 +1722,7 @@ void CAdjTNE2EulerSolver::SetUndivided_Laplacian(CGeometry *geometry,
 void CAdjTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry,
                                                   CSolver **solver_container,
                                                   CConfig *config) {
-	double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+	double *local_Residual, Vol, Delta, Res;
 	unsigned short iVar;
 	unsigned long iPoint;
   
@@ -1815,7 +1820,6 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -2459,7 +2463,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
                                    unsigned short iMesh) : CAdjTNE2EulerSolver() {
 
   bool restart;
-	unsigned short iDim, iMarker, iSpecies, iVar;
+	unsigned short iDim, iMarker, iSpecies, iVar, nLineLets;
   unsigned long iPoint, index, iVertex;
   double dull_val;
   string text_line, mesh_filename;
@@ -2540,6 +2544,11 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
     
   } else {
     if (rank == MASTER_NODE)
@@ -3470,7 +3479,7 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   ////////////////////
   bool implicit, heat_flux_obj;
 	unsigned long iVertex, iPoint, total_index, Point_Normal;
-	unsigned short iDim, jDim, iSpecies, iVar, jVar;
+	unsigned short iDim, iVar, jVar;
   unsigned short RHOS_INDEX, RHO_INDEX;
 	double *V, *dPdU, *d, q, dn;
   double phi[3];

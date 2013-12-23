@@ -28,7 +28,7 @@ CHeatSolver::CHeatSolver(void) : CSolver() { }
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
-	unsigned short nMarker, iVar;
+	unsigned short nMarker, iVar, nLineLets;
   unsigned long iPoint;
   
   int rank = MASTER_NODE;
@@ -66,6 +66,11 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
   if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Linear Elasticity)." << endl;
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+  
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+  }
   
   /*--- Initialization of linear solver structures ---*/
   
@@ -535,7 +540,6 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

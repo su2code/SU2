@@ -26,12 +26,18 @@
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-	unsigned short iVar, iDim;
+	unsigned short iVar, iDim, nLineLets;
 	unsigned long iPoint, index;
 	double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey, mach;
 	ifstream restart_file;
 	char *cstr;
 	string text_line;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	
   cout << "Entered constructor for CTransLMSolver -AA\n";
@@ -77,6 +83,11 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 			}
 			/*--- Initialization of the structure of the whole Jacobian ---*/
 			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+      
+      if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+        nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+        if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+      }
       
 		}
 	
@@ -256,7 +267,6 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

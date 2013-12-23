@@ -28,8 +28,14 @@ CLinEulerSolver::CLinEulerSolver(void) : CSolver() { }
 CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned long iPoint, index;
 	string text_line, mesh_filename;
-	unsigned short iDim, iVar;
+	unsigned short iDim, iVar, nLineLets;
 	ifstream restart_file;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	bool restart = config->GetRestart();
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -64,6 +70,11 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);

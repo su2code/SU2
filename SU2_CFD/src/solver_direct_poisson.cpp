@@ -487,7 +487,6 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     StiffMatrix.BuildJacobiPreconditioner();
-    StiffMatrix.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
   }
   
