@@ -2407,6 +2407,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   
   
 	/*--- Farfield Sensitivity (Mach, AoA, Press, Temp), only for compressible flows ---*/
+  
   if (compressible) {
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -2504,6 +2505,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
             
             /*--- Mach number sensitivity ---*/
+            
             USens[0] = 0.0; USens[1] = ru/Mach_Inf; USens[2] = rv/Mach_Inf;
             if (nDim == 2) { USens[3] = Gamma*Mach_Inf*p; }
             else { USens[3] = rw/Mach_Inf; USens[4] = Gamma*Mach_Inf*p; }
@@ -2514,6 +2516,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
             
             /*--- AoA sensitivity ---*/
+            
             USens[0] = 0.0;
             if (nDim == 2) { USens[1] = -rv; USens[2] = ru; USens[3] = 0.0; }
             else { USens[1] = -rw; USens[2] = 0.0; USens[3] = ru; USens[4] = 0.0; }
@@ -2524,6 +2527,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
             
             /*--- Pressure sensitivity ---*/
+            
             USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
             if (nDim == 2) { USens[3] = rE/p; }
             else { USens[3] = rw/p; USens[4] = rE/p; }
@@ -2534,6 +2538,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
             
             /*--- Temperature sensitivity ---*/
+            
             T = p/(r*Gas_Constant);
             USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
             if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
@@ -2553,6 +2558,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     }
     
     /*--- Explicit contribution from objective function quantity ---*/
+    
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
       if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
@@ -5158,7 +5164,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 	normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
   psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel,
   Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr,
-  dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf;
+  dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf, eps;
   
   USens = new double[nVar];
   
@@ -5312,6 +5318,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             d = node[iPoint]->GetForceProj_Vector();
             
             /*--- Turbulent kinetic energy ---*/
+            
             if (config->GetKind_Turb_Model() == SST)
               val_turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
             else
@@ -5366,33 +5373,33 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iDim = 0; iDim < nDim; iDim++)
               vartheta_partial += vartheta * normal_grad_v_ux[iDim] * UnitNormal[iDim];
             
-//            if (iVertex==50) {
-//              cout.precision(15);
-//              cout << Density*Psi[0] << "  " << Density*Enthalpy*Psi[nDim+1] << "  "  << U[0+1]*Psi[0+1] << "  " << U[1+1]*Psi[1+1] << "  "  <<vartheta << "  " << normal_grad_v_ux[0] << "  " << normal_grad_v_ux[1] << "  "<< UnitNormal[0] << "  " << UnitNormal[1] << endl;
-//            }
-            
               /*--- Form sigma_partial = n_i ( \Sigma_Phi_{ij} + \Sigma_Psi5v_{ij} ) \partial_n (v - u_x)_j ---*/
+            
               sigma_partial = 0.0;
               for (iDim = 0; iDim < nDim; iDim++)
                 for (jDim = 0; jDim < nDim; jDim++)
                   sigma_partial += UnitNormal[iDim]*(Sigma[iDim][jDim]+Sigma_Psi5v[iDim][jDim])*normal_grad_v_ux[jDim];
 
             /*--- Form psi5_tau_partial = \Psi_5 * \partial_n (v - u_x)_i * tau_{ij} * n_j ---*/
+            
             psi5_tau_partial = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               for (jDim = 0; jDim < nDim; jDim++)
                 psi5_tau_partial -= Psi[nDim+1]*normal_grad_v_ux[iDim]*tau[iDim][jDim]*UnitNormal[jDim];
             
             /*--- Form psi5_p_div_vel = ---*/
+            
             psi5_p_div_vel = -Psi[nDim+1]*Pressure*div_vel;
             
             /*--- Form psi5_tau_grad_vel = \Psi_5 * tau_{ij} : \nabla( v ) ---*/
+            
             psi5_tau_grad_vel = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
               for (jDim = 0; jDim < nDim; jDim++)
                 psi5_tau_grad_vel += Psi[nDim+1]*tau[iDim][jDim]*PrimVar_Grad[iDim+1][jDim];
             
             /*--- Retrieve the angular velocity vector ---*/
+            
             source_v_1 = 0.0; source_v_2 = 0.0;
             if (rotating_frame) {
               
@@ -5416,13 +5423,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               }
             }
             
-//            if (iVertex==50) {
-//              cout.precision(15);
-//              cout << sigma_partial << "  " << vartheta_partial << "  " <<  psi5_tau_partial<< "  " <<  psi5_p_div_vel << "  " <<  psi5_tau_grad_vel << "  " <<  source_v_1  <<endl;
-//              //cout <<
-//            }
+            /*--- For simplicity, store all additional terms within sigma_partial ---*/
             
-            /*--- For simplicity, store all additional terms within sigma_partial ---*/ //  
             sigma_partial = sigma_partial + vartheta_partial + psi5_tau_partial + psi5_p_div_vel + psi5_tau_grad_vel + source_v_1;
 
           }
@@ -5438,6 +5440,15 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           /*--- Compute sensitivity for each surface point ---*/
           
           CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens)*Area;
+          
+          /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+          
+          if (config->GetSens_Remove_Sharp()) {
+            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+              CSensitivity[iMarker][iVertex] = 0.0;
+          }
+          
           Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex]*Area;
           
         }
@@ -5449,6 +5460,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   }
   
   /*--- Farfield Sensitivity (Mach, AoA, Press, Temp), only for compressible flows ---*/
+  
   if (compressible) {
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -5546,6 +5558,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             /*--- Mach number sensitivity ---*/
+            
             USens[0] = 0.0; USens[1] = ru/Mach_Inf; USens[2] = rv/Mach_Inf;
             if (nDim == 2) { USens[3] = Gamma*Mach_Inf*p; }
             else { USens[3] = rw/Mach_Inf; USens[4] = Gamma*Mach_Inf*p; }
@@ -5556,6 +5569,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             /*--- AoA sensitivity ---*/
+            
             USens[0] = 0.0;
             if (nDim == 2) { USens[1] = -rv; USens[2] = ru; USens[3] = 0.0; }
             else { USens[1] = -rw; USens[2] = 0.0; USens[3] = ru; USens[4] = 0.0; }
@@ -5566,6 +5580,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             /*--- Pressure sensitivity ---*/
+            
             USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
             if (nDim == 2) { USens[3] = rE/p; }
             else { USens[3] = rw/p; USens[4] = rE/p; }
@@ -5576,6 +5591,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             /*--- Temperature sensitivity ---*/
+            
             T = p/(r*Gas_Constant);
             USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
             if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
@@ -5595,6 +5611,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     }
     
     /*--- Explicit contribution from objective function quantity ---*/
+    
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
       if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
@@ -5622,10 +5639,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
             
             /*--- Mach number sensitivity ---*/
+            
             for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2/Mach_Inf)*d[iPos];
             for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- AoA sensitivity ---*/
+            
             if (nDim == 2) {
               D[0][0] = 0.0; D[0][1] = -1.0;
               D[1][0] = 1.0; D[1][1] = 0.0;
@@ -5646,11 +5665,13 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- Pressure sensitivity ---*/
+            
             for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
             for (iPos = 0; iPos<nDim; iPos++)
               Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- Temperature sensitivity ---*/
+            
             for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
             for (iPos = 0; iPos<nDim; iPos++)
               Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
