@@ -243,8 +243,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
 	/* DESCRIPTION: Unsteady simulation  */
 	AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
-	/* DESCRIPTION:  Unsteady farfield boundaries  */
-	AddSpecialOption("UNSTEADY_FARFIELD", Unsteady_Farfield, SetBoolOption, false);
 	/* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
 	AddScalarOption("CFL_NUMBER", CFLFineGrid, 1.25);
 	/* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
@@ -633,8 +631,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("CONV_FILENAME", Conv_FileName, string("history"));
 	/* DESCRIPTION: Restart flow input file */
 	AddScalarOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
-	/* DESCRIPTION: Restart flow input file */
-	AddScalarOption("FARFIELD_FILENAME", Farfield_FileName, string("farfield.dat"));
 	/* DESCRIPTION: Restart linear flow input file */
 	AddScalarOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
 	/* DESCRIPTION: Restart adjoint input file */
@@ -4394,18 +4390,6 @@ CConfig::~CConfig(void)
 	if (Plunging_Ampl_Z != NULL)
 		delete [] Plunging_Ampl_Z;
 
-	if (Unsteady_Farfield && Unsteady_Simulation) {
-		delete [] Density_FreeStreamND_Time;
-		delete [] Pressure_FreeStreamND_Time;
-		delete [] Mach_Inf_Time;
-		delete [] Energy_FreeStreamND_Time;
-		delete [] Density_FreeStreamND_Time;
-		for (unsigned long iter = 0; iter < nExtIter; iter ++)
-			delete []Velocity_FreeStreamND_Time[iter];
-		delete []Velocity_FreeStreamND_Time;
-
-	}
-
     if (RefOriginMoment != NULL)
 		delete [] RefOriginMoment;
     if (RefOriginMoment_X != NULL)
@@ -5079,124 +5063,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	bool freesurface = (Kind_Regime == FREESURFACE);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-  
-	if (Unsteady_Farfield && Unsteady) {
-		double time, time_ext;
-		unsigned long iter, n;
-		string text_line;
-		double temp_Temperature, temp_Mach, temp_Pressure, Derivative_Begin, Derivative_End;
-		vector<double> Time_Spline, Temperature_Spline, Mach_Spline, Pressure_Spline;
-		vector<double> Temperature2_Spline, Mach2_Spline, Pressure2_Spline;
     
-		ifstream farfield_file;
-		string filename = GetFarfield_FileName();
-		farfield_file.open(filename.data(), ios::in);
-    
-		/*--- In case there is no restart file ---*/
-		if (farfield_file.fail()) {
-			cout << "There is no farfield bounadry data file!!" << endl;
-			exit(1);
-		}
-    
-		/*--- The first line is the header ---*/
-		getline (farfield_file, text_line);
-    
-		while (getline (farfield_file,text_line) ) {
-			istringstream point_line(text_line);
-      
-			/*--- First value is the point index, then the conservative vars. ---*/
-			point_line >> time;
-			point_line >> temp_Temperature;// Temperature_FreeStream;
-			point_line >> temp_Mach; // Mach
-			point_line >> temp_Pressure;// Pressure_FreeStream;
-      
-			/*--- Spline interpolation, dummy function ---*/
-			Time_Spline.push_back(time);
-			Temperature_Spline.push_back(temp_Temperature);
-			Mach_Spline.push_back(temp_Mach);
-			Pressure_Spline.push_back(temp_Pressure);
-			cout << " pressure = " << temp_Pressure << endl;
-		}
-    
-		/*--- Close the restart file ---*/
-		farfield_file.close();
-    
-		/*--- Create the spline ---*/
-		n = Time_Spline.size();
-		Temperature2_Spline.resize(n);
-		Mach2_Spline.resize(n);
-		Pressure2_Spline.resize(n);
-    
-		Derivative_Begin = (Temperature_Spline[1]-Temperature_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
-		Derivative_End = (Temperature_Spline[n-1]-Temperature_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
-		SetSpline(Time_Spline, Temperature_Spline, n, Derivative_Begin, Derivative_End, Temperature2_Spline);
-    
-    
-		Derivative_Begin = (Mach_Spline[1]-Mach_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
-		Derivative_End = (Mach_Spline[n-1]-Mach_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
-		SetSpline(Time_Spline, Mach_Spline, n, Derivative_Begin, Derivative_End, Mach2_Spline);
-    
-    
-		Derivative_Begin = (Pressure_Spline[1]-Pressure_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
-		Derivative_End = (Pressure_Spline[n-1]-Pressure_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
-		SetSpline(Time_Spline, Pressure_Spline, n, Derivative_Begin, Derivative_End, Pressure2_Spline);
-    
-		/*--- Allocate arrays to store time dependent farfield information ---*/
-		Density_FreeStreamND_Time   = new double  [nExtIter];
-		Pressure_FreeStreamND_Time  = new double  [nExtIter];
-		Mach_Inf_Time 				= new double  [nExtIter];
-		Energy_FreeStreamND_Time    = new double  [nExtIter];
-		Velocity_FreeStreamND_Time  = new double* [nExtIter];
-		for (iter = 0; iter < nExtIter; iter ++) {
-			Velocity_FreeStreamND_Time[iter]  = new double [val_nDim];
-			for (iDim = 0; iDim < val_nDim; iDim ++)
-				Velocity_FreeStreamND_Time[iter][iDim] = 0.0;
-		}
-    
-		/*--- Loop over all external time instances to store the time dependent values ---*/
-    
-		for (iter = 0; iter < nExtIter; iter ++) {
-      
-			time_ext =  iter*Delta_UnstTime;
-      
-			/*--- Get the interpolated values at current time step ---*/
-			Temperature_FreeStream = GetSpline(Time_Spline, Temperature_Spline, Temperature2_Spline, n, time_ext);
-			Mach = GetSpline(Time_Spline, Mach_Spline, Mach2_Spline, n, time_ext);
-			Pressure_FreeStream = GetSpline(Time_Spline, Pressure_Spline, Pressure2_Spline, n, time_ext);
-      
-      
-			Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-      
-			/*--- Compute the Free Stream velocity, using the Mach number ---*/
-			if (val_nDim == 2) {
-				Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
-			}
-			if (val_nDim == 3) {
-				Velocity_FreeStream[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-			}
-      
-			Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
-      
-			for (iDim = 0; iDim < val_nDim; iDim++)
-				Velocity_FreeStreamND_Time[iter][iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
-      
-			Density_FreeStream  				= Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
-			Density_FreeStreamND_Time[iter]  	= Density_FreeStream/Density_Ref;
-			Pressure_FreeStreamND_Time[iter] 	= Pressure_FreeStream/Pressure_Ref;
-			Mach_Inf_Time[iter]				    = Mach;
-      
-			ModVel_FreeStreamND = 0;
-			for (iDim = 0; iDim < val_nDim; iDim++)
-				ModVel_FreeStreamND += Velocity_FreeStreamND_Time[iter][iDim]*Velocity_FreeStreamND_Time[iter][iDim];
-			ModVel_FreeStreamND    	 = sqrt(ModVel_FreeStreamND);
-			Energy_FreeStreamND_Time[iter]    = Pressure_FreeStreamND_Time[iter]/(Density_FreeStreamND_Time[iter]*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-		}
-    
-	}
-  
 	if (compressible) {
     
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);

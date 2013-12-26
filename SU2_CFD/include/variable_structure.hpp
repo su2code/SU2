@@ -183,6 +183,11 @@ public:
 	 * \brief Set to zero the solution.
 	 */	
 	void SetSolutionZero(void);
+  
+  /*!
+	 * \brief Set to zero a particular solution.
+	 */
+  void SetSolutionZero(unsigned short val_var);
 
 	/*!
 	 * \brief Add a value to the solution.

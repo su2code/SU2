@@ -330,17 +330,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Energy_Inf   = config->GetEnergy_FreeStreamND();
   Mach_Inf     = config->GetMach_FreeStreamND();
   
-  if (dual_time && config->GetUnsteady_Farfield()) {
-    
-    /*--- Read farfield conditions ---*/
-    Density_Inf  = config->GetDensity_FreeStreamND_Time(0);
-    Pressure_Inf = config->GetPressure_FreeStreamND_Time(0);
-    Velocity_Inf = config->GetVelocity_FreeStreamND_Time(0);
-    Energy_Inf   = config->GetEnergy_FreeStreamND_Time(0);
-    Mach_Inf     = config->GetMach_FreeStreamND_Time(0);
-    
-  }
-  
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     FanFace_MassFlow[iMarker] = 0.0;
@@ -1847,38 +1836,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         }
       }
     }
-  }
-  
-  if (dual_time && config->GetUnsteady_Farfield()) {
-    
-    /*--- Read farfield conditions ---*/
-    Density_Inf  = config->GetDensity_FreeStreamND_Time(ExtIter);
-    Pressure_Inf = config->GetPressure_FreeStreamND_Time(ExtIter);
-    Velocity_Inf = config->GetVelocity_FreeStreamND_Time(ExtIter);
-    Energy_Inf   = config->GetEnergy_FreeStreamND_Time(ExtIter);
-    Mach_Inf     = config->GetMach_FreeStreamND_Time(ExtIter);
-    
-    /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      FanFace_MassFlow[iMarker] = 0.0;
-      Exhaust_MassFlow[iMarker] = 0.0;
-      Exhaust_Area[iMarker] = 0.0;
-      FanFace_Mach[iMarker] = Mach_Inf;
-      FanFace_Pressure[iMarker] = Pressure_Inf;
-      FanFace_Area[iMarker] = 0.0;
-    }
-    
-    /*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-    Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
-    Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
-    Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
-    Mach_Inlet = Mach_Inf;					Mach_Outlet = Mach_Inf;
-    Velocity_Inlet  = new double [nDim]; Velocity_Outlet = new double [nDim];
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Velocity_Inlet[iDim] = Velocity_Inf[iDim];
-      Velocity_Outlet[iDim] = Velocity_Inf[iDim];
-    }
-    
   }
   
   if (aeroelastic) {

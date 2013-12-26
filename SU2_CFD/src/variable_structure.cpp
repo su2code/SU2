@@ -313,6 +313,12 @@ void CVariable::SetSolutionZero(void) {
   
 }
 
+void CVariable::SetSolutionZero(unsigned short val_var) {
+  
+		Solution[val_var] = 0.0;
+  
+}
+
 void CVariable::SetResidualSumZero(void) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
