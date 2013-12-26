@@ -26,7 +26,11 @@
 
 #ifndef NO_MPI
 #include <mpi.h>
+#ifdef WINDOWS
+	MPI_Status status;
 #endif
+#endif
+
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -45,6 +49,8 @@ extern "C" {
 #ifndef NO_CGNS
 #include "cgnslib.h"
 #endif
+
+
 
 #include "primal_grid_structure.hpp"
 #include "dual_grid_structure.hpp"
