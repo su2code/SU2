@@ -801,14 +801,16 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor);
   
   /*--- Copy the solution to the coarse levels ---*/
-  for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++)
+  for (iMesh = 0; iMesh < config[iZone]->GetMGLevels(); iMesh++) {
     SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh], solver_container[iZone][iMesh+1], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+    solver_container[iZone][iMesh+1][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh+1], solver_container[iZone][iMesh+1], config[iZone], iMesh+1);
+  }
   
 }
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long iVertex, Point_Fine, Point_Coarse;
-  unsigned short iMarker, iVar, iChildren;
+  unsigned long Point_Fine, Point_Coarse;
+  unsigned short iVar, iChildren;
   double Area_Parent, Area_Children, *Solution_Fine, *Solution;
   
   unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
@@ -837,17 +839,6 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   
   /*--- MPI the new interpolated solution ---*/
   sol_coarse[SolContainer_Position]->Set_MPI_Solution(geo_coarse, config);
-  
-  /*--- Update solution at the no slip wall boundary ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        if (SolContainer_Position == TURB_SOL) sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero();
-      }
-    }
-  }
   
   delete [] Solution;
   
