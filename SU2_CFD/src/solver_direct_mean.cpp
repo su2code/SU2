@@ -1764,7 +1764,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
   
-  if (restart) {
+  if (restart && (ExtIter == 0)) {
     Solution = new double[nVar];
     for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
