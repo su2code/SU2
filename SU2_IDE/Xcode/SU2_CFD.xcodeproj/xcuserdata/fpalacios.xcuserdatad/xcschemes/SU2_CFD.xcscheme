@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "turb_SA_bump.cfg"
+            argument = "turb_SST_bump.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
