@@ -3,10 +3,10 @@
 ## \file autotest.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author Aniket C. Aranake, Alejandro Campos, Thomas D. Economon
-#  \version 2.0.2.
+#  \version 2.0.10
 #
 # Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# Copyright (C) 2012-2013 Aerospace Design Laboratory
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -285,7 +285,7 @@ if __name__=="__main__":
   rae2822.cfg_dir   = "TestCases/rans/rae2822"
   rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
   rae2822.test_iter = 100
-  rae2822.test_vals = [-3.559337,-5.452687,0.884382,0.024165] #last 4 columns
+  rae2822.test_vals = [-3.559272,-5.452676,0.884380,0.024162] #last 4 columns
   rae2822.su2_exec  = "SU2_CFD"
   rae2822.timeout   = 1600
   rae2822.tol       = 0.00001
@@ -296,7 +296,7 @@ if __name__=="__main__":
   turb_flatplate.cfg_dir   = "TestCases/rans/flatplate"
   turb_flatplate.cfg_file  = "turb_SA_flatplate_Roe.cfg"
   turb_flatplate.test_iter = 100
-  turb_flatplate.test_vals = [-5.055273,-7.227298,-0.000005,0.013853] #last 4 columns
+  turb_flatplate.test_vals = [-5.056418,-7.226171,-0.000006,0.013812] #last 4 columns
   turb_flatplate.su2_exec  = "SU2_CFD"
   turb_flatplate.timeout   = 1600
   turb_flatplate.tol       = 0.00001
