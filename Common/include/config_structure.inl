@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -732,8 +732,6 @@ inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFo
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
-inline string CConfig::GetFarfield_FileName(void) { return Farfield_FileName; }
-
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
 inline string CConfig::GetSolution_LinFileName(void) { return Solution_LinFileName; }
@@ -842,8 +840,6 @@ inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 
-inline bool CConfig::GetUnsteady_Farfield(void) { return Unsteady_Farfield; }
-
 inline bool CConfig::GetInletConditionsDefined(void) { return Inlet_Outlet_Defined; }
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
@@ -912,13 +908,13 @@ inline double* CConfig::GetAeroelastic_n1(void) {return Aeroelastic_n1; }
 
 inline void CConfig::SetAeroelastic_np1(unsigned short val_index, double val) {Aeroelastic_np1[val_index] = val;}
 
-inline double CConfig::GetAeroelastic_plunge(unsigned short val_marker) {return Aeroelastic_plunge[val_marker];}
+inline double CConfig::GetAeroelastic_plunge(unsigned short val_marker) {return Aeroelastic_plunge[val_marker]; }
 
-inline double CConfig::GetAeroelastic_pitch(unsigned short val_marker) {return Aeroelastic_pitch[val_marker];}
+inline double CConfig::GetAeroelastic_pitch(unsigned short val_marker) {return Aeroelastic_pitch[val_marker]; }
 
-inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, double val) {Aeroelastic_plunge[val_marker] = val;}
+inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, double val) {Aeroelastic_plunge[val_marker] = val; }
 
-inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, double val) {Aeroelastic_pitch[val_marker] = val;}
+inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, double val) {Aeroelastic_pitch[val_marker] = val; }
 
 inline void CConfig::SetAeroelastic_n1(void) {
     for (unsigned short i=0; i<4; i++)
@@ -930,35 +926,24 @@ inline void CConfig::SetAeroelastic_n(void) {
         Aeroelastic_n[i] = Aeroelastic_np1[i];
 }
     
-inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic;}
+inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic; }
 
-inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic;}
+inline double CConfig::GetAeroelastic_Frequency_Pitch(void) {return FreqPitchAeroelastic; }
 
 inline bool CConfig::GetWind_Gust(void) { return Wind_Gust; }
 
 inline bool CConfig::GetAeroelastic_Simulation(void) { return Aeroelastic_Simulation; }
 
-inline unsigned short CConfig::GetGust_Type(void) {return Gust_Type;}
+inline unsigned short CConfig::GetGust_Type(void) {return Gust_Type; }
 
-inline unsigned short CConfig::GetGust_Dir(void) {return Gust_Dir;}
+inline unsigned short CConfig::GetGust_Dir(void) {return Gust_Dir; }
 
-inline double CConfig::GetGust_WaveLength(void) {return Gust_WaveLength;}
+inline double CConfig::GetGust_WaveLength(void) {return Gust_WaveLength; }
 
-inline double CConfig::GetGust_Periods(void) {return Gust_Periods;}
+inline double CConfig::GetGust_Periods(void) {return Gust_Periods; }
 
-inline double CConfig::GetGust_Ampl(void) {return Gust_Ampl;}
+inline double CConfig::GetGust_Ampl(void) {return Gust_Ampl; }
 
-inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time;}
+inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time; }
 
-inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc;}
-
-inline	double  CConfig::GetDensity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Density_FreeStreamND_Time[val_Ext_Iter];}
-
-inline	double  CConfig::GetPressure_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Pressure_FreeStreamND_Time[val_Ext_Iter];}
-
-inline	double  CConfig::GetEnergy_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Energy_FreeStreamND_Time[val_Ext_Iter];}
-
-inline	double  CConfig::GetMach_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Mach_Inf_Time[val_Ext_Iter];}
-
-inline	double*  CConfig::GetVelocity_FreeStreamND_Time(unsigned long val_Ext_Iter) {return Velocity_FreeStreamND_Time[val_Ext_Iter];}
-
+inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc; }

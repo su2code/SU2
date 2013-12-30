@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -27,7 +27,12 @@ CWaveSolver::CWaveSolver(void) : CSolver() { }
 
 CWaveSolver::CWaveSolver(CGeometry *geometry, 
                              CConfig *config) : CSolver() {
-	unsigned short nMarker, iVar;
+	unsigned short nMarker, iVar, nLineLets;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -57,6 +62,11 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
 	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+  
+  if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+  }
   
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -624,7 +634,6 @@ void CWaveSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

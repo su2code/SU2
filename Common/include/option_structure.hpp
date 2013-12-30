@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -98,7 +98,6 @@ enum SU2_COMPONENT {
 	SU2_PBC = 7,	/*!< \brief Running the SU2_PBC software. */
 	SU2_SMC = 8,	/*!< \brief Running the SU2_SMC software. */
 	SU2_SOL = 9,	/*!< \brief Running the SU2_SOL software. */
-  SU2_EDU = 10	/*!< \brief Running the SU2_CFD software. */
 };
 
 const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processors. */

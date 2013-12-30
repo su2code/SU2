@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2) Code
  * Copyright (C) 2012 Aerospace Design Laboratory
@@ -56,7 +56,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
                                    unsigned short iMesh) : CSolver() {
 
 	unsigned long iPoint, index, counter_local = 0, counter_global = 0;
-	unsigned short iVar, iDim, iMarker, iSpecies, nZone;
+	unsigned short iVar, iDim, iMarker, iSpecies, nZone, nLineLets;
   double *Mvec_Inf;
   double Alpha, Beta, dull_val;
 	bool restart, check_infty, check_temp, check_press;
@@ -187,9 +187,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- Initialization of the structure for the global Jacobian ---*/
 		if (rank == MASTER_NODE)
-      cout << "Initialize Jacobian structure. MG level: "
-           << iMesh <<"." << endl;
+      cout << "Initialize Jacobian structure. MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+    
 	} else {
 		if (rank == MASTER_NODE)
 			cout << "Explicit scheme. No jacobian structure (Euler). MG level: "
@@ -2360,7 +2365,6 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -3974,7 +3978,7 @@ CTNE2NSSolver::CTNE2NSSolver(void) : CTNE2EulerSolver() {
 CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
                              unsigned short iMesh) : CTNE2EulerSolver() {
   bool restart, check_infty, check;
-  unsigned short iDim, iMarker, iSpecies, iVar, nZone;
+  unsigned short iDim, iMarker, iSpecies, iVar, nZone, nLineLets;
 	unsigned long iPoint, index, counter_local, counter_global;
   double *Mvec_Inf, Alpha, Beta, dull_val;
   
@@ -4100,9 +4104,14 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- Initialization of the structure of the global Jacobian ---*/
 		if (rank == MASTER_NODE)
-      cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: "
-           << iMesh <<"." << endl;
+      cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+    
 	} else {
 		if (rank == MASTER_NODE)
 			cout << "Explicit scheme. No jacobian structure (TNE2 Navier-Stokes). MG level: "

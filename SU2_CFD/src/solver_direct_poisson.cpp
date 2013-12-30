@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -487,7 +487,6 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     StiffMatrix.BuildJacobiPreconditioner();
-    StiffMatrix.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
   }
   

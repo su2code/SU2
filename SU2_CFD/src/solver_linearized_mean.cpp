@@ -2,7 +2,7 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -28,8 +28,14 @@ CLinEulerSolver::CLinEulerSolver(void) : CSolver() { }
 CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	unsigned long iPoint, index;
 	string text_line, mesh_filename;
-	unsigned short iDim, iVar;
+	unsigned short iDim, iVar, nLineLets;
 	ifstream restart_file;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	bool restart = config->GetRestart();
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -64,6 +70,11 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
 
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);

@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -24,7 +24,7 @@
 #include "../include/solver_structure.hpp"
 
 CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-	unsigned short iVar, iDim;
+	unsigned short iVar, iDim, nLineLets;
 	unsigned long iPoint, index;
 	double dull_val;
 	ifstream restart_file;
@@ -98,6 +98,11 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Adj. Level Set). MG level: 0." << endl;
       Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+      
+      if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+        nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+        if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+      }
       
     }
 	
@@ -997,7 +1002,6 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

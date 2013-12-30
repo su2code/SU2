@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -26,12 +26,18 @@
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-	unsigned short iVar, iDim;
+	unsigned short iVar, iDim, nLineLets;
 	unsigned long iPoint, index;
 	double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey, mach;
 	ifstream restart_file;
 	char *cstr;
 	string text_line;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
 	bool restart = (config->GetRestart() || config->GetRestart_Flow());
 	
   cout << "Entered constructor for CTransLMSolver -AA\n";
@@ -77,6 +83,11 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 			}
 			/*--- Initialization of the structure of the whole Jacobian ---*/
 			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+      
+      if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+        nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+        if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+      }
       
 		}
 	
@@ -256,7 +267,6 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   

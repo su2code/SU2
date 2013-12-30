@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -243,8 +243,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
 	/* DESCRIPTION: Unsteady simulation  */
 	AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
-	/* DESCRIPTION:  Unsteady farfield boundaries  */
-	AddSpecialOption("UNSTEADY_FARFIELD", Unsteady_Farfield, SetBoolOption, false);
 	/* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
 	AddScalarOption("CFL_NUMBER", CFLFineGrid, 1.25);
 	/* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
@@ -633,8 +631,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("CONV_FILENAME", Conv_FileName, string("history"));
 	/* DESCRIPTION: Restart flow input file */
 	AddScalarOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
-	/* DESCRIPTION: Restart flow input file */
-	AddScalarOption("FARFIELD_FILENAME", Farfield_FileName, string("farfield.dat"));
 	/* DESCRIPTION: Restart linear flow input file */
 	AddScalarOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
 	/* DESCRIPTION: Restart adjoint input file */
@@ -957,21 +953,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Kind_SU2 = val_software;
   
   /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
-  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_EDU) && (Kind_SU2 != SU2_SOL)) {
+  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
     cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
     exit(1);
-    }
-  }
-  
-  /*--- Set default values for the grid based in the Reynolds number for SU2_EDU ---*/
-  
-  if (Kind_SU2 == SU2_EDU) {
-    if (Kind_Solver == EULER) Mesh_FileName = "naca0012_inviscid.su2";
-    else {
-      if (Reynolds < 1E5) Mesh_FileName = "naca0012_re1e5.su2";
-      if ((Reynolds >= 1E5) && (Reynolds <= 1E7)) Mesh_FileName = "naca0012_re1e6.su2";
-      if (Reynolds > 1E7) Mesh_FileName = "naca0012_re1e7.su2";
     }
   }
   
@@ -982,10 +967,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
-  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL) || (Kind_SU2 == SU2_EDU))) Mesh_FileFormat = SU2;
+  if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
 
-  /*--- Divide grid if runnning SU2_MDC ---*/
-//  if (Kind_SU2 == SU2_MDC) Divide_Element = true;
+  /*--- Don't divide the numerical grid unless running SU2_MDC ---*/
+  if (Kind_SU2 != SU2_MDC) Divide_Element = false;
   
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (Kind_Regime == FREESURFACE) {
@@ -1026,7 +1011,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
-	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_EDU) &&
+	if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
@@ -1684,7 +1669,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
 	}
 
-  if (((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_EDU)) && (Kind_Solver == NO_SOLVER)) {
+  if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
 		cout << "You must define a solver type!!" << endl;
 		exit(1);
 	}
@@ -2620,7 +2605,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
 	switch (val_software) {
 	case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamic Code)  |" << endl; break;
-  case SU2_EDU: cout << "|  |_____/   \\____/  |____|   Suite (Educational Code)                  |" << endl; break;
 	case SU2_MDC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
 	case SU2_GPC: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
 	case SU2_DDC: cout << "|  |_____/   \\____/  |____|   Suite (Domain Decomposition Code)         |" << endl; break;
@@ -2630,7 +2614,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
-	cout << "|                             Release 2.0.9                             |" << endl;
+	cout << "|                             Release 2.0.10                             |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| Stanford University Unstructured (SU2).                               |" << endl; 
   cout << "| Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).            |" << endl;
@@ -2641,7 +2625,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	cout <<"-------------------------------------------------------------------------" << endl;
 
 	cout << endl <<"------------------------ Physical case definition -----------------------" << endl;
-	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
+	if (val_software == SU2_CFD) {
 		switch (Kind_Solver) {
       case EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
@@ -2904,7 +2888,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if ((((val_software == SU2_CFD) || (val_software == SU2_EDU)) && ( Linearized )) || (val_software == SU2_GPC)) {
+	if (((val_software == SU2_CFD) && ( Linearized )) || (val_software == SU2_GPC)) {
 		cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
 		cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
 		for (unsigned short iDV = 0; iDV < nDV; iDV++) {
@@ -2966,7 +2950,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if ((((val_software == SU2_CFD) || (val_software == SU2_EDU)) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
+	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -2998,7 +2982,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	}
 
-	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
+	if (val_software == SU2_CFD) {
 		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
 
 		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
@@ -3418,10 +3402,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Euler implicit time integration for the turbulence model." << endl;
 	}
 
-	if ((val_software == SU2_CFD) || (val_software == SU2_EDU))
-		cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
+	if (val_software == SU2_CFD) {
+    
+    cout << endl <<"------------------------- Convergence criteria --------------------------" << endl;
 
-	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
 		cout << "Maximum number of iterations: " << nExtIter <<"."<<endl;
 
 		if (ConvCriteria == CAUCHY) {
@@ -3516,7 +3500,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cerr << "Error: STL output file format only valid for SU2_MDC" << endl; throw(-1);
 	}
 
-	if ((val_software == SU2_CFD) || (val_software == SU2_EDU)) {
+	if (val_software == SU2_CFD) {
 
 		cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
 		cout << "Writing the convergence history every " << Wrt_Con_Freq <<" iterations."<<endl;
@@ -4406,18 +4390,6 @@ CConfig::~CConfig(void)
 	if (Plunging_Ampl_Z != NULL)
 		delete [] Plunging_Ampl_Z;
 
-	if (Unsteady_Farfield && Unsteady_Simulation) {
-		delete [] Density_FreeStreamND_Time;
-		delete [] Pressure_FreeStreamND_Time;
-		delete [] Mach_Inf_Time;
-		delete [] Energy_FreeStreamND_Time;
-		delete [] Density_FreeStreamND_Time;
-		for (unsigned long iter = 0; iter < nExtIter; iter ++)
-			delete []Velocity_FreeStreamND_Time[iter];
-		delete []Velocity_FreeStreamND_Time;
-
-	}
-
     if (RefOriginMoment != NULL)
 		delete [] RefOriginMoment;
     if (RefOriginMoment_X != NULL)
@@ -5091,124 +5063,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	bool freesurface = (Kind_Regime == FREESURFACE);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-  
-	if (Unsteady_Farfield && Unsteady) {
-		double time, time_ext;
-		unsigned long iter, n;
-		string text_line;
-		double temp_Temperature, temp_Mach, temp_Pressure, Derivative_Begin, Derivative_End;
-		vector<double> Time_Spline, Temperature_Spline, Mach_Spline, Pressure_Spline;
-		vector<double> Temperature2_Spline, Mach2_Spline, Pressure2_Spline;
     
-		ifstream farfield_file;
-		string filename = GetFarfield_FileName();
-		farfield_file.open(filename.data(), ios::in);
-    
-		/*--- In case there is no restart file ---*/
-		if (farfield_file.fail()) {
-			cout << "There is no farfield bounadry data file!!" << endl;
-			exit(1);
-		}
-    
-		/*--- The first line is the header ---*/
-		getline (farfield_file, text_line);
-    
-		while (getline (farfield_file,text_line) ) {
-			istringstream point_line(text_line);
-      
-			/*--- First value is the point index, then the conservative vars. ---*/
-			point_line >> time;
-			point_line >> temp_Temperature;// Temperature_FreeStream;
-			point_line >> temp_Mach; // Mach
-			point_line >> temp_Pressure;// Pressure_FreeStream;
-      
-			/*--- Spline interpolation, dummy function ---*/
-			Time_Spline.push_back(time);
-			Temperature_Spline.push_back(temp_Temperature);
-			Mach_Spline.push_back(temp_Mach);
-			Pressure_Spline.push_back(temp_Pressure);
-			cout << " pressure = " << temp_Pressure << endl;
-		}
-    
-		/*--- Close the restart file ---*/
-		farfield_file.close();
-    
-		/*--- Create the spline ---*/
-		n = Time_Spline.size();
-		Temperature2_Spline.resize(n);
-		Mach2_Spline.resize(n);
-		Pressure2_Spline.resize(n);
-    
-		Derivative_Begin = (Temperature_Spline[1]-Temperature_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
-		Derivative_End = (Temperature_Spline[n-1]-Temperature_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
-		SetSpline(Time_Spline, Temperature_Spline, n, Derivative_Begin, Derivative_End, Temperature2_Spline);
-    
-    
-		Derivative_Begin = (Mach_Spline[1]-Mach_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
-		Derivative_End = (Mach_Spline[n-1]-Mach_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
-		SetSpline(Time_Spline, Mach_Spline, n, Derivative_Begin, Derivative_End, Mach2_Spline);
-    
-    
-		Derivative_Begin = (Pressure_Spline[1]-Pressure_Spline[0])/(Time_Spline[1]-Time_Spline[0]);
-		Derivative_End = (Pressure_Spline[n-1]-Pressure_Spline[n-2])/(Time_Spline[n-1]-Time_Spline[n-2]);
-		SetSpline(Time_Spline, Pressure_Spline, n, Derivative_Begin, Derivative_End, Pressure2_Spline);
-    
-		/*--- Allocate arrays to store time dependent farfield information ---*/
-		Density_FreeStreamND_Time   = new double  [nExtIter];
-		Pressure_FreeStreamND_Time  = new double  [nExtIter];
-		Mach_Inf_Time 				= new double  [nExtIter];
-		Energy_FreeStreamND_Time    = new double  [nExtIter];
-		Velocity_FreeStreamND_Time  = new double* [nExtIter];
-		for (iter = 0; iter < nExtIter; iter ++) {
-			Velocity_FreeStreamND_Time[iter]  = new double [val_nDim];
-			for (iDim = 0; iDim < val_nDim; iDim ++)
-				Velocity_FreeStreamND_Time[iter][iDim] = 0.0;
-		}
-    
-		/*--- Loop over all external time instances to store the time dependent values ---*/
-    
-		for (iter = 0; iter < nExtIter; iter ++) {
-      
-			time_ext =  iter*Delta_UnstTime;
-      
-			/*--- Get the interpolated values at current time step ---*/
-			Temperature_FreeStream = GetSpline(Time_Spline, Temperature_Spline, Temperature2_Spline, n, time_ext);
-			Mach = GetSpline(Time_Spline, Mach_Spline, Mach2_Spline, n, time_ext);
-			Pressure_FreeStream = GetSpline(Time_Spline, Pressure_Spline, Pressure2_Spline, n, time_ext);
-      
-      
-			Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
-      
-			/*--- Compute the Free Stream velocity, using the Mach number ---*/
-			if (val_nDim == 2) {
-				Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
-			}
-			if (val_nDim == 3) {
-				Velocity_FreeStream[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
-				Velocity_FreeStream[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
-			}
-      
-			Velocity_Ref = sqrt(Pressure_Ref/Density_Ref);
-      
-			for (iDim = 0; iDim < val_nDim; iDim++)
-				Velocity_FreeStreamND_Time[iter][iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
-      
-			Density_FreeStream  				= Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
-			Density_FreeStreamND_Time[iter]  	= Density_FreeStream/Density_Ref;
-			Pressure_FreeStreamND_Time[iter] 	= Pressure_FreeStream/Pressure_Ref;
-			Mach_Inf_Time[iter]				    = Mach;
-      
-			ModVel_FreeStreamND = 0;
-			for (iDim = 0; iDim < val_nDim; iDim++)
-				ModVel_FreeStreamND += Velocity_FreeStreamND_Time[iter][iDim]*Velocity_FreeStreamND_Time[iter][iDim];
-			ModVel_FreeStreamND    	 = sqrt(ModVel_FreeStreamND);
-			Energy_FreeStreamND_Time[iter]    = Pressure_FreeStreamND_Time[iter]/(Density_FreeStreamND_Time[iter]*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-		}
-    
-	}
-  
 	if (compressible) {
     
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);

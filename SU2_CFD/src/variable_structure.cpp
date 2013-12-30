@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -310,6 +310,12 @@ void CVariable::SetSolutionZero(void) {
   
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Solution[iVar] = 0.0;
+  
+}
+
+void CVariable::SetSolutionZero(unsigned short val_var) {
+  
+		Solution[val_var] = 0.0;
   
 }
 

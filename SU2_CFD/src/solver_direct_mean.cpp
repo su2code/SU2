@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.9
+ * \version 2.0.10
  *
  * Stanford University Unstructured (SU2).
  * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
@@ -79,7 +79,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iDim, iMarker;
+  unsigned short iVar, iDim, iMarker, nLineLets;
   double Density, Velocity2, Pressure, Temperature, dull_val;
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -229,6 +229,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
     
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+    
   } else {
     if (rank == MASTER_NODE)
       cout << "Explicit scheme. No jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
@@ -324,17 +329,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Velocity_Inf = config->GetVelocity_FreeStreamND();
   Energy_Inf   = config->GetEnergy_FreeStreamND();
   Mach_Inf     = config->GetMach_FreeStreamND();
-  
-  if (dual_time && config->GetUnsteady_Farfield()) {
-    
-    /*--- Read farfield conditions ---*/
-    Density_Inf  = config->GetDensity_FreeStreamND_Time(0);
-    Pressure_Inf = config->GetPressure_FreeStreamND_Time(0);
-    Velocity_Inf = config->GetVelocity_FreeStreamND_Time(0);
-    Energy_Inf   = config->GetEnergy_FreeStreamND_Time(0);
-    Mach_Inf     = config->GetMach_FreeStreamND_Time(0);
-    
-  }
   
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1759,7 +1753,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
   
-  if (restart) {
+  if (restart && (ExtIter == 0)) {
     Solution = new double[nVar];
     for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -1844,38 +1838,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
   }
   
-  if (dual_time && config->GetUnsteady_Farfield()) {
-    
-    /*--- Read farfield conditions ---*/
-    Density_Inf  = config->GetDensity_FreeStreamND_Time(ExtIter);
-    Pressure_Inf = config->GetPressure_FreeStreamND_Time(ExtIter);
-    Velocity_Inf = config->GetVelocity_FreeStreamND_Time(ExtIter);
-    Energy_Inf   = config->GetEnergy_FreeStreamND_Time(ExtIter);
-    Mach_Inf     = config->GetMach_FreeStreamND_Time(ExtIter);
-    
-    /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      FanFace_MassFlow[iMarker] = 0.0;
-      Exhaust_MassFlow[iMarker] = 0.0;
-      Exhaust_Area[iMarker] = 0.0;
-      FanFace_Mach[iMarker] = Mach_Inf;
-      FanFace_Pressure[iMarker] = Pressure_Inf;
-      FanFace_Area[iMarker] = 0.0;
-    }
-    
-    /*--- Inlet/Outlet boundary conditions, using infinity values ---*/
-    Density_Inlet = Density_Inf;		Density_Outlet = Density_Inf;
-    Pressure_Inlet = Pressure_Inf;	Pressure_Outlet = Pressure_Inf;
-    Energy_Inlet = Energy_Inf;			Energy_Outlet = Energy_Inf;
-    Mach_Inlet = Mach_Inf;					Mach_Outlet = Mach_Inf;
-    Velocity_Inlet  = new double [nDim]; Velocity_Outlet = new double [nDim];
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Velocity_Inlet[iDim] = Velocity_Inf[iDim];
-      Velocity_Outlet[iDim] = Velocity_Inf[iDim];
-    }
-    
-  }
-  
   if (aeroelastic) {
     /*--- Reset the plunge and pitch value for the new unsteady step. ---*/
     unsigned short iMarker_Monitoring;
@@ -1892,11 +1854,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol;
   
-#ifdef NO_MPI
-  int rank = MASTER_NODE;
-#else
-  int rank = MPI::COMM_WORLD.Get_rank();
-#endif
+  //#ifdef NO_MPI
+  //  int rank = MASTER_NODE;
+  //#else
+  //  int rank = MPI::COMM_WORLD.Get_rank();
+  //#endif
   
   bool adjoint = config->GetAdjoint();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -3911,7 +3873,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     Jacobian.BuildJacobiPreconditioner();
-    Jacobian.BuildLineletPreconditioner(geometry, config);
     precond = new CLineletPreconditioner(Jacobian, geometry, config);
   }
   
@@ -6991,7 +6952,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
   
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iDim, iMarker;
+  unsigned short iVar, iDim, iMarker, nLineLets;
   double Density, Velocity2, Pressure, Temperature, dull_val;
   
   unsigned short nZone = geometry->GetnZone();
@@ -7111,6 +7072,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     /*--- Initialization of the structure of the whole Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    
+    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
     
   } else {
     if (rank == MASTER_NODE)
@@ -7479,11 +7445,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol;
   
-#ifdef NO_MPI
-  int rank = MASTER_NODE;
-#else
-  int rank = MPI::COMM_WORLD.Get_rank();
-#endif
+  //#ifdef NO_MPI
+  //  int rank = MASTER_NODE;
+  //#else
+  //  int rank = MPI::COMM_WORLD.Get_rank();
+  //#endif
   
   bool adjoint = config->GetAdjoint();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
