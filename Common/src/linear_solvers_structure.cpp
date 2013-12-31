@@ -143,9 +143,14 @@ void CSysSolve::writeHistory(const int & iter, const double & res, const double 
 unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
-  int rank = 0;
+int rank = 0;
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Check the subspace size ---*/
@@ -154,8 +159,13 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
   
@@ -248,9 +258,14 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
-  int rank = 0;
+int rank = 0;
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*---  Check the subspace size ---*/
@@ -259,8 +274,13 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
 
@@ -270,8 +290,13 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
   
@@ -382,7 +407,11 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	
   int rank = 0;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Check the subspace size ---*/
@@ -391,8 +420,13 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
 	
