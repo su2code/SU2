@@ -39,9 +39,14 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	base_file = config->GetFlow_FileName();
   
 #ifndef NO_MPI
+	int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
-  int nProcessor = MPI::COMM_WORLD.Get_size();
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+	nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+	if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
 #endif
   
 	/*--- Add CGNS extension. ---*/
@@ -193,7 +198,12 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
   
 #ifndef NO_MPI
   /*--- Remove the domain number from the CGNS filename ---*/
-  int nProcessor = MPI::COMM_WORLD.Get_size();
+  int nProcessor;
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+  nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
   if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
 #endif
   
@@ -353,8 +363,13 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	base_file = config->GetFlow_FileName();
   
 #ifndef NO_MPI
+  int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
-  int nProcessor = MPI::COMM_WORLD.Get_size();
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+  nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
   if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
 #endif
   
