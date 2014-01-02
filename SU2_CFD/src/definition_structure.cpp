@@ -32,10 +32,17 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   char cstr[200];
   string::size_type position;
   int rank = MASTER_NODE;
+  int size;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
-  if (MPI::COMM_WORLD.Get_size() != 1) {
+  size = MPI::COMM_WORLD.Get_size();
+#endif
+  if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
     val_mesh_filename = val_mesh_filename + "_1.su2";
@@ -55,8 +62,13 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifdef NO_MPI
         exit(1);
 #else
+#ifdef WINDOWS
+		MPI_Abort(MPI_COMM_WORLD,1);
+		MPI_Finalize();
+#else
         MPI::COMM_WORLD.Abort(1);
         MPI::Finalize();
+#endif
 #endif
       }
       
@@ -76,8 +88,13 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifdef NO_MPI
               exit(1);
 #else
+#ifdef WINDOWS
+			  MPI_Abort(MPI_COMM_WORLD,1);
+			  MPI_Finalize();
+#else
               MPI::COMM_WORLD.Abort(1);
               MPI::Finalize();
+#endif
 #endif
             }
           }
@@ -121,9 +138,15 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   bool isFound = false;
   char cstr[200];
   string::size_type position;
+  int size;
   
 #ifndef NO_MPI
-  if (MPI::COMM_WORLD.Get_size() != 1) {
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
+  size = MPI::COMM_WORLD.Get_size();
+#endif
+  if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
     val_mesh_filename = val_mesh_filename + "_1.su2";
@@ -161,11 +184,15 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
   
   unsigned short iMGlevel, iZone;
-  unsigned long iPoint;
-  
+  unsigned long iPoint; 
   int rank = MASTER_NODE;
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -218,7 +245,11 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   
 #ifndef NO_MPI
   /*--- Synchronization point before the multigrid algorithm ---*/
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Barrier();
+#endif
 #endif
   
   /*--- Loop over all the new grid ---*/
