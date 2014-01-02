@@ -818,8 +818,13 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+	MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
 	}
 	else {
@@ -1022,8 +1027,13 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+	MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
 	}
 }
