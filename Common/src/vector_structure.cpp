@@ -45,11 +45,19 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
+
+  int myrank;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  unsigned long nElmLocal = (unsigned long)nElm;
+  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   myrank = MPI::COMM_WORLD.Get_rank();
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   
 }
@@ -71,11 +79,19 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
+
+  int myrank;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  unsigned long nElmLocal = (unsigned long)nElm;
+  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   myrank = MPI::COMM_WORLD.Get_rank();
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   
 }
@@ -114,11 +130,19 @@ CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
   vec_val = new double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
+
+  int myrank;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  unsigned long nElmLocal = (unsigned long)nElm;
+  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   myrank = MPI::COMM_WORLD.Get_rank();
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   
 }
@@ -140,11 +164,19 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   vec_val = new double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
+
+  int myrank;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  unsigned long nElmLocal = (unsigned long)nElm;
+  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   myrank = MPI::COMM_WORLD.Get_rank();
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   
 }
@@ -177,11 +209,19 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   vec_val = new double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
+
+  int myrank;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  unsigned long nElmLocal = (unsigned long)nElm;
+  MPI_Allreduce(&nElmLocal, &nElmGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   myrank = MPI::COMM_WORLD.Get_rank();
   unsigned long nElmLocal = (unsigned long)nElm;
   MPI::COMM_WORLD.Allreduce(&nElmLocal, &nElmGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   
 }
@@ -407,7 +447,11 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
   double prod = 0.0;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&loc_prod, &prod, 1, MPI::DOUBLE, MPI::SUM);
+#endif
 #else
   prod = loc_prod;
 #endif
