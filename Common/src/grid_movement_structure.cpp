@@ -1493,7 +1493,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	/*--- Local variables ---*/
 	unsigned short iDim, nDim; 
 	unsigned long iPoint;
-	double r[3], rotCoord[3], *Coord, Center[3], Omega[3], Lref, dt;
+	double r[3], rotCoord[3], *Coord, Center[3], Omega[3], Lref, dt, Center_Moment[3];
   double *GridVel, newGridVel[3];
 	double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	double dtheta, dphi, dpsi, cosTheta, sinTheta;
@@ -1610,6 +1610,40 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
       
     }
+  }
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the rotation. ---*/
+  
+  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    
+    Center_Moment[0] = config->GetRefOriginMoment_X(jMarker);
+    Center_Moment[1] = config->GetRefOriginMoment_Y(jMarker);
+    Center_Moment[2] = config->GetRefOriginMoment_Z(jMarker);
+    
+    /*--- Calculate non-dim. position from rotation center ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      r[iDim] = (Center_Moment[iDim]-Center[iDim])/Lref;
+    if (nDim == 2) r[nDim] = 0.0;
+    
+    /*--- Compute transformed point coordinates ---*/
+    
+    rotCoord[0] = rotMatrix[0][0]*r[0]
+    + rotMatrix[0][1]*r[1]
+    + rotMatrix[0][2]*r[2];
+    
+    rotCoord[1] = rotMatrix[1][0]*r[0]
+    + rotMatrix[1][1]*r[1]
+    + rotMatrix[1][2]*r[2];
+    
+    rotCoord[2] = rotMatrix[2][0]*r[0]
+    + rotMatrix[2][1]*r[1]
+    + rotMatrix[2][2]*r[2];
+    
+    config->SetRefOriginMoment_X(jMarker, Center[0]+rotCoord[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]+rotCoord[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]+rotCoord[2]);
   }
   
 	/*--- After moving all nodes, update geometry class ---*/
@@ -1778,6 +1812,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     }
   }
   
+  /*--- For pitching we don't update the motion origin and moment reference origin. ---*/
+
 	/*--- After moving all nodes, update geometry class ---*/
   
 	UpdateDualGrid(geometry, config);
@@ -1904,12 +1940,24 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
   
-  /*--- As the body origin may have moved, pring it to the console ---*/
+  /*--- As the body origin may have moved, print it to the console ---*/
   
   if (rank == MASTER_NODE) {
     cout << " Body origin: (" << Center[0]+deltaX[0];
     cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
     cout << ")." << endl;
+  }
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the plunging. ---*/
+  
+  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
+    Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
+    Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
+    config->SetRefOriginMoment_X(jMarker, Center[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
   
 	/*--- After moving all nodes, update geometry class ---*/
@@ -1983,9 +2031,9 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   }
   
 	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
-	deltaX[0] = xDot[0]*deltaT;
-	deltaX[1] = xDot[1]*deltaT;
-	deltaX[2] = xDot[2]*deltaT;
+	deltaX[0] = xDot[0]*(time_new-time_old);
+	deltaX[1] = xDot[1]*(time_new-time_old);
+	deltaX[2] = xDot[2]*(time_new-time_old);
 
   if (rank == MASTER_NODE) {
     cout << " New physical time: " << time_new << " seconds." << endl;
@@ -2021,6 +2069,18 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
   config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the translation. ---*/
+  
+  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
+    Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
+    Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
+    config->SetRefOriginMoment_X(jMarker, Center[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]);
+  }
   
 	/*--- After moving all nodes, update geometry class ---*/
 	
@@ -3697,7 +3757,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   }
   
   /*--- Set the moment computation center to the new location after
-   incrementing the position with the translation. ---*/
+   incrementing the position with the plunging. ---*/
   
   for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
@@ -4023,55 +4083,11 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      /*--- There is no movement in the first iteration ---*/
-      if (iter !=0) {
         
-        Center_Aux[0] = config->GetMotion_Origin_X(jMarker);
-        Center_Aux[1] = config->GetMotion_Origin_Y(jMarker);
-        Center_Aux[2] = config->GetMotion_Origin_Z(jMarker);
-        
-        /*--- Calculate non-dim. position from rotation center ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
-        if (nDim == 2) r[nDim] = 0.0;
-        
-        /*--- Compute transformed point coordinates ---*/
-        
-        rotCoord[0] = rotMatrix[0][0]*r[0]
-        + rotMatrix[0][1]*r[1]
-        + rotMatrix[0][2]*r[2] + Center[0];
-        
-        rotCoord[1] = rotMatrix[1][0]*r[0]
-        + rotMatrix[1][1]*r[1]
-        + rotMatrix[1][2]*r[2] + Center[1];
-        
-        rotCoord[2] = rotMatrix[2][0]*r[0]
-        + rotMatrix[2][1]*r[1]
-        + rotMatrix[2][2]*r[2] + Center[2];
-        
-        /*--- Calculate delta change in the x, y, & z directions ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
-        if (nDim == 2) VarCoord[nDim] = 0.0;
-        config->SetMotion_Origin_X(jMarker, Center_Aux[0]+VarCoord[0]);
-        config->SetMotion_Origin_Y(jMarker, Center_Aux[1]+VarCoord[1]);
-        config->SetMotion_Origin_Z(jMarker, Center_Aux[2]+VarCoord[2]);
-      }
-    }
-  }
-
-  /*--- Set the moment computation center to the new location after
-   incrementing the position with the rotation. ---*/
-  
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-    /*--- There is no movement in the first iteration ---*/
-    if (iter !=0) {
+      Center_Aux[0] = config->GetMotion_Origin_X(jMarker);
+      Center_Aux[1] = config->GetMotion_Origin_Y(jMarker);
+      Center_Aux[2] = config->GetMotion_Origin_Z(jMarker);
       
-      Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
-      Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
-      Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
-
       /*--- Calculate non-dim. position from rotation center ---*/
       
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4096,11 +4112,49 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       for (iDim = 0; iDim < nDim; iDim++)
         VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
       if (nDim == 2) VarCoord[nDim] = 0.0;
-      
-      config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
-      config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
-      config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
+      config->SetMotion_Origin_X(jMarker, Center_Aux[0]+VarCoord[0]);
+      config->SetMotion_Origin_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+      config->SetMotion_Origin_Z(jMarker, Center_Aux[2]+VarCoord[2]);
     }
+  }
+
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the rotation. ---*/
+  
+  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+      
+    Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
+    Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
+    Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
+
+    /*--- Calculate non-dim. position from rotation center ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
+    if (nDim == 2) r[nDim] = 0.0;
+    
+    /*--- Compute transformed point coordinates ---*/
+    
+    rotCoord[0] = rotMatrix[0][0]*r[0]
+    + rotMatrix[0][1]*r[1]
+    + rotMatrix[0][2]*r[2] + Center[0];
+    
+    rotCoord[1] = rotMatrix[1][0]*r[0]
+    + rotMatrix[1][1]*r[1]
+    + rotMatrix[1][2]*r[2] + Center[1];
+    
+    rotCoord[2] = rotMatrix[2][0]*r[0]
+    + rotMatrix[2][1]*r[1]
+    + rotMatrix[2][2]*r[2] + Center[2];
+    
+    /*--- Calculate delta change in the x, y, & z directions ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
+    if (nDim == 2) VarCoord[nDim] = 0.0;
+    
+    config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
   }
 }
 
