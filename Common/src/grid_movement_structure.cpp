@@ -4104,75 +4104,50 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]) {
-    /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
-    double dy = -displacements[0];           // relative plunge
-    double dalpha = -displacements[1];       // relative pitch
-    double Center[2];
-    unsigned short jMarker, iDim;
-    double Lref = config->GetLength_Ref();
-    double *Coord;
-    unsigned long iPoint, iVertex;
-    double x_new, y_new;
-    double VarCoord[3];
-    string Marker_Tag;
-	int rank;
-    
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#else
-	rank = MASTER_NODE;
-#endif
-    
-    /*--- Check to see if we are supposed to move this marker(airfoil) ---*/
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-        
-        /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
-        
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
-        jMarker    = config->GetMarker_Moving(Marker_Tag);
-        
-        /*--- Pitching origin from config. ---*/
-        
-        Center[0] = config->GetMotion_Origin_X(jMarker);
-        Center[1] = config->GetMotion_Origin_Y(jMarker);
-        
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            /*--- Coordinates of the current point ---*/
-            Coord = geometry->node[iPoint]->GetCoord();
-            
-            /*--- Calculate non-dim. position from rotation center ---*/
-            double r[2] = {0,0};
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-                r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-            
-            /*--- Compute delta of transformed point coordinates ---*/
-            // The deltas are needed for the Spring Method.
-            // rotation contribution + plunging contribution - previous position
-            x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
-            y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
-            
-            VarCoord[0] = x_new;
-            VarCoord[1] = y_new;
-            VarCoord[2] = 0.0;
-            
-            /*--- Store new delta node locations for the surface ---*/
-            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-        }
-        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
-        config->SetMotion_Origin_Y(iMarker,Center[1]+dy);
-        config->SetRefOriginMoment_Y(iMarker,Center[1]+dy);
+void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]) {
+  /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
+  double dy = -displacements[0];           // relative plunge
+  double dalpha = -displacements[1];       // relative pitch
+  double Center[2];
+  unsigned short iDim;
+  double Lref = config->GetLength_Ref();
+  double *Coord;
+  unsigned long iPoint, iVertex;
+  double x_new, y_new;
+  double VarCoord[3];
+  string Marker_Tag;
 
-    }
-    else {
-        if (rank == MASTER_NODE)
-            std::cout << "WARNING: There is(are) marker(s) being monitored which are not being moved!" << std::endl;
-    }
+  /*--- Pitching origin from config. ---*/
+        
+  Center[0] = config->GetRefOriginMoment_X(iMarker_Monitoring);
+  Center[1] = config->GetRefOriginMoment_Y(iMarker_Monitoring);
+  
+  for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    /*--- Coordinates of the current point ---*/
+    Coord = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Calculate non-dim. position from rotation center ---*/
+    double r[2] = {0,0};
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+        r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+    
+    /*--- Compute delta of transformed point coordinates ---*/
+    // The deltas are needed for the FEA grid deformation Method.
+    // rotation contribution + plunging contribution - previous position
+    x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
+    y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
+    
+    VarCoord[0] = x_new;
+    VarCoord[1] = y_new;
+    VarCoord[2] = 0.0;
+    
+    /*--- Store new delta node locations for the surface ---*/
+    geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+  }
+  /*--- Set the elastic axis to the new location after incrementing the position with the plunge ---*/
+  config->SetRefOriginMoment_Y(iMarker_Monitoring,Center[1]+dy);
+  
 }
 
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config,
