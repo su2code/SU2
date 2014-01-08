@@ -1060,10 +1060,11 @@ public:
 	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iMarker - Marker to deform.
-     * \param[in] displacements - solution of typical section wing model.
+   * \param[in] iMarker - Marker to deform.
+   * \param[in] iMarker_Monitoring - Marker we are monitoring.
+   * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]);
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.

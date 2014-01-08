@@ -1380,11 +1380,13 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
           
           /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
           SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, iMarker_Monitoring, structural_solution);
+          
+          break;
         }
       }
       
       /*--- Compute the new surface node locations ---*/
-      surface_movement->AeroelasticDeform(geometry, config, iMarker, structural_solution);
+      surface_movement->AeroelasticDeform(geometry, config, iMarker, iMarker_Monitoring, structural_solution);
       
     }
     
