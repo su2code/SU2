@@ -5644,21 +5644,27 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- AoA sensitivity ---*/
-            
-            if (nDim == 2) {
-              D[0][0] = 0.0; D[0][1] = -1.0;
-              D[1][0] = 1.0; D[1][1] = 0.0;
+            /* Coefficients with an explicit AoA dependence - NOTE: Still need to implement right dependency for EFFICIENCY */
+            aoa_dependence = (config->GetKind_ObjFunc() == DRAG_COEFFICIENT or config->GetKind_ObjFunc() == LIFT_COEFFICIENT or config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT or config->GetKind_ObjFunc() == EQUIVALENT_AREA or config->GetKind_ObjFunc() == NEARFIELD_PRESSURE);
+            if (aoa_dependence) {
+            	if (nDim == 2) {
+            		D[0][0] = 0.0; D[0][1] = -1.0;
+            		D[1][0] = 1.0; D[1][1] = 0.0;
+            	}
+            	else {
+            		D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
+            		D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
+            		D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+            	}
+            	for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
+            	for (iPos = 0; iPos < nDim; iPos++) {
+            		for (jPos = 0; jPos < nDim; jPos++)
+                		Dd[iPos] += D[iPos][jPos]*d[jPos];
+            	}
             }
+            /* Coefficients with no explicit AoA dependece */
             else {
-              D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
-              D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
-              D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
-            }
-            
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
-            for (iPos = 0; iPos < nDim; iPos++) {
-              for (jPos = 0; jPos < nDim; jPos++)
-                Dd[iPos] += D[iPos][jPos]*d[jPos];
+            	for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
             }
             
             for (iPos = 0; iPos < nDim; iPos++)
