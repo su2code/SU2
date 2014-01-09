@@ -5645,8 +5645,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             /*--- AoA sensitivity ---*/
             /* Coefficients with an explicit AoA dependence - NOTE: Still need to implement right dependency for EFFICIENCY */
-            aoa_dependence = (config->GetKind_ObjFunc() == DRAG_COEFFICIENT or config->GetKind_ObjFunc() == LIFT_COEFFICIENT or config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT or config->GetKind_ObjFunc() == EQUIVALENT_AREA or config->GetKind_ObjFunc() == NEARFIELD_PRESSURE);
-            if (aoa_dependence) {
+            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT or config->GetKind_ObjFunc() == LIFT_COEFFICIENT or config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT or config->GetKind_ObjFunc() == EQUIVALENT_AREA or config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
             	if (nDim == 2) {
             		D[0][0] = 0.0; D[0][1] = -1.0;
             		D[1][0] = 1.0; D[1][1] = 0.0;
