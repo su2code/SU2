@@ -4509,7 +4509,7 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
     
   }
   
-  /*--- Copy to the appropiate structure ---*/
+  /*--- Copy to the appropriate structure ---*/
   unsigned short iMarker_NacelleInflow, iMarker_NacelleExhaust;
   
   double FanFace_MassFlow_Local[nMarker_NacelleInflow];
