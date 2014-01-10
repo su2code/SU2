@@ -31,7 +31,11 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	nDim = geometry->GetnDim();
@@ -236,9 +240,13 @@ void CAdjTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif 
 #else
       
       /*--- Receive information without MPI ---*/
@@ -313,8 +321,13 @@ void CAdjTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) 
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -395,9 +408,13 @@ void CAdjTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *con
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif
 #else
       
       /*--- Receive information without MPI ---*/
