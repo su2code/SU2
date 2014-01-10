@@ -64,7 +64,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Array initialization ---*/
@@ -498,9 +502,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   }
   
 #ifndef NO_MPI
-  
+#ifdef WINDOWS
+  MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#else  
   MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
-  
+#endif  
 #else
   
   counter_global = counter_local;
@@ -605,8 +611,13 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -729,8 +740,13 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -842,9 +858,13 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
 #ifndef NO_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_V, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_V, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_V, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_V, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif
 #else
       
       /*--- Receive information without MPI ---*/
@@ -959,9 +979,13 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *co
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif      
 #else
       
       /*--- Receive information without MPI ---*/
