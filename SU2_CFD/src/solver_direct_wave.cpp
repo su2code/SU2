@@ -31,7 +31,11 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   nPoint = geometry->GetnPoint();
@@ -733,11 +737,16 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
 
 void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
+	int rank;
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
   
   /*--- Restart the solution from file information ---*/

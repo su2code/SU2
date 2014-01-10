@@ -1100,10 +1100,17 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry,
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector,
+                               MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Undivided_Laplacian,
+                               nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector,
                                MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Undivided_Laplacian,
                                nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -1225,10 +1232,17 @@ void CTNE2EulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *confi
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      MPI_Sendrecv(Buffer_Send_Neighbor, nBufferS_Vector, MPI_UNSIGNED_SHORT, send_to, 1,
+                               Buffer_Receive_Neighbor, nBufferR_Vector, MPI_UNSIGNED_SHORT, receive_from, 1, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Lambda, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Neighbor, nBufferS_Vector, MPI::UNSIGNED_SHORT, send_to, 1,
                                Buffer_Receive_Neighbor, nBufferR_Vector, MPI::UNSIGNED_SHORT, receive_from, 1);
+#endif
       
 #else
       
@@ -1301,8 +1315,13 @@ void CTNE2EulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Lambda, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -1378,8 +1397,14 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -1509,8 +1534,13 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -1602,10 +1632,16 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
+
+	int rank;
 #ifdef NO_MPI
-	int rank = MASTER_NODE;
+	rank = MASTER_NODE;
 #else
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
 	
   unsigned long iPoint, ErrorCounter = 0;
@@ -1652,7 +1688,11 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   /*--- Error message ---*/
 #ifndef NO_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -1736,9 +1776,15 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 #ifndef NO_MPI
 		double rbuf_time, sbuf_time;
 		sbuf_time = Global_Delta_Time;
+#ifdef WINDOWS
+		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
 		MPI::COMM_WORLD.Reduce(&sbuf_time, &rbuf_time, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
 		MPI::COMM_WORLD.Bcast(&rbuf_time, 1, MPI::DOUBLE, MASTER_NODE);
 		MPI::COMM_WORLD.Barrier();
+#endif
 		Global_Delta_Time = rbuf_time;
 #endif
 		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -2259,7 +2305,19 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	double MyAllBound_CFx_Inv          = AllBound_CFx_Inv;          AllBound_CFx_Inv = 0.0;
 	double MyAllBound_CFy_Inv          = AllBound_CFy_Inv;          AllBound_CFy_Inv = 0.0;
 	double MyAllBound_CFz_Inv          = AllBound_CFz_Inv;          AllBound_CFz_Inv = 0.0;
-  
+
+#ifdef WINDOWS
+  MPI_Allreduce(&MyAllBound_CDrag_Inv, &AllBound_CDrag_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CLift_Inv, &AllBound_CLift_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CSideForce_Inv, &AllBound_CSideForce_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
+  MPI_Allreduce(&MyAllBound_CMx_Inv, &AllBound_CMx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CMy_Inv, &AllBound_CMy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CFx_Inv, &AllBound_CFx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CFy_Inv, &AllBound_CFy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_CFz_Inv, &AllBound_CFz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CDrag_Inv, &AllBound_CDrag_Inv, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CLift_Inv, &AllBound_CLift_Inv, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CSideForce_Inv, &AllBound_CSideForce_Inv, 1, MPI::DOUBLE, MPI::SUM);
@@ -2269,7 +2327,8 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CFx_Inv, &AllBound_CFx_Inv, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CFy_Inv, &AllBound_CFy_Inv, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFz_Inv, &AllBound_CFz_Inv, 1, MPI::DOUBLE, MPI::SUM);  
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFz_Inv, &AllBound_CFz_Inv, 1, MPI::DOUBLE, MPI::SUM); 
+#endif
 #endif
 
   
@@ -3807,7 +3866,11 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
   unsigned short iVar;
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Restart the solution from file information ---*/
@@ -4009,7 +4072,11 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   /*--- Get MPI rank ---*/
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Array initialization ---*/
@@ -4448,9 +4515,11 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   }
   
 #ifndef NO_MPI
-  
+#ifdef WINDOWS
+  MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#else  
   MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
-  
+#endif
 #else
   
   counter_global = counter_local;
@@ -4678,9 +4747,15 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 #ifndef NO_MPI
 		double rbuf_time, sbuf_time;
 		sbuf_time = Global_Delta_Time;
+#ifdef WINDOWS
+		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
 		MPI::COMM_WORLD.Reduce(&sbuf_time, &rbuf_time, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
 		MPI::COMM_WORLD.Bcast(&rbuf_time, 1, MPI::DOUBLE, MASTER_NODE);
 		MPI::COMM_WORLD.Barrier();
+#endif
 		Global_Delta_Time = rbuf_time;
 #endif
 		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -4694,9 +4769,15 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 #ifndef NO_MPI
 		double rbuf_time, sbuf_time;
 		sbuf_time = Global_Delta_UnstTimeND;
+#ifdef WINDOWS
+		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		MPI_Barrier(MPI_COMM_WORLD);
+#else
 		MPI::COMM_WORLD.Reduce(&sbuf_time, &rbuf_time, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
 		MPI::COMM_WORLD.Bcast(&rbuf_time, 1, MPI::DOUBLE, MASTER_NODE);
 		MPI::COMM_WORLD.Barrier();
+#endif
 		Global_Delta_UnstTimeND = rbuf_time;
 #endif
 		config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
