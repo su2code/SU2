@@ -3693,7 +3693,11 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Local variables and initialization ---*/
@@ -3716,7 +3720,11 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- The master node alone owns all data found in this routine. ---*/
@@ -3744,7 +3752,11 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- The master node alone owns all data found in this routine. ---*/
@@ -3917,10 +3929,16 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 
 void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration, bool DualTime_Iteration, double timeused, unsigned short val_iZone) {
   
+	int rank;
+
 #ifndef NO_MPI
-  int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #else
-  int rank = MASTER_NODE;
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+  rank = MASTER_NODE;
 #endif
   
   /*--- Output using only the master node ---*/
@@ -4971,8 +4989,14 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
                               unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
+  int size; 
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   unsigned short iZone;
@@ -4986,7 +5010,11 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #ifndef NO_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
-    int size = MPI::COMM_WORLD.Get_size();
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
+    size = MPI::COMM_WORLD.Get_size();
+#endif
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
       Wrt_Srf = false;
@@ -5156,8 +5184,13 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
      output files. ---*/
     
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Bcast(&wrote_base_file, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
     MPI::COMM_WORLD.Bcast(&wrote_base_file, 1, MPI::INT, MASTER_NODE);
     MPI::COMM_WORLD.Barrier();
+#endif
 #endif
     
   }
@@ -5168,7 +5201,11 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   unsigned short iZone;
@@ -5295,8 +5332,13 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      output files. ---*/
     
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Bcast(&wrote_base_file, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+#else
     MPI::COMM_WORLD.Bcast(&wrote_base_file, 1, MPI::INT, MASTER_NODE);
     MPI::COMM_WORLD.Barrier();
+#endif
 #endif
     
   }
@@ -5417,8 +5459,14 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
 #else
   
-  int nProcessor = MPI::COMM_WORLD.Get_size();
+  int nProcessor;
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+  nProcessor = MPI::COMM_WORLD.Get_size();
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
   
   unsigned long nLocalVertex_NearField = 0, MaxLocalVertex_NearField = 0;
   int iProcessor;
@@ -5443,9 +5491,15 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   Buffer_Send_nVertex[0] = nLocalVertex_NearField;
   
   /*--- Send Near-Field vertex information --*/
+#ifdef WINDOWS
+  MPI_Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI::UNSIGNED_LONG, MPI::MAX);
   MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
   
   double *Buffer_Send_Xcoord = new double[MaxLocalVertex_NearField];
   double *Buffer_Send_Ycoord = new double[MaxLocalVertex_NearField];
@@ -5496,12 +5550,21 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       }
   
   /*--- Send all the information --*/
+#ifdef WINDOWS
+  MPI_Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI_DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI::DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI::DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI::DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_IdPoint, nBuffer_IdPoint, MPI::UNSIGNED_LONG, Buffer_Receive_IdPoint, nBuffer_IdPoint, MPI::UNSIGNED_LONG, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_Pressure, nBuffer_Pressure, MPI::DOUBLE, Buffer_Receive_Pressure, nBuffer_Pressure, MPI::DOUBLE, MASTER_NODE);
   MPI::COMM_WORLD.Gather(Buffer_Send_FaceArea, nBuffer_FaceArea, MPI::DOUBLE, Buffer_Receive_FaceArea, nBuffer_FaceArea, MPI::DOUBLE, MASTER_NODE);
+#endif
   
   if (rank == MASTER_NODE) {
     
@@ -5822,8 +5885,12 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 #else
   
   /*--- Send the value of the NearField coefficient to all the processors ---*/
+#ifdef WINDOWS
+  MPI_Bcast(&InverseDesign, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Bcast (&InverseDesign, 1, MPI::DOUBLE, MASTER_NODE);
-  
+#endif
+
   /*--- Store the value of the NearField coefficient ---*/
   solver_container->SetTotal_CEquivArea(InverseDesign);
   
