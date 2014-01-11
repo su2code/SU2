@@ -26,9 +26,6 @@
 
 #ifndef NO_MPI
 #include <mpi.h>
-#ifdef WINDOWS
-	MPI_Status status;
-#endif
 #endif
 
 #include <string>
