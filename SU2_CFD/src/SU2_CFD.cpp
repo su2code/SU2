@@ -170,8 +170,8 @@ int main(int argc, char *argv[]) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
     
-    if ( (config_container[iZone]->GetKind_Solver() == RANS)     ||
-        (config_container[iZone]->GetKind_Solver() == ADJ_RANS)    )
+    if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+        (config_container[iZone]->GetKind_Solver() == ADJ_RANS) )
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     
     /*--- Computation of positive surface area in the z-plane which is used for
