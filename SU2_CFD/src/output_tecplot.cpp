@@ -76,7 +76,12 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   
 #ifndef NO_MPI
   /*--- Remove the domain number from the surface csv filename ---*/
-  int nProcessor = MPI::COMM_WORLD.Get_size();
+  int nProcessor;
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+  nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
   if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
 #endif
   
@@ -461,13 +466,18 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
     
     file.str(string());
     buffer = config->GetFlow_FileName();
-    
+
 #ifndef NO_MPI
-    /*--- Remove the domain number from the filename ---*/
-    int nProcessor = MPI::COMM_WORLD.Get_size();
+	/*--- Remove the domain number from the filename ---*/
+    int nProcessor;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+    nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
-    
+
     file << buffer << ".mesh.plt";
     FileType = GRID;
     
@@ -748,8 +758,13 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
     buffer = config->GetSurfFlowCoeff_FileName();
     
 #ifndef NO_MPI
-    /*--- Remove the domain number from the filename ---*/
-    int nProcessor = MPI::COMM_WORLD.Get_size();
+	/*--- Remove the domain number from the filename ---*/
+    int nProcessor;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+    nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
     
@@ -1067,11 +1082,16 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
   
   file.str(string());
   buffer = config->GetFlow_FileName();
-  
+
 #ifndef NO_MPI
-  /*--- Remove the domain number from the filename ---*/
-  int nProcessor = MPI::COMM_WORLD.Get_size();
-  if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
+	/*--- Remove the domain number from the filename ---*/
+    int nProcessor;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+    nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+    if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
   
   file << buffer;
@@ -1405,11 +1425,16 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   
   file.str(string());
   buffer = config->GetSurfFlowCoeff_FileName();
-  
+
 #ifndef NO_MPI
-  /*--- Remove the domain number from the filename ---*/
-  int nProcessor = MPI::COMM_WORLD.Get_size();
-  if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
+	/*--- Remove the domain number from the filename ---*/
+    int nProcessor;
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+    nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+    if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
   
   file << buffer;
