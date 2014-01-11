@@ -54,7 +54,11 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Array initialization ---*/
@@ -352,8 +356,13 @@ void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -470,8 +479,13 @@ void CAdjEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -587,8 +601,13 @@ void CAdjEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -709,9 +728,13 @@ void CAdjEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif
 #else
       
       /*--- Receive information without MPI ---*/
@@ -829,9 +852,13 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif      
 #else
       
       /*--- Receive information without MPI ---*/
@@ -945,8 +972,13 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
       //      recv_request.Wait(status);
       
       /*--- Send/Receive information using Sendrecv ---*/
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Lambda, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
+#endif
       
 #else
       
@@ -1024,8 +1056,13 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 	sbuf_force[1] = solver_container[FLOW_SOL]->GetTotal_CLift();
 	sbuf_force[2] = solver_container[FLOW_SOL]->GetTotal_CT();
 	sbuf_force[3] = solver_container[FLOW_SOL]->GetTotal_CQ();
+#ifdef WINDOWS
+	MPI_Reduce(sbuf_force, rbuf_force, 4, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+	MPI_Bcast(rbuf_force, 4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, 4, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
 	MPI::COMM_WORLD.Bcast(rbuf_force, 4, MPI::DOUBLE, MASTER_NODE);
+#endif
 	C_d = rbuf_force[0];
 	C_l = rbuf_force[1];
 	C_t = rbuf_force[2];
@@ -1547,11 +1584,16 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	unsigned long iPoint, ErrorCounter = 0;
   double SharpEdge_Distance;
   bool RightSol;
+  int rank;
 
 #ifdef NO_MPI
-	int rank = MASTER_NODE;
+	rank = MASTER_NODE;
 #else
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -1562,8 +1604,8 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool limiter        = (config->GetKind_SlopeLimit() != NONE);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   GetNacelle_Properties(geometry, config, iMesh);
@@ -1611,7 +1653,11 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Error message ---*/
 #ifndef NO_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -2638,13 +2684,20 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   double MyTotal_Sens_AoA   = Total_Sens_AoA;     Total_Sens_AoA = 0.0;
   double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
   double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
-  
+
+#ifdef WINDOWS
+  MPI_Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI::DOUBLE, MPI::SUM);
-  
+#endif
 #endif
   
 	delete [] USens;
@@ -4641,7 +4694,11 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Set the gamma value ---*/
@@ -4859,11 +4916,16 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 	unsigned long iPoint, ErrorCounter = 0;
   double SharpEdge_Distance;
   bool RightSol;
+  int rank;
 
 #ifdef NO_MPI
-	int rank = MASTER_NODE;
+	rank = MASTER_NODE;
 #else
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -4938,7 +5000,11 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Error message ---*/
 #ifndef NO_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -5644,21 +5710,26 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- AoA sensitivity ---*/
-            
-            if (nDim == 2) {
-              D[0][0] = 0.0; D[0][1] = -1.0;
-              D[1][0] = 1.0; D[1][1] = 0.0;
+            /* Coefficients with an explicit AoA dependence - NOTE: Still need to implement right dependency for EFFICIENCY */
+            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT || config->GetKind_ObjFunc() == LIFT_COEFFICIENT || config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT || config->GetKind_ObjFunc() == EQUIVALENT_AREA || config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+            	if (nDim == 2) {
+            		D[0][0] = 0.0; D[0][1] = -1.0;
+            		D[1][0] = 1.0; D[1][1] = 0.0;
+            	}
+            	else {
+            		D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
+            		D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
+            		D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+            	}
+            	for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
+            	for (iPos = 0; iPos < nDim; iPos++) {
+            		for (jPos = 0; jPos < nDim; jPos++)
+                		Dd[iPos] += D[iPos][jPos]*d[jPos];
+            	}
             }
+            /* Coefficients with no explicit AoA dependece */
             else {
-              D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
-              D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
-              D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
-            }
-            
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
-            for (iPos = 0; iPos < nDim; iPos++) {
-              for (jPos = 0; jPos < nDim; jPos++)
-                Dd[iPos] += D[iPos][jPos]*d[jPos];
+            	for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
             }
             
             for (iPos = 0; iPos < nDim; iPos++)
@@ -5695,12 +5766,20 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   double MyTotal_Sens_AoA   = Total_Sens_AoA;     Total_Sens_AoA = 0.0;
   double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
   double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
-  
+
+#ifdef WINDOWS  
+  MPI_Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI::DOUBLE, MPI::SUM);
+#endif
   
 #endif
   
