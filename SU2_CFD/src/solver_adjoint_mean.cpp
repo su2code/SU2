@@ -358,7 +358,7 @@ void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -481,7 +481,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -603,7 +603,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+                               Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -730,7 +730,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -854,7 +854,7 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+                               Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -974,7 +974,7 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Lambda, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
