@@ -412,7 +412,7 @@ def findiff( config, state=None, step=1e-4 ):
     # remove plot items
     del grads['VARIABLE']
     del grads['FINDIFF_STEP']
-    state.update(grads)
+    state.GRADIENTS.update(grads)
     
     # return results
     grads = copy.deepcopy(grads)
