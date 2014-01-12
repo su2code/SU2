@@ -290,7 +290,7 @@ if __name__=="__main__":
   rae2822.cfg_dir   = "TestCases/rans/rae2822"
   rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
   rae2822.test_iter = 100
-  rae2822.test_vals = [-3.413507,-5.454040,0.889408,0.024480] #last 4 columns
+  rae2822.test_vals = [-3.413484,-5.454038,0.889411,0.024479] #last 4 columns
   rae2822.su2_exec  = "parallel_computation.py -f"
   rae2822.timeout   = 1600
   rae2822.tol       = 0.00001
@@ -301,7 +301,7 @@ if __name__=="__main__":
   turb_flatplate.cfg_dir   = "TestCases/rans/flatplate"
   turb_flatplate.cfg_file  = "turb_SA_flatplate_Roe.cfg"
   turb_flatplate.test_iter = 100
-  turb_flatplate.test_vals = [-5.105129,-7.241293,-0.000029,0.013708] #last 4 columns
+  turb_flatplate.test_vals = [-5.104863,-7.241096,-0.000029,0.013699] #last 4 columns
   turb_flatplate.su2_exec  = "parallel_computation.py -f"
   turb_flatplate.timeout   = 1600
   turb_flatplate.tol       = 0.00001
