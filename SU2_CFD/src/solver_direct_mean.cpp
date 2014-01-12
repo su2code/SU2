@@ -4512,15 +4512,15 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   /*--- Copy to the appropriate structure ---*/
   unsigned short iMarker_NacelleInflow, iMarker_NacelleExhaust;
   
-  double FanFace_MassFlow_Local[nMarker_NacelleInflow];
-  double FanFace_Mach_Local[nMarker_NacelleInflow];
-  double FanFace_Pressure_Local[nMarker_NacelleInflow];
-  double FanFace_Area_Local[nMarker_NacelleInflow];
+  double *FanFace_MassFlow_Local = new double [nMarker_NacelleInflow];
+  double *FanFace_Mach_Local = new double [nMarker_NacelleInflow];
+  double *FanFace_Pressure_Local = new double [nMarker_NacelleInflow];
+  double *FanFace_Area_Local = new double [nMarker_NacelleInflow];
   
-  double FanFace_MassFlow_Total[nMarker_NacelleInflow];
-  double FanFace_Mach_Total[nMarker_NacelleInflow];
-  double FanFace_Pressure_Total[nMarker_NacelleInflow];
-  double FanFace_Area_Total[nMarker_NacelleInflow];
+  double *FanFace_MassFlow_Total = new double [nMarker_NacelleInflow];
+  double *FanFace_Mach_Total = new double [nMarker_NacelleInflow];
+  double *FanFace_Pressure_Total = new double [nMarker_NacelleInflow];
+  double *FanFace_Area_Total = new double [nMarker_NacelleInflow];
   
   for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
     FanFace_MassFlow_Local[iMarker_NacelleInflow] = 0.0;
@@ -4534,11 +4534,11 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
     FanFace_Area_Total[iMarker_NacelleInflow] = 0.0;
   }
   
-  double Exhaust_MassFlow_Local[nMarker_NacelleExhaust];
-  double Exhaust_Area_Local[nMarker_NacelleExhaust];
+  double *Exhaust_MassFlow_Local = new double [nMarker_NacelleExhaust];
+  double *Exhaust_Area_Local = new double [nMarker_NacelleExhaust];
   
-  double Exhaust_MassFlow_Total[nMarker_NacelleExhaust];
-  double Exhaust_Area_Total[nMarker_NacelleExhaust];
+  double *Exhaust_MassFlow_Total = new double [nMarker_NacelleExhaust];
+  double *Exhaust_Area_Total = new double [nMarker_NacelleExhaust];
   
   for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
     Exhaust_MassFlow_Local[iMarker_NacelleExhaust] = 0.0;
@@ -4702,6 +4702,22 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
       }
     }
   }
+  
+  delete [] FanFace_MassFlow_Local;
+  delete [] FanFace_Mach_Local;
+  delete [] FanFace_Pressure_Local;
+  delete [] FanFace_Area_Local;
+  
+  delete [] FanFace_MassFlow_Total;
+  delete [] FanFace_Mach_Total;
+  delete [] FanFace_Pressure_Total;
+  delete [] FanFace_Area_Total;
+  
+  delete [] Exhaust_MassFlow_Local;
+  delete [] Exhaust_Area_Local;
+  
+  delete [] Exhaust_MassFlow_Total;
+  delete [] Exhaust_Area_Total;
   
 }
 
