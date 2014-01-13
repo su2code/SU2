@@ -31,7 +31,11 @@ int main(int argc, char *argv[]) {
 	unsigned short nZone = 1;
     
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Init(&argc,&argv);
+#else
     MPI::Init(argc, argv);
+#endif
 #endif
   
 	/*--- Definition of the class for the definition of the problem ---*/
@@ -90,7 +94,11 @@ int main(int argc, char *argv[]) {
   strcpy (buffer_plt, "periodic_halo.plt"); periodic->SetTecPlot(buffer_plt);
 	
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Finalize();
+#else
 	MPI::Finalize();
+#endif
 #endif
     
 	/*--- End solver ---*/

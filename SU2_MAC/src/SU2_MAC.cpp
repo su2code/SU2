@@ -31,7 +31,11 @@ int main(int argc, char *argv[]) {
   unsigned short nZone = 1;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Init(&argc,&argv);
+#else
 	MPI::Init(argc, argv);
+#endif
 #endif
 	
 	/*--- Definition of the config problem ---*/
@@ -204,7 +208,11 @@ int main(int argc, char *argv[]) {
 	}
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Finalize();
+#else
 	MPI::Finalize();
+#endif
 #endif
 	
 	/*--- End solver ---*/
