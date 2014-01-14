@@ -10,9 +10,12 @@
 ##########################
 
 # AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
-SUBDIRS = Common/lib 
+# build third-party optional dependencies first
+SUBDIRS = contrib
+
+SUBDIRS += Common/lib
 
 SUBDIRS += SU2_PY
 
