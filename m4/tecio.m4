@@ -11,7 +11,7 @@ AC_DEFUN([CONFIGURE_TECIO],
 		   no)  enabletecio=no ;;
  		    *)  AC_MSG_ERROR(bad value ${enableval} for --enable-tecio) ;;
 		 esac],
-		 [enabletecio=$enableoptional])
+		 [enabletecio=yes])
 
 
   # The TECIO APU requires some header files...
