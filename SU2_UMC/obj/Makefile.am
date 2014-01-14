@@ -15,7 +15,7 @@ bin_PROGRAMS = ../bin/SU2_UMC
 
 ___bin_SU2_UMC_SOURCES = ../include/SU2_UMC.hpp \
 		../src/SU2_UMC.cpp
-		
+
 ___bin_SU2_UMC_CXXFLAGS =
 ___bin_SU2_UMC_LDADD = ../../Common/lib/libSU2.a
 
@@ -30,8 +30,8 @@ ___bin_SU2_UMC_LDADD += @METIS_LD@
 # endif
 
 # if BUILD_TECIO
-___bin_SU2_UMC_CXXFLAGS += @TECIO_CXX@
-___bin_SU2_UMC_LDADD += @TECIO_LD@
+___bin_SU2_UMC_CXXFLAGS += @su2_contrib_INCLUDES@
+___bin_SU2_UMC_LDADD += @su2_contrib_LIBS@
 # endif
 
 # if BUILD_MUTATIONPP

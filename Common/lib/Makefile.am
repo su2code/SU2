@@ -43,12 +43,12 @@ libSU2_a_SOURCES = ../src/config_structure.hpp \
 	       ../src/vector_structure.cpp \
 		../src/matrix_structure.cpp
 
-libSU2_a_CXXFLAGS = 
+libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
 
 # if BUILD_CGNS
-libSU2_a_CXXFLAGS += @CGNS_CXX@ 
-libSU2_a_LIBADD += @CGNS_LD@ 
+libSU2_a_CXXFLAGS += @CGNS_CXX@
+libSU2_a_LIBADD += @CGNS_LD@
 # endif
 
 # if BUILD_METIS
@@ -57,8 +57,8 @@ libSU2_a_LIBADD += @METIS_LD@
 # endif
 
 # if BUILD_TECIO
-libSU2_a_CXXFLAGS += @TECIO_CXX@
-libSU2_a_LIBADD += @TECIO_LD@
+libSU2_a_CXXFLAGS += @su2_contrib_INCLUDES@
+libSU2_a_LIBADD += @su2_contrib_LIBS@
 # endif
 
 # if BUILD_MUTATIONPP

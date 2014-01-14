@@ -15,6 +15,53 @@ AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([subdir-objects])  # [SU^2], [2.0]
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
+
+
+# AC_CONFIG_HEADERS([config.h])
+AC_PROG_CXX
+# AC_PROG_CC
+# AM_PROG_CC_C_O
+AC_PROG_RANLIB
+AC_PROG_MKDIR_P
+
+# --------------------------------------------------------------
+# Check for important type sizes
+# --------------------------------------------------------------
+AC_CHECK_SIZEOF(short int)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(unsigned int)
+AC_CHECK_SIZEOF(long int)
+AC_CHECK_SIZEOF(float)
+AC_CHECK_SIZEOF(double)
+AC_CHECK_SIZEOF(void *)
+
+
+
+# --------------------------------------------------------------
+# Build up contributed packages that we will build from source
+# --------------------------------------------------------------
+su2_contrib_INCLUDES=""
+su2_contrib_LIBS=""
+
+# Tecplot
+CONFIGURE_TECIO
+if (test $enabletecio = yes); then
+  su2_contrib_INCLUDES="$TECIO_INCLUDE $su2_contrib_INCLUDES"
+  su2_contrib_LIBS="$TECIO_LIB $su2_contrib_LIBS"
+else
+  su2_contrib_INCLUDES="-DNO_TECIO $su2_contrib_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
+AC_CONFIG_FILES([contrib/tecio/Makefile])
+
+
+
+AC_SUBST([su2_contrib_INCLUDES])
+AC_SUBST([su2_contrib_LIBS])
+
+
+
 
 # optional bindings
 AC_ARG_WITH(MPI,
@@ -26,14 +73,6 @@ AC_ARG_WITH(CGNS-lib,
 AC_ARG_WITH(CGNS-include,
     	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]),
 	[with_CGNS_include=$withval], [with_CGNS_include="no"])
-
-CONFIGURE_TECIO
-if (test $enabletecio = yes); then
-  libmesh_contrib_INCLUDES="$TECIO_INCLUDE $libmesh_contrib_INCLUDES"
-fi
-AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
-AC_CONFIG_FILES([contrib/tecio/Makefile])
-
 AC_ARG_WITH(Metis-lib,
    	AS_HELP_STRING([--with-Metis-lib[=ARG]], [Metis library directory, ARG = path to libmetis.a]),
 	[with_Metis_lib=$withval], [with_Metis_lib="no"])
@@ -295,12 +334,6 @@ AM_CONDITIONAL([BUILD_UMC],[test $build_UMC != "no"])
 
 ###########################
 
-# AC_CONFIG_HEADERS([config.h])
-AC_PROG_CXX
-# AC_PROG_CC
-# AM_PROG_CC_C_O
-AC_PROG_RANLIB
-AC_PROG_MKDIR_P
 AC_OUTPUT(Makefile \
         contrib/Makefile \
 	Common/lib/Makefile \

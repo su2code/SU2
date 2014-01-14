@@ -103,8 +103,8 @@ ___bin_SU2_CFD_LDADD += @METIS_LD@
 # endif
 
 # if BUILD_TECIO
-___bin_SU2_CFD_CXXFLAGS += @TECIO_CXX@
-___bin_SU2_CFD_LDADD += @TECIO_LD@
+___bin_SU2_CFD_CXXFLAGS += @su2_contrib_INCLUDES@
+___bin_SU2_CFD_LDADD += @su2_contrib_LIBS@
 # endif
 
 # if BUILD_MUTATIONPP
