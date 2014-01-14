@@ -2,10 +2,9 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4989,9 +4988,9 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
                               unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
-  int size; 
 
 #ifndef NO_MPI
+  int size;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #else

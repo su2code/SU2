@@ -2,10 +2,9 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -234,9 +233,9 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {
   
   unsigned short iCounter;
-  int size, rank;
   
 #ifndef NO_MPI
+  int size, rank;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);

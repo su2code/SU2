@@ -2,14 +2,13 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
  * is no corresponding .cpp file at this time.
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

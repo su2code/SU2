@@ -2,10 +2,9 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,9 +31,9 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   char cstr[200];
   string::size_type position;
   int rank = MASTER_NODE;
-  int size;
   
 #ifndef NO_MPI
+  int size;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -138,9 +137,9 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   bool isFound = false;
   char cstr[200];
   string::size_type position;
-  int size;
   
 #ifndef NO_MPI
+  int size;
 #ifdef WINDOWS
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 #else

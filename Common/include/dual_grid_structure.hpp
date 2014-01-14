@@ -3,10 +3,9 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CDualGrid{
 protected:
@@ -123,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CPoint : public CDualGrid {
 private:
@@ -657,7 +656,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CEdge : public CDualGrid {
 private:
@@ -794,7 +793,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CVertex : public CDualGrid {
 private:
