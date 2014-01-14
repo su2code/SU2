@@ -15,7 +15,7 @@ bin_PROGRAMS = ../bin/SU2_GDC
 
 ___bin_SU2_GDC_SOURCES = ../include/SU2_GDC.hpp \
 		../src/SU2_GDC.cpp
-		
+
 ___bin_SU2_GDC_CXXFLAGS =
 ___bin_SU2_GDC_LDADD = ../../Common/lib/libSU2.a
 
@@ -30,8 +30,8 @@ ___bin_SU2_GDC_LDADD += @METIS_LD@
 # endif
 
 # if BUILD_TECIO
-___bin_SU2_GDC_CXXFLAGS += @TECIO_CXX@
-___bin_SU2_GDC_LDADD += @TECIO_LD@
+___bin_SU2_GDC_CXXFLAGS += @su2_contrib_INCLUDES@
+___bin_SU2_GDC_LDADD += @su2_contrib_LIBS@
 # endif
 
 # if BUILD_MUTATIONPP
