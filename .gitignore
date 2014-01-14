@@ -29,3 +29,6 @@ UserInterfaceState.xcuserstate
 
 # Compiled Makefiles
 Makefile
+
+# Emacs temporary files
+*~
