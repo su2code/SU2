@@ -26,6 +26,7 @@
 import os, sys, shutil, copy
 import subprocess
 from ..io import Config
+from ..util import which
 
 # ------------------------------------------------------------
 #  Setup
@@ -43,8 +44,12 @@ slurm_job = os.environ.has_key('SLURM_JOBID')
 # set mpi command
 if slurm_job:
     mpi_Command = 'srun -n %i %s'
-else:
+elif not which('mpirun') is None:
     mpi_Command = 'mpirun -np %i %s'
+elif not which('mpiexec') is None:
+    mpi_Command = 'mpiexec -np %i %s'
+else:
+    mpi_Command = ''
     
 # ------------------------------------------------------------
 #  SU2 Suite Interface Functions
@@ -246,6 +251,8 @@ def build_command( the_Command , processes=0 ):
     """ builds an mpi command for given number of processes """
     the_Command = base_Command % the_Command
     if processes > 0:
+        if not mpi_Command:
+            raise RuntimeError , 'could not find an mpi interface'
         the_Command = mpi_Command % (processes,the_Command)
     return the_Command
 
