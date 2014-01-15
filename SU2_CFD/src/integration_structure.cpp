@@ -253,7 +253,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Initialize at the fist iteration ---*/
 		if (Iteration  == 0) {
 			Cauchy_Value = 0.0;
-			Cauchy_Counter = 0.0;
+			Cauchy_Counter = 0;
 			for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
 				Cauchy_Serie[iCounter] = 0.0;
 		}
