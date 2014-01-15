@@ -1603,11 +1603,11 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
     
     /*--- Error checking ---*/
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       if (Residual_i[iVar] != Residual_i[iVar]) {
         cout << "NaN in Chemistry Residual" << endl;
       }
-      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
         if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
           cout << "NaN in Chemistry Jacobian i" << endl;
       }
