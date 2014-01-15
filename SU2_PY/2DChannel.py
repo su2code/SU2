@@ -3,10 +3,9 @@
 ## \file 2DChannel.py
 #  \brief Python script for creating grid for freesurface channels.
 #  \author F. Palacios
-#  \version 2.0.10
+#  \version 3.0.0 "eagle"
 #
-# Stanford University Unstructured (SU2).
-# Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public

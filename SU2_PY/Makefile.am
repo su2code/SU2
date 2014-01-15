@@ -66,5 +66,6 @@ nobase_dist_mypkg_DATA= \
     SU2/util/plot.py \
     SU2/util/pyCppTap.py \
     SU2/util/switch.py \
+    SU2/util/which.py \
     SU2/util/__init__.py
 

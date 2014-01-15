@@ -2,10 +2,9 @@
  * \file vector_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,10 +44,9 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
-
-  int myrank;
   
 #ifndef NO_MPI
+  int myrank;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -79,10 +77,9 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   vec_val = new double[nElm];
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
-
-  int myrank;
   
 #ifndef NO_MPI
+  int myrank;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -131,9 +128,8 @@ CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
-  int myrank;
-  
 #ifndef NO_MPI
+  int myrank;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -165,9 +161,8 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
-  int myrank;
-  
 #ifndef NO_MPI
+  int myrank;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -209,10 +204,9 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   vec_val = new double[nElm];
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
-
-  int myrank;
   
 #ifndef NO_MPI
+  int myrank;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
