@@ -3,9 +3,9 @@
 ## \file config_gui.py
 #  \brief _____________.
 #  \author Aniket Aranake
+#  \version 3.0.0 "eagle"
 #
-# Stanford University Unstructured (SU2).
-# Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
