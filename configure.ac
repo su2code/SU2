@@ -349,7 +349,7 @@ AC_OUTPUT(Makefile \
 	SU2_PY/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
-abs_prefix=`(cd $prefix && pwd)`
+abs_prefix=$prefix #`(cd $prefix && pwd)`
 
 
 AC_MSG_RESULT([
@@ -369,6 +369,9 @@ Build Configuration Summary:
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+
+    su2_contrib_INCLUDES = $su2_contrib_INCLUDES
+    su2_contrib_LIBS     = $su2_contrib_LIBS
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC
