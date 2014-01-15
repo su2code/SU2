@@ -44,8 +44,13 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
+#ifdef WINDOWS
+	MPI_Init(&argc,&argv);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	MPI::Init(argc,argv);
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -276,8 +281,13 @@ int main(int argc, char *argv[]) {
 #ifdef NO_MPI
           exit(1);
 #else
+#ifdef WINDOWS
+		  MPI_Abort(MPI_COMM_WORLD,1);
+		  MPI_Finalize();
+#else
           MPI::COMM_WORLD.Abort(1);
           MPI::Finalize();
+#endif
 #endif
         }
 
@@ -371,7 +381,11 @@ int main(int argc, char *argv[]) {
 	
 #ifndef NO_MPI
 	/*--- Finalize MPI parallelization ---*/
+#ifdef WINDOWS
+	MPI_Finalize();
+#else
 	MPI::Finalize();
+#endif
 #endif
 	
 	/*--- End solver ---*/
