@@ -1,12 +1,12 @@
 /*!
- * \file SU2_GDC.hpp
- * \brief Headers of the main subroutines of the code SU2_GDC.
- *        The subroutines and functions are in the <i>SU2_GDC.cpp</i> file.
+ * \file SU2_UMC.hpp
+ * \brief Headers of the main subroutines of the code SU2_UMC.
+ *        The subroutines and functions are in the <i>SU2_UMC.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 2.0.9
  *
  * Stanford University Unstructured (SU2).
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,4 +40,5 @@ void Tracked_Points_to_Coords(CBoundaryGeometry *boundary);
 void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary);
 void clean_up(const char *filename);
 bool fexists(const char *filename);
-
+bool Compute_Sectional_Forces();
+string file_find(string input_file, unsigned short column, string entry);
