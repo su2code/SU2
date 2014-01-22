@@ -3517,7 +3517,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         
 				if (iPoint == Pin) {
 					for (iVar = 0; iVar < nVar; iVar++)
-						Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar]; //- IntBoundary_Jump[iVar];
+						Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar] - IntBoundary_Jump[iVar];
 					numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
 				}
         
@@ -3525,7 +3525,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         
 				if (iPoint == Pout) {
 					for (iVar = 0; iVar < nVar; iVar++)
-						Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar]; //+ IntBoundary_Jump[iVar];
+						Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar] + IntBoundary_Jump[iVar];
 					numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
 				}
         
@@ -3667,7 +3667,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
             for (iVar = 0; iVar < nVar; iVar++) {
               Psi_in[iVar] = Psi_i[iVar]; Psi_out[iVar] = Psi_j[iVar];
               MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-              Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar]; //- IntBoundary_Jump[iVar];
+              Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar] - IntBoundary_Jump[iVar];
             }
             numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
           }
@@ -3678,7 +3678,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
             for (iVar = 0; iVar < nVar; iVar++) {
               Psi_in[iVar] = Psi_j[iVar]; Psi_out[iVar] = Psi_i[iVar];
               MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-              Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar]; //+ IntBoundary_Jump[iVar];
+              Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar] + IntBoundary_Jump[iVar];
             }
             numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
           }
