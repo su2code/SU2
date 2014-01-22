@@ -2,10 +2,9 @@
  * \file SU2_DDC.cpp
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,16 +37,23 @@ int main(int argc, char *argv[]) {
   static char buffer[MAX_MPI_BUFFER]; // buffer size in bytes
   
   void *ptr;
+
+#ifdef WINDOWS
+	MPI_Init(&argc,&argv);
+	MPI_Buffer_attach(buffer,MAX_MPI_BUFFER);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
 	MPI::Init(argc, argv);
 	MPI::Attach_buffer(buffer, MAX_MPI_BUFFER);
-  
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
+#endif	
 #endif
 	
 	/*--- Definition of some important class ---*/
 	CConfig *config = NULL;
-  CGeometry *geometry = NULL;
+	CGeometry *geometry = NULL;
 	CSurfaceMovement *surface_mov = NULL;
 	CFreeFormDefBox** FFDBox = NULL;
   
@@ -63,7 +69,11 @@ int main(int argc, char *argv[]) {
   }
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Barrier();
+#endif
 #endif
   
 	/*--- Set domains for parallel computation (if any) ---*/
@@ -84,7 +94,11 @@ int main(int argc, char *argv[]) {
     }
     
 #ifndef NO_MPI
-    MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
 #endif
     
     /*--- Allocate the memory of the current domain, and
@@ -95,14 +109,22 @@ int main(int argc, char *argv[]) {
     domain->SetSendReceive(config);
     
 #ifndef NO_MPI
-    MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
 #endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------------------- Write mesh files --------------------------" << endl;
     
 #ifndef NO_MPI
-    MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
 #endif
     
     /*--- Write tecplot files ---*/
@@ -120,7 +142,11 @@ int main(int argc, char *argv[]) {
     domain->SetMeshFile(config, cstr_su2);
     
 #ifndef NO_MPI
-    MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
 #endif
     
     if (rank == MASTER_NODE)
@@ -130,14 +156,22 @@ int main(int argc, char *argv[]) {
     if (domain->GetnDim() == 3) {
       
 #ifndef NO_MPI
-      MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
 #endif
       
       if (rank == MASTER_NODE)
         cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
       
 #ifndef NO_MPI
-      MPI::COMM_WORLD.Barrier();
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
 #endif
       
       FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -149,9 +183,15 @@ int main(int argc, char *argv[]) {
     
 #ifndef NO_MPI
     /*--- Finalize MPI parallelization ---*/
+#ifdef WINDOWS
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Buffer_detach(buffer,NULL);
+	MPI_Finalize();
+#else
     MPI::COMM_WORLD.Barrier();
     MPI::Detach_buffer(ptr);
     MPI::Finalize();
+#endif
 #endif
     
   }

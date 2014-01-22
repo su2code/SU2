@@ -2,10 +2,9 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -551,10 +550,14 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
 #ifndef NO_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-      
+#ifdef WINDOWS
+	  MPI_Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+#else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-      
+#endif
+
 #else
       
       /*--- Receive information without MPI ---*/
@@ -769,8 +772,8 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   
   bool *check_Point, add_point;
   unsigned long iEdge, iPoint, jPoint, index_Point, iLinelet, iVertex, next_Point, counter, iElem;
-  unsigned short iMarker, iNode, ExtraLines = 100;
-  double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint, MeanPoints;
+  unsigned short iMarker, iNode, ExtraLines = 100, MeanPoints;
+  double alpha = 0.9, weight, max_weight, *normal, area, volume_iPoint, volume_jPoint;
   unsigned long Local_nPoints, Local_nLineLets, Global_nPoints, Global_nLineLets;
 
   /*--- Memory allocation --*/
@@ -919,8 +922,13 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   Global_nPoints = Local_nPoints;
   Global_nLineLets = Local_nLineLets;
 #else
+#ifdef WINDOWS
+  MPI_Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
 
   MeanPoints = int(double(Global_nPoints)/double(Global_nLineLets));

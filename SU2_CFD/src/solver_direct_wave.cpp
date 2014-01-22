@@ -2,10 +2,9 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +30,11 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   nPoint = geometry->GetnPoint();
@@ -733,11 +736,16 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
 
 void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
+	int rank;
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
   
   /*--- Restart the solution from file information ---*/

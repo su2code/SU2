@@ -4,8 +4,7 @@
 #  \brief _____________.
 #  \author Trent Lukaczyk
 #
-# Stanford University Unstructured (SU2).
-# Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public

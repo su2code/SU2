@@ -1,7 +1,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.10
+#  \version 3.0.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -412,7 +412,7 @@ def findiff( config, state=None, step=1e-4 ):
     # remove plot items
     del grads['VARIABLE']
     del grads['FINDIFF_STEP']
-    state.update(grads)
+    state.GRADIENTS.update(grads)
     
     # return results
     grads = copy.deepcopy(grads)

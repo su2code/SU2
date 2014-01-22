@@ -2,10 +2,9 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,8 +33,15 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   int rank = MASTER_NODE;
   
 #ifndef NO_MPI
+  int size;
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
-  if (MPI::COMM_WORLD.Get_size() != 1) {
+  size = MPI::COMM_WORLD.Get_size();
+#endif
+  if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
     val_mesh_filename = val_mesh_filename + "_1.su2";
@@ -55,8 +61,13 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifdef NO_MPI
         exit(1);
 #else
+#ifdef WINDOWS
+		MPI_Abort(MPI_COMM_WORLD,1);
+		MPI_Finalize();
+#else
         MPI::COMM_WORLD.Abort(1);
         MPI::Finalize();
+#endif
 #endif
       }
       
@@ -76,8 +87,13 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifdef NO_MPI
               exit(1);
 #else
+#ifdef WINDOWS
+			  MPI_Abort(MPI_COMM_WORLD,1);
+			  MPI_Finalize();
+#else
               MPI::COMM_WORLD.Abort(1);
               MPI::Finalize();
+#endif
 #endif
             }
           }
@@ -123,7 +139,13 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   string::size_type position;
   
 #ifndef NO_MPI
-  if (MPI::COMM_WORLD.Get_size() != 1) {
+  int size;
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
+  size = MPI::COMM_WORLD.Get_size();
+#endif
+  if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
     val_mesh_filename = val_mesh_filename + "_1.su2";
@@ -161,11 +183,15 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
   
   unsigned short iMGlevel, iZone;
-  unsigned long iPoint;
-  
+  unsigned long iPoint; 
   int rank = MASTER_NODE;
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -218,7 +244,11 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   
 #ifndef NO_MPI
   /*--- Synchronization point before the multigrid algorithm ---*/
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Barrier();
+#endif
 #endif
   
   /*--- Loop over all the new grid ---*/
