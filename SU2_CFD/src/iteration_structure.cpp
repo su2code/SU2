@@ -2,10 +2,9 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +38,12 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+  int rank;
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
@@ -229,7 +233,11 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
@@ -393,10 +401,15 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
   unsigned short iZone; // Index for zone of the mesh
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();  
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+	int rank;
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -439,11 +452,14 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
   IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   ExtIter = config_container[ZONE_0]->GetExtIter();
   rank    = MASTER_NODE;
-  
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
-  
+#endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -790,7 +806,11 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Gust Parameters from config ---*/
@@ -808,8 +828,13 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
   
@@ -934,7 +959,11 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Perform mesh movement depending on specified type ---*/
@@ -1194,7 +1223,11 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Local variables and initialization ---*/
@@ -1502,8 +1535,13 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 #ifndef NO_MPI
     
 	  /*--- for a given zone, sum the coefficients across the processors ---*/
+#ifdef WINDOWS
+	  MPI_Reduce(sbuf_force, rbuf_force, nVar_Force, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+	  MPI_Barrier(MPI_COMM_WORLD);
+#else
 	  MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, nVar_Force, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
 	  MPI::COMM_WORLD.Barrier();
+#endif
 #else
 	  for (iVar = 0; iVar < nVar_Force; iVar++) {
 		  rbuf_force[iVar] = sbuf_force[iVar];

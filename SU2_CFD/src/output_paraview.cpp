@@ -2,10 +2,9 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,8 +69,13 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 		filename = config->GetHeat_FileName().c_str();
     
 #ifndef NO_MPI
+	int nProcessor;
 	/*--- Remove the domain number from the surface csv filename ---*/
-	int nProcessor = MPI::COMM_WORLD.Get_size();
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+	nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
 	if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
 #endif
     

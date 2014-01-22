@@ -2,10 +2,9 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -143,9 +142,14 @@ void CSysSolve::writeHistory(const int & iter, const double & res, const double 
 unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
-  int rank = 0;
+int rank = 0;
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Check the subspace size ---*/
@@ -154,8 +158,13 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
   
@@ -248,9 +257,14 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
-  int rank = 0;
+int rank = 0;
+
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*---  Check the subspace size ---*/
@@ -259,8 +273,13 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
 
@@ -270,8 +289,13 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
   
@@ -382,7 +406,11 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	
   int rank = 0;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Check the subspace size ---*/
@@ -391,8 +419,13 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
   }
 	

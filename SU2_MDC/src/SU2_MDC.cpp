@@ -2,10 +2,9 @@
  * \file SU2_MDC.cpp
  * \brief Main file of Mesh Deformation Code (SU2_MDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,10 +30,15 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- MPI initialization ---*/
-  
+#ifdef WINDOWS
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else  
   MPI::Init(argc,argv);
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
+#endif
 #endif
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -140,8 +144,11 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- MPI syncronization point ---*/
-  
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else 
   MPI::COMM_WORLD.Barrier();
+#endif
 #endif
   
   /*--- Volumetric grid deformation ---*/
@@ -200,8 +207,11 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- Finalize MPI parallelization ---*/
-  
+#ifdef WINDOWS
+  MPI_Finalize();
+#else  
   MPI::Finalize();
+#endif
 #endif
   
   /*--- End solver ---*/

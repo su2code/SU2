@@ -2,10 +2,10 @@
  * \file SU2_UMC.cpp
  * \brief Main file for UMarc Coupling (SU2_UMC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
  * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,13 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
 #ifndef NO_MPI
   /*--- MPI initialization, and buffer setting ---*/
+#ifdef WINDOWS
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   MPI::Init(argc,argv);
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
 	
   /*--- Declare pointers to class objects ---*/

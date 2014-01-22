@@ -5,10 +5,9 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +44,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CGridMovement {
 public:
@@ -74,7 +73,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -659,7 +658,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -914,7 +913,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

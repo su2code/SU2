@@ -2,10 +2,9 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -818,8 +817,13 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+	MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
 	}
 	else {
@@ -1022,8 +1026,13 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
 #ifdef NO_MPI
     exit(1);
 #else
+#ifdef WINDOWS
+	MPI_Abort(MPI_COMM_WORLD,1);
+	MPI_Finalize();
+#else
     MPI::COMM_WORLD.Abort(1);
     MPI::Finalize();
+#endif
 #endif
 	}
 }

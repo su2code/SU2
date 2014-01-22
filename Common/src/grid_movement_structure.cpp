@@ -2,10 +2,9 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 2.0.10
+ * \version 3.0.0 "eagle"
  *
- * Stanford University Unstructured (SU2).
- * Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+ * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,7 +95,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Decide if there is going to be a screen output ---*/
@@ -164,7 +167,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
 
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1000, Screen_Output);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, Screen_Output);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -209,7 +212,11 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   int rank = MASTER_NODE;
   
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
@@ -269,10 +276,15 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
   double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
   double MinVolume_Local = MinVolume; MinVolume = 0.0;
-  
+#ifdef WINDOWS
+  MPI_Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI::DOUBLE, MPI::MAX);
   MPI::COMM_WORLD.Allreduce(&MinVolume_Local, &MinVolume, 1, MPI::DOUBLE, MPI::MIN);
+#endif
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
@@ -293,7 +305,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Allocate maximum size (rectangle and hexahedron) ---*/
@@ -361,7 +377,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
 #ifndef NO_MPI
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+#ifdef WINDOWS
+  MPI_Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
 #endif
   
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
@@ -387,7 +407,11 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
   
 #ifndef NO_MPI
   double MinLength_Local = MinLength; MinLength = 0.0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MinLength_Local, &MinLength, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else
   MPI::COMM_WORLD.Allreduce(&MinLength_Local, &MinLength, 1, MPI::DOUBLE, MPI::MIN);
+#endif
 #endif
       
 	return MinLength;
@@ -1459,7 +1483,11 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
 	/*--- Local variables ---*/
@@ -1594,7 +1622,11 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Local variables ---*/
@@ -1756,7 +1788,11 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Local variables ---*/
@@ -1886,7 +1922,11 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Local variables ---*/
@@ -2007,8 +2047,11 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 	FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
   
 #ifndef NO_MPI
-	/*--- MPI initialization, and buffer setting ---*/
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Arbitrary definition of surface coordinates from file. ---*/
@@ -2216,11 +2259,16 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	unsigned long iVertex, iPoint;
 	double *car_coord, *car_coord_new, *par_coord, guess[3], max_diff, 
 	my_max_diff = 0.0, diff;
+	int rank;
 	
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
 	guess[0] = 0.5; guess[1] = 0.5; guess[2] = 0.5;
@@ -2266,7 +2314,11 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 			}
 		
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX); 	
+#endif
 #else
 	max_diff = my_max_diff;
 #endif
@@ -2279,11 +2331,16 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild) {
 	unsigned short iOrder, jOrder, kOrder;
 	double *car_coord, *par_coord, guess[3];
+	int rank;
 
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
 	for (iOrder = 0; iOrder < FFDBoxChild->GetlOrder(); iOrder++)
@@ -2303,11 +2360,16 @@ void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config
 void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild) {
 	unsigned short iOrder, jOrder, kOrder, iDim;
 	double *car_coord, *par_coord;
+	int rank;
 	
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 		
 	for (iOrder = 0; iOrder < FFDBoxChild->GetlOrder(); iOrder++)
@@ -2336,11 +2398,16 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 	unsigned long iVertex, iPoint, iSurfacePoints;
 	double car_coord[3], *car_coord_new, *car_coord_old, *par_coord, *var_coord, guess[3], max_diff, 
 	my_max_diff = 0.0, diff;
+	int rank;
 	
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 			
 	/*--- Recompute the parametric coordinates ---*/
@@ -2389,7 +2456,11 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 	}
 		
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX); 	
+#endif
 #else
 	max_diff = my_max_diff;
 #endif
@@ -2404,11 +2475,16 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 	*par_coord, VarCoord[3];
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, iSurfacePoints;
+	int rank;
 	
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
 	/*--- Recompute the cartesians coordinates ---*/
@@ -2457,7 +2533,11 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 	}
 		
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX); 	
+#endif
 #else
 	max_diff = my_max_diff;
 #endif
@@ -2777,17 +2857,26 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 #ifndef NO_MPI
 
   unsigned long *Buffer_Send_nVertex, *Buffer_Receive_nVertex;
-	int iProcessor;
+	int iProcessor, nProcessor;
 	double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-  
-	int nProcessor = MPI::COMM_WORLD.Get_size();
+
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
+	nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
   
 	Buffer_Receive_Coord = new double [nProcessor*2];
   Buffer_Send_Coord = new double [2];
   
   Buffer_Send_Coord[0] = TPCoord[0]; Buffer_Send_Coord[1] = TPCoord[1];
+
+#ifdef WINDOWS
+	MPI_Allgather(Buffer_Send_Coord, 2, MPI_DOUBLE, Buffer_Receive_Coord, 2, MPI_DOUBLE, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, 2, MPI::DOUBLE, Buffer_Receive_Coord, 2, MPI::DOUBLE);
-  
+#endif
+
   TPCoord[0] = Buffer_Receive_Coord[0]; TPCoord[1] = Buffer_Receive_Coord[1];
   for (iProcessor = 1; iProcessor < nProcessor; iProcessor++) {
     Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
@@ -2812,14 +2901,23 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   }
   
 #ifndef NO_MPI
-  
+ 
+#ifdef WINDOWS
+	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+#else
 	nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
   
 	Buffer_Receive_Coord = new double [nProcessor*2];
   Buffer_Send_Coord = new double [2];
   
   Buffer_Send_Coord[0] = LPCoord[0]; Buffer_Send_Coord[1] = LPCoord[1];
+
+#ifdef WINDOWS
+	MPI_Allgather(Buffer_Send_Coord, 2, MPI_DOUBLE, Buffer_Receive_Coord, 2, MPI_DOUBLE, MPI_COMM_WORLD);
+#else
 	MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, 2, MPI::DOUBLE, Buffer_Receive_Coord, 2, MPI::DOUBLE);
+#endif
   
   Chord = 0.0;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -3287,7 +3385,11 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Local variables ---*/
@@ -3370,11 +3472,16 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
+  int rank;
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
   /*--- Initialize the delta variation in coordinates ---*/
@@ -3485,11 +3592,16 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   unsigned short iMarker, jMarker, Moving;
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
+  int rank;
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
   /*--- Initialize the delta variation in coordinates ---*/
@@ -3609,11 +3721,16 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
   unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
+  int rank;
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
   
   /*--- Initialize the delta variation in coordinates ---*/
@@ -3763,11 +3880,16 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   unsigned short iMarker, jMarker, Moving, iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
+  int rank;
   
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
   /*--- Initialize the delta variation in coordinates ---*/
@@ -3994,11 +4116,16 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     double x_new, y_new;
     double VarCoord[3];
     string Marker_Tag;
+	int rank;
     
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
     
     /*--- Check to see if we are supposed to move this marker(airfoil) ---*/
@@ -4056,13 +4183,17 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   double time_new, time_old;
   double Center[3], Omega[3], Ampl[3], Phase[3];
   double DEG2RAD = PI_NUMBER/180.0;
-
+  int rank;
   bool adjoint = config->GetAdjoint();
     
 #ifndef NO_MPI
-	int rank = MPI::COMM_WORLD.Get_rank();
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	int rank = MASTER_NODE;
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#else
+	rank = MASTER_NODE;
 #endif
 	
   /*--- Retrieve values from the config file ---*/
@@ -4139,7 +4270,11 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
   /*--- Local variables ---*/
@@ -4706,8 +4841,12 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
   int rank = MASTER_NODE;
 
-#ifndef NO_MPI  
+#ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
 	rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
 	
 	char *cstr = new char [val_mesh_filename.size()+1];
@@ -4918,7 +5057,11 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         nSurfPoints = 0;
 #ifndef NO_MPI
         if (config->GetKind_SU2() != SU2_DDC)
+#ifdef WINDOWS
+          MPI_Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
           MPI::COMM_WORLD.Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
         else
           nSurfPoints = my_nSurfPoints;
 #else
