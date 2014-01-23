@@ -89,6 +89,7 @@ CConfig::CConfig(char case_filename[200]) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
 	double default_vec_3d[3];
+  double default_vec_4d[4];
 	double default_vec_6d[6];
 	nZone = val_nZone;
 	iZone = val_iZone;
@@ -594,8 +595,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
-  default_vec_3d[0] = 1E-6; default_vec_3d[1] = 1;
-	AddArrayOption("GEO_SECTION_LIMIT", 2, Section_Limit, default_vec_3d);
+  default_vec_4d[0] = 1E-6; default_vec_4d[1] = 1; default_vec_4d[2] = 1; default_vec_4d[3] = 0;
+	AddArrayOption("GEO_SECTION_LIMIT", 4, Section_Limit, default_vec_4d);
 	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
 	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
 	/* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
