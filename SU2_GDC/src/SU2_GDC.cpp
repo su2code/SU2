@@ -27,7 +27,8 @@ int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
 	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 5, iVar;
-	double ObjectiveFunc[100], ObjectiveFunc_New[100], Gradient[100], delta_eps, MinPlane, MaxPlane, Plane_P0[5][3], Plane_Normal[5][3];
+	double ObjectiveFunc[100], ObjectiveFunc_New[100], Gradient[100], delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+  Plane_P0[5][3], Plane_Normal[5][3];
   vector<double> Xcoord_Airfoil[5], Ycoord_Airfoil[5], Zcoord_Airfoil[5];
   
 	char *cstr;
@@ -95,7 +96,9 @@ int main(int argc, char *argv[]) {
     Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
   }
   else if (boundary->GetnDim() == 3) {
-    nPlane = 5; MinPlane = config->GetSection_Limit(0); MaxPlane = config->GetSection_Limit(1);
+    nPlane = 5;
+    MinPlane = config->GetSection_Limit(0); MaxPlane = config->GetSection_Limit(1);
+    MinXCoord = config->GetSection_Limit(2); MaxXCoord = config->GetSection_Limit(3);
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
       Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
@@ -106,7 +109,7 @@ int main(int argc, char *argv[]) {
   /*--- Create airfoil section structure ---*/
   if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config,
+    boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, config,
                                      Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
   }
   
@@ -265,7 +268,8 @@ int main(int argc, char *argv[]) {
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+        boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, config,
+                                         Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
       }
       
 			/*--- Compute gradient ---*/

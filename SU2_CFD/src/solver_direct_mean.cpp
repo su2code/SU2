@@ -2989,7 +2989,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   double rho_inf = Density_Inf;
   double V_inf_mag = sqrt(pow(Velocity_Inf[0],2.0) + pow(Velocity_Inf[1],2.0) + pow(Velocity_Inf[2],2.0));
-  double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0);
+  double dynamic_pressure = 0.5*rho_inf*pow(V_inf_mag,2.0), MinXCoord, MaxXCoord;
   unsigned short Boundary;
   bool Monitoring;
   string Marker_Tag, Slice_Filename, Slice_Ext;
@@ -3043,6 +3043,8 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
           //cout << " Slicing marker: " << config->GetMarker_All_Tag(iMarker) << endl;
           
           MinPlane = 0; MaxPlane = 1.1;
+          MinXCoord = 0; MaxXCoord = 10.0;
+
           Plane_Normal[0] = 0.0;
           Plane_Normal[1] = 1.0;
           Plane_Normal[2] = 0.0;
@@ -3056,7 +3058,7 @@ void CEulerSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config
             Plane_P0[2] = 0.0;
             
             // pass in the pressure and bring it back
-            geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, config,
+            geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, config,
                                              Xcoord_Airfoil[iSection], Ycoord_Airfoil[iSection], Zcoord_Airfoil[iSection], true);
           }
         }
