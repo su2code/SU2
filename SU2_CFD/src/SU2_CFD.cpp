@@ -53,16 +53,23 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
+  
 #ifndef NO_MPI
-  /*--- MPI initialization, and buffer setting ---*/
+	/*--- MPI initialization, and buffer setting ---*/
+  static char buffer[MAX_MPI_BUFFER]; // buffer size in bytes
+  
+  void *ptr;
+  
 #ifdef WINDOWS
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+	MPI_Init(&argc,&argv);
+	MPI_Buffer_attach(buffer,MAX_MPI_BUFFER);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD,&size);
 #else
-  MPI::Init(argc, argv);
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
+	MPI::Init(argc, argv);
+	MPI::Attach_buffer(buffer, MAX_MPI_BUFFER);
+	rank = MPI::COMM_WORLD.Get_rank();
+	size = MPI::COMM_WORLD.Get_size();
 #endif
 #endif
   
@@ -481,7 +488,7 @@ int main(int argc, char *argv[]) {
             integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_1], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
             integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS);
+            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
           }
           
           /*--- Execute the routine for writing restart, volume solution,
@@ -563,11 +570,15 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
   
-  /*--- Finalize MPI parallelization ---*/
 #ifndef NO_MPI
+  /*--- Finalize MPI parallelization ---*/
 #ifdef WINDOWS
-  MPI_Finalize();
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Buffer_detach(buffer,NULL);
+	MPI_Finalize();
 #else
+  MPI::COMM_WORLD.Barrier();
+  MPI::Detach_buffer(ptr);
   MPI::Finalize();
 #endif
 #endif

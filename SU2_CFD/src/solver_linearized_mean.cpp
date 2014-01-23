@@ -303,7 +303,7 @@ void CLinEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 
 }
 
-void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 	unsigned long iPoint;
 	
 	/*--- Residual inicialization ---*/

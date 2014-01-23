@@ -181,7 +181,7 @@ void CWaveSolver::Preprocessing(CGeometry *geometry,
                                   CConfig   *config,
                                   unsigned short iMesh,
                                   unsigned short iRKStep,
-                                  unsigned short RunTime_EqSystem) {
+                                  unsigned short RunTime_EqSystem, bool Output) {
   
   /* Set residuals and matrix entries to zero */
   
