@@ -1903,16 +1903,21 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
 }
 
-void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol;
   
   //#ifdef NO_MPI
-  //  int rank = MASTER_NODE;
+  //	rank = MASTER_NODE;
   //#else
-  //  int rank = MPI::COMM_WORLD.Get_rank();
+  //#ifdef WINDOWS
+  //	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  //#else
+  //	rank = MPI::COMM_WORLD.Get_rank();
   //#endif
+  //#endif
+
   
   bool adjoint = config->GetAdjoint();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -1930,7 +1935,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
-  if (engine) GetNacelle_Properties(geometry, config, iMesh);
+  if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
   
   /*--- Compute distance function to zero level set (Set LevelSet and Distance primitive variables)---*/
   if (freesurface) SetFreeSurface_Distance(geometry, config);
@@ -1978,7 +1983,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   //  /*--- Error message ---*/
   //#ifndef NO_MPI
   //  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+  //#ifdef WINDOWS
+  //  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  //#else
   //  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  //#endif
   //#endif
   //  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
   //    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -4415,7 +4424,7 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) {
   
 }
 
-void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   unsigned short iDim, iMarker, iVar;
   unsigned long iVertex, iPoint;
   double Pressure, Velocity[3], Velocity2, MassFlow, Density, Energy, Area,
@@ -4634,7 +4643,8 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   }
   
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
+  
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     
     cout.precision(4);
     cout.setf(ios::fixed,ios::floatfield);
@@ -7527,7 +7537,7 @@ CNSSolver::~CNSSolver(void) {
   
 }
 
-void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol;
@@ -7553,7 +7563,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
-  if (engine) GetNacelle_Properties(geometry, config, iMesh);
+  if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
   
   /*--- Compute distance function to zero level set ---*/
   if (freesurface) SetFreeSurface_Distance(geometry, config);

@@ -1223,7 +1223,7 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
                                         CConfig *config,
                                         unsigned short iMesh,
                                         unsigned short iRKStep,
-                                        unsigned short RunTime_EqSystem) {
+                                        unsigned short RunTime_EqSystem, bool Output) {
 
   bool implicit, upwind_2nd, center, center_jst, limiter, RightSol;
 	unsigned long iPoint, ErrorCounter = 0;
@@ -2781,7 +2781,7 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
                                      CConfig *config,
                                      unsigned short iMesh,
                                      unsigned short iRKStep,
-                                     unsigned short RunTime_EqSystem) {
+                                     unsigned short RunTime_EqSystem, bool Output) {
   bool implicit, upwind_2nd, center, center_jst, limiter, RightSol;
 	unsigned long iPoint, ErrorCounter;
   double SharpEdge_Distance;

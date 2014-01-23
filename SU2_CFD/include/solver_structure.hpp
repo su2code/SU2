@@ -424,8 +424,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	virtual void Preprocessing(CGeometry *geometry, CSolver **solver_container,
-                               CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	virtual void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief A virtual member.
@@ -1608,7 +1607,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
     
     /*!
 	 * \brief Prepares and solves the aeroelastic equations.
@@ -2043,7 +2042,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
   /*!
 	 * \brief A virtual member.
@@ -2282,7 +2281,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
     
 	/*!
 	 * \brief Update the solution using the explicit Euler scheme.
@@ -2760,7 +2759,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
     /*!
 	 * \brief Impose a constant heat-flux condition at the wall.
@@ -3039,7 +3038,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief A virtual member.
@@ -3223,7 +3222,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
 	/*!
 	 * \brief A virtual member.
@@ -3371,7 +3370,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief A virtual member.
@@ -3543,7 +3542,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Computes the eddy viscosity.
@@ -3725,7 +3724,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
-	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
 	/*!
 	 * \brief Created the force projection vector for adjoint boundary conditions.
@@ -3970,7 +3969,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.
@@ -4121,7 +4120,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Compute the viscous sensitivity of the functional.
@@ -4254,7 +4253,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -4402,7 +4401,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Compute the linearization of the pressure forces and all the adimensional coefficients.
@@ -4528,7 +4527,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Source term computation.
@@ -4640,7 +4639,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Source term computation.
@@ -4794,7 +4793,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Source term computation.
@@ -4933,7 +4932,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief A virtual member.
@@ -5088,7 +5087,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Compute the spatial integration using a upwind scheme.
@@ -5229,7 +5228,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
      * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
     
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
@@ -5702,7 +5701,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
 	/*!
 	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
@@ -6108,7 +6107,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
   /*!
 	 * \brief Impose the symmetry boundary condition using the residual.
@@ -6426,7 +6425,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
 	/*!
 	 * \brief Compute the inviscid sensitivity of the functional.
@@ -6556,7 +6555,7 @@ public:
 	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
 	/*!
 	 * \brief Compute the viscous sensitivity of the functional.

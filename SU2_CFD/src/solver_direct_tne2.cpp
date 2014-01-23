@@ -1630,7 +1630,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
                                      CSolver **solution_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
-                                     unsigned short RunTime_EqSystem) {
+                                     unsigned short RunTime_EqSystem, bool Output) {
 
 	int rank;
 #ifdef NO_MPI
@@ -4572,7 +4572,7 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 
 void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                   unsigned short iMesh, unsigned short iRKStep,
-                                  unsigned short RunTime_EqSystem) {
+                                  unsigned short RunTime_EqSystem, bool Output) {
 	unsigned long iPoint;
   bool check;
   bool adjoint    = config->GetAdjoint();

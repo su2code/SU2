@@ -135,7 +135,7 @@ CPoissonSolver::~CPoissonSolver(void) {
 }
 
 void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
-                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 	unsigned long iPoint;
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
