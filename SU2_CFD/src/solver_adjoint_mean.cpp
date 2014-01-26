@@ -1578,15 +1578,15 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool RightSol;
   int rank;
 
-  //#ifdef NO_MPI
-  //	rank = MASTER_NODE;
-  //#else
-  //#ifdef WINDOWS
-  //	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  //#else
-  //	rank = MPI::COMM_WORLD.Get_rank();
-  //#endif
-  //#endif
+#ifdef NO_MPI
+	rank = MASTER_NODE;
+#else
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
@@ -1642,17 +1642,17 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	/*--- Implicit solution ---*/
 	if (implicit) Jacobian.SetValZero();
   
-  //  /*--- Error message ---*/
-  //#ifndef NO_MPI
-  //  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  //#ifdef WINDOWS
-  //  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  //#else
-  //  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  //#endif
-  //#endif
-  //  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-  //    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+#endif
+  if ((ErrorCounter >= 100) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 

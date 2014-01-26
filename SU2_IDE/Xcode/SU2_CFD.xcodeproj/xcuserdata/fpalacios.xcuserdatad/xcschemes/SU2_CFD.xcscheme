@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/Bump_Channel"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/C435_FD"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "turb_SST_bump.cfg"
+            argument = "config_C435.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
