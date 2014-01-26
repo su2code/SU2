@@ -7543,12 +7543,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol;
-  
-  //#ifdef NO_MPI
-  //  int rank = MASTER_NODE;
-  //#else
-  //  int rank = MPI::COMM_WORLD.Get_rank();
-  //#endif
+  int rank;
+
+#ifdef NO_MPI
+	rank = MASTER_NODE;
+#else
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
   
   bool adjoint = config->GetAdjoint();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -7610,13 +7615,17 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Initialize the jacobian matrices ---*/
   if (implicit) Jacobian.SetValZero();
   
-  //  /*--- Error message ---*/
-  //#ifndef NO_MPI
-  //  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  //  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  //#endif
-  //  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-  //    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  /*--- Error message ---*/
+#ifndef NO_MPI
+  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+#endif
+  if ((ErrorCounter >= 100) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
 
