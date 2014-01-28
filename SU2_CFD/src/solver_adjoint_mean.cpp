@@ -1313,6 +1313,13 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 							/*--- Compute the azimuthal angle of the iPoint ---*/
               
 							AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+              
+              /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
+              
+              double FixAzimuthalLine = config->GetFixAzimuthalLine();
+              
+              if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
+              
 							iPhiAngle = (short) floor(AngleDouble + 0.5);
 							if (iPhiAngle < 0) iPhiAngle = 180 + iPhiAngle;
 						}

@@ -5436,12 +5436,21 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             Zcoord[nVertex_NearField] = geometry->node[iPoint]->GetCoord(2);
             
             /*--- Rotate the nearfield cylinder (AoA) only 3D ---*/
+            
             double YcoordRot = Ycoord[nVertex_NearField];
             double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
             
-            /* Compute the Azimuthal angle (resolution of degress in the Azimuthal angle)---*/
+            /*--- Compute the Azimuthal angle (resolution of degress in the Azimuthal angle)---*/
+            
             double AngleDouble; short AngleInt;
             AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+            
+            /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
+            
+            double FixAzimuthalLine = config->GetFixAzimuthalLine();
+            
+            if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
+            
             AngleInt = (short) floor(AngleDouble + 0.5);
             if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
             else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
@@ -5594,13 +5603,23 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           Zcoord[nVertex_NearField] = Buffer_Receive_Zcoord[iProcessor*MaxLocalVertex_NearField+iVertex];
           
           /*--- Rotate the nearfield cylinder  ---*/
+          
           double YcoordRot = Ycoord[nVertex_NearField];
           double ZcoordRot = Xcoord[nVertex_NearField]*sin(AoA) + Zcoord[nVertex_NearField]*cos(AoA);
           
           /*--- Compute the Azimuthal angle ---*/
+          
           double AngleDouble; short AngleInt;
           AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+          
+          /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
+
+          double FixAzimuthalLine = config->GetFixAzimuthalLine();
+
+          if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
+          
           AngleInt = (short) floor(AngleDouble + 0.5);
+          
           if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
           else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
         }

@@ -611,6 +611,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
 	/* DESCRIPTION:  */
 	AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
+  /* DESCRIPTION:  */
+	AddScalarOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
 	/* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
 	AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
   
