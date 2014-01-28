@@ -1470,7 +1470,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 					/*--- Update the internal boundary jump --*/
           
 					for (iVar = 0; iVar < nVar; iVar++)
-						IntBound_Vector[iVar] = 0.0;//b[iVar];
+						IntBound_Vector[iVar] = b[iVar];
 
 					node[iPoint]->SetIntBoundary_Jump(IntBound_Vector);
           
