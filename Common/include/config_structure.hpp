@@ -93,6 +93,7 @@ private:
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
 	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
+  double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -3901,6 +3902,12 @@ public:
 	 * \return Value of ther constant viscous drag for Cl/Cd computation.
 	 */
 	double GetCteViscDrag(void);
+  
+  /*!
+	 * \brief Value of the azimuthal line to fix due to a misalignments of the nearfield.
+	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
+	 */
+	double GetFixAzimuthalLine(void);
 
 	/*! 
 	 * \brief Update the CFL number using the ramp information.

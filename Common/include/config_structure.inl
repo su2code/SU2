@@ -825,6 +825,8 @@ inline double CConfig::GetWeightCd(void) { return WeightCd; }
 
 inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 
+inline double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
+
 inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
