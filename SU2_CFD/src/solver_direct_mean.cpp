@@ -1950,8 +1950,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
     if (!RightSol) ErrorCounter++;
     
-    /*--- Initialize the convective residual vector ---*/
-    LinSysRes.SetBlock_Zero(iPoint);
+    /*--- Initialize the residual vector (except for output of the residuals) ---*/
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
