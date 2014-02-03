@@ -83,7 +83,7 @@ def function( func_name, config, state=None ):
             geometry( func_name, config, state )
             
         else:
-            raise Exception, 'unknown function name'
+            raise Exception, 'unknown function name, %s' % func_name
         
     #: if not redundant
     
@@ -164,12 +164,13 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------    
     
     # redundancy check
-    direct_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_aero ] )
+    direct_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_aero[:9] ] )
     if direct_done:
         # return aerodynamic function values
         aero = su2util.ordered_bunch()
         for key in su2io.optnames_aero:
-            aero[key] = state.FUNCTIONS[key]
+            if state.FUNCTIONS.has_key(key):
+                aero[key] = state.FUNCTIONS[key]
         return copy.deepcopy(aero)    
     #: if redundant
     
@@ -303,20 +304,21 @@ def stability( config, state=None, step=1e-2 ):
             
             # TODO: GENERALIZE
             konfig.AoA = konfig.AoA + step
+            ztate.FUNCTIONS.clear()
             
             func_1 = aerodynamics(konfig,ztate)
                         
-            # direct files to store
-            name = ztate.FILES['DIRECT']
-            if not state.FILES.has_key('STABILITY'):
-                state.FILES.STABILITY = su2io.ordered_bunch()
-            state.FILES.STABILITY['DIRECT'] = name
+            ## direct files to store
+            #name = ztate.FILES['DIRECT']
+            #if not state.FILES.has_key('STABILITY'):
+                #state.FILES.STABILITY = su2io.ordered_bunch()
+            #state.FILES.STABILITY['DIRECT'] = name
             
-            # equivarea files to store
-            if 'WEIGHT_NF' in ztate.FILES:
-                state.FILES.STABILITY['WEIGHT_NF'] = ztate.FILES['WEIGHT_NF']
+            ## equivarea files to store
+            #if 'WEIGHT_NF' in ztate.FILES:
+                #state.FILES.STABILITY['WEIGHT_NF'] = ztate.FILES['WEIGHT_NF']
     
-        # ----------------------------------------------------    
+    # ----------------------------------------------------    
     #  DIFFERENCING
     # ----------------------------------------------------
         
