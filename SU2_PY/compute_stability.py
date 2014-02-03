@@ -47,9 +47,6 @@ state  = SU2.io.State()
 config.NUMBER_PART = options.partitions
 config.EXT_ITER    = options.iterations
 
-config.EXT_ITER = 4
-
-
 # find solution files if they exist
 state.find_files(config)
 
