@@ -221,6 +221,14 @@ optnames_aero = [ "LIFT"               ,
                   "HEAT_LOAD"           ]
 #: optnames_aero
 
+optnames_stab = [ "D_LIFT_D_ALPHA"               ,
+                  "D_DRAG_D_ALPHA"               ,
+                  "D_SIDEFORCE_D_ALPHA"          ,
+                  "D_MOMENT_X_D_ALPHA"           ,
+                  "D_MOMENT_Y_D_ALPHA"           ,
+                  "D_MOMENT_Z_D_ALPHA"           ,
+                ]
+
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"      ,
                  "1/4_THICKNESS"      ,
