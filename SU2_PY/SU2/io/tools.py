@@ -321,7 +321,8 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     elif final_avg:
         for key,value in Func_Values.iteritems():
             # only the last few iterations
-            value = value[-final_avg:]
+            i_fin = min([final_avg,len(value)])
+            value = value[-i_fin:]
             Func_Values[key] = sum(value)/len(value)
     
     # otherwise, keep only last value
