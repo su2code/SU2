@@ -338,11 +338,11 @@ def stability( func_name, config, state=None, step=1e-2 ):
             # the gradient
             grads_1 = gradient(base_name,'ADJOINT',konfig,ztate)
                         
-            # direct files to store
-            name = ztate.FILES[ADJ_NAME]
-            if not state.FILES.has_key('STABILITY'):
-                state.FILES.STABILITY = su2io.ordered_bunch()
-            state.FILES.STABILITY[ADJ_NAME] = name
+            ## direct files to store
+            #name = ztate.FILES[ADJ_NAME]
+            #if not state.FILES.has_key('STABILITY'):
+                #state.FILES.STABILITY = su2io.ordered_bunch()
+            #state.FILES.STABILITY[ADJ_NAME] = name
             
     
     # ----------------------------------------------------    

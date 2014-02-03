@@ -177,6 +177,8 @@ class State(ordered_bunch):
                 # adjoint solution
                 value = expand_time(value,config)
                 link.extend(value)
+            #elif key == 'STABILITY':
+                #pass
             # copy all other files
             else:
                 pull.append(value)
