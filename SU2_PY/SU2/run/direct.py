@@ -83,10 +83,13 @@ def direct ( config ):
     plot_extension   = su2io.get_extension(plot_format)
     history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
+    
+    # averaging final iterations
+    final_avg = config.get('ITER_AVERAGE_OBJ',0)
 
     # get history and objectives
     history      = su2io.read_history( history_filename )
-    aerodynamics = su2io.read_aerodynamics( history_filename , special_cases )
+    aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
     
     # update super config
     config.update({ 'DECOMPOSED'   : konfig['DECOMPOSED']   ,

@@ -350,6 +350,7 @@ def read_config(filename):
             if case("EXT_ITER")               : pass
             if case("TIME_INSTANCES")         : pass
             if case("UNST_ADJOINT_ITER")      : pass
+            if case("ITER_AVERAGE_OBJ")       : pass
             if case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
