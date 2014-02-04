@@ -154,7 +154,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
-     across all paritions. ---*/
+     across all partitions. ---*/
     
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
@@ -1942,11 +1942,11 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   /*--- As the body origin may have moved, print it to the console ---*/
   
-  if (rank == MASTER_NODE) {
-    cout << " Body origin: (" << Center[0]+deltaX[0];
-    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
-    cout << ")." << endl;
-  }
+//  if (rank == MASTER_NODE) {
+//    cout << " Body origin: (" << Center[0]+deltaX[0];
+//    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
+//    cout << ")." << endl;
+//  }
   
   /*--- Set the moment computation center to the new location after
    incrementing the position with the plunging. ---*/
@@ -4158,10 +4158,12 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   }
 }
 
-void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]) {
+void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]) {
+  
   /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
-  double dy = -displacements[0];           // relative plunge
+  double dh = -displacements[0];           // relative plunge
   double dalpha = -displacements[1];       // relative pitch
+  double dh_x, dh_y;
   double Center[2];
   unsigned short iDim;
   double Lref = config->GetLength_Ref();
@@ -4169,10 +4171,38 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint, iVertex;
   double x_new, y_new;
   double VarCoord[3];
-  string Marker_Tag;
-
+  string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+  
+  /*--- Calculate the plunge displacement for the Typical Section Wing Model taking into account rotation ---*/
+  if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
+    double Omega, dt, psi;
+    dt = config->GetDelta_UnstTimeND();
+    Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
+    psi = Omega*(dt*ExtIter);
+    
+    /* --- Correct for the airfoil starting position (This is hardcoded in here) --- */
+    if (Monitoring_Tag == "Airfoil1") {
+      psi = psi + 0.0;
+    }
+    else if (Monitoring_Tag == "Airfoil2") {
+      psi = psi + 2.0/3.0*PI_NUMBER;
+    }
+    else if (Monitoring_Tag == "Airfoil3") {
+      psi = psi + 4.0/3.0*PI_NUMBER;
+    }
+    else
+      cout << "WARNING: There is a marker that we are monitoring that doesn't match the values hardcoded above!" << endl;
+    
+    dh_x = -dh*sin(psi);
+    dh_y = dh*cos(psi);
+    
+  } else {
+    dh_x = 0;
+    dh_y = dh;
+  }
+  
   /*--- Pitching origin from config. ---*/
-        
+  
   Center[0] = config->GetRefOriginMoment_X(iMarker_Monitoring);
   Center[1] = config->GetRefOriginMoment_Y(iMarker_Monitoring);
   
@@ -4188,9 +4218,9 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     
     /*--- Compute delta of transformed point coordinates ---*/
     // The deltas are needed for the FEA grid deformation Method.
-    // rotation contribution + plunging contribution - previous position
-    x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
-    y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
+    // rotation contribution - previous position + plunging contribution
+    x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0] + dh_x;
+    y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dh_y;
     
     VarCoord[0] = x_new;
     VarCoord[1] = y_new;
@@ -4200,7 +4230,9 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
   }
   /*--- Set the elastic axis to the new location after incrementing the position with the plunge ---*/
-  config->SetRefOriginMoment_Y(iMarker_Monitoring,Center[1]+dy);
+  config->SetRefOriginMoment_X(iMarker_Monitoring,Center[0]+dh_x);
+  config->SetRefOriginMoment_Y(iMarker_Monitoring,Center[1]+dh_y);
+
   
 }
 

@@ -1151,17 +1151,37 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case AEROELASTIC: case AEROELASTIC_ROTATION:
+    case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
       
-      /*--- Apply rigid rotation to entire grid first, if necessary ---*/
+      /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
       if (IntIter == 0) {
-        if (Kind_Grid_Movement == AEROELASTIC_ROTATION) {
-          if (rank == MASTER_NODE)
-            cout << " Updating node locations by rigid rotation." << endl;
+        if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
+          
+          if (rank == MASTER_NODE) {
+            cout << endl << " Performing rigid mesh transformation." << endl;
+          }
+          
+          /*--- Move each node in the volume mesh using the specified type
+           of rigid mesh motion. These routines also compute analytic grid
+           velocities for the fine mesh. ---*/
+          
+          grid_movement->Rigid_Translation(geometry_container[MESH_0],
+                                           config_container, iZone, ExtIter);
+          grid_movement->Rigid_Plunging(geometry_container[MESH_0],
+                                        config_container, iZone, ExtIter);
+          grid_movement->Rigid_Pitching(geometry_container[MESH_0],
+                                        config_container, iZone, ExtIter);
           grid_movement->Rigid_Rotation(geometry_container[MESH_0],
                                         config_container, iZone, ExtIter);
+          
+          /*--- Update the multigrid structure after moving the finest grid,
+           including computing the grid velocities on the coarser levels. ---*/
+          
+          grid_movement->UpdateMultiGrid(geometry_container, config_container);
         }
+        
       }
+      
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
       else if (IntIter % 3 ==0) {
         if (rank == MASTER_NODE)
