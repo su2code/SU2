@@ -333,7 +333,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
             
             # let's start somethin somthin
             del ztate.GRADIENTS[base_name]
-            ztate.find_files(konfig)
+            #ztate.find_files(konfig)
             
             # the gradient
             grads_1 = gradient(base_name,'ADJOINT',konfig,ztate)
