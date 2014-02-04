@@ -154,8 +154,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
 #else
-  rank = MPI::COMM_WORLD.Get_rank();
-  iProcessor, nProcessor = MPI::COMM_WORLD.Get_size();
+  int rank = MPI::COMM_WORLD.Get_rank();
+  int iProcessor, nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
   
   unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;

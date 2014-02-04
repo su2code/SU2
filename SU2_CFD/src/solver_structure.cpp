@@ -1352,11 +1352,12 @@ void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
 	}
 }
 
-void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long IntIter) {
+void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {
   
   /*--- Variables used for Aeroelastic case ---*/
   
-  double Cl, Cm;
+  double Cl, Cd, Cn, Ct, Cm, Cn_rot;
+  double Alpha = config->GetAoA()*PI_NUMBER/180.0;
   double structural_solution[4]; //contains solution of typical section wing model.
   
   unsigned short iMarker, iMarker_Monitoring, Monitoring;
@@ -1376,17 +1377,57 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
         if (Marker_Tag == Monitoring_Tag) {
           
           Cl = GetSurface_CLift(iMarker_Monitoring);
+          Cd = GetSurface_CDrag(iMarker_Monitoring);
+          
+          /*--- For typical section wing model want the force normal to the airfoil (in the direction of the spring) ---*/
+          Cn = Cl*cos(Alpha) + Cd*sin(Alpha);
+          Ct = -Cl*sin(Alpha) + Cd*cos(Alpha);
+          
           Cm = -1.0*GetSurface_CMz(iMarker_Monitoring);
           
+          /*--- Calculate forces for the Typical Section Wing Model taking into account rotation ---*/
+          
+          /* --- Note that the calculation of the forces and the subsequent displacements ...
+                 is only correct for the airfoil that starts at the 0 degree position --- */
+          
+          if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
+            double Omega, dt, psi;
+            dt = config->GetDelta_UnstTimeND();
+            Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
+            psi = Omega*(dt*ExtIter);
+            
+            /* --- Correct for the airfoil starting position (This is hardcoded in here) --- */
+            if (Monitoring_Tag == "Airfoil1") {
+              psi = psi + 0.0;
+            }
+            else if (Monitoring_Tag == "Airfoil2") {
+              psi = psi + 2.0/3.0*PI_NUMBER;
+            }
+            else if (Monitoring_Tag == "Airfoil3") {
+              psi = psi + 4.0/3.0*PI_NUMBER;
+            }
+            else
+              cout << "WARNING: There is a marker that we are monitoring that doesn't match the values hardcoded above!" << endl;
+            
+            cout << Monitoring_Tag << " position " << psi*180.0/PI_NUMBER << " degrees. " << endl;
+            
+            Cn_rot = Cn*cos(psi) - Ct*sin(psi); //Note the signs are different for accounting for the AOA.
+            Cn = Cn_rot;
+          }
+          
+//          Can compare the Cn values here, with the values in post-processing.
+//          std::cout << "Cn = " << Cn << endl;
+//          std::cout << "Cm = " << Cm << endl;
+          
           /*--- Solve the aeroelastic equations for the particular marker(surface) ---*/
-          SolveTypicalSectionWingModel(geometry, Cl, Cm, config, IntIter, iMarker_Monitoring, structural_solution);
+          SolveTypicalSectionWingModel(geometry, Cn, Cm, config, iMarker_Monitoring, structural_solution);
           
           break;
         }
       }
       
       /*--- Compute the new surface node locations ---*/
-      surface_movement->AeroelasticDeform(geometry, config, iMarker, iMarker_Monitoring, structural_solution);
+      surface_movement->AeroelasticDeform(geometry, config, ExtIter, iMarker, iMarker_Monitoring, structural_solution);
       
     }
     
@@ -1459,7 +1500,7 @@ void CSolver::SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[
   
 }
 
-void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short iMarker, double (&displacements)[4]) {
+void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short iMarker, double (&displacements)[4]) {
   
   /*--- The aeroelastic model solved in this routine is the typical section wing model
    The details of the implementation can be found in J.J. Alonso "Fully-Implicit Time-Marching Aeroelastic Solutions" 1994.
@@ -1510,35 +1551,18 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   
   /*--- Solving the Decoupled Aeroelastic Problem with second order time discretization Eq (9) ---*/
   
-  /*--- Solution variables. //x1[i], i-equation. // Time (n+1)->np1, n->n, (n-1)->n1 ---*/
-  double x1_n[2], x1_n1[2], x1_np1[2];
-  double x2_n[2], x2_n1[2], x2_np1[2];
-  
-  double x1_np1_old[2];
-  double x2_np1_old[2];
+  /*--- Solution variables description. //x[j][i], j-entry, i-equation. // Time (n+1)->np1, n->n, (n-1)->n1 ---*/
+  // This variable gets overwritten below. I'm just using this to initialize it.
+  vector<vector<double> > x_np1 = config->GetAeroelastic_np1(iMarker);
   
   /*--- Values from previous movement of spring at true time step n+1
    We use this values because we are solving for delta changes not absolute changes ---*/
-  double *source_np1 = config->GetAeroelastic_np1();
-  x1_np1_old[0] = source_np1[0];
-  x1_np1_old[1] = source_np1[1];
-  x2_np1_old[0] = source_np1[2];
-  x2_np1_old[1] = source_np1[3];
+  vector<vector<double> > x_np1_old = config->GetAeroelastic_np1(iMarker);
   
   /*--- Values at previous timesteps. ---*/
-  double *source_n = config->GetAeroelastic_n();
-  double *source_n1 = config->GetAeroelastic_n1();
-  
-  x1_n[0] = source_n[0];
-  x1_n[1] = source_n[1];
-  x2_n[0] = source_n[2];
-  x2_n[1] = source_n[3];
-  
-  x1_n1[0] = source_n1[0];
-  x1_n1[1] = source_n1[1];
-  x2_n1[0] = source_n1[2];
-  x2_n1[1] = source_n1[3];
-  
+  vector<vector<double> > x_n = config->GetAeroelastic_n(iMarker);
+  vector<vector<double> > x_n1 = config->GetAeroelastic_n1(iMarker);
+
   /*--- Set up of variables used to solve the structural problem. ---*/
   double Q[2];
   double A_inv[2][2];
@@ -1558,7 +1582,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
       Q[i] += PHI[k][i]*F[k]; //PHI transpose
     }
   }
-  
+
   /*--- solve each decoupled equation (The inverse of the 2x2 matrix is provided) ---*/
   for (int i=0; i<2; i++) {
     /* Matrix Inverse */
@@ -1569,19 +1593,19 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     A_inv[1][1] = 1/detA * 3/(2.0*dt);
     
     /* Source Terms from previous iterations */
-    S1 = (-4*x1_n[i] + x1_n1[i])/(2.0*dt);
-    S2 = (-4*x2_n[i] + x2_n1[i])/(2.0*dt);
+    S1 = (-4*x_n[0][i] + x_n1[0][i])/(2.0*dt);
+    S2 = (-4*x_n[1][i] + x_n1[1][i])/(2.0*dt);
     
     /* Problem Right Hand Side */
     RHS[0] = -S1;
     RHS[1] = Q[i]-S2;
     
     /* Solve the equations */
-    x1_np1[i] = A_inv[0][0]*RHS[0] + A_inv[0][1]*RHS[1];
-    x2_np1[i] = A_inv[1][0]*RHS[0] + A_inv[1][1]*RHS[1];
+    x_np1[0][i] = A_inv[0][0]*RHS[0] + A_inv[0][1]*RHS[1];
+    x_np1[1][i] = A_inv[1][0]*RHS[0] + A_inv[1][1]*RHS[1];
     
-    eta[i] = x1_np1[i]-x1_np1_old[i];  // For displacements, the change(deltas) is used.
-    eta_dot[i] = x2_np1[i]; // For velocities, absolute values are used.
+    eta[i] = x_np1[0][i]-x_np1_old[0][i];  // For displacements, the change(deltas) is used.
+    eta_dot[i] = x_np1[1][i]; // For velocities, absolute values are used.
   }
   
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch ---*/
@@ -1596,16 +1620,16 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
     }
   }
   
-  double dy = b*q[0];
+  double dh = b*q[0];
   double dalpha = q[1];
   
-  double y_dot = w_a*b*q_dot[0];
+  double h_dot = w_a*b*q_dot[0];
   double alpha_dot = w_a*q_dot[1];
   
   /*--- Set the solution of the structural equations ---*/
-  displacements[0] = dy;
+  displacements[0] = dh;
   displacements[1] = dalpha;
-  displacements[2] = y_dot;
+  displacements[2] = h_dot;
   displacements[3] = alpha_dot;
   
   /*--- Calculate the total plunge and total pitch displacements for the unsteady step by summing the displacement at each sudo time step ---*/
@@ -1614,15 +1638,13 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   plunge = config->GetAeroelastic_plunge(iMarker);
   
   config->SetAeroelastic_pitch(iMarker ,pitch+dalpha);
-  config->SetAeroelastic_plunge(iMarker ,plunge+dy/b);
+  config->SetAeroelastic_plunge(iMarker ,plunge+dh/b);
   
   /*--- Set the Aeroelastic solution at time n+1. This gets update every sudo time step
    and after convering the sudo time step the solution at n+1 get moved to the solution at n
    in SetDualTime_Solver method ---*/
-  config->SetAeroelastic_np1(0, x1_np1[0]);
-  config->SetAeroelastic_np1(1, x1_np1[1]);
-  config->SetAeroelastic_np1(2, x2_np1[0]);
-  config->SetAeroelastic_np1(3, x2_np1[1]);
+  
+  config->SetAeroelastic_np1(iMarker, x_np1);
   
 }
 

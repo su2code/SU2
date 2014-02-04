@@ -1471,20 +1471,31 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   
   /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
-	if (Grid_Movement && Kind_GridMovement[ZONE_0] == AEROELASTIC)
+	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
 		Aeroelastic_Simulation = true;
   else
     Aeroelastic_Simulation = false;
   
-	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
+  /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
+
 	if (Grid_Movement && Aeroelastic_Simulation) {
-		Aeroelastic_np1 = new double[4];
-		Aeroelastic_n   = new double[4];
-		Aeroelastic_n1  = new double[4];
-		for (int i=0; i<4; i++) {
-			Aeroelastic_np1[i] = 0.0;
-			Aeroelastic_n[i]   = 0.0;
-			Aeroelastic_n1[i]  = 0.0;
+    Aeroelastic_np1.resize(nMarker_Monitoring);
+    Aeroelastic_n.resize(nMarker_Monitoring);
+    Aeroelastic_n1.resize(nMarker_Monitoring);
+		for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+			Aeroelastic_np1[iMarker].resize(2);
+      Aeroelastic_n[iMarker].resize(2);
+			Aeroelastic_n1[iMarker].resize(2);
+      for (int i =0; i<2; i++) {
+        Aeroelastic_np1[iMarker][i].resize(2);
+        Aeroelastic_n[iMarker][i].resize(2);
+        Aeroelastic_n1[iMarker][i].resize(2);
+        for (int j=0; j<2; j++) {
+          Aeroelastic_np1[iMarker][i][j] = 0.0;
+          Aeroelastic_n[iMarker][i][j] = 0.0;
+          Aeroelastic_n1[iMarker][i][j] = 0.0;
+        }
+      }
 		}
 	}
     
@@ -2720,7 +2731,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
         case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
-        case AEROELASTIC_ROTATION:  cout << "rotation plus aeroelastic motion." << endl; break;
+        case AEROELASTIC_RIGID_MOTION:  cout << "rigid mesh motion plus aeroelastic motion." << endl; break;
       }
 		}
 
@@ -4321,9 +4332,6 @@ CConfig::~CConfig(void)
 
 	/*--- Free memory for Aeroelastic problems. ---*/
 	if (Grid_Movement && Aeroelastic_Simulation) {
-		delete[] Aeroelastic_np1;
-		delete[] Aeroelastic_n;
-		delete[] Aeroelastic_n1;
         
     delete[] Aeroelastic_pitch;
     delete[] Aeroelastic_plunge;

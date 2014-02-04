@@ -585,9 +585,9 @@ private:
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
-	double *Aeroelastic_np1, /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
-	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
-	*Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
+  vector<vector<vector<double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
+  Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
+	Aeroelastic_n1; /*!< \brief Aeroelastic solution at time level n-1. */
   double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
 	FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
   double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
@@ -4278,22 +4278,22 @@ public:
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n+1.
 	 */
-	double *GetAeroelastic_np1(void);
+	vector<vector<double> > GetAeroelastic_np1(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n.
 	 */
-	double *GetAeroelastic_n(void);
+	vector<vector<double> > GetAeroelastic_n(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n-1.
 	 */
-	double *GetAeroelastic_n1(void);
+	vector<vector<double> > GetAeroelastic_n1(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n+1.
 	 */
-	void SetAeroelastic_np1(unsigned short val_index, double val);
+	void SetAeroelastic_np1(unsigned short iMarker, vector<vector<double> > solution);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n from time n+1.
