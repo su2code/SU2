@@ -2616,7 +2616,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
-	cout << "|                             Release 3.0.0 \"eagle\"                   |" << endl;
+	cout << "|                             Release 3.0.0 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
