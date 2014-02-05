@@ -901,13 +901,13 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
 
-inline double* CConfig::GetAeroelastic_np1(void) {return Aeroelastic_np1; }
+inline vector<vector<double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) {return Aeroelastic_np1[iMarker]; }
 
-inline double* CConfig::GetAeroelastic_n(void) {return Aeroelastic_n; }
-    
-inline double* CConfig::GetAeroelastic_n1(void) {return Aeroelastic_n1; }
+inline vector<vector<double> > CConfig::GetAeroelastic_n(unsigned short iMarker) {return Aeroelastic_n[iMarker]; }
 
-inline void CConfig::SetAeroelastic_np1(unsigned short val_index, double val) {Aeroelastic_np1[val_index] = val;}
+inline vector<vector<double> > CConfig::GetAeroelastic_n1(unsigned short iMarker) {return Aeroelastic_n1[iMarker]; }
+
+inline void CConfig::SetAeroelastic_np1(unsigned short iMarker, vector<vector<double> > solution) {Aeroelastic_np1[iMarker] = solution;}
 
 inline double CConfig::GetAeroelastic_plunge(unsigned short val_marker) {return Aeroelastic_plunge[val_marker]; }
 
@@ -918,13 +918,11 @@ inline void CConfig::SetAeroelastic_plunge(unsigned short val_marker, double val
 inline void CConfig::SetAeroelastic_pitch(unsigned short val_marker, double val) {Aeroelastic_pitch[val_marker] = val; }
 
 inline void CConfig::SetAeroelastic_n1(void) {
-    for (unsigned short i=0; i<4; i++)
-        Aeroelastic_n1[i] = Aeroelastic_n[i];
+        Aeroelastic_n1 = Aeroelastic_n;
 }
 
 inline void CConfig::SetAeroelastic_n(void) {
-    for (unsigned short i=0; i<4; i++)
-        Aeroelastic_n[i] = Aeroelastic_np1[i];
+        Aeroelastic_n = Aeroelastic_np1;
 }
     
 inline double CConfig::GetAeroelastic_Frequency_Plunge(void) {return FreqPlungeAeroelastic; }

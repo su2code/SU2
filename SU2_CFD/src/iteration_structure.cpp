@@ -58,9 +58,8 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
     
 		/*--- Dynamic mesh update ---*/
     
-		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) != AEROELASTIC)){
-			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],
-                       config_container[iZone], iZone, ExtIter);
+		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)){
+			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
     }
 	}
   
@@ -172,9 +171,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 				}
         
 				/*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetKind_GridMovement(ZONE_0) == AEROELASTIC))
+				if ((config_container[ZONE_0]->GetGrid_Movement()) && (config_container[ZONE_0]->GetAeroelastic_Simulation()))
 					SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone],
-                           solver_container[iZone], config_container[iZone], iZone, IntIter);
+                           solver_container[iZone], config_container[iZone], iZone, IntIter, ExtIter);
       }
       
       if (integration_container[ZONE_0][FLOW_SOL]->GetConvergence()) break;
@@ -673,7 +672,7 @@ void FEAIteration(COutput *output, CIntegration ***integration_container, CGeome
     
     if (config_container[iZone]->GetGrid_Movement())
       SetGrid_Movement(geometry_container[iZone], surface_movement[iZone],
-                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, ExtIter);
+                       grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
     
 		/*--- Set the value of the internal iteration ---*/
 		IntIter = ExtIter;
@@ -942,7 +941,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
 
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement,
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
-                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter)   {
+                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long IntIter, unsigned long ExtIter)   {
   
   unsigned short iDim, iMGlevel, nMGlevels = config_container->GetMGLevels();
 	unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
@@ -1152,10 +1151,39 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
-    case AEROELASTIC:
+    case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      
+      /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
+      if (IntIter == 0) {
+        if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
+          
+          if (rank == MASTER_NODE) {
+            cout << endl << " Performing rigid mesh transformation." << endl;
+          }
+          
+          /*--- Move each node in the volume mesh using the specified type
+           of rigid mesh motion. These routines also compute analytic grid
+           velocities for the fine mesh. ---*/
+          
+          grid_movement->Rigid_Translation(geometry_container[MESH_0],
+                                           config_container, iZone, ExtIter);
+          grid_movement->Rigid_Plunging(geometry_container[MESH_0],
+                                        config_container, iZone, ExtIter);
+          grid_movement->Rigid_Pitching(geometry_container[MESH_0],
+                                        config_container, iZone, ExtIter);
+          grid_movement->Rigid_Rotation(geometry_container[MESH_0],
+                                        config_container, iZone, ExtIter);
+          
+          /*--- Update the multigrid structure after moving the finest grid,
+           including computing the grid velocities on the coarser levels. ---*/
+          
+          grid_movement->UpdateMultiGrid(geometry_container, config_container);
+        }
+        
+      }
       
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      if (ExtIter % 3 ==0) {
+      else if (IntIter % 3 ==0) {
         if (rank == MASTER_NODE)
           cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
         
