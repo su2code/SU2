@@ -85,7 +85,8 @@ private:
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
 	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
-    double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
+  bool Deform_ScaleVolume;	/*!< \brief Deform the grid scaling with the cell area. */
+  double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
 	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -1058,6 +1059,12 @@ public:
 	 */
 	bool GetVisualize_Deformation(void);
 
+  /*!
+	 * \brief Deform the grid scaling with the volume.
+	 * \return <code>TRUE</code> if the deformation is going to be scaled; otherwise <code>FALSE</code>.
+	 */
+	bool GetDeform_ScaleVolume(void);
+  
 	/*! 
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
 	 * \return Value of the Mach number.

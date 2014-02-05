@@ -90,6 +90,8 @@ inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
 inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
 
+inline bool CConfig::GetDeform_ScaleVolume(void) { return Deform_ScaleVolume; }
+
 inline double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
 
 inline double CConfig::GetWaveSpeed(void) { return Wave_Speed; }

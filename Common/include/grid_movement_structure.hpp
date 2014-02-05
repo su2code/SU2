@@ -711,7 +711,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
-	double SetFEAMethodContributions_Elem(CGeometry *geometry);
+	double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
@@ -719,7 +719,7 @@ public:
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
 	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
@@ -727,7 +727,7 @@ public:
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+  bool SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
