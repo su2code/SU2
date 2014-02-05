@@ -215,11 +215,12 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] solver_container - Container vector with all the solutions.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
+ * \param[in] IntIter - Current sudo time iteration number.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement, 
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
-                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter);
+                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long IntIter, unsigned long ExtIter);
 
 /*!
  * \brief Computation and storage of the time spectral source terms.

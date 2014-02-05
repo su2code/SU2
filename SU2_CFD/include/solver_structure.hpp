@@ -1597,47 +1597,46 @@ public:
 	 */
 	void Gauss_Elimination(double** A, double* rhs, unsigned long nVar);
     
-    /*!
-	 * \brief Get the number of Species present in the flow.
-	 */
+  /*!
+  * \brief Get the number of Species present in the flow.
+  */
 	virtual unsigned short GetnSpecies(void);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution - Container vector with all the solutions.
-	 */
+  
+  /*!
+  * \brief A virtual member.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solution - Container vector with all the solutions.
+  */
 	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
     
-    /*!
-	 * \brief Prepares and solves the aeroelastic equations.
-     * \param[in] surface_movement - Surface movement classes of the problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current sudo time iteration.
-	 */
-	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long IntIter);
+  /*!
+  * \brief Prepares and solves the aeroelastic equations.
+  * \param[in] surface_movement - Surface movement classes of the problem.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] config - Definition of the particular problem.
+  * \param[in] ExtIter - Physical iteration number.
+  */
+	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
 
     
-    /*!
-	 * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
-     * \param[in] PHI - Matrix of the generalized eigenvectors.
-     * \param[in] lambda - The eigenvalues of the generalized eigensystem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-    void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
+  /*!
+  * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
+  * \param[in] PHI - Matrix of the generalized eigenvectors.
+  * \param[in] lambda - The eigenvalues of the generalized eigensystem.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
     
-    /*!
-	 * \brief Solve the typical section wing model.
-	 * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] Cl - Coefficient of lift at particular iteration.
-     * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
-	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iter - Sudo time iteration number.
-     * \param[in] val_Marker - Surface that is being monitored.
-     * \param[in] displacements - solution of typical section wing model.
-	 */
-    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short val_Marker, double (&displacements)[4]);
+  /*!
+  * \brief Solve the typical section wing model.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] Cl - Coefficient of lift at particular iteration.
+  * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
+	* \param[in] config - Definition of the particular problem.
+  * \param[in] val_Marker - Surface that is being monitored.
+  * \param[in] displacements - solution of typical section wing model.
+	*/
+  void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short val_Marker, double (&displacements)[4]);
 
 };
 
