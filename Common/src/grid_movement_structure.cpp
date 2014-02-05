@@ -136,7 +136,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
-    MinVolume = SetFEAMethodContributions_Elem(geometry);
+    MinVolume = SetFEAMethodContributions_Elem(geometry, config);
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
@@ -295,7 +295,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
 }
 
-double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) {
+double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
   
 	unsigned short iVar, iDim, nNodes, iNodes;
 	unsigned long Point_0, Point_1, iElem, iEdge, ElemCounter = 0, PointCorners[8];
@@ -364,8 +364,8 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       }
     }
     
-    if (nDim == 2) RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, CoordCorners, nNodes, Scale);
-    if (nDim == 3) RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, CoordCorners, nNodes, Scale);
+    if (nDim == 2) RightVol = SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, CoordCorners, nNodes, Scale);
+    if (nDim == 3) RightVol = SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, CoordCorners, nNodes, Scale);
 
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
@@ -1112,16 +1112,16 @@ double CVolumetricMovement::GetHexa_Volume(double CoordCorners[8][3]) {
 
 }
 
-bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
+bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det;
+  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det, E, Lambda, Nu;
   unsigned short iNode, iVar, jVar, kVar, iGauss, jGauss, kGauss;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   double iWeight, jWeight, kWeight;
   unsigned short nVar = geometry->GetnDim();
-  
+
   for (iVar = 0; iVar < nNodes*nVar; iVar++) {
     for (jVar = 0; jVar < nNodes*nVar; jVar++) {
       StiffMatrix_Elem[iVar][jVar] = 0.0;
@@ -1171,14 +1171,18 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
           B_Matrix[5][2+iNode*nVar] = DShapeFunction[iNode][0];
         }
         
-      double E = scale / (iWeight * jWeight * kWeight * Det) ;
-      double Mu = E;
-      double Lambda = -E;
+        /*--- Scale the deformation ---*/
         
-//        double E = 2E11;
-//        double Nu = 0.30;
-//        double Mu = E / (2.0*(1.0 + Nu));
-//        double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+        if (config->GetDeform_ScaleVolume()) {
+          E = scale / (iWeight * jWeight * kWeight * Det) ;
+          Mu = E;
+          Lambda = -E;
+        }
+        else {
+          E = 2E11; Nu = 0.30;
+          Mu = E / (2.0*(1.0 + Nu));
+          Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+        }
         
         /*--- Compute the D Matrix (for plane strain and 3-D)---*/
         
@@ -1220,10 +1224,10 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
+bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  double Xi = 0.0, Eta = 0.0, Det;
+  double Xi = 0.0, Eta = 0.0, Det, E, Lambda, Nu, Mu;
   unsigned short iNode, iVar, jVar, kVar, iGauss, jGauss;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
@@ -1267,14 +1271,18 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
         B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
       }
       
-      double E = scale / (iWeight * jWeight * Det) ;
-      double Mu = E;
-      double Lambda = -E;
+      /*--- Scale the deformation ---*/
       
-//      double E = 2E11;
-//      double Nu = 0.30;
-//      double Mu = E / (2.0*(1.0 + Nu));
-//      double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+      if (config->GetDeform_ScaleVolume()) {
+        E = scale / (iWeight * jWeight * Det) ;
+        Mu = E;
+        Lambda = -E;
+      }
+      else {
+        E = 2E11; Nu = 0.30;
+        Mu = E / (2.0*(1.0 + Nu));
+        Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+      }
       
       /*--- Compute the D Matrix (for plane strain and 3-D)---*/
       

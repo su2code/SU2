@@ -852,6 +852,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
+  /* DESCRIPTION: Scale deformation using cell volume */
+	AddSpecialOption("DEFORM_SCALE_VOLUME", Deform_ScaleVolume, SetBoolOption, true);
 	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
 	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
   
@@ -3574,6 +3576,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
 		if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
 		else cout << "No file for visualizing the deformation." << endl;
+    if (Deform_ScaleVolume) cout << "Scale the deformation using the volume." << endl;
+		else cout << "Don't scale the deformation using the cell volume." << endl;
 	}
 
 	if (val_software == SU2_PBC) {
