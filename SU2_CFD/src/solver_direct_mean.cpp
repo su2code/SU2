@@ -204,7 +204,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-  if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
+  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND)) {
     Precon_Mat_inv = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       Precon_Mat_inv[iVar] = new double[nVar];
@@ -1924,7 +1924,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND)       ||
                      (config->GetKind_Upwind_Flow() == AUSM_2ND)      ||
                      (config->GetKind_Upwind_Flow() == HLLC_2ND)      ||
-                     (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND)  );
+                     (config->GetKind_Upwind_Flow() == MSW_2ND)      ||
+                     (config->GetKind_Upwind_Flow() == TURKEL_2ND)  );
   bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
@@ -2274,7 +2275,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
+                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == MSW_2ND) || (config->GetKind_Upwind_Flow() == TURKEL_2ND))
                           && ((iMesh == MESH_0) || low_fidelity));
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
@@ -5063,8 +5064,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) ||
-          (config->GetKind_Upwind() == ROE_TURKEL_1ST))
+      if ((config->GetKind_Upwind() == TURKEL_1ST) ||
+          (config->GetKind_Upwind() == TURKEL_2ND))
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       
       /*--- Viscous residual contribution ---*/
@@ -5370,7 +5371,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+      if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       }
       
@@ -5611,7 +5612,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+      if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       }
       
@@ -7142,7 +7143,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-  if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
+  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND)) {
     Precon_Mat_inv = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       Precon_Mat_inv[iVar] = new double[nVar];
@@ -7494,8 +7495,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
   
-  if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) ||
-      (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) roe_turkel = true;
+  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) ||
+      (config->GetKind_Upwind_Flow() == TURKEL_2ND)) roe_turkel = true;
   else roe_turkel = false;
   
   /*--- Perform the MPI communication of the solution ---*/

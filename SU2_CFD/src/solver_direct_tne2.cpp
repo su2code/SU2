@@ -1651,7 +1651,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
                      (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
                      (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
-                     (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
+                     (config->GetKind_Upwind_TNE2() == TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
   bool RightSol;
   
@@ -1930,7 +1930,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
                       (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
                       (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
                       (config->GetKind_Upwind_TNE2() == MSW_2ND)  ||
-                      (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND))
+                      (config->GetKind_Upwind_TNE2() == TURKEL_2ND))
                      && (iMesh == MESH_0));
   
   /*--- Allocate arrays ---*/
@@ -3415,7 +3415,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+			if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
 				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 			}
       
@@ -3585,7 +3585,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+			if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
 				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 			}
       
@@ -4578,7 +4578,7 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   bool adjoint    = config->GetAdjoint();
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
-                     || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == ROE_TURKEL_2ND));
+                     || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == TURKEL_2ND));
 	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
   bool center     = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                      (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));

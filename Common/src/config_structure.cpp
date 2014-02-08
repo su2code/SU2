@@ -3013,7 +3013,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
 				if (Kind_Upwind_Flow == ROE_1ST) cout << "1st order Roe solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == AUSM_1ST)	cout << "1st order AUSM solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
@@ -3021,9 +3021,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 			if ((Kind_ConvNumScheme_Flow == SPACE_UPWIND) &&
 					((Kind_Upwind_Flow == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-							|| (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == ROE_TURKEL_2ND))) {
+							|| (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
 				if (Kind_Upwind_Flow == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == ROE_TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
@@ -3047,7 +3047,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 			if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
 				if (Kind_Upwind_TNE2 == ROE_1ST) cout << "1st order Roe solver for the inviscid terms of the two-temperature model."<< endl;
-				if (Kind_Upwind_TNE2 == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == TURKEL_1ST) cout << "1st order Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == AUSM_1ST)	cout << "1st order AUSM solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == HLLC_1ST)	cout << "1st order HLLC solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == SW_1ST)	cout << "1st order Steger-Warming solver for the inviscid terms of the two-temperature model."<< endl;
@@ -3055,9 +3055,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 			if ((Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) &&
 					((Kind_Upwind_TNE2 == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-           || (Kind_Upwind_TNE2 == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == ROE_TURKEL_2ND))) {
+           || (Kind_Upwind_TNE2 == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
             if (Kind_Upwind_TNE2 == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_TNE2 == ROE_TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
@@ -5069,6 +5069,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	Velocity_FreeStreamND = new double[val_nDim];
   
 	/*--- Local variables and memory allocation ---*/
+  
 	double Alpha = AoA*PI_NUMBER/180.0;
 	double Beta  = AoS*PI_NUMBER/180.0;
 	double Gamma_Minus_One = Gamma - 1.0;
@@ -5083,6 +5084,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
     
 		/*--- Compute the Free Stream velocity, using the Mach number ---*/
+    
 		if (val_nDim == 2) {
 			Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
 			Velocity_FreeStream[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -5094,6 +5096,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
     
 		/*--- Compute the modulus of the free stream velocity ---*/
+    
 		ModVel_FreeStream = 0;
 		for (iDim = 0; iDim < val_nDim; iDim++)
 			ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
@@ -5103,14 +5106,14 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
       
 			/*--- First, check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
-			if (Grid_Movement)
-				Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
-			else
-				Velocity_Reynolds = ModVel_FreeStream;
+      
+			if (Grid_Movement) Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
+			else Velocity_Reynolds = ModVel_FreeStream;
       
 			/*--- For viscous flows, pressure will be computed from a density
        that is found from the Reynolds number. The viscosity is computed
        from the dimensional version of Sutherland's law ---*/
+      
 			Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*Length_Reynolds);
 			Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
@@ -5248,7 +5251,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")" << endl;
 		}
     
-		cout << "Freestream velocity magnitude (m/s):"	<< ModVel_FreeStream << endl;
+		cout << "Freestream velocity magnitude (m/s): "	<< ModVel_FreeStream << endl;
     
 		if (compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
