@@ -1547,48 +1547,39 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 	  else
 		  mean_TS_Flow_file.open("history_TS_forces.plt", ios::out | ios::app);
   }
-  
-  for (kZone = 0; kZone < nZone; kZone++) {
+ 
+  if (rank == MASTER_NODE) { 
     
-	  /*--- Flow solution coefficients (parallel) ---*/
-	  sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
-	  sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
-	  sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
-	  sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
-	  sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
-	  sbuf_force[5] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
-	  sbuf_force[6] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
-	  sbuf_force[7] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
-    
-#ifndef NO_MPI
-    
-	  /*--- for a given zone, sum the coefficients across the processors ---*/
-#ifdef WINDOWS
-	  MPI_Reduce(sbuf_force, rbuf_force, nVar_Force, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-	  MPI_Barrier(MPI_COMM_WORLD);
-#else
-	  MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, nVar_Force, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
-	  MPI::COMM_WORLD.Barrier();
-#endif
-#else
-	  for (iVar = 0; iVar < nVar_Force; iVar++) {
-		  rbuf_force[iVar] = sbuf_force[iVar];
-	  }
-#endif
-    
-	  if (rank == MASTER_NODE) {
-		  TS_Flow_file << kZone << ", ";
-		  for (iVar = 0; iVar < nVar_Force; iVar++)
-			  TS_Flow_file << rbuf_force[iVar] << ", ";
-		  TS_Flow_file << endl;
+    /*--- Run through the zones, collecting the forces coefficients
+          N.B. Summing across processors within a given zone is being done
+          elsewhere. ---*/
+    for (kZone = 0; kZone < nZone; kZone++) {
       
-		  /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
-		  for (iVar = 0; iVar < nVar_Force; iVar++) {
-			  averages[iVar] += (1.0/double(nZone))*rbuf_force[iVar];
-		  }
-	  }
+      /*--- Flow solution coefficients (parallel) ---*/
+      sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+      sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+      sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
+      sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
+      sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+      sbuf_force[5] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
+      sbuf_force[6] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
+      sbuf_force[7] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
+      
+      for (iVar = 0; iVar < nVar_Force; iVar++) {
+        rbuf_force[iVar] = sbuf_force[iVar];
+      }
+      
+      TS_Flow_file << kZone << ", ";
+      for (iVar = 0; iVar < nVar_Force; iVar++)
+        TS_Flow_file << rbuf_force[iVar] << ", ";
+      TS_Flow_file << endl;
+      
+      /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
+      for (iVar = 0; iVar < nVar_Force; iVar++) {
+        averages[iVar] += (1.0/double(nZone))*rbuf_force[iVar];
+      }
+    }
   }
-  
   
   if (rank == MASTER_NODE && iZone == ZONE_0) {
     
