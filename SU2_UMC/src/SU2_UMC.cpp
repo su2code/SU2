@@ -36,11 +36,11 @@ int main(int argc, char *argv[]) {
   MPI::Init(argc,argv);
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
-	
+
   /*--- Declare pointers to class objects ---*/
   CConfig *config = NULL;
   CBoundaryGeometry *boundary = NULL;
-  
+ 
   /*--- Instatiate an object of the config class
         based on the name of the config file given ---*/
   strcpy(grid_filename, argv[1]);
@@ -114,11 +114,15 @@ int main(int argc, char *argv[]) {
             of pressure from "surface_flow.csv," and write the 
             sectional-forces files cl, cd, and cm ---*/
       complete = Compute_Sectional_Forces();
+     
+
+ 
       
       
-      
-      if (complete == false)
+      if (complete == false) {
+        cout << endl << "Sectional forces have not been computed properly." << endl;
         return EXIT_SUCCESS;
+      }
       
       break;
       
