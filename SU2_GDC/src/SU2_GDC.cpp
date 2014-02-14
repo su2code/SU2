@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
   if (boundary->GetnDim() == 2) {
     nPlane = 1;
+    MinXCoord = -1E6; MaxXCoord = 1E6;
     Plane_Normal[0][0] = 0.0;   Plane_P0[0][0] = 0.0;
     Plane_Normal[0][1] = 1.0;   Plane_P0[0][1] = 0.0;
     Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
