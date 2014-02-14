@@ -89,7 +89,7 @@ CConfig::CConfig(char case_filename[200]) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
 	double default_vec_3d[3];
-  double default_vec_4d[4];
+  double default_vec_2d[2];
 	double default_vec_6d[6];
 	nZone = val_nZone;
 	iZone = val_iZone;
@@ -151,6 +151,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
+  /* DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
+	AddMarkerOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
 	/* DESCRIPTION: Far-field boundary marker(s) */
@@ -595,9 +597,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
-  default_vec_4d[0] = 1E-6; default_vec_4d[1] = 1; default_vec_4d[2] = 1; default_vec_4d[3] = 0;
-	AddArrayOption("GEO_SECTION_LIMIT", 4, Section_Limit, default_vec_4d);
-	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
+  default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
+	AddArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  /* DESCRIPTION: Identify the axis of the section */
+	AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
+	/* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
+	AddScalarOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
 	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
 	/* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
@@ -2398,6 +2404,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
 	Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
 	Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
+	Marker_All_GeoEval    = new unsigned short[nMarker_All+2];	// Store whether the boundary should be geometry evaluation.
 	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
@@ -2405,7 +2412,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
+	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving,
 	iMarker_Supersonic_Inlet;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
@@ -2413,6 +2420,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_SendRecv[iMarker_All]   = 0;
 		Marker_All_Boundary[iMarker_All]   = 0;
 		Marker_All_Monitoring[iMarker_All] = 0;
+		Marker_All_GeoEval[iMarker_All]    = 0;
 		Marker_All_Designing[iMarker_All]  = 0;
 		Marker_All_Plotting[iMarker_All]   = 0;
 		Marker_All_DV[iMarker_All]         = 0;
@@ -2426,6 +2434,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
 	Marker_Config_Monitoring = new unsigned short[nMarker_Config];
+	Marker_Config_GeoEval    = new unsigned short[nMarker_Config];
 	Marker_Config_Plotting   = new unsigned short[nMarker_Config];
 	Marker_Config_DV         = new unsigned short[nMarker_Config];
   Marker_Config_Moving     = new unsigned short[nMarker_Config];
@@ -2436,6 +2445,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config]   = 0;
 		Marker_Config_Monitoring[iMarker_Config] = 0;
+		Marker_Config_GeoEval[iMarker_Config]    = 0;
 		Marker_Config_Designing[iMarker_Config]  = 0;
 		Marker_Config_Plotting[iMarker_Config]   = 0;
 		Marker_Config_DV[iMarker_Config]         = 0;
@@ -2578,6 +2588,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	}
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+		Marker_Config_GeoEval[iMarker_Config] = NO;
+		for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++)
+			if (Marker_Config_Tag[iMarker_Config] == Marker_GeoEval[iMarker_GeoEval])
+				Marker_Config_GeoEval[iMarker_Config] = YES;
+	}
+  
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Designing[iMarker_Config] = NO;
 		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++)
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Designing[iMarker_Designing])
@@ -2610,7 +2627,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -2811,10 +2828,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
 	}
 
+  if (val_software == SU2_GDC) {
+    if (nMarker_GeoEval != 0) {
+      cout << "Surface(s) where the geometrical based functions is evaluated: ";
+      for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++) {
+        cout << Marker_GeoEval[iMarker_GeoEval];
+        if (iMarker_GeoEval < nMarker_GeoEval-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
+  }
+  
 	cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (Divide_Element) cout << "Divide grid elements into triangles and tetrahedra." << endl;
-
+  
 	if (val_software == SU2_GPC) {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
@@ -4261,6 +4290,13 @@ unsigned short CConfig::GetMarker_Config_Monitoring(string val_marker) {
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
 		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
 	return Marker_Config_Monitoring[iMarker_Config];
+}
+
+unsigned short CConfig::GetMarker_Config_GeoEval(string val_marker) {
+	unsigned short iMarker_Config;
+	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+	return Marker_Config_GeoEval[iMarker_Config];
 }
 
 unsigned short CConfig::GetMarker_Config_Designing(string val_marker) {

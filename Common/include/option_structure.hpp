@@ -951,6 +951,19 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
 ("BIPARABOLIC", BIPARABOLIC);
 
 /*!
+ * \brief types of axis orientation
+ */
+enum ENUM_AXIS_ORIENTATION {
+	X_AXIS = 0,   /*!< \brief X axis orientation. */
+	Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
+	Z_AXIS = 2    /*!< \brief Z axis orientation. */
+};
+static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
+("X_AXIS", X_AXIS)
+("Y_AXIS", Y_AXIS)
+("Z_AXIS", Z_AXIS);
+
+/*!
  * \brief types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
