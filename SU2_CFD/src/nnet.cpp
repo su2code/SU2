@@ -125,6 +125,36 @@ void CNeurNet::Predict(double * input, double * output){
   return;
 }
 
+// get_file_contents gets all of the file contents and returns them as a string
+string get_file_contents(string filename){
+  
+  const char * charfile = filename.c_str();
+  
+  ifstream in(charfile, ios::in | ios::binary);
+  if (in)
+  {
+    string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    return(contents);
+  }
+  cout << "Predictor filename " << filename << " not found" <<endl;
+#ifdef NO_MPI
+  exit(1);
+#else
+#ifdef WINDOWS
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#else
+  MPI::COMM_WORLD.Abort(1);
+  MPI::Finalize();
+#endif
+#endif
+}
+
 CScalePredictor::CScalePredictor(){}
 CScalePredictor::CScalePredictor(string filename){
   cout << "filename is " << filename << endl;

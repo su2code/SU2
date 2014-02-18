@@ -7,6 +7,10 @@
 #include <cmath>
 #include <sstream>
 
+#ifndef NO_MPI
+#include <mpi.h>
+#endif
+
 using namespace std;
 
 class CScaler{
