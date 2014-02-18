@@ -114,6 +114,8 @@ private:
 	int outputDim;
 	int totalNumParameters;
 public:
+  
+  // ADDED COMMENT
 	CNeurNet();
     //CNeurNet(string filename); // Should have custom constructor with nInputs, etc.
 	~CNeurNet();
