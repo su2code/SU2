@@ -89,7 +89,8 @@ public:
   CPredictor *Pred;
   CScaler *InputScaler;
   CScaler *OutputScaler;
-  
+public:
+  void Predict(double *inputs, double *outputs);
   // Need to add predict method
 };
 

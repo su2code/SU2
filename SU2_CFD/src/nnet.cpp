@@ -80,18 +80,6 @@ double CSumNeuron::Activate(double combination){
 CPredictor::CPredictor(){}
 CPredictor::~CPredictor(){}
 
-CScalePredictor::CScalePredictor(){}
-CScalePredictor::CScalePredictor(string filename){
-  cout << "filename is " << filename << endl;
-  return;
-}
-CScalePredictor::~CScalePredictor(){
-  delete this->Pred;
-  delete this->InputScaler;
-  delete this->OutputScaler;
-  return;
-}
-
 CNeurNet::CNeurNet(){}
 CNeurNet::~CNeurNet(){}
 
@@ -130,8 +118,34 @@ void CNeurNet::Predict(double * input, double * output){
   int inputDim = this->nNeuronsInLayer[nLayers-1];
   // Last layer has the actual output
   processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer],this->nParameters[layer], output);
+
+  // Clean up garbage
+  delete [] prevTmpOutput;
+  delete [] tmpOutput;
   return;
 }
+
+CScalePredictor::CScalePredictor(){}
+CScalePredictor::CScalePredictor(string filename){
+  cout << "filename is " << filename << endl;
+  return;
+}
+CScalePredictor::~CScalePredictor(){
+  delete this->Pred;
+  delete this->InputScaler;
+  delete this->OutputScaler;
+  return;
+}
+void CScalePredictor::Predict(double *input, double *output){
+  // Scale the input
+  this->InputScaler->Scale(input);
+  // Call the predict method
+  this->Pred->Predict(input, output);
+  // Unscale
+  this->InputScaler->Unscale(input);
+	this->OutputScaler->Unscale(output);
+}
+
 
 /*
 void CNeurNet::Predict(double * input, double * output){
