@@ -1,14 +1,11 @@
 #include "../include/nnet.hpp"
 using namespace std;
 
-Scaler::Scaler(){}
-Scaler::~Scaler(){}
+CScaler::CScaler(){}
+CScaler::~CScaler(){}
 
-NormalScaler::NormalScaler(){
-	delete [] mu;
-	delete [] sigma;
-}
-NormalScaler::NormalScaler(int nInputs, double *mu, double *sigma){
+CNormalScaler::CNormalScaler(){}
+CNormalScaler::CNormalScaler(int nInputs, double *mu, double *sigma){
 	this->nInputs = nInputs;
 	this->mu = new double[nInputs];
 	this->sigma = new double[nInputs];
@@ -18,56 +15,219 @@ NormalScaler::NormalScaler(int nInputs, double *mu, double *sigma){
 	}
 	return;
 }
-NormalScaler::~NormalScaler(){}
-void NormalScaler::Scale(double * inputs){
+CNormalScaler::~CNormalScaler(){
+	delete [] mu;
+	delete [] sigma;
+}
+
+void CNormalScaler::Scale(double * inputs){
 	for (int i=0; i<nInputs; i++){
 		inputs[i] = (inputs[i]-mu[i])/sigma[i];
 	}
 	return;
 }
-void NormalScaler::Unscale(double * inputs){
+void CNormalScaler::Unscale(double * inputs){
 	for (int i=0; i<nInputs; i++){
 		inputs[i] = inputs[i]*sigma[i] + mu[i];
 	}
 	return;
 }
 
-Activator::Activator(){}
-Activator::~Activator(){}
+CActivator::CActivator(){}
+CActivator::~CActivator(){}
 
-Neuron::Neuron(){}
-Neuron::Neuron(Activator* activator, int parameterStart, int nParameters){
-	this->activator = activator;
-	this->parameterStart = parameterStart;
-	this->nParameters = nParameters;
-}
-Neuron::~Neuron(){
-	delete this->activator;
-}
-//Activator* Neuron::GetActivator(){return activator;}
-
-double Neuron::Combine(double * input, double * parameters){
-	double output = 0;
-	for (int i = 0; i < this->nParameters-1; i++){
-		output += input[i] * parameters[this->parameterStart + i];
-	}
-	// Add in the bias term
-	output += parameters[this->parameterStart + this->nParameters - 1];
-	return output;
-}
-
-TanhActivator::TanhActivator(){}
-TanhActivator::~TanhActivator(){}
-double TanhActivator::Activate(double sum){
+CTanhActivator::CTanhActivator(){}
+CTanhActivator::~CTanhActivator(){}
+double CTanhActivator::Activate(double sum){
 	double val =  1.7159 * tanh(2.0/3.0 *sum);
 	return val;
 }
 
-LinearActivator::LinearActivator(){}
-LinearActivator::~LinearActivator(){}
-double LinearActivator::Activate(double sum){
+CLinearActivator::CLinearActivator(){}
+CLinearActivator::~CLinearActivator(){}
+double CLinearActivator::Activate(double sum){
 	return sum;
 }
+
+CNeuron::CNeuron(){}
+CNeuron::~CNeuron(){}
+
+CSumNeuron::CSumNeuron(){}
+CSumNeuron::CSumNeuron(CActivator* activator){
+	this->activator = activator;
+}
+CSumNeuron::~CSumNeuron(){
+	delete this->activator;
+}
+
+double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, int nInputs){
+  if (nParameters != nInputs +1){
+    cout << "parameter size mismatch" <<endl;
+  }
+  double combination = 0;
+	for (int i = 0; i < nInputs; i++){
+		combination += inputs[i] * parameters[i];
+	}
+	// Add in the bias term
+  combination+= parameters[nParameters -1];
+	return combination;
+}
+
+double CSumNeuron::Activate(double combination){
+  return this->activator->Activate(combination);
+}
+
+CPredictor::CPredictor(){}
+CPredictor::~CPredictor(){}
+
+CNeurNet::CNeurNet(){}
+CNeurNet::~CNeurNet(){}
+
+void CNeurNet::processLayer(double * input, int nInput, CNeuron **neurons, double **parameters, int nNeurons, int * nParameters, double *output){
+  for (int i = 0; i < nNeurons; i++){
+    double combination = neurons[i]->Combine(parameters[i], nParameters[i], input, nInput);
+    output[i] = neurons[i]->Activate(combination);
+  }
+  return;
+}
+
+void CNeurNet::Predict(double * input, double * output){
+  double * prevTmpOutput = new double[this->maxNeurons];
+  double *tmpOutput = new double[this->maxNeurons];
+  
+  int nLayers = this->nLayers;
+  if (nLayers == 1){
+    this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], output);
+    return;
+  }
+  
+  // First layer uses the real input as the input
+  this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], tmpOutput);
+  
+  // Middle layers use the previous output as input
+  for (int i= 1; i < nLayers -1; i++){
+    double *tmp;
+    tmp = prevTmpOutput;
+    prevTmpOutput = tmpOutput;
+    tmpOutput = tmp;
+    
+    int inputDim = this->nNeuronsInLayer[i-1];
+    processLayer(prevTmpOutput, inputDim, this->neurons[i], this->parameters[i], this->nNeuronsInLayer[i], this->nParameters[i], tmpOutput);
+  }
+  int layer = nLayers -1;
+  int inputDim = this->nNeuronsInLayer[nLayers-1];
+  // Last layer has the actual output
+  processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer],this->nParameters[layer], output);
+
+  // Clean up garbage
+  delete [] prevTmpOutput;
+  delete [] tmpOutput;
+  return;
+}
+
+// get_file_contents gets all of the file contents and returns them as a string
+string get_file_contents(string filename){
+  
+  const char * charfile = filename.c_str();
+  
+  ifstream in(charfile, ios::in | ios::binary);
+  if (in)
+  {
+    string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    return(contents);
+  }
+  cout << "Predictor filename " << filename << " not found" <<endl;
+#ifdef NO_MPI
+  exit(1);
+#else
+#ifdef WINDOWS
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#else
+  MPI::COMM_WORLD.Abort(1);
+  MPI::Finalize();
+#endif
+#endif
+}
+
+CScalePredictor::CScalePredictor(){}
+CScalePredictor::CScalePredictor(string filename){
+  cout << "filename is " << filename << endl;
+  return;
+}
+CScalePredictor::~CScalePredictor(){
+  delete this->Pred;
+  delete this->InputScaler;
+  delete this->OutputScaler;
+  return;
+}
+void CScalePredictor::Predict(double *input, double *output){
+  // Scale the input
+  this->InputScaler->Scale(input);
+  // Call the predict method
+  this->Pred->Predict(input, output);
+  // Unscale
+  this->InputScaler->Unscale(input);
+	this->OutputScaler->Unscale(output);
+}
+
+
+/*
+void CNeurNet::Predict(double * input, double * output){
+	this->inputScaler->Scale(input);
+  
+	// Predict over all the layers
+  
+	// Make data to store the layers
+	//double ** neuronCombinations = new double*[this->nLayers];
+	double ** neuronOutputs = new double*[this->nLayers];
+	for (int i = 0; i < this->nLayers; i++){
+		neuronOutputs[i] = new double[this -> nNeuronsPerLayer[i]];
+	}
+  
+	// Make the prediction
+	// The first layer has the input as an input
+	int firstLayer = 0;
+	for (int i= 0; i < nNeuronsPerLayer[firstLayer]; i++){
+		double combination = this->neurons[firstLayer][i]->Combine(input, this->parameters);
+		double output = this->neurons[firstLayer][i]->activator->Activate(combination);
+		neuronOutputs[firstLayer][i] = output;
+	}
+  
+	// For all the other layers, the input is the output of the previous layer
+	for (int j = 1; j < this->nLayers; j++){
+		for (int i=0; i < nNeuronsPerLayer[j]; i++){
+			//cout << "Layer " << j << " neuron " << i << endl;
+			double combination = this->neurons[j][i]->Combine(neuronOutputs[j-1], this->parameters);
+			//cout << "combination " << combination <<endl;
+			double output = this->neurons[j][i]->activator->Activate(combination);
+			//cout << "output " << output <<endl;
+			neuronOutputs[j][i] = output;
+		}
+	}
+  
+	// Copy the last layer
+	int lastLayer = this->nLayers - 1;
+	for (int i = 0; i < this->nOutputs; i++){
+		output[i] = neuronOutputs[lastLayer][i];
+	}
+  
+	this->inputScaler->Unscale(input);
+	this->outputScaler->Unscale(output);
+  
+	for (int i=0; i < this->nLayers; i++){
+		//delete neuronSums[i];
+		delete [] neuronOutputs[i];
+	}
+	delete [] neuronOutputs;
+	return;
+}
+
 
 CNeurNet::CNeurNet(){}
 
@@ -482,3 +642,4 @@ bool CNeurNet::CheckPredictions(ifstream& f){
 	delete [] predOutput;
 	return true;
 }
+*/

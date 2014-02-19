@@ -26,24 +26,20 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   /*--- Local variables ---*/
-	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane = 5, iVar;
-	double ObjectiveFunc[100], ObjectiveFunc_New[100], Gradient[100], delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
-  Plane_P0[5][3], Plane_Normal[5][3];
-  vector<double> Xcoord_Airfoil[5], Ycoord_Airfoil[5], Zcoord_Airfoil[5];
   
-	char *cstr;
+	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane, iVar;
+	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+  **Plane_P0, **Plane_Normal;
+  vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil;
+  char grid_file[200];
+
+ 	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
   
-  /*--- Initialization ---*/
-  for (iVar = 0; iVar < 100; iVar++) {
-    ObjectiveFunc[iVar] = 0.0;
-    ObjectiveFunc_New[iVar] = 0.0;
-    Gradient[iVar] = 0.0;
-  }
-  
+  /*--- MPI initialization ---*/
+
 #ifndef NO_MPI
-	/*--- MPI initialization, and buffer setting ---*/
 #ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -54,60 +50,94 @@ int main(int argc, char *argv[]) {
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
+  
 	CFreeFormDefBox** FFDBox = NULL;
 	CConfig *config = NULL;
 	CGeometry *boundary = NULL;
 	CSurfaceMovement *surface_mov = NULL;
 	
-	/*--- Definition of the Class for the definition of the problem ---*/
+	/*--- Definition of the class for the definition of the problem ---*/
+  
 	if (argc == 2) config = new CConfig(argv[1], SU2_GDC, ZONE_0, nZone, VERB_HIGH);
 	else {
-		char grid_file[200];
 		strcpy (grid_file, "default.cfg");
 		config = new CConfig(grid_file, SU2_GDC, ZONE_0, nZone, VERB_HIGH);
 	}
 	
+  /*--- Change the name of the input-output files for the parallel computation ---*/
+  
 #ifndef NO_MPI
-	/*--- Change the name of the input-output files for the
-	 parallel computation ---*/
 	config->SetFileNameDomain(rank+1);
 #endif
 	
-	/*--- Definition of the Class for the boundary of the geometry ---*/
+	/*--- Definition of the class for the boundary of the geometry ---*/
+  
 	boundary = new CBoundaryGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  
+  /*--- Set the number of sections, and allocate the memory ---*/
+  
+  if (boundary->GetnDim() == 2) nPlane = 1;
+  else nPlane = config->GetnSections();
+
+  Xcoord_Airfoil = new vector<double>[nPlane];
+  Ycoord_Airfoil = new vector<double>[nPlane];
+  Zcoord_Airfoil = new vector<double>[nPlane];
+  
+  Plane_P0 = new double*[nPlane];
+  Plane_Normal = new double*[nPlane];
+  for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
+    Plane_P0[iPlane] = new double[3];
+    Plane_Normal[iPlane] = new double[3];
+  }
+  
+  ObjectiveFunc = new double[nPlane*20];
+  ObjectiveFunc_New = new double[nPlane*20];
+  Gradient = new double[nPlane*20];
+
+  for (iVar = 0; iVar < nPlane*20; iVar++) {
+    ObjectiveFunc[iVar] = 0.0;
+    ObjectiveFunc_New[iVar] = 0.0;
+    Gradient[iVar] = 0.0;
+  }
+  
+  /*--- Evaluation of the objective function ---*/
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
   /*--- Boundary geometry preprocessing ---*/
+  
 	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
 	boundary->SetVertex();
 	
 	/*--- Create the control volume structures ---*/
+  
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl;
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
 	/*--- Create plane structure ---*/
+  
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
   if (boundary->GetnDim() == 2) {
-    nPlane = 1;
     MinXCoord = -1E6; MaxXCoord = 1E6;
     Plane_Normal[0][0] = 0.0;   Plane_P0[0][0] = 0.0;
     Plane_Normal[0][1] = 1.0;   Plane_P0[0][1] = 0.0;
     Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
   }
   else if (boundary->GetnDim() == 3) {
-    nPlane = 5;
-    MinPlane = config->GetSection_Limit(0); MaxPlane = config->GetSection_Limit(1);
-    MinXCoord = config->GetSection_Limit(2); MaxXCoord = config->GetSection_Limit(3);
+    MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
+    MinXCoord = -1E6; MaxXCoord = 1E6;
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
-      Plane_Normal[iPlane][1] = 1.0;    Plane_P0[iPlane][1] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
+      Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
       Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
+      Plane_Normal[iPlane][config->GetAxis_Orientation()] = 1.0;
+      Plane_P0[iPlane][config->GetAxis_Orientation()] = MinPlane + iPlane*(MaxPlane - MinPlane)/double(nPlane-1);
     }
   }
 
   /*--- Create airfoil section structure ---*/
+  
   if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     boundary->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, MinXCoord, MaxXCoord, config,
@@ -126,13 +156,13 @@ int main(int argc, char *argv[]) {
         
         cout << "\nSection " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
         
-        ObjectiveFunc[iPlane]           = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[1*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[2*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[3*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[4*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[5*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[6*nPlane+iPlane]  = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[iPlane]           = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[1*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[2*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[3*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[4*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[5*nPlane+iPlane]  = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+        ObjectiveFunc[6*nPlane+iPlane]  = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
         ObjectiveFunc[7*nPlane+iPlane]  = boundary->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
         ObjectiveFunc[8*nPlane+iPlane]  = boundary->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
         
@@ -301,25 +331,25 @@ int main(int argc, char *argv[]) {
             
             cout << "\nSection " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
             
-            ObjectiveFunc_New[iPlane] = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[iPlane] = boundary->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[iPlane] = (ObjectiveFunc_New[iPlane] - ObjectiveFunc[iPlane]) / delta_eps;
             
-            ObjectiveFunc_New[1*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[1*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
             
-            ObjectiveFunc_New[2*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[2*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
             
-            ObjectiveFunc_New[3*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[3*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
             
-            ObjectiveFunc_New[4*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[4*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[4*nPlane + iPlane] = (ObjectiveFunc_New[4*nPlane + iPlane] - ObjectiveFunc[4*nPlane + iPlane]) / delta_eps;
             
-            ObjectiveFunc_New[5*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[5*nPlane + iPlane] = boundary->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[5*nPlane + iPlane] = (ObjectiveFunc_New[5*nPlane + iPlane] - ObjectiveFunc[5*nPlane + iPlane]) / delta_eps;
             
-            ObjectiveFunc_New[6*nPlane + iPlane] = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+            ObjectiveFunc_New[6*nPlane + iPlane] = boundary->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
             Gradient[6*nPlane + iPlane] = (ObjectiveFunc_New[6*nPlane + iPlane] - ObjectiveFunc[6*nPlane + iPlane]) / delta_eps;
             
             ObjectiveFunc_New[7*nPlane + iPlane] = boundary->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
@@ -382,9 +412,9 @@ int main(int argc, char *argv[]) {
     
 	}
 	
+  /*--- Finalize MPI parallelization ---*/
 	
 #ifndef NO_MPI
-	/*--- Finalize MPI parallelization ---*/
 #ifdef WINDOWS
 	MPI_Finalize();
 #else
@@ -392,9 +422,28 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
 	
-	/*--- End solver ---*/
+  /*--- Deallocate memory ---*/
+  
+  delete [] Xcoord_Airfoil;
+  delete [] Ycoord_Airfoil;
+  delete [] Zcoord_Airfoil;
+  
+  delete [] ObjectiveFunc;
+  delete [] ObjectiveFunc_New;
+  delete [] Gradient;
+  
+  for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
+    delete Plane_P0[iPlane];
+    delete Plane_Normal[iPlane];
+  }
+  delete [] Plane_P0;
+  delete [] Plane_Normal;
+  
+  /*--- End solver ---*/
+  
 	if (rank == MASTER_NODE)
 		cout << endl <<"------------------------- Exit Success (SU2_GDC) ------------------------" << endl << endl;
+
   
 	return EXIT_SUCCESS;
 	
