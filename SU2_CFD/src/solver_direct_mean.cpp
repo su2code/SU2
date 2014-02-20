@@ -324,7 +324,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CEff = 0.0;   Total_CEquivArea = 0.0; Total_CNearFieldOF = 0.0;
   Total_CFx = 0.0;    Total_CFy = 0.0;        Total_CFz = 0.0;
   Total_CT = 0.0;     Total_CQ = 0.0;         Total_CMerit = 0.0;
-  Total_Maxq = 0.0;
+  Total_NormHeatFlux = 0.0;
   
   /*--- Read farfield conditions ---*/
   Density_Inf  = config->GetDensity_FreeStreamND();
@@ -3528,7 +3528,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   Total_CFx = 0.0;    Total_CFy = 0.0;      Total_CFz = 0.0;
   Total_CT = 0.0;     Total_CQ = 0.0;       Total_CMerit = 0.0;
   Total_CNearFieldOF = 0.0;
-  Total_Q = 0.0;  Total_Maxq = 0.0;
+  Total_NormHeatFlux = 0.0;
   
   AllBound_CDrag_Inv = 0.0;   AllBound_CLift_Inv = 0.0; AllBound_CSideForce_Inv = 0.0;   AllBound_CEff_Inv = 0.0;
   AllBound_CMx_Inv = 0.0;     AllBound_CMy_Inv = 0.0;   AllBound_CMz_Inv = 0.0;
@@ -7076,8 +7076,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CMerit_Visc = NULL;
   CT_Visc = NULL;
   CQ_Visc = NULL;
-  Q_Visc = NULL;
-  Maxq_Visc = NULL;
+  NormHeatFlux_Visc = NULL;
   ForceViscous = NULL;
   MomentViscous = NULL;
   CSkinFriction = NULL;
@@ -7289,7 +7288,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CEff  = 0.0;	Total_CEquivArea = 0.0;  Total_CNearFieldOF = 0.0;
   Total_CFx   = 0.0;	Total_CFy        = 0.0;  Total_CFz          = 0.0;
   Total_CT    = 0.0;	Total_CQ         = 0.0;  Total_CMerit       = 0.0;
-  Total_Maxq  = 0.0;  Total_Q          = 0.0;
+  Total_NormHeatFlux  = 0.0;
   
   ForceViscous    = new double[3];
   MomentViscous   = new double[3];
@@ -7306,8 +7305,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CMerit_Visc     = new double[nMarker];
   CT_Visc         = new double[nMarker];
   CQ_Visc         = new double[nMarker];
-  Q_Visc          = new double[nMarker];
-  Maxq_Visc       = new double[nMarker];
+  NormHeatFlux_Visc       = new double[nMarker];
   
   Surface_CLift_Visc = new double[config->GetnMarker_Monitoring()];
   Surface_CDrag_Visc = new double[config->GetnMarker_Monitoring()];
@@ -7520,8 +7518,7 @@ CNSSolver::~CNSSolver(void) {
   if (CMerit_Visc != NULL)     delete [] CMerit_Visc;
   if (CT_Visc != NULL)         delete [] CT_Visc;
   if (CQ_Visc != NULL)         delete [] CQ_Visc;
-  if (Q_Visc != NULL)          delete [] Q_Visc;
-  if (Maxq_Visc != NULL)       delete [] Maxq_Visc;
+  if (NormHeatFlux_Visc != NULL)       delete [] NormHeatFlux_Visc;
   if (ForceViscous != NULL)    delete [] ForceViscous;
   if (MomentViscous != NULL)   delete [] MomentViscous;
   
@@ -7930,7 +7927,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMx_Visc = 0.0;    AllBound_CMy_Visc = 0.0;    AllBound_CMz_Visc = 0.0;
   AllBound_CFx_Visc = 0.0;    AllBound_CFy_Visc = 0.0;    AllBound_CFz_Visc = 0.0;
   AllBound_CT_Visc = 0.0;     AllBound_CQ_Visc = 0.0;     AllBound_CMerit_Visc = 0.0;
-  AllBound_Q_Visc = 0.0;      AllBound_Maxq_Visc = 0.0;
+  AllBound_NormHeatFlux_Visc = 0.0;
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CLift_Visc[iMarker_Monitoring] = 0.0;
@@ -7962,7 +7959,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
       CMx_Visc[iMarker] = 0.0;    CMy_Visc[iMarker] = 0.0;   CMz_Visc[iMarker] = 0.0;
       CFx_Visc[iMarker] = 0.0;    CFy_Visc[iMarker] = 0.0;   CFz_Visc[iMarker] = 0.0;
       CT_Visc[iMarker] = 0.0;     CQ_Visc[iMarker] = 0.0;    CMerit_Visc[iMarker] = 0.0;
-      Q_Visc[iMarker] = 0.0;      Maxq_Visc[iMarker] = 0.0;
+      NormHeatFlux_Visc[iMarker] = 0.0;
       
       for (iDim = 0; iDim < nDim; iDim++) ForceViscous[iDim] = 0.0;
       MomentViscous[0] = 0.0; MomentViscous[1] = 0.0; MomentViscous[2] = 0.0;
@@ -8041,10 +8038,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
             GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
           
           CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-          Q_Visc[iMarker] += CHeatTransfer[iMarker][iVertex];
           
-          if ((CHeatTransfer[iMarker][iVertex]/Area) > Maxq_Visc[iMarker])
-            Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex]/Area;
+          NormHeatFlux_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex], 8);
           
         }
         
@@ -8086,6 +8081,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           CT_Visc[iMarker]      = -CFx_Visc[iMarker];
           CQ_Visc[iMarker]      = -CMz_Visc[iMarker];
           CMerit_Visc[iMarker]  = CT_Visc[iMarker]/CQ_Visc[iMarker];
+          NormHeatFlux_Visc[iMarker] = pow(NormHeatFlux_Visc[iMarker],1.0/8.0);
+
         }
         if (nDim == 3) {
           CDrag_Visc[iMarker]       =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
@@ -8100,7 +8097,9 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           CFz_Visc[iMarker]         = ForceViscous[2];
           CT_Visc[iMarker]          = -CFz_Visc[iMarker];
           CQ_Visc[iMarker]          = -CMz_Visc[iMarker];
-          CMerit_Visc[iMarker]      = CT_Visc[iMarker]/CQ_Visc[iMarker]; // CT_Visc[iMarker]*sqrt(fabs(CT_Visc[iMarker]))/(sqrt(2.0)*CQ_Visc[iMarker]);
+          CMerit_Visc[iMarker]      = CT_Visc[iMarker]/CQ_Visc[iMarker];
+          // CT_Visc[iMarker]*sqrt(fabs(CT_Visc[iMarker]))/(sqrt(2.0)*CQ_Visc[iMarker]);
+          NormHeatFlux_Visc[iMarker] = pow(NormHeatFlux_Visc[iMarker],1.0/8.0);
         }
         
         AllBound_CDrag_Visc       += CDrag_Visc[iMarker];
@@ -8114,9 +8113,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         AllBound_CFz_Visc         += CFz_Visc[iMarker];
         AllBound_CT_Visc          += CT_Visc[iMarker];
         AllBound_CQ_Visc          += CQ_Visc[iMarker];
-        AllBound_Q_Visc           += Q_Visc[iMarker];
-        if (Maxq_Visc[iMarker] > AllBound_Maxq_Visc) AllBound_Maxq_Visc = Maxq_Visc[iMarker];
-        
+        AllBound_NormHeatFlux_Visc += NormHeatFlux_Visc[iMarker];
+
         /*--- Compute the coefficients per surface ---*/
         for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
           Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
@@ -8156,8 +8154,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   double MyAllBound_CT_Visc           = AllBound_CT_Visc;           AllBound_CT_Visc = 0.0;
   double MyAllBound_CQ_Visc           = AllBound_CQ_Visc;           AllBound_CQ_Visc = 0.0;
   double MyAllBound_CMerit_Visc       = AllBound_CMerit_Visc;       AllBound_CMerit_Visc = 0.0;
-  double MyAllBound_Q_Visc            = AllBound_Q_Visc;            AllBound_Q_Visc = 0.0;
-  double MyAllBound_Maxq_Visc         = AllBound_Maxq_Visc;         AllBound_Maxq_Visc = 0.0;
+  double MyAllBound_NormHeatFlux_Visc = AllBound_NormHeatFlux_Visc; AllBound_NormHeatFlux_Visc = 0.0;
 
 #ifdef WINDOWS
   MPI_Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -8173,8 +8170,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
-  MPI_Allreduce(&MyAllBound_Q_Visc, &AllBound_Q_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_Maxq_Visc, &AllBound_Maxq_Visc, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_NormHeatFlux_Visc, &AllBound_NormHeatFlux_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CLift_Visc, &AllBound_CLift_Visc, 1, MPI::DOUBLE, MPI::SUM);
@@ -8189,8 +8185,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI::DOUBLE, MPI::SUM);
   AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_Q_Visc, &AllBound_Q_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_Maxq_Visc, &AllBound_Maxq_Visc, 1, MPI::DOUBLE, MPI::MAX);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_NormHeatFlux_Visc, &AllBound_NormHeatFlux_Visc, 1, MPI::DOUBLE, MPI::SUM);
 #endif
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
@@ -8256,8 +8251,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   Total_CT          += AllBound_CT_Visc;
   Total_CQ          += AllBound_CQ_Visc;
   Total_CMerit      += AllBound_CMerit_Visc;
-  Total_Q           += Total_CT / (Total_CQ + EPS);
-  Total_Maxq        = AllBound_Maxq_Visc;
+  Total_NormHeatFlux        = AllBound_NormHeatFlux_Visc;
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {

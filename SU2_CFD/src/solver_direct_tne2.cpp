@@ -242,7 +242,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
 	Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
   Total_CEff  = 0.0;
-  Total_Maxq  = 0.0;
+  Total_NormHeatFlux  = 0.0;
   
 	/*--- Read farfield conditions from the config file ---*/
 	Pressure_Inf       = config->GetPressure_FreeStream();
@@ -2175,8 +2175,8 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CDrag = 0.0; Total_CLift = 0.0;  Total_CSideForce = 0.0;
 	Total_CMx = 0.0;   Total_CMy = 0.0;    Total_CMz = 0.0;
 	Total_CFx = 0.0;   Total_CFy = 0.0;    Total_CFz = 0.0;
-	Total_CEff = 0.0;  Total_Q = 0.0;
-  Total_Maxq = 0.0;
+	Total_CEff = 0.0;
+  Total_NormHeatFlux = 0.0;
 	AllBound_CDrag_Inv = 0.0;        AllBound_CLift_Inv = 0.0;  AllBound_CSideForce_Inv = 0.0;
 	AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;    AllBound_CMz_Inv = 0.0;
 	AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;    AllBound_CFz_Inv = 0.0;
@@ -4088,8 +4088,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFy_Visc      = NULL;
 	CFz_Visc      = NULL;
 	CEff_Visc     = NULL;
-  Q_Visc        = NULL;
-  Maxq_Visc     = NULL;
+  NormHeatFlux_Visc     = NULL;
 	ForceViscous  = NULL;
 	MomentViscous = NULL;
 	CSkinFriction = NULL;
@@ -4256,8 +4255,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
 	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
 	Total_CEff  = 0.0;
-  Total_Q     = 0.0;
-  Total_Maxq  = 0.0;
+  Total_NormHeatFlux  = 0.0;
   
 	ForceViscous  = new double[3];
 	MomentViscous = new double[3];
@@ -4270,8 +4268,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFx_Visc      = new double[nMarker];
 	CFy_Visc      = new double[nMarker];
 	CFz_Visc      = new double[nMarker];
-  Q_Visc        = new double[nMarker];
-  Maxq_Visc     = new double[nMarker];
+  NormHeatFlux_Visc     = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
 	Pressure_Inf       = config->GetPressure_FreeStream();
@@ -4556,8 +4553,7 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 	if (CFy_Visc != NULL) delete [] CFy_Visc;
 	if (CFz_Visc != NULL) delete [] CFz_Visc;
 	if (CEff_Visc != NULL) delete [] CEff_Visc;
-  if (Q_Visc != NULL) delete [] Q_Visc;
-  if (Maxq_Visc != NULL) delete [] Maxq_Visc;
+  if (NormHeatFlux_Visc != NULL) delete [] NormHeatFlux_Visc;
 	if (ForceViscous != NULL) delete [] ForceViscous;
 	if (MomentViscous != NULL) delete [] MomentViscous;
   
@@ -4933,7 +4929,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
 	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
-	AllBound_Q_Visc     = 0.0; AllBound_Maxq_Visc  = 0.0;
+	AllBound_NormHeatFlux_Visc  = 0.0;
 	AllBound_CEff_Visc  = 0.0;
   
 	/*--- Vector and variables initialization ---*/
@@ -4948,7 +4944,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		Boundary   = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    Maxq_Visc[iMarker] = 0.0;
+    NormHeatFlux_Visc[iMarker] = 0.0;
 		if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
       
 			for (iDim = 0; iDim < nDim; iDim++) ForceViscous[iDim] = 0.0;
@@ -5029,10 +5025,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
         CHeatTransfer[iMarker][iVertex] = (ThermalCond*dTn + ThermalCond_ve*dTven);
 //				CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-        HeatLoad += CHeatTransfer[iMarker][iVertex]*Area;
         
-        if (CHeatTransfer[iMarker][iVertex] > Maxq_Visc[iMarker])
-          Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex];
+        NormHeatFlux_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex]*Area,8.0);
         
 				/*--- Compute viscous forces, and moment using the stress tensor ---*/
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
@@ -5063,7 +5057,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker]   = ForceViscous[0];
 					CFy_Visc[iMarker]   = ForceViscous[1];
 					CFz_Visc[iMarker]   = 0.0;
-          Q_Visc[iMarker]     = HeatLoad;
+          NormHeatFlux_Visc[iMarker] = pow(NormHeatFlux_Visc[iMarker], 1.0/8.0);
 				}
 				if (nDim == 3) {
 					CDrag_Visc[iMarker] = ForceViscous[0]*cos(Alpha)*cos(Beta)
@@ -5078,7 +5072,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker]   = ForceViscous[0];
 					CFy_Visc[iMarker]   = ForceViscous[1];
 					CFz_Visc[iMarker]   = ForceViscous[2];
-          Q_Visc[iMarker]     = HeatLoad;
+          NormHeatFlux_Visc[iMarker] = pow(NormHeatFlux_Visc[iMarker], 1.0/8.0);
 				}
         
 				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
@@ -5090,9 +5084,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				AllBound_CFx_Visc   += CFx_Visc[iMarker];
 				AllBound_CFy_Visc   += CFy_Visc[iMarker];
 				AllBound_CFz_Visc   += CFz_Visc[iMarker];
-        AllBound_Q_Visc     += Q_Visc[iMarker];
-        if (Maxq_Visc[iMarker] > AllBound_Maxq_Visc)
-          AllBound_Maxq_Visc = Maxq_Visc[iMarker];
+        AllBound_NormHeatFlux_Visc += NormHeatFlux_Visc[iMarker];
 			}
 		}
 	}
@@ -5105,8 +5097,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFx   += AllBound_CFx_Visc;
 	Total_CFy   += AllBound_CFy_Visc;
 	Total_CFz   += AllBound_CFz_Visc;
-  Total_Q     += AllBound_Q_Visc;
-  Total_Maxq   = AllBound_Maxq_Visc;
+  Total_NormHeatFlux   = AllBound_NormHeatFlux_Visc;
   
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Tau[iDim];
