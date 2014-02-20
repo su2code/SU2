@@ -167,9 +167,7 @@ inline void CSolver::SetTotal_CT(double val_Total_CT) { }
 
 inline double CSolver::GetTotal_CQ() { return 0; }
 
-inline double CSolver::GetTotal_Q() { return 0; }
-
-inline double CSolver::GetTotal_MaxQ() { return 0; }
+inline double CSolver::GetTotal_NormHeatFlux() { return 0; }
 
 inline double CSolver::Get_PressureDrag() { return 0; }
 
@@ -177,9 +175,7 @@ inline double CSolver::Get_ViscDrag() { return 0; }
 
 inline void CSolver::SetTotal_CQ(double val_Total_CQ) { }
 
-inline void CSolver::SetTotal_Q(double val_Total_Q) { }
-
-inline void CSolver::SetTotal_MaxQ(double val_Total_Q) { }
+inline void CSolver::SetTotal_NormHeatFlux(double val_Total_NormHeatFlux) { }
 
 inline double CSolver::GetTotal_CMerit() { return 0; }
 
@@ -531,15 +527,11 @@ inline void CEulerSolver::SetTotal_CT(double val_Total_CT) { Total_CT = val_Tota
 
 inline double CEulerSolver::GetTotal_CQ() { return Total_CQ; }
 
-inline double CEulerSolver::GetTotal_Q() { return Total_Q; }
-
-inline double CEulerSolver::GetTotal_MaxQ() { return Total_Maxq; }
+inline double CEulerSolver::GetTotal_NormHeatFlux() { return Total_NormHeatFlux; }
 
 inline void CEulerSolver::SetTotal_CQ(double val_Total_CQ) { Total_CQ = val_Total_CQ; }
 
-inline void CEulerSolver::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
-
-inline void CEulerSolver::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
+inline void CEulerSolver::SetTotal_NormHeatFlux(double val_Total_NormHeatFlux) { Total_NormHeatFlux = val_Total_NormHeatFlux; }
 
 inline double CEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
@@ -680,13 +672,9 @@ inline double CTNE2EulerSolver::GetTotal_CSideForce() { return Total_CSideForce;
 
 inline double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
 
-inline double CTNE2EulerSolver::GetTotal_Q() { return Total_Q; }
+inline double CTNE2EulerSolver::GetTotal_NormHeatFlux() { return Total_NormHeatFlux; }
 
-inline double CTNE2EulerSolver::GetTotal_MaxQ() { return Total_Maxq; }
-
-inline void CTNE2EulerSolver::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
-
-inline void CTNE2EulerSolver::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
+inline void CTNE2EulerSolver::SetTotal_NormHeatFlux(double val_Total_NormHeatFlux) { Total_NormHeatFlux = val_Total_NormHeatFlux; }
 
 inline void CTNE2EulerSolver::SetTotal_CLift(double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 

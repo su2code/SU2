@@ -1190,7 +1190,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
-          case HEAT_LOAD:
+          case NORM_HEAT_FLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -4942,7 +4942,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if (config->GetKind_ObjFunc() == HEAT_LOAD)
+  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX)
     PsiE_Inf = -1.0;
   else
     PsiE_Inf = 0.0;
@@ -6319,7 +6319,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = (config->GetKind_ObjFunc() == HEAT_FLUX);
+  bool heat_flux_obj  = (config->GetKind_ObjFunc() == NORM_HEAT_FLUX);
   
 	double Gas_Constant = config->GetGas_ConstantND();
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
@@ -6379,13 +6379,9 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 				}
 			}
       
-      /*--- Strong enforcement of the adjoint energy equation for temperature-based objectives ---*/
-      if (heat_flux_obj) {
-        // This is the derivative of our objective function j = kdndT for heat flux with a negative sign from the formulation of the adjoint boundary conditions.
-        q = -1.0;
-      } else {
-        q = 0.0;
-      }
+      /*--- Strong enforcement of the adjoint energy equation for temperature-based objectives, This is the derivative of our objective function j = kdndT for heat flux with a negative sign from the formulation of the adjoint boundary conditions. ---*/
+      if (heat_flux_obj) { q = -1.0; }
+      else { q = 0.0; }
       
       /*--- Strong enforcement of the energy equations ---*/
       LinSysRes.SetBlock_Zero(iPoint, nVar-1);

@@ -919,15 +919,9 @@ public:
     
     /*!
 	 * \brief A virtual member.
-	 * \param[in] val_Total_Q - Value of the total heat load.
+	 * \param[in] val_Total_NormHeatFlux - Value of the total heat load.
 	 */
-	virtual void SetTotal_Q(double val_Total_Q);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] val_Total_MaxQ - Value of the total heat load.
-	 */
-	virtual void SetTotal_MaxQ(double val_Total_MaxQ);
+	virtual void SetTotal_NormHeatFlux(double val_Total_NormHeatFlux);
     
 	/*!
 	 * \brief A virtual member.
@@ -1123,13 +1117,7 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_Q(void);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \return Value of the heat load (integrated heat flux).
-	 */
-	virtual double GetTotal_MaxQ(void);
+	virtual double GetTotal_NormHeatFlux(void);
     
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1785,8 +1773,7 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-  Total_Q,    /*!< \brief Total heat load for all the boundaries. */
-  Total_Maxq, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_NormHeatFlux, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
@@ -2522,13 +2509,7 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_Q(void);
-    
-    /*!
-	 * \brief Provide the total heat load.
-	 * \return Value of the heat load (viscous contribution).
-	 */
-	double GetTotal_MaxQ(void);
+	double GetTotal_NormHeatFlux(void);
     
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
@@ -2540,13 +2521,7 @@ public:
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Q - Value of the heat load.
 	 */
-	void SetTotal_Q(double val_Total_Q);
-    
-    /*!
-	 * \brief Store the total heat load.
-	 * \param[in] val_Total_Q - Value of the heat load.
-	 */
-	void SetTotal_MaxQ(double val_Total_MaxQ);
+	void SetTotal_NormHeatFlux(double val_Total_NormHeatFlux);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
@@ -2692,8 +2667,7 @@ private:
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-  *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-  *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *NormHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -2711,8 +2685,7 @@ private:
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-  AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_NormHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
@@ -5465,8 +5438,7 @@ protected:
 	Total_CFy,                /*!< \brief Total CFy. */
 	Total_CFz,                /*!< \brief Total CFz. */
 	Total_CEff,               /*!< \brief Total CEff. */
-  Total_Q,                  /*!< \brief Total heat load. */
-  Total_Maxq;               /*!< \brief Maximum heat flux on all boundaries. */
+  Total_NormHeatFlux;               /*!< \brief Maximum heat flux on all boundaries. */
 
 	double
   *PrimVar_i,	      /*!< \brief Vector for storing primitives at node i. */
@@ -5934,25 +5906,13 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_Q(void);
-  
-  /*!
-	 * \brief Provide the total heat load.
-	 * \return Value of the heat load (viscous contribution).
-	 */
-	double GetTotal_MaxQ(void);
+	double GetTotal_NormHeatFlux(void);
   
   /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Q - Value of the heat load.
 	 */
-	void SetTotal_Q(double val_Total_Q);
-  
-  /*!
-	 * \brief Store the total heat load.
-	 * \param[in] val_Total_Q - Value of the heat load.
-	 */
-	void SetTotal_MaxQ(double val_Total_MaxQ);
+	void SetTotal_NormHeatFlux(double val_Total_NormHeatFlux);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -6044,8 +6004,7 @@ private:
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
-  *Q_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-  *Maxq_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *NormHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -6059,8 +6018,7 @@ private:
 	AllBound_CFx_Visc,			/*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_Q_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_Maxq_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_NormHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
