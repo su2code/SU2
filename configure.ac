@@ -5,7 +5,7 @@
 # Last updated:         10/11/13
 #
 # Created by: 		M. Colonno  10/26/12
-# Updated by: 		T. Economon  10/30/13
+# Updated by: 		B. Tracey 	2/12/14
 #
 ##########################
 
@@ -45,6 +45,12 @@ AC_ARG_WITH(Mutationpp-lib,
 AC_ARG_WITH(Mutationpp-include,
    	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]), 
 	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
+AC_ARG_WITH(Libjson-lib,
+   	AS_HELP_STRING([--with-Libjson-lib[=ARG]], [Libjson library directory, ARG = path to libjson.a]), 
+	[with_Libjson_lib=$withval], [with_Libjson_lib="no"])
+AC_ARG_WITH(Libjson-include,
+   	AS_HELP_STRING([--with-Libjson-include[=ARG]], [Libjson include directory, ARG = path to libjson.h]), 
+	[with_Libjson_include=$withval], [with_Libjson_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]), 
 	[build_CFD=$enableval], [build_CFD="yes"])
@@ -263,6 +269,50 @@ fi
 AC_SUBST([MUTATIONPP_CXX])
 AC_SUBST([MUTATIONPP_LD])
 
+##########################
+
+# check for lib
+Libjsonlib=libjson.a
+Libjsonheader=libjson.h
+have_Libjson="no"
+
+if test "$with_Libjson_lib" != "no" 
+then
+  	AC_CHECK_FILE([$with_Libjson_lib/$Libjsonlib],[have_Libjson="yes"],[have_Libjson="no"])   
+	if test "$have_Libjson" == "no"
+	then
+		AC_MSG_ERROR([Libjson requested but library file not found.])
+	fi
+fi
+
+# check for header
+if test "$have_Libjson" != "no"
+then
+	if test "$with_Libjson_include" != "no"
+	then
+		AC_CHECK_FILE([$with_Libjson_include/$Libjsonheader],[have_Libjson='yes'],[have_Libjson='no']) 
+		if test "$have_Libjson" == "no"
+		then
+			AC_MSG_ERROR([Libjson requested but header file not found.])
+		fi
+	else
+		have_Libjson="no"
+	fi  
+fi
+
+if test "$have_Libjson" != "no"
+then
+  	AM_CONDITIONAL(BUILD_Libjson,true)
+	Libjson_CXX=-I"$with_Libjson_include"
+	Libjson_LD="$with_Libjson_lib"/$Libjsonlib
+else
+	AM_CONDITIONAL(BUILD_Libjson,false)
+	Libjson_CXX=-DNO_Libjson
+	Libjson_LD=
+fi
+AC_SUBST([Libjson_CXX])
+AC_SUBST([Libjson_LD])
+
 
 ########################### MPI
 
@@ -327,6 +377,7 @@ Build Configuration Summary:
     Metis support:        $have_METIS
     TecIO support:        $have_Tecio
     Mutation++ support:   $have_Mutationpp
+    Libjson support: 	  $have_Libjson
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC

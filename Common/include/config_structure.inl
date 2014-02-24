@@ -82,6 +82,8 @@ inline double CConfig::GetRatioViscosity(void) { return RatioViscosity; }
 
 inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_Surface; }
 
+inline unsigned short CConfig::GetAxis_Orientation(void) { return Axis_Orientation; }
+
 inline double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
 inline bool CConfig::GetVisualize_Partition(void) { return Visualize_Partition; }
@@ -122,7 +124,7 @@ inline double CConfig::GetMach_FreeStreamND(void) { return Mach; }
 
 inline double CConfig::GetGamma(void) { return Gamma; }
 
-inline double CConfig::GetSection_Limit(unsigned short val_var) { return Section_Limit[val_var]; }
+inline double CConfig::GetSection_Location(unsigned short val_var) { return Section_Location[val_var]; }
 
 inline int ***CConfig::GetReaction_Map(void) { return Reactions; } 
 
@@ -631,6 +633,8 @@ inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline unsigned short CConfig::GetnSections(void) { return nSections; }
+
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
 inline void CConfig::SetKind_ViscNumScheme(unsigned short val_kind_viscnumscheme) { Kind_ViscNumScheme = val_kind_viscnumscheme; }
@@ -683,6 +687,8 @@ inline void CConfig::SetMarker_All_Tag(unsigned short val_marker, string val_ind
 
 inline void CConfig::SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring) { Marker_All_Monitoring[val_marker] = val_monitoring; }
 
+inline void CConfig::SetMarker_All_GeoEval(unsigned short val_marker, unsigned short val_geoeval) { Marker_All_GeoEval[val_marker] = val_geoeval; }
+
 inline void CConfig::SetMarker_All_Designing(unsigned short val_marker, unsigned short val_designing) { Marker_All_Designing[val_marker] = val_designing; }
 
 inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting) { Marker_All_Plotting[val_marker] = val_plotting; }
@@ -700,6 +706,8 @@ inline unsigned short CConfig::GetMarker_All_Monitoring(unsigned short val_marke
 inline void CConfig::SetMarker_All_Out1D(unsigned short val_marker, unsigned short val_boundary) { Marker_All_Out1D[val_marker] = val_boundary; }
 
 inline unsigned short CConfig::GetMarker_All_Out1D(unsigned short val_marker) { return Marker_All_Out1D[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_GeoEval(unsigned short val_marker) { return Marker_All_GeoEval[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Designing(unsigned short val_marker) { return Marker_All_Designing[val_marker]; }
 

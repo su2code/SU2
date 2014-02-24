@@ -690,7 +690,8 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
   string readFile = config->GetML_Turb_Model_File();
   string checkFile = config->GetML_Turb_Model_Check_File();
   cout << "Loading ML file from " << readFile << endl;
-  CNeurNet* Net = new CNeurNet(readFile, checkFile);
+//  CNeurNet* Net = new CNeurNet(readFile, checkFile);
+  CNeurNet* Net = new CNeurNet();
   this->MLModel = Net;
   cout << "ML File successfully read " << endl;
 }
