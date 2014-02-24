@@ -335,7 +335,8 @@ private:
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-	double *Section_Limit;                  /*!< \brief Airfoil section limit. */
+	double *Section_Location;                  /*!< \brief Airfoil section limit. */
+  unsigned short nSections;               /*!< \brief Number of sections. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
@@ -385,15 +386,18 @@ private:
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
+	nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
 	string *Marker_Monitoring,			/*!< \brief Markers to monitor. */
 	*Marker_Designing,					/*!< \brief Markers to plot. */
+	*Marker_GeoEval,					/*!< \brief Markers to plot. */
 	*Marker_Plotting,					/*!< \brief Markers to plot. */
   *Marker_Moving,						/*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	*Marker_DV;						/*!< \brief Markers affected by the design variables. */
 	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
+	*Marker_All_GeoEval,				/*!< \brief Global index for geometrical evaluation. */
 	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
 	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
@@ -401,6 +405,7 @@ private:
 	*Marker_All_Out1D,      /*!< \brief Global index for moving using 1D integrated output. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
+	*Marker_Config_GeoEval,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
 	*Marker_Config_Outlet_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
@@ -410,6 +415,7 @@ private:
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
+	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
 	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
@@ -1003,6 +1009,14 @@ public:
 	 *         and it will use and interpolation.
 	 */
 	unsigned short GetAnalytical_Surface(void);
+  
+  /*!
+	 * \brief Get Information about if there is an analytical definition of the surface for doing the
+	 *        grid adaptation.
+	 * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
+	 *         and it will use and interpolation.
+	 */
+	unsigned short GetAxis_Orientation(void);
 
 	/*! 
 	 * \brief Get the maximum dimension of the agglomerated element compared with the whole domain.
@@ -1100,7 +1114,7 @@ public:
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
 	 */
-	double GetSection_Limit(unsigned short val_var);
+	double GetSection_Location(unsigned short val_var);
 
 	/*! 
 	 * \brief Get the array that maps chemical consituents to each chemical reaction.
@@ -1925,6 +1939,15 @@ public:
 	void SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring);
   
   /*!
+	 * \brief Set if a marker <i>val_marker</i> is going to be monitored <i>val_monitoring</i>
+	 *        (read from the config file).
+	 * \note This is important for non dimensional coefficient computation.
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_monitoring - 0 or 1 depending if the the marker is going to be monitored.
+	 */
+	void SetMarker_All_GeoEval(unsigned short val_marker, unsigned short val_geoeval);
+  
+  /*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be designed <i>val_designing</i>
 	 *        (read from the config file).
 	 * \note This is important for non dimensional coefficient computation.
@@ -1994,6 +2017,13 @@ public:
 	 * \return 0 or 1 depending if the marker is going to be monitored.
 	 */		
 	unsigned short GetMarker_All_Monitoring(unsigned short val_marker);
+  
+  /*!
+	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be monitored.
+	 * \return 0 or 1 depending if the marker is going to be monitored.
+	 */
+	unsigned short GetMarker_All_GeoEval(unsigned short val_marker);
   
   /*!
 	 * \brief Get the design information for a marker <i>val_marker</i>.
@@ -2962,6 +2992,12 @@ public:
 	 */
 	unsigned short GetKind_Inlet(void);
 
+  /*!
+	 * \brief Get the number of sections.
+	 * \return Number of sections
+	 */
+	unsigned short GetnSections(void);
+  
 	/*! 
 	 * \brief Provides information about the the nodes that are going to be moved on a deformation 
 	 *        volumetric grid deformation.
@@ -3846,6 +3882,12 @@ public:
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_Monitoring(string val_marker);
+  
+  /*!
+	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
+	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_Config_GeoEval(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
