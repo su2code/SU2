@@ -3781,6 +3781,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS));
   bool frozen_turb = config->GetFrozen_Visc();
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool exit_pt = (config->GetWrt_Exit_Pt());
   
   bool isothermal = false;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -3839,6 +3840,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char fea_coeff[]= ",\"CFEA\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   
+  char exit_stagnation_pressure[]=",\"Exit_Pt\"";
+
   /*--- Header for the residuals ---*/
   
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
@@ -3854,7 +3857,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
   char fea_resid[]= ",\"Res_FEA\"";
   char heat_resid[]= ",\"Res_Heat\"";
-  
+
   /*--- End of the header ---*/
   
   char end[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
@@ -3876,6 +3879,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (exit_pt) ConvHist_file[0] << exit_stagnation_pressure;
       ConvHist_file[0] << end;
       if (freesurface) {
         ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
@@ -3952,6 +3956,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], resid_aux[1000],
     levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000],
     fea_resid[1000], end[1000];
+    char exit_stagnation_pressure[1000];
     double dummy = 0.0;
     unsigned short iVar, iMarker, iMarker_Monitoring;
     
@@ -3987,10 +3992,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     (config[val_iZone]->GetKind_Regime() == RANS) || (config[val_iZone]->GetKind_Regime() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Regime() == ADJ_RANS);
     
+    bool exit_pt = ((*config)->GetWrt_Exit_Pt());
+
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
+    double Exit_Stagnation_Pressure= 0.0;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -4118,6 +4126,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         if (fluid_structure) {
           Total_CFEA  = solver_container[ZONE_1][FinestMesh][FEA_SOL]->GetTotal_CFEA();
         }
+
+        if (exit_pt) {
+          Exit_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalExitPressure();
+        }
         
         /*--- Flow Residuals ---*/
         
@@ -4213,7 +4225,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           Total_Q           = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Q();
           Total_MaxQ        = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxQ();
         }
-        
         /*--- Residuals ---*/
         
         for (iVar = 0; iVar < nVar_TNE2; iVar++)
@@ -4360,7 +4371,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (fluid_structure)
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz,
                        Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CFEA);
-            
+            /*---- Averaged stagnation pressure at an exit ---- */
+            if (exit_pt)
+              sprintf( exit_stagnation_pressure, ", %12.10f", Exit_Stagnation_Pressure);
             /*--- Flow residual ---*/
             if (nDim == 2) {
               if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy );
@@ -4435,7 +4448,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                        Total_CEff);
-            
             /*--- Direct problem residual ---*/
             for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
               sprintf (resid_aux, ", %12.10f", log10 (residual_TNE2[iVar]));
@@ -4676,6 +4688,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (incompressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
             if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
             if (fluid_structure) ConvHist_file[0] << fea_resid;
+            /*---- Averaged stagnation pressure at an exit ---- */
+            if (exit_pt) ConvHist_file[0] << exit_stagnation_pressure;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }

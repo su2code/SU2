@@ -133,6 +133,7 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
 	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
+	nMarker_Outlet_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
 	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
@@ -160,6 +161,7 @@ private:
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
 	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
+	*Marker_Outlet_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
 	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
@@ -396,9 +398,11 @@ private:
 	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
 	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
+	*Marker_All_Out1D,      /*!< \brief Global index for moving using 1D integrated output. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
+	*Marker_Config_Outlet_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
 	*Marker_Config_DV,				/*!< \brief Global index for design variable markers using the config information. */
 	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
@@ -459,7 +463,8 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Wrt_Sectional_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  Wrt_Sectional_Forces,       /*!< \brief Write sectional forces for specified markers. */
+	Wrt_Exit_Pt;                /*!< \brief Write average stagnation pressure specified markers. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -1646,7 +1651,14 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
-    
+
+  /*!
+   * \brief Get the total number of 1D output markers.
+   * \return Total number of monitoring markers.
+   */
+  unsigned short GetnMarker_Out1D(void);
+
+
     /*!
 	 * \brief Get the total number of monitoring markers.
 	 * \return Total number of monitoring markers.
@@ -1810,7 +1822,13 @@ public:
 	 * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
 	 */
 	bool GetWrt_Sectional_Forces(void);
-  
+
+  /*!
+   * \brief Get information about writing average stagnation pressure
+   * \return <code>TRUE</code> means that the average stagnation pressure will be output for specified markers.
+   */
+  bool GetWrt_Exit_Pt(void);
+
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.
@@ -1864,6 +1882,22 @@ public:
 	 * \return Kind of boundary for the marker <i>val_marker</i>.
 	 */		
 	unsigned short GetMarker_All_Boundary(unsigned short val_marker);
+
+  /*!
+   * \brief Get the kind of boundary for each marker.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \return Kind of boundary for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_All_Out1D(unsigned short val_marker);
+
+  /*!
+   * \brief Set the value of the boundary <i>val_boundary</i> (read from the config file)
+   *        for the marker <i>val_marker</i>.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_boundary - Kind of boundary read from config file.
+   */
+  void SetMarker_All_Out1D(unsigned short val_marker, unsigned short val_boundary);
+
 
 	/*! 
 	 * \brief Set the value of the boundary <i>val_boundary</i> (read from the config file) 
@@ -3824,6 +3858,12 @@ public:
 	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_Plotting(string val_marker);
+
+  /*!
+   * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
+   * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Config_Outlet_1D(string val_marker);
 
 	/*! 
 	 * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.

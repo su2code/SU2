@@ -219,7 +219,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
 	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
-  
+  /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
+   Format: ( outlet marker) */
+  AddMarkerOption("MARKER_OUTLET_1D", nMarker_Outlet_1D, Marker_Outlet_1D);
+
+
 	/*--- Options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
   
@@ -697,7 +701,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
   /* DESCRIPTION: Output sectional forces for specified markers. */
 	AddSpecialOption("WRT_SECTIONAL_FORCES", Wrt_Sectional_Forces, SetBoolOption, false);
-  
+  /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
+  AddSpecialOption("WRT_EXIT_PT", Wrt_Exit_Pt, SetBoolOption, false);
+
 	/*--- Options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
   
@@ -2390,7 +2396,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Outlet_1D;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2401,12 +2407,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
+	Marker_All_Out1D   = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
 	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-	iMarker_Supersonic_Inlet;
+	iMarker_Supersonic_Inlet, iMarker_Outlet_1D;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
@@ -2418,10 +2425,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
 		Marker_All_PerBound[iMarker_All]   = 0;
+		Marker_All_Out1D[iMarker_All]   = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
-			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
+			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal
+			+ nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement
+			+ nMarker_Load + nMarker_FlowLoad + nMarker_Custom + nMarker_Outlet_1D;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -2431,7 +2441,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_Config_Moving     = new unsigned short[nMarker_Config];
 	Marker_Config_Designing  = new unsigned short[nMarker_Config];
 	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
-  
+	Marker_Config_Outlet_1D   = new unsigned short[nMarker_Config];
+
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config]   = 0;
@@ -2441,6 +2452,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_DV[iMarker_Config]         = 0;
     Marker_Config_Moving[iMarker_Config]     = 0;
 		Marker_Config_PerBound[iMarker_Config]   = 0;
+		Marker_Config_Outlet_1D[iMarker_Config]   = 0;
 	}
 
 	iMarker_Config = 0;
@@ -2604,7 +2616,15 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Moving[iMarker_Moving])
 				Marker_Config_Moving[iMarker_Config] = YES;
 	}
-  
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+    Marker_Config_Outlet_1D[iMarker_Config] = NO;
+    for (iMarker_Outlet_1D = 0; iMarker_Outlet_1D < nMarker_Outlet_1D; iMarker_Outlet_1D++)
+      if (Marker_Config_Tag[iMarker_Config] == Marker_Outlet_1D[iMarker_Outlet_1D])
+        Marker_Config_Outlet_1D[iMarker_Config] = YES;
+  }
+
+
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -4277,6 +4297,13 @@ unsigned short CConfig::GetMarker_Config_Plotting(string val_marker) {
 	return Marker_Config_Plotting[iMarker_Config];
 }
 
+unsigned short CConfig::GetMarker_Config_Outlet_1D(string val_marker) {
+  unsigned short iMarker_Config;
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+  return Marker_Config_Outlet_1D[iMarker_Config];
+}
+
 unsigned short CConfig::GetMarker_Config_DV(string val_marker) {
 	unsigned short iMarker_Config;
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
@@ -4412,6 +4439,12 @@ CConfig::~CConfig(void)
 		delete [] RefOriginMoment_Y;
 	if (RefOriginMoment_Z != NULL)
 		delete [] RefOriginMoment_Z;
+
+	/*Marker pointers*/
+	if (Marker_Config_Outlet_1D!=NULL)
+	  delete [] Marker_Config_Outlet_1D;
+	if (Marker_All_Out1D!=NULL)
+	    delete [] Marker_All_Out1D;
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
