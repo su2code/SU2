@@ -3836,7 +3836,8 @@ void CEulerSolver::OneDimensionalExit(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
     unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
     double Pressure, *Normal = NULL, MomentDist[3], *Coord, *Origin, Area,
-    factor, NFPressOF, RefVel2, RefDensity, RefPressure, Gas_Constant, Mach2Vel, Mach_Motion, UnitNormal[3], Force[3];
+    factor, NFPressOF, RefVel2, RefDensity, RefPressure, Gas_Constant, Mach2Vel, Mach_Motion, UnitNormal[3], Force[3],
+    Stag_Pressure, Mach;
     string Marker_Tag, Monitoring_Tag;
 
     double SumPressure,SumArea, AveragePressure =0.0;
@@ -3894,14 +3895,17 @@ void CEulerSolver::OneDimensionalExit(CGeometry *geometry, CConfig *config) {
                   Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
                   Coord = geometry->node[iPoint]->GetCoord();
         }
-        // get the pressure from the node
-        if (compressible)   Pressure = node[iPoint]->GetPressure();
-        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
+
         //CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
         /*For now just average pressure, later will have stagnation pressure*/
         if (Out1D==YES){
+          // get the pressure from the node
+          if (compressible)   Pressure = node[iPoint]->GetPressure();
+          if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
+          Mach = (sqrt(node[iPoint]->GetVelocity2()) / node[iPoint]->GetSoundSpeed());
+          Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-          SumPressure+=Pressure*Area;
+          SumPressure+=Stag_Pressure * Area;
           SumArea+=Area;
         }
 
