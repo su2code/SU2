@@ -45,12 +45,12 @@ AC_ARG_WITH(Mutationpp-lib,
 AC_ARG_WITH(Mutationpp-include,
    	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]), 
 	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
-AC_ARG_WITH(Libjson-lib,
-   	AS_HELP_STRING([--with-Libjson-lib[=ARG]], [Libjson library directory, ARG = path to libjson.a]), 
-	[with_Libjson_lib=$withval], [with_Libjson_lib="no"])
-AC_ARG_WITH(Libjson-include,
-   	AS_HELP_STRING([--with-Libjson-include[=ARG]], [Libjson include directory, ARG = path to libjson.h]), 
-	[with_Libjson_include=$withval], [with_Libjson_include="no"])
+AC_ARG_WITH(Jsoncpp-lib,
+   	AS_HELP_STRING([--with-Jsoncpp-lib[=ARG]], [Jsoncpp library directory, ARG = path to jsoncpp_SYS.a]), 
+	[with_Jsoncpp_lib=$withval], [with_Jsoncpp_lib="no"])
+AC_ARG_WITH(Jsoncpp-include,
+   	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]), 
+	[with_Jsoncpp_include=$withval], [with_Jsoncpp_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]), 
 	[build_CFD=$enableval], [build_CFD="yes"])
@@ -272,46 +272,46 @@ AC_SUBST([MUTATIONPP_LD])
 ##########################
 
 # check for lib
-Libjsonlib=libjson.a
-Libjsonheader=libjson.h
-have_Libjson="no"
+Jsoncpplib=libjson_linux-gcc-4.2.1_libmt.a
+Jsoncppheader=json/json.h
+have_Jsoncpp="no"
 
-if test "$with_Libjson_lib" != "no" 
+if test "$with_Jsoncpp_lib" != "no" 
 then
-  	AC_CHECK_FILE([$with_Libjson_lib/$Libjsonlib],[have_Libjson="yes"],[have_Libjson="no"])   
-	if test "$have_Libjson" == "no"
+  	AC_CHECK_FILE([$with_Jsoncpp_lib/$Jsoncpplib],[have_Jsoncpp="yes"],[have_Jsoncpp="no"])   
+	if test "$have_Jsoncpp" == "no"
 	then
-		AC_MSG_ERROR([Libjson requested but library file not found.])
+		AC_MSG_ERROR([Jsoncpp requested but library file not found.])
 	fi
 fi
 
 # check for header
-if test "$have_Libjson" != "no"
+if test "$have_Jsoncpp" != "no"
 then
-	if test "$with_Libjson_include" != "no"
+	if test "$with_Jsoncpp_include" != "no"
 	then
-		AC_CHECK_FILE([$with_Libjson_include/$Libjsonheader],[have_Libjson='yes'],[have_Libjson='no']) 
-		if test "$have_Libjson" == "no"
+		AC_CHECK_FILE([$with_Jsoncpp_include/$Jsoncppheader],[have_Jsoncpp='yes'],[have_Jsoncpp='no']) 
+		if test "$have_Jsoncpp" == "no"
 		then
-			AC_MSG_ERROR([Libjson requested but header file not found.])
+			AC_MSG_ERROR([Jsoncpp requested but header file not found.])
 		fi
 	else
-		have_Libjson="no"
+		have_Jsoncpp="no"
 	fi  
 fi
 
-if test "$have_Libjson" != "no"
+if test "$have_Jsoncpp" != "no"
 then
-  	AM_CONDITIONAL(BUILD_Libjson,true)
-	Libjson_CXX=-I"$with_Libjson_include"
-	Libjson_LD="$with_Libjson_lib"/$Libjsonlib
+  	AM_CONDITIONAL(BUILD_JSONCPP,true)
+	JSONCPP_CXX=-I"$with_Jsoncpp_include"
+	JSONCPP_LD="$with_Jsoncpp_lib"/$Jsoncpplib
 else
-	AM_CONDITIONAL(BUILD_Libjson,false)
-	Libjson_CXX=-DNO_Libjson
-	Libjson_LD=
+	AM_CONDITIONAL(BUILD_JSONCPP,false)
+	JSONCPP_CXX=-DNO_JSONCPP
+	JSONCPP_LD=
 fi
-AC_SUBST([Libjson_CXX])
-AC_SUBST([Libjson_LD])
+AC_SUBST([JSONCPP_CXX])
+AC_SUBST([JSONCPP_LD])
 
 
 ########################### MPI
@@ -377,7 +377,7 @@ Build Configuration Summary:
     Metis support:        $have_METIS
     TecIO support:        $have_Tecio
     Mutation++ support:   $have_Mutationpp
-    Libjson support: 	  $have_Libjson
+    Jsoncpp support: 	  $have_Jsoncpp
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC
