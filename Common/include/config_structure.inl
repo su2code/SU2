@@ -865,6 +865,8 @@ inline string CConfig::GetML_Turb_Model_File(void) { return ML_Turb_Model_File; 
 
 inline string CConfig::GetML_Turb_Model_Check_File(void) { return ML_Turb_Model_Check_File; }
 
+inline string CConfig::GetML_Turb_Model_FeatureSet(void) { return ML_Turb_Model_FeatureSet; }
+
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
 inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
