@@ -211,10 +211,10 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] nVortex - number of vortices.
  * \param[in] x0 - Vector of x-loc of the vortices.
  * \param[in] y0 - Vector of y-loc of the vortices.
- * \param[in] lambda - Vector of vortex strengths.
- * \param[in] eta - Vector related to the decay and gradient of the vortices.
+ * \param[in] vort_strength - Vector of vortex strengths.
+ * \param[in] r_core - Vector of vortex core size.
  */
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& lambda,vector<double>& eta);
+void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
