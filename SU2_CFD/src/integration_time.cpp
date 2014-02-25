@@ -630,8 +630,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
       if (config->GetWrt_Sectional_Forces())
         solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces_Sections(geometry[FinestMesh], config);
-      if (config->GetWrt_Exit_Pt())
-        solver_container[FinestMesh][FLOW_SOL]->OneDimensionalExit(geometry[FinestMesh], config);
+      if (config->GetWrt_1D_Output())
+        solver_container[FinestMesh][FLOW_SOL]->OneDimensionalOutput(geometry[FinestMesh], config);
       if (config->GetKind_ViscNumScheme() != NONE) solver_container[FinestMesh][FLOW_SOL]->Viscous_Forces(geometry[FinestMesh], config);
       
       /*--- Evaluate convergence monitor ---*/

@@ -759,7 +759,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void OneDimensionalExit(CGeometry *geometry, CConfig *config);
+  virtual void OneDimensionalOutput(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1534,13 +1534,13 @@ public:
    * \brief A virtual member.
    * \return average total pressure evaluated at an exit boundary marker
    */
-  virtual double GetTotalExitPressure(void);
+  virtual double GetOneDStagPressure(void);
 
   /*!
    * \brief A virtual member.
    * \param[in] val_exit_pt: value of the total average pressure at the exit.
    */
-  virtual void SetTotalExitPressure(double val_exit_pt);
+  virtual void SetOneDStagPressure(double val_exit_pt);
 
   /*!
 	 * \brief A virtual member.
@@ -1791,7 +1791,7 @@ protected:
 	AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
 	
   double
-  Exit_Pt, /*!< \brief average total pressure evaluated at an exit */
+  OneD_Pt, /*!< \brief average total pressure evaluated at an exit */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -2333,11 +2333,11 @@ public:
 	void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
 
 	/*!
-   * \brief Compute the one dimensional outputs at exits (averaged stagnation pressure).
+   * \brief Compute the one dimensional outputs(averaged stagnation pressure).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-	void OneDimensionalExit(CGeometry *geometry, CConfig *config);
+	void OneDimensionalOutput(CGeometry *geometry, CConfig *config);
 
 
 	/*!
@@ -2643,13 +2643,13 @@ public:
 	/*!
 	   * \brief Provide the averaged total pressure at a marker.
 	   */
-	double GetTotalExitPressure(void);
+	double GetOneDStagPressure(void);
 
 	/*!
 	   * \brief Set the value of averaged total pressure
 	   * \param[in] val_exit_pt - value of the averaged pressure
 	   */
-	void SetTotalExitPressure(double exit_pt);
+	void SetOneDStagPressure(double exit_pt);
 
 
 
