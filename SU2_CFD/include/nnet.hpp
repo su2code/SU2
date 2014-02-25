@@ -7,9 +7,10 @@
 #include <cmath>
 #include <sstream>
 
-#ifndef NO_MPI
-#include <mpi.h>
+#ifndef NO_JSONCPP
+#include <json/json.h>
 #endif
+
 
 using namespace std;
 
@@ -19,18 +20,20 @@ public:
   virtual ~CScaler();
 	virtual void Scale(double *) = 0;
 	virtual void Unscale(double *) = 0;
-	//virtual void LoadJSON(int) = 0;
 };
 
 class CNormalScaler: public CScaler{
 private:
 	double * mu;
 	double * sigma;
-	int nInputs;
+	int dim;
 
 public:
 	CNormalScaler();
 	CNormalScaler(int,double*,double*);
+#ifndef NO_JSONCPP
+  CNormalScaler(Json::Value);
+#endif
 	~CNormalScaler();
 	void Scale(double *);
 	void Unscale(double *);
@@ -46,6 +49,9 @@ public:
 class CTanhActivator : public CActivator{
 public:
 	CTanhActivator();
+#ifndef NO_JSONCPP
+  CTanhActivator(Json::Value);
+#endif
 	~CTanhActivator();
 	double Activate(double combination);
 };
@@ -53,6 +59,9 @@ public:
 class CLinearActivator : public CActivator{
 public:
 	CLinearActivator();
+#ifndef NO_JSONCPP
+  CLinearActivator(Json::Value);
+#endif
 	~CLinearActivator();
 	double Activate(double combination);
 };
@@ -71,6 +80,9 @@ private:
 public:
 	CSumNeuron();
 	CSumNeuron(CActivator*); // activator, parameterStart, nParameters
+#ifndef NO_JSONCPP
+  CSumNeuron(Json::Value);
+#endif
 	~CSumNeuron();
 	//Activator* GetActivator(void);
 	double Combine(double * parameters, int nParameters, double * inputs, int nInputs);
@@ -79,10 +91,15 @@ public:
 
 
 class CPredictor{
+protected:
+  int inputDim;
+  int outputDim;
 public:
   CPredictor();
   ~CPredictor();
   virtual void Predict(double *, double *){cout << "In base Predict, this is bad";};
+  int InputDim();
+  int OutputDim();
 };
 
 class CScalePredictor{
@@ -106,16 +123,18 @@ private:
   double*** parameters; // Array of parameters for each neuron
   int* nNeuronsInLayer; //one list for each layer
   int** nParameters; // Number of parameters for the neuron
-  int inputDim;
+//  int inputDim;
   
   void processLayer(double *, int,CNeuron **, double **, int, int * ,double *);
   
   //----
-	int outputDim;
+//	int outputDim;
 	int totalNumParameters;
 public:
 	CNeurNet();
-    //CNeurNet(string filename); // Should have custom constructor with nInputs, etc.
+#ifndef NO_JSONCPP
+  CNeurNet(Json::Value);
+#endif
 	~CNeurNet();
 //	int InputDim();
 //	int OutputDim();

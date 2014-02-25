@@ -5,11 +5,11 @@ CScaler::CScaler(){}
 CScaler::~CScaler(){}
 
 CNormalScaler::CNormalScaler(){}
-CNormalScaler::CNormalScaler(int nInputs, double *mu, double *sigma){
-	this->nInputs = nInputs;
-	this->mu = new double[nInputs];
-	this->sigma = new double[nInputs];
-	for (int i=0; i < nInputs; i++){
+CNormalScaler::CNormalScaler(int dim, double *mu, double *sigma){
+	this->dim = dim;
+	this->mu = new double[dim];
+	this->sigma = new double[dim];
+	for (int i=0; i < dim; i++){
 		this->mu[i] = mu[i];
 		this->sigma[i] = sigma[i];
 	}
@@ -20,14 +20,48 @@ CNormalScaler::~CNormalScaler(){
 	delete [] sigma;
 }
 
+#ifndef NO_JSONCPP
+CNormalScaler::CNormalScaler(Json::Value json){
+  int nDim = json["Dim"].asInt();
+  Json::Value muVal = json["Mu"];
+  
+  int muSize = muVal.size();
+  if (muSize != nDim){
+    cout << "musize and Dim mismatch" << endl;
+  }
+  double *mu = new double[muSize];
+  for (int i = 0; i < nDim; i++){
+    mu[i] = muVal[i].asDouble();
+  }
+
+  Json::Value sigmaVal = json["Sigma"];
+  int sigmaSize = sigmaVal.size();
+  if (sigmaSize != nDim){
+    cout << "sigmasize and and Dim mismatch" << endl;
+  }
+  
+  double * sigma = new double[sigmaSize];
+  for (int i = 0; i < nDim; i++) {
+    sigma[i] = sigmaVal[i].asDouble();
+  }
+
+  this->dim = nDim;
+  this->mu = mu;
+  this->sigma = sigma;
+  
+  return;
+}
+#endif
+
+
 void CNormalScaler::Scale(double * inputs){
-	for (int i=0; i<nInputs; i++){
+	for (int i=0; i<dim; i++){
 		inputs[i] = (inputs[i]-mu[i])/sigma[i];
 	}
 	return;
 }
 void CNormalScaler::Unscale(double * inputs){
-	for (int i=0; i<nInputs; i++){
+	for (int i=0; i<dim; i++){
 		inputs[i] = inputs[i]*sigma[i] + mu[i];
 	}
 	return;
@@ -37,6 +71,9 @@ CActivator::CActivator(){}
 CActivator::~CActivator(){}
 
 CTanhActivator::CTanhActivator(){}
+#ifndef NO_JSONCPP
+CTanhActivator::CTanhActivator(Json::Value json){}
+#endif
 CTanhActivator::~CTanhActivator(){}
 double CTanhActivator::Activate(double sum){
 	double val =  1.7159 * tanh(2.0/3.0 *sum);
@@ -44,6 +81,9 @@ double CTanhActivator::Activate(double sum){
 }
 
 CLinearActivator::CLinearActivator(){}
+#ifndef NO_JSONCPP
+CLinearActivator::CLinearActivator(Json::Value){}
+#endif
 CLinearActivator::~CLinearActivator(){}
 double CLinearActivator::Activate(double sum){
 	return sum;
@@ -56,11 +96,26 @@ CSumNeuron::CSumNeuron(){}
 CSumNeuron::CSumNeuron(CActivator* activator){
 	this->activator = activator;
 }
+#ifndef NO_JSONCPP
+CSumNeuron::CSumNeuron(Json::Value json){
+  string type = json["Type"].asString();
+  if (type.compare("github.com/reggo/reggo/nnet/Tanh") == 0){
+    this->activator = new CTanhActivator(json["Value"]);
+  }else if(type.compare("github.com/reggo/reggo/nnet/Linear") == 0){
+    this->activator = new CLinearActivator(json["Value"]);
+  }else{
+    cout << "Unknown activator type: " << type << endl;
+    exit(1);
+  }
+}
+#endif
+
 CSumNeuron::~CSumNeuron(){
 	delete this->activator;
 }
 
 double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, int nInputs){
+  
   if (nParameters != nInputs +1){
     cout << "parameter size mismatch" <<endl;
   }
@@ -80,8 +135,105 @@ double CSumNeuron::Activate(double combination){
 CPredictor::CPredictor(){}
 CPredictor::~CPredictor(){}
 
+int CPredictor::InputDim(){
+  return this->inputDim;
+}
+
+int CPredictor::OutputDim(){
+  return this->outputDim;
+}
+
 CNeurNet::CNeurNet(){}
-CNeurNet::~CNeurNet(){}
+
+#ifndef NO_JSONCPP
+CNeurNet::CNeurNet(Json::Value json){
+  this-> inputDim = json["InputDim"].asInt();
+  this-> outputDim = json["OutputDim"].asInt();
+  this-> totalNumParameters = json["TotalNumParameters"].asInt();
+
+  // Get the number of neurons
+  Json::Value layers = json["Neurons"];
+  Json::Value parameters = json["Parameters"];
+  int nLayers = layers.size();
+  int nParameterLayers = parameters.size();
+  if (nLayers != nParameterLayers){
+    cout << "neurons and parameters disagree on number of layers" << endl;
+  }
+  this->nLayers = nLayers;
+  
+  // Allocate memory for neuron and parameters by layer
+  this->nNeuronsInLayer = new int[nLayers];
+  this->nParameters = new int *[nLayers];
+  this->neurons = new CNeuron **[nLayers];
+  this->parameters = new double**[nLayers];
+  
+  // Per layer, get the number of neurons in the layer and then read in the neurons
+  for (int i = 0; i < nLayers; i++){
+    Json::Value layer = layers[i];
+    Json::Value parameterLayer = parameters[i];
+    int neuronsInLayer = layer.size();
+    int parameterNeurons = parameterLayer.size();
+    if (neuronsInLayer != parameterNeurons){
+      cout << "neurons and parameters disagree on the number of neurons in layer i" << endl;
+    }
+    this->nNeuronsInLayer[i] = neuronsInLayer;
+    if (i == nLayers-1){
+      if (neuronsInLayer != this->outputDim){
+        cout << "Size of initial layer is not equal to input dimension" << endl;
+      }
+    }
+    this->neurons[i] = new CNeuron *[neuronsInLayer];
+    this->nParameters[i] = new int[neuronsInLayer];
+    this->parameters[i] = new double *[neuronsInLayer];
+    
+    // Loop over all the neurons in the layer and add the parameters and neuron itself
+    for (int j = 0; j < neuronsInLayer; j++){
+      Json::Value neuron = layer[j];
+      
+      // get the parameters
+      int nParametersInNeuron = parameterLayer[j].size();
+      this->nParameters[i][j] = nParametersInNeuron;
+      this->parameters[i][j] = new double [nParametersInNeuron];
+      for (int k = 0; k < nParametersInNeuron; k++){
+        this-> parameters[i][j][k] = parameterLayer[j][k].asDouble();
+      }
+      
+      // get the neurons
+      string type = neuron["Type"].asString();
+      if (type.compare("github.com/reggo/reggo/nnet/SumNeuron") == 0){
+        this->neurons[i][j] = new CSumNeuron(neuron["Value"]);
+      }else{
+        cout << "neuron type unknown: " << type << endl;
+      }
+    }
+    // TODO: Should add in extra checking for num parameters and such
+  }
+  
+  // Find the maximum number of neurons
+  this->maxNeurons = 0;
+  for (int i = 0; i < this->nLayers; i++){
+    if (this->maxNeurons < this->nNeuronsInLayer[i]){
+      this->maxNeurons = this->nNeuronsInLayer[i];
+    }
+  }
+  
+#endif
+
+CNeurNet::~CNeurNet(){
+  for (int i = 0; i < this->nLayers; i++){
+    for (int j = 0; j < this->nNeuronsInLayer[i]; j++){
+      delete [] this-> parameters[i][j];
+      delete [] this->neurons[i][j];
+    }
+    delete [] this->nParameters[i];
+    delete [] this->parameters[i];
+    delete [] this->neurons[i];
+  }
+  delete [] this->nNeuronsInLayer;
+  delete [] this->neurons;
+  delete [] this->parameters;
+  delete [] this->nParameters;
+}
 
 void CNeurNet::processLayer(double * input, int nInput, CNeuron **neurons, double **parameters, int nNeurons, int * nParameters, double *output){
   for (int i = 0; i < nNeurons; i++){
@@ -100,9 +252,9 @@ void CNeurNet::Predict(double * input, double * output){
     this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], output);
     return;
   }
-  
   // First layer uses the real input as the input
   this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], tmpOutput);
+  
   
   // Middle layers use the previous output as input
   for (int i= 1; i < nLayers -1; i++){
@@ -115,15 +267,45 @@ void CNeurNet::Predict(double * input, double * output){
     processLayer(prevTmpOutput, inputDim, this->neurons[i], this->parameters[i], this->nNeuronsInLayer[i], this->nParameters[i], tmpOutput);
   }
   int layer = nLayers -1;
-  int inputDim = this->nNeuronsInLayer[nLayers-1];
+  int inputDim = this->nNeuronsInLayer[nLayers-2];
   // Last layer has the actual output
   processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer],this->nParameters[layer], output);
-
+  
   // Clean up garbage
   delete [] prevTmpOutput;
   delete [] tmpOutput;
   return;
 }
+#ifndef NO_JSONCPP
+CPredictor* parse_predictor(Json::Value json){
+  string type = json["Type"].asString();
+  Json::Value value = json["Value"];
+  if (type.compare("github.com/reggo/reggo/nnet/Net*")==0){
+    CPredictor* predictor = new CNeurNet(value);
+    return predictor;
+  }
+  cout << "No Match for predictor type: " << type << endl;
+  return NULL;
+}
+
+CScaler* parse_cscaler(Json::Value json){
+  
+  string type = json["Type"].asString();
+  Json::Value value = json["Value"];
+  if (type.compare("github.com/reggo/reggo/scale/Normal*") == 0){
+    // We matched the normal scaler. Now, allocate a new one
+    CScaler * scaler = new CNormalScaler(value);
+    return scaler;
+  }else{
+    cout << "NoMatch for scaler type: "<< type << endl;
+    exit(1);
+  }
+  cout << "Shouldnt' be here" << endl;
+  exit(1);
+  
+  return NULL;
+}
+#endif
 
 // get_file_contents gets all of the file contents and returns them as a string
 string get_file_contents(string filename){
@@ -131,9 +313,9 @@ string get_file_contents(string filename){
   const char * charfile = filename.c_str();
   
   ifstream in(charfile, ios::in | ios::binary);
+  string contents;
   if (in)
   {
-    string contents;
     in.seekg(0, std::ios::end);
     contents.resize(in.tellg());
     in.seekg(0, std::ios::beg);
@@ -142,24 +324,80 @@ string get_file_contents(string filename){
     return(contents);
   }
   cout << "Predictor filename " << filename << " not found" <<endl;
-#ifdef NO_MPI
   exit(1);
-#else
-#ifdef WINDOWS
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
-#else
-  MPI::COMM_WORLD.Abort(1);
-  MPI::Finalize();
-#endif
-#endif
 }
 
+// TODO: Separate filename from parse script. (make a function of a Node)
 CScalePredictor::CScalePredictor(){}
+#ifndef NO_JSONCPP
 CScalePredictor::CScalePredictor(string filename){
-  cout << "filename is " << filename << endl;
+  string contents = get_file_contents(filename);
+
+  Json::Value root;
+  Json::Reader reader;
+  bool parsingSuccessful = reader.parse(contents, root);
+  if (!parsingSuccessful){
+    std::cout << "Failed to parse \n" << reader.getFormatedErrorMessages()<<endl;
+  }
+  
+  // Get the input scaler
+  this->InputScaler = parse_cscaler(root["InputScaler"]);
+  this->OutputScaler = parse_cscaler(root["OutputScaler"]);
+  this->Pred = parse_predictor(root["Predictor"]);
+  
+  // Check the predictions
+  int nTestInputs = root["TestInputs"].size();
+  int nTestOutputs = root["TestOutputs"].size();
+  if (nTestInputs != nTestOutputs){
+    cout << "Number of test inputs and number of test outputs doesn't match" << endl;
+  }
+  Json::Value testInputs = root["TestInputs"];
+  Json::Value testOutputs = root["TestOutputs"];
+  
+  for (int i = 0; i < nTestInputs; i++){
+    int nInputs = testInputs[i].size();
+    int nOutputs = testOutputs[i].size();
+    double *input = new double[nInputs];
+    double *output = new double[nOutputs];
+    for (int j = 0; j < nInputs; j++){
+      input[j] = testInputs[i][j].asDouble();
+      output[j] = testOutputs[i][j].asDouble();
+    }
+    double *predOutput = new double[nOutputs];
+    this->Predict(input, predOutput);
+    bool mismatch = 0;
+    for (int j = 0; j < nOutputs; j++){
+      double max = abs(output[j]);
+      if (predOutput[j] > max){
+        max = abs(predOutput[j]);
+      }
+      if (max < 1.0){
+        max = 1.0;
+      }
+      if (abs(output[j] - predOutput[j])/(max) > 1e-12){
+        mismatch = 1;
+      }
+    }
+    cout.precision(16);
+    if (mismatch){
+      cout << "Prediction mismatch" <<endl;
+      for (int j = 0; j < nOutputs; j++){
+        cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << endl;
+      }
+      exit(1);
+    }
+    delete [] predOutput;
+    delete [] input;
+    delete [] output;
+  }
   return;
 }
+#else
+  CScalePredictor::CScalePredictor(string filename){
+    cout << "Must have JsonCpp installed" << endl;
+    exit(1);
+  }
+#endif
 CScalePredictor::~CScalePredictor(){
   delete this->Pred;
   delete this->InputScaler;
@@ -175,471 +413,3 @@ void CScalePredictor::Predict(double *input, double *output){
   this->InputScaler->Unscale(input);
 	this->OutputScaler->Unscale(output);
 }
-
-
-/*
-void CNeurNet::Predict(double * input, double * output){
-	this->inputScaler->Scale(input);
-  
-	// Predict over all the layers
-  
-	// Make data to store the layers
-	//double ** neuronCombinations = new double*[this->nLayers];
-	double ** neuronOutputs = new double*[this->nLayers];
-	for (int i = 0; i < this->nLayers; i++){
-		neuronOutputs[i] = new double[this -> nNeuronsPerLayer[i]];
-	}
-  
-	// Make the prediction
-	// The first layer has the input as an input
-	int firstLayer = 0;
-	for (int i= 0; i < nNeuronsPerLayer[firstLayer]; i++){
-		double combination = this->neurons[firstLayer][i]->Combine(input, this->parameters);
-		double output = this->neurons[firstLayer][i]->activator->Activate(combination);
-		neuronOutputs[firstLayer][i] = output;
-	}
-  
-	// For all the other layers, the input is the output of the previous layer
-	for (int j = 1; j < this->nLayers; j++){
-		for (int i=0; i < nNeuronsPerLayer[j]; i++){
-			//cout << "Layer " << j << " neuron " << i << endl;
-			double combination = this->neurons[j][i]->Combine(neuronOutputs[j-1], this->parameters);
-			//cout << "combination " << combination <<endl;
-			double output = this->neurons[j][i]->activator->Activate(combination);
-			//cout << "output " << output <<endl;
-			neuronOutputs[j][i] = output;
-		}
-	}
-  
-	// Copy the last layer
-	int lastLayer = this->nLayers - 1;
-	for (int i = 0; i < this->nOutputs; i++){
-		output[i] = neuronOutputs[lastLayer][i];
-	}
-  
-	this->inputScaler->Unscale(input);
-	this->outputScaler->Unscale(output);
-  
-	for (int i=0; i < this->nLayers; i++){
-		//delete neuronSums[i];
-		delete [] neuronOutputs[i];
-	}
-	delete [] neuronOutputs;
-	return;
-}
-
-
-CNeurNet::CNeurNet(){}
-
-CNeurNet::CNeurNet(string filename, string predFilename){
-	// Open the file
-	ifstream f;
-	string text_line;
-	f.open(filename.c_str(), ios::in);
-
-	// Construct the neural net
-	// this algorithm is slow, but should be 
-	// good enough for now
-
-	// If you are a future person reading this, be careful, this
-	// code not at all robust to changes in the JSON format
-
-	int position;
-	this->nInputs = this->LoadInteger(f, "\"NumInputs\":");
-	f.clear();
-	f.seekg(0,ios::beg);
-	this->nOutputs = this->LoadInteger(f, "\"NumOutputs\":");
-	f.clear();
-	f.seekg(0,ios::beg);
-	this->nParameters = this->LoadInteger(f, "\"TotalNumParameters\":");
-	f.clear();
-	f.seekg(0,ios::beg);
-	this->nLayers = this->LoadInteger(f, "\"NumLayers\":");
-	f.clear();
-	f.seekg(0,ios::beg);
-	//cout << "Integers read"<<endl;
-
-	// Read in the number of neurons per layer
-	this->nNeuronsPerLayer = new int[this->nLayers];
-	bool nNeuronsRead = false;
-	while(getline(f,text_line)){
-		position = text_line.find("\"NumNeuronsPerLayer\":");
-		if (position == string::npos){
-			continue;
-		}
-		nNeuronsRead = true;
-		for (int i = 0; i < this->nLayers; i++){
-			getline(f,text_line);
-			stringstream ss(text_line);
-			int neur = 0;
-			string tmp;
-			ss >> neur >> tmp;
-			//cout << "neuron in layer: " << neur <<endl;
-			this->nNeuronsPerLayer[i] = neur;
-		}
-	}
-	if (!nNeuronsRead){
-		cout << "Neurons not read"<<endl;
-		throw 10;
-	}
-	f.clear();
-	f.seekg(0, ios::beg);
-
-	// Now that we have those, create memory for the parameters
-	this->parameters = new double[nParameters];
-	this->parameterIdx = new int*[this->nLayers];
-	this->nParametersPerNeuron = new int*[this->nLayers];
-	for (int i=0; i < this->nLayers; i++){
-		this->parameterIdx[i] = new int[this->nNeuronsPerLayer[i]];
-		this->nParametersPerNeuron[i] = new int[this->nNeuronsPerLayer[i]];
-	}
-
-	//cout << "before while loop"<<endl;
-	// Read in the rest of the data
-	bool inputScalerFound = false;
-	bool outputScalerFound = false;
-	while (getline(f,text_line)){
-		position = text_line.find("InputScaler");
-		if (position != string::npos){
-			inputScalerFound = true;
-			this->inputScaler = LoadScaler(f, this->nInputs);
-		}
-		position = text_line.find("OutputScaler");
-		if (position != string::npos){
-			outputScalerFound = true;
-			this->outputScaler = LoadScaler(f, this->nOutputs);
-		}
-		position = text_line.find("\"Parameters\":");
-		if (position != string::npos){
-			for (int i=0; i< this->nParameters; i++){
-				getline(f,text_line);
-				stringstream ss(text_line);
-				string tmp;
-				double param;
-				ss >> param >> tmp;
-				this->parameters[i] = param;
-			}
-		}
-		position = text_line.find("\"NumParametersPerNeuron\":");
-		if (position != string::npos){
-			for (int i = 0; i < this->nLayers; i++){
-				// Get the line from the first brace
-				getline(f,text_line);
-				for (int j = 0; j < this->nNeuronsPerLayer[i]; j++){
-					getline(f,text_line);
-					stringstream ss(text_line);
-					int neur = -1 ;
-					ss >> neur;
-					if (neur == -1){
-						cout << "Misread nParam: text is: " <<text_line<<endl;
-						throw 10;
-					}
-					this->nParametersPerNeuron[i][j] = neur;
-				}
-				// Get the ending brace
-				getline(f,text_line);
-			}
-		}
-		position = text_line.find("\"ParameterIndex\":");
-		if (position != string::npos){
-			for (int i = 0; i < this->nLayers; i++){
-				// Get the line from the first brace
-				getline(f,text_line);
-				for (int j = 0; j < this->nNeuronsPerLayer[i]; j++){
-					getline(f,text_line);
-					stringstream ss(text_line);
-					int neur = -1 ;
-					ss >> neur;
-					if (neur == -1){
-						cout << "Misread param idx: text is: " <<text_line<<endl;
-						throw 10;
-					}
-					this->parameterIdx[i][j] = neur;
-				}
-				// Get the ending brace
-				getline(f,text_line);
-			}
-		}
-	}
-
-	// Create all neurons. Right now they must all be Tanh except the last
-	// layer which is linear. Should check this later
-	this->neurons = new Neuron**[this->nLayers];
-	for (int i = 0; i < this->nLayers; i++){
-		this->neurons[i] = new Neuron*[this->nNeuronsPerLayer[i]];
-	}
-	for (int i = 0; i < this->nLayers - 1; i++){
-		for (int j = 0; j < this->nNeuronsPerLayer[i]; j++){
-			Activator *activator = new TanhActivator;
-			this->neurons[i][j] = new Neuron(activator, this->parameterIdx[i][j], this->nParametersPerNeuron[i][j]);
-		}
-	}
-	int lastLayer = this->nLayers -1;
-	for (int j = 0; j < this->nNeuronsPerLayer[lastLayer]; j++){
-		Activator * activator = new LinearActivator;
-		this -> neurons[lastLayer][j] = new Neuron(activator, this->parameterIdx[lastLayer][j], this->nParametersPerNeuron[lastLayer][j]);
-	}
-
-	// Check predictions
-	this->CheckPredictions(f);
-  
-  f.close();
-	return;
-}
-
-CNeurNet::~CNeurNet(){
-//	delete this->inputScaler;
-//	delete this->outputScaler;
-	delete this->parameters;
-	for (int i=0; i < this->nLayers; i++){
-		delete [] this->parameterIdx[i];
-		delete [] this->nParametersPerNeuron[i];
-		for (int j = 0; j < this -> nNeuronsPerLayer[i]; j++){
-			delete [] this -> neurons[i][j];
-		}
-	}
-	for (int i= 0; i < this->nLayers; i++){
-		delete [] this->neurons[i];
-	}
-	delete [] this->nNeuronsPerLayer;
-	delete [] this->parameterIdx;
-	delete [] this->nParametersPerNeuron;
-	delete [] this->neurons;
-}
-
-int CNeurNet::LoadInteger(ifstream& f, string name){
-	int position;
-	int i;
-	string text_line;
-	bool stringFound = false;
-	while(getline(f,text_line)){
-		position = text_line.find(name);
-		if (position != string::npos){
-			stringstream ss(text_line);
-			string tmpstr;
-			string comma;
-			ss >> name >> i >> comma;
-			stringFound = true;
-		}
-	}
-	if (!stringFound){
-		cout << "String "<< name <<" not found"<<endl;
-    exit(1);
-	}
-	return i;
-}
-
-Scaler* CNeurNet::LoadScaler(ifstream& f, int nVals){
-	string text_line;
-	getline(f, text_line);
-	int position;
-	// Next line should contain the go package path
-	position = text_line.find("Type");
-	if (position == string::npos){
-		cout <<"Type not on line after InputScaler"<<endl;
-		throw 10;
-	}
-	position = text_line.find("github.com/btracey/nnet/scale/");
-	if (position == string::npos){
-		cout << "Scaler must come from scale"<<endl;
-		throw 10;
-	}
-	// This could be replaced with some sort of string parsing and switch statement
-	position = text_line.find("Normal");
-	if (position != string::npos){
-		// Net line should have Value
-		getline(f, text_line);
-		// Next line should be the start of Mu
-		getline(f, text_line);
-		position = text_line.find("Mu");
-		if (position == string::npos){
-			cout << "Mu not found reading normal scaler"<< endl;
-			throw 10;
-		}
-	
-		// If it is there, should be nInputs lines of doubles
-		double *mus = new double[nVals];
-		for (int i=0; i< nVals; i++){
-			// Get the line
-			getline(f, text_line);
-			stringstream ss(text_line);
-			double mu;
-			string tmp2;
-			ss >> mu >> tmp2;
-			mus[i] = mu;
-		}
-		getline(f, text_line);
-		// Now, should read in the sigmas
-		double *sigmas = new double[nVals];
-		getline(f,text_line);
-		position = text_line.find("Sigma");
-		if (position == string::npos){
-			throw 10;
-		}
-		for (int i = 0; i<nVals; i++){
-			getline(f,text_line);
-			stringstream ss(text_line);
-			double sigma;
-			string tmp;
-			ss >> sigma >> tmp;
-			sigmas[i] = sigma;
-		}
-
-		Scaler * s = new NormalScaler(nVals,mus,sigmas);
-
-		delete [] mus;
-		delete [] sigmas;
-
-		return s;
-	}
-	throw "Scaler type not implemented";
-}
-
-void CNeurNet::Predict(double * input, double * output){
-	this->inputScaler->Scale(input);
-
-	// Predict over all the layers
-
-	// Make data to store the layers
-	//double ** neuronCombinations = new double*[this->nLayers];
-	double ** neuronOutputs = new double*[this->nLayers];
-	for (int i = 0; i < this->nLayers; i++){
-		neuronOutputs[i] = new double[this -> nNeuronsPerLayer[i]];
-	}
-
-	// Make the prediction
-	// The first layer has the input as an input
-	int firstLayer = 0;
-	for (int i= 0; i < nNeuronsPerLayer[firstLayer]; i++){
-		double combination = this->neurons[firstLayer][i]->Combine(input, this->parameters);
-		double output = this->neurons[firstLayer][i]->activator->Activate(combination);
-		neuronOutputs[firstLayer][i] = output;
-	}
-
-	// For all the other layers, the input is the output of the previous layer
-	for (int j = 1; j < this->nLayers; j++){
-		for (int i=0; i < nNeuronsPerLayer[j]; i++){
-			//cout << "Layer " << j << " neuron " << i << endl;
-			double combination = this->neurons[j][i]->Combine(neuronOutputs[j-1], this->parameters);
-			//cout << "combination " << combination <<endl;
-			double output = this->neurons[j][i]->activator->Activate(combination);
-			//cout << "output " << output <<endl;
-			neuronOutputs[j][i] = output;
-		}
-	}
-
-	// Copy the last layer 
-	int lastLayer = this->nLayers - 1;
-	for (int i = 0; i < this->nOutputs; i++){
-		output[i] = neuronOutputs[lastLayer][i];
-	}
-
-	this->inputScaler->Unscale(input);
-	this->outputScaler->Unscale(output);
-
-	for (int i=0; i < this->nLayers; i++){
-		//delete neuronSums[i];
-		delete [] neuronOutputs[i];
-	}
-	delete [] neuronOutputs;
-	return;
-}
-
-int CNeurNet::NumInputs(){
-	return nInputs;
-}
-
-int CNeurNet::NumOutputs(){
-	return nOutputs;
-}
-
-bool CNeurNet::CheckPredictions(ifstream& f){
-  int position;
-  string text_line;
-  bool lineFound = false;
-  // Rewind to top
-  f.clear();
-	f.seekg(0, ios::beg);
-  
-  while (getline(f,text_line)){
-		position = text_line.find("\"PredictionCheck\":");
-		if (position != string::npos){
-      lineFound = true;
-      break;
-		}
-  }
-  if (!lineFound){
-    cout << "PredictionCheck line not found" << endl;
-    exit(10);
-  }
-  
-	// Check that the predictions from this net match the predictions 
-	// from the file
-	// Should be a "["
-	double * input = new double[this->nInputs];
-	double * output = new double[this->nOutputs];
-	double * predOutput = new double[this->nOutputs];
-	string tmp;
-	double val = 0;
-
-	while (true){
-		// Read starting { or ending ]
-		getline(f,text_line);
-		position = text_line.find("]");
-		if (position != string::npos){
-			break;
-		}
-		// Read inputs line
-		getline(f, text_line);
-		position = text_line.find("\"Input\":");
-		if (position == string::npos){
-			cout <<"No Input line"<<endl;
-			cout << "Line is: " << text_line<<endl;
-			exit(10);
-		}
-		for (int i = 0; i < this->nInputs; i++){
-			getline(f,text_line);
-			stringstream ss(text_line);
-			// Read in double
-			ss >> val;
-			input[i] = val;
-		}
-		// Read ending braces
-		getline(f,text_line);
-		// Read outputs line
-		getline(f,text_line);
-		position = text_line.find("\"Output\":");
-		if (position == string::npos){
-			cout <<"No Output line"<<endl;
-			cout << "Line is: " << text_line<<endl;
-			throw 10;
-		}
-		for (int i=0; i < this->nOutputs; i++){
-			getline(f,text_line);
-			stringstream ss(text_line);
-			ss >> val;
-			output[i] = val;
-		}
-		// Get the ]
-		getline(f,text_line);
-		// get the }
-		getline(f, text_line);
-
-		// Check that the prediction matches
-		this->Predict(input,predOutput);
-		for (int i = 0 ; i < this->nOutputs; i++){
-			if (abs(output[i] - predOutput[i]) > 10e-14){
-				cout << "predictions don't match"<< endl;
-				cout << "real output " << output[i] << endl;
-			cout << "pred output " << predOutput[i] << endl;
-			cout << "diff = "<< output[i] - predOutput[i]<<endl;
-			exit(10);
-			}
-		}
-	}
-	delete [] input;
-	delete [] output;
-	delete [] predOutput;
-	return true;
-}
-*/
