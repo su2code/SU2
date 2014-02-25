@@ -3834,59 +3834,20 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 /*CEulerSolver::OneDimensionalOutput*/
 void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
-    unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-    double Pressure, *Normal = NULL, MomentDist[3], *Coord, *Origin, Area,
-    factor, NFPressOF, RefVel2, RefDensity, RefPressure, Gas_Constant, Mach2Vel, Mach_Motion, UnitNormal[3], Force[3],
-    Stag_Pressure, Mach;
+    unsigned short iDim, iMarker,Out1D;
+    double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure, Mach,SumPressure,SumArea, AveragePressure =0.0;
     string Marker_Tag, Monitoring_Tag;
 
-    double SumPressure,SumArea, AveragePressure =0.0;
-    unsigned short Out1D;
-
-
-    bool grid_movement      = config->GetGrid_Movement();
-    double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
-    double Beta             = config->GetAoS()*PI_NUMBER/180.0;
-    double RefAreaCoeff     = config->GetRefAreaCoeff();
-    double RefLengthMoment  = config->GetRefLengthMoment();
     bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
     bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
-    /*--- For dynamic meshes, use the motion Mach number as a reference value
-     for computing the force coefficients. Otherwise, use the freestream values,
-     which is the standard convention. ---*/
-/*
-    if (grid_movement) {
-      Gas_Constant = config->GetGas_ConstantND();
-      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-      Mach_Motion = config->GetMach_Motion();
-      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-    }
-    else {
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-    }
-
-    RefDensity  = Density_Inf;
-    RefPressure = Pressure_Inf;
-
-    factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
-*/
     /*-- Variables initialization ---*/
     SumArea=0;
     SumPressure=0.0;
-/*
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      Surface_CDrag_Inv[iMarker_Monitoring] = 0.0;
-    }
-*/
     /*--- Loop over the markers ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
       Out1D = config ->GetMarker_All_Out_1D(iMarker);
-
       /*--- Loop over the vertices to compute the output ---*/
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3895,9 +3856,7 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
                   Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
                   Coord = geometry->node[iPoint]->GetCoord();
         }
-
-        //CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
-        /*For now just average pressure, later will have stagnation pressure*/
+        /*For now just area averaged stagnation pressure*/
         if (Out1D==YES){
           // get the pressure from the node
           if (compressible)   Pressure = node[iPoint]->GetPressure();
@@ -3908,12 +3867,10 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
           SumPressure+=Stag_Pressure * Area;
           SumArea+=Area;
         }
-
       }
-
     }// end of loop over markers
     AveragePressure = SumPressure*(1.0/SumArea);
-    /*Set the exit average stagnation pressure (just average pressure for now)*/
+    /*Set the area averaged stagnation pressure*/
     OneD_Pt=AveragePressure;
 }/*CEulerSolver::OneDimensionalOutput*/
 
