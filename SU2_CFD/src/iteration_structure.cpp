@@ -911,6 +911,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
               /*--- There is no wind gust specified. ---*/
               if (rank == MASTER_NODE)
                 cout << "No wind gust specified." << endl;
+              break;
               
           }
         }
