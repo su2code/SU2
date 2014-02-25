@@ -216,7 +216,7 @@ CNeurNet::CNeurNet(Json::Value json){
       this->maxNeurons = this->nNeuronsInLayer[i];
     }
   }
-  
+}
 #endif
 
 CNeurNet::~CNeurNet(){
@@ -407,6 +407,7 @@ CScalePredictor::~CScalePredictor(){
 void CScalePredictor::Predict(double *input, double *output){
   // Scale the input
   this->InputScaler->Scale(input);
+  
   // Call the predict method
   this->Pred->Predict(input, output);
   // Unscale

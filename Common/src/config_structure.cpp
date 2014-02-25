@@ -128,6 +128,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
   /* DESCRIPTION: Location of the turb model itself */
 	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: what kind of input/output feature map is there */
+	AddScalarOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   

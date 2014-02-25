@@ -325,6 +325,7 @@ private:
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
   string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
+  string ML_Turb_Model_FeatureSet;
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
@@ -2165,6 +2166,13 @@ public:
 	 * \return Temporary ml->SU2 file name.
 	 */
 	string GetML_Turb_Model_Check_File(void);
+
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  string GetML_Turb_Model_FeatureSet(void);
+  
   
 	/*! 
 	 * \brief Get the kind of the transition model.
