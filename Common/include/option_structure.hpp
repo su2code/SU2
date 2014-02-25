@@ -359,16 +359,18 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
  * \brief type of wind gusts
  */
 enum ENUM_GUST_TYPE {
-    NO_GUST = 0,        /*!< \brief _______. */
-	TOP_HAT = 1, 		/*!< \brief Top-hat function shaped gust  */
-	SINE = 2,  		/*!< \brief  Sine shaped gust */
-    ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
+  NO_GUST = 0,      /*!< \brief _______. */
+	TOP_HAT = 1,      /*!< \brief Top-hat function shaped gust  */
+	SINE = 2,         /*!< \brief  Sine shaped gust */
+  ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
+  VORTEX = 4,       /*!< \brief  A gust made from vortices */
 };
 static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM_GUST_TYPE>
 ("NONE", NO_GUST)
 ("TOP_HAT", TOP_HAT)
 ("SINE", SINE)
-("ONE_M_COSINE", ONE_M_COSINE);
+("ONE_M_COSINE", ONE_M_COSINE)
+("VORTEX", VORTEX);
 
 /*!
  * \brief type of wind direction
