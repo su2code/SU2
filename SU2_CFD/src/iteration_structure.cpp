@@ -839,9 +839,9 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   // Vortex variables
   unsigned int nVortex;
-  std::vector<double> x0,y0,lambda,eta;
+  std::vector<double> x0,y0,vort_strenth,r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
-    InitializeVortexDistribution(nVortex,x0,y0,lambda,eta);
+    InitializeVortexDistribution(nVortex,x0,y0,vort_strenth,r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
@@ -927,11 +927,13 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
           case VORTEX:
             
             /*--- Use vortex distribution ---*/
-            // The equations for the Advective 2D isentropic vortex can be found in 'High resolution conjugate filters for the simulation of flows'
+            // Algebraic vortex equation.
             for (unsigned int i=0; i<nVortex; i++) {
               double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
-              gust[0] = gust[0] - lambda[i]/(2*PI_NUMBER)*(y-y0[i]) * exp(eta[i]*(1-r2));
-              gust[1] = gust[1] + lambda[i]/(2*PI_NUMBER)*(x-(x0[i]+Uinf*(Physical_t-tbegin))) * exp(eta[i]*(1-r2));
+              double r = sqrt(r2);
+              double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
+              gust[0] = gust[0] + v_theta*(y-y0[i])/r;
+              gust[1] = gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
             }
             break;
             
@@ -966,11 +968,11 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   }
 }
 
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& lambda,vector<double>& eta) {
+void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core) {
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
-  double x_temp,y_temp,lambda_temp,eta_temp;
+  double x_temp,y_temp,vort_strength_temp,r_core_temp;
   file.open("vortex_distribution.txt");
   /*--- In case there is no vortex file ---*/
   if (file.fail()) {
@@ -989,12 +991,12 @@ void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vect
     if (line.size() != 0) { //ignore blank lines if they exist.
       ss >> x_temp;
       ss >> y_temp;
-      ss >> lambda_temp;
-      ss >> eta_temp;
+      ss >> vort_strength_temp;
+      ss >> r_core_temp;
       x0.push_back(x_temp);
       y0.push_back(y_temp);
-      lambda.push_back(lambda_temp);
-      eta.push_back(eta_temp);
+      vort_strength.push_back(vort_strength_temp);
+      r_core.push_back(r_core_temp);
     }
   }
   file.close();
