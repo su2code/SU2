@@ -89,7 +89,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool adjoint = config->GetAdjoint();
-  bool exit_pressure = (config->GetWrt_Exit_Pt());
+  bool exit_pressure = (config->GetWrt_1D_Output());
   roe_turkel = false;
   
   int rank = MASTER_NODE;
@@ -3831,8 +3831,8 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 }
 
-/*CEulerSolver::OneDimensionalExit*/
-void CEulerSolver::OneDimensionalExit(CGeometry *geometry, CConfig *config) {
+/*CEulerSolver::OneDimensionalOutput*/
+void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
     unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
     double Pressure, *Normal = NULL, MomentDist[3], *Coord, *Origin, Area,
@@ -3885,7 +3885,7 @@ void CEulerSolver::OneDimensionalExit(CGeometry *geometry, CConfig *config) {
     /*--- Loop over the markers ---*/
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      Out1D = config ->GetMarker_All_Out1D(iMarker);
+      Out1D = config ->GetMarker_All_Out_1D(iMarker);
 
       /*--- Loop over the vertices to compute the output ---*/
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -3914,8 +3914,8 @@ void CEulerSolver::OneDimensionalExit(CGeometry *geometry, CConfig *config) {
     }// end of loop over markers
     AveragePressure = SumPressure*(1.0/SumArea);
     /*Set the exit average stagnation pressure (just average pressure for now)*/
-    Exit_Pt=AveragePressure;
-}/*CEulerSolver::OneDimensionalExit*/
+    OneD_Pt=AveragePressure;
+}/*CEulerSolver::OneDimensionalOutput*/
 
 
 

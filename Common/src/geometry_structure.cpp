@@ -1305,7 +1305,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
-          config->SetMarker_All_Out1D(iMarker, config->GetMarker_Config_Outlet_1D(Marker_Tag));
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
           
         }
         
@@ -2124,7 +2124,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
-          config->SetMarker_All_Out1D(iMarker, config->GetMarker_Config_Outlet_1D(Marker_Tag));
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
         }
         iMarker++;
       }
@@ -2544,7 +2544,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
-    config->SetMarker_All_Out1D(iMarker, config->GetMarker_Config_Outlet_1D(Marker_Tag));
+    config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
   }
   
 }
@@ -8985,7 +8985,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
-          config->SetMarker_All_Out1D(iMarker, config->GetMarker_Config_Outlet_1D(Marker_Tag));
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
           
         }
         
