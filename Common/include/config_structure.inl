@@ -703,6 +703,10 @@ inline short CConfig::GetMarker_All_PerBound(unsigned short val_marker) { return
 
 inline unsigned short CConfig::GetMarker_All_Monitoring(unsigned short val_marker) { return Marker_All_Monitoring[val_marker]; }
 
+inline void CConfig::SetMarker_All_Out_1D(unsigned short val_marker, unsigned short val_boundary) { Marker_All_Out_1D[val_marker] = val_boundary; }
+
+inline unsigned short CConfig::GetMarker_All_Out_1D(unsigned short val_marker) { return Marker_All_Out_1D[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_GeoEval(unsigned short val_marker) { return Marker_All_GeoEval[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Designing(unsigned short val_marker) { return Marker_All_Designing[val_marker]; }
@@ -726,6 +730,8 @@ inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
+
+inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
@@ -912,6 +918,8 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
+
+inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
 
 inline vector<vector<double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) {return Aeroelastic_np1[iMarker]; }
 

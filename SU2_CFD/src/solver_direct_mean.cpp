@@ -89,6 +89,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool adjoint = config->GetAdjoint();
+  bool exit_pressure = (config->GetWrt_1D_Output());
   roe_turkel = false;
   
   int rank = MASTER_NODE;
@@ -149,7 +150,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Primitive_i = NULL;
   Primitive_j = NULL;
   CharacPrimVar = NULL;
-  
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -3704,9 +3704,9 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   }
   
 #ifndef NO_MPI
-  
+
   /*--- Add AllBound information using all the nodes ---*/
-  
+
   double MyAllBound_CDrag_Inv        = AllBound_CDrag_Inv;        AllBound_CDrag_Inv = 0.0;
   double MyAllBound_CLift_Inv       = AllBound_CLift_Inv;        AllBound_CLift_Inv = 0.0;
   double MyAllBound_CSideForce_Inv   = AllBound_CSideForce_Inv;   AllBound_CSideForce_Inv = 0.0;
@@ -3753,21 +3753,21 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI::DOUBLE, MPI::SUM);
 #endif
-  
+
   /*--- Add the forces on the surfaces using all the nodes ---*/
-  
+
   double *MySurface_CLift_Inv = NULL;
   double *MySurface_CDrag_Inv = NULL;
   double *MySurface_CMx_Inv   = NULL;
   double *MySurface_CMy_Inv   = NULL;
   double *MySurface_CMz_Inv   = NULL;
-  
+
   MySurface_CLift_Inv = new double[config->GetnMarker_Monitoring()];
   MySurface_CDrag_Inv = new double[config->GetnMarker_Monitoring()];
   MySurface_CMx_Inv   = new double[config->GetnMarker_Monitoring()];
   MySurface_CMy_Inv   = new double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Inv   = new double[config->GetnMarker_Monitoring()];
-  
+
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     MySurface_CLift_Inv[iMarker_Monitoring] = Surface_CLift_Inv[iMarker_Monitoring];
     MySurface_CDrag_Inv[iMarker_Monitoring] = Surface_CDrag_Inv[iMarker_Monitoring];
@@ -3794,17 +3794,17 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(MySurface_CMy_Inv, Surface_CMy_Inv, config->GetnMarker_Monitoring(), MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI::DOUBLE, MPI::SUM);
 #endif
-  
+
   delete [] MySurface_CLift_Inv;
   delete [] MySurface_CDrag_Inv;
   delete [] MySurface_CMx_Inv;
   delete [] MySurface_CMy_Inv;
   delete [] MySurface_CMz_Inv;
-  
+
 #endif
-  
+
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
-  
+
   Total_CDrag         = AllBound_CDrag_Inv;
   Total_CLift         = AllBound_CLift_Inv;
   Total_CSideForce    = AllBound_CSideForce_Inv;
@@ -3819,7 +3819,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   Total_CQ            = AllBound_CQ_Inv;
   Total_CMerit        = Total_CT / (Total_CQ + EPS);
   Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
-  
+
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CLift[iMarker_Monitoring]     = Surface_CLift_Inv[iMarker_Monitoring];
@@ -3828,8 +3828,53 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMy[iMarker_Monitoring]       = Surface_CMy_Inv[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]       = Surface_CMz_Inv[iMarker_Monitoring];
   }
-  
+
 }
+
+/*CEulerSolver::OneDimensionalOutput*/
+void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
+  unsigned long iVertex, iPoint;
+    unsigned short iDim, iMarker,Out1D;
+    double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure, Mach,SumPressure,SumArea, AveragePressure =0.0;
+    string Marker_Tag, Monitoring_Tag;
+
+    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+
+    /*-- Variables initialization ---*/
+    SumArea=0;
+    SumPressure=0.0;
+    /*--- Loop over the markers ---*/
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      Out1D = config ->GetMarker_All_Out_1D(iMarker);
+      /*--- Loop over the vertices to compute the output ---*/
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        /*Find the normal direction*/
+        if ( (geometry->node[iPoint]->GetDomain()) && (Out1D == YES) ) {
+                  Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+                  Coord = geometry->node[iPoint]->GetCoord();
+        }
+        /*For now just area averaged stagnation pressure*/
+        if (Out1D==YES){
+          // get the pressure from the node
+          if (compressible)   Pressure = node[iPoint]->GetPressure();
+          if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
+          Mach = (sqrt(node[iPoint]->GetVelocity2()) / node[iPoint]->GetSoundSpeed());
+          Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          SumPressure+=Stag_Pressure * Area;
+          SumArea+=Area;
+        }
+      }
+    }// end of loop over markers
+    AveragePressure = SumPressure*(1.0/SumArea);
+    /*Set the area averaged stagnation pressure*/
+    OneD_Pt=AveragePressure;
+}/*CEulerSolver::OneDimensionalOutput*/
+
+
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
