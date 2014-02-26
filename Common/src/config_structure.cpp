@@ -128,6 +128,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
   /* DESCRIPTION: Location of the turb model itself */
 	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: what kind of input/output feature map is there */
+	AddScalarOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
@@ -864,10 +866,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
-  /* DESCRIPTION: Scale deformation using cell volume */
-	AddSpecialOption("DEFORM_SCALE_VOLUME", Deform_ScaleVolume, SetBoolOption, true);
-	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
+  /* DESCRIPTION: Print the residuals during mesh deformation to the console */
+	AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
+	/* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
+	AddScalarOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
+  /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
+	AddScalarOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
+  /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
+	AddScalarOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
+	AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -3625,8 +3633,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
 		if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
 		else cout << "No file for visualizing the deformation." << endl;
-    if (Deform_ScaleVolume) cout << "Scale the deformation using the volume." << endl;
-		else cout << "Don't scale the deformation using the cell volume." << endl;
+    switch (GetDeform_Stiffness_Type()) {
+      case INVERSE_VOLUME:
+        cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
+        break;
+      case WALL_DISTANCE:
+         cout << "Cell stiffness scaled by distance from the deforming surface." << endl;
+        break;
+      case CONSTANT_STIFFNESS:
+        cout << "Imposing constant cell stiffness (steel)." << endl;
+        break;
+    }
 	}
 
 	if (val_software == SU2_PBC) {

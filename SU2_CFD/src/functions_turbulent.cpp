@@ -230,6 +230,8 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   
   // NOTE: Do not have derivative with respect to the cross production term
   
+  inputs->Omega = Omega;
+  
   return;
   
 };
