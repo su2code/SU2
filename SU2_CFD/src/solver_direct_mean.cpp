@@ -3857,7 +3857,7 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
         Coord = geometry->node[iPoint]->GetCoord();
       }
       /*For now just area averaged stagnation pressure*/
-      if (Out1D==YES){
+      if ((geometry->node[iPoint]->GetDomain()) &&(Out1D==YES)){
         // get the pressure from the node
         if (compressible)   Pressure = node[iPoint]->GetPressure();
         if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
@@ -3868,20 +3868,23 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
         SumArea+=Area;
       }
     }
+    if (Out1D==YES){
+      AveragePressure += SumPressure*(1.0/SumArea);
+    }
   }// end of loop over markers
 
-  AveragePressure = SumPressure*(1.0/SumArea);
-  #ifndef NO_MPI
+
+#ifndef NO_MPI
     /*--- Add AllBound information using all the nodes ---*/
     double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
 
-    #ifdef WINDOWS
+#ifdef WINDOWS
       MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    #else
+#else
       MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
-    #endif // WINDOWS
+#endif // WINDOWS
 
-  #endif // NO_MPI
+#endif // NO_MPI
 
   /*Set Area Averaged Stagnation Pressure Output*/
   OneD_Pt=AveragePressure;
