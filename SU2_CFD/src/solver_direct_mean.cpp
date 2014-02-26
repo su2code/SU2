@@ -3834,60 +3834,57 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 /*CEulerSolver::OneDimensionalOutput*/
 void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
-    unsigned short iDim, iMarker,Out1D;
-    double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure, Mach,SumPressure,SumArea, AveragePressure =0.0;
-    string Marker_Tag, Monitoring_Tag;
+  unsigned short iDim, iMarker,Out1D;
+  double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure, Mach,SumPressure,SumArea, AveragePressure =0.0;
+  string Marker_Tag, Monitoring_Tag;
 
-    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
-    /*-- Variables initialization ---*/
-    SumArea=0;
-    SumPressure=0.0;
-    /*--- Loop over the markers ---*/
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Out1D = config ->GetMarker_All_Out_1D(iMarker);
-      /*--- Loop over the vertices to compute the output ---*/
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        /*Find the normal direction*/
-        if ( (geometry->node[iPoint]->GetDomain()) && (Out1D == YES) ) {
-                  Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-                  Coord = geometry->node[iPoint]->GetCoord();
-        }
-        /*For now just area averaged stagnation pressure*/
-        if (Out1D==YES){
-          // get the pressure from the node
-          if (compressible)   Pressure = node[iPoint]->GetPressure();
-          if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
-          Mach = (sqrt(node[iPoint]->GetVelocity2()) / node[iPoint]->GetSoundSpeed());
-          Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
-          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-          SumPressure+=Stag_Pressure * Area;
-          SumArea+=Area;
-        }
+  /*-- Variables initialization ---*/
+  SumArea=0;
+  SumPressure=0.0;
+  /*--- Loop over the markers ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Out1D = config ->GetMarker_All_Out_1D(iMarker);
+    /*--- Loop over the vertices to compute the output ---*/
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      /*Find the normal direction*/
+      if ( (geometry->node[iPoint]->GetDomain()) && (Out1D == YES) ) {
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Coord = geometry->node[iPoint]->GetCoord();
       }
-    }// end of loop over markers
+      /*For now just area averaged stagnation pressure*/
+      if (Out1D==YES){
+        // get the pressure from the node
+        if (compressible)   Pressure = node[iPoint]->GetPressure();
+        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
+        Mach = (sqrt(node[iPoint]->GetVelocity2()) / node[iPoint]->GetSoundSpeed());
+        Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
+        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        SumPressure+=Stag_Pressure * Area;
+        SumArea+=Area;
+      }
+    }
+  }// end of loop over markers
 
-#ifndef NO_MPI
-  /*--- Add AllBound information using all the nodes ---*/
-  double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
-  #ifdef WINDOWS
-    MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  #else
-    MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
-  #endif // WINDOWS
-    /*Set output*/
+  AveragePressure = SumPressure*(1.0/SumArea);
+  #ifndef NO_MPI
+    /*--- Add AllBound information using all the nodes ---*/
+    double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
+
+    #ifdef WINDOWS
+      MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    #else
+      MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
+    #endif // WINDOWS
+
+  #endif // NO_MPI
+
+  /*Set Area Averaged Stagnation Pressure Output*/
   OneD_Pt=AveragePressure;
-
-#endif // NO_MPI
-
-
-
-    AveragePressure = SumPressure*(1.0/SumArea);
-    /*Set the area averaged stagnation pressure*/
-    OneD_Pt=AveragePressure;
 }/*CEulerSolver::OneDimensionalOutput*/
 
 
