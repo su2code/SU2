@@ -719,7 +719,7 @@ public:
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
 	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
@@ -727,7 +727,7 @@ public:
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+  bool SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -841,6 +841,13 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	double Check_Grid(CGeometry *geometry);
+  
+  /*!
+	 * \brief Compute the minimum distance to the nearest deforming surface.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+	 */
+  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.

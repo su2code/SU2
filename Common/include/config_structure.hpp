@@ -84,8 +84,6 @@ private:
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
-	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
-  bool Deform_ScaleVolume;	/*!< \brief Deform the grid scaling with the cell area. */
   double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
 	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
@@ -360,7 +358,12 @@ private:
 
 	double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
-  unsigned long GridDef_Iter; /*!< \brief Number of incrememts for grid deformation. */
+  unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
+  GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
+  unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
+  double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
 	double Froude;	/*!< \brief Froude number. */	
@@ -1072,18 +1075,6 @@ public:
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
   bool GetExtraOutput(void);
-  
-	/*! 
-	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
-	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-	 */
-	bool GetVisualize_Deformation(void);
-
-  /*!
-	 * \brief Deform the grid scaling with the volume.
-	 * \return <code>TRUE</code> if the deformation is going to be scaled; otherwise <code>FALSE</code>.
-	 */
-	bool GetDeform_ScaleVolume(void);
   
 	/*! 
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
@@ -2174,11 +2165,41 @@ public:
 	double GetAdjTurb_CFLRedCoeff(void);
   
   /*!
-	 * \brief Get the number of increments for mesh deformation.
-	 * \return Number of increments for mesh deformation.
+	 * \brief Get the number of linear smoothing iterations for mesh deformation.
+	 * \return Number of linear smoothing iterations for mesh deformation.
 	 */
-	unsigned long GetGridDef_Iter(void);
+	unsigned long GetGridDef_Linear_Iter(void);
+  
+  /*!
+	 * \brief Get the number of nonlinear increments for mesh deformation.
+	 * \return Number of nonlinear increments for mesh deformation.
+	 */
+	unsigned long GetGridDef_Nonlinear_Iter(void);
 
+  /*!
+	 * \brief Get information about writing grid deformation residuals to the console.
+	 * \return <code>TRUE</code> means that grid deformation residuals will be written to the console.
+	 */
+	bool GetDeform_Output(void);
+  
+  /*!
+	 * \brief Get factor to multiply smallest volume for deform tolerance.
+	 * \return Factor to multiply smallest volume for deform tolerance.
+	 */
+	double GetDeform_Tol_Factor(void);
+  
+  /*!
+	 * \brief Get the type of stiffness to impose for FEA mesh deformation.
+	 * \return type of stiffness to impose for FEA mesh deformation.
+	 */
+	unsigned short GetDeform_Stiffness_Type(void);
+  
+	/*!
+	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
+	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+	 */
+	bool GetVisualize_Deformation(void);
+  
 	/*!
 	 * \brief Get the kind of SU2 software component.
 	 * \return Kind of the SU2 software component.
