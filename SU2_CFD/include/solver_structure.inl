@@ -282,6 +282,10 @@ inline double CSolver::GetDensity_Energy_Outlet(void) { return 0; }
 
 inline double* CSolver::GetConstants() {return NULL;}
 
+inline double CSolver::GetOneDStagPressure(void){return 0;}
+
+inline void CSolver::SetOneDStagPressure(double val_exit_pt){ }
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
@@ -375,6 +379,8 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -568,6 +574,10 @@ inline double CEulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
 inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
 
 inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
+
+inline double CEulerSolver::GetOneDStagPressure(void) { return OneD_Pt; }
+
+inline void CEulerSolver::SetOneDStagPressure(double oneD_pt) { OneD_Pt=oneD_pt; }
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

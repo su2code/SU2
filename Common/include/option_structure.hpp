@@ -359,16 +359,18 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
  * \brief type of wind gusts
  */
 enum ENUM_GUST_TYPE {
-    NO_GUST = 0,        /*!< \brief _______. */
-	TOP_HAT = 1, 		/*!< \brief Top-hat function shaped gust  */
-	SINE = 2,  		/*!< \brief  Sine shaped gust */
-    ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
+  NO_GUST = 0,      /*!< \brief _______. */
+	TOP_HAT = 1,      /*!< \brief Top-hat function shaped gust  */
+	SINE = 2,         /*!< \brief  Sine shaped gust */
+  ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
+  VORTEX = 4,       /*!< \brief  A gust made from vortices */
 };
 static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM_GUST_TYPE>
 ("NONE", NO_GUST)
 ("TOP_HAT", TOP_HAT)
 ("SINE", SINE)
-("ONE_M_COSINE", ONE_M_COSINE);
+("ONE_M_COSINE", ONE_M_COSINE)
+("VORTEX", VORTEX);
 
 /*!
  * \brief type of wind direction
@@ -993,6 +995,19 @@ enum ENUM_CONVERGE_CRIT {
 static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<string, ENUM_CONVERGE_CRIT>
 ("CAUCHY", CAUCHY)
 ("RESIDUAL", RESIDUAL);
+
+/*!
+ * \brief types of element stiffnesses imposed for FEA mesh deformation
+ */
+enum ENUM_DEFORM_STIFFNESS {
+	CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
+	INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
+	WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+};
+static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
+("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
+("INVERSE_VOLUME", INVERSE_VOLUME)
+("WALL_DISTANCE", WALL_DISTANCE);
 
 /* END_CONFIG_ENUMS */
 

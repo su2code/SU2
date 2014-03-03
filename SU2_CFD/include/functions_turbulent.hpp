@@ -61,6 +61,7 @@ public:
   double* GetTurbKinViscGradient();
   bool rotating_frame;
   bool transition;
+  double Omega;
   double dist; // Wall distance
   double Laminar_Viscosity;
   double Density;
