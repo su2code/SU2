@@ -4484,9 +4484,9 @@ CConfig::~CConfig(void)
 	if (Plunging_Ampl_Z != NULL)
 		delete [] Plunging_Ampl_Z;
 
-    if (RefOriginMoment != NULL)
+  if (RefOriginMoment != NULL)
 		delete [] RefOriginMoment;
-    if (RefOriginMoment_X != NULL)
+  if (RefOriginMoment_X != NULL)
 		delete [] RefOriginMoment_X;
 	if (RefOriginMoment_Y != NULL)
 		delete [] RefOriginMoment_Y;
@@ -4494,10 +4494,40 @@ CConfig::~CConfig(void)
 		delete [] RefOriginMoment_Z;
 
 	/*Marker pointers*/
+
 	if (Marker_Config_Out_1D!=NULL)
-	  delete [] Marker_Config_Out_1D;
+	  delete[] Marker_Config_Out_1D;
 	if (Marker_All_Out_1D!=NULL)
-	    delete [] Marker_All_Out_1D;
+    delete[] Marker_All_Out_1D;
+  if (Marker_Config_GeoEval!=NULL)
+    delete[] Marker_Config_GeoEval;
+  if (Marker_All_GeoEval!=NULL)
+    delete[] Marker_All_GeoEval;
+  if (Marker_Config_Tag!=NULL)
+    delete[] Marker_Config_Tag;
+  if (Marker_All_Tag!=NULL)
+    delete[] Marker_All_Tag;
+  if (Marker_Config_Boundary!=NULL)
+    delete[] Marker_Config_Boundary;
+  if (Marker_All_Boundary!=NULL)
+    delete[] Marker_All_Boundary;
+  if (Marker_Config_Monitoring!=NULL)
+    delete[] Marker_Config_Monitoring;
+  if (Marker_All_Monitoring!=NULL)
+    delete[] Marker_All_Monitoring;
+  if (Marker_Config_Designing!=NULL)
+    delete[] Marker_Config_Designing;
+  if (Marker_All_Designing!=NULL)
+    delete[] Marker_All_Designing;
+  if (Marker_Config_Plotting!=NULL)
+    delete[] Marker_Config_Plotting;
+  if (Marker_All_Plotting!=NULL)
+    delete[] Marker_All_Plotting;
+  if (Marker_Config_DV!=NULL)
+    delete[] Marker_Config_DV;
+  if (Marker_All_DV!=NULL)
+    delete[] Marker_All_DV;
+
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
