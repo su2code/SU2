@@ -4858,7 +4858,7 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Vib-el. thermal conductivity ---*/
     numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
                                         node[jPoint]->GetThermalConductivity_ve() );
-    
+        
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
