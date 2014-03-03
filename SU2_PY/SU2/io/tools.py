@@ -221,6 +221,14 @@ optnames_aero = [ "LIFT"               ,
                   "HEAT_LOAD"           ]
 #: optnames_aero
 
+optnames_stab = [ "D_LIFT_D_ALPHA"               ,
+                  "D_DRAG_D_ALPHA"               ,
+                  "D_SIDEFORCE_D_ALPHA"          ,
+                  "D_MOMENT_X_D_ALPHA"           ,
+                  "D_MOMENT_Y_D_ALPHA"           ,
+                  "D_MOMENT_Z_D_ALPHA"           ,
+                ]
+
 # Geometric Optimizer Function Names
 optnames_geo = [ "MAX_THICKNESS"      ,
                  "1/4_THICKNESS"      ,
@@ -282,7 +290,7 @@ optnames_geo = [ "MAX_THICKNESS"      ,
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
 
-def read_aerodynamics( History_filename , special_cases=[] ):
+def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     """ values = read_aerodynamics(historyname, special_cases=[])
         read aerodynamic function values from history file
         
@@ -307,6 +315,14 @@ def read_aerodynamics( History_filename , special_cases=[] ):
     # for unsteady cases, average time-accurate objective function values
     if 'UNSTEADY_SIMULATION' in special_cases:
         for key,value in Func_Values.iteritems():
+            Func_Values[key] = sum(value)/len(value)
+         
+    # average the final iterations   
+    elif final_avg:
+        for key,value in Func_Values.iteritems():
+            # only the last few iterations
+            i_fin = min([final_avg,len(value)])
+            value = value[-i_fin:]
             Func_Values[key] = sum(value)/len(value)
     
     # otherwise, keep only last value
@@ -695,7 +711,7 @@ def get_specialCases(config):
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
-
+        
     return special_cases
 
 #: def get_specialCases()

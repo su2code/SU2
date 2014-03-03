@@ -2265,8 +2265,8 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim == 2){ nOutputVariables = 18; }
-      else if (nDim == 3){ nOutputVariables = 24; }
+      if (nDim == 2){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
+      else if (nDim == 3){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
     }
@@ -2538,32 +2538,50 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     unsigned long idx = 0;
     if (config->GetExtraOutput()) {
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAProduction;
-      OutputHeadingNames[idx] = "SAProduction";
+      
+      int nResidual = mynum->NumResidual();
+      
+      for (iDim = 0; iDim<nResidual;iDim++){
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->Residual[iDim];
+        stringstream intstr;
+        intstr << iDim;
+        string intAsStr = intstr.str();
+        OutputHeadingNames[idx] = "Residual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAResidual[iDim];
+        OutputHeadingNames[idx] = "SAResidual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->ResidualDiff[iDim];
+        OutputHeadingNames[idx] = "ResidualDiff_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->NondimResidual[iDim];
+        OutputHeadingNames[idx] = "NondimResidual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimResidual[iDim];
+        OutputHeadingNames[idx] = "SANondimResidual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->NondimResidualDiff[iDim];
+        OutputHeadingNames[idx] = "NondimResidualDiff_" + intAsStr;
+        idx++;
+      }
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->Chi;
+      OutputHeadingNames[idx] = "Chi";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SADestruction;
-      OutputHeadingNames[idx] = "SADestruction";
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->OmegaBar;
+      OutputHeadingNames[idx] = "OmegaBar";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SACrossProduction;
-      OutputHeadingNames[idx] = "SACrossProduction";
+      for (iDim = 0; iDim<nDim;iDim++){
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->DNuHatDXBar[iDim];
+        stringstream intstr;
+        intstr << iDim;
+        OutputHeadingNames[idx] = "DNuHatDXBar_" + intstr.str();
+        idx++;
+      }
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->NuHatGradNorm;
+      OutputHeadingNames[idx] = "NuHatGradNorm";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SASource;
-      OutputHeadingNames[idx] = "SASource";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLProduction;
-      OutputHeadingNames[idx] = "Production";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLDestruction;
-      OutputHeadingNames[idx] = "Destruction";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLCrossProduction;
-      OutputHeadingNames[idx] = "CrossProduction";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLSource;
-      OutputHeadingNames[idx] = "Source";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SourceDiff;
-      OutputHeadingNames[idx] = "SourceDiff";
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->NuHatGradNormBar;
+      OutputHeadingNames[idx] = "NuHatGradNormBar";
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->Laminar_Viscosity_i/numerics->Density_i;
       OutputHeadingNames[idx] = "KinematicViscosity";
@@ -2573,6 +2591,15 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->dist_i;
       OutputHeadingNames[idx] = "WallDist";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->NuGradNondim;
+      OutputHeadingNames[idx] = "NuGradNondimer";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->OmegaNondim;
+      OutputHeadingNames[idx] = "OmegaNondimer";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->SourceNondim;
+      OutputHeadingNames[idx] = "SourceNondimer";
       idx++;
       for (iDim = 0; iDim<nDim;iDim++){
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_Grad_i[0][iDim];

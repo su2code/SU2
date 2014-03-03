@@ -48,4 +48,7 @@ ___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
 ___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
 # endif
 
-
+# if BUILD_JSONCPP
+___bin_SU2_SOL_CXXFLAGS += @JSONCPP_CXX@
+___bin_SU2_SOL_LDADD += @JSONCPP_LD@
+# endif

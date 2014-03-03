@@ -338,7 +338,8 @@ enum ENUM_GRIDMOVEMENT {
   AEROELASTIC = 6,    /*!< \brief Simulation with aeroelastic motion. */
   MOVING_WALL = 7,    /*!< \brief Simulation with moving walls (translation/rotation). */
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
-  ELASTICITY = 9    /*!< \brief Linear Elasticity. */
+  ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
+  AEROELASTIC_RIGID_MOTION = 10 /*!< \brief Simulation with rotation and aeroelastic motion. */
 
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
@@ -351,22 +352,25 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("AEROELASTIC", AEROELASTIC)
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
-("MOVING_WALL", MOVING_WALL);
+("MOVING_WALL", MOVING_WALL)
+("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION);
 
 /*!
  * \brief type of wind gusts
  */
 enum ENUM_GUST_TYPE {
-    NO_GUST = 0,        /*!< \brief _______. */
-	TOP_HAT = 1, 		/*!< \brief Top-hat function shaped gust  */
-	SINE = 2,  		/*!< \brief  Sine shaped gust */
-    ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
+  NO_GUST = 0,      /*!< \brief _______. */
+	TOP_HAT = 1,      /*!< \brief Top-hat function shaped gust  */
+	SINE = 2,         /*!< \brief  Sine shaped gust */
+  ONE_M_COSINE = 3, /*!< \brief  1-cosine shaped gust */
+  VORTEX = 4,       /*!< \brief  A gust made from vortices */
 };
 static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM_GUST_TYPE>
 ("NONE", NO_GUST)
 ("TOP_HAT", TOP_HAT)
 ("SINE", SINE)
-("ONE_M_COSINE", ONE_M_COSINE);
+("ONE_M_COSINE", ONE_M_COSINE)
+("VORTEX", VORTEX);
 
 /*!
  * \brief type of wind direction
@@ -410,8 +414,8 @@ enum ENUM_UPWIND {
 	SW_2ND = 11,      /*!< \brief Second order Steger-Warming method. */
   MSW_1ST = 12,     /*!< \brief First order Modified Steger-Warming method. */
   MSW_2ND = 13,     /*!< \brief Second order Modified Steger-Warming method. */
-	ROE_TURKEL_1ST = 14,			/*!< \brief First order Roe-Turkel's upwind numerical method. */
-	ROE_TURKEL_2ND = 15,			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
+	TURKEL_1ST = 14,			/*!< \brief First order Roe-Turkel's upwind numerical method. */
+	TURKEL_2ND = 15,			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
   AUSMPWPLUS_1ST = 16,  /*!< \brief First order AUSMPW+ numerical method. */
   AUSMPWPLUS_2ND = 17   /*!< \brief Second order AUSMPW+ numerical method. */
   
@@ -420,8 +424,8 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("NONE", NO_UPWIND)
 ("ROE-1ST_ORDER", ROE_1ST)
 ("ROE-2ND_ORDER", ROE_2ND)
-("ROE_TURKEL_1ST", ROE_TURKEL_1ST)
-("ROE_TURKEL_2ND", ROE_TURKEL_2ND)
+("TURKEL_PREC-1ST_ORDER", TURKEL_1ST)
+("TURKEL_PREC-2ND_ORDER", TURKEL_2ND)
 ("AUSM-1ST_ORDER", AUSM_1ST)
 ("AUSM-2ND_ORDER", AUSM_2ND)
 ("AUSMPW+-1ST_ORDER", AUSMPWPLUS_1ST)
@@ -949,6 +953,19 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
 ("BIPARABOLIC", BIPARABOLIC);
 
 /*!
+ * \brief types of axis orientation
+ */
+enum ENUM_AXIS_ORIENTATION {
+	X_AXIS = 0,   /*!< \brief X axis orientation. */
+	Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
+	Z_AXIS = 2    /*!< \brief Z axis orientation. */
+};
+static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
+("X_AXIS", X_AXIS)
+("Y_AXIS", Y_AXIS)
+("Z_AXIS", Z_AXIS);
+
+/*!
  * \brief types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
@@ -978,6 +995,19 @@ enum ENUM_CONVERGE_CRIT {
 static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<string, ENUM_CONVERGE_CRIT>
 ("CAUCHY", CAUCHY)
 ("RESIDUAL", RESIDUAL);
+
+/*!
+ * \brief types of element stiffnesses imposed for FEA mesh deformation
+ */
+enum ENUM_DEFORM_STIFFNESS {
+	CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
+	INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
+	WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+};
+static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
+("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
+("INVERSE_VOLUME", INVERSE_VOLUME)
+("WALL_DISTANCE", WALL_DISTANCE);
 
 /* END_CONFIG_ENUMS */
 

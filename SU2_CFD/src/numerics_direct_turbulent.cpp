@@ -676,10 +676,22 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
   SAInputs = new SpalartAllmarasInputs(nDim);
   SAConstants = new SpalartAllmarasConstants;
   
+  SANondimInputs = new CSANondimInputs(val_nDim);
+  
   nResidual = 4;
   nJacobian = 1;
-  testResidual = new double[nResidual];
-  testJacobian = new double[nJacobian];
+  
+  SAResidual = new double[nResidual];
+  SANondimResidual = new double[nResidual];
+  Residual = new double[nResidual];
+  NondimResidual = new double[nResidual];
+  ResidualDiff = new double[nResidual];
+  NondimResidualDiff = new double[nResidual];
+  
+  SAJacobian = new double[nJacobian];
+  
+  //testResidual = new double[nResidual];
+  //testJacobian = new double[nJacobian];
   DUiDXj = new double*[nDim];
   for(int i=0; i < nDim; i++){
     DUiDXj[i] = new double[nDim];
@@ -688,10 +700,16 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
   
   // Construct the nnet
   string readFile = config->GetML_Turb_Model_File();
-  string checkFile = config->GetML_Turb_Model_Check_File();
-  cout << "Loading ML file from " << readFile << endl;
-  CNeurNet* Net = new CNeurNet(readFile, checkFile);
-  this->MLModel = Net;
+//  string checkFile = config->GetML_Turb_Model_Check_File();
+//  cout << "Loading ML file from " << readFile << endl;
+//  CNeurNet* Net = new CNeurNet(readFile, checkFile);
+  
+  this->featureset = config->GetML_Turb_Model_FeatureSet();
+  
+  cout << "in constructor, featureset is " << featureset << endl;
+  
+  CScalePredictor* Pred = new CScalePredictor(readFile);
+  this->MLModel = Pred;
   cout << "ML File successfully read " << endl;
 }
 
@@ -699,14 +717,72 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
   delete MLModel;
   delete SAInputs;
   delete SAConstants;
-  delete testResidual;
-  delete testJacobian;
+  
+  delete SAResidual;
+  delete SANondimResidual;
+  delete Residual;
+  delete NondimResidual;
+  delete ResidualDiff;
+  delete NondimResidualDiff;
+  delete SAJacobian;
+//  delete testResidual;
+//  delete testJacobian;
   for (int i=0; i < nDim; i++){
     delete DUiDXj[i];
   }
   delete DUiDXj;
   delete DNuhatDXj;
+  
+  delete SANondimInputs;
 }
+
+CSANondimInputs::CSANondimInputs(int nDim){
+  this->nDim = nDim;
+  this->DNuHatDXBar = new double[nDim];
+};
+CSANondimInputs::~CSANondimInputs(){
+  delete [] this->DNuHatDXBar;
+};
+void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
+  double kin_visc = sainputs->Laminar_Viscosity / sainputs->Density;
+  this->Chi = sainputs->Turbulent_Kinematic_Viscosity / kin_visc;
+  double nuSum = sainputs->Turbulent_Kinematic_Viscosity + kin_visc;
+  double distSq = sainputs->dist * sainputs->dist;
+  if (distSq < 1e-10){
+    distSq = 1e-10;
+  }
+  this->OmegaNondim = 1.0 / ( distSq / (nuSum) );
+  this->OmegaBar = sainputs->Omega / this->OmegaNondim;
+  this->SourceNondim = 1.0 /( distSq / (nuSum * nuSum) );
+  this->NuGradNondim = 1.0 /( sainputs->dist / nuSum );
+
+  double * turbViscGrad = sainputs->GetTurbKinViscGradient();
+  this->NuHatGradNorm = 0;
+  for (int i = 0; i < this->nDim; i++){
+    this->DNuHatDXBar[i] = turbViscGrad[i] / this->NuGradNondim;
+    this->NuHatGradNorm += turbViscGrad[i] * turbViscGrad[i];
+  }
+  this->NuHatGradNormBar = this->NuHatGradNorm / this->SourceNondim;
+};
+void CSANondimInputs::NondimensionalizeSource(int nResidual, double * source){
+  for (int i = 0; i < nResidual; i++){
+    source[i] /= this->SourceNondim;
+  }
+}
+
+void CSANondimInputs::DimensionalizeSource(int nResidual, double * source){
+
+  for (int i = 0; i < nResidual; i++){
+//    cout << "pre" << source[i] << endl;
+    source[i] *= this->SourceNondim;
+//    cout << "post" << source[i] << endl;
+  }
+}
+
+int CSourcePieceWise_TurbML::NumResidual(){
+  return this->nResidual;
+}
+
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
@@ -721,112 +797,145 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   
   /* Intialize */
   // Note that the Production, destruction, etc. are all volume independent
+  
+  for (int i= 0; i < nResidual; i++){
+    SAResidual[i] = 0;
+    SANondimResidual[i] = 0;
+    Residual[i] = 0;
+    NondimResidual[i] = 0;
+    ResidualDiff[i] = 0;
+    NondimResidualDiff[i] = 0;
+  }
+  
   val_residual[0] = 0.0;
-  SAProduction = 0;
-  SADestruction = 0;
-  SACrossProduction = 0;
-  SASource = 0;
-  MLProduction = 0;
-  MLDestruction = 0;
-  MLCrossProduction = 0;
-  MLSource = 0;
-  SourceDiff = 0;
   val_Jacobian_i[0][0] = 0.0;
   
+  NuhatGradNorm = 0;
   for (int i =0; i < nDim; i++){
     for (int j=0; j < nDim; j++){
       DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
     }
     DNuhatDXj[i] = TurbVar_Grad_i[0][i];
+    NuhatGradNorm += TurbVar_Grad_i[0][i] * TurbVar_Grad_i[0][i];
   }
   
   /* Call Spalart-Allmaras (for comparison) */
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
-  SpalartAllmarasSourceTerm(SAInputs, SAConstants, testResidual, testJacobian);
-  
-  SAProduction = testResidual[0];
-  SADestruction = testResidual[1];
-  SACrossProduction = testResidual[2];
-  SASource = testResidual[3];
-  
+  SpalartAllmarasSourceTerm(SAInputs, SAConstants,SAResidual, SAJacobian);
+  this->SANondimInputs -> Set(SAInputs);
+
   for (int i=0; i < nResidual; i++){
-    testResidual[i] *= Volume;
+    SANondimResidual[i] = SAResidual[i];
   }
+  SANondimInputs->NondimensionalizeSource(nResidual, SANondimResidual);
   
-  for (int i=0; i < nJacobian; i++){
-    testJacobian[i] *= Volume;
-  }
+  int nInputMLVariables = 0;
+  int nOutputMLVariables = 0;
+  double* netInput = NULL;
+  double* netOutput = NULL;
   
-  /* Call turbulence model */
-  // Get all the variables
-  int nInputMLVariables = 9;
-  int nOutputMLVariables = 1;
-  double * input = new double[nInputMLVariables];
-  for (int i = 0; i < nInputMLVariables; i++){
-    input[i] = 0;
+  if (featureset.compare("SA") == 0){
+    // Set the output equal to the spalart allmaras output.
+    for (int i = 0; i < nResidual; i++){
+      Residual[i] = SAResidual[i];
+      NondimResidual[i] = SANondimResidual[i];
+    }
+  }else if (featureset.compare("nondim_production")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->Chi;
+    netInput[1] = SANondimInputs->OmegaBar;
+    
+    /*
+    cout << "Net input" << endl;
+    for (int i = 0; i < nInputMLVariables; i++){
+      cout << i << " " << netInput[i] << endl;
+    }
+     */
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    /*
+    cout << "Net output" << endl;
+    for (int i = 0; i < nOutputMLVariables; i++){
+      cout << i << " " << netOutput[i] << endl;
+    }
+    
+    cout << "Sa nondim production " << SANondimResidual[0] << endl;
+    cout << "Ml nondim production " << netOutput[0] << endl;
+    */
+    // Gather all the appropriate variables
+    NondimResidual[0] = netOutput[0];
+    NondimResidual[1] = SANondimResidual[1];
+    NondimResidual[2] = SANondimResidual[2];
+    NondimResidual[3] = NondimResidual[0] - NondimResidual[1] + NondimResidual[2];
+    
+    for (int i=0; i < nResidual; i++){
+      Residual[i] = NondimResidual[i];
+    }
+    SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if (featureset.compare("nondim_crossproduction")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->Chi;
+    netInput[1] = SANondimInputs->Turb_Kin_Visc_Grad_Norm_Bar;
+    
+    MLModel->Predict(netInput, netOutput);
+    
+    NondimResidual[0] = SANondimResidual[0];
+    NondimResidual[1] = SANondimResidual[1];
+    NondimResidual[2] = netOutput[0];
+    NondimResidual[3] = NondimResidual[0] - NondimResidual[1] + NondimResidual[2];
+    
+    for (int i=0; i < nResidual; i++){
+      Residual[i] = NondimResidual[i];
+    }
+    SANondimInputs->DimensionalizeSource(nResidual, Residual);
+    
+  }else{
+    cout << "None of the conditions met" << endl;
+    cout << "featureset is " << featureset << endl;
+    throw "ML_Turb_Model_Nondimensionalization not recognized";
   }
-  int ctr = 0;
-  input[ctr] = Laminar_Viscosity_i/Density_i;
-  ctr++;
-  input[ctr] = TurbVar_i[0];
-  ctr++;
-  input[ctr] = dist_i;
-  ctr++;
-  for (iDim = 0; iDim < nDim; iDim++){
-    input[ctr] = TurbVar_Grad_i[0][iDim];
-    ctr++;
-  }
-  for (iDim = 0; iDim < nDim; iDim ++){
-    for (int jDim = 0; jDim < nDim; jDim++){
-      input[ctr] = PrimVar_Grad_i[iDim+1][iDim];
-      ctr++;
+  delete [] netInput;
+  delete [] netOutput;
+  
+  // Hack if the wall distance is too low
+  if (dist_i < 1e-10){
+    for (int i= 0; i < nResidual; i++){
+      Residual[i] = 0;
+      NondimResidual[i] = 0;
     }
   }
-  if (ctr != nInputMLVariables){
-    cout << "Improper number of variables put into ctr"<< endl;
-    exit(1);
-  }
-  double *output = new double[nOutputMLVariables];
-  for (int i=0; i < nOutputMLVariables; i++){
-    output[i] = 0;
+  
+  // Compute the differences
+  for (int i = 0; i < nResidual; i++){
+    ResidualDiff[i] = Residual[i] - SAResidual[i];
+    NondimResidualDiff[i] = NondimResidual[i] - SANondimResidual[i];
   }
   
-  this->MLModel->Predict(input, output);
-  
-  // Should add some sort of switch in the future
-  MLSource = output[0];
-  SourceDiff = MLSource - SASource;
-  
-  
-  cout << "SASource = " << SASource << " MLSource = " << MLSource << endl;
-  // Rescale by volume
-  output[0] = output[0]*Volume;
+  // Store The residual for the outer structure
+  val_residual[0] = Residual[3] * Volume;
+  val_Jacobian_i[0][0] = SAJacobian[0] * Volume;
   
   /*
-  double slideIter = 500.0;
-  double extiter = double(config->GetExtIter());
-  if (extiter > slideIter){
-    extiter = slideIter;
+  cout << "Sa resid ";
+  for (int i = 0; i < nResidual; i++){
+    cout << SAResidual[i] << "\t";
   }
-  val_residual[0] = testResidual[3]*(slideIter - extiter)/slideIter + output[0] * extiter/slideIter;
-  */
-  //  cout.precision(15);
-  /*
-   cout <<"ml pred is " << output[0] << endl;
-   cout << "real SA is " << testResidual[3] << endl;
-   cout << "val resid is " << val_residual[0] << endl;
+  cout << endl;
+  cout << "Ml resid ";
+  for (int i = 0; i < nResidual; i++){
+    cout << Residual[i] << "\t";
+  }
+  cout << endl;
    */
-  
-  val_residual[0] = output[0];
-//  val_residual[0] = testResidual[3];
-  
-//  cout << "SASourceScaled = " << SASource * Volume << " MLSourceScaled = " << MLSource * Volume << endl;
-//  cout << "Val residual = " << output[0] << endl;;
-  //val_Jacobian_i[0][0] = testJacobian[0];
-  
-  delete input;
-  delete output;
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
@@ -1143,8 +1252,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
   alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
   beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
   
-  if (dist_i > 0.0) {
-    
+  if (dist_i > 1e-10) {
+
     /*--- Production ---*/
     
     diverg = 0.0;

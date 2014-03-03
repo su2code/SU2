@@ -89,6 +89,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool adjoint = config->GetAdjoint();
+  bool exit_pressure = (config->GetWrt_1D_Output());
   roe_turkel = false;
   
   int rank = MASTER_NODE;
@@ -149,7 +150,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Primitive_i = NULL;
   Primitive_j = NULL;
   CharacPrimVar = NULL;
-  
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -204,7 +204,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-  if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
+  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND)) {
     Precon_Mat_inv = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       Precon_Mat_inv[iVar] = new double[nVar];
@@ -1924,7 +1924,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND)       ||
                      (config->GetKind_Upwind_Flow() == AUSM_2ND)      ||
                      (config->GetKind_Upwind_Flow() == HLLC_2ND)      ||
-                     (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND)  );
+                     (config->GetKind_Upwind_Flow() == MSW_2ND)      ||
+                     (config->GetKind_Upwind_Flow() == TURKEL_2ND)  );
   bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
@@ -1950,8 +1951,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
     if (!RightSol) ErrorCounter++;
     
-    /*--- Initialize the convective residual vector ---*/
-    LinSysRes.SetBlock_Zero(iPoint);
+    /*--- Initialize the residual vector (except for output of the residuals) ---*/
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
@@ -2274,7 +2275,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND))
+                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == MSW_2ND) || (config->GetKind_Upwind_Flow() == TURKEL_2ND))
                           && ((iMesh == MESH_0) || low_fidelity));
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
@@ -3703,9 +3704,9 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   }
   
 #ifndef NO_MPI
-  
+
   /*--- Add AllBound information using all the nodes ---*/
-  
+
   double MyAllBound_CDrag_Inv        = AllBound_CDrag_Inv;        AllBound_CDrag_Inv = 0.0;
   double MyAllBound_CLift_Inv       = AllBound_CLift_Inv;        AllBound_CLift_Inv = 0.0;
   double MyAllBound_CSideForce_Inv   = AllBound_CSideForce_Inv;   AllBound_CSideForce_Inv = 0.0;
@@ -3752,21 +3753,21 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI::DOUBLE, MPI::SUM);
 #endif
-  
+
   /*--- Add the forces on the surfaces using all the nodes ---*/
-  
+
   double *MySurface_CLift_Inv = NULL;
   double *MySurface_CDrag_Inv = NULL;
   double *MySurface_CMx_Inv   = NULL;
   double *MySurface_CMy_Inv   = NULL;
   double *MySurface_CMz_Inv   = NULL;
-  
+
   MySurface_CLift_Inv = new double[config->GetnMarker_Monitoring()];
   MySurface_CDrag_Inv = new double[config->GetnMarker_Monitoring()];
   MySurface_CMx_Inv   = new double[config->GetnMarker_Monitoring()];
   MySurface_CMy_Inv   = new double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Inv   = new double[config->GetnMarker_Monitoring()];
-  
+
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     MySurface_CLift_Inv[iMarker_Monitoring] = Surface_CLift_Inv[iMarker_Monitoring];
     MySurface_CDrag_Inv[iMarker_Monitoring] = Surface_CDrag_Inv[iMarker_Monitoring];
@@ -3793,17 +3794,17 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(MySurface_CMy_Inv, Surface_CMy_Inv, config->GetnMarker_Monitoring(), MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI::DOUBLE, MPI::SUM);
 #endif
-  
+
   delete [] MySurface_CLift_Inv;
   delete [] MySurface_CDrag_Inv;
   delete [] MySurface_CMx_Inv;
   delete [] MySurface_CMy_Inv;
   delete [] MySurface_CMz_Inv;
-  
+
 #endif
-  
+
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
-  
+
   Total_CDrag         = AllBound_CDrag_Inv;
   Total_CLift         = AllBound_CLift_Inv;
   Total_CSideForce    = AllBound_CSideForce_Inv;
@@ -3818,7 +3819,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   Total_CQ            = AllBound_CQ_Inv;
   Total_CMerit        = Total_CT / (Total_CQ + EPS);
   Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
-  
+
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CLift[iMarker_Monitoring]     = Surface_CLift_Inv[iMarker_Monitoring];
@@ -3827,8 +3828,69 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMy[iMarker_Monitoring]       = Surface_CMy_Inv[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]       = Surface_CMz_Inv[iMarker_Monitoring];
   }
-  
+
 }
+
+/*CEulerSolver::OneDimensionalOutput*/
+void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
+  unsigned long iVertex, iPoint;
+  unsigned short iDim, iMarker,Out1D;
+  double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure, Mach,SumPressure,SumArea, AveragePressure =0.0;
+  string Marker_Tag, Monitoring_Tag;
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+
+  /*-- Variables initialization ---*/
+  SumArea=0;
+  SumPressure=0.0;
+  /*--- Loop over the markers ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Out1D = config ->GetMarker_All_Out_1D(iMarker);
+    /*--- Loop over the vertices to compute the output ---*/
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      /*Find the normal direction*/
+      if ( (geometry->node[iPoint]->GetDomain()) && (Out1D == YES) ) {
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Coord = geometry->node[iPoint]->GetCoord();
+      }
+      /*For now just area averaged stagnation pressure*/
+      if ((geometry->node[iPoint]->GetDomain()) &&(Out1D==YES)){
+        // get the pressure from the node
+        if (compressible)   Pressure = node[iPoint]->GetPressure();
+        if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
+        Mach = (sqrt(node[iPoint]->GetVelocity2()) / node[iPoint]->GetSoundSpeed());
+        Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
+        Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        SumPressure+=Stag_Pressure * Area;
+        SumArea+=Area;
+      }
+    }
+    if (Out1D==YES){
+      AveragePressure += SumPressure*(1.0/SumArea);
+    }
+  }// end of loop over markers
+
+
+#ifndef NO_MPI
+    /*--- Add AllBound information using all the nodes ---*/
+    double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
+
+#ifdef WINDOWS
+      MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+      MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
+#endif // WINDOWS
+
+#endif // NO_MPI
+
+  /*Set Area Averaged Stagnation Pressure Output*/
+  OneD_Pt=AveragePressure;
+}/*CEulerSolver::OneDimensionalOutput*/
+
+
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
@@ -4851,12 +4913,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   
   double Gas_Constant     = config->GetGas_ConstantND();
   
-  bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
-  bool grid_movement  = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool viscous        = config->GetViscous();
+  bool implicit         = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
+  bool grid_movement    = config->GetGrid_Movement();
+  bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
+  bool viscous          = config->GetViscous();
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   
   double *Normal = new double[nDim];
   
@@ -5011,7 +5074,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         }
         Pressure = Density*SoundSpeed*SoundSpeed/Gamma;
         Energy   = Pressure/(Gamma_Minus_One*Density) + 0.5*Velocity2;
-        
+        if (tkeNeeded) Energy += GetTke_Inf();
+
         /*--- Store new primitive state for computing the flux. ---*/
         
         V_infty[0] = Pressure/(Gas_Constant*Density);
@@ -5063,8 +5127,8 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) ||
-          (config->GetKind_Upwind() == ROE_TURKEL_1ST))
+      if ((config->GetKind_Upwind() == TURKEL_1ST) ||
+          (config->GetKind_Upwind() == TURKEL_2ND))
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       
       /*--- Viscous residual contribution ---*/
@@ -5132,7 +5196,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag         = config->GetMarker_All_Tag(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+
   double *Normal = new double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -5197,7 +5262,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
             Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-            Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+            Pressure    = V_domain[nDim+1];
             H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
             SoundSpeed2 = Gamma*Pressure/Density;
             
@@ -5254,8 +5319,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             Density = Pressure/(Gas_Constant*Temperature);
             
             /*--- Using pressure, density, & velocity, compute the energy ---*/
-            Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-            
+            Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+            if (tkeNeeded) Energy += GetTke_Inf();
+
             /*--- Primitive variables, using the derived quantities ---*/
             V_inlet[0] = Temperature;
             for (iDim = 0; iDim < nDim; iDim++)
@@ -5302,8 +5368,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             Pressure = SoundSpeed2*Density/Gamma;
             
             /*--- Energy for the fictitious inlet state ---*/
-            Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Vel_Mag*Vel_Mag;
-            
+            Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
+            if (tkeNeeded) Energy += GetTke_Inf();
+
             /*--- Primitive variables, using the derived quantities ---*/
             V_inlet[0] = Pressure / ( Gas_Constant * Density);
             for (iDim = 0; iDim < nDim; iDim++)
@@ -5370,7 +5437,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+      if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       }
       
@@ -5440,7 +5507,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   double PressFreeSurface = GetPressure_Inf();
   double Froude           = config->GetFroude();
-  
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+
   double *Normal = new double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -5492,7 +5560,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Vn += Velocity[iDim]*UnitNormal[iDim];
         }
         Energy     = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-        Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+        Pressure   = V_domain[nDim+1];
         SoundSpeed = sqrt(Gamma*Pressure/Density);
         Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
         
@@ -5527,8 +5595,9 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
             Velocity2 += Velocity[iDim]*Velocity[iDim];
           }
-          Energy  = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-          
+          Energy = P_Exit/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+          if (tkeNeeded) Energy += GetTke_Inf();
+
           /*--- Conservative variables, using the derived quantities ---*/
           V_outlet[0] = Pressure / ( Gas_Constant * Density);
           for (iDim = 0; iDim < nDim; iDim++)
@@ -5611,7 +5680,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == ROE_TURKEL_2ND) || (config->GetKind_Upwind() == ROE_TURKEL_1ST)) {
+      if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       }
       
@@ -5672,7 +5741,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-  
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+
   double *Normal = new double[nDim];
   
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
@@ -5697,7 +5767,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity2 += Velocity[iDim]*Velocity[iDim];
   Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-  
+  if (tkeNeeded) Energy += GetTke_Inf();
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -5799,7 +5870,8 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
   bool viscous              = config->GetViscous();
   double Gas_Constant = config->GetGas_ConstantND();
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-  
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+
   double *Normal = new double[nDim];
   
   /*--- Retrieve the specified target fan face mach in the nacelle. ---*/
@@ -5859,7 +5931,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
         Vn += Velocity[iDim]*UnitNormal[iDim];
       }
       Energy     = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-      Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+      Pressure   = V_domain[nDim+1];
       SoundSpeed = sqrt(Gamma*Pressure/Density);
       Entropy = Pressure*pow(1.0/Density,Gamma);
       Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
@@ -5875,8 +5947,9 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       
-      Energy  = P_Fan/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      
+      Energy = P_Fan/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+      if (tkeNeeded) Energy += GetTke_Inf();
+
       /*--- Conservative variables, using the derived quantities ---*/
       V_inflow[0] = Pressure / ( Gas_Constant * Density);
       for (iDim = 0; iDim < nDim; iDim++)
@@ -5943,7 +6016,8 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-  
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+
   double *Normal = new double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -5994,8 +6068,8 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
         Velocity[iDim] = V_domain[iDim+1];
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
-      Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
-      Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
+      Energy = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
+      Pressure = V_domain[nDim+1];
       H_Exhaust     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Exhaust;
       SoundSpeed2 = Gamma*Pressure/Density;
       
@@ -6055,8 +6129,9 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
       Density = Pressure/(Gas_Constant*Temperature);
       
       /*--- Using pressure, density, & velocity, compute the energy ---*/
-      Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-      
+      Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+      if (tkeNeeded) Energy += GetTke_Inf();
+
       /*--- Primitive variables, using the derived quantities ---*/
       V_exhaust[0] = Temperature;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -7142,7 +7217,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-  if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) || (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) {
+  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND)) {
     Precon_Mat_inv = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       Precon_Mat_inv[iVar] = new double[nVar];
@@ -7323,7 +7398,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Mach_Inf      = config->GetMach_FreeStreamND();
   Prandtl_Lam   = config->GetPrandtl_Lam();
   Prandtl_Turb  = config->GetPrandtl_Turb();
-  
+  Tke_Inf       = config->GetTke_FreeStreamND();
+
   /*--- Initializate Fan Face Pressure ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     FanFace_MassFlow[iMarker] = 0.0;
@@ -7494,8 +7570,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
   
-  if ((config->GetKind_Upwind_Flow() == ROE_TURKEL_2ND) ||
-      (config->GetKind_Upwind_Flow() == ROE_TURKEL_1ST)) roe_turkel = true;
+  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) ||
+      (config->GetKind_Upwind_Flow() == TURKEL_2ND)) roe_turkel = true;
   else roe_turkel = false;
   
   /*--- Perform the MPI communication of the solution ---*/

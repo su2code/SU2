@@ -394,7 +394,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 	}
   
   /*--- Store old aeroelastic solutions ---*/
-  if (config->GetGrid_Movement() && config->GetKind_GridMovement(ZONE_0) == AEROELASTIC && geometry->GetFinestMGLevel()) {
+  if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && geometry->GetFinestMGLevel()) {
     config->SetAeroelastic_n1();
     config->SetAeroelastic_n();
     

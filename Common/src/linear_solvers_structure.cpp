@@ -333,7 +333,7 @@ int rank = 0;
   /*---  Initialize the RHS of the reduced system ---*/
   g[0] = beta;
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Set the norm to the initial residual value ---*/
   norm0 = beta;
 
   /*---  Output header information including initial residual ---*/
@@ -343,7 +343,7 @@ int rank = 0;
     writeHistory(i, beta, norm0);
   }
   
-  /*---  Loop over all serach directions ---*/
+  /*---  Loop over all search directions ---*/
   for (i = 0; i < m; i++) {
     
     /*---  Check if solution has converged ---*/

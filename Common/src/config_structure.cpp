@@ -89,7 +89,7 @@ CConfig::CConfig(char case_filename[200]) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
 	double default_vec_3d[3];
-  double default_vec_4d[4];
+  double default_vec_2d[2];
 	double default_vec_6d[6];
 	nZone = val_nZone;
 	iZone = val_iZone;
@@ -128,6 +128,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
   /* DESCRIPTION: Location of the turb model itself */
 	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: what kind of input/output feature map is there */
+	AddScalarOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
@@ -151,6 +153,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
 	AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
+  /* DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
+	AddMarkerOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
 	/* DESCRIPTION: Euler wall boundary marker(s) */
 	AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
 	/* DESCRIPTION: Far-field boundary marker(s) */
@@ -219,7 +223,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
 	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
-  
+  /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
+   Format: ( outlet marker) */
+  AddMarkerOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
+
+
 	/*--- Options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
   
@@ -595,9 +603,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Adjoint problem boundary condition */
 	AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
-  default_vec_4d[0] = 1E-6; default_vec_4d[1] = 1; default_vec_4d[2] = 1; default_vec_4d[3] = 0;
-	AddArrayOption("GEO_SECTION_LIMIT", 4, Section_Limit, default_vec_4d);
-	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
+  default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
+	AddArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  /* DESCRIPTION: Identify the axis of the section */
+	AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
+	/* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
+	AddScalarOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
 	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
 	/* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
@@ -697,7 +709,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
   /* DESCRIPTION: Output sectional forces for specified markers. */
 	AddSpecialOption("WRT_SECTIONAL_FORCES", Wrt_Sectional_Forces, SetBoolOption, false);
-  
+  /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
+  AddSpecialOption("WRT_1D_OUTPUT", Wrt_1D_Output, SetBoolOption, false);
+
 	/*--- Options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
   
@@ -852,8 +866,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
-	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
+  /* DESCRIPTION: Print the residuals during mesh deformation to the console */
+	AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
+	/* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
+	AddScalarOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
+  /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
+	AddScalarOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
+  /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
+	AddScalarOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
+	AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -1470,33 +1492,44 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
     }
   
-	/*--- Allocating memory for previous time step solutions of Aeroelastic problem and Intializing variables. ---*/
-	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
-		Aeroelastic_np1 = new double[4];
-		Aeroelastic_n   = new double[4];
-		Aeroelastic_n1  = new double[4];
-		for (int i=0; i<4; i++) {
-			Aeroelastic_np1[i] = 0.0;
-			Aeroelastic_n[i]   = 0.0;
-			Aeroelastic_n1[i]  = 0.0;
+  /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
+	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC || Kind_GridMovement[ZONE_0] == AEROELASTIC_RIGID_MOTION))
+		Aeroelastic_Simulation = true;
+  else
+    Aeroelastic_Simulation = false;
+  
+  /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
+
+	if (Grid_Movement && Aeroelastic_Simulation) {
+    Aeroelastic_np1.resize(nMarker_Monitoring);
+    Aeroelastic_n.resize(nMarker_Monitoring);
+    Aeroelastic_n1.resize(nMarker_Monitoring);
+		for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
+			Aeroelastic_np1[iMarker].resize(2);
+      Aeroelastic_n[iMarker].resize(2);
+			Aeroelastic_n1[iMarker].resize(2);
+      for (int i =0; i<2; i++) {
+        Aeroelastic_np1[iMarker][i].resize(2);
+        Aeroelastic_n[iMarker][i].resize(2);
+        Aeroelastic_n1[iMarker][i].resize(2);
+        for (int j=0; j<2; j++) {
+          Aeroelastic_np1[iMarker][i][j] = 0.0;
+          Aeroelastic_n[iMarker][i][j] = 0.0;
+          Aeroelastic_n1[iMarker][i][j] = 0.0;
+        }
+      }
 		}
 	}
     
-    /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
-    if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
-        Aeroelastic_pitch = new double[nMarker_Monitoring];
-        Aeroelastic_plunge = new double[nMarker_Monitoring];
-        for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
-            Aeroelastic_pitch[iMarker] = 0.0;
-            Aeroelastic_plunge[iMarker] = 0.0;
-        }
-    }
-
-    /*--- Set the boolean flag if we are carrying out an aeroelastic simulation. ---*/
-	if (Grid_Movement && Kind_GridMovement[ZONE_0] == AEROELASTIC)
-		Aeroelastic_Simulation = true;
-    else
-        Aeroelastic_Simulation = false;
+  /*--- Allocate memory for the plunge and pitch and initialized them to zero ---*/
+  if (Grid_Movement && Aeroelastic_Simulation) {
+      Aeroelastic_pitch = new double[nMarker_Monitoring];
+      Aeroelastic_plunge = new double[nMarker_Monitoring];
+      for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++ ) {
+          Aeroelastic_pitch[iMarker] = 0.0;
+          Aeroelastic_plunge[iMarker] = 0.0;
+      }
+  }
     
   /*--- Fluid-Structure problems always have grid movement ---*/
 	if (Kind_Solver == FLUID_STRUCTURE_EULER ||
@@ -2377,7 +2410,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2385,49 +2418,59 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
 	Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
 	Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
+	Marker_All_GeoEval    = new unsigned short[nMarker_All+2];	// Store whether the boundary should be geometry evaluation.
 	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
+	Marker_All_Out_1D   = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-	iMarker_Supersonic_Inlet;
+	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving,
+	iMarker_Supersonic_Inlet,iMarker_Out_1D;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
 		Marker_All_SendRecv[iMarker_All]   = 0;
 		Marker_All_Boundary[iMarker_All]   = 0;
 		Marker_All_Monitoring[iMarker_All] = 0;
+		Marker_All_GeoEval[iMarker_All]    = 0;
 		Marker_All_Designing[iMarker_All]  = 0;
 		Marker_All_Plotting[iMarker_All]   = 0;
 		Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
 		Marker_All_PerBound[iMarker_All]   = 0;
+		Marker_All_Out_1D[iMarker_All]   = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
-			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
+			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal
+			+ nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement
+			+ nMarker_Load + nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
 	Marker_Config_Monitoring = new unsigned short[nMarker_Config];
+	Marker_Config_GeoEval    = new unsigned short[nMarker_Config];
 	Marker_Config_Plotting   = new unsigned short[nMarker_Config];
 	Marker_Config_DV         = new unsigned short[nMarker_Config];
   Marker_Config_Moving     = new unsigned short[nMarker_Config];
 	Marker_Config_Designing  = new unsigned short[nMarker_Config];
 	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
-  
+	Marker_Config_Out_1D   = new unsigned short[nMarker_Config];
+
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config]   = 0;
 		Marker_Config_Monitoring[iMarker_Config] = 0;
+		Marker_Config_GeoEval[iMarker_Config]    = 0;
 		Marker_Config_Designing[iMarker_Config]  = 0;
 		Marker_Config_Plotting[iMarker_Config]   = 0;
 		Marker_Config_DV[iMarker_Config]         = 0;
     Marker_Config_Moving[iMarker_Config]     = 0;
 		Marker_Config_PerBound[iMarker_Config]   = 0;
+		Marker_Config_Out_1D[iMarker_Config]   = 0;
 	}
 
 	iMarker_Config = 0;
@@ -2565,6 +2608,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	}
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+		Marker_Config_GeoEval[iMarker_Config] = NO;
+		for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++)
+			if (Marker_Config_Tag[iMarker_Config] == Marker_GeoEval[iMarker_GeoEval])
+				Marker_Config_GeoEval[iMarker_Config] = YES;
+	}
+  
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Designing[iMarker_Config] = NO;
 		for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++)
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Designing[iMarker_Designing])
@@ -2591,13 +2641,21 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Moving[iMarker_Moving])
 				Marker_Config_Moving[iMarker_Config] = YES;
 	}
-  
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+    Marker_Config_Out_1D[iMarker_Config] = NO;
+    for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
+      if (Marker_Config_Tag[iMarker_Config] == Marker_Out_1D[iMarker_Out_1D])
+        Marker_Config_Out_1D[iMarker_Config] = YES;
+  }
+
+
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -2616,7 +2674,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
 	}
 
-	cout << "|                             Release 3.0.0 \"eagle\"                   |" << endl;
+	cout << "|                             Release 3.0.0 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
@@ -2720,6 +2778,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AEROELASTIC:     cout << "aeroelastic motion." << endl; break;
         case FLUID_STRUCTURE: cout << "fluid-structure motion." << endl; break;
         case EXTERNAL:        cout << "externally prescribed motion." << endl; break;
+        case AEROELASTIC_RIGID_MOTION:  cout << "rigid mesh motion plus aeroelastic motion." << endl; break;
       }
 		}
 
@@ -2797,10 +2856,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
 	}
 
+  if (val_software == SU2_GDC) {
+    if (nMarker_GeoEval != 0) {
+      cout << "Surface(s) where the geometrical based functions is evaluated: ";
+      for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++) {
+        cout << Marker_GeoEval[iMarker_GeoEval];
+        if (iMarker_GeoEval < nMarker_GeoEval-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
+  }
+  
 	cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (Divide_Element) cout << "Divide grid elements into triangles and tetrahedra." << endl;
-
+  
 	if (val_software == SU2_GPC) {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
@@ -2999,7 +3070,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
 				if (Kind_Upwind_Flow == ROE_1ST) cout << "1st order Roe solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == AUSM_1ST)	cout << "1st order AUSM solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
@@ -3007,9 +3078,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 			if ((Kind_ConvNumScheme_Flow == SPACE_UPWIND) &&
 					((Kind_Upwind_Flow == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-							|| (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == ROE_TURKEL_2ND))) {
+							|| (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
 				if (Kind_Upwind_Flow == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == ROE_TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
@@ -3033,7 +3104,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 			if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
 				if (Kind_Upwind_TNE2 == ROE_1ST) cout << "1st order Roe solver for the inviscid terms of the two-temperature model."<< endl;
-				if (Kind_Upwind_TNE2 == ROE_TURKEL_1ST) cout << "1st order Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
+				if (Kind_Upwind_TNE2 == TURKEL_1ST) cout << "1st order Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == AUSM_1ST)	cout << "1st order AUSM solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == HLLC_1ST)	cout << "1st order HLLC solver for the inviscid terms of the two-temperature model."<< endl;
 				if (Kind_Upwind_TNE2 == SW_1ST)	cout << "1st order Steger-Warming solver for the inviscid terms of the two-temperature model."<< endl;
@@ -3041,9 +3112,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			}
 			if ((Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) &&
 					((Kind_Upwind_TNE2 == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-           || (Kind_Upwind_TNE2 == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == ROE_TURKEL_2ND))) {
+           || (Kind_Upwind_TNE2 == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
             if (Kind_Upwind_TNE2 == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_TNE2 == ROE_TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_TNE2 == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
@@ -3562,6 +3633,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
 		if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
 		else cout << "No file for visualizing the deformation." << endl;
+    switch (GetDeform_Stiffness_Type()) {
+      case INVERSE_VOLUME:
+        cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
+        break;
+      case WALL_DISTANCE:
+         cout << "Cell stiffness scaled by distance from the deforming surface." << endl;
+        break;
+      case CONSTANT_STIFFNESS:
+        cout << "Imposing constant cell stiffness (steel)." << endl;
+        break;
+    }
 	}
 
 	if (val_software == SU2_PBC) {
@@ -4247,6 +4329,13 @@ unsigned short CConfig::GetMarker_Config_Monitoring(string val_marker) {
 	return Marker_Config_Monitoring[iMarker_Config];
 }
 
+unsigned short CConfig::GetMarker_Config_GeoEval(string val_marker) {
+	unsigned short iMarker_Config;
+	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+	return Marker_Config_GeoEval[iMarker_Config];
+}
+
 unsigned short CConfig::GetMarker_Config_Designing(string val_marker) {
 	unsigned short iMarker_Config;
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
@@ -4259,6 +4348,13 @@ unsigned short CConfig::GetMarker_Config_Plotting(string val_marker) {
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
 		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
 	return Marker_Config_Plotting[iMarker_Config];
+}
+
+unsigned short CConfig::GetMarker_Config_Out_1D(string val_marker) {
+  unsigned short iMarker_Config;
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+  return Marker_Config_Out_1D[iMarker_Config];
 }
 
 unsigned short CConfig::GetMarker_Config_DV(string val_marker) {
@@ -4319,13 +4415,10 @@ CConfig::~CConfig(void)
 	}
 
 	/*--- Free memory for Aeroelastic problems. ---*/
-	if (Grid_Movement && (Kind_GridMovement[ZONE_0] == AEROELASTIC)) {
-		delete[] Aeroelastic_np1;
-		delete[] Aeroelastic_n;
-		delete[] Aeroelastic_n1;
+	if (Grid_Movement && Aeroelastic_Simulation) {
         
-        delete[] Aeroelastic_pitch;
-        delete[] Aeroelastic_plunge;
+    delete[] Aeroelastic_pitch;
+    delete[] Aeroelastic_plunge;
 	}
 
 	/*--- Free memory for unspecified grid motion parameters ---*/
@@ -4391,14 +4484,50 @@ CConfig::~CConfig(void)
 	if (Plunging_Ampl_Z != NULL)
 		delete [] Plunging_Ampl_Z;
 
-    if (RefOriginMoment != NULL)
+  if (RefOriginMoment != NULL)
 		delete [] RefOriginMoment;
-    if (RefOriginMoment_X != NULL)
+  if (RefOriginMoment_X != NULL)
 		delete [] RefOriginMoment_X;
 	if (RefOriginMoment_Y != NULL)
 		delete [] RefOriginMoment_Y;
 	if (RefOriginMoment_Z != NULL)
 		delete [] RefOriginMoment_Z;
+
+	/*Marker pointers*/
+
+	if (Marker_Config_Out_1D!=NULL)
+	  delete[] Marker_Config_Out_1D;
+	if (Marker_All_Out_1D!=NULL)
+    delete[] Marker_All_Out_1D;
+  if (Marker_Config_GeoEval!=NULL)
+    delete[] Marker_Config_GeoEval;
+  if (Marker_All_GeoEval!=NULL)
+    delete[] Marker_All_GeoEval;
+  if (Marker_Config_Tag!=NULL)
+    delete[] Marker_Config_Tag;
+  if (Marker_All_Tag!=NULL)
+    delete[] Marker_All_Tag;
+  if (Marker_Config_Boundary!=NULL)
+    delete[] Marker_Config_Boundary;
+  if (Marker_All_Boundary!=NULL)
+    delete[] Marker_All_Boundary;
+  if (Marker_Config_Monitoring!=NULL)
+    delete[] Marker_Config_Monitoring;
+  if (Marker_All_Monitoring!=NULL)
+    delete[] Marker_All_Monitoring;
+  if (Marker_Config_Designing!=NULL)
+    delete[] Marker_Config_Designing;
+  if (Marker_All_Designing!=NULL)
+    delete[] Marker_All_Designing;
+  if (Marker_Config_Plotting!=NULL)
+    delete[] Marker_Config_Plotting;
+  if (Marker_All_Plotting!=NULL)
+    delete[] Marker_All_Plotting;
+  if (Marker_Config_DV!=NULL)
+    delete[] Marker_Config_DV;
+  if (Marker_All_DV!=NULL)
+    delete[] Marker_All_DV;
+
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
@@ -5041,7 +5170,7 @@ double CConfig::GetFlowLoad_Value(string val_marker) {
 void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) {
   
 	double Mach2Vel_FreeStream, ModVel_FreeStream, Energy_FreeStream = 0.0, ModVel_FreeStreamND;
-	double Velocity_Reynolds;
+	double Velocity_Reynolds, Omega_FreeStream, Omega_FreeStreamND;
 	unsigned short iDim;
 	int rank = MASTER_NODE;
   
@@ -5056,6 +5185,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	Velocity_FreeStreamND = new double[val_nDim];
   
 	/*--- Local variables and memory allocation ---*/
+  
 	double Alpha = AoA*PI_NUMBER/180.0;
 	double Beta  = AoS*PI_NUMBER/180.0;
 	double Gamma_Minus_One = Gamma - 1.0;
@@ -5064,12 +5194,14 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	bool freesurface = (Kind_Regime == FREESURFACE);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-    
+  bool tkeNeeded = ((Kind_Solver == RANS) && (Kind_Turb_Model == SST));
+
 	if (compressible) {
     
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
     
 		/*--- Compute the Free Stream velocity, using the Mach number ---*/
+    
 		if (val_nDim == 2) {
 			Velocity_FreeStream[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
 			Velocity_FreeStream[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -5081,6 +5213,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		}
     
 		/*--- Compute the modulus of the free stream velocity ---*/
+    
 		ModVel_FreeStream = 0;
 		for (iDim = 0; iDim < val_nDim; iDim++)
 			ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
@@ -5090,26 +5223,31 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
       
 			/*--- First, check if there is mesh motion. If yes, use the Mach
        number relative to the body to initialize the flow. ---*/
-			if (Grid_Movement)
-				Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
-			else
-				Velocity_Reynolds = ModVel_FreeStream;
+      
+			if (Grid_Movement) Velocity_Reynolds = Mach_Motion*Mach2Vel_FreeStream;
+			else Velocity_Reynolds = ModVel_FreeStream;
       
 			/*--- For viscous flows, pressure will be computed from a density
        that is found from the Reynolds number. The viscosity is computed
        from the dimensional version of Sutherland's law ---*/
+      
 			Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*Length_Reynolds);
 			Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
-
+      
+      Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
+      Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*Turb2LamViscRatio_FreeStream);
+      
 		} else {
 			/*--- For inviscid flow, density is calculated from the specified
 			 total temperature and pressure using the gas law. ---*/
 			Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
 		}
+    
 		/*-- Compute the freestream energy. ---*/
 		Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream*ModVel_FreeStream;
-    
+    if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+
 		/*--- Additional reference values defined by Pref, Tref, RHOref. By definition,
 		 Lref is one because we have converted the grid to meters.---*/
 		Length_Ref         = 1.0;
@@ -5174,13 +5312,17 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
 	ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND);
-	Energy_FreeStreamND    = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-	Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
+  
+  Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
+
+  Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
+
+  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
+  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };
+  
 	Total_UnstTimeND = Total_UnstTime / Time_Ref;
 	Delta_UnstTimeND = Delta_UnstTime / Time_Ref;
-  
-	double kine_Inf  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
-	double omega_Inf = Density_FreeStreamND*kine_Inf/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
   
 	/*--- Write output to the console if this is the master node and first domain ---*/
 	if ((rank == MASTER_NODE) && (val_iZone == 0) && (Kind_Solver != LINEAR_ELASTICITY) &&
@@ -5235,7 +5377,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")" << endl;
 		}
     
-		cout << "Freestream velocity magnitude (m/s):"	<< ModVel_FreeStream << endl;
+		cout << "Freestream velocity magnitude (m/s): "	<< ModVel_FreeStream << endl;
     
 		if (compressible)
 			cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
@@ -5295,8 +5437,8 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Freestream velocity magnitude (non-dimensional): "	 << ModVel_FreeStreamND << endl;
     
 		if (turbulent){
-			cout << "Free-stream turb. kinetic energy (non-dimensional): " << kine_Inf << endl;
-			cout << "Free-stream specific dissipation (non-dimensional): " << omega_Inf << endl;
+			cout << "Free-stream turb. kinetic energy (non-dimensional): " << Tke_FreeStreamND << endl;
+			cout << "Free-stream specific dissipation (non-dimensional): " << Omega_FreeStreamND << endl;
 		}
     
 		if (compressible)

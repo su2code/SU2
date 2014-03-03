@@ -89,9 +89,10 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 }
 
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo) {
-	unsigned long IterLinSol, iGridDef_Iter;
-  double MinVolume, NumError;
-  bool Screen_Output = true;
+  
+	unsigned long IterLinSol, Smoothing_Iter, iNonlinear_Iter;
+  double MinVolume, NumError, Tol_Factor;
+  bool Screen_Output;
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -102,7 +103,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 #endif
 #endif
   
-  /*--- Decide if there is going to be a screen output ---*/
+  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
+  
+  Smoothing_Iter = config->GetGridDef_Linear_Iter();
+  Screen_Output  = config->GetDeform_Output();
+  Tol_Factor     = config->GetDeform_Tol_Factor();
+  
+  /*--- Disable the screen output if we're running SU2_CFD ---*/
   
   if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
 
@@ -124,7 +131,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
    deformation can be divided into increments to help with stability. In
    particular, the linear elasticity equations hold only for small deformations. ---*/
   
-  for (iGridDef_Iter = 0; iGridDef_Iter < config->GetGridDef_Iter(); iGridDef_Iter++) {
+  for (iNonlinear_Iter = 0; iNonlinear_Iter < config->GetGridDef_Nonlinear_Iter(); iNonlinear_Iter++) {
     
     /*--- Initialize vector and sparse matrix ---*/
     
@@ -136,11 +143,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
-    MinVolume = SetFEAMethodContributions_Elem(geometry);
+    MinVolume = SetFEAMethodContributions_Elem(geometry, config);
     
     /*--- Compute the tolerance of the linear solver using MinLength ---*/
     
-    NumError = MinVolume * 0.001;
+    NumError = MinVolume * Tol_Factor;
     
     /*--- Set the boundary displacements (as prescribed by the design variable
      perturbations controlling the surface shape) as a Dirichlet BC. ---*/
@@ -154,7 +161,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Communicate any prescribed boundary displacements via MPI,
      so that all nodes have the same solution and r.h.s. entries
-     across all paritions. ---*/
+     across all partitions. ---*/
     
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
@@ -167,7 +174,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Solve the linear system ---*/
 
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 500, Screen_Output);
+    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -187,7 +194,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     MinVolume = Check_Grid(geometry);
     
     if ((rank == MASTER_NODE) && Screen_Output) {
-      cout << " Non-linear iter.: " << iGridDef_Iter+1 << "/" << config->GetGridDef_Iter()
+      cout << " Non-linear iter.: " << iNonlinear_Iter+1 << "/" << config->GetGridDef_Nonlinear_Iter()
       << ". Linear iter.: " << IterLinSol << ". Min vol.: " << MinVolume
       << ". Error: " << NumError << "." <<endl;
     }
@@ -295,7 +302,187 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
 }
 
-double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) {
+void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config) {
+  
+  double *coord, dist2, dist;
+  unsigned short iDim, iMarker;
+  unsigned long iPoint, iVertex, nVertex_SolidWall;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+  if (rank == MASTER_NODE)
+    cout << "Computing distances to the nearest deforming surface." << endl;
+  
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+  
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+  
+#ifdef NO_MPI
+  
+  /*--- Compute the total number of nodes on deforming boundaries ---*/
+  
+  nVertex_SolidWall = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+      nVertex_SolidWall += geometry->GetnVertex(iMarker);
+  
+  /*--- Allocate an array to hold boundary node coordinates ---*/
+  
+  double **Coord_bound;
+  Coord_bound = new double* [nVertex_SolidWall];
+  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
+    Coord_bound[iVertex] = new double [nDim];
+  
+  /*--- Retrieve and store the coordinates of the deforming boundary nodes ---*/
+  
+  nVertex_SolidWall = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Coord_bound[nVertex_SolidWall][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        nVertex_SolidWall++;
+      }
+  }
+  
+  /*--- Loop over all interior mesh nodes and compute the distances to each
+   of the deforming boundary nodes. Store the minimum distance to the wall for
+   each interior mesh node. Store the global minimum distance. ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    coord = geometry->node[iPoint]->GetCoord();
+    dist = 1E20;
+    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
+      dist2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
+        *(coord[iDim]-Coord_bound[iVertex][iDim]);
+      if (dist2 < dist) dist = dist2;
+    }
+    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  
+  /*--- Deallocate the vector of boundary coordinates. ---*/
+  
+  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
+    delete[] Coord_bound[iVertex];
+  delete[] Coord_bound;
+  
+  
+#else
+  
+  /*--- Variables and buffers needed for MPI ---*/
+  
+  int iProcessor, nProcessor;
+  double local_min_dist;
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+  nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+  
+  unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
+  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
+  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  
+  /*--- Count the total number of nodes on deforming boundaries within the
+   local partition. ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+      nLocalVertex_NS += geometry->GetnVertex(iMarker);
+  
+  /*--- Communicate to all processors the total number of deforming boundary
+   nodes, the maximum number of deforming boundary nodes on any single
+   partition, and the number of deforming nodes on each partition. ---*/
+  
+  Buffer_Send_nVertex[0] = nLocalVertex_NS;
+#ifdef WINDOWS
+  MPI_Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1,
+                            MPI::UNSIGNED_LONG, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1,
+                            MPI::UNSIGNED_LONG, MPI::MAX);
+  MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG,
+                            Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
+  
+  /*--- Create and initialize to zero some buffers to hold the coordinates
+   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
+  
+  double *Buffer_Send_Coord    = new double [MaxLocalVertex_NS*nDim];
+  double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_NS*nDim];
+  unsigned long nBuffer = MaxLocalVertex_NS*nDim;
+  
+  for (iVertex = 0; iVertex < MaxLocalVertex_NS; iVertex++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+  
+  /*--- Retrieve and store the coordinates of the deforming boundary nodes on
+   the local partition and broadcast them to all partitions. ---*/
+  
+  nVertex_SolidWall = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        nVertex_SolidWall++;
+      }
+#ifdef WINDOWS
+  MPI_Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE,
+                            Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
+#endif
+  
+  /*--- Loop over all interior mesh nodes on the local partition and compute
+   the distances to each of the deforming boundary nodes in the entire mesh.
+   Store the minimum distance to the wall for each interior mesh node. ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    coord = geometry->node[iPoint]->GetCoord();
+    dist = 1E20;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+        dist2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
+          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+        if (dist2 < dist) dist = dist2;
+      }
+    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  
+  /*--- Deallocate the buffers needed for the MPI communication. ---*/
+  
+  delete[] Buffer_Send_Coord;
+  delete[] Buffer_Receive_Coord;
+  delete[] Buffer_Send_nVertex;
+  delete[] Buffer_Receive_nVertex;
+  
+#endif
+
+}
+
+double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
   
 	unsigned short iVar, iDim, nNodes, iNodes;
 	unsigned long Point_0, Point_1, iElem, iEdge, ElemCounter = 0, PointCorners[8];
@@ -345,9 +532,20 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
 	}
   
   /*--- Compute min volume in the entire mesh. ---*/
+  
   Scale = Check_Grid(geometry);
   
+  /*--- Compute the distance to the nearest deforming surface if needed
+   as part of the stiffness calculation. In this case, we can scale based
+   on the minimum edge length. ---*/
+  
+  if(config->GetDeform_Stiffness_Type() == WALL_DISTANCE) {
+    ComputeDeforming_Wall_Distance(geometry, config);
+    Scale = MinLength;
+  }
+  
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
+  
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
@@ -364,8 +562,8 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry) 
       }
     }
     
-    if (nDim == 2) RightVol = SetFEA_StiffMatrix2D(geometry, StiffMatrix_Elem, CoordCorners, nNodes, Scale);
-    if (nDim == 3) RightVol = SetFEA_StiffMatrix3D(geometry, StiffMatrix_Elem, CoordCorners, nNodes, Scale);
+    if (nDim == 2) RightVol = SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, Scale);
+    if (nDim == 3) RightVol = SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, Scale);
 
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
@@ -1112,16 +1310,16 @@ double CVolumetricMovement::GetHexa_Volume(double CoordCorners[8][3]) {
 
 }
 
-bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
+bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det;
-  unsigned short iNode, iVar, jVar, kVar, iGauss, jGauss, kGauss;
+  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det, E, Lambda, Nu, Avg_Wall_Dist;
+  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, jGauss, kGauss;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   double iWeight, jWeight, kWeight;
   unsigned short nVar = geometry->GetnDim();
-  
+
   for (iVar = 0; iVar < nNodes*nVar; iVar++) {
     for (jVar = 0; jVar < nNodes*nVar; jVar++) {
       StiffMatrix_Elem[iVar][jVar] = 0.0;
@@ -1171,14 +1369,32 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
           B_Matrix[5][2+iNode*nVar] = DShapeFunction[iNode][0];
         }
         
-      double E = scale / (iWeight * jWeight * kWeight * Det) ;
-      double Mu = E;
-      double Lambda = -E;
-        
-//        double E = 2E11;
-//        double Nu = 0.30;
-//        double Mu = E / (2.0*(1.0 + Nu));
-//        double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+        /*--- Impose a type of stiffness for each element ---*/
+
+        switch (config->GetDeform_Stiffness_Type()) {
+            
+          case INVERSE_VOLUME:
+            E = scale / (iWeight * jWeight * kWeight * Det) ;
+            Mu = E;
+            Lambda = -E;
+            break;
+            
+          case WALL_DISTANCE:
+            Avg_Wall_Dist = 0.0;
+            for (jNode = 0; jNode < nNodes; jNode++) {
+              Avg_Wall_Dist += geometry->node[PointCorners[jNode]]->GetWall_Distance()/((double)nNodes);
+            }
+            E = scale / (iWeight * jWeight * kWeight * Avg_Wall_Dist);
+            Mu = E;
+            Lambda = -E;
+            break;
+            
+          case CONSTANT_STIFFNESS:
+            E = 2E11; Nu = 0.30;
+            Mu = E / (2.0*(1.0 + Nu));
+            Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+            break;
+        }
         
         /*--- Compute the D Matrix (for plane strain and 3-D)---*/
         
@@ -1220,11 +1436,11 @@ bool CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, double **Sti
   
 }
 
-bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale) {
+bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  double Xi = 0.0, Eta = 0.0, Det;
-  unsigned short iNode, iVar, jVar, kVar, iGauss, jGauss;
+  double Xi = 0.0, Eta = 0.0, Det, E, Lambda, Nu, Mu, Avg_Wall_Dist;
+  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, jGauss;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   double iWeight, jWeight;
@@ -1267,14 +1483,32 @@ bool CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, double **Sti
         B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
       }
       
-      double E = scale / (iWeight * jWeight * Det) ;
-      double Mu = E;
-      double Lambda = -E;
+      /*--- Impose a type of stiffness for each element ---*/
       
-//      double E = 2E11;
-//      double Nu = 0.30;
-//      double Mu = E / (2.0*(1.0 + Nu));
-//      double Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+      switch (config->GetDeform_Stiffness_Type()) {
+          
+        case INVERSE_VOLUME:
+          E = scale / (iWeight * jWeight * Det) ;
+          Mu = E;
+          Lambda = -E;
+          break;
+          
+        case WALL_DISTANCE:
+          Avg_Wall_Dist = 0.0;
+          for (jNode = 0; jNode < nNodes; jNode++) {
+            Avg_Wall_Dist += geometry->node[PointCorners[jNode]]->GetWall_Distance()/((double)nNodes);
+          }
+          E = scale / (iWeight * jWeight * Avg_Wall_Dist);
+          Mu = E;
+          Lambda = -E;
+          break;
+          
+        case CONSTANT_STIFFNESS:
+          E = 2E11; Nu = 0.30;
+          Mu = E / (2.0*(1.0 + Nu));
+          Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+          break;
+      }
       
       /*--- Compute the D Matrix (for plane strain and 3-D)---*/
       
@@ -1365,7 +1599,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
    increments and solve the grid deformation equations iteratively with
    successive small deformations. ---*/
   
-  VarIncrement = 1.0/((double)config->GetGridDef_Iter());
+  VarIncrement = 1.0/((double)config->GetGridDef_Nonlinear_Iter());
 	
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
@@ -1493,7 +1727,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	/*--- Local variables ---*/
 	unsigned short iDim, nDim; 
 	unsigned long iPoint;
-	double r[3], rotCoord[3], *Coord, Center[3], Omega[3], Lref, dt;
+	double r[3], rotCoord[3], *Coord, Center[3], Omega[3], Lref, dt, Center_Moment[3];
   double *GridVel, newGridVel[3];
 	double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	double dtheta, dphi, dpsi, cosTheta, sinTheta;
@@ -1610,6 +1844,40 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
       
     }
+  }
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the rotation. ---*/
+  
+  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    
+    Center_Moment[0] = config->GetRefOriginMoment_X(jMarker);
+    Center_Moment[1] = config->GetRefOriginMoment_Y(jMarker);
+    Center_Moment[2] = config->GetRefOriginMoment_Z(jMarker);
+    
+    /*--- Calculate non-dim. position from rotation center ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      r[iDim] = (Center_Moment[iDim]-Center[iDim])/Lref;
+    if (nDim == 2) r[nDim] = 0.0;
+    
+    /*--- Compute transformed point coordinates ---*/
+    
+    rotCoord[0] = rotMatrix[0][0]*r[0]
+    + rotMatrix[0][1]*r[1]
+    + rotMatrix[0][2]*r[2];
+    
+    rotCoord[1] = rotMatrix[1][0]*r[0]
+    + rotMatrix[1][1]*r[1]
+    + rotMatrix[1][2]*r[2];
+    
+    rotCoord[2] = rotMatrix[2][0]*r[0]
+    + rotMatrix[2][1]*r[1]
+    + rotMatrix[2][2]*r[2];
+    
+    config->SetRefOriginMoment_X(jMarker, Center[0]+rotCoord[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]+rotCoord[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]+rotCoord[2]);
   }
   
 	/*--- After moving all nodes, update geometry class ---*/
@@ -1778,6 +2046,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     }
   }
   
+  /*--- For pitching we don't update the motion origin and moment reference origin. ---*/
+
 	/*--- After moving all nodes, update geometry class ---*/
   
 	UpdateDualGrid(geometry, config);
@@ -1904,12 +2174,24 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
   
-  /*--- As the body origin may have moved, pring it to the console ---*/
+  /*--- As the body origin may have moved, print it to the console ---*/
   
-  if (rank == MASTER_NODE) {
-    cout << " Body origin: (" << Center[0]+deltaX[0];
-    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
-    cout << ")." << endl;
+//  if (rank == MASTER_NODE) {
+//    cout << " Body origin: (" << Center[0]+deltaX[0];
+//    cout << ", " << Center[1]+deltaX[1] << ", " << Center[2]+deltaX[2];
+//    cout << ")." << endl;
+//  }
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the plunging. ---*/
+  
+  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
+    Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
+    Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
+    config->SetRefOriginMoment_X(jMarker, Center[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]);
   }
   
 	/*--- After moving all nodes, update geometry class ---*/
@@ -1983,9 +2265,9 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   }
   
 	/*--- Compute delta change in the position in the x, y, & z directions. ---*/
-	deltaX[0] = xDot[0]*deltaT;
-	deltaX[1] = xDot[1]*deltaT;
-	deltaX[2] = xDot[2]*deltaT;
+	deltaX[0] = xDot[0]*(time_new-time_old);
+	deltaX[1] = xDot[1]*(time_new-time_old);
+	deltaX[2] = xDot[2]*(time_new-time_old);
 
   if (rank == MASTER_NODE) {
     cout << " New physical time: " << time_new << " seconds." << endl;
@@ -2021,6 +2303,18 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   config->SetMotion_Origin_X(iZone,Center[0]+deltaX[0]);
   config->SetMotion_Origin_Y(iZone,Center[1]+deltaX[1]);
   config->SetMotion_Origin_Z(iZone,Center[2]+deltaX[2]);
+  
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the translation. ---*/
+  
+  for (unsigned short jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    Center[0] = config->GetRefOriginMoment_X(jMarker) + deltaX[0];
+    Center[1] = config->GetRefOriginMoment_Y(jMarker) + deltaX[1];
+    Center[2] = config->GetRefOriginMoment_Z(jMarker) + deltaX[2];
+    config->SetRefOriginMoment_X(jMarker, Center[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]);
+  }
   
 	/*--- After moving all nodes, update geometry class ---*/
 	
@@ -3697,7 +3991,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   }
   
   /*--- Set the moment computation center to the new location after
-   incrementing the position with the translation. ---*/
+   incrementing the position with the plunging. ---*/
   
   for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
     Center[0] = config->GetRefOriginMoment_X(jMarker) + VarCoord[0];
@@ -4023,55 +4317,11 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     /*-- Check if we want to update the motion origin for the given marker ---*/
     
     if (config->GetMoveMotion_Origin(jMarker) == YES) {
-      /*--- There is no movement in the first iteration ---*/
-      if (iter !=0) {
         
-        Center_Aux[0] = config->GetMotion_Origin_X(jMarker);
-        Center_Aux[1] = config->GetMotion_Origin_Y(jMarker);
-        Center_Aux[2] = config->GetMotion_Origin_Z(jMarker);
-        
-        /*--- Calculate non-dim. position from rotation center ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
-        if (nDim == 2) r[nDim] = 0.0;
-        
-        /*--- Compute transformed point coordinates ---*/
-        
-        rotCoord[0] = rotMatrix[0][0]*r[0]
-        + rotMatrix[0][1]*r[1]
-        + rotMatrix[0][2]*r[2] + Center[0];
-        
-        rotCoord[1] = rotMatrix[1][0]*r[0]
-        + rotMatrix[1][1]*r[1]
-        + rotMatrix[1][2]*r[2] + Center[1];
-        
-        rotCoord[2] = rotMatrix[2][0]*r[0]
-        + rotMatrix[2][1]*r[1]
-        + rotMatrix[2][2]*r[2] + Center[2];
-        
-        /*--- Calculate delta change in the x, y, & z directions ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
-        if (nDim == 2) VarCoord[nDim] = 0.0;
-        config->SetMotion_Origin_X(jMarker, Center_Aux[0]+VarCoord[0]);
-        config->SetMotion_Origin_Y(jMarker, Center_Aux[1]+VarCoord[1]);
-        config->SetMotion_Origin_Z(jMarker, Center_Aux[2]+VarCoord[2]);
-      }
-    }
-  }
-
-  /*--- Set the moment computation center to the new location after
-   incrementing the position with the rotation. ---*/
-  
-  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
-    /*--- There is no movement in the first iteration ---*/
-    if (iter !=0) {
+      Center_Aux[0] = config->GetMotion_Origin_X(jMarker);
+      Center_Aux[1] = config->GetMotion_Origin_Y(jMarker);
+      Center_Aux[2] = config->GetMotion_Origin_Z(jMarker);
       
-      Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
-      Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
-      Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
-
       /*--- Calculate non-dim. position from rotation center ---*/
       
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4096,83 +4346,128 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       for (iDim = 0; iDim < nDim; iDim++)
         VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
       if (nDim == 2) VarCoord[nDim] = 0.0;
-      
-      config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
-      config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
-      config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
+      config->SetMotion_Origin_X(jMarker, Center_Aux[0]+VarCoord[0]);
+      config->SetMotion_Origin_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+      config->SetMotion_Origin_Z(jMarker, Center_Aux[2]+VarCoord[2]);
     }
+  }
+
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the rotation. ---*/
+  
+  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+      
+    Center_Aux[0] = config->GetRefOriginMoment_X(jMarker);
+    Center_Aux[1] = config->GetRefOriginMoment_Y(jMarker);
+    Center_Aux[2] = config->GetRefOriginMoment_Z(jMarker);
+
+    /*--- Calculate non-dim. position from rotation center ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      r[iDim] = (Center_Aux[iDim]-Center[iDim])/Lref;
+    if (nDim == 2) r[nDim] = 0.0;
+    
+    /*--- Compute transformed point coordinates ---*/
+    
+    rotCoord[0] = rotMatrix[0][0]*r[0]
+    + rotMatrix[0][1]*r[1]
+    + rotMatrix[0][2]*r[2] + Center[0];
+    
+    rotCoord[1] = rotMatrix[1][0]*r[0]
+    + rotMatrix[1][1]*r[1]
+    + rotMatrix[1][2]*r[2] + Center[1];
+    
+    rotCoord[2] = rotMatrix[2][0]*r[0]
+    + rotMatrix[2][1]*r[1]
+    + rotMatrix[2][2]*r[2] + Center[2];
+    
+    /*--- Calculate delta change in the x, y, & z directions ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      VarCoord[iDim] = (rotCoord[iDim]-Center_Aux[iDim])/Lref;
+    if (nDim == 2) VarCoord[nDim] = 0.0;
+    
+    config->SetRefOriginMoment_X(jMarker, Center_Aux[0]+VarCoord[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
   }
 }
 
-void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]) {
-    /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
-    double dy = -displacements[0];           // relative plunge
-    double dalpha = -displacements[1];       // relative pitch
-    double Center[2];
-    unsigned short jMarker, iDim;
-    double Lref = config->GetLength_Ref();
-    double *Coord;
-    unsigned long iPoint, iVertex;
-    double x_new, y_new;
-    double VarCoord[3];
-    string Marker_Tag;
-	int rank;
+void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]) {
+  
+  /* The sign conventions of these are those of the Typical Section Wing Model, below the signs are corrected */
+  double dh = -displacements[0];           // relative plunge
+  double dalpha = -displacements[1];       // relative pitch
+  double dh_x, dh_y;
+  double Center[2];
+  unsigned short iDim;
+  double Lref = config->GetLength_Ref();
+  double *Coord;
+  unsigned long iPoint, iVertex;
+  double x_new, y_new;
+  double VarCoord[3];
+  string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+  
+  /*--- Calculate the plunge displacement for the Typical Section Wing Model taking into account rotation ---*/
+  if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
+    double Omega, dt, psi;
+    dt = config->GetDelta_UnstTimeND();
+    Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
+    psi = Omega*(dt*ExtIter);
     
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#else
-	rank = MASTER_NODE;
-#endif
+    /* --- Correct for the airfoil starting position (This is hardcoded in here) --- */
+    if (Monitoring_Tag == "Airfoil1") {
+      psi = psi + 0.0;
+    }
+    else if (Monitoring_Tag == "Airfoil2") {
+      psi = psi + 2.0/3.0*PI_NUMBER;
+    }
+    else if (Monitoring_Tag == "Airfoil3") {
+      psi = psi + 4.0/3.0*PI_NUMBER;
+    }
+    else
+      cout << "WARNING: There is a marker that we are monitoring that doesn't match the values hardcoded above!" << endl;
     
-    /*--- Check to see if we are supposed to move this marker(airfoil) ---*/
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
-        
-        /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
-        
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
-        jMarker    = config->GetMarker_Moving(Marker_Tag);
-        
-        /*--- Pitching origin from config. ---*/
-        
-        Center[0] = config->GetMotion_Origin_X(jMarker);
-        Center[1] = config->GetMotion_Origin_Y(jMarker);
-        
-        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            /*--- Coordinates of the current point ---*/
-            Coord = geometry->node[iPoint]->GetCoord();
-            
-            /*--- Calculate non-dim. position from rotation center ---*/
-            double r[2] = {0,0};
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-                r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-            
-            /*--- Compute delta of transformed point coordinates ---*/
-            // The deltas are needed for the Spring Method.
-            // rotation contribution + plunging contribution - previous position
-            x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0];
-            y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dy;
-            
-            VarCoord[0] = x_new;
-            VarCoord[1] = y_new;
-            VarCoord[2] = 0.0;
-            
-            /*--- Store new delta node locations for the surface ---*/
-            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-        }
-        /*--- Set the mesh motion center to the new location after incrementing the position with the plunge ---*/
-        config->SetMotion_Origin_Y(iMarker,Center[1]+dy);
-        config->SetRefOriginMoment_Y(iMarker,Center[1]+dy);
+    dh_x = -dh*sin(psi);
+    dh_y = dh*cos(psi);
+    
+  } else {
+    dh_x = 0;
+    dh_y = dh;
+  }
+  
+  /*--- Pitching origin from config. ---*/
+  
+  Center[0] = config->GetRefOriginMoment_X(iMarker_Monitoring);
+  Center[1] = config->GetRefOriginMoment_Y(iMarker_Monitoring);
+  
+  for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+    iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    /*--- Coordinates of the current point ---*/
+    Coord = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Calculate non-dim. position from rotation center ---*/
+    double r[2] = {0,0};
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+        r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
+    
+    /*--- Compute delta of transformed point coordinates ---*/
+    // The deltas are needed for the FEA grid deformation Method.
+    // rotation contribution - previous position + plunging contribution
+    x_new = cos(dalpha)*r[0] - sin(dalpha)*r[1] -r[0] + dh_x;
+    y_new = sin(dalpha)*r[0] + cos(dalpha)*r[1] -r[1] + dh_y;
+    
+    VarCoord[0] = x_new;
+    VarCoord[1] = y_new;
+    VarCoord[2] = 0.0;
+    
+    /*--- Store new delta node locations for the surface ---*/
+    geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+  }
+  /*--- Set the elastic axis to the new location after incrementing the position with the plunge ---*/
+  config->SetRefOriginMoment_X(iMarker_Monitoring,Center[0]+dh_x);
+  config->SetRefOriginMoment_Y(iMarker_Monitoring,Center[1]+dh_y);
 
-    }
-    else {
-        if (rank == MASTER_NODE)
-            std::cout << "WARNING: There is(are) marker(s) being monitored which are not being moved!" << std::endl;
-    }
+  
 }
 
 void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *config,

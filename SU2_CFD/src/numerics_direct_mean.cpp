@@ -997,7 +997,221 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
 }
 
-CUpwRoeTurkel_Flow::CUpwRoeTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  /*--- Set booleans from CConfig settings ---*/
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Allocate arrays ---*/
+	Diff_U   = new double [nVar];
+  Fc_i	   = new double [nVar];
+	Fc_j	   = new double [nVar];
+	Lambda_i = new double [nVar];
+  Lambda_j = new double [nVar];
+  
+	u_i		   = new double [nDim];
+	u_j		   = new double [nDim];
+  ust_i    = new double [nDim];
+  ust_j    = new double [nDim];
+  Vst_i    = new double [nPrimVar];
+  Vst_j    = new double [nPrimVar];
+  Ust_i    = new double [nVar];
+  Ust_j    = new double [nVar];
+  
+  Velst_i    = new double [nDim];
+  Velst_j    = new double [nDim];
+  
+	P_Tensor		= new double* [nVar];
+	invP_Tensor	= new double* [nVar];
+	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+		P_Tensor[iVar]    = new double [nVar];
+		invP_Tensor[iVar] = new double [nVar];
+	}
+  
+}
+
+CUpwMSW_Flow::~CUpwMSW_Flow(void) {
+  
+	delete [] Diff_U;
+  delete [] Fc_i;
+	delete [] Fc_j;
+	delete [] Lambda_i;
+  delete [] Lambda_j;
+  
+  delete [] u_i;
+  delete [] u_j;
+  delete [] ust_i;
+  delete [] ust_j;
+  delete [] Ust_i;
+  delete [] Vst_i;
+  delete [] Ust_j;
+  delete [] Vst_j;
+  delete [] Velst_i;
+  delete [] Velst_j;
+  
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] P_Tensor[iVar];
+    delete [] invP_Tensor[iVar];
+  }
+  delete [] P_Tensor;
+  delete [] invP_Tensor;
+
+}
+
+void CUpwMSW_Flow::ComputeResidual(double *val_residual,
+                                   double **val_Jacobian_i,
+                                   double **val_Jacobian_j, CConfig *config) {
+  
+	unsigned short iDim, iVar, jVar, kVar;
+  double P_i, P_j;
+  double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
+  double sqvel_i, sqvel_j;
+	double epsilon, alpha, w, dp, onemw;
+  double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
+  
+  /*--- Set parameters in the numerical method ---*/
+	epsilon = 1E-4;
+  alpha = 6.0;
+  
+  /*--- Calculate supporting geometry parameters ---*/
+  
+	Area = 0;
+	for (iDim = 0; iDim < nDim; iDim++)
+		Area += Normal[iDim]*Normal[iDim];
+	Area = sqrt(Area);
+  
+	for (iDim = 0; iDim < nDim; iDim++)
+		UnitNormal[iDim] = Normal[iDim]/Area;
+
+  /*--- Initialize flux & Jacobian vectors ---*/
+  
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Fc_i[iVar] = 0.0;
+		Fc_j[iVar] = 0.0;
+	}
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_i[iVar][jVar] = 0.0;
+        val_Jacobian_j[iVar][jVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Load variables from nodes i & j ---*/
+  
+  rhos_i = V_i[0];
+  rhos_j = V_j[0];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    u_i[iDim] = V_i[iDim+1];
+    u_j[iDim] = V_j[iDim+1];
+  }
+  P_i = V_i[nDim+1];
+  P_j = V_j[nDim+1];
+  
+  /*--- Calculate supporting quantities ---*/
+  
+  sqvel_i   = 0.0; sqvel_j   = 0.0;
+  ProjVel_i = 0.0; ProjVel_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    sqvel_i   += u_i[iDim]*u_i[iDim];
+    sqvel_j   += u_j[iDim]*u_j[iDim];
+    ProjVel_i += u_i[iDim]*UnitNormal[iDim];
+    ProjVel_j += u_j[iDim]*UnitNormal[iDim];
+  }
+  
+  /*--- Calculate the state weighting function ---*/
+  
+  dp = fabs(P_j-P_i) / min(P_j,P_i);
+  w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
+  onemw = 1.0 - w;
+  
+  /*--- Calculate weighted state vector (*) for i & j ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Ust_i[iVar] = onemw*U_i[iVar] + w*U_j[iVar];
+    Ust_j[iVar] = onemw*U_j[iVar] + w*U_i[iVar];
+  }
+  for (iVar = 0; iVar < nDim+5; iVar++) {
+    Vst_i[iVar] = onemw*V_i[iVar] + w*V_j[iVar];
+    Vst_j[iVar] = onemw*V_j[iVar] + w*V_i[iVar];
+  }
+  ProjVelst_i = onemw*ProjVel_i + w*ProjVel_j;
+  ProjVelst_j = onemw*ProjVel_j + w*ProjVel_i;
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velst_i[iDim] = Vst_i[iDim+1];
+    Velst_j[iDim] = Vst_j[iDim+1];
+  }
+  
+  /*--- Flow eigenvalues at i (Lambda+) --- */
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+  Lambda_i[iDim]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
+  }
+
+  Lambda_i[nDim] = 0.5*( ProjVelst_i + Vst_i[nDim+4] + fabs(ProjVelst_i + Vst_i[nDim+4])  );
+  Lambda_i[nDim+1]   = 0.5*( ProjVelst_i - Vst_i[nDim+4] + fabs(ProjVelst_i - Vst_i[nDim+4])  );
+  
+  /*--- Compute projected P, invP, and Lambda ---*/
+  
+  GetPMatrix(&Vst_i[nDim+2], Velst_i, &Vst_i[nDim+4], UnitNormal, P_Tensor);
+  GetPMatrix_inv(&Vst_i[nDim+2], Velst_i, &Vst_i[nDim+4], UnitNormal, invP_Tensor);
+  
+  /*--- Projected flux (f+) at i ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Proj_ModJac_Tensor_i = 0.0;
+      
+      /*--- Compute Proj_ModJac_Tensor = P x Lambda+ x inverse P ---*/
+      
+      for (kVar = 0; kVar < nVar; kVar++)
+        Proj_ModJac_Tensor_i += P_Tensor[iVar][kVar]*Lambda_i[kVar]*invP_Tensor[kVar][jVar];
+      Fc_i[iVar] += Proj_ModJac_Tensor_i*U_i[jVar]*Area;
+      if (implicit)
+        val_Jacobian_i[iVar][jVar] += Proj_ModJac_Tensor_i*Area;
+    }
+  }
+  
+	/*--- Flow eigenvalues at j (Lambda-) ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Lambda_j[iDim]          = 0.5*(ProjVelst_j - fabs(ProjVelst_j));
+  }
+  Lambda_j[nDim] = 0.5*(     ProjVelst_j + Vst_j[nDim+4] -
+                                   fabs(ProjVelst_j + Vst_j[nDim+4])  );
+  Lambda_j[nDim+1]   = 0.5*(     ProjVelst_j - Vst_j[nDim+4] -
+                                   fabs(ProjVelst_j - Vst_j[nDim+4])  );
+  
+  /*--- Compute projected P, invP, and Lambda ---*/
+  
+  GetPMatrix(&Vst_j[nDim+2], Velst_j, &Vst_j[nDim+4], UnitNormal, P_Tensor);
+  GetPMatrix_inv(&Vst_j[nDim+2], Velst_j, &Vst_j[nDim+4], UnitNormal, invP_Tensor);
+  
+	/*--- Projected flux (f-) ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Proj_ModJac_Tensor_j = 0.0;
+      /*--- Compute Proj_ModJac_Tensor = P x Lambda- x inverse P ---*/
+      for (kVar = 0; kVar < nVar; kVar++)
+        Proj_ModJac_Tensor_j += P_Tensor[iVar][kVar]*Lambda_j[kVar]*invP_Tensor[kVar][jVar];
+      Fc_j[iVar] += Proj_ModJac_Tensor_j*U_j[jVar]*Area;
+      if (implicit)
+        val_Jacobian_j[iVar][jVar] += Proj_ModJac_Tensor_j*Area;
+    }
+  }
+  
+	/*--- Flux splitting ---*/
+  
+	for (iVar = 0; iVar < nVar; iVar++) {
+		val_residual[iVar] = Fc_i[iVar]+Fc_j[iVar];
+	}
+  
+}
+
+CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
@@ -1030,7 +1244,7 @@ CUpwRoeTurkel_Flow::CUpwRoeTurkel_Flow(unsigned short val_nDim, unsigned short v
   }
 }
 
-CUpwRoeTurkel_Flow::~CUpwRoeTurkel_Flow(void) {
+CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
   
   delete [] Diff_U;
   delete [] Velocity_i;
@@ -1055,35 +1269,42 @@ CUpwRoeTurkel_Flow::~CUpwRoeTurkel_Flow(void) {
   
 }
 
-void CUpwRoeTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   /*--- Face area (norm or the normal vector) ---*/
+  
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
   
   /*-- Unit Normal ---*/
+  
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
   
   /*--- Primitive variables at point i ---*/
+  
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity_i[iDim] = V_i[iDim+1];
   Pressure_i = V_i[nDim+1];
   Density_i = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
   Energy_i = Enthalpy_i - Pressure_i/Density_i;
-  
+  SoundSpeed_i = sqrt(Pressure_i*Gamma/Density_i);
+
   /*--- Primitive variables at point j ---*/
+  
   for (iDim = 0; iDim < nDim; iDim++)
     Velocity_j[iDim] = V_j[iDim+1];
   Pressure_j = V_j[nDim+1];
   Density_j = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
-  
+  SoundSpeed_j = sqrt(Pressure_j*Gamma/Density_j);
+
   /*--- Recompute conservative variables ---*/
+  
   double U_i[5], U_j[5];
   U_i[0] = Density_i; U_j[0] = Density_j;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1092,6 +1313,7 @@ void CUpwRoeTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jaco
   U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
   
   /*--- Roe-averaged variables at interface between i & j ---*/
+  
   R = sqrt(Density_j/Density_i);
   RoeDensity = R*Density_i;
   sq_vel = 0.0;

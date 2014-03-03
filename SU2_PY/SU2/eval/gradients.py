@@ -78,13 +78,17 @@ def gradient( func_name, method, config, state=None ):
             # Aerodynamics
             if func_name in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )
+                
+            # Stability
+            elif func_name in su2io.optnames_stab:
+                grads = stability( func_name, config, state )
             
             # Geometry (actually a finite difference)
             elif func_name in su2io.optnames_geo:
                 grads = geometry( func_name, config, state )
                 
             else:
-                raise Exception, 'unknown function name'            
+                raise Exception, 'unknown function name: %s' % func_name
             
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -239,6 +243,121 @@ def adjoint( func_name, config, state=None ):
     return grads
 
 #: def adjoint()
+
+
+
+# ----------------------------------------------------------------------
+#  Stability Functions
+# ----------------------------------------------------------------------
+
+def stability( func_name, config, state=None, step=1e-2 ):
+   
+    
+    folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
+    
+    # ----------------------------------------------------
+    #  Initialize    
+    # ----------------------------------------------------
+    
+    # initialize
+    state = su2io.State(state)
+    if not state.FILES.has_key('MESH'):
+        state.FILES.MESH = config['MESH_FILENAME']
+    special_cases = su2io.get_specialCases(config)
+    
+    # find base func name
+    matches = [ k for k in su2io.optnames_aero if k in func_name ]
+    if not len(matches) == 1: raise Exception, 'could not find stability function name'
+    base_name = matches[0]    
+    
+    ADJ_NAME = 'ADJOINT_'+base_name
+    
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+        log_direct = 'log_Direct.out'
+    else:
+        log_direct = None
+    
+    # ----------------------------------------------------    
+    #  Update Mesh
+    # ----------------------------------------------------
+    
+    # does decomposition and deformation
+    info = update_mesh(config,state) 
+    
+    # ----------------------------------------------------    
+    #  CENTRAL POINT
+    # ----------------------------------------------------    
+    
+    # will run in ADJOINT/
+    grads_0 = gradient(base_name,'ADJOINT',config,state)
+    
+    
+    # ----------------------------------------------------    
+    #  Run Forward Point
+    # ----------------------------------------------------   
+    
+    # files to pull
+    files = state.FILES
+    pull = []; link = []
+    
+    # files: mesh
+    name = files['MESH']
+    name = su2io.expand_part(name,config)
+    link.extend(name)
+    
+    # files: direct solution
+    ## DO NOT PULL DIRECT SOLUTION, use the one in STABILITY/ 
+        
+    # files: adjoint solution
+    if files.has_key( ADJ_NAME ):
+        name = files[ADJ_NAME]
+        name = su2io.expand_time(name,config)
+        link.extend(name)       
+    else:
+        config['RESTART_SOL'] = 'NO'        
+    
+    # files: target equivarea adjoint weights
+    ## DO NOT PULL EQUIVAREA WEIGHTS, use the one in STABILITY/
+    
+    
+    # pull needed files, start folder
+    with redirect_folder( folder, pull, link ) as push:
+        with redirect_output(log_direct):     
+            
+            konfig = copy.deepcopy(config)
+            ztate  = copy.deepcopy(state)
+            
+            # TODO: GENERALIZE
+            konfig.AoA = konfig.AoA + step
+            
+            # let's start somethin somthin
+            del ztate.GRADIENTS[base_name]
+            #ztate.find_files(konfig)
+            
+            # the gradient
+            grads_1 = gradient(base_name,'ADJOINT',konfig,ztate)
+                        
+            ## direct files to store
+            #name = ztate.FILES[ADJ_NAME]
+            #if not state.FILES.has_key('STABILITY'):
+                #state.FILES.STABILITY = su2io.ordered_bunch()
+            #state.FILES.STABILITY[ADJ_NAME] = name
+            
+    
+    # ----------------------------------------------------    
+    #  DIFFERENCING
+    # ----------------------------------------------------
+    
+    grads = [ ( g_1 - g_0 ) / step 
+              for g_1,g_0 in zip(grads_1,grads_0) ]
+    
+    state.GRADIENTS[func_name] = grads
+    grads_out = su2util.ordered_bunch()
+    grads_out[func_name] = grads
+    
+    return grads_out
+    
 
 
 # ----------------------------------------------------------------------

@@ -206,6 +206,17 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container);
 
 /*!
+ * \brief Reads and initializes the vortex positions, strengths and gradient.
+ * \author S. Padron
+ * \param[in] nVortex - number of vortices.
+ * \param[in] x0 - Vector of x-loc of the vortices.
+ * \param[in] y0 - Vector of y-loc of the vortices.
+ * \param[in] vort_strength - Vector of vortex strengths.
+ * \param[in] r_core - Vector of vortex core size.
+ */
+void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core);
+
+/*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
  * \author T. Economon
  * \param[in] geometry - Geometrical definition of the problem.
@@ -215,11 +226,12 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] solver_container - Container vector with all the solutions.
  * \param[in] config - Definition of the particular problem.
  * \param[in] iZone - Index of the zone.
+ * \param[in] IntIter - Current sudo time iteration number.
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement, 
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
-                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long ExtIter);
+                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long IntIter, unsigned long ExtIter);
 
 /*!
  * \brief Computation and storage of the time spectral source terms.
