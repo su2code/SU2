@@ -5090,7 +5090,7 @@ double CConfig::GetFlowLoad_Value(string val_marker) {
 void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone) {
   
 	double Mach2Vel_FreeStream, ModVel_FreeStream, Energy_FreeStream = 0.0, ModVel_FreeStreamND;
-	double Velocity_Reynolds;
+	double Velocity_Reynolds, Omega_FreeStream, Omega_FreeStreamND;
 	unsigned short iDim;
 	int rank = MASTER_NODE;
   
@@ -5114,7 +5114,8 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	bool freesurface = (Kind_Regime == FREESURFACE);
 	bool Unsteady = (Unsteady_Simulation != NO);
 	bool turbulent = (Kind_Solver == RANS);
-    
+  bool tkeNeeded = ((Kind_Solver == RANS) && (Kind_Turb_Model == SST));
+
 	if (compressible) {
     
 		Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
@@ -5153,15 +5154,20 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 			Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 			Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*Length_Reynolds);
 			Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
-
+      
+      Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
+      Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*Turb2LamViscRatio_FreeStream);
+      
 		} else {
 			/*--- For inviscid flow, density is calculated from the specified
 			 total temperature and pressure using the gas law. ---*/
 			Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
 		}
+    
 		/*-- Compute the freestream energy. ---*/
 		Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream*ModVel_FreeStream;
-    
+    if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+
 		/*--- Additional reference values defined by Pref, Tref, RHOref. By definition,
 		 Lref is one because we have converted the grid to meters.---*/
 		Length_Ref         = 1.0;
@@ -5226,13 +5232,17 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 	for (iDim = 0; iDim < val_nDim; iDim++)
 		ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
 	ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND);
-	Energy_FreeStreamND    = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-	Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
+  
+  Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
+
+  Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
+
+  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
+  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };
+  
 	Total_UnstTimeND = Total_UnstTime / Time_Ref;
 	Delta_UnstTimeND = Delta_UnstTime / Time_Ref;
-  
-	double kine_Inf  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
-	double omega_Inf = Density_FreeStreamND*kine_Inf/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
   
 	/*--- Write output to the console if this is the master node and first domain ---*/
 	if ((rank == MASTER_NODE) && (val_iZone == 0) && (Kind_Solver != LINEAR_ELASTICITY) &&
@@ -5347,8 +5357,8 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
 		cout << "Freestream velocity magnitude (non-dimensional): "	 << ModVel_FreeStreamND << endl;
     
 		if (turbulent){
-			cout << "Free-stream turb. kinetic energy (non-dimensional): " << kine_Inf << endl;
-			cout << "Free-stream specific dissipation (non-dimensional): " << omega_Inf << endl;
+			cout << "Free-stream turb. kinetic energy (non-dimensional): " << Tke_FreeStreamND << endl;
+			cout << "Free-stream specific dissipation (non-dimensional): " << Omega_FreeStreamND << endl;
 		}
     
 		if (compressible)

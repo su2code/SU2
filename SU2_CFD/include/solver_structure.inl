@@ -266,6 +266,8 @@ inline double CSolver::GetPressure_Inf(void) { return 0; }
 
 inline double CSolver::GetViscosity_Inf(void) { return 0; }
 
+inline double CSolver::GetTke_Inf(void) { return 0; }
+
 inline double CSolver::GetDensity_Inlet(void) { return 0; }
 
 inline double CSolver::GetDensity_Velocity_Inlet(unsigned short val_dim) { return 0; }
@@ -568,6 +570,8 @@ inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface;
 inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
+
+inline double CNSSolver::GetTke_Inf(void) { return Tke_Inf; }
 
 inline double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
 

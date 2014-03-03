@@ -192,6 +192,8 @@ inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND
 
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
 
+inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
+
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
 inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
