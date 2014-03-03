@@ -502,6 +502,7 @@ private:
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
 	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
+	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -528,7 +529,8 @@ private:
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
 	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
-	Viscosity_FreeStreamND;    /*!< \brief Farfield viscosity value (external flow). */
+	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
+	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
 	double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
 	***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
@@ -1330,6 +1332,12 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetViscosity_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetTke_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.

@@ -1143,8 +1143,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(double *val_residual, double **va
   alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
   beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
   
-  if (dist_i > 0.0) {
-    
+  if (dist_i > 1e-10) {
+
     /*--- Production ---*/
     
     diverg = 0.0;

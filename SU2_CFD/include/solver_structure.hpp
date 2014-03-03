@@ -1463,7 +1463,13 @@ public:
 	 * \return Value of the viscosity at the infinity.
 	 */
 	virtual double GetViscosity_Inf(void);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the turbulent kinetic energy.
+	 */
+	virtual double GetTke_Inf(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2672,6 +2678,7 @@ public:
 class CNSSolver : public CEulerSolver {
 private:
 	double Viscosity_Inf;	/*!< \brief Viscosity at the infinity. */
+  double Tke_Inf;	/*!< \brief Turbulent kinetic energy at the infinity. */
 	double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
 	Prandtl_Turb;         /*!< \brief Turbulent Prandtl number. */
 	double *CDrag_Visc,	/*!< \brief Drag coefficient (viscous contribution) for each boundary. */
@@ -2738,6 +2745,12 @@ public:
 	 * \return Value of the viscosity at the infinity.
 	 */
 	double GetViscosity_Inf(void);
+  
+  /*!
+	 * \brief Get the turbulent kinetic energy at the infinity.
+	 * \return Value of the turbulent kinetic energy at the infinity.
+	 */
+	double GetTke_Inf(void);
     
 	/*!
 	 * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.

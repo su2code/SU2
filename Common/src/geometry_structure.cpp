@@ -2941,17 +2941,23 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall for
    each interior mesh node. ---*/
   
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    coord = node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
-        *(coord[iDim]-Coord_bound[iVertex][iDim]);
-      if (dist2 < dist) dist = dist2;
+  if (nVertex_SolidWall != 0) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      coord = node[iPoint]->GetCoord();
+      dist = 1E20;
+      for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
+        dist2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
+          *(coord[iDim]-Coord_bound[iVertex][iDim]);
+        if (dist2 < dist) dist = dist2;
+      }
+      node[iPoint]->SetWall_Distance(sqrt(dist));
     }
-    node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  else {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+      node[iPoint]->SetWall_Distance(0.0);
   }
   
   /*--- Deallocate the vector of boundary coordinates. ---*/
@@ -3037,18 +3043,29 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    the distances to each of the no-slip boundary nodes in the entire mesh.
    Store the minimum distance to the wall for each interior mesh node. ---*/
   
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    coord = node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-        if (dist2 < dist) dist = dist2;
-      }
-    node[iPoint]->SetWall_Distance(sqrt(dist));
+  nVertex_SolidWall = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    nVertex_SolidWall += Buffer_Receive_nVertex[iProcessor];
+  }
+  
+  if (nVertex_SolidWall != 0) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      coord = node[iPoint]->GetCoord();
+      dist = 1E20;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+          dist2 = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
+            (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+          if (dist2 < dist) dist = dist2;
+        }
+      node[iPoint]->SetWall_Distance(sqrt(dist));
+    }
+  }
+  else {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+      node[iPoint]->SetWall_Distance(0.0);
   }
   
   /*--- Deallocate the buffers needed for the MPI communication. ---*/
