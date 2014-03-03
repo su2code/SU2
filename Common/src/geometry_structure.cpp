@@ -4021,7 +4021,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
   bool change_face_orientation;
   int rank;
-  
+//  int counter = 0;
 #ifdef NO_MPI
   rank = MASTER_NODE;
 #else
@@ -4086,6 +4086,19 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
         
+//        /*--- Print out the coordinates for a set of triangles making
+//         up a single dual control volume (for visualization) 124 is center ---*/
+//        if (face_iPoint == 124 || face_jPoint == 124) {
+//          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_FaceElem_CG[iDim] << "\t";
+//          cout << endl;
+//          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_Edge_CG[iDim] << "\t";
+//          cout << endl;
+//          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_Elem_CG[iDim] << "\t";
+//          cout << endl;
+//          counter++;
+//        }
+        
+        
         switch (nDim) {
           case 2:
             /*--- Two dimensional problem ---*/
@@ -4108,6 +4121,13 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         }
       }
     }
+  
+//  //cout << counter << endl;
+//  for (int i = 0; i < counter; i++){
+//    int j = i*3;
+//    cout << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t"<<j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
+//  }
+  
   
   /*--- Check if there is a normal with null area ---*/
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
