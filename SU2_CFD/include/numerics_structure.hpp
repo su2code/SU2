@@ -5455,6 +5455,49 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_AdjTNE2
+ * \brief Class for computing the adjoint viscous terms.
+ * \ingroup ViscDiscr
+ * \author F. Palacios.
+ * \version 3.0.0 "eagle"
+ */
+class CAvgGrad_AdjTNE2 : public CNumerics {
+private:
+	double *Velocity_i;	/*!< \brief Auxiliary vector for storing the velocity of point i. */
+	double *Velocity_j;	/*!< \brief Auxiliary vector for storing the velocity of point j. */
+	double *Mean_Velocity;
+	double *Mean_GradPsiE;	/*!< \brief Counter for dimensions of the problem. */
+	double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
+  double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
+	double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
+  bool implicit;			/*!< \brief Implicit calculus. */
+  double **Dxx, **Dxy, **Dxz, **Dyx, **Dyy, **Dyz, **Dzx, **Dzy, **Dzz;
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGrad_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGrad_AdjTNE2(void);
+  
+	/*!
+	 * \brief Residual computation.
+	 * \param[out] val_residual_i - Pointer to the total residual at point i.
+	 * \param[out] val_residual_j - Pointer to the total residual at point j.
+	 */
+	void ComputeResidual(double *val_residual_i, double *val_residual_j,
+                       double **val_Jacobian_ii, double **val_Jacobian_ij,
+                       double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
+};
+
+/*!
  * \class CSource_AdjTNE2
  * \brief Class for adjoint two-temperature model source terms.
  * \ingroup SourceDiscr
