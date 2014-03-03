@@ -345,7 +345,7 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
     else klo=k;							// they remain appropriate on the next call.
   }								// klo and khi now bracket the input value of x
   h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) cout << "Bad xa input to routine splint" << endl;	// The xa’s must be distinct.
+  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl;	// The xa’s must be distinct.
   a = (xa[khi-1]-x)/h;
   b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
   y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
@@ -1298,12 +1298,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           config->SetMarker_All_Tag(iMarker, Marker_Tag);
           config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
           config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+          config->SetMarker_All_GeoEval(iMarker, config->GetMarker_Config_GeoEval(Marker_Tag));
           config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
           
         }
         
@@ -2116,11 +2118,13 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_Tag(iMarker, Marker_Tag);
           config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
           config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+          config->SetMarker_All_GeoEval(iMarker, config->GetMarker_Config_GeoEval(Marker_Tag));
           config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
         }
         iMarker++;
       }
@@ -2534,11 +2538,13 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     config->SetMarker_All_Tag(iMarker, Marker_Tag);
     config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
     config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+    config->SetMarker_All_GeoEval(iMarker, config->GetMarker_Config_GeoEval(Marker_Tag));
     config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
     config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
     config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
+    config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
   }
   
 }
@@ -2938,17 +2944,23 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall for
    each interior mesh node. ---*/
   
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    coord = node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
-        *(coord[iDim]-Coord_bound[iVertex][iDim]);
-      if (dist2 < dist) dist = dist2;
+  if (nVertex_SolidWall != 0) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      coord = node[iPoint]->GetCoord();
+      dist = 1E20;
+      for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
+        dist2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
+          *(coord[iDim]-Coord_bound[iVertex][iDim]);
+        if (dist2 < dist) dist = dist2;
+      }
+      node[iPoint]->SetWall_Distance(sqrt(dist));
     }
-    node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  else {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+      node[iPoint]->SetWall_Distance(0.0);
   }
   
   /*--- Deallocate the vector of boundary coordinates. ---*/
@@ -3034,18 +3046,29 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    the distances to each of the no-slip boundary nodes in the entire mesh.
    Store the minimum distance to the wall for each interior mesh node. ---*/
   
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    coord = node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-        if (dist2 < dist) dist = dist2;
-      }
-    node[iPoint]->SetWall_Distance(sqrt(dist));
+  nVertex_SolidWall = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    nVertex_SolidWall += Buffer_Receive_nVertex[iProcessor];
+  }
+  
+  if (nVertex_SolidWall != 0) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      coord = node[iPoint]->GetCoord();
+      dist = 1E20;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+          dist2 = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
+            (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+          if (dist2 < dist) dist = dist2;
+        }
+      node[iPoint]->SetWall_Distance(sqrt(dist));
+    }
+  }
+  else {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+      node[iPoint]->SetWall_Distance(0.0);
   }
   
   /*--- Deallocate the buffers needed for the MPI communication. ---*/
@@ -4015,7 +4038,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
   bool change_face_orientation;
   int rank;
-  
+  //  int counter = 0;
 #ifdef NO_MPI
   rank = MASTER_NODE;
 #else
@@ -4080,6 +4103,19 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
         
+        //        /*--- Print out the coordinates for a set of triangles making
+        //         up a single dual control volume (for visualization) 124 is center ---*/
+        //        if (face_iPoint == 124 || face_jPoint == 124) {
+        //          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_FaceElem_CG[iDim] << "\t";
+        //          cout << endl;
+        //          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_Edge_CG[iDim] << "\t";
+        //          cout << endl;
+        //          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_Elem_CG[iDim] << "\t";
+        //          cout << endl;
+        //          counter++;
+        //        }
+        
+        
         switch (nDim) {
           case 2:
             /*--- Two dimensional problem ---*/
@@ -4102,6 +4138,13 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
         }
       }
     }
+  
+  //  //cout << counter << endl;
+  //  for (int i = 0; i < counter; i++){
+  //    int j = i*3;
+  //    cout << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t"<<j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
+  //  }
+  
   
   /*--- Check if there is a normal with null area ---*/
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
@@ -5227,23 +5270,23 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	  /*--- Send/Receive information using Sendrecv ---*/   
-	  MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-					Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
+                   Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/   
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Coord, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Coord, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif 
+#endif
 #else
       
-      /*--- Receive information without MPI ---*/    
+      /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = vertex[MarkerR][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Receive_Coord[iDim*nVertexR+iVertex] = Buffer_Send_Coord[iDim*nVertexR+iVertex];
       }
-
+      
 #endif
       
       /*--- Deallocate send buffer ---*/
@@ -5286,21 +5329,21 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
         /*--- Rotate the coordinates. ---*/
         
         if (nDim == 2) {
-          newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Coord[2*nVertexR+iVertex];
-          newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Coord[2*nVertexR+iVertex];
+          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
         }
         else {
-          newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
-          newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
-          newCoord[2] = rotMatrix[2][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
+          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[0][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
+          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[1][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
+          newCoord[2] = (rotMatrix[2][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[2][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[2][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
         }
         
         /*--- Copy transformed coordinates back into buffer. ---*/
@@ -5368,17 +5411,17 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	  /*--- Send/Receive information using Sendrecv ---*/   
-	MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-					Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
+                   Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/     
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_GridVel, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_GridVel, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif  
+#endif
 #else
       
-      /*--- Receive information without MPI ---*/    
+      /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = vertex[MarkerR][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -5424,21 +5467,21 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
           newGridVel[iDim] = Buffer_Receive_GridVel[iDim*nVertexR+iVertex];
         
         if (nDim == 2) {
-          newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex];
-          newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex];
+          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
+          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
         }
         else {
-          newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
-          newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
-          newGridVel[2] = rotMatrix[2][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
+          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[0][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
+          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[1][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
+          newGridVel[2] = (rotMatrix[2][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[2][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[2][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
         }
         
         /*--- Copy transformed grid velocity back into buffer. ---*/
@@ -7581,18 +7624,18 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	/*--- Send/Receive information using Sendrecv ---*/   
-	MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
-					Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
-	MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
-					Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
+                   Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
+      MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
+                   Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/      
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Children, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 0,
                                Buffer_Receive_Children, nBufferR_Vector, MPI::UNSIGNED_LONG, receive_from, 0);
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Parent, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 1,
                                Buffer_Receive_Parent, nBufferR_Vector, MPI::UNSIGNED_LONG, receive_from, 1);
-#endif  
+#endif
 #else
       
       /*--- Receive information without MPI ---*/
@@ -8972,12 +9015,14 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           config->SetMarker_All_Tag(iMarker, Marker_Tag);
           config->SetMarker_All_Boundary(iMarker, config->GetMarker_Config_Boundary(Marker_Tag));
           config->SetMarker_All_Monitoring(iMarker, config->GetMarker_Config_Monitoring(Marker_Tag));
+          config->SetMarker_All_GeoEval(iMarker, config->GetMarker_Config_GeoEval(Marker_Tag));
           config->SetMarker_All_Designing(iMarker, config->GetMarker_Config_Designing(Marker_Tag));
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
           
         }
         
@@ -9407,6 +9452,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   Zcoord_Airfoil.clear();
   
   /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
+  
   if (nDim == 2) {
     iSection = 0;
     Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
@@ -9415,6 +9461,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   
   /*--- the grid variation is stored using a vertices information,
    we should go from vertex to points ---*/
+  
   if (original_surface == false) {
     
     Coord_Variation = new double *[nPoint];
@@ -9422,7 +9469,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
       Coord_Variation[iPoint] = new double [nDim];
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
+      if (config->GetMarker_All_GeoEval(iMarker) == YES) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
           iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -9435,7 +9482,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   }
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_Monitoring(iMarker) == YES) {
+    if (config->GetMarker_All_GeoEval(iMarker) == YES) {
       for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
         for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
@@ -9459,12 +9506,14 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
               }
               
               /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+              
               if (nDim == 2) {
                 Xcoord.push_back(Segment_P0[0]);  Xcoord.push_back(Segment_P1[0]);
                 Ycoord.push_back(Segment_P0[2]);  Ycoord.push_back(Segment_P1[2]);
                 Zcoord.push_back(Segment_P0[1]);  Zcoord.push_back(Segment_P1[1]);
               }
               /*--- In 3D compute the intersection ---*/
+              
               else if (nDim == 3) {
                 intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Plane_P0, Plane_Normal, Intersection);
                 if (intersect == 1) {
@@ -9494,6 +9543,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 #ifndef NO_MPI
   
   /*--- Copy the coordinates of all the points in the plane to the master node ---*/
+  
   nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
 #ifdef WINDOWS
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -9527,14 +9577,15 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     Buffer_Send_Coord[iVertex*3 + 1] = Ycoord[iVertex];
     Buffer_Send_Coord[iVertex*3 + 2] = Zcoord[iVertex];
   }
-
+  
 #ifdef WINDOWS
   MPI_Allgather(Buffer_Send_Coord,nBuffer,MPI_DOUBLE,Buffer_Receive_Coord,nBuffer,MPI_DOUBLE,MPI_COMM_WORLD);
 #else
   MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
 #endif
-
+  
   /*--- Clean the vectors before adding the new vertices only to the master node ---*/
+  
   Xcoord.clear();
   Ycoord.clear();
   Zcoord.clear();
@@ -9558,6 +9609,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
   if ((rank == MASTER_NODE) && (Xcoord.size() != 0)) {
     
     /*--- Create a list with the duplicated points ---*/
+    
     for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
       for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
         Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
@@ -9575,170 +9627,179 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
     Duplicate.resize(it - Duplicate.begin());
     
     /*--- Remove duplicated points (starting from the back) ---*/
+    
     for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
       Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
       Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
       Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
     }
     
-    /*--- Find the trailing edge ---*/
-    Trailing_Point = 0; Trailing_Coord = Xcoord[0];
-    for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-      if (Xcoord[iVertex] > Trailing_Coord) {
-        Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
-      }
-    }
-    
-    /*--- Add the trailing edge to the list, and remove from the original list ---*/
-    Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
-    Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point);
-    
-    /*--- Find the next point using the right hand side rule ---*/
-    MinDist_Value = 1E6;
-    for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-      Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
-      Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
-      Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
-      Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-      Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+    if (Xcoord.size() != 1) {
       
-      if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-    }
-    
-    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-    Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
-    
-    /*--- Algorithm for the rest of the points ---*/
-    do {
+      /*--- Find the trailing edge ---*/
       
-      /*--- Last added point in the list ---*/
-      Airfoil_Point = Xcoord_Airfoil.size() - 1;
-      
-      /*--- Compute the slope of the curve ---*/
-      Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
-      Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
-      Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
-      Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
-      Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
-      
-      /*--- Find the closest point with the right slope ---*/
-      MinDist_Value = 1E6; MinDistAngle_Value = 180;
-      MinDist_Point = -1; MinDistAngle_Point = -1;
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        
-        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
-        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
-        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
-        
-        /*--- Compute the distance to each point ---*/
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        
-        /*--- Compute the angle of the point ---*/
-        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-        
-        /*--- Clip the value of the cosine, this is important due to the round errors ---*/
-        CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
-        if (CosValue >= 1.0) CosValue = 1.0;
-        if (CosValue <= -1.0) CosValue = -1.0;
-        
-        Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
-        
-        if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
-        
-      }
-      
-      if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
-      
-      /*--- Add and remove the min distance to the list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-      Xcoord.erase(Xcoord.begin() + MinDist_Point);    Ycoord.erase(Ycoord.begin() + MinDist_Point);    Zcoord.erase(Zcoord.begin() + MinDist_Point);
-      
-    } while (Xcoord.size() != 0);
-    
-    /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-    Xcoord.clear(); Ycoord.clear(); Zcoord.clear();
-    
-    /*--- Identify upper and lower side using the value of the normal vector --*/
-    for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-      Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
-      Tangent[1] = Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[iVertex-1];
-      Tangent[2] = Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[iVertex-1];
-      Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
-      Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
-      
-      BiNormal[0] = Plane_Normal[0];
-      BiNormal[1] = Plane_Normal[1];
-      BiNormal[2] = Plane_Normal[2];
-      Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
-      BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
-      
-      Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
-      Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
-      Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
-      
-      Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
-      
-      if (Normal[2] >= 0.0) {
-        Xcoord.push_back(Xcoord_Airfoil[iVertex]);
-        Ycoord.push_back(Ycoord_Airfoil[iVertex]);
-        Zcoord.push_back(Zcoord_Airfoil[iVertex]);
-      }
-      
-    }
-    
-    n = Xcoord.size();
-    
-    /*--- Order the arrays using the X component ---*/
-    for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-      for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
-        if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
-          auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
-          auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
-          auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
+      Trailing_Point = 0; Trailing_Coord = Xcoord[0];
+      for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
+        if (Xcoord[iVertex] > Trailing_Coord) {
+          Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
         }
       }
-    }
-    
-    zp1=(Zcoord[1]-Zcoord[0]) / (Xcoord[1]-Xcoord[0]);
-    zpn=(Zcoord[n-1]-Zcoord[n-2]) / (Xcoord[n-1]-Xcoord[n-2]);
-    Z2coord.resize(n+1);
-    SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
-    
-    /*--- Compute the camber--*/
-    for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-      if (Zcoord_Normal[iVertex] < 0.0) {
-        Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
-        Xcoord_Camber.push_back(Xcoord_Airfoil[iVertex]);
-        Ycoord_Camber.push_back(Ycoord_Airfoil[iVertex]);
-        Zcoord_Camber.push_back(Camber_Line);
-      }
-    }
-    
-    /*--- Write the output file (tecplot format) ---*/
-    if (original_surface == true) {
-      ofstream Tecplot_File;
-      if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-      else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
       
-      if (iSection == 0) {
-        Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
-        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
+      /*--- Add the trailing edge to the list, and remove from the original list ---*/
+      Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
+      Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point);
+      
+      /*--- Find the next point using the right hand side rule ---*/
+      MinDist_Value = 1E6; MinDist_Point = 0;
+      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
+        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
+        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+        
+        if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
       }
       
-      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
+      Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
       
-      /*--- Coordinates ---*/
-      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
-      }
-      /*--- Conectivity ---*/
+      /*--- Algorithm for the rest of the points ---*/
+      do {
+        
+        /*--- Last added point in the list ---*/
+        Airfoil_Point = Xcoord_Airfoil.size() - 1;
+        
+        /*--- Compute the slope of the curve ---*/
+        Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
+        Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
+        Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
+        Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
+        Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
+        
+        /*--- Find the closest point with the right slope ---*/
+        MinDist_Value = 1E6; MinDistAngle_Value = 180;
+        MinDist_Point = -1; MinDistAngle_Point = -1;
+        for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+          
+          Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
+          Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
+          Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
+          
+          /*--- Compute the distance to each point ---*/
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          
+          /*--- Compute the angle of the point ---*/
+          Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+          
+          /*--- Clip the value of the cosine, this is important due to the round errors ---*/
+          CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
+          if (CosValue >= 1.0) CosValue = 1.0;
+          if (CosValue <= -1.0) CosValue = -1.0;
+          
+          Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
+          
+          if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
+          if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
+          
+        }
+        
+        if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
+        
+        /*--- Add and remove the min distance to the list ---*/
+        Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
+        Xcoord.erase(Xcoord.begin() + MinDist_Point);    Ycoord.erase(Ycoord.begin() + MinDist_Point);    Zcoord.erase(Zcoord.begin() + MinDist_Point);
+        
+      } while (Xcoord.size() != 0);
+      
+      /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
+      Xcoord.clear(); Ycoord.clear(); Zcoord.clear();
+      
+      /*--- Identify upper and lower side using the value of the normal vector --*/
       for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
+        Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
+        Tangent[1] = Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[iVertex-1];
+        Tangent[2] = Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[iVertex-1];
+        Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
+        Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
+        
+        BiNormal[0] = Plane_Normal[0];
+        BiNormal[1] = Plane_Normal[1];
+        BiNormal[2] = Plane_Normal[2];
+        Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
+        BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
+        
+        Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
+        Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
+        Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
+        
+        Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
+        
+        unsigned short index = 2;
+        if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+        
+        if (Normal[index] >= 0.0) {
+          Xcoord.push_back(Xcoord_Airfoil[iVertex]);
+          Ycoord.push_back(Ycoord_Airfoil[iVertex]);
+          Zcoord.push_back(Zcoord_Airfoil[iVertex]);
+        }
+        
       }
       
-      Tecplot_File.close();
+      n = Xcoord.size();
+      
+      /*--- Order the arrays using the X component ---*/
+      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+        for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
+          if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
+            auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
+            auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
+            auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
+          }
+        }
+      }
+      
+      zp1=(Zcoord[1]-Zcoord[0]) / (Xcoord[1]-Xcoord[0]);
+      zpn=(Zcoord[n-1]-Zcoord[n-2]) / (Xcoord[n-1]-Xcoord[n-2]);
+      Z2coord.resize(n+1);
+      SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
+      
+      /*--- Compute the camber--*/
+      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        if (Zcoord_Normal[iVertex] < 0.0) {
+          Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
+          Xcoord_Camber.push_back(Xcoord_Airfoil[iVertex]);
+          Ycoord_Camber.push_back(Ycoord_Airfoil[iVertex]);
+          Zcoord_Camber.push_back(Camber_Line);
+        }
+      }
+      
+      /*--- Write the output file (tecplot format) ---*/
+      if (original_surface == true) {
+        ofstream Tecplot_File;
+        if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
+        else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
+        
+        if (iSection == 0) {
+          Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
+          Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
+        }
+        
+        Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+        
+        /*--- Coordinates ---*/
+        for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+          Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
+        }
+        /*--- Conectivity ---*/
+        for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+          Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
+        }
+        
+        Tecplot_File.close();
+      }
     }
+    
     
   }
   
@@ -9751,14 +9812,6 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_N
 #endif
   
 }
-
-
-
-
-
-
-
-
 
 void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
                                                double *Plane_Normal,
@@ -10638,22 +10691,7 @@ void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
   
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex, n, Trailing_Point, LeadingPoint;
   double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, MaxThickness_Location, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
@@ -10715,7 +10753,10 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
     
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
-    if (Normal[2] >= 0.0) {
+    unsigned short index = 2;
+    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    
+    if (Normal[index] >= 0.0) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
       Ycoord.push_back(Ycoord_Airfoil_[iVertex]);
       Zcoord.push_back(Zcoord_Airfoil_[iVertex]);
@@ -10795,7 +10836,7 @@ double CBoundaryGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, 
   
 }
 
-double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, LeadingPoint;
   double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;
   vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
@@ -10857,7 +10898,10 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
     
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
-    if (Normal[2] >= 0.0) {
+    unsigned short index = 2;
+    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    
+    if (Normal[index] >= 0.0) {
       Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
       Ycoord_Upper.push_back(Ycoord_Airfoil_[iVertex]);
       Zcoord_Upper.push_back(Zcoord_Airfoil_[iVertex]);
@@ -10913,7 +10957,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   
 }
 
-double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
+double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex;
   double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Area_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
   vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
@@ -10977,7 +11021,10 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
     
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
-    if (Normal[2] >= 0.0) {
+    unsigned short index = 2;
+    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    
+    if (Normal[index] >= 0.0) {
       Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
       Ycoord_Upper.push_back(Ycoord_Airfoil_[iVertex]);
       Zcoord_Upper.push_back(Zcoord_Airfoil_[iVertex]);
@@ -11050,9 +11097,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_BoundTriangle,       *Buffer_Receive_BoundTriangle;
   unsigned long *Buffer_Send_BoundRectangle,      *Buffer_Receive_BoundRectangle;
   unsigned long *Buffer_Send_Local2Global_Marker, *Buffer_Receive_Local2Global_Marker;
-
+  
   int rank, size;
-
+  
 #ifdef WINDOWS
 	MPI_Comm_size(MPI_COMM_WORLD,&rank);
 	MPI_Comm_rank(MPI_COMM_WORLD,&size);
@@ -11060,7 +11107,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
   /*--- Basic dimensionalization ---*/
   nDomain = size;
   
@@ -11225,7 +11272,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(&nElemHexahedron,    1,  MPI::UNSIGNED_LONG,   iDomain, 9);
       MPI::COMM_WORLD.Bsend(&nElemWedge,         1,  MPI::UNSIGNED_LONG,   iDomain, 10);
       MPI::COMM_WORLD.Bsend(&nElemPyramid,       1,  MPI::UNSIGNED_LONG,   iDomain, 11);
-#endif    
+#endif
       /*--- Allocate the send buffer vector ---*/
       Buffer_Send_BoundLine =           new unsigned long [nBoundLineTotal*2];
       Buffer_Send_BoundTriangle =       new unsigned long [nBoundTriangleTotal*3];
@@ -11234,7 +11281,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the size of buffers ---*/
 #ifdef WINDOWS
-	  MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
+      MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundTriangleTotal,  1, MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundRectangleTotal, 1, MPI_UNSIGNED_LONG, iDomain, 14, MPI_COMM_WORLD);
       MPI_Bsend(&nMarkerDomain,        1, MPI_UNSIGNED_LONG, iDomain, 15, MPI_COMM_WORLD);
@@ -11261,14 +11308,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the size of buffers ---*/
       MPI::COMM_WORLD.Bsend(&nPeriodic, 1, MPI::UNSIGNED_SHORT, iDomain, 22);
-#endif     
+#endif
     }
     
     if (rank == iDomain) {
       
 #ifdef WINDOWS
-	  /*--- Receive the size of buffers---*/
-	  MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
+      /*--- Receive the size of buffers---*/
+      MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointTotal,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 1, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointDomainTotal,  1, MPI_UNSIGNED_LONG,    MASTER_NODE, 2, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointGhost,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 3, MPI_COMM_WORLD, NULL);
@@ -11293,7 +11340,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI_SHORT, MASTER_NODE, 20, MPI_COMM_WORLD, NULL);
       MPI_Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI_CHAR, MASTER_NODE, 21, MPI_COMM_WORLD, NULL);
 #else
-	  /*--- Receive the size of buffers---*/
+      /*--- Receive the size of buffers---*/
       MPI::COMM_WORLD.Recv(&nDim,               1, MPI::UNSIGNED_SHORT,   MASTER_NODE, 0);
       MPI::COMM_WORLD.Recv(&nPointTotal,        1, MPI::UNSIGNED_LONG,    MASTER_NODE, 1);
       MPI::COMM_WORLD.Recv(&nPointDomainTotal,  1, MPI::UNSIGNED_LONG,    MASTER_NODE, 2);
@@ -11319,18 +11366,18 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI::SHORT, MASTER_NODE, 20);
       MPI::COMM_WORLD.Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI::CHAR, MASTER_NODE, 21);
 #endif
-
+      
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
       }
       
       /*--- Receive the size of buffers ---*/
 #ifdef WINDOWS
-	  MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, NULL);
+      MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Recv(&nPeriodic, 1, MPI::UNSIGNED_SHORT, MASTER_NODE, 22);
 #endif
-
+      
       config->SetnPeriodicIndex(nPeriodic);
       double* center = new double[3]; double* rotation  = new double[3]; double* translate = new double[3];
       for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
@@ -11518,7 +11565,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the buffers with the geometrical information ---*/
 #ifdef WINDOWS
-	  MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_GlobalPointIndex,      nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Color,                 nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Triangle,              nElemTriangle*3,    MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
@@ -11538,7 +11585,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(Buffer_Send_Wedge,                 nElemWedge*6,       MPI::UNSIGNED_LONG, iDomain, 8);
       MPI::COMM_WORLD.Bsend(Buffer_Send_Pyramid,               nElemPyramid*5,     MPI::UNSIGNED_LONG, iDomain, 9);
 #endif
-
+      
       delete[] Buffer_Send_Coord;
       delete[] Buffer_Send_GlobalPointIndex;
       delete[] Buffer_Send_Color;
@@ -11548,9 +11595,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Send_Hexahedron;
       delete[] Buffer_Send_Wedge;
       delete[] Buffer_Send_Pyramid;
- 
+      
 #ifdef WINDOWS
-	  MPI_Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, iDomain, 11, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
@@ -11560,7 +11607,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, iDomain, 12);
       MPI::COMM_WORLD.Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, iDomain, 13);
 #endif
-
+      
       delete[] Buffer_Send_BoundLine;
       delete[] Buffer_Send_BoundTriangle;
       delete[] Buffer_Send_BoundRectangle;
@@ -11571,7 +11618,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Set a communitation barrier before
      receiving to reduce the buffering ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 #else
     MPI::COMM_WORLD.Barrier();
 #endif
@@ -11580,7 +11627,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Receive the buffers with the geometrical information ---*/
 #ifdef WINDOWS
-	  MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
+      MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_GlobalPointIndex,      nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Color,                 nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Triangle,              nElemTriangle*3,     MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, NULL);
@@ -11588,7 +11635,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI_UNSIGNED_LONG, MASTER_NODE, 6, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI_UNSIGNED_LONG, MASTER_NODE, 7, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI_UNSIGNED_LONG, MASTER_NODE, 8, MPI_COMM_WORLD, NULL);
-      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, NULL);      
+      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, MASTER_NODE, 10, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, NULL);
@@ -11602,13 +11649,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI::UNSIGNED_LONG, MASTER_NODE, 6);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI::UNSIGNED_LONG, MASTER_NODE, 7);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI::UNSIGNED_LONG, MASTER_NODE, 8);
-      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);    
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI::UNSIGNED_LONG, MASTER_NODE, 10);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI::UNSIGNED_LONG, MASTER_NODE, 11);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, MASTER_NODE, 12);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, MASTER_NODE, 13);
 #endif
-
+      
       /*--- Create the domain structures for the points ---*/
       nPoint = nPointTotal; iPoint = 0;
       nPointDomain = nPointDomainTotal;
@@ -11719,7 +11766,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 #else
 	MPI::COMM_WORLD.Barrier();
 #endif
-
+  
   //  /*--- Set the periodic boundary conditions ---*/
   //  unsigned long ReceptorColor, DonorColor, Transformation;
   //  unsigned short jMarker;
@@ -12429,9 +12476,9 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
   unsigned short iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
-
+  
   int rank, size;
-
+  
 #ifdef WINDOWS
 	MPI_Comm_size(MPI_COMM_WORLD,&rank);
 	MPI_Comm_rank(MPI_COMM_WORLD,&size);
@@ -12624,13 +12671,13 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   /*--- Send after receive in the .su2 file ---*/
   unsigned short iDomain, nDomain;
   int size;
-
+  
 #ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
 	size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
   nDomain = size+1;
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {

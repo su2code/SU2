@@ -5,7 +5,7 @@
 # Last updated:         10/11/13
 #
 # Created by: 		M. Colonno  10/26/12
-# Updated by: 		T. Economon  10/30/13
+# Updated by: 		B. Tracey 	2/12/14
 #
 ##########################
 
@@ -45,6 +45,12 @@ AC_ARG_WITH(Mutationpp-lib,
 AC_ARG_WITH(Mutationpp-include,
    	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]), 
 	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
+AC_ARG_WITH(Jsoncpp-lib,
+   	AS_HELP_STRING([--with-Jsoncpp-lib[=ARG]], [Jsoncpp library directory, ARG = path to jsoncpp_SYS.a]), 
+	[with_Jsoncpp_lib=$withval], [with_Jsoncpp_lib="no"])
+AC_ARG_WITH(Jsoncpp-include,
+   	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]), 
+	[with_Jsoncpp_include=$withval], [with_Jsoncpp_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]), 
 	[build_CFD=$enableval], [build_CFD="yes"])
@@ -263,6 +269,50 @@ fi
 AC_SUBST([MUTATIONPP_CXX])
 AC_SUBST([MUTATIONPP_LD])
 
+##########################
+
+# check for lib
+Jsoncpplib=libjson_linux-gcc-4.2.1_libmt.a
+Jsoncppheader=json/json.h
+have_Jsoncpp="no"
+
+if test "$with_Jsoncpp_lib" != "no" 
+then
+  	AC_CHECK_FILE([$with_Jsoncpp_lib/$Jsoncpplib],[have_Jsoncpp="yes"],[have_Jsoncpp="no"])   
+	if test "$have_Jsoncpp" == "no"
+	then
+		AC_MSG_ERROR([Jsoncpp requested but library file not found.])
+	fi
+fi
+
+# check for header
+if test "$have_Jsoncpp" != "no"
+then
+	if test "$with_Jsoncpp_include" != "no"
+	then
+		AC_CHECK_FILE([$with_Jsoncpp_include/$Jsoncppheader],[have_Jsoncpp='yes'],[have_Jsoncpp='no']) 
+		if test "$have_Jsoncpp" == "no"
+		then
+			AC_MSG_ERROR([Jsoncpp requested but header file not found.])
+		fi
+	else
+		have_Jsoncpp="no"
+	fi  
+fi
+
+if test "$have_Jsoncpp" != "no"
+then
+  	AM_CONDITIONAL(BUILD_JSONCPP,true)
+	JSONCPP_CXX=-I"$with_Jsoncpp_include"
+	JSONCPP_LD="$with_Jsoncpp_lib"/$Jsoncpplib
+else
+	AM_CONDITIONAL(BUILD_JSONCPP,false)
+	JSONCPP_CXX=-DNO_JSONCPP
+	JSONCPP_LD=
+fi
+AC_SUBST([JSONCPP_CXX])
+AC_SUBST([JSONCPP_LD])
+
 
 ########################### MPI
 
@@ -327,6 +377,7 @@ Build Configuration Summary:
     Metis support:        $have_METIS
     TecIO support:        $have_Tecio
     Mutation++ support:   $have_Mutationpp
+    Jsoncpp support: 	  $have_Jsoncpp
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC

@@ -1495,13 +1495,58 @@ public:
 };
 
 /*!
- * \class CUpwRoeTurkel_Flow
+ * \class CUpwMSW_Flow
+ * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
+ * \ingroup ConvDiscr
+ * \author ADL Stanford
+ * \version 3.0.0 "eagle"
+ */
+class CUpwMSW_Flow : public CNumerics {
+private:
+	bool implicit;
+	double *Diff_U;
+	double *u_i, *u_j, *ust_i, *ust_j;
+	double *Fc_i, *Fc_j;
+	double *Lambda_i, *Lambda_j;
+  double rhos_i, rhos_j, rhosst_i, rhosst_j;
+  double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Velst_i, *Velst_j;
+	double **P_Tensor, **invP_Tensor;
+  unsigned short nPrimVar, nPrimVarGrad, nVar, nDim;
+
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwMSW_Flow(void);
+  
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+};
+
+/*!
+ * \class CUpwTurkel_Flow
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
  * \author A. K. Lonkar (Stanford University)
  * \version 3.0.0 "eagle"
  */
-class CUpwRoeTurkel_Flow : public CNumerics {
+class CUpwTurkel_Flow : public CNumerics {
 private:
 	bool implicit, grid_movement;
 	double *Diff_U;
@@ -1526,12 +1571,12 @@ public:
 	 * \param[in] val_nVar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CUpwRoeTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+	CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
     
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CUpwRoeTurkel_Flow(void);
+	~CUpwTurkel_Flow(void);
     
 	/*!
 	 * \brief Compute the Roe's flux between two nodes i and j.
@@ -3820,6 +3865,27 @@ public:
 };
 
 
+class CSANondimInputs{
+private:
+  int nDim;
+public:
+  CSANondimInputs(int);
+  ~CSANondimInputs();
+  void Set(SpalartAllmarasInputs*);
+  void NondimensionalizeSource(int,double*);
+  void DimensionalizeSource(int,double*);
+  double Chi;
+  double OmegaNondim;
+  double OmegaBar;
+  double SourceNondim;
+  double NuGradNondim;
+  double Turb_Kin_Visc_Grad_Norm_Bar;
+  double * DNuHatDXBar;
+  double NuHatGradNorm;
+  double NuHatGradNormBar;
+};
+
+
 /*!
  * \class CSourcePieceWise_TurbML
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
@@ -3855,18 +3921,32 @@ private:
   double beta, gamma_sep, gamma_eff, intermittency;
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
-  CNeurNet * MLModel;
+  CScalePredictor* MLModel;
   
+
   
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
   int nResidual;
   int nJacobian;
-  double* testResidual;
-  double* testJacobian;
+  
+  string featureset;
+  
+  //double* testResidual;
+  //double* testJacobian;
   double** DUiDXj;
   double* DNuhatDXj;
 public:
+  double *SAResidual;
+  double * SANondimResidual;
+  double* Residual;
+  double * NondimResidual;
+  double *ResidualDiff;
+  double *NondimResidualDiff;
+  double* SAJacobian;
+  CSANondimInputs* SANondimInputs;
+  double NuhatGradNorm;
+  
 	/*!
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
@@ -3932,6 +4012,8 @@ public:
   double GetCrossProduction(void);
   
   double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
+  
+  int NumResidual();
 };
 
 

@@ -711,7 +711,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
-	double SetFEAMethodContributions_Elem(CGeometry *geometry);
+	double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
@@ -719,7 +719,7 @@ public:
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix3D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+  bool SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
 	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
@@ -727,7 +727,7 @@ public:
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
 	 */
-  bool SetFEA_StiffMatrix2D(CGeometry *geometry, double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes, double scale);
+  bool SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
   
   /*!
 	 * \brief Shape functions and derivative of the shape functions
@@ -841,6 +841,13 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	double Check_Grid(CGeometry *geometry);
+  
+  /*!
+	 * \brief Compute the minimum distance to the nearest deforming surface.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+	 */
+  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
@@ -1060,10 +1067,12 @@ public:
 	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iMarker - Marker to deform.
-     * \param[in] displacements - solution of typical section wing model.
+   * \param[in] ExtIter - Physical iteration number.
+   * \param[in] iMarker - Marker to deform.
+   * \param[in] iMarker_Monitoring - Marker we are monitoring.
+   * \param[in] displacements - solution of typical section wing model.
 	 */
-    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned short iMarker, double displacements[4]);
+    void AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, double displacements[4]);
     
    /*!
 	 * \brief Deforms a 3-D flutter/pitching surface during an unsteady simulation.

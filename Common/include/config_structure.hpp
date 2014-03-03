@@ -84,8 +84,7 @@ private:
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
-	bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in the MDC. */
-    double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
+  double Damp_Nacelle_Inflow;	/*!< \brief Damping factor for the engine inlet. */
 	double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
@@ -132,6 +131,7 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
 	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
+	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
 	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
@@ -159,6 +159,7 @@ private:
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
 	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
+	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
 	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
@@ -324,6 +325,7 @@ private:
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
   string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
+  string ML_Turb_Model_FeatureSet;
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
@@ -332,7 +334,8 @@ private:
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-	double *Section_Limit;                  /*!< \brief Airfoil section limit. */
+	double *Section_Location;                  /*!< \brief Airfoil section limit. */
+  unsigned short nSections;               /*!< \brief Number of sections. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
@@ -355,7 +358,12 @@ private:
 
 	double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
-  unsigned long GridDef_Iter; /*!< \brief Number of incrememts for grid deformation. */
+  unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
+  GridDef_Linear_Iter; /*!< \brief Number of linear smoothing iterations for grid deformation. */
+  unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
+  bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
+  double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
 	double Froude;	/*!< \brief Froude number. */	
@@ -382,22 +390,28 @@ private:
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
+	nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
 	string *Marker_Monitoring,			/*!< \brief Markers to monitor. */
 	*Marker_Designing,					/*!< \brief Markers to plot. */
+	*Marker_GeoEval,					/*!< \brief Markers to plot. */
 	*Marker_Plotting,					/*!< \brief Markers to plot. */
   *Marker_Moving,						/*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	*Marker_DV;						/*!< \brief Markers affected by the design variables. */
 	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
+	*Marker_All_GeoEval,				/*!< \brief Global index for geometrical evaluation. */
 	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
 	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
 	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
+	*Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
 	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
+	*Marker_Config_GeoEval,			/*!< \brief Global index for monitoring using the config information. */
 	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
+	*Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
 	*Marker_Config_DV,				/*!< \brief Global index for design variable markers using the config information. */
 	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
@@ -405,6 +419,7 @@ private:
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
+	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
 	double RefAreaCoeff,		/*!< \brief Reference area for coefficient computation. */
@@ -458,7 +473,8 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Wrt_Sectional_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  Wrt_Sectional_Forces,       /*!< \brief Write sectional forces for specified markers. */
+	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
 	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
@@ -495,6 +511,7 @@ private:
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
 	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
+	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -521,7 +538,8 @@ private:
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
 	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
-	Viscosity_FreeStreamND;    /*!< \brief Farfield viscosity value (external flow). */
+	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
+	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
 	double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
 	***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
@@ -585,9 +603,9 @@ private:
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
-	double *Aeroelastic_np1, /*!< \brief Structural source terms used for Aeroelastic computation at time level n+1. */
-	*Aeroelastic_n, /*!< \brief Structural source terms used for Aeroelastic computation at time level n. */
-	*Aeroelastic_n1; /*!< \brief Structural Source terms used for Aeroelastic computation at time level n-1. */
+  vector<vector<vector<double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
+  Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
+	Aeroelastic_n1; /*!< \brief Aeroelastic solution at time level n-1. */
   double FreqPlungeAeroelastic, /*!< \brief Plunging natural frequency for Aeroelastic. */
 	FreqPitchAeroelastic; /*!< \brief Pitch natural frequency for Aeroelastic. */
   double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
@@ -997,6 +1015,14 @@ public:
 	 *         and it will use and interpolation.
 	 */
 	unsigned short GetAnalytical_Surface(void);
+  
+  /*!
+	 * \brief Get Information about if there is an analytical definition of the surface for doing the
+	 *        grid adaptation.
+	 * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
+	 *         and it will use and interpolation.
+	 */
+	unsigned short GetAxis_Orientation(void);
 
 	/*! 
 	 * \brief Get the maximum dimension of the agglomerated element compared with the whole domain.
@@ -1053,12 +1079,6 @@ public:
   bool GetExtraOutput(void);
   
 	/*! 
-	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
-	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
-	 */
-	bool GetVisualize_Deformation(void);
-
-	/*! 
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
 	 * \return Value of the Mach number.
 	 */
@@ -1088,7 +1108,7 @@ public:
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
 	 */
-	double GetSection_Limit(unsigned short val_var);
+	double GetSection_Location(unsigned short val_var);
 
 	/*! 
 	 * \brief Get the array that maps chemical consituents to each chemical reaction.
@@ -1309,6 +1329,12 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetViscosity_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetTke_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.
@@ -1639,7 +1665,14 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
-    
+
+  /*!
+   * \brief Get the total number of 1D output markers.
+   * \return Total number of monitoring markers.
+   */
+  unsigned short GetnMarker_Out_1D(void);
+
+
     /*!
 	 * \brief Get the total number of monitoring markers.
 	 * \return Total number of monitoring markers.
@@ -1803,7 +1836,13 @@ public:
 	 * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
 	 */
 	bool GetWrt_Sectional_Forces(void);
-  
+
+  /*!
+   * \brief Get information about writing average stagnation pressure
+   * \return <code>TRUE</code> means that the average stagnation pressure will be output for specified markers.
+   */
+  bool GetWrt_1D_Output(void);
+
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.
@@ -1858,6 +1897,22 @@ public:
 	 */		
 	unsigned short GetMarker_All_Boundary(unsigned short val_marker);
 
+  /*!
+   * \brief Get the kind of boundary for each marker.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \return Kind of boundary for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_All_Out_1D(unsigned short val_marker);
+
+  /*!
+   * \brief Set the value of the boundary <i>val_boundary</i> (read from the config file)
+   *        for the marker <i>val_marker</i>.
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_boundary - Kind of boundary read from config file.
+   */
+  void SetMarker_All_Out_1D(unsigned short val_marker, unsigned short val_boundary);
+
+
 	/*! 
 	 * \brief Set the value of the boundary <i>val_boundary</i> (read from the config file) 
 	 *        for the marker <i>val_marker</i>.
@@ -1882,6 +1937,15 @@ public:
 	 * \param[in] val_monitoring - 0 or 1 depending if the the marker is going to be monitored.
 	 */	
 	void SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring);
+  
+  /*!
+	 * \brief Set if a marker <i>val_marker</i> is going to be monitored <i>val_monitoring</i>
+	 *        (read from the config file).
+	 * \note This is important for non dimensional coefficient computation.
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_monitoring - 0 or 1 depending if the the marker is going to be monitored.
+	 */
+	void SetMarker_All_GeoEval(unsigned short val_marker, unsigned short val_geoeval);
   
   /*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be designed <i>val_designing</i>
@@ -1953,6 +2017,13 @@ public:
 	 * \return 0 or 1 depending if the marker is going to be monitored.
 	 */		
 	unsigned short GetMarker_All_Monitoring(unsigned short val_marker);
+  
+  /*!
+	 * \brief Get the monitoring information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker - 0 or 1 depending if the the marker is going to be monitored.
+	 * \return 0 or 1 depending if the marker is going to be monitored.
+	 */
+	unsigned short GetMarker_All_GeoEval(unsigned short val_marker);
   
   /*!
 	 * \brief Get the design information for a marker <i>val_marker</i>.
@@ -2102,11 +2173,41 @@ public:
 	double GetAdjTurb_CFLRedCoeff(void);
   
   /*!
-	 * \brief Get the number of increments for mesh deformation.
-	 * \return Number of increments for mesh deformation.
+	 * \brief Get the number of linear smoothing iterations for mesh deformation.
+	 * \return Number of linear smoothing iterations for mesh deformation.
 	 */
-	unsigned long GetGridDef_Iter(void);
+	unsigned long GetGridDef_Linear_Iter(void);
+  
+  /*!
+	 * \brief Get the number of nonlinear increments for mesh deformation.
+	 * \return Number of nonlinear increments for mesh deformation.
+	 */
+	unsigned long GetGridDef_Nonlinear_Iter(void);
 
+  /*!
+	 * \brief Get information about writing grid deformation residuals to the console.
+	 * \return <code>TRUE</code> means that grid deformation residuals will be written to the console.
+	 */
+	bool GetDeform_Output(void);
+  
+  /*!
+	 * \brief Get factor to multiply smallest volume for deform tolerance.
+	 * \return Factor to multiply smallest volume for deform tolerance.
+	 */
+	double GetDeform_Tol_Factor(void);
+  
+  /*!
+	 * \brief Get the type of stiffness to impose for FEA mesh deformation.
+	 * \return type of stiffness to impose for FEA mesh deformation.
+	 */
+	unsigned short GetDeform_Stiffness_Type(void);
+  
+	/*!
+	 * \brief Creates a teot file to visualize the deformation made by the MDC software.
+	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+	 */
+	bool GetVisualize_Deformation(void);
+  
 	/*!
 	 * \brief Get the kind of SU2 software component.
 	 * \return Kind of the SU2 software component.
@@ -2128,6 +2229,13 @@ public:
 	 * \return Temporary ml->SU2 file name.
 	 */
 	string GetML_Turb_Model_Check_File(void);
+
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  string GetML_Turb_Model_FeatureSet(void);
+  
   
 	/*! 
 	 * \brief Get the kind of the transition model.
@@ -2921,6 +3029,12 @@ public:
 	 */
 	unsigned short GetKind_Inlet(void);
 
+  /*!
+	 * \brief Get the number of sections.
+	 * \return Number of sections
+	 */
+	unsigned short GetnSections(void);
+  
 	/*! 
 	 * \brief Provides information about the the nodes that are going to be moved on a deformation 
 	 *        volumetric grid deformation.
@@ -3810,6 +3924,12 @@ public:
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
+	unsigned short GetMarker_Config_GeoEval(string val_marker);
+  
+  /*!
+	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
+	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
 	unsigned short GetMarker_Config_Designing(string val_marker);
 
 	/*! 
@@ -3817,6 +3937,12 @@ public:
 	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Config_Plotting(string val_marker);
+
+  /*!
+   * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
+   * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_Config_Out_1D(string val_marker);
 
 	/*! 
 	 * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
@@ -4278,22 +4404,22 @@ public:
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n+1.
 	 */
-	double *GetAeroelastic_np1(void);
+	vector<vector<double> > GetAeroelastic_np1(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n.
 	 */
-	double *GetAeroelastic_n(void);
+	vector<vector<double> > GetAeroelastic_n(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n-1.
 	 */
-	double *GetAeroelastic_n1(void);
+	vector<vector<double> > GetAeroelastic_n1(unsigned short iMarker);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n+1.
 	 */
-	void SetAeroelastic_np1(unsigned short val_index, double val);
+	void SetAeroelastic_np1(unsigned short iMarker, vector<vector<double> > solution);
 
 	/*!
 	 * \brief Value of Aeroelastic solution coordinate at time n from time n+1.

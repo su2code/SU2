@@ -603,6 +603,10 @@ BUILD_DDC_FALSE
 BUILD_DDC_TRUE
 BUILD_CFD_FALSE
 BUILD_CFD_TRUE
+JSONCPP_LD
+JSONCPP_CXX
+BUILD_JSONCPP_FALSE
+BUILD_JSONCPP_TRUE
 MUTATIONPP_LD
 MUTATIONPP_CXX
 BUILD_MUTATIONPP_FALSE
@@ -693,6 +697,8 @@ with_Metis_include
 with_Metis_version
 with_Mutationpp_lib
 with_Mutationpp_include
+with_Jsoncpp_lib
+with_Jsoncpp_include
 enable_CFD
 enable_DDC
 enable_GPC
@@ -1362,6 +1368,10 @@ Optional Packages:
   --with-Mutationpp-include=ARG
                           Mutation++ include directory, ARG = path to
                           mutation++.h
+  --with-Jsoncpp-lib=ARG  Jsoncpp library directory, ARG = path to
+                          jsoncpp_SYS.a
+  --with-Jsoncpp-include=ARG
+                          Jsoncpp include directory, ARG = path to json.h
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2432,6 +2442,22 @@ else
   with_Mutationpp_include="no"
 fi
 
+
+# Check whether --with-Jsoncpp-lib was given.
+if test "${with_Jsoncpp_lib+set}" = set; then :
+  withval=$with_Jsoncpp_lib; with_Jsoncpp_lib=$withval
+else
+  with_Jsoncpp_lib="no"
+fi
+
+
+# Check whether --with-Jsoncpp-include was given.
+if test "${with_Jsoncpp_include+set}" = set; then :
+  withval=$with_Jsoncpp_include; with_Jsoncpp_include=$withval
+else
+  with_Jsoncpp_include="no"
+fi
+
 # Check whether --enable-CFD was given.
 if test "${enable_CFD+set}" = set; then :
   enableval=$enable_CFD; build_CFD=$enableval
@@ -2936,6 +2962,108 @@ fi
 
 	MUTATIONPP_CXX=-DNO_MUTATIONPP
 	MUTATION_LD=
+fi
+
+
+
+##########################
+
+# check for lib
+Jsoncpplib=libjson_linux-gcc-4.2.1_libmt.a
+Jsoncppheader=json/json.h
+have_Jsoncpp="no"
+
+if test "$with_Jsoncpp_lib" != "no"
+then
+  	as_ac_File=`$as_echo "ac_cv_file_$with_Jsoncpp_lib/$Jsoncpplib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_Jsoncpp_lib/$Jsoncpplib" >&5
+$as_echo_n "checking for $with_Jsoncpp_lib/$Jsoncpplib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_Jsoncpp_lib/$Jsoncpplib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_Jsoncpp="yes"
+else
+  have_Jsoncpp="no"
+fi
+
+	if test "$have_Jsoncpp" == "no"
+	then
+		as_fn_error $? "Jsoncpp requested but library file not found." "$LINENO" 5
+	fi
+fi
+
+# check for header
+if test "$have_Jsoncpp" != "no"
+then
+	if test "$with_Jsoncpp_include" != "no"
+	then
+		as_ac_File=`$as_echo "ac_cv_file_$with_Jsoncpp_include/$Jsoncppheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_Jsoncpp_include/$Jsoncppheader" >&5
+$as_echo_n "checking for $with_Jsoncpp_include/$Jsoncppheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_Jsoncpp_include/$Jsoncppheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_Jsoncpp='yes'
+else
+  have_Jsoncpp='no'
+fi
+
+		if test "$have_Jsoncpp" == "no"
+		then
+			as_fn_error $? "Jsoncpp requested but header file not found." "$LINENO" 5
+		fi
+	else
+		have_Jsoncpp="no"
+	fi
+fi
+
+if test "$have_Jsoncpp" != "no"
+then
+  	 if true; then
+  BUILD_JSONCPP_TRUE=
+  BUILD_JSONCPP_FALSE='#'
+else
+  BUILD_JSONCPP_TRUE='#'
+  BUILD_JSONCPP_FALSE=
+fi
+
+	JSONCPP_CXX=-I"$with_Jsoncpp_include"
+	JSONCPP_LD="$with_Jsoncpp_lib"/$Jsoncpplib
+else
+	 if false; then
+  BUILD_JSONCPP_TRUE=
+  BUILD_JSONCPP_FALSE='#'
+else
+  BUILD_JSONCPP_TRUE='#'
+  BUILD_JSONCPP_FALSE=
+fi
+
+	JSONCPP_CXX=-DNO_JSONCPP
+	JSONCPP_LD=
 fi
 
 
@@ -4005,6 +4133,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_MUTATIONPP_TRUE}" && test -z "${BUILD_MUTATIONPP_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_MUTATIONPP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_JSONCPP_TRUE}" && test -z "${BUILD_JSONCPP_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_JSONCPP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_JSONCPP_TRUE}" && test -z "${BUILD_JSONCPP_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_JSONCPP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CFD_TRUE}" && test -z "${BUILD_CFD_FALSE}"; then
@@ -5232,6 +5368,7 @@ Build Configuration Summary:
     Metis support:        $have_METIS
     TecIO support:        $have_Tecio
     Mutation++ support:   $have_Mutationpp
+    Jsoncpp support: 	  $have_Jsoncpp
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC
@@ -5269,6 +5406,7 @@ Build Configuration Summary:
     Metis support:        $have_METIS
     TecIO support:        $have_Tecio
     Mutation++ support:   $have_Mutationpp
+    Jsoncpp support: 	  $have_Jsoncpp
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC

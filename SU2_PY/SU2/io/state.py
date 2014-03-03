@@ -40,14 +40,14 @@ def State_Factory(state=None,config=None):
         Starts a state class, an extension of ordered_bunch().
         Stores data generated while traversing SU2 tool chain
         
-        Parameters:
+        Fields:
             FUNCTIONS - ordered bunch of objective function values
             GRADIENTS - ordered bunch of gradient value lists
             VARIABLES - ordered bunch of variables
             FILES     - ordered bunch of file types
             HISTORY   - ordered bunch of history information
             
-        Parameters can be accessed by item or attribute
+        Fields can be accessed by item or attribute
         ie: state['FUNCTIONS'] or state.FUNCTIONS
         
         Methods:
@@ -177,6 +177,8 @@ class State(ordered_bunch):
                 # adjoint solution
                 value = expand_time(value,config)
                 link.extend(value)
+            #elif key == 'STABILITY':
+                #pass
             # copy all other files
             else:
                 pull.append(value)

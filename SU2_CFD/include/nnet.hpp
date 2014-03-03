@@ -7,91 +7,136 @@
 #include <cmath>
 #include <sstream>
 
+#ifndef NO_JSONCPP
+#include <json/json.h>
+#endif
+
+
 using namespace std;
 
-class Scaler{
+class CScaler{
 public:
-	Scaler();
-	~Scaler();
+	CScaler();
+  virtual ~CScaler();
 	virtual void Scale(double *) = 0;
 	virtual void Unscale(double *) = 0;
-	//virtual void LoadJSON(int) = 0;
 };
 
-class NormalScaler: public Scaler{
+class CNormalScaler: public CScaler{
 private:
 	double * mu;
 	double * sigma;
-	int nInputs;
+	int dim;
 
 public:
-	NormalScaler();
-	NormalScaler(int,double*,double*);
-	~NormalScaler();
-	NormalScaler(double *, double *);
+	CNormalScaler();
+	CNormalScaler(int,double*,double*);
+#ifndef NO_JSONCPP
+  CNormalScaler(Json::Value);
+#endif
+	~CNormalScaler();
 	void Scale(double *);
 	void Unscale(double *);
 };
 
-class Activator{
+class CActivator{
 public:
-	Activator();
-	~Activator();
-	virtual double Activate(double sum){cout<< "IN BASE ACTIVATOR THIS IS BAD" <<endl; return 0;};
+	CActivator();
+	~CActivator();
+	virtual double Activate(double combination){cout<< "IN BASE ACTIVATOR THIS IS BAD" <<endl; return 0;};
 };
 
-class TanhActivator : public Activator{
+class CTanhActivator : public CActivator{
 public:
-	TanhActivator();
-	~TanhActivator();
-	double Activate(double sum);
+	CTanhActivator();
+#ifndef NO_JSONCPP
+  CTanhActivator(Json::Value);
+#endif
+	~CTanhActivator();
+	double Activate(double combination);
 };
 
-class LinearActivator : public Activator{
+class CLinearActivator : public CActivator{
 public:
-	LinearActivator();
-	~LinearActivator();
-	double Activate(double sum);
+	CLinearActivator();
+#ifndef NO_JSONCPP
+  CLinearActivator(Json::Value);
+#endif
+	~CLinearActivator();
+	double Activate(double combination);
 };
 
-class Neuron{
+class CNeuron{
+public:
+  CNeuron();
+  ~CNeuron();
+  virtual double Activate(double combination){cout << "In base neuron. Bad";return 0;};
+  virtual double Combine(double * parameters, int nParameters, double *inputs, int nInputs){cout << "In base neuron. Bad";return 0;};
+};
+
+class CSumNeuron : public CNeuron{
 private:
-	
-	int parameterStart;
-	int nParameters;
+		CActivator *activator;
 public:
-	Activator *activator;
-	Neuron();
-	Neuron(Activator*, int, int); // activator, parameterStart, nParameters
-	~Neuron();
+	CSumNeuron();
+	CSumNeuron(CActivator*); // activator, parameterStart, nParameters
+#ifndef NO_JSONCPP
+  CSumNeuron(Json::Value);
+#endif
+	~CSumNeuron();
 	//Activator* GetActivator(void);
-	double Combine(double * input, double * parameters);
-	int ParameterStart();
-	int ParameterEnd();
+	double Combine(double * parameters, int nParameters, double * inputs, int nInputs);
+  double Activate(double combination);
 };
 
-class CNeurNet {
-private:
-	int nNodes;
-	int nInputs;
-	int nOutputs;
-	int nParameters;
-	int nLayers;
-	int *nNeuronsPerLayer;
-	double *parameters;
-	int **parameterIdx;
-	int **nParametersPerNeuron;
-	Neuron ***neurons; // Array of arrays to pointers to neuron
-	Scaler* LoadScaler(ifstream&,int);
-	int LoadInteger(ifstream&, string);
+
+class CPredictor{
+protected:
+  int inputDim;
+  int outputDim;
 public:
-	Scaler *inputScaler;
-	Scaler *outputScaler;
+  CPredictor();
+  ~CPredictor();
+  virtual void Predict(double *, double *){cout << "In base Predict, this is bad";};
+  int InputDim();
+  int OutputDim();
+};
+
+class CScalePredictor{
+public:
+  CScalePredictor();
+  CScalePredictor(string filename);
+  ~CScalePredictor();
+  CPredictor *Pred;
+  CScaler *InputScaler;
+  CScaler *OutputScaler;
+public:
+  void Predict(double *inputs, double *outputs);
+  // Need to add predict method
+};
+
+class CNeurNet : public CPredictor{
+private:
+  int maxNeurons; // Number of neurons in the largest layer
+  int nLayers;
+  CNeuron ***neurons; // Array of arrays to pointers to neuron
+  double*** parameters; // Array of parameters for each neuron
+  int* nNeuronsInLayer; //one list for each layer
+  int** nParameters; // Number of parameters for the neuron
+//  int inputDim;
+  
+  void processLayer(double *, int,CNeuron **, double **, int, int * ,double *);
+  
+  //----
+//	int outputDim;
+	int totalNumParameters;
+public:
 	CNeurNet();
-	CNeurNet(string, string);
+#ifndef NO_JSONCPP
+  CNeurNet(Json::Value);
+#endif
 	~CNeurNet();
-	int NumInputs();
-	int NumOutputs();
+//	int InputDim();
+//	int OutputDim();
 	void Predict(double *, double *);
-	bool CheckPredictions(ifstream&);
 };

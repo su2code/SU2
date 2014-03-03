@@ -753,7 +753,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void OneDimensionalOutput(CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1463,7 +1470,13 @@ public:
 	 * \return Value of the viscosity at the infinity.
 	 */
 	virtual double GetViscosity_Inf(void);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the turbulent kinetic energy.
+	 */
+	virtual double GetTke_Inf(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1522,7 +1535,19 @@ public:
 	 * \return A pointer to an array containing a set of constants
 	 */
 	virtual double* GetConstants();
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return average total pressure evaluated at an exit boundary marker
+   */
+  virtual double GetOneDStagPressure(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_exit_pt: value of the total average pressure at the exit.
+   */
+  virtual void SetOneDStagPressure(double val_exit_pt);
+
   /*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1597,47 +1622,46 @@ public:
 	 */
 	void Gauss_Elimination(double** A, double* rhs, unsigned long nVar);
     
-    /*!
-	 * \brief Get the number of Species present in the flow.
-	 */
+  /*!
+  * \brief Get the number of Species present in the flow.
+  */
 	virtual unsigned short GetnSpecies(void);
-    
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solution - Container vector with all the solutions.
-	 */
+  
+  /*!
+  * \brief A virtual member.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solution - Container vector with all the solutions.
+  */
 	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
     
-    /*!
-	 * \brief Prepares and solves the aeroelastic equations.
-     * \param[in] surface_movement - Surface movement classes of the problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iter - Current sudo time iteration.
-	 */
-	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long IntIter);
+  /*!
+  * \brief Prepares and solves the aeroelastic equations.
+  * \param[in] surface_movement - Surface movement classes of the problem.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] config - Definition of the particular problem.
+  * \param[in] ExtIter - Physical iteration number.
+  */
+	void Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter);
 
     
-    /*!
-	 * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
-     * \param[in] PHI - Matrix of the generalized eigenvectors.
-     * \param[in] lambda - The eigenvalues of the generalized eigensystem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-    void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
+  /*!
+  * \brief Sets up the generalized eigenvectors and eigenvalues needed to solve the aeroelastic equations.
+  * \param[in] PHI - Matrix of the generalized eigenvectors.
+  * \param[in] lambda - The eigenvalues of the generalized eigensystem.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void SetUpTypicalSectionWingModel(double (&PHI)[2][2],double (&lambda)[2], CConfig *config);
     
-    /*!
-	 * \brief Solve the typical section wing model.
-	 * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] Cl - Coefficient of lift at particular iteration.
-     * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
-	 * \param[in] config - Definition of the particular problem.
-     * \param[in] iter - Sudo time iteration number.
-     * \param[in] val_Marker - Surface that is being monitored.
-     * \param[in] displacements - solution of typical section wing model.
-	 */
-    void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned long iter, unsigned short val_Marker, double (&displacements)[4]);
+  /*!
+  * \brief Solve the typical section wing model.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] Cl - Coefficient of lift at particular iteration.
+  * \param[in] Cm - Moment coefficient about z-axis at particular iteration.
+	* \param[in] config - Definition of the particular problem.
+  * \param[in] val_Marker - Surface that is being monitored.
+  * \param[in] displacements - solution of typical section wing model.
+	*/
+  void SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, double Cm, CConfig *config, unsigned short val_Marker, double (&displacements)[4]);
 
 };
 
@@ -1773,6 +1797,7 @@ protected:
 	AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
 	
   double
+  OneD_Pt, /*!< \brief average total pressure evaluated at an exit */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -2312,7 +2337,15 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
-    
+
+	/*!
+   * \brief Compute the one dimensional outputs(averaged stagnation pressure).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+	void OneDimensionalOutput(CGeometry *geometry, CConfig *config);
+
+
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coefficient is going to be computed.
@@ -2612,7 +2645,20 @@ public:
 	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
 	 */
 	void SetTotal_CFreeSurface(double val_cfreesurface);
-  
+
+	/*!
+	   * \brief Provide the averaged total pressure at a marker.
+	   */
+	double GetOneDStagPressure(void);
+
+	/*!
+	   * \brief Set the value of averaged total pressure
+	   * \param[in] val_exit_pt - value of the averaged pressure
+	   */
+	void SetOneDStagPressure(double exit_pt);
+
+
+
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2673,6 +2719,7 @@ public:
 class CNSSolver : public CEulerSolver {
 private:
 	double Viscosity_Inf;	/*!< \brief Viscosity at the infinity. */
+  double Tke_Inf;	/*!< \brief Turbulent kinetic energy at the infinity. */
 	double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
 	Prandtl_Turb;         /*!< \brief Turbulent Prandtl number. */
 	double *CDrag_Visc,	/*!< \brief Drag coefficient (viscous contribution) for each boundary. */
@@ -2739,6 +2786,12 @@ public:
 	 * \return Value of the viscosity at the infinity.
 	 */
 	double GetViscosity_Inf(void);
+  
+  /*!
+	 * \brief Get the turbulent kinetic energy at the infinity.
+	 * \return Value of the turbulent kinetic energy at the infinity.
+	 */
+	double GetTke_Inf(void);
     
 	/*!
 	 * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.

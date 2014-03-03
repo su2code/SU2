@@ -23,7 +23,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import os, sys, shutil, copy 
 from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
@@ -71,15 +71,19 @@ def function( func_name, config, state=None ):
     if not state['FUNCTIONS'].has_key(func_name):
         
         # Aerodynamics
-        if func_name == "ALL" or func_name in su2io.optnames_aero:
+        if func_name == 'ALL' or func_name in su2io.optnames_aero:
             aerodynamics( config, state )
+            
+        # Stability
+        elif func_name in su2io.optnames_stab:
+            stability( config, state )
         
         # Geometry
         elif func_name in su2io.optnames_geo:
             geometry( func_name, config, state )
             
         else:
-            raise Exception, 'unknown function name'
+            raise Exception, 'unknown function name, %s' % func_name
         
     #: if not redundant
     
@@ -160,12 +164,13 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------    
     
     # redundancy check
-    direct_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_aero ] )
+    direct_done = all( [ state.FUNCTIONS.has_key(key) for key in su2io.optnames_aero[:9] ] )
     if direct_done:
         # return aerodynamic function values
         aero = su2util.ordered_bunch()
         for key in su2io.optnames_aero:
-            aero[key] = state.FUNCTIONS[key]
+            if state.FUNCTIONS.has_key(key):
+                aero[key] = state.FUNCTIONS[key]
         return copy.deepcopy(aero)    
     #: if redundant
     
@@ -221,6 +226,124 @@ def aerodynamics( config, state=None ):
 #: def aerodynamics()
 
 
+# ----------------------------------------------------------------------
+#  Stability Functions
+# ----------------------------------------------------------------------
+
+def stability( config, state=None, step=1e-2 ):
+   
+    
+    folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
+    
+    # ----------------------------------------------------
+    #  Initialize    
+    # ----------------------------------------------------
+    
+    # initialize
+    state = su2io.State(state)
+    if not state.FILES.has_key('MESH'):
+        state.FILES.MESH = config['MESH_FILENAME']
+    special_cases = su2io.get_specialCases(config)
+    
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+        log_direct = 'log_Direct.out'
+    else:
+        log_direct = None
+    
+    # ----------------------------------------------------    
+    #  Update Mesh
+    # ----------------------------------------------------
+  
+    
+    # does decomposition and deformation
+    info = update_mesh(config,state) 
+    
+    # ----------------------------------------------------    
+    #  CENTRAL POINT
+    # ----------------------------------------------------    
+    
+    # will run in DIRECT/
+    func_0 = aerodynamics(config,state)      
+    
+    
+    # ----------------------------------------------------    
+    #  Run Forward Point
+    # ----------------------------------------------------   
+    
+    # files to pull
+    files = state.FILES
+    pull = []; link = []
+    
+    # files: mesh
+    name = files['MESH']
+    name = su2io.expand_part(name,config)
+    link.extend(name)
+    
+    # files: direct solution
+    if files.has_key('DIRECT'):
+        name = files['DIRECT']
+        name = su2io.expand_time(name,config)
+        link.extend( name )
+        ##config['RESTART_SOL'] = 'YES' # don't override config file
+    else:
+        config['RESTART_SOL'] = 'NO'
+        
+    # files: target equivarea distribution
+    if ( 'EQUIV_AREA' in special_cases and 
+         'TARGET_EA' in files ) : 
+        pull.append( files['TARGET_EA'] )    
+    
+    
+    # pull needed files, start folder
+    with redirect_folder( folder, pull, link ) as push:
+        with redirect_output(log_direct):     
+            
+            konfig = copy.deepcopy(config)
+            ztate  = copy.deepcopy(state)
+            
+            # TODO: GENERALIZE
+            konfig.AoA = konfig.AoA + step
+            ztate.FUNCTIONS.clear()
+            
+            func_1 = aerodynamics(konfig,ztate)
+                        
+            ## direct files to store
+            #name = ztate.FILES['DIRECT']
+            #if not state.FILES.has_key('STABILITY'):
+                #state.FILES.STABILITY = su2io.ordered_bunch()
+            #state.FILES.STABILITY['DIRECT'] = name
+            
+            ## equivarea files to store
+            #if 'WEIGHT_NF' in ztate.FILES:
+                #state.FILES.STABILITY['WEIGHT_NF'] = ztate.FILES['WEIGHT_NF']
+    
+    # ----------------------------------------------------    
+    #  DIFFERENCING
+    # ----------------------------------------------------
+        
+    for derv_name in su2io.optnames_stab:
+
+        matches = [ k for k in su2io.optnames_aero if k in derv_name ]
+        if not len(matches) == 1: continue
+        func_name = matches[0]
+
+        obj_func = ( func_1[func_name] - func_0[func_name] ) / step
+        
+        state.FUNCTIONS[derv_name] = obj_func
+    
+
+    # return output 
+    funcs = su2util.ordered_bunch()
+    for key in su2io.optnames_stab:
+        if state['FUNCTIONS'].has_key(key):
+            funcs[key] = state['FUNCTIONS'][key]    
+    
+    return funcs
+    
+    
+    
+    
 # ----------------------------------------------------------------------
 #  Geometric Functions
 # ----------------------------------------------------------------------
