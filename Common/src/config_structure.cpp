@@ -128,6 +128,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
   /* DESCRIPTION: Location of the turb model itself */
 	AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  /* DESCRIPTION: what kind of input/output feature map is there */
+	AddScalarOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
 	/* DESCRIPTION: Specify transition model */
 	AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
@@ -221,7 +223,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
 	/* DESCRIPTION: Damping factor for engine inlet condition */
 	AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
-  
+  /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
+   Format: ( outlet marker) */
+  AddMarkerOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
+
+
 	/*--- Options related to grid adaptation ---*/
 	/* CONFIG_CATEGORY: Grid adaptation */
   
@@ -703,7 +709,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
   /* DESCRIPTION: Output sectional forces for specified markers. */
 	AddSpecialOption("WRT_SECTIONAL_FORCES", Wrt_Sectional_Forces, SetBoolOption, false);
-  
+  /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
+  AddSpecialOption("WRT_1D_OUTPUT", Wrt_1D_Output, SetBoolOption, false);
+
 	/*--- Options related to the equivalent area ---*/
 	/* CONFIG_CATEGORY: Equivalent Area */
   
@@ -858,10 +866,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
-  /* DESCRIPTION: Scale deformation using cell volume */
-	AddSpecialOption("DEFORM_SCALE_VOLUME", Deform_ScaleVolume, SetBoolOption, true);
-	/* DESCRIPTION: Number of iterations for FEA mesh deformation (surface deformation increments) */
-	AddScalarOption("GRID_DEFORM_ITER", GridDef_Iter, 1);
+  /* DESCRIPTION: Print the residuals during mesh deformation to the console */
+	AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
+	/* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
+	AddScalarOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
+  /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
+	AddScalarOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
+  /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
+	AddScalarOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
+	AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
   
 	/*--- option related to rotorcraft problems ---*/
 	/* CONFIG_CATEGORY: Rotorcraft problem */
@@ -2396,7 +2410,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain;
+			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2408,12 +2422,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
 	Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
+	Marker_All_Out_1D   = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
 
 	unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
 	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-	iMarker_Supersonic_Inlet;
+	iMarker_Supersonic_Inlet,iMarker_Out_1D;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
@@ -2426,10 +2441,13 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_All_DV[iMarker_All]         = 0;
     Marker_All_Moving[iMarker_All]     = 0;
 		Marker_All_PerBound[iMarker_All]   = 0;
+		Marker_All_Out_1D[iMarker_All]   = 0;
 	}
 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
-			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load + nMarker_FlowLoad + nMarker_Custom;
+			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal
+			+ nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement
+			+ nMarker_Load + nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -2440,7 +2458,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_Config_Moving     = new unsigned short[nMarker_Config];
 	Marker_Config_Designing  = new unsigned short[nMarker_Config];
 	Marker_Config_PerBound   = new unsigned short[nMarker_Config];
-  
+	Marker_Config_Out_1D   = new unsigned short[nMarker_Config];
+
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
 		Marker_Config_Tag[iMarker_Config] = "NONE";
 		Marker_Config_Boundary[iMarker_Config]   = 0;
@@ -2451,6 +2470,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 		Marker_Config_DV[iMarker_Config]         = 0;
     Marker_Config_Moving[iMarker_Config]     = 0;
 		Marker_Config_PerBound[iMarker_Config]   = 0;
+		Marker_Config_Out_1D[iMarker_Config]   = 0;
 	}
 
 	iMarker_Config = 0;
@@ -2621,7 +2641,15 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 			if (Marker_Config_Tag[iMarker_Config] == Marker_Moving[iMarker_Moving])
 				Marker_Config_Moving[iMarker_Config] = YES;
 	}
-  
+
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
+    Marker_Config_Out_1D[iMarker_Config] = NO;
+    for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
+      if (Marker_Config_Tag[iMarker_Config] == Marker_Out_1D[iMarker_Out_1D])
+        Marker_Config_Out_1D[iMarker_Config] = YES;
+  }
+
+
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
@@ -3605,8 +3633,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
 		if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
 		else cout << "No file for visualizing the deformation." << endl;
-    if (Deform_ScaleVolume) cout << "Scale the deformation using the volume." << endl;
-		else cout << "Don't scale the deformation using the cell volume." << endl;
+    switch (GetDeform_Stiffness_Type()) {
+      case INVERSE_VOLUME:
+        cout << "Cell stiffness scaled by inverse of the cell volume." << endl;
+        break;
+      case WALL_DISTANCE:
+         cout << "Cell stiffness scaled by distance from the deforming surface." << endl;
+        break;
+      case CONSTANT_STIFFNESS:
+        cout << "Imposing constant cell stiffness (steel)." << endl;
+        break;
+    }
 	}
 
 	if (val_software == SU2_PBC) {
@@ -4313,6 +4350,13 @@ unsigned short CConfig::GetMarker_Config_Plotting(string val_marker) {
 	return Marker_Config_Plotting[iMarker_Config];
 }
 
+unsigned short CConfig::GetMarker_Config_Out_1D(string val_marker) {
+  unsigned short iMarker_Config;
+  for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
+    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
+  return Marker_Config_Out_1D[iMarker_Config];
+}
+
 unsigned short CConfig::GetMarker_Config_DV(string val_marker) {
 	unsigned short iMarker_Config;
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
@@ -4440,14 +4484,50 @@ CConfig::~CConfig(void)
 	if (Plunging_Ampl_Z != NULL)
 		delete [] Plunging_Ampl_Z;
 
-    if (RefOriginMoment != NULL)
+  if (RefOriginMoment != NULL)
 		delete [] RefOriginMoment;
-    if (RefOriginMoment_X != NULL)
+  if (RefOriginMoment_X != NULL)
 		delete [] RefOriginMoment_X;
 	if (RefOriginMoment_Y != NULL)
 		delete [] RefOriginMoment_Y;
 	if (RefOriginMoment_Z != NULL)
 		delete [] RefOriginMoment_Z;
+
+	/*Marker pointers*/
+
+	if (Marker_Config_Out_1D!=NULL)
+	  delete[] Marker_Config_Out_1D;
+	if (Marker_All_Out_1D!=NULL)
+    delete[] Marker_All_Out_1D;
+  if (Marker_Config_GeoEval!=NULL)
+    delete[] Marker_Config_GeoEval;
+  if (Marker_All_GeoEval!=NULL)
+    delete[] Marker_All_GeoEval;
+  if (Marker_Config_Tag!=NULL)
+    delete[] Marker_Config_Tag;
+  if (Marker_All_Tag!=NULL)
+    delete[] Marker_All_Tag;
+  if (Marker_Config_Boundary!=NULL)
+    delete[] Marker_Config_Boundary;
+  if (Marker_All_Boundary!=NULL)
+    delete[] Marker_All_Boundary;
+  if (Marker_Config_Monitoring!=NULL)
+    delete[] Marker_Config_Monitoring;
+  if (Marker_All_Monitoring!=NULL)
+    delete[] Marker_All_Monitoring;
+  if (Marker_Config_Designing!=NULL)
+    delete[] Marker_Config_Designing;
+  if (Marker_All_Designing!=NULL)
+    delete[] Marker_All_Designing;
+  if (Marker_Config_Plotting!=NULL)
+    delete[] Marker_Config_Plotting;
+  if (Marker_All_Plotting!=NULL)
+    delete[] Marker_All_Plotting;
+  if (Marker_Config_DV!=NULL)
+    delete[] Marker_Config_DV;
+  if (Marker_All_DV!=NULL)
+    delete[] Marker_All_DV;
+
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {

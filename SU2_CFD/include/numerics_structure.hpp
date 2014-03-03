@@ -3865,6 +3865,27 @@ public:
 };
 
 
+class CSANondimInputs{
+private:
+  int nDim;
+public:
+  CSANondimInputs(int);
+  ~CSANondimInputs();
+  void Set(SpalartAllmarasInputs*);
+  void NondimensionalizeSource(int,double*);
+  void DimensionalizeSource(int,double*);
+  double Chi;
+  double OmegaNondim;
+  double OmegaBar;
+  double SourceNondim;
+  double NuGradNondim;
+  double Turb_Kin_Visc_Grad_Norm_Bar;
+  double * DNuHatDXBar;
+  double NuHatGradNorm;
+  double NuHatGradNormBar;
+};
+
+
 /*!
  * \class CSourcePieceWise_TurbML
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
@@ -3900,18 +3921,32 @@ private:
   double beta, gamma_sep, gamma_eff, intermittency;
   double Freattach, r_t, s1;
   double Production, Destruction, CrossProduction;
-  CNeurNet * MLModel;
+  CScalePredictor* MLModel;
   
+
   
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
   int nResidual;
   int nJacobian;
-  double* testResidual;
-  double* testJacobian;
+  
+  string featureset;
+  
+  //double* testResidual;
+  //double* testJacobian;
   double** DUiDXj;
   double* DNuhatDXj;
 public:
+  double *SAResidual;
+  double * SANondimResidual;
+  double* Residual;
+  double * NondimResidual;
+  double *ResidualDiff;
+  double *NondimResidualDiff;
+  double* SAJacobian;
+  CSANondimInputs* SANondimInputs;
+  double NuhatGradNorm;
+  
 	/*!
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
@@ -3977,6 +4012,8 @@ public:
   double GetCrossProduction(void);
   
   double SAProduction, SADestruction, SACrossProduction, SASource, MLProduction, MLDestruction, MLCrossProduction, MLSource, SourceDiff;
+  
+  int NumResidual();
 };
 
 
