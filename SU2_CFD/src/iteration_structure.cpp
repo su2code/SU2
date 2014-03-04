@@ -50,16 +50,16 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   
 	for (iZone = 0; iZone < nZone; iZone++) {
     
+    /*--- Dynamic mesh update ---*/
+    
+		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)){
+			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
+    }
+    
     /*--- Apply a Wind Gust ---*/
     
     if (config_container[ZONE_0]->GetWind_Gust()){
       SetWind_GustField(config_container[iZone],geometry_container[iZone],solver_container[iZone]);
-    }
-    
-		/*--- Dynamic mesh update ---*/
-    
-		if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)){
-			SetGrid_Movement(geometry_container[iZone], surface_movement[iZone], grid_movement[iZone], FFDBox[iZone], solver_container[iZone],config_container[iZone], iZone, IntIter, ExtIter);
     }
 	}
   
@@ -833,7 +833,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   double Physical_dt = config_container->GetDelta_UnstTime();
   unsigned long ExtIter = config_container->GetExtIter();
-  double Physical_t = (ExtIter+1)*Physical_dt;
+  double Physical_t = ExtIter*Physical_dt;
   
   double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
