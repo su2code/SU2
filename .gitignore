@@ -27,3 +27,6 @@
 
 # Compiled Makefiles
 Makefile
+
+# Emacs temporary files
+*~
