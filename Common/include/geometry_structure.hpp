@@ -379,6 +379,13 @@ public:
 	 */
 	virtual void SetControlVolume(CConfig *config, unsigned short action);
 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] action - Allocate or not the new elements.
+	 */
+  virtual void VisualizeControlVolume(CConfig *config, unsigned short action);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -927,7 +934,14 @@ public:
 	 */
 	void SetControlVolume(CConfig *config, unsigned short action);
 
-	/*! 
+	/*!
+	 * \brief Visualize the structure of the control volume(s).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] action - Allocate or not the new elements.
+	 */
+  void VisualizeControlVolume(CConfig *config, unsigned short action);
+  
+	/*!
 	 * \brief Mach the near field boundary condition.
 	 * \param[in] config - Definition of the particular problem.
 	 */
