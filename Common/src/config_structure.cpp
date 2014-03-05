@@ -906,6 +906,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Thermal diffusivity constant */
 	AddScalarOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
   
+  /*--- options related to visualizing control volumes ---*/
+	/* CONFIG_CATEGORY: Visualize Control Volumes */
+  
+  /* DESCRIPTION: Node number for the CV to be visualized */
+	AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
+  
+	/* DESCRIPTION: Thermal diffusivity constant */
+  
   
 	/* END_CONFIG_OPTIONS */
   

@@ -152,6 +152,8 @@ inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) 
 
 inline void CGeometry::SetControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
 
+inline void CGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) { }
+
 inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchInterface(CConfig *config) { }

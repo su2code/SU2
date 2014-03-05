@@ -617,7 +617,7 @@ private:
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
-
+  long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
@@ -4518,6 +4518,11 @@ public:
 	 */
 	double GetGust_Begin_Loc(void);
 
+  /*!
+	 * \brief Get the node number of the CV to visualize.
+	 * \return Node number of the CV to visualize.
+	 */
+	long GetVisualize_CV(void);
 
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
