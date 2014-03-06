@@ -227,6 +227,12 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     geometry[iZone][MESH_0]->SetControlVolume(config[iZone], ALLOCATE);
     geometry[iZone][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
     
+    /*--- Visualize a control volume if requested ---*/
+    
+    if ((config[iZone]->GetVisualize_CV() >= 0) &&
+        (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))
+      geometry[iZone][MESH_0]->VisualizeControlVolume(config[iZone], UPDATE);
+    
     /*--- Identify closest normal neighbor ---*/
     
     if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
