@@ -8039,7 +8039,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           
           CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
           
-          NormHeatFlux_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex], 8);
+          NormHeatFlux_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex], 2);
           
         }
         
