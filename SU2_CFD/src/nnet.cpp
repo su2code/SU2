@@ -331,6 +331,11 @@ string get_file_contents(string filename){
 CScalePredictor::CScalePredictor(){}
 #ifndef NO_JSONCPP
 CScalePredictor::CScalePredictor(string filename){
+  
+  if (filename.compare("none")==0) {
+    return;
+  }
+  
   string contents = get_file_contents(filename);
 
   Json::Value root;
