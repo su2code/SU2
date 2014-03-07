@@ -58,6 +58,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
       if (mesh_file.fail()) {
         cout << "cstr=" << cstr << endl;
         cout << "There is no geometry file (GetnZone))!" << endl;
+
 #ifdef NO_MPI
         exit(1);
 #else
