@@ -4379,6 +4379,11 @@ void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
       /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
     case VENKATAKRISHNAN:
       
+      /*-- Get limiter parameters from the configuration file ---*/
+      dave = config->GetRefElemLength();
+      LimK = config->GetLimiterCoeff();
+      eps2 = pow((LimK*dave), 3.0);
+      
       for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         
         iPoint     = geometry->edge[iEdge]->GetNode(0);
@@ -4391,11 +4396,6 @@ void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
         Coord_j    = geometry->node[jPoint]->GetCoord();
 				
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          
-          /*-- Get limiter parameters from the configuration file ---*/
-          dave = config->GetRefElemLength();
-          LimK = config->GetLimiterCoeff();
-          eps2 = pow((LimK*dave), 3.0);
           
           /*--- Calculate the interface left gradient, delta- (dm) ---*/
           dm = 0.0;
@@ -4412,10 +4412,6 @@ void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
             if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter_Primitive(iVar, limiter);
           
           /*-- Repeat for point j on the edge ---*/
-          dave = config->GetRefElemLength();
-          LimK = config->GetLimiterCoeff();
-          eps2 = pow((LimK*dave), 3.0);
-					
           dm = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];

@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/SST"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/Laminar_FlatPlate"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "sst_farfield_error.cfg"
+            argument = "lam_flatplate.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
