@@ -389,11 +389,13 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
 enum ENUM_CENTERED {
 	NO_CENTERED = 0,               /*!< \brief No centered scheme is used. */
 	JST = 1,			/*!< \brief Jameson-Smith-Turkel centered numerical method. */
-	LAX = 2			/*!< \brief Lax-Friedrich centered numerical method. */
+	LAX = 2,			/*!< \brief Lax-Friedrich centered numerical method. */
+        JST_KE = 3                     /*!< \brief . */
 };
 static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_CENTERED>
 ("NONE", NO_CENTERED)
 ("JST", JST)
+("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
 /*!
