@@ -906,6 +906,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Thermal diffusivity constant */
 	AddScalarOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
   
+  /*--- options related to visualizing control volumes ---*/
+	/* CONFIG_CATEGORY: Visualize Control Volumes */
+  
+  /* DESCRIPTION: Node number for the CV to be visualized */
+	AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
+  
+	/* DESCRIPTION: Thermal diffusivity constant */
+  
   
 	/* END_CONFIG_OPTIONS */
   
@@ -3066,6 +3074,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 						<< ", " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"."<< endl;
 				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
 			}
+                        if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST_KE)) {
+                                cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
+                                cout << "JST viscous coefficients (1st, 2nd): " << Kappa_1st_Flow
+                                                << ", " << Kappa_2nd_Flow << "."<< endl;
+                                cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+                        }
 			if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == LAX))
 				cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {

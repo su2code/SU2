@@ -4038,7 +4038,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   Volume, DomainVolume, my_DomainVolume, *NormalFace = NULL;
   bool change_face_orientation;
   int rank;
-//  int counter = 0;
+  
 #ifdef NO_MPI
   rank = MASTER_NODE;
 #else
@@ -4103,19 +4103,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
           Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
         }
         
-//        /*--- Print out the coordinates for a set of triangles making
-//         up a single dual control volume (for visualization) 124 is center ---*/
-//        if (face_iPoint == 124 || face_jPoint == 124) {
-//          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_FaceElem_CG[iDim] << "\t";
-//          cout << endl;
-//          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_Edge_CG[iDim] << "\t";
-//          cout << endl;
-//          for (iDim = 0; iDim < nDim; iDim++) cout << Coord_Elem_CG[iDim] << "\t";
-//          cout << endl;
-//          counter++;
-//        }
-        
-        
         switch (nDim) {
           case 2:
             /*--- Two dimensional problem ---*/
@@ -4139,13 +4126,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
       }
     }
   
-//  //cout << counter << endl;
-//  for (int i = 0; i < counter; i++){
-//    int j = i*3;
-//    cout << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t"<<j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
-//  }
-  
-  
   /*--- Check if there is a normal with null area ---*/
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     NormalFace = edge[iEdge]->GetNormal();
@@ -4154,13 +4134,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
   }
   
-  //	/*--- Set the volume for the iterations n and n-1 (dual time stteping with grid movement) ---*/
-  //	if (config->GetUnsteady_Simulation() != NO) {
-  //		for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  //			node[iPoint]->SetVolume_n();
-  //			node[iPoint]->SetVolume_nM1();
-  //		}
-  //	}
   
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -4184,6 +4157,338 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   delete[] Coord_Elem_CG;
   delete[] Coord_FaceiPoint;
   delete[] Coord_FacejPoint;
+}
+
+void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {
+  unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, jPoint, iElem, iPoint_Viz;
+  long iEdge;
+  unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
+  double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint,
+  *Coord_FacejPoint;
+  bool change_face_orientation;
+  int rank;
+  int counter = 0;
+  char cstr[200], buffer[50];
+  ofstream Tecplot_File;
+  string mesh_filename;
+  vector<double> X, Y, Z;
+  unsigned short iNodes, nNodes = 4;
+  unsigned long PointCorners[4];
+  double CoordCorners[4][3];
+  double r1[3], r2[3], CrossProduct[3];
+  double Vol, Area_Jameson = 0.0, Area_Dual = 0.0;
+  double r[3][3]; unsigned short node_counter;
+  
+  /*--- This routine is only meant for visualization in serial currently ---*/
+#ifdef NO_MPI
+  rank = MASTER_NODE;
+  
+  /*--- Access the point number for control volume we want to vizualize ---*/
+  
+  iPoint_Viz = config->GetVisualize_CV();
+  
+  /*--- Allocate some structures for building the dual CVs ---*/
+  
+  Coord_Edge_CG     = new double [nDim];
+  Coord_FaceElem_CG = new double [nDim];
+  Coord_Elem_CG     = new double [nDim];
+  Coord_FaceiPoint  = new double [nDim];
+  Coord_FacejPoint  = new double [nDim];
+  
+  /*--- Loop over each face of each element ---*/
+  
+  for(iElem = 0; iElem < nElem; iElem++) {
+    
+    for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+      
+      /*--- In 2D all the faces have only one edge ---*/
+      if (nDim == 2) nEdgesFace = 1;
+      /*--- In 3D the number of edges per face is the same as the number of point per face ---*/
+      if (nDim == 3) nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+      
+      /*-- Loop over the edges of a face ---*/
+      for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+        
+        /*--- In 2D only one edge (two points) per edge ---*/
+        if (nDim == 2) {
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
+        }
+        
+        /*--- In 3D there are several edges in each face ---*/
+        if (nDim == 3) {
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+          if (iEdgesFace != nEdgesFace-1)
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace+1));
+          else
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+        }
+        
+        /*--- We define a direction (from the smallest index to the greatest) --*/
+        change_face_orientation = false;
+        if (face_iPoint > face_jPoint) change_face_orientation = true;
+        iEdge = FindEdge(face_iPoint, face_jPoint);
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
+          Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
+          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace,iDim);
+          Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
+          Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
+        }
+        
+        /*--- Print out the coordinates for a set of triangles making
+         up a single dual control volume for visualization. ---*/
+        
+        if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+          //cout << face_iPoint << "    " << face_jPoint << endl;
+          if (nDim == 2) {
+            X.push_back(Coord_Elem_CG[0]); X.push_back(Coord_Edge_CG[0]);
+            Y.push_back(Coord_Elem_CG[1]); Y.push_back(Coord_Edge_CG[1]);
+          } else if (nDim == 3) {
+            X.push_back(Coord_FaceElem_CG[0]); X.push_back(Coord_Edge_CG[0]); X.push_back(Coord_Elem_CG[0]);
+            Y.push_back(Coord_FaceElem_CG[1]); Y.push_back(Coord_Edge_CG[1]); Y.push_back(Coord_Elem_CG[1]);
+            Z.push_back(Coord_FaceElem_CG[2]); Z.push_back(Coord_Edge_CG[2]); Z.push_back(Coord_Elem_CG[2]);
+            
+            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                r1[iDim] = Coord_FaceElem_CG[iDim]-Coord_Elem_CG[iDim];
+                r2[iDim] = Coord_Edge_CG[iDim]-Coord_Elem_CG[iDim];
+              }
+              
+              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
+              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
+              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+              
+              Area_Dual += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
+                                    +CrossProduct[1]*CrossProduct[1]
+                                    +CrossProduct[2]*CrossProduct[2]);
+            }
+          }
+          counter++;
+        }
+      }
+    }
+  }
+  
+  /*--- Write a Tecplot file to visualize the CV ---*/
+  
+  strcpy(cstr,"dual_cv");
+  sprintf (buffer, "_%d.dat", int(iPoint_Viz));
+  strcat(cstr,buffer);
+  
+  Tecplot_File.open(cstr, ios::out);
+  Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+  
+  if (nDim == 2) {
+    Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+    Tecplot_File << "ZONE NODES= "<< counter*2 <<", ELEMENTS= ";
+    Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+  } if (nDim == 3) {
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+    Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
+    Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+  }
+  
+  /*--- Write coordinates for the nodes in the order that they were found
+   for each of the edges/triangles making up a dual control volume. ---*/
+  
+  for(vector<double>::size_type i = 0; i != X.size(); i++) {
+    Tecplot_File << X[i] << "\t" << Y[i];
+    if (nDim == 3) Tecplot_File << "\t" << Z[i];
+    Tecplot_File << "\n";
+  }
+  
+  /*--- Create a new connectivity table in the order the faces were found ---*/
+  
+  int j;
+  for (int i= 0; i < counter; i++){
+    if (nDim == 2) {
+      j = i*2;
+      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
+    } if (nDim == 3) {
+      j = i*3;
+      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t";
+      Tecplot_File << j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
+    }
+  }
+  
+  Tecplot_File.close();
+  X.clear();
+  Y.clear();
+  Z.clear();
+  
+  
+  /*--- Now plot Jameson's control volume for the same node (assumes tets) ---*/
+  
+  Area_Jameson = 0.0; Vol = 0.0; counter = 0; nNodes = 4;
+  for(iElem = 0; iElem < nElem; iElem++) {
+    
+    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+      
+      for (iNodes = 0; iNodes < nNodes; iNodes++) {
+        PointCorners[iNodes] = elem[iElem]->GetNode(iNodes);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          CoordCorners[iNodes][iDim] = node[PointCorners[iNodes]]->GetCoord(iDim);
+        }
+      }
+      
+      for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+        
+        nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+        
+        /*-- Loop over the edges of a face ---*/
+        for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+          
+          /*--- In 3D there are several edges in each face ---*/
+          if (nDim == 3) {
+            face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+            if (iEdgesFace != nEdgesFace-1)
+              face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace+1));
+            else
+              face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          }
+          
+          /*--- We define a direction (from the smallest index to the greatest) --*/
+          
+          change_face_orientation = false;
+          if (face_iPoint > face_jPoint) change_face_orientation = true;
+          iEdge = FindEdge(face_iPoint, face_jPoint);
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
+            Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
+            Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace,iDim);
+            Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
+            Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
+          }
+          
+          
+          if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+            
+            node_counter = 0;
+            for (iNodes = 0; iNodes < nNodes; iNodes++) {
+              
+              jPoint = elem[iElem]->GetNode(iNodes);
+              
+              /*--- Add the other three nodes to the triangle list, except for
+               the point that we are trying to visualize ---*/
+              if (jPoint != iPoint_Viz) {
+                
+                X.push_back(CoordCorners[iNodes][0]);
+                Y.push_back(CoordCorners[iNodes][1]);
+                Z.push_back(CoordCorners[iNodes][2]);
+                
+                r[node_counter][0] = CoordCorners[iNodes][0];
+                r[node_counter][1] = CoordCorners[iNodes][1];
+                r[node_counter][2] = CoordCorners[iNodes][2];
+                
+                node_counter++;
+                
+              }
+            }
+            counter++;
+            
+            /*--- For only the selected edge, increment the surface area ---*/
+            
+            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                r1[iDim] = r[1][iDim]-r[0][iDim];
+                r2[iDim] = r[2][iDim]-r[0][iDim];
+              }
+              
+              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
+              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
+              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+              
+              Area_Jameson += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
+                                       +CrossProduct[1]*CrossProduct[1]
+                                       +CrossProduct[2]*CrossProduct[2]);
+              
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Write a Tecplot file to visualize the CV ---*/
+  
+  if (counter > 0 && nDim ==3) {
+    
+    /*--- Compare total surface areas for the two types of control volumes
+     along a single edge --*/
+    
+    double Area_Dual = 0.0; double Area_Tmp; double *Normal;
+    for (iEdge = 0; iEdge < nEdge; iEdge++) {
+      
+      /*--- Points in edge, set normal vectors, and number of neighbors ---*/
+      
+      iPoint = edge[iEdge]->GetNode(0);
+      jPoint = edge[iEdge]->GetNode(1);
+      
+      if ((jPoint == 123 && iPoint == iPoint_Viz) ||
+          (iPoint == 123 && jPoint == iPoint_Viz) ) {
+        
+        Normal = edge[iEdge]->GetNormal();
+        
+        Area_Tmp = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area_Tmp += Normal[iDim]*Normal[iDim];
+        Area_Dual += sqrt(Area_Tmp);
+        
+      }
+    }
+    
+    cout << "Area comparison for node " << iPoint_Viz << ": ";
+    cout << Area_Dual << ", " << Area_Jameson << ", Ratio: ";
+    cout << Area_Jameson/Area_Dual << endl;
+    
+    strcpy(cstr,"jameson_cv");
+    sprintf (buffer, "_%d.dat", int(iPoint_Viz));
+    strcat(cstr,buffer);
+    
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+    Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
+    Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+    
+    /*--- Write coordinates for the nodes in the order that they were found
+     for each of the edges/triangles making up a dual control volume. ---*/
+    
+    for(vector<double>::size_type i = 0; i != X.size(); i++) {
+      Tecplot_File << X[i] << "\t" << Y[i];
+      if (nDim == 3) Tecplot_File << "\t" << Z[i];
+      Tecplot_File << "\n";
+    }
+    
+    /*--- Create a new connectivity table in the order the faces were found ---*/
+    
+    int j;
+    for (int i= 0; i < counter; i++){
+      j = i*3;
+      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t";
+      Tecplot_File << j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
+    }
+    
+    Tecplot_File.close();
+    X.clear();
+    Y.clear();
+    Z.clear();
+    
+  }
+  
+  delete[] Coord_Edge_CG;
+  delete[] Coord_FaceElem_CG;
+  delete[] Coord_Elem_CG;
+  delete[] Coord_FaceiPoint;
+  delete[] Coord_FacejPoint;
+  
+#endif
 }
 
 void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
@@ -5270,23 +5575,23 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	  /*--- Send/Receive information using Sendrecv ---*/   
-	  MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-					Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
+                   Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/   
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Coord, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Coord, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif 
+#endif
 #else
       
-      /*--- Receive information without MPI ---*/    
+      /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = vertex[MarkerR][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Receive_Coord[iDim*nVertexR+iVertex] = Buffer_Send_Coord[iDim*nVertexR+iVertex];
       }
-
+      
 #endif
       
       /*--- Deallocate send buffer ---*/
@@ -5329,21 +5634,21 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
         /*--- Rotate the coordinates. ---*/
         
         if (nDim == 2) {
-          newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Coord[2*nVertexR+iVertex];
-          newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Coord[2*nVertexR+iVertex];
+          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
         }
         else {
-          newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
-          newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
-          newCoord[2] = rotMatrix[2][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
+          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[0][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
+          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[1][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
+          newCoord[2] = (rotMatrix[2][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[2][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[2][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
         }
         
         /*--- Copy transformed coordinates back into buffer. ---*/
@@ -5411,17 +5716,17 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	  /*--- Send/Receive information using Sendrecv ---*/   
-	MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-					Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
+                   Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/     
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_GridVel, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_GridVel, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif  
+#endif
 #else
       
-      /*--- Receive information without MPI ---*/    
+      /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = vertex[MarkerR][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -5467,21 +5772,21 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
           newGridVel[iDim] = Buffer_Receive_GridVel[iDim*nVertexR+iVertex];
         
         if (nDim == 2) {
-          newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex];
-          newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex];
+          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
+          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
         }
         else {
-          newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
-          newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
-          newGridVel[2] = rotMatrix[2][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
+          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[0][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
+          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[1][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
+          newGridVel[2] = (rotMatrix[2][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[2][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[2][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
         }
         
         /*--- Copy transformed grid velocity back into buffer. ---*/
@@ -7624,18 +7929,18 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	/*--- Send/Receive information using Sendrecv ---*/   
-	MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
-					Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
-	MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
-					Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
+                   Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
+      MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
+                   Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/      
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Children, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 0,
                                Buffer_Receive_Children, nBufferR_Vector, MPI::UNSIGNED_LONG, receive_from, 0);
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Parent, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 1,
                                Buffer_Receive_Parent, nBufferR_Vector, MPI::UNSIGNED_LONG, receive_from, 1);
-#endif  
+#endif
 #else
       
       /*--- Receive information without MPI ---*/
@@ -11097,17 +11402,17 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_BoundTriangle,       *Buffer_Receive_BoundTriangle;
   unsigned long *Buffer_Send_BoundRectangle,      *Buffer_Receive_BoundRectangle;
   unsigned long *Buffer_Send_Local2Global_Marker, *Buffer_Receive_Local2Global_Marker;
-
+  
   int rank, size;
-
+  
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&rank);
-	MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
+  rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
   /*--- Basic dimensionalization ---*/
   nDomain = size;
   
@@ -11272,7 +11577,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(&nElemHexahedron,    1,  MPI::UNSIGNED_LONG,   iDomain, 9);
       MPI::COMM_WORLD.Bsend(&nElemWedge,         1,  MPI::UNSIGNED_LONG,   iDomain, 10);
       MPI::COMM_WORLD.Bsend(&nElemPyramid,       1,  MPI::UNSIGNED_LONG,   iDomain, 11);
-#endif    
+#endif
       /*--- Allocate the send buffer vector ---*/
       Buffer_Send_BoundLine =           new unsigned long [nBoundLineTotal*2];
       Buffer_Send_BoundTriangle =       new unsigned long [nBoundTriangleTotal*3];
@@ -11281,7 +11586,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the size of buffers ---*/
 #ifdef WINDOWS
-	  MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
+      MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundTriangleTotal,  1, MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundRectangleTotal, 1, MPI_UNSIGNED_LONG, iDomain, 14, MPI_COMM_WORLD);
       MPI_Bsend(&nMarkerDomain,        1, MPI_UNSIGNED_LONG, iDomain, 15, MPI_COMM_WORLD);
@@ -11308,14 +11613,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the size of buffers ---*/
       MPI::COMM_WORLD.Bsend(&nPeriodic, 1, MPI::UNSIGNED_SHORT, iDomain, 22);
-#endif     
+#endif
     }
     
     if (rank == iDomain) {
       
 #ifdef WINDOWS
-	  /*--- Receive the size of buffers---*/
-	  MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
+      /*--- Receive the size of buffers---*/
+      MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointTotal,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 1, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointDomainTotal,  1, MPI_UNSIGNED_LONG,    MASTER_NODE, 2, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointGhost,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 3, MPI_COMM_WORLD, NULL);
@@ -11340,7 +11645,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI_SHORT, MASTER_NODE, 20, MPI_COMM_WORLD, NULL);
       MPI_Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI_CHAR, MASTER_NODE, 21, MPI_COMM_WORLD, NULL);
 #else
-	  /*--- Receive the size of buffers---*/
+      /*--- Receive the size of buffers---*/
       MPI::COMM_WORLD.Recv(&nDim,               1, MPI::UNSIGNED_SHORT,   MASTER_NODE, 0);
       MPI::COMM_WORLD.Recv(&nPointTotal,        1, MPI::UNSIGNED_LONG,    MASTER_NODE, 1);
       MPI::COMM_WORLD.Recv(&nPointDomainTotal,  1, MPI::UNSIGNED_LONG,    MASTER_NODE, 2);
@@ -11366,18 +11671,18 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI::SHORT, MASTER_NODE, 20);
       MPI::COMM_WORLD.Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI::CHAR, MASTER_NODE, 21);
 #endif
-
+      
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
       }
       
       /*--- Receive the size of buffers ---*/
 #ifdef WINDOWS
-	  MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, NULL);
+      MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Recv(&nPeriodic, 1, MPI::UNSIGNED_SHORT, MASTER_NODE, 22);
 #endif
-
+      
       config->SetnPeriodicIndex(nPeriodic);
       double* center = new double[3]; double* rotation  = new double[3]; double* translate = new double[3];
       for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
@@ -11565,7 +11870,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the buffers with the geometrical information ---*/
 #ifdef WINDOWS
-	  MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_GlobalPointIndex,      nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Color,                 nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Triangle,              nElemTriangle*3,    MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
@@ -11585,7 +11890,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(Buffer_Send_Wedge,                 nElemWedge*6,       MPI::UNSIGNED_LONG, iDomain, 8);
       MPI::COMM_WORLD.Bsend(Buffer_Send_Pyramid,               nElemPyramid*5,     MPI::UNSIGNED_LONG, iDomain, 9);
 #endif
-
+      
       delete[] Buffer_Send_Coord;
       delete[] Buffer_Send_GlobalPointIndex;
       delete[] Buffer_Send_Color;
@@ -11595,9 +11900,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Send_Hexahedron;
       delete[] Buffer_Send_Wedge;
       delete[] Buffer_Send_Pyramid;
- 
+      
 #ifdef WINDOWS
-	  MPI_Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, iDomain, 11, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
@@ -11607,7 +11912,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, iDomain, 12);
       MPI::COMM_WORLD.Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, iDomain, 13);
 #endif
-
+      
       delete[] Buffer_Send_BoundLine;
       delete[] Buffer_Send_BoundTriangle;
       delete[] Buffer_Send_BoundRectangle;
@@ -11618,7 +11923,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Set a communitation barrier before
      receiving to reduce the buffering ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 #else
     MPI::COMM_WORLD.Barrier();
 #endif
@@ -11627,7 +11932,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Receive the buffers with the geometrical information ---*/
 #ifdef WINDOWS
-	  MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
+      MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_GlobalPointIndex,      nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Color,                 nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Triangle,              nElemTriangle*3,     MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, NULL);
@@ -11635,7 +11940,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI_UNSIGNED_LONG, MASTER_NODE, 6, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI_UNSIGNED_LONG, MASTER_NODE, 7, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI_UNSIGNED_LONG, MASTER_NODE, 8, MPI_COMM_WORLD, NULL);
-      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, NULL);      
+      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, MASTER_NODE, 10, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, NULL);
@@ -11649,13 +11954,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI::UNSIGNED_LONG, MASTER_NODE, 6);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI::UNSIGNED_LONG, MASTER_NODE, 7);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI::UNSIGNED_LONG, MASTER_NODE, 8);
-      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);    
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI::UNSIGNED_LONG, MASTER_NODE, 10);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI::UNSIGNED_LONG, MASTER_NODE, 11);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, MASTER_NODE, 12);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, MASTER_NODE, 13);
 #endif
-
+      
       /*--- Create the domain structures for the points ---*/
       nPoint = nPointTotal; iPoint = 0;
       nPointDomain = nPointDomainTotal;
@@ -11762,11 +12067,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
 #endif
-
+  
   //  /*--- Set the periodic boundary conditions ---*/
   //  unsigned long ReceptorColor, DonorColor, Transformation;
   //  unsigned short jMarker;
@@ -12009,9 +12314,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
 #endif
   
   if (rank == MASTER_NODE) {
@@ -12476,15 +12781,15 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
   unsigned short iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
-
+  
   int rank, size;
-
+  
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&rank);
-	MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
+  rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
   
   int nDomain = size;
@@ -12671,13 +12976,13 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   /*--- Send after receive in the .su2 file ---*/
   unsigned short iDomain, nDomain;
   int size;
-
+  
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
-	size = MPI::COMM_WORLD.Get_size();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
   nDomain = size+1;
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -13630,7 +13935,7 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   RemoveCV(iPoint);
   for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
-    if (fine_grid->node[jPoint]->GetAgglomerate() == false) 
+    if (fine_grid->node[jPoint]->GetAgglomerate() == false)
       IncrPriorityCV(jPoint);
   }
   
