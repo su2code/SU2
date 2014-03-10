@@ -597,6 +597,7 @@ enum BC_TYPE {
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
+  ACTUATOR_DISK = 31,	/*!< \brief Actuator disk boundary definition. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 

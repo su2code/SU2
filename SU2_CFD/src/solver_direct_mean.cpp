@@ -6376,6 +6376,94 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
 
 }
 
+void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                             CConfig *config, unsigned short val_marker) {
+  
+  /*--- Calculate the actuator disk BC --- */
+  
+  
+  /* Here are some useful structures from the Euler wall to help get you started... */
+  
+  unsigned short iDim, iVar, jVar, jDim;
+  unsigned long iPoint, iVertex;
+  double Pressure, *Normal = NULL, *GridVel = NULL, *U_disk = NULL, Area, UnitNormal[3],
+  ProjGridVel = 0.0, a2, phi;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+      
+      /*--- Get the solution at the current disk node ---*/
+      U_disk = node[iPoint]->GetSolution();
+      
+      /*--- Set the residual using the pressure ---*/
+      if (compressible)                   Pressure = node[iPoint]->GetPressure();
+      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
+      
+      Residual[0] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
+      
+      if (compressible || freesurface) {
+        Residual[nVar-1] = 0.0;
+      }
+      
+      /*--- Add value to the residual ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Form Jacobians for implicit computations ---*/
+      if (implicit) {
+        
+        /*--- Initialize jacobian ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+        
+        if (compressible)  {
+          a2 = Gamma-1.0;
+          phi = 0.5*a2*node[iPoint]->GetVelocity2();
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Jacobian_i[0][iVar] = 0.0;
+            Jacobian_i[nDim+1][iVar] = 0.0;
+          }
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
+            for (jDim = 0; jDim < nDim; jDim++)
+              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
+            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
+          }
+          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+        }
+        if (incompressible || freesurface)  {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][0] = -Normal[iDim];
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        }
+        
+      }
+    }
+  }
+  
+}
+
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) { }
 
