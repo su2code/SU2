@@ -546,7 +546,17 @@ public:
 	 */
 	virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                        unsigned short val_marker);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2213,7 +2223,18 @@ public:
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config, unsigned short val_marker);
-    
+  
+  /*!
+	 * \brief Impose the actuator disk boundary condition using the residual.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                 CConfig *config, unsigned short val_marker);
+  
 	/*!
 	 * \brief Impose the dirichlet boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.

@@ -115,6 +115,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 			case NEARFIELD_BOUNDARY:
 				solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
+      case ACTUATOR_DISK:
+				solver_container[MainSolver]->BC_Actuator_Disk_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+				break;
 			case ELECTRODE_BOUNDARY:
 				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;

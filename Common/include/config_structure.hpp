@@ -125,6 +125,7 @@ private:
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
+  nMarker_Actuator_Disk,				/*!< \brief Number of actuator disk boundary markers. */
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet_Elec,				/*!< \brief Number of interface boundary markers. */
@@ -154,6 +155,7 @@ private:
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+  *Marker_Actuator_Disk,				/*!< \brief Actuator disk boundary markers. */
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
@@ -1666,6 +1668,12 @@ public:
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
 
+  /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_Actuator_Disk(void);
+  
   /*!
    * \brief Get the total number of 1D output markers.
    * \return Total number of monitoring markers.

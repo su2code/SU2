@@ -167,6 +167,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddMarkerOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
 	/* DESCRIPTION: Zone interface boundary marker(s) */
 	AddMarkerOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
+  /* DESCRIPTION: Actuator disk boundary condition */
+	AddMarkerOption("MARKER_ACTUATOR_DISK", nMarker_Actuator_Disk, Marker_Actuator_Disk);
 	/* DESCRIPTION: Dirichlet boundary marker(s) */
 	AddMarkerOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
@@ -2418,7 +2420,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
 			+ nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
+			+ nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + nMarker_Actuator_Disk + 2*nDomain+nMarker_Out_1D;
 
 	Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
 	Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2436,7 +2438,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
 	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
 	iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-	iMarker_Supersonic_Inlet,iMarker_Out_1D;
+	iMarker_Supersonic_Inlet,iMarker_Out_1D, iMarker_Actuator_Disk;
 
 	for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
 		Marker_All_Tag[iMarker_All] = "NONE";
@@ -2455,7 +2457,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
 			+ nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal
 			+ nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement
-			+ nMarker_Load + nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
+			+ nMarker_Load + nMarker_FlowLoad + nMarker_Custom + nMarker_Actuator_Disk + nMarker_Out_1D;
 
 	Marker_Config_Tag        = new string[nMarker_Config];
 	Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -2516,6 +2518,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 	for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
 		Marker_Config_Tag[iMarker_Config] = Marker_NearFieldBound[iMarker_NearFieldBound];
 		Marker_Config_Boundary[iMarker_Config] = NEARFIELD_BOUNDARY;
+		iMarker_Config++;
+	}
+
+  for (iMarker_Actuator_Disk = 0; iMarker_Actuator_Disk < nMarker_Actuator_Disk; iMarker_Actuator_Disk++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_Actuator_Disk[iMarker_Actuator_Disk];
+		Marker_Config_Boundary[iMarker_Config] = ACTUATOR_DISK;
 		iMarker_Config++;
 	}
 
@@ -2663,7 +2671,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
 	iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
+	iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Actuator_Disk;
 
 	cout << endl <<"-------------------------------------------------------------------------" << endl;
 	cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -3746,6 +3754,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
+  if (nMarker_Actuator_Disk != 0) {
+		cout << "Actuator disk boundary marker(s): ";
+		for (iMarker_Actuator_Disk = 0; iMarker_Actuator_Disk < nMarker_Actuator_Disk; iMarker_Actuator_Disk++) {
+			cout << Marker_Actuator_Disk[iMarker_Actuator_Disk];
+			if (iMarker_Actuator_Disk < nMarker_Actuator_Disk-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
 	if (nMarker_InterfaceBound != 0) {
 		cout << "Interface boundary marker(s): ";
 		for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
