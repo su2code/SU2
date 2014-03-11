@@ -31,8 +31,8 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 	Sens_Geo = NULL;
 	Sens_Press = NULL;
 	Sens_Temp = NULL;
-	p1_Und_Lapl = NULL;
-	p2_Und_Lapl = NULL;
+	iPoint_UndLapl = NULL;
+	jPoint_UndLapl = NULL;
   Jacobian_Axisymmetric = NULL;
 	CSensitivity = NULL;
 
@@ -67,8 +67,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 	Sens_Geo = NULL;
 	Sens_Press = NULL;
 	Sens_Temp = NULL;
-	p1_Und_Lapl = NULL;
-	p2_Und_Lapl = NULL;
+	iPoint_UndLapl = NULL;
+	jPoint_UndLapl = NULL;
   Jacobian_Axisymmetric = NULL;
 	CSensitivity = NULL;
   
@@ -112,8 +112,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
 	/*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) {
-		p1_Und_Lapl = new double [nPoint];
-		p2_Und_Lapl = new double [nPoint]; 
+		iPoint_UndLapl = new double [nPoint];
+		jPoint_UndLapl = new double [nPoint]; 
 	}
 
 	/*--- Define some auxiliary vectors related to the geometry ---*/
@@ -298,8 +298,8 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
 	if (Sens_Geo != NULL) delete [] Sens_Geo;
 	if (Sens_Press != NULL) delete [] Sens_Press;
 	if (Sens_Temp != NULL) delete [] Sens_Temp;
-	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
-	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
+	if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
+	if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   
   
 	if (Jacobian_Axisymmetric != NULL) {

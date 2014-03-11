@@ -1,5 +1,5 @@
 /*!
- * \file functions_turbulent.cpp
+ * \file numerics_machine_learning_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
  * \version 3.0.0 "eagle"
@@ -20,7 +20,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/functions_turbulent.hpp"
+#include "../include/numerics_machine_learning_turbulent.hpp"
 
 SpalartAllmarasConstants::SpalartAllmarasConstants(){
   /*--- Spalart-Allmaras closure constants ---*/
