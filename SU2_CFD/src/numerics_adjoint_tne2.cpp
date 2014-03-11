@@ -850,7 +850,7 @@ CAvgGrad_AdjTNE2::~CAvgGrad_AdjTNE2(void) {
 void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i, double *val_residual_j,
                                        double **val_Jacobian_ii, double **val_Jacobian_ij,
                                        double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
-  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
+  unsigned short iDim, iSpecies, iVar, jVar;
 	double rho;
   double u, v, w, sqvel;
   
