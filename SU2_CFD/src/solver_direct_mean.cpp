@@ -3330,18 +3330,16 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker,Out1D;
-  double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure,
-      Mach,SumPressure,SumArea,SumMach,  AveragePressure =0.0, AverageMach=0.0;
+  double *Normal = NULL, Area,*Coord,
+      Stag_Pressure, Mach,Temperature,Pressure,
+      SumPressure=0,SumArea=0,SumMach=0, SumTemperature=0,
+      AveragePressure =0.0, AverageMach=0.0, AverageTemperature=0.0;
   string Marker_Tag, Monitoring_Tag;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
-  /*-- Variables initialization ---*/
-  SumArea=0;
-  SumPressure=0.0;
-  SumMach=0.0;
   /*--- Loop over the markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Out1D = config ->GetMarker_All_Out_1D(iMarker);
@@ -3360,15 +3358,18 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
         if (incompressible || freesurface) Pressure = node[iPoint]->GetPressureInc();
         Mach = (sqrt(node[iPoint]->GetVelocity2()) / node[iPoint]->GetSoundSpeed());
         Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
+        Temperature = node[iPoint]->GetTemperature();
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
         SumPressure+=Stag_Pressure * Area;
         SumArea+=Area;
         SumMach+=Mach*Area;
+        SumTemperature+=Temperature*Area;
       }
     }
     if (Out1D==YES){
       AveragePressure += SumPressure*(1.0/SumArea);
       AverageMach += SumMach*(1.0/SumArea);
+      AverageTemperature += SumTemperature*(1.0/SumArea);
     }
   }// end of loop over markers
 
@@ -3377,13 +3378,16 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
     /*--- Add AllBound information using all the nodes ---*/
     double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
     double My_AverageMach            = AverageMach;            AverageMach = 0.0;
+    double My_AverageTemperature     = AverageTemperature;     AverageTemperature = 0.0;
 
 #ifdef WINDOWS
       MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       MPI_Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
       MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
       MPI::COMM_WORLD.Allreduce(&My_AverageMach, &AverageMach, 1, MPI::DOUBLE, MPI::SUM);
+      MPI::COMM_WORLD.Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI::DOUBLE, MPI::SUM);
 #endif // WINDOWS
 
 #endif // NO_MPI
@@ -3391,6 +3395,7 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   /*Set Area Averaged Stagnation Pressure Output*/
   OneD_Pt=AveragePressure;
   OneD_M=AverageMach;
+  OneD_T=AverageTemperature;
 }/*CEulerSolver::OneDimensionalOutput*/
 
 
