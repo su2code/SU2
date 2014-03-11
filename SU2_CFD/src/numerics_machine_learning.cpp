@@ -360,9 +360,6 @@ CScalePredictor::CScalePredictor(string filename){
   this->OutputScaler = parse_cscaler(root["OutputScaler"]);
   this->Pred = parse_predictor(root["Predictor"]);
   
-  
-CNeurNet *mynet = (CNeurNet*)(this->Pred);
-  
   // Check the predictions
   int nTestInputs = root["TestInputs"].size();
   int nTestOutputs = root["TestOutputs"].size();
