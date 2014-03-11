@@ -5357,6 +5357,99 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   }
 }
 
+void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+  
+  short iSection, nSection;
+  unsigned long iVertex, iPoint;
+  double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *Pressure, MinXCoord, MaxXCoord;
+  vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
+  string Marker_Tag, Slice_Filename, Slice_Ext;
+  ofstream Cp_File;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
+  Plane_P0 = new double [3];
+  Plane_Normal = new double [3];
+  Pressure = new double [geometry->GetnPoint()];
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+  
+  /*--- Copy the pressure to an auxiliar structure ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if (compressible)   Pressure[iPoint] = solver_container->node[iPoint]->GetPressure();
+    if (incompressible || freesurface) Pressure[iPoint] = solver_container->node[iPoint]->GetPressureInc();
+  }
+  
+  nSection = config->GetnSections();
+  
+  for (iSection = 0; iSection < nSection; iSection++) {
+    
+    /*--- Read the values from the config file ---*/
+
+    MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
+    MinXCoord = -1E6; MaxXCoord = 1E6;
+    
+    Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
+    Plane_Normal[1] = 0.0;    Plane_P0[1] = 0.0;
+    Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
+    
+    Plane_Normal[config->GetAxis_Orientation()] = 1.0;
+    Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
+    
+    /*--- Compute the airfoil sections ---*/
+    geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, Pressure,
+                                     Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+                                     Pressure_Airfoil, true, config);
+    
+    /*--- Output the pressure on each section (tecplot format) ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      ofstream Tecplot_File;
+      if (iSection == 0) {
+        Tecplot_File.open("Cp_Sections.plt", ios::out);
+        Tecplot_File << "TITLE = \"Airfoil sections\"" << endl;
+        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Pressure\"" << endl;
+      }
+      else Tecplot_File.open("Cp_Sections.plt", ios::app);
+      
+      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+      
+      /*--- Coordinates and pressure value ---*/
+      
+      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+      }
+      
+      /*--- Basic conectivity ---*/
+      
+      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
+      }
+      
+      Tecplot_File.close();
+    }
+    
+  }
+  
+  /*--- Delete dynamically allocated memory ---*/
+  
+  delete [] Plane_P0;
+  delete [] Plane_Normal;
+  delete [] Pressure;
+  
+}
+
+
 void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
   
   ofstream EquivArea_file, FuncGrad_file;
