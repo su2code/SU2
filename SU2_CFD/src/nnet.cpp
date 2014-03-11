@@ -72,20 +72,27 @@ CActivator::~CActivator(){}
 
 CTanhActivator::CTanhActivator(){}
 #ifndef NO_JSONCPP
-CTanhActivator::CTanhActivator(Json::Value json){}
+CTanhActivator::CTanhActivator(Json::Value json){
+}
 #endif
 CTanhActivator::~CTanhActivator(){}
 double CTanhActivator::Activate(double sum){
+  //cout << "In CTanhActivator" << endl;
 	double val =  1.7159 * tanh(2.0/3.0 *sum);
+  //cout << "Done CTanhActivator" << endl;
 	return val;
 }
 
 CLinearActivator::CLinearActivator(){}
 #ifndef NO_JSONCPP
-CLinearActivator::CLinearActivator(Json::Value){}
+CLinearActivator::CLinearActivator(Json::Value){
+}
 #endif
+
 CLinearActivator::~CLinearActivator(){}
+
 double CLinearActivator::Activate(double sum){
+//  cout << "In CLinear Activate" << endl;
 	return sum;
 }
 
@@ -115,16 +122,14 @@ CSumNeuron::~CSumNeuron(){
 }
 
 double CSumNeuron::Combine(double *parameters, int nParameters, double *inputs, int nInputs){
-  
-  if (nParameters != nInputs +1){
-    cout << "parameter size mismatch" <<endl;
-  }
   double combination = 0;
 	for (int i = 0; i < nInputs; i++){
 		combination += inputs[i] * parameters[i];
 	}
+ 
 	// Add in the bias term
   combination+= parameters[nParameters -1];
+//  cout << "Done CSumNeuronCombine" << endl;
 	return combination;
 }
 
@@ -195,7 +200,9 @@ CNeurNet::CNeurNet(Json::Value json){
       this->nParameters[i][j] = nParametersInNeuron;
       this->parameters[i][j] = new double [nParametersInNeuron];
       for (int k = 0; k < nParametersInNeuron; k++){
-        this-> parameters[i][j][k] = parameterLayer[j][k].asDouble();
+        
+        double val = parameterLayer[j][k].asDouble();
+        this->parameters[i][j][k] = val;
       }
       
       // get the neurons
@@ -220,6 +227,7 @@ CNeurNet::CNeurNet(Json::Value json){
 #endif
 
 CNeurNet::~CNeurNet(){
+  
   for (int i = 0; i < this->nLayers; i++){
     for (int j = 0; j < this->nNeuronsInLayer[i]; j++){
       delete [] this-> parameters[i][j];
@@ -248,13 +256,14 @@ void CNeurNet::Predict(double * input, double * output){
   double *tmpOutput = new double[this->maxNeurons];
   
   int nLayers = this->nLayers;
+  
   if (nLayers == 1){
     this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], output);
     return;
   }
+  
   // First layer uses the real input as the input
   this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], tmpOutput);
-  
   
   // Middle layers use the previous output as input
   for (int i= 1; i < nLayers -1; i++){
@@ -268,6 +277,7 @@ void CNeurNet::Predict(double * input, double * output){
   }
   int layer = nLayers -1;
   int inputDim = this->nNeuronsInLayer[nLayers-2];
+  
   // Last layer has the actual output
   processLayer(tmpOutput, inputDim, this->neurons[layer], this->parameters[layer], this->nNeuronsInLayer[layer],this->nParameters[layer], output);
   
@@ -337,7 +347,7 @@ CScalePredictor::CScalePredictor(string filename){
   }
   
   string contents = get_file_contents(filename);
-
+  
   Json::Value root;
   Json::Reader reader;
   bool parsingSuccessful = reader.parse(contents, root);
@@ -349,6 +359,9 @@ CScalePredictor::CScalePredictor(string filename){
   this->InputScaler = parse_cscaler(root["InputScaler"]);
   this->OutputScaler = parse_cscaler(root["OutputScaler"]);
   this->Pred = parse_predictor(root["Predictor"]);
+  
+  
+CNeurNet *mynet = (CNeurNet*)(this->Pred);
   
   // Check the predictions
   int nTestInputs = root["TestInputs"].size();
@@ -366,9 +379,12 @@ CScalePredictor::CScalePredictor(string filename){
     double *output = new double[nOutputs];
     for (int j = 0; j < nInputs; j++){
       input[j] = testInputs[i][j].asDouble();
+    }
+    for (int j=0; j < nOutputs; j++){
       output[j] = testOutputs[i][j].asDouble();
     }
     double *predOutput = new double[nOutputs];
+    
     this->Predict(input, predOutput);
     bool mismatch = 0;
     for (int j = 0; j < nOutputs; j++){
@@ -379,7 +395,7 @@ CScalePredictor::CScalePredictor(string filename){
       if (max < 1.0){
         max = 1.0;
       }
-      if (abs(output[j] - predOutput[j])/(max) > 1e-12){
+      if (abs(output[j] - predOutput[j])/(max) > 1e-14){
         mismatch = 1;
       }
     }
@@ -415,6 +431,7 @@ void CScalePredictor::Predict(double *input, double *output){
   
   // Call the predict method
   this->Pred->Predict(input, output);
+  
   // Unscale
   this->InputScaler->Unscale(input);
 	this->OutputScaler->Unscale(output);
