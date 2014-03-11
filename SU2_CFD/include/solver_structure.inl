@@ -286,6 +286,8 @@ inline double CSolver::GetOneDStagPressure(void){return 0;}
 
 inline void CSolver::SetOneDStagPressure(double val_exit_pt){ }
 
+inline double CSolver::GetOneDMach(void){return 0;}
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
@@ -576,6 +578,8 @@ inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFr
 inline double CEulerSolver::GetOneDStagPressure(void) { return OneD_Pt; }
 
 inline void CEulerSolver::SetOneDStagPressure(double oneD_pt) { OneD_Pt=oneD_pt; }
+
+inline double CEulerSolver::GetOneDMach(void){return OneD_M;}
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
