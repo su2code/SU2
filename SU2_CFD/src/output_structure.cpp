@@ -3840,7 +3840,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char fea_coeff[]= ",\"CFEA\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   
-  char oneD_stagnation_pressure[]=",\"1D_Pt\"";
+  char oneD_outputs[]=",\"1D_Pt\",\"1D_Mach\"";
 
   /*--- Header for the residuals ---*/
   
@@ -3879,7 +3879,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
-      if (output_1d) ConvHist_file[0] << oneD_stagnation_pressure;
+      if (output_1d) ConvHist_file[0] << oneD_outputs;
       ConvHist_file[0] << end;
       if (freesurface) {
         ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
@@ -3956,7 +3956,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     turb_resid[1000], trans_resid[1000], adj_turb_resid[1000], resid_aux[1000],
     levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000], heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000],
     fea_resid[1000], end[1000];
-    char oneD_stagnation_pressure[1000];
+    char oneD_outputs[1000];
     double dummy = 0.0;
     unsigned short iVar, iMarker, iMarker_Monitoring;
     
@@ -3998,7 +3998,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, Total_Q = 0.0, Total_MaxQ = 0.0;
-    double OneD_Stagnation_Pressure= 0.0;
+    double OneD_Stagnation_Pressure= 0.0, OneD_Mach=0.0;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -4129,6 +4129,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
 
         if (output_1d) {
           OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDStagPressure();
+          OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDMach();
         }
         
         /*--- Flow Residuals ---*/
@@ -4373,7 +4374,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                        Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CFEA);
             /*---- Averaged stagnation pressure at an exit ---- */
             if (output_1d)
-              sprintf( oneD_stagnation_pressure, ", %12.10f", OneD_Stagnation_Pressure);
+              sprintf( oneD_outputs, ", %12.10f, %12.10f", OneD_Stagnation_Pressure, OneD_Mach);
             /*--- Flow residual ---*/
             if (nDim == 2) {
               if (compressible) sprintf (flow_resid, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy );
@@ -4689,7 +4690,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
             if (fluid_structure) ConvHist_file[0] << fea_resid;
             /*---- Averaged stagnation pressure at an exit ---- */
-            if (output_1d) ConvHist_file[0] << oneD_stagnation_pressure;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }

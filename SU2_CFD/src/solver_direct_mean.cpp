@@ -3330,7 +3330,8 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker,Out1D;
-  double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure, Mach,SumPressure,SumArea, AveragePressure =0.0;
+  double Pressure, *Normal = NULL, Area,*Coord, Stag_Pressure,
+      Mach,SumPressure,SumArea,SumMach,  AveragePressure =0.0, AverageMach=0.0;
   string Marker_Tag, Monitoring_Tag;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -3340,6 +3341,7 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
   /*-- Variables initialization ---*/
   SumArea=0;
   SumPressure=0.0;
+  SumMach=0.0;
   /*--- Loop over the markers ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Out1D = config ->GetMarker_All_Out_1D(iMarker);
@@ -3361,10 +3363,12 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
         SumPressure+=Stag_Pressure * Area;
         SumArea+=Area;
+        SumMach+=Mach*Area;
       }
     }
     if (Out1D==YES){
       AveragePressure += SumPressure*(1.0/SumArea);
+      AverageMach += SumMach*(1.0/SumArea);
     }
   }// end of loop over markers
 
@@ -3372,17 +3376,21 @@ void CEulerSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) {
 #ifndef NO_MPI
     /*--- Add AllBound information using all the nodes ---*/
     double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
+    double My_AverageMach            = AverageMach;            AverageMach = 0.0;
 
 #ifdef WINDOWS
       MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
       MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
+      MPI::COMM_WORLD.Allreduce(&My_AverageMach, &AverageMach, 1, MPI::DOUBLE, MPI::SUM);
 #endif // WINDOWS
 
 #endif // NO_MPI
 
   /*Set Area Averaged Stagnation Pressure Output*/
   OneD_Pt=AveragePressure;
+  OneD_M=AverageMach;
 }/*CEulerSolver::OneDimensionalOutput*/
 
 

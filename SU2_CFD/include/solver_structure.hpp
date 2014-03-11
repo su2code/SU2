@@ -1542,6 +1542,12 @@ public:
   virtual void SetOneDStagPressure(double val_exit_pt);
 
   /*!
+   * \brief A virtual member.
+   * \return average Mach number evaluated at an exit boundary marker
+   */
+  virtual double GetOneDMach(void);
+
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1791,6 +1797,7 @@ protected:
 	
   double
   OneD_Pt, /*!< \brief average total pressure evaluated at an exit */
+  OneD_M, /*!< \brief area average Mach evaluated at an exit */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -2643,7 +2650,10 @@ public:
 	   */
 	void SetOneDStagPressure(double exit_pt);
 
-
+  /*!
+     * \brief Provide the averaged Mach number at a marker.
+     */
+  double GetOneDMach(void);
 
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
