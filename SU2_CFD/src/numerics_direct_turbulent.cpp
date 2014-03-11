@@ -1253,7 +1253,11 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     netOutput = new double[nOutputMLVariables];
     
     netInput[0] = SANondimInputs->Chi;
-    netInput[1] = SANondimInputs->Turb_Kin_Visc_Grad_Norm_Bar;
+    netInput[1] = SANondimInputs->NuHatGradNormBar;
+    
+    //cout << "IN nondim_crossproduction " << endl;
+    //  cout << "chi " << netInput[0] <<  endl;
+    //    cout << "grad norm bar "<< netInput[1] << endl;
     
     MLModel->Predict(netInput, netOutput);
     
@@ -1274,7 +1278,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     netInput[0] = SANondimInputs->Chi;
     netInput[1] = SANondimInputs->OmegaBar;
-    netInput[2] = SANondimInputs->Turb_Kin_Visc_Grad_Norm_Bar;
+    netInput[2] = SANondimInputs->NuHatGradNormBar;
   
     // Predict using Nnet
     MLModel->Predict(netInput, netOutput);
@@ -1303,6 +1307,12 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       NondimResidual[i] = 0;
     }
   }
+  
+  
+//  cout << "SA nondim cross production " << SANondimResidual[2] << endl;
+//    cout << "Nondim cross production " << NondimResidual[2] << endl;
+//    cout << "SA cross production " << SAResidual[2] << endl;
+//    cout << "Cross production " << Residual[2] << endl;
   
   // Compute the differences
   for (int i = 0; i < nResidual; i++){

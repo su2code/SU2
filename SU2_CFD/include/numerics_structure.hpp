@@ -3935,7 +3935,6 @@ public:
   double OmegaBar;
   double SourceNondim;
   double NuGradNondim;
-  double Turb_Kin_Visc_Grad_Norm_Bar;
   double * DNuHatDXBar;
   double NuHatGradNorm;
   double NuHatGradNormBar;

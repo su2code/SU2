@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#include <iomanip> 
 #include <fstream>
 #include <cmath>
 #include <sstream>
@@ -120,7 +121,6 @@ private:
   int maxNeurons; // Number of neurons in the largest layer
   int nLayers;
   CNeuron ***neurons; // Array of arrays to pointers to neuron
-  double*** parameters; // Array of parameters for each neuron
   int* nNeuronsInLayer; //one list for each layer
   int** nParameters; // Number of parameters for the neuron
 //  int inputDim;
@@ -139,4 +139,5 @@ public:
 //	int InputDim();
 //	int OutputDim();
 	void Predict(double *, double *);
+    double*** parameters; // Array of parameters for each neuron
 };
