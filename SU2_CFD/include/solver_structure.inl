@@ -167,9 +167,9 @@ inline void CSolver::SetTotal_CT(double val_Total_CT) { }
 
 inline double CSolver::GetTotal_CQ() { return 0; }
 
-inline double CSolver::GetTotal_Q() { return 0; }
+inline double CSolver::GetTotal_Heat() { return 0; }
 
-inline double CSolver::GetTotal_MaxQ() { return 0; }
+inline double CSolver::GetTotal_MaxHeat() { return 0; }
 
 inline double CSolver::Get_PressureDrag() { return 0; }
 
@@ -177,9 +177,9 @@ inline double CSolver::Get_ViscDrag() { return 0; }
 
 inline void CSolver::SetTotal_CQ(double val_Total_CQ) { }
 
-inline void CSolver::SetTotal_Q(double val_Total_Q) { }
+inline void CSolver::SetTotal_Heat(double val_Total_Heat) { }
 
-inline void CSolver::SetTotal_MaxQ(double val_Total_Q) { }
+inline void CSolver::SetTotal_MaxHeat(double val_Total_Heat) { }
 
 inline double CSolver::GetTotal_CMerit() { return 0; }
 
@@ -267,18 +267,6 @@ inline double CSolver::GetPressure_Inf(void) { return 0; }
 inline double CSolver::GetViscosity_Inf(void) { return 0; }
 
 inline double CSolver::GetTke_Inf(void) { return 0; }
-
-inline double CSolver::GetDensity_Inlet(void) { return 0; }
-
-inline double CSolver::GetDensity_Velocity_Inlet(unsigned short val_dim) { return 0; }
-
-inline double CSolver::GetDensity_Energy_Inlet(void) { return 0; }
-
-inline double CSolver::GetDensity_Outlet(void) { return 0; }
-
-inline double CSolver::GetDensity_Velocity_Outlet(unsigned short val_dim) { return 0; }
-
-inline double CSolver::GetDensity_Energy_Outlet(void) { return 0; }
 
 inline double* CSolver::GetConstants() {return NULL;}
 
@@ -442,21 +430,7 @@ inline double CSolver::GetMin_Delta_Time(unsigned short val_Species) { return 0.
 inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config, 
 										  CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {};
 
-inline double CEulerSolver::GetDensity_Inlet(void) { return Density_Inlet; }
-
-inline double CEulerSolver::GetDensity_Energy_Inlet(void) { return Density_Inlet*Energy_Inlet; }
-
-inline double CEulerSolver::GetDensity_Velocity_Inlet(unsigned short val_dim) { return Density_Inlet*Velocity_Inlet[val_dim]; }
-
-inline double CEulerSolver::GetDensity_Outlet(void) { return Density_Outlet; }
-
-inline double CEulerSolver::GetDensity_Energy_Outlet(void) { return Density_Outlet*Energy_Outlet; }
-
-inline double CEulerSolver::GetDensity_Velocity_Outlet(unsigned short val_dim) { return Density_Outlet*Velocity_Outlet[val_dim]; }
-
 inline double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
-
-inline double CEulerSolver::GetDensity_Back(void) { return Density_Back; }
 
 inline double CEulerSolver::GetModVelocity_Inf(void) { 
 	double Vel2 = 0; 
@@ -467,17 +441,11 @@ inline double CEulerSolver::GetModVelocity_Inf(void) {
 
 inline double CEulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
 
-inline double CEulerSolver::GetDensity_Energy_Back(void) { return Density_Back*Energy_Back; }
-
 inline double CEulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
-
-inline double CEulerSolver::GetDensity_Velocity_Back(unsigned short val_dim) { return Density_Back*Velocity_Back[val_dim]; }
 
 inline double CEulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
 
 inline double CEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
-
-inline double CEulerSolver::GetPressure_Back(void) { return Pressure_Back; }
 
 inline double CEulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
 
@@ -537,15 +505,15 @@ inline void CEulerSolver::SetTotal_CT(double val_Total_CT) { Total_CT = val_Tota
 
 inline double CEulerSolver::GetTotal_CQ() { return Total_CQ; }
 
-inline double CEulerSolver::GetTotal_Q() { return Total_Q; }
+inline double CEulerSolver::GetTotal_Heat() { return Total_Heat; }
 
-inline double CEulerSolver::GetTotal_MaxQ() { return Total_Maxq; }
+inline double CEulerSolver::GetTotal_MaxHeat() { return Total_MaxHeat; }
 
 inline void CEulerSolver::SetTotal_CQ(double val_Total_CQ) { Total_CQ = val_Total_CQ; }
 
-inline void CEulerSolver::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
+inline void CEulerSolver::SetTotal_Heat(double val_Total_Heat) { Total_Heat = val_Total_Heat; }
 
-inline void CEulerSolver::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
+inline void CEulerSolver::SetTotal_MaxHeat(double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
 
 inline double CEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
@@ -650,18 +618,6 @@ inline double CTNE2EulerSolver::GetModVelocity_Inf(void) {
 	return sqrt(Vel2);
 }
 
-inline double CTNE2EulerSolver::GetDensity_Inlet(void) { cout << "CTNE2EulerSolver::GetDensity_Inlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
-
-inline double CTNE2EulerSolver::GetDensity_Energy_Inlet(void) { cout << "CTNE2EulerSolver::GetDensity_Energy_Inlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
-
-inline double CTNE2EulerSolver::GetDensity_Velocity_Inlet(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Inlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
-
-inline double CTNE2EulerSolver::GetDensity_Outlet(void) { cout << "CTNE2EulerSolver::GetDensity_Outlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
-
-inline double CTNE2EulerSolver::GetDensity_Energy_Outlet(void) { cout << "CTNE2EulerSolver::GetDensity_Energy_Outlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
-
-inline double CTNE2EulerSolver::GetDensity_Velocity_Outlet(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Outlet NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
-
 inline double CTNE2EulerSolver::GetCPressure(unsigned short val_marker, unsigned short val_vertex) { return CPressure[val_marker][val_vertex]; }
 
 inline double CTNE2EulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
@@ -692,13 +648,13 @@ inline double CTNE2EulerSolver::GetTotal_CSideForce() { return Total_CSideForce;
 
 inline double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
 
-inline double CTNE2EulerSolver::GetTotal_Q() { return Total_Q; }
+inline double CTNE2EulerSolver::GetTotal_Heat() { return Total_Heat; }
 
-inline double CTNE2EulerSolver::GetTotal_MaxQ() { return Total_Maxq; }
+inline double CTNE2EulerSolver::GetTotal_MaxHeat() { return Total_MaxHeat; }
 
-inline void CTNE2EulerSolver::SetTotal_Q(double val_Total_Q) { Total_Q = val_Total_Q; }
+inline void CTNE2EulerSolver::SetTotal_Heat(double val_Total_Heat) { Total_Heat = val_Total_Heat; }
 
-inline void CTNE2EulerSolver::SetTotal_MaxQ(double val_Total_MaxQ) { Total_Maxq = val_Total_MaxQ; }
+inline void CTNE2EulerSolver::SetTotal_MaxHeat(double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
 
 inline void CTNE2EulerSolver::SetTotal_CLift(double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 
