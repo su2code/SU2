@@ -747,13 +747,6 @@ public:
 	 */
 	virtual void Inviscid_Forces(CGeometry *geometry, CConfig *config);
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void OneDimensionalOutput(CGeometry *geometry, CConfig *config);
-
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1457,6 +1450,12 @@ public:
 	 * \return Value of the velocity at the infinity.
 	 */
 	virtual double GetVelocity_Inf(unsigned short val_dim);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the velocity at the infinity.
+	 */
+	virtual double *GetVelocity_Inf(void);
     
 	/*!
 	 * \brief A virtual member.
@@ -1883,7 +1882,13 @@ public:
 	 * \return Value of the velocity at the infinity.
 	 */
 	double GetVelocity_Inf(unsigned short val_dim);
-    
+  
+  /*!
+	 * \brief Get the velocity at the infinity.
+	 * \return Value of the velocity at the infinity.
+	 */
+	double *GetVelocity_Inf(void);
+  
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2211,14 +2216,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
-
-	/*!
-   * \brief Compute the one dimensional outputs(averaged stagnation pressure).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-	void OneDimensionalOutput(CGeometry *geometry, CConfig *config);
-
 
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).

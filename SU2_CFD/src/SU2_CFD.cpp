@@ -497,9 +497,14 @@ int main(int argc, char *argv[]) {
           output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
           
           /*--- Compute the forces at different sections. ---*/
-          if (config_container[ZONE_0]->GetWrt_Sectional_Forces())
+          if (config_container[ZONE_0]->GetPlot_Section_Forces())
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+          
+          /*--- Compute 1D output. ---*/
+          if (config->GetWrt_1D_Output())
+            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
           
         }
     
