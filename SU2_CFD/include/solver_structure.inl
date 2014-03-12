@@ -262,6 +262,8 @@ inline double CSolver::GetDensity_Velocity_Inf(unsigned short val_dim, unsigned 
 
 inline double CSolver::GetVelocity_Inf(unsigned short val_dim) { return 0; }
 
+inline double* CSolver::GetVelocity_Inf(void) { return 0; }
+
 inline double CSolver::GetPressure_Inf(void) { return 0; }
 
 inline double CSolver::GetViscosity_Inf(void) { return 0; }
@@ -371,8 +373,6 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::OneDimensionalOutput(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -449,6 +449,8 @@ inline double CEulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Ene
 inline double CEulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
 
 inline double CEulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+
+inline double *CEulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; }
 
 inline double CEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
 

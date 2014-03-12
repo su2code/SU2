@@ -1758,9 +1758,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
   
   unsigned short iDim;
-  bool nDim               = geometry->GetnDim();
-  double RefAreaCoeff     = config->GetRefAreaCoeff();
-  double Gamma            = config->GetGamma();
+  unsigned short nDim = geometry->GetnDim();
+  double RefAreaCoeff = config->GetRefAreaCoeff();
+  double Gamma = config->GetGamma();
   double RefVel2;
   
   /*--- Set the non-dimensionalization ---*/
@@ -5359,87 +5359,266 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   }
 }
 
-void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
   
-  short iSection, nSection;
   unsigned long iVertex, iPoint;
-  double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *Pressure, MinXCoord, MaxXCoord;
-  vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
-  string Marker_Tag, Slice_Filename, Slice_Ext;
-  ofstream Cp_File;
+  unsigned short iDim, iMarker,Out1D;
+  double *Normal = NULL, Area,*Coord,
+  Stag_Pressure, Mach,Temperature,Pressure,
+  SumPressure = 0, SumArea = 0, SumMach = 0, SumTemperature = 0,
+  AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0;
+  string Marker_Tag, Monitoring_Tag;
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  double Gamma = config->GetGamma();
+
+  /*--- Loop over the markers ---*/
   
-  Plane_P0 = new double [3];
-  Plane_Normal = new double [3];
-  Pressure = new double [geometry->GetnPoint()];
-  
-  int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#endif
-  
-  /*--- Copy the pressure to an auxiliar structure ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    if (compressible)   Pressure[iPoint] = solver_container->node[iPoint]->GetPressure();
-    if (incompressible || freesurface) Pressure[iPoint] = solver_container->node[iPoint]->GetPressureInc();
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Out1D = config ->GetMarker_All_Out_1D(iMarker);
+    
+    /*--- Loop over the vertices to compute the output ---*/
+    
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      
+      /*--- Find the normal direction ---*/
+      
+      if ( (geometry->node[iPoint]->GetDomain()) && (Out1D == YES) ) {
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Coord = geometry->node[iPoint]->GetCoord();
+      }
+      
+      /*--- For now just area averaged stagnation pressure--- */
+      if ((geometry->node[iPoint]->GetDomain()) &&(Out1D==YES)){
+        
+        if (compressible)   Pressure = solver_container->node[iPoint]->GetPressure();
+        if (incompressible || freesurface) Pressure = solver_container->node[iPoint]->GetPressureInc();
+        Mach = (sqrt(solver_container->node[iPoint]->GetVelocity2()) / solver_container->node[iPoint]->GetSoundSpeed());
+        Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
+        Temperature = solver_container->node[iPoint]->GetTemperature();
+        Area = 0.0; for (iDim = 0; iDim < geometry->GetnDim(); iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        SumPressure += Stag_Pressure * Area;
+        SumArea += Area;
+        SumMach += Mach*Area;
+        SumTemperature += Temperature*Area;
+        
+      }
+    }
+    
+    if (Out1D==YES){
+      
+      AveragePressure += SumPressure*(1.0/SumArea);
+      AverageMach += SumMach*(1.0/SumArea);
+      AverageTemperature += SumTemperature*(1.0/SumArea);
+    
+    }
   }
   
-  nSection = config->GetnSections();
+#ifndef NO_MPI
   
-  for (iSection = 0; iSection < nSection; iSection++) {
-    
-    /*--- Read the values from the config file ---*/
+  /*--- Add AllBound information using all the nodes ---*/
+  
+  double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
+  double My_AverageMach            = AverageMach;            AverageMach = 0.0;
+  double My_AverageTemperature     = AverageTemperature;     AverageTemperature = 0.0;
+  
+#ifdef WINDOWS
+  MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&My_AverageMach, &AverageMach, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI::DOUBLE, MPI::SUM);
+  
+#endif
+  
+#endif
+  
+  /*--- Set Area Averaged Stagnation Pressure Output ---*/
+  
+//  solver_container->SetOneD_Pt(AveragePressure);
+//  solver_container->SetOneD_M(AverageMach);
+//  solver_container->SetOneD_T(AverageTemperature);
+  
+}
 
-    MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
-    MinXCoord = -1E6; MaxXCoord = 1E6;
+void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+  
+    short iSection, nSection;
+    unsigned long iVertex, iPoint;
+    double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *Pressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
+    MomentInviscid[3], MomentDist[3], RefDensity, RefAreaCoeff, Pressure_Inf, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;;
+    vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
+    string Marker_Tag, Slice_Filename, Slice_Ext;
+    ofstream Cp_File;
+    unsigned short iDim;
     
-    Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
-    Plane_Normal[1] = 0.0;    Plane_P0[1] = 0.0;
-    Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
+    bool grid_movement = config->GetGrid_Movement();
+    bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+    bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  
+    Plane_P0 = new double [3];
+    Plane_Normal = new double [3];
+    Pressure = new double [geometry->GetnPoint()];
     
-    Plane_Normal[config->GetAxis_Orientation()] = 1.0;
-    Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
+    int rank = MASTER_NODE;
+#ifndef NO_MPI
+#ifdef WINDOWS
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+    rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+  
+  if (geometry->GetnDim() == 3) {
+
+    /*--- Copy the pressure to an auxiliar structure ---*/
     
-    /*--- Compute the airfoil sections ---*/
-    geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, Pressure,
-                                     Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
-                                     Pressure_Airfoil, true, config);
-    
-    /*--- Output the pressure on each section (tecplot format) ---*/
-    
-    if (rank == MASTER_NODE) {
-      
-      ofstream Tecplot_File;
-      if (iSection == 0) {
-        Tecplot_File.open("Cp_Sections.plt", ios::out);
-        Tecplot_File << "TITLE = \"Airfoil sections\"" << endl;
-        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Pressure\"" << endl;
-      }
-      else Tecplot_File.open("Cp_Sections.plt", ios::app);
-      
-      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
-      
-      /*--- Coordinates and pressure value ---*/
-      
-      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
-      }
-      
-      /*--- Basic conectivity ---*/
-      
-      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
-      }
-      
-      Tecplot_File.close();
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      if (compressible)   Pressure[iPoint] = solver_container->node[iPoint]->GetPressure();
+      if (incompressible || freesurface) Pressure[iPoint] = solver_container->node[iPoint]->GetPressureInc();
     }
+    
+    nSection = config->GetnSections();
+    
+    for (iSection = 0; iSection < nSection; iSection++) {
+      
+      /*--- Read the values from the config file ---*/
+      
+      MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
+      MinXCoord = -1E6; MaxXCoord = 1E6;
+      
+      Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
+      Plane_Normal[1] = 0.0;    Plane_P0[1] = 0.0;
+      Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
+      
+      Plane_Normal[config->GetAxis_Orientation()] = 1.0;
+      Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
+      
+      /*--- Compute the airfoil sections ---*/
+      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, Pressure,
+                                       Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+                                       Pressure_Airfoil, true, config);
+      
+      /*--- Output the pressure on each section (tecplot format) ---*/
+      
+      if (rank == MASTER_NODE) {
+        
+        /*--- Write Cp at each section ---*/
+        
+        ofstream Cp_File;
+        if (iSection == 0) {
+          Cp_File.open("Cp_Sections.plt", ios::out);
+          Cp_File << "TITLE = \"Airfoil sections\"" << endl;
+          Cp_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Pressure\"" << endl;
+        }
+        else Cp_File.open("Cp_Sections.plt", ios::app);
+        
+        Cp_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+        
+        /*--- Coordinates and pressure value ---*/
+        
+        for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+          Cp_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+        }
+        
+        /*--- Basic conectivity ---*/
+        
+        for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+          Cp_File << iVertex << "\t" << iVertex+1 << "\n";
+        }
+        
+        Cp_File.close();
+        
+        
+        /*--- Compute load distribution ---*/
+        
+        RefDensity = solver_container->GetDensity_Inf();
+        RefAreaCoeff = config->GetRefAreaCoeff();
+        Velocity_Inf = solver_container->GetVelocity_Inf();
+        Pressure_Inf = solver_container->GetPressure_Inf();
+        Gamma = config->GetGamma();
+        Origin = config->GetRefOriginMoment(0);
+        RefLengthMoment  = config->GetRefLengthMoment();
+        Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+        Beta             = config->GetAoS()*PI_NUMBER/180.0;
+        
+        if (grid_movement) {
+          Gas_Constant = config->GetGas_ConstantND();
+          Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+          Mach_Motion = config->GetMach_Motion();
+          RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+        }
+        else {
+          double RefVel2 = 0.0;
+          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+            RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+        }
+        
+        factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+        
+        ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0;
+        
+        for (iVertex = 0; iVertex < Xcoord_Airfoil.size()-1; iVertex++) {
+          
+          NDPressure = (0.5*(Pressure_Airfoil[iVertex]+Pressure_Airfoil[iVertex+1])-Pressure_Inf)*factor;
+          
+          Force[0] = -(Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex])*NDPressure;
+          Force[1] = 0.0;
+          Force[2] = (Xcoord_Airfoil[iVertex+1] - Xcoord_Airfoil[iVertex])*NDPressure;
+          
+          ForceInviscid[0] += Force[0];
+          ForceInviscid[1] += Force[1];
+          ForceInviscid[2] += Force[2];
+          
+          MomentDist[0] = 0.5*(Xcoord_Airfoil[iVertex] + Xcoord_Airfoil[iVertex+1]) - Origin[0];
+          MomentDist[1] = 0.5*(Ycoord_Airfoil[iVertex] + Ycoord_Airfoil[iVertex+1]) - Origin[1];
+          MomentDist[2] = 0.5*(Zcoord_Airfoil[iVertex] + Zcoord_Airfoil[iVertex+1]) - Origin[3];
+          
+          MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
+          
+        }
+        
+        CLift_Inv = fabs( -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha));
+        CDrag_Inv = fabs( ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta));
+        CMy_Inv = MomentInviscid[1];
+        
+        
+        /*--- Write load distribution ---*/
+        
+        ofstream Load_File;
+        if (iSection == 0) {
+          Load_File.open("Load_Distribution.plt", ios::out);
+          Load_File << "TITLE = \"Load distribution\"" << endl;
+          Load_File << "VARIABLES = \"Y\",\"C<sub>L</sub>\",\"C<sub>D</sub>\",\"C<supb>My</sub>\"" << endl;
+          Load_File << "ZONE T=\"Wing load distribution\", NODES= "<< nSection << ", ELEMENTS= " << nSection-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+        }
+        else Load_File.open("Load_Distribution.plt", ios::app);
+        
+        /*--- Coordinates and pressure value ---*/
+        
+        Load_File << Ycoord_Airfoil[0] <<" "<< CLift_Inv <<" "<< CDrag_Inv  <<" "<< CMy_Inv << endl;
+        
+        /*--- Basic conectivity ---*/
+        
+        if (iSection == nSection-1) {
+          for (iSection = 1; iSection < nSection; iSection++) {
+            Load_File << iSection << "\t" << iSection+1 << "\n";
+          }
+        }
+        
+        Load_File.close();
+        
+        
+      }
+      
+    }
+
     
   }
   
