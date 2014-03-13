@@ -236,7 +236,8 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
       case TORQUE_COEFFICIENT:    AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit.dat"; break;
       case FREE_SURFACE:          AdjExt = "_fs.dat"; break;
-      case NORM_HEAT_FLUX:        AdjExt = "_qnorm.dat"; break;
+      case HEAT:                  AdjExt = "_heat.dat"; break;
+      case NORM_HEAT:             AdjExt = "_normheat.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
@@ -1138,7 +1139,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
-          case NORM_HEAT_FLUX:
+          case NORM_HEAT:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -2619,7 +2620,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     PsiRho_Inf[iSpecies] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Phi_Inf[iDim] = 0.0;
-  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX) {
+  if (config->GetKind_ObjFunc() == NORM_HEAT) {
     PsiE_Inf = -1.0;
     PsiEve_Inf = -1.0;
   } else {
@@ -2660,7 +2661,8 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
       case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
       case FREE_SURFACE: AdjExt = "_fs.dat"; break;
-      case NORM_HEAT_FLUX: AdjExt = "_qnorm.dat"; break;
+      case HEAT: AdjExt = "_heat.dat"; break;
+      case NORM_HEAT: AdjExt = "_normheat.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);

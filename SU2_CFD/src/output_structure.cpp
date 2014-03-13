@@ -3830,7 +3830,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   /*--- Header for the coefficients ---*/
   
   char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
-  char heat_coeff[]= ",\"CHeat_Norm\"";
+  char heat_coeff[]= ",\"Heat\",\"Norm_Heat\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   //char aeroelastic_coeff[]= Monitoring_coeff;

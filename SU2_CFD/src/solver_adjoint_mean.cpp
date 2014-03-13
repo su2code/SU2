@@ -1190,7 +1190,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
-          case NORM_HEAT_FLUX:
+          case NORM_HEAT:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -4948,7 +4948,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX)
+  if (config->GetKind_ObjFunc() == NORM_HEAT)
     PsiE_Inf = -1.0;
   else
     PsiE_Inf = 0.0;
@@ -6330,7 +6330,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = (config->GetKind_ObjFunc() == NORM_HEAT_FLUX);
+  bool heat_flux_obj  = (config->GetKind_ObjFunc() == NORM_HEAT);
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();

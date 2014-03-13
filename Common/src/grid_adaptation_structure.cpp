@@ -314,7 +314,7 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX) sprintf (buffer, "_qnorm.dat");
+  if (config->GetKind_ObjFunc() == NORM_HEAT) sprintf (buffer, "_qnorm.dat");
 //  if (config->GetKind_ObjFunc() == ROTOR_EFFICIENCY) sprintf (buffer, "_rot_eff.dat");
 	strcat(cstr, buffer);
 	
@@ -3567,7 +3567,7 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT) sprintf (buffer, "_cfx.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT) sprintf (buffer, "_cfy.dat"); 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT) sprintf (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX) sprintf (buffer, "_qnorm.dat");
+  if (config->GetKind_ObjFunc() == NORM_HEAT) sprintf (buffer, "_qnorm.dat");
 //  if (config->GetKind_ObjFunc() == ROTOR_EFFICIENCY) sprintf (buffer, "_rot_eff.dat");
 	strcat(cstr, buffer);
 	
