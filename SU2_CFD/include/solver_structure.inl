@@ -169,7 +169,7 @@ inline double CSolver::GetTotal_CQ() { return 0; }
 
 inline double CSolver::GetTotal_Heat() { return 0; }
 
-inline double CSolver::GetTotal_MaxHeat() { return 0; }
+inline double CSolver::GetTotal_NormHeat() { return 0; }
 
 inline double CSolver::Get_PressureDrag() { return 0; }
 
@@ -179,7 +179,7 @@ inline void CSolver::SetTotal_CQ(double val_Total_CQ) { }
 
 inline void CSolver::SetTotal_Heat(double val_Total_Heat) { }
 
-inline void CSolver::SetTotal_MaxHeat(double val_Total_Heat) { }
+inline void CSolver::SetTotal_NormHeat(double val_Total_Heat) { }
 
 inline double CSolver::GetTotal_CMerit() { return 0; }
 
@@ -514,13 +514,13 @@ inline double CEulerSolver::GetTotal_CQ() { return Total_CQ; }
 
 inline double CEulerSolver::GetTotal_Heat() { return Total_Heat; }
 
-inline double CEulerSolver::GetTotal_MaxHeat() { return Total_MaxHeat; }
+inline double CEulerSolver::GetTotal_NormHeat() { return Total_NormHeat; }
 
 inline void CEulerSolver::SetTotal_CQ(double val_Total_CQ) { Total_CQ = val_Total_CQ; }
 
 inline void CEulerSolver::SetTotal_Heat(double val_Total_Heat) { Total_Heat = val_Total_Heat; }
 
-inline void CEulerSolver::SetTotal_MaxHeat(double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
+inline void CEulerSolver::SetTotal_NormHeat(double val_Total_NormHeat) { Total_NormHeat = val_Total_NormHeat; }
 
 inline double CEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
@@ -661,11 +661,11 @@ inline double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
 
 inline double CTNE2EulerSolver::GetTotal_Heat() { return Total_Heat; }
 
-inline double CTNE2EulerSolver::GetTotal_MaxHeat() { return Total_MaxHeat; }
+inline double CTNE2EulerSolver::GetTotal_NormHeat() { return Total_NormHeat; }
 
 inline void CTNE2EulerSolver::SetTotal_Heat(double val_Total_Heat) { Total_Heat = val_Total_Heat; }
 
-inline void CTNE2EulerSolver::SetTotal_MaxHeat(double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
+inline void CTNE2EulerSolver::SetTotal_NormHeat(double val_Total_NormHeat) { Total_NormHeat = val_Total_NormHeat; }
 
 inline void CTNE2EulerSolver::SetTotal_CLift(double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 
