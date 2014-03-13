@@ -272,7 +272,7 @@ AC_SUBST([MUTATIONPP_LD])
 ##########################
 
 # check for lib
-Jsoncpplib=libjson_linux-gcc-4.2.1_libmt.a
+Jsoncpplib=libjson.a
 Jsoncppheader=json/json.h
 have_Jsoncpp="no"
 

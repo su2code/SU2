@@ -1,4 +1,4 @@
-#include "../include/nnet.hpp"
+#include "../include/numerics_machine_learning.hpp"
 using namespace std;
 
 CScaler::CScaler(){}
@@ -432,4 +432,59 @@ void CScalePredictor::Predict(double *input, double *output){
   // Unscale
   this->InputScaler->Unscale(input);
 	this->OutputScaler->Unscale(output);
+}
+
+CSANondimInputs::CSANondimInputs(int nDim){
+  this->nDim = nDim;
+  this->DNuHatDXBar = new double[nDim];
+};
+CSANondimInputs::~CSANondimInputs(){
+  delete [] this->DNuHatDXBar;
+};
+void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
+  double kin_visc = sainputs->Laminar_Viscosity / sainputs->Density;
+  this->Chi = sainputs->Turbulent_Kinematic_Viscosity / kin_visc;
+  double nuSum = sainputs->Turbulent_Kinematic_Viscosity + kin_visc;
+  double dist = sainputs->dist;
+  if (dist < 1e-10){
+    dist = 1e-10;
+  }
+  
+  double distSq = dist* dist;
+  
+  this->OmegaNondim = 1.0 / ( distSq / (nuSum) );
+  this->OmegaBar = sainputs->Omega / this->OmegaNondim;
+  this->SourceNondim = 1.0 /( distSq / (nuSum * nuSum) );
+  this->NuGradNondim = 1.0 /( dist / nuSum );
+  
+  if (isinf(this->NuGradNondim)){
+    cout << this->NuGradNondim;
+    cout << "Inf NuGrad" << endl;
+    cout << "dist = " << dist << endl;
+    cout << "distSq = " << distSq << endl;
+    cout << "nuSum = " << nuSum << endl;
+    exit(1);
+  }
+  
+  double * turbViscGrad = sainputs->GetTurbKinViscGradient();
+  this->NuHatGradNorm = 0;
+  for (int i = 0; i < this->nDim; i++){
+    this->DNuHatDXBar[i] = turbViscGrad[i] / this->NuGradNondim;
+    this->NuHatGradNorm += turbViscGrad[i] * turbViscGrad[i];
+  }
+  this->NuHatGradNormBar = this->NuHatGradNorm / this->SourceNondim;
+};
+void CSANondimInputs::NondimensionalizeSource(int nResidual, double * source){
+  for (int i = 0; i < nResidual; i++){
+    source[i] /= this->SourceNondim;
+  }
+}
+
+void CSANondimInputs::DimensionalizeSource(int nResidual, double * source){
+  
+  for (int i = 0; i < nResidual; i++){
+    //    cout << "pre" << source[i] << endl;
+    source[i] *= this->SourceNondim;
+    //    cout << "post" << source[i] << endl;
+  }
 }
