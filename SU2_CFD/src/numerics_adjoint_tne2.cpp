@@ -761,6 +761,663 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
 	}
 }
 
+
+CAvgGrad_AdjTNE2::CAvgGrad_AdjTNE2(unsigned short val_nDim,
+                                   unsigned short val_nVar,
+                                   CConfig *config) : CNumerics(val_nDim,
+                                                                val_nVar,
+                                                                config) {
+	unsigned short iVar;
+  
+  implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  
+  nDim         = val_nDim;
+  nSpecies     = config->GetnSpecies();
+  nVar         = val_nVar;
+  
+  Mean_GPsi = new double*[nVar];
+  Dxx = new double*[nVar];
+  Dxy = new double*[nVar];
+  Dxz = new double*[nVar];
+  Dyx = new double*[nVar];
+  Dyy = new double*[nVar];
+  Dyz = new double*[nVar];
+  Dzx = new double*[nVar];
+  Dzy = new double*[nVar];
+  Dzz = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Mean_GPsi[iVar] = new double[nDim];
+    Dxx[iVar] = new double[nVar];
+    Dxy[iVar] = new double[nVar];
+    Dxz[iVar] = new double[nVar];
+    Dyx[iVar] = new double[nVar];
+    Dyy[iVar] = new double[nVar];
+    Dyz[iVar] = new double[nVar];
+    Dzx[iVar] = new double[nVar];
+    Dzy[iVar] = new double[nVar];
+    Dzz[iVar] = new double[nVar];
+  }
+  
+  
+  
+  
+//	Velocity_i = new double [nDim];
+//	Velocity_j = new double [nDim];
+//	Mean_Velocity = new double [nDim];
+//	Mean_GradPhi = new double* [nDim];
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		Mean_GradPhi[iDim] = new double [nDim];
+//	Mean_GradPsiE = new double [nDim];
+//	Edge_Vector = new double [nDim];
+  
+}
+
+CAvgGrad_AdjTNE2::~CAvgGrad_AdjTNE2(void) {
+  unsigned short iVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] Mean_GPsi[iVar];
+    delete [] Dxx[iVar];
+    delete [] Dxy[iVar];
+    delete [] Dxz[iVar];
+    delete [] Dyx[iVar];
+    delete [] Dyy[iVar];
+    delete [] Dyz[iVar];
+    delete [] Dzx[iVar];
+    delete [] Dzy[iVar];
+    delete [] Dzz[iVar];
+  }
+  delete [] Mean_GPsi;
+  delete [] Dxx;
+  delete [] Dxy;
+  delete [] Dxz;
+  delete [] Dyx;
+  delete [] Dyy;
+  delete [] Dyz;
+  delete [] Dzx;
+  delete [] Dzy;
+  delete [] Dzz;
+  
+//	delete [] Velocity_i;
+//	delete [] Velocity_j;
+//	delete [] Mean_Velocity;
+//	delete [] Edge_Vector;
+//	delete [] Mean_GradPsiE;
+//	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+//		delete [] Mean_GradPhi[iDim];
+}
+
+void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i, double *val_residual_j,
+                                       double **val_Jacobian_ii, double **val_Jacobian_ij,
+                                       double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+  unsigned short iDim, iSpecies, iVar, jVar;
+	double rho;
+  double u, v, w, sqvel;
+  
+  if (nDim == 2) {
+    cout << "ERROR!!!  CAvgGrad_AdjTNE2 not configured for 2D simulations!  Exiting..." << endl;
+    exit(1);
+  }
+  
+  /*--- Caclulate mean quantities ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_GPsi[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] +
+                                   PsiVar_Grad_j[iVar][iDim]  );
+  
+  /*--- Rename for convenience ---*/
+  rho = 0.5*(V_i[RHO_INDEX]   + V_j[RHO_INDEX]  );
+  u   = 0.5*(V_i[VEL_INDEX]   + V_j[VEL_INDEX]  );
+  v   = 0.5*(V_i[VEL_INDEX+1] + V_j[VEL_INDEX+1]);
+  w   = 0.5*(V_i[VEL_INDEX+2] + V_j[VEL_INDEX+2]);
+  sqvel = u*u+v*v+w*w;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual_i[iVar] = 0.0;
+    val_residual_j[iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Dxx[iVar][jVar] = 0.0;
+      Dxy[iVar][jVar] = 0.0;
+      Dxz[iVar][jVar] = 0.0;
+      Dyx[iVar][jVar] = 0.0;
+      Dyy[iVar][jVar] = 0.0;
+      Dyz[iVar][jVar] = 0.0;
+      Dzx[iVar][jVar] = 0.0;
+      Dzy[iVar][jVar] = 0.0;
+      Dzz[iVar][jVar] = 0.0;
+    }
+  }
+  
+  /*--- Dxxv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dxx[nSpecies][iSpecies]   = -(4.0/3.0)*u/rho;
+    Dxx[nSpecies+1][iSpecies] = -v/rho;
+    Dxx[nSpecies+2][iSpecies] = -w/rho;
+    Dxx[nSpecies+3][iSpecies] = -sqvel/rho - 1.0/3.0*u*u/rho;
+  }
+  //
+  Dxx[nSpecies][nSpecies]     = (4.0/3.0)*1/rho;
+  //
+  Dxx[nSpecies+1][nSpecies+1] = 1/rho;
+  //
+  Dxx[nSpecies+2][nSpecies+2] = 1/rho;
+  //
+  Dxx[nSpecies+3][nSpecies] = (4.0/3.0)*u/rho;
+  Dxx[nSpecies+3][nSpecies+1] = v/rho;
+  Dxx[nSpecies+3][nSpecies+2] = w/rho;
+  
+  /*--- Dxyv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dxy[nSpecies][iSpecies]   = (2.0/3.0)*v/rho;
+    Dxy[nSpecies+1][iSpecies] = -u/rho;
+    Dxy[nSpecies+3][iSpecies] = -u*v/(3*rho);
+  }
+  //
+  Dxy[nSpecies][nSpecies+1]   = -(2.0/3.0)*1/rho;
+  //
+  Dxy[nSpecies+1][nSpecies]   = 1/rho;
+  //
+  //
+  Dxy[nSpecies+3][nSpecies] = v/rho;
+  Dxy[nSpecies+3][nSpecies+1] = -(2.0/3.0)*u/rho;
+  
+  /*--- Dxzv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dxz[nSpecies][iSpecies]   = (2.0/3.0)*w/rho;
+    Dxz[nSpecies+2][iSpecies] = -u/rho;
+    Dxz[nSpecies+3][iSpecies] = -u*w/(3*rho);
+  }
+  //
+  Dxz[nSpecies][nSpecies+2]   = -(2.0/3.0)*1/rho;
+  //
+  //
+  Dxz[nSpecies+2][nSpecies]   = 1/rho;
+  //
+  Dxz[nSpecies+3][nSpecies] = w/rho;
+  Dxz[nSpecies+3][nSpecies+2] = -(2.0/3.0)*u/rho;
+  
+  /*--- Dyxv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dyx[nSpecies][iSpecies]   = -v/rho;
+    Dyx[nSpecies+1][iSpecies] = 2.0/3.0*u/rho;
+    Dyx[nSpecies+3][iSpecies] = -u*v/(3*rho);
+  }
+  //
+  Dyx[nSpecies][nSpecies+1]   = 1/rho;
+  //
+  Dyx[nSpecies+1][nSpecies]   = -(2.0/3.0)*1/rho;
+  //
+  //
+  Dyx[nSpecies+3][nSpecies]   = -(2.0/3.0)*v/rho;
+  Dyx[nSpecies+3][nSpecies+1] = u/rho;
+  
+  /*--- Dyyv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dyy[nSpecies][iSpecies]   = -u/rho;
+    Dyy[nSpecies+1][iSpecies] = -(4.0/3.0)*v/rho;
+    Dyy[nSpecies+2][iSpecies] = -w/rho;
+    Dyy[nSpecies+3][iSpecies] = -sqvel/rho - 1.0/3.0*v*v/rho;
+  }
+  //
+  Dyy[nSpecies][nSpecies]     = 1/rho;
+  //
+  Dyy[nSpecies+1][nSpecies+1] = (4.0/3.0)*1/rho;
+  //
+  Dyy[nSpecies+2][nSpecies+2] = 1/rho;
+  //
+  Dyy[nSpecies+3][nSpecies]   = u/rho;
+  Dyy[nSpecies+3][nSpecies+1] = (4.0/3.0)*v/rho;
+  Dyy[nSpecies+3][nSpecies+2] = w/rho;
+  
+  /*--- Dyzv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dyz[nSpecies+1][iSpecies] = 2.0/3.0*w/rho;
+    Dyz[nSpecies+2][iSpecies] = -v/rho;
+    Dyz[nSpecies+3][iSpecies] = -v*w/(3*rho);
+  }
+  //
+  //
+  Dyz[nSpecies+1][nSpecies+2] = -(2.0/3.0)*1/rho;
+  //
+  Dyz[nSpecies+2][nSpecies+1] = 1/rho;
+  //
+  //
+  Dyz[nSpecies+3][nSpecies+1] = w/rho;
+  Dyz[nSpecies+3][nSpecies+2] = -(2.0/3.0)*v/rho;
+  
+  /*--- Dzxv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dzx[nSpecies][iSpecies]   = -w/rho;
+    Dzx[nSpecies+2][iSpecies] = (2.0/3.0)*u/rho;
+    Dzx[nSpecies+3][iSpecies] = -u*w/(3*rho);
+  }
+  //
+  Dzx[nSpecies][nSpecies+2]   = 1/rho;
+  //
+  //
+  Dzx[nSpecies+2][nSpecies]   = -(2.0/3.0)*1/rho;
+  //
+  Dzx[nSpecies+3][nSpecies]   = -(2.0/3.0)*w/rho;
+  Dzx[nSpecies+3][nSpecies+2] = u/rho;
+  
+  /*--- Dzyv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dzy[nSpecies+1][iSpecies] = -w/rho;
+    Dzy[nSpecies+2][iSpecies] = (2.0/3.0)*v/rho;
+    Dzy[nSpecies+3][iSpecies] = -v*w/(3*rho);
+  }
+  //
+  //
+  Dzy[nSpecies+1][nSpecies+2] = 1/rho;
+  //
+  Dzy[nSpecies+2][nSpecies+1] = -(2.0/3.0)*1/rho;
+  //
+  //
+  Dzy[nSpecies+3][nSpecies+1] = -(2.0/3.0)*w/rho;
+  Dzy[nSpecies+3][nSpecies+2] = v/rho;
+  
+  /*--- Dzzv2 ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Dzz[nSpecies][iSpecies]   = -u/rho;
+    Dzz[nSpecies+1][iSpecies] = -v/rho;
+    Dzz[nSpecies+1][iSpecies] = -(4.0/3.0)*w/rho;
+    Dzz[nSpecies+3][iSpecies] = -sqvel/rho - 1.0/3.0*w*w/rho;
+  }
+  //
+  Dzz[nSpecies][nSpecies]     = 1/rho;
+  //
+  Dzz[nSpecies+1][nSpecies+1] = 1/rho;
+  //
+  Dzz[nSpecies+2][nSpecies+2] = (4.0/3.0)*1/rho;
+  //
+  Dzz[nSpecies+3][nSpecies]   = u/rho;
+  Dzz[nSpecies+3][nSpecies+1] = v/rho;
+  Dzz[nSpecies+3][nSpecies+2] = (4.0/3.0)*w/rho;
+  
+  /*--- Residual calculation ---*/
+  
+//  unsigned short iDim, jDim, iVar, jVar;
+//	double sq_vel_i, Energy_i, ViscDens_i, XiDens_i,
+//  sq_vel_j, Energy_j, ViscDens_j, XiDens_j, dist_ij_2, dPhiE_dn,
+//	Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
+//	Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
+//	Sigma_yz5, Sigma_5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
+//  
+//  /*--- Local variables needed for Jacobian calculations ---*/
+//  double dSigmaxx_phi1, dSigmayy_phi1, dSigmazz_phi1, dSigmaxy_phi1, dSigmaxz_phi1, dSigmayz_phi1;
+//  double dSigmaxx_phi2, dSigmayy_phi2, dSigmazz_phi2, dSigmaxy_phi2, dSigmaxz_phi2, dSigmayz_phi2;
+//  double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
+//  double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
+//  
+//	/*--- States at the point i ---*/
+//	Density_i = U_i[0];
+//	sq_vel_i = 0;
+//	for (iDim = 0; iDim < nDim; iDim++) {
+//		Velocity_i[iDim] = U_i[iDim+1] / Density_i;
+//		sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
+//	}
+//	Energy_i = U_i[nDim+1] / Density_i;
+//	SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-sq_vel_i));
+//	Pressure_i = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
+//	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
+//	XiDens_i = Gamma * (Laminar_Viscosity_i/PRANDTL + Eddy_Viscosity_i/PRANDTL_TURB) / Density_i;
+//  
+//	/*--- States at the point j ---*/
+//	Density_j = U_j[0];
+//	sq_vel_j = 0;
+//	for (iDim = 0; iDim < nDim; iDim++) {
+//		Velocity_j[iDim] = U_j[iDim+1] / Density_j;
+//		sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
+//	}
+//	Energy_j = U_j[nDim+1] / Density_j;
+//	SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-sq_vel_j));
+//	Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
+//	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
+//	XiDens_j = Gamma *(Laminar_Viscosity_j/PRANDTL + Eddy_Viscosity_j/PRANDTL_TURB) / Density_j;
+//  
+//	/*--- Compute vector going from iPoint to jPoint ---*/
+//	dist_ij_2 = 0.0;
+//	for (iDim = 0; iDim < nDim; iDim++) {
+//		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+//		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+//	}
+//  
+//	/*--- Average of the derivatives of the adjoint variables ---*/
+//	for (iDim = 0; iDim < nDim; iDim++) {
+//		Mean_GradPsiE[iDim] =  0.5*(PsiVar_Grad_i[nVar-1][iDim]+PsiVar_Grad_j[nVar-1][iDim]);
+//		for (jDim = 0; jDim < nDim; jDim++)
+//			Mean_GradPhi[iDim][jDim] =  0.5*(PsiVar_Grad_i[iDim+1][jDim]+PsiVar_Grad_j[iDim+1][jDim]);
+//	}
+//  
+//	dPhiE_dn = 0;
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		dPhiE_dn += Mean_GradPsiE[iDim]*Normal[iDim];
+//  
+//	/*--- Compute the viscous residual ---*/
+//	if (nDim == 3) {
+//    
+//		/*--- Residual at iPoint ---*/
+//		Sigma_xx = ViscDens_i * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
+//		Sigma_yy = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
+//		Sigma_zz = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] + FOUR3 * Mean_GradPhi[2][2]);
+//		Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+//		Sigma_xz = ViscDens_i * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
+//		Sigma_yz = ViscDens_i * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
+//		Sigma_xx5 = ViscDens_i * ( FOUR3 * Velocity_i[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_i[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_i[2] * Mean_GradPsiE[2]);
+//		Sigma_yy5 = ViscDens_i * (- TWO3 * Velocity_i[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_i[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_i[2] * Mean_GradPsiE[2]);
+//		Sigma_zz5 = ViscDens_i * (- TWO3 * Velocity_i[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_i[1] * Mean_GradPsiE[1] + FOUR3 * Velocity_i[2] * Mean_GradPsiE[2]);
+//		Sigma_xy5 = ViscDens_i * (Velocity_i[0] * Mean_GradPsiE[1] + Velocity_i[1] * Mean_GradPsiE[0]);
+//		Sigma_xz5 = ViscDens_i * (Velocity_i[0] * Mean_GradPsiE[2] + Velocity_i[2] * Mean_GradPsiE[0]);
+//		Sigma_yz5 = ViscDens_i * (Velocity_i[1] * Mean_GradPsiE[2] + Velocity_i[2] * Mean_GradPsiE[1]);
+//		Sigma_5   = XiDens_i * dPhiE_dn;
+//		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
+//		eta_xy = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
+//    
+//		val_residual_i[0] = - (Velocity_i[0] * Normal[0] * eta_xx  + Velocity_i[1] * Normal[1] * eta_yy + Velocity_i[2] * Normal[2] * eta_zz
+//                           + (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
+//                           + (Velocity_i[0] * Normal[2] + Velocity_i[2] * Normal[0]) * eta_xz
+//                           + (Velocity_i[2] * Normal[1] + Velocity_i[1] * Normal[2]) * eta_yz
+//                           - (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
+//    
+//		val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_i[0] * Sigma_5);
+//		val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_i[1] * Sigma_5);
+//		val_residual_i[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_i[2] * Sigma_5);
+//		val_residual_i[4] = (Sigma_5);
+//    
+//		/*--- Computation of the Jacobians at Point i---*/
+//    
+//    if (implicit) {
+//      dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxx_phi3 =   TWO3 * ViscDens_i * Edge_Vector[2]/dist_ij_2;
+//      dSigmayy_phi1 =   TWO3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmayy_phi2 = -FOUR3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmayy_phi3 =   TWO3 * ViscDens_i * Edge_Vector[2]/dist_ij_2;
+//      dSigmazz_phi1 =   TWO3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmazz_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmazz_phi3 = -FOUR3 * ViscDens_i * Edge_Vector[2]/dist_ij_2;
+//      dSigmaxy_phi1 = -ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxy_phi2 = -ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmaxy_phi3 = 0;
+//      dSigmaxz_phi1 = -ViscDens_i * Edge_Vector[2]/dist_ij_2;
+//      dSigmaxz_phi2 = 0;
+//      dSigmaxz_phi3 = -ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmayz_phi1 = 0;
+//      dSigmayz_phi2 = -ViscDens_i * Edge_Vector[2]/dist_ij_2;
+//      dSigmayz_phi3 = -ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      
+//      dSigmaxx5_psi5 = -ViscDens_i * ( FOUR3*Velocity_i[0]*Edge_Vector[0] -  TWO3*Velocity_i[1]*Edge_Vector[1] -  TWO3*Velocity_i[2]*Edge_Vector[2])/dist_ij_2;
+//      dSigmayy5_psi5 = -ViscDens_i * (- TWO3*Velocity_i[0]*Edge_Vector[0] + FOUR3*Velocity_i[1]*Edge_Vector[1] -  TWO3*Velocity_i[2]*Edge_Vector[2])/dist_ij_2;
+//      dSigmazz5_psi5 = -ViscDens_i * (- TWO3*Velocity_i[0]*Edge_Vector[0] -  TWO3*Velocity_i[1]*Edge_Vector[1] + FOUR3*Velocity_i[2]*Edge_Vector[2])/dist_ij_2;
+//      dSigmaxy5_psi5 = -ViscDens_i * ( Velocity_i[0]*Edge_Vector[1] + Velocity_i[1]*Edge_Vector[0] )/dist_ij_2;
+//      dSigmaxz5_psi5 = -ViscDens_i * ( Velocity_i[0]*Edge_Vector[2] + Velocity_i[2]*Edge_Vector[0] )/dist_ij_2;
+//      dSigmayz5_psi5 = -ViscDens_i * ( Velocity_i[1]*Edge_Vector[2] + Velocity_i[2]*Edge_Vector[1] )/dist_ij_2;
+//      dSigma5_psi5   = -XiDens_i * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] + Edge_Vector[2]*Normal[2] )/dist_ij_2;
+//      
+//      val_Jacobian_ii[0][0] = 0;
+//      val_Jacobian_ii[0][1] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi1 + Velocity_i[1]*Normal[1]*dSigmayy_phi1 + Velocity_i[2]*Normal[2]*dSigmazz_phi1
+//                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1
+//                                + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi1
+//                                + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi1 );
+//      val_Jacobian_ii[0][2] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi2 + Velocity_i[1]*Normal[1]*dSigmayy_phi2 + Velocity_i[2]*Normal[2]*dSigmazz_phi2
+//                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2
+//                                + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi2
+//                                + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi2 );
+//      val_Jacobian_ii[0][3] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi3 + Velocity_i[1]*Normal[1]*dSigmayy_phi3 + Velocity_i[2]*Normal[2]*dSigmazz_phi3
+//                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi3
+//                                + (Velocity_i[0]*Normal[2] + Velocity_i[2]*Normal[0])*dSigmaxz_phi3
+//                                + (Velocity_i[2]*Normal[1] + Velocity_i[1]*Normal[2])*dSigmayz_phi3 );
+//      val_Jacobian_ii[0][4] = (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * dSigma5_psi5;
+//      
+//      val_Jacobian_ii[1][0] = 0;
+//      val_Jacobian_ii[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1 + Normal[2]*dSigmaxz_phi1;
+//      val_Jacobian_ii[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2 + Normal[2]*dSigmaxz_phi2;
+//      val_Jacobian_ii[1][3] = Normal[0]*dSigmaxx_phi3 + Normal[1]*dSigmaxy_phi3 + Normal[2]*dSigmaxz_phi3;
+//      val_Jacobian_ii[1][4] = -Velocity_i[0]*dSigma5_psi5;
+//      
+//      val_Jacobian_ii[2][0] = 0;
+//      val_Jacobian_ii[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1 + Normal[2]*dSigmayz_phi1;
+//      val_Jacobian_ii[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2 + Normal[2]*dSigmayz_phi2;
+//      val_Jacobian_ii[2][3] = Normal[0]*dSigmaxy_phi3 + Normal[1]*dSigmayy_phi3 + Normal[2]*dSigmayz_phi3;
+//      val_Jacobian_ii[2][4] = -Velocity_i[1]*dSigma5_psi5;
+//      
+//      val_Jacobian_ii[3][0] = 0;
+//      val_Jacobian_ii[3][1] = Normal[0]*dSigmaxz_phi1 + Normal[1]*dSigmayz_phi1 + Normal[2]*dSigmazz_phi1;
+//      val_Jacobian_ii[3][2] = Normal[0]*dSigmaxz_phi2 + Normal[1]*dSigmayz_phi2 + Normal[2]*dSigmazz_phi2;
+//      val_Jacobian_ii[3][3] = Normal[0]*dSigmaxz_phi3 + Normal[1]*dSigmayz_phi3 + Normal[2]*dSigmazz_phi3;
+//      val_Jacobian_ii[3][4] = -Velocity_i[2]*dSigma5_psi5;
+//      
+//      val_Jacobian_ii[4][0] = 0;
+//      val_Jacobian_ii[4][1] = 0;
+//      val_Jacobian_ii[4][2] = 0;
+//      val_Jacobian_ii[4][3] = 0;
+//      val_Jacobian_ii[4][4] = dSigma5_psi5;
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
+//    }
+//    
+//		/*--- Residual at jPoint ---*/
+//		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
+//		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1] - TWO3  * Mean_GradPhi[2][2]);
+//		Sigma_zz = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1] + FOUR3 * Mean_GradPhi[2][2]);
+//		Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+//		Sigma_xz = ViscDens_j * (Mean_GradPhi[2][0] + Mean_GradPhi[0][2]);
+//		Sigma_yz = ViscDens_j * (Mean_GradPhi[2][1] + Mean_GradPhi[1][2]);
+//		Sigma_xx5 = ViscDens_j * ( FOUR3 * Velocity_j[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_j[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_j[2] * Mean_GradPsiE[2]);
+//		Sigma_yy5 = ViscDens_j * (- TWO3 * Velocity_j[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_j[1] * Mean_GradPsiE[1] -  TWO3 * Velocity_j[2] * Mean_GradPsiE[2]);
+//		Sigma_zz5 = ViscDens_j * (- TWO3 * Velocity_j[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_j[1] * Mean_GradPsiE[1] + FOUR3 * Velocity_j[2] * Mean_GradPsiE[2]);
+//		Sigma_xy5 = ViscDens_j * (Velocity_j[0] * Mean_GradPsiE[1] + Velocity_j[1] * Mean_GradPsiE[0]);
+//		Sigma_xz5 = ViscDens_j * (Velocity_j[0] * Mean_GradPsiE[2] + Velocity_j[2] * Mean_GradPsiE[0]);
+//		Sigma_yz5 = ViscDens_j * (Velocity_j[1] * Mean_GradPsiE[2] + Velocity_j[2] * Mean_GradPsiE[1]);
+//		Sigma_5   = XiDens_j * dPhiE_dn;
+//		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
+//		eta_xy = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
+//    
+//		val_residual_j[0] = - (Velocity_j[0] * Normal[0] * eta_xx  + Velocity_j[1] * Normal[1] * eta_yy + Velocity_j[2] * Normal[2] * eta_zz
+//                           + (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
+//                           + (Velocity_j[0] * Normal[2] + Velocity_j[2] * Normal[0]) * eta_xz
+//                           + (Velocity_j[2] * Normal[1] + Velocity_j[1] * Normal[2]) * eta_yz
+//                           - (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
+//		val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] + eta_xz * Normal[2] - Velocity_j[0] * Sigma_5);
+//		val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] + eta_yz * Normal[2] - Velocity_j[1] * Sigma_5);
+//		val_residual_j[3] = (eta_xz * Normal[0] + eta_yz * Normal[1] + eta_zz * Normal[2] - Velocity_j[2] * Sigma_5);
+//		val_residual_j[4] = (Sigma_5);
+//    
+//		/*--- Computation of the Jacobians at Point j---*/
+//    if (implicit) {
+//      dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxx_phi3 = -TWO3 * ViscDens_j * Edge_Vector[2]/dist_ij_2;
+//      dSigmayy_phi1 = -TWO3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmayy_phi2 = FOUR3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmayy_phi3 = -TWO3 * ViscDens_j * Edge_Vector[2]/dist_ij_2;
+//      dSigmazz_phi1 = -TWO3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmazz_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmazz_phi3 = FOUR3 * ViscDens_j * Edge_Vector[2]/dist_ij_2;
+//      dSigmaxy_phi1 = ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxy_phi2 = ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmaxy_phi3 = 0;
+//      dSigmaxz_phi1 = ViscDens_j * Edge_Vector[2]/dist_ij_2;
+//      dSigmaxz_phi2 = 0;
+//      dSigmaxz_phi3 = ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmayz_phi1 = 0;
+//      dSigmayz_phi2 = ViscDens_j * Edge_Vector[2]/dist_ij_2;
+//      dSigmayz_phi3 = ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      
+//      dSigmaxx5_psi5 = ViscDens_j * ( FOUR3*Velocity_j[0]*Edge_Vector[0] -  TWO3*Velocity_j[1]*Edge_Vector[1] -  TWO3*Velocity_j[2]*Edge_Vector[2])/dist_ij_2;
+//      dSigmayy5_psi5 = ViscDens_j * (- TWO3*Velocity_j[0]*Edge_Vector[0] + FOUR3*Velocity_j[1]*Edge_Vector[1] -  TWO3*Velocity_j[2]*Edge_Vector[2])/dist_ij_2;
+//      dSigmazz5_psi5 = ViscDens_j * (- TWO3*Velocity_j[0]*Edge_Vector[0] -  TWO3*Velocity_j[1]*Edge_Vector[1] + FOUR3*Velocity_j[2]*Edge_Vector[2])/dist_ij_2;
+//      dSigmaxy5_psi5 = ViscDens_j * ( Velocity_j[0]*Edge_Vector[1] + Velocity_j[1]*Edge_Vector[0] )/dist_ij_2;
+//      dSigmaxz5_psi5 = ViscDens_j * ( Velocity_j[0]*Edge_Vector[2] + Velocity_j[2]*Edge_Vector[0] )/dist_ij_2;
+//      dSigmayz5_psi5 = ViscDens_j * ( Velocity_j[1]*Edge_Vector[2] + Velocity_j[2]*Edge_Vector[1] )/dist_ij_2;
+//      dSigma5_psi5   = XiDens_j * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] + Edge_Vector[2]*Normal[2] )/dist_ij_2;
+//      
+//      val_Jacobian_jj[0][0] = 0;
+//      val_Jacobian_jj[0][1] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi1 + Velocity_j[1]*Normal[1]*dSigmayy_phi1 + Velocity_j[2]*Normal[2]*dSigmazz_phi1
+//                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1
+//                                + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi1
+//                                + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi1 );
+//      val_Jacobian_jj[0][2] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi2 + Velocity_j[1]*Normal[1]*dSigmayy_phi2 + Velocity_j[2]*Normal[2]*dSigmazz_phi2
+//                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2
+//                                + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi2
+//                                + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi2 );
+//      val_Jacobian_jj[0][3] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi3 + Velocity_j[1]*Normal[1]*dSigmayy_phi3 + Velocity_j[2]*Normal[2]*dSigmazz_phi3
+//                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi3
+//                                + (Velocity_j[0]*Normal[2] + Velocity_j[2]*Normal[0])*dSigmaxz_phi3
+//                                + (Velocity_j[2]*Normal[1] + Velocity_j[1]*Normal[2])*dSigmayz_phi3 );
+//      val_Jacobian_jj[0][4] = (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * dSigma5_psi5;
+//      
+//      val_Jacobian_jj[1][0] = 0;
+//      val_Jacobian_jj[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1 + Normal[2]*dSigmaxz_phi1;
+//      val_Jacobian_jj[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2 + Normal[2]*dSigmaxz_phi2;
+//      val_Jacobian_jj[1][3] = Normal[0]*dSigmaxx_phi3 + Normal[1]*dSigmaxy_phi3 + Normal[2]*dSigmaxz_phi3;
+//      val_Jacobian_jj[1][4] = -Velocity_j[0]*dSigma5_psi5;
+//      
+//      val_Jacobian_jj[2][0] = 0;
+//      val_Jacobian_jj[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1 + Normal[2]*dSigmayz_phi1;
+//      val_Jacobian_jj[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2 + Normal[2]*dSigmayz_phi2;
+//      val_Jacobian_jj[2][3] = Normal[0]*dSigmaxy_phi3 + Normal[1]*dSigmayy_phi3 + Normal[2]*dSigmayz_phi3;
+//      val_Jacobian_jj[2][4] = -Velocity_j[1]*dSigma5_psi5;
+//      
+//      val_Jacobian_jj[3][0] = 0;
+//      val_Jacobian_jj[3][1] = Normal[0]*dSigmaxz_phi1 + Normal[1]*dSigmayz_phi1 + Normal[2]*dSigmazz_phi1;
+//      val_Jacobian_jj[3][2] = Normal[0]*dSigmaxz_phi2 + Normal[1]*dSigmayz_phi2 + Normal[2]*dSigmazz_phi2;
+//      val_Jacobian_jj[3][3] = Normal[0]*dSigmaxz_phi3 + Normal[1]*dSigmayz_phi3 + Normal[2]*dSigmazz_phi3;
+//      val_Jacobian_jj[3][4] = -Velocity_j[2]*dSigma5_psi5;
+//      
+//      val_Jacobian_jj[4][0] = 0;
+//      val_Jacobian_jj[4][1] = 0;
+//      val_Jacobian_jj[4][2] = 0;
+//      val_Jacobian_jj[4][3] = 0;
+//      val_Jacobian_jj[4][4] = dSigma5_psi5;
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
+//    }
+//    
+//	} else if (nDim == 2) {
+//		/*--- Residual at iPoint ---*/
+//		Sigma_xx = ViscDens_i * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
+//		Sigma_yy = ViscDens_i * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1]);
+//		Sigma_xy = ViscDens_i * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+//		Sigma_xx5 = ViscDens_i * ( FOUR3 * Velocity_i[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_i[1] * Mean_GradPsiE[1]);
+//		Sigma_yy5 = ViscDens_i * (- TWO3 * Velocity_i[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_i[1] * Mean_GradPsiE[1]);
+//		Sigma_xy5 = ViscDens_i * (Velocity_i[0] * Mean_GradPsiE[1] + Velocity_i[1] * Mean_GradPsiE[0]);
+//		Sigma_5   = XiDens_i * dPhiE_dn;
+//		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_xy = Sigma_xy + Sigma_xy5;
+//    
+//		val_residual_i[0] = - (Velocity_i[0] * Normal[0] * eta_xx  + Velocity_i[1] * Normal[1] * eta_yy
+//                           + (Velocity_i[0] * Normal[1] + Velocity_i[1] * Normal[0]) * eta_xy
+//                           - (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * Sigma_5);
+//		val_residual_i[1] = (eta_xx * Normal[0] + eta_xy * Normal[1] - Velocity_i[0] * Sigma_5);
+//		val_residual_i[2] = (eta_xy * Normal[0] + eta_yy * Normal[1] - Velocity_i[1] * Sigma_5);
+//		val_residual_i[3] = (Sigma_5);
+//    
+//		/*--- Computation of the Jacobians at Point i---*/
+//		if (implicit) {
+//      
+//      dSigmaxx_phi1 = -FOUR3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmaxx_phi2 =   TWO3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmayy_phi1 =   TWO3 * ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      dSigmayy_phi2 = -FOUR3 * ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxy_phi1 = -ViscDens_i * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxy_phi2 = -ViscDens_i * Edge_Vector[0]/dist_ij_2;
+//      
+//      dSigmaxx5_psi5 = -ViscDens_i * ( FOUR3*Velocity_i[0]*Edge_Vector[0] -  TWO3*Velocity_i[1]*Edge_Vector[1] )/dist_ij_2;
+//      dSigmayy5_psi5 = -ViscDens_i * (- TWO3*Velocity_i[0]*Edge_Vector[0] + FOUR3*Velocity_i[1]*Edge_Vector[1] )/dist_ij_2;
+//      dSigmaxy5_psi5 = -ViscDens_i * ( Velocity_i[0]*Edge_Vector[1] + Velocity_i[1]*Edge_Vector[0] )/dist_ij_2;
+//      dSigma5_psi5   = -XiDens_i * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] )/dist_ij_2;
+//      
+//      val_Jacobian_ii[0][0] = 0;
+//      val_Jacobian_ii[0][1] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi1 + Velocity_i[1]*Normal[1]*dSigmayy_phi1
+//                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi1 );
+//      val_Jacobian_ii[0][2] = -( Velocity_i[0]*Normal[0]*dSigmaxx_phi2 + Velocity_i[1]*Normal[1]*dSigmayy_phi2
+//                                + (Velocity_i[0]*Normal[1] + Velocity_i[1]*Normal[0])*dSigmaxy_phi2 );
+//      val_Jacobian_ii[0][3] = (sq_vel_i - Pressure_i/(Density_i*Gamma_Minus_One)) * dSigma5_psi5;
+//      
+//      val_Jacobian_ii[1][0] = 0;
+//      val_Jacobian_ii[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1;
+//      val_Jacobian_ii[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2;
+//      val_Jacobian_ii[1][3] = -Velocity_i[0]*dSigma5_psi5;
+//      
+//      val_Jacobian_ii[2][0] = 0;
+//      val_Jacobian_ii[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1;
+//      val_Jacobian_ii[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2;
+//      val_Jacobian_ii[2][3] = -Velocity_i[1]*dSigma5_psi5;
+//      
+//      val_Jacobian_ii[3][0] = 0;
+//      val_Jacobian_ii[3][1] = 0;
+//      val_Jacobian_ii[3][2] = 0;
+//      val_Jacobian_ii[3][3] = dSigma5_psi5;
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ij[iVar][jVar] = -val_Jacobian_ii[iVar][jVar];
+//    }
+//    
+//		/*--- Residual at jPoint ---*/
+//		Sigma_xx = ViscDens_j * (FOUR3 * Mean_GradPhi[0][0] -  TWO3 * Mean_GradPhi[1][1]);
+//		Sigma_yy = ViscDens_j * (-TWO3 * Mean_GradPhi[0][0] + FOUR3 * Mean_GradPhi[1][1]);
+//		Sigma_xy = ViscDens_j * (Mean_GradPhi[1][0] + Mean_GradPhi[0][1]);
+//		Sigma_xx5 = ViscDens_j * ( FOUR3 * Velocity_j[0] * Mean_GradPsiE[0] -  TWO3 * Velocity_j[1] * Mean_GradPsiE[1]);
+//		Sigma_yy5 = ViscDens_j * (- TWO3 * Velocity_j[0] * Mean_GradPsiE[0] + FOUR3 * Velocity_j[1] * Mean_GradPsiE[1]);
+//		Sigma_xy5 = ViscDens_j * (Velocity_j[0] * Mean_GradPsiE[1] + Velocity_j[1] * Mean_GradPsiE[0]);
+//		Sigma_5   = XiDens_j * dPhiE_dn;
+//		eta_xx = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_xy = Sigma_xy + Sigma_xy5;
+//    
+//		val_residual_j[0] = - (Velocity_j[0] * Normal[0] * eta_xx  + Velocity_j[1] * Normal[1] * eta_yy
+//                           + (Velocity_j[0] * Normal[1] + Velocity_j[1] * Normal[0]) * eta_xy
+//                           - (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * Sigma_5);
+//		val_residual_j[1] = (eta_xx * Normal[0] + eta_xy * Normal[1]  - Velocity_j[0] * Sigma_5);
+//		val_residual_j[2] = (eta_xy * Normal[0] + eta_yy * Normal[1]  - Velocity_j[1] * Sigma_5);
+//		val_residual_j[3] = (Sigma_5);
+//    
+//		/*--- Computation of the Jacobians at Point j---*/
+//    if (implicit) {
+//      dSigmaxx_phi1 = FOUR3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmaxx_phi2 = -TWO3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmayy_phi1 = -TWO3 * ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      dSigmayy_phi2 = FOUR3 * ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxy_phi1 = ViscDens_j * Edge_Vector[1]/dist_ij_2;
+//      dSigmaxy_phi2 = ViscDens_j * Edge_Vector[0]/dist_ij_2;
+//      
+//      dSigmaxx5_psi5 = ViscDens_j * ( FOUR3*Velocity_j[0]*Edge_Vector[0] -  TWO3*Velocity_j[1]*Edge_Vector[1] )/dist_ij_2;
+//      dSigmayy5_psi5 = ViscDens_j * (- TWO3*Velocity_j[0]*Edge_Vector[0] + FOUR3*Velocity_j[1]*Edge_Vector[1] )/dist_ij_2;
+//      dSigmaxy5_psi5 = ViscDens_j * ( Velocity_j[0]*Edge_Vector[1] + Velocity_j[1]*Edge_Vector[0] )/dist_ij_2;
+//      dSigma5_psi5   = XiDens_j * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] )/dist_ij_2;
+//      
+//      val_Jacobian_jj[0][0] = 0;
+//      val_Jacobian_jj[0][1] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi1 + Velocity_j[1]*Normal[1]*dSigmayy_phi1
+//                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi1 );
+//      val_Jacobian_jj[0][2] = -( Velocity_j[0]*Normal[0]*dSigmaxx_phi2 + Velocity_j[1]*Normal[1]*dSigmayy_phi2
+//                                + (Velocity_j[0]*Normal[1] + Velocity_j[1]*Normal[0])*dSigmaxy_phi2 );
+//      val_Jacobian_jj[0][3] = (sq_vel_j - Pressure_j/(Density_j*Gamma_Minus_One)) * dSigma5_psi5;
+//      
+//      val_Jacobian_jj[1][0] = 0;
+//      val_Jacobian_jj[1][1] = Normal[0]*dSigmaxx_phi1 + Normal[1]*dSigmaxy_phi1;
+//      val_Jacobian_jj[1][2] = Normal[0]*dSigmaxx_phi2 + Normal[1]*dSigmaxy_phi2;
+//      val_Jacobian_jj[1][3] = -Velocity_j[0]*dSigma5_psi5;
+//      
+//      val_Jacobian_jj[2][0] = 0;
+//      val_Jacobian_jj[2][1] = Normal[0]*dSigmaxy_phi1 + Normal[1]*dSigmayy_phi1;
+//      val_Jacobian_jj[2][2] = Normal[0]*dSigmaxy_phi2 + Normal[1]*dSigmayy_phi2;
+//      val_Jacobian_jj[2][3] = -Velocity_j[1]*dSigma5_psi5;
+//      
+//      val_Jacobian_jj[3][0] = 0;
+//      val_Jacobian_jj[3][1] = 0;
+//      val_Jacobian_jj[3][2] = 0;
+//      val_Jacobian_jj[3][3] = dSigma5_psi5;
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ji[iVar][jVar] = -val_Jacobian_jj[iVar][jVar];
+//    }
+//	}
+}
+
 CSource_AdjTNE2::CSource_AdjTNE2(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  unsigned short val_nPrimVar,

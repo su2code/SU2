@@ -716,6 +716,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   
   double *U_time_nM1, *U_time_n, *U_time_nP1;
   double Volume_nM1, Volume_nP1, TimeStep;
+  double Density_nM1, Density_n, Density_nP1;
   double *Normal = NULL, *GridVel_i = NULL, *GridVel_j = NULL, Residual_GCL;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
@@ -748,13 +749,30 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
+
+      if (config->GetKind_Turb_Model() == SST) {
+        
+        /*--- If this is the SST model, we need to multiply by the density
+         in order to get the conservative variables ---*/
+        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
+        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        
         if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
+          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
-                            +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+          Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
+                            +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+        
+      } else {
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+                              +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
+        }
       }
       
       /*--- Store the residual and compute the Jacobian contribution due
@@ -806,15 +824,33 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Compute the GCL component of the source term for node i ---*/
       
       U_time_n = node[iPoint]->GetSolution_time_n();
-      for(iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      
+      /*--- Multiply by density at node i for the SST model ---*/
+
+      if (config->GetKind_Turb_Model() == SST) {
+        Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+        for(iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+      } else {
+        for(iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      }
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Compute the GCL component of the source term for node j ---*/
       
       U_time_n = node[jPoint]->GetSolution_time_n();
-      for(iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      
+      /*--- Multiply by density at node j for the SST model ---*/
+
+      if (config->GetKind_Turb_Model() == SST) {
+        Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
+        for(iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+      } else {
+        for(iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+      }
       LinSysRes.SubtractBlock(jPoint, Residual);
       
     }
@@ -843,8 +879,17 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         /*--- Compute the GCL component of the source term for node i ---*/
         
         U_time_n = node[iPoint]->GetSolution_time_n();
-        for(iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+
+        /*--- Multiply by density at node i for the SST model ---*/
+        
+        if (config->GetKind_Turb_Model() == SST) {
+          Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          for(iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
+        } else {
+          for(iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = U_time_n[iVar]*Residual_GCL;
+        }
         LinSysRes.AddBlock(iPoint, Residual);
       }
     }
@@ -873,14 +918,31 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
       
-      for(iVar = 0; iVar < nVar; iVar++) {
+      if (config->GetKind_Turb_Model() == SST) {
+        
+        /*--- If this is the SST model, we need to multiply by the density
+         in order to get the conservative variables ---*/
+        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
+        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        
         if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-          + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+          + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        
+      } else {
+        
+        for(iVar = 0; iVar < nVar; iVar++) {
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+            + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        }
       }
-      
+  
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
       
@@ -2265,8 +2327,8 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim == 2){ nOutputVariables = 18; }
-      else if (nDim == 3){ nOutputVariables = 24; }
+      if (nDim == 2){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
+      else if (nDim == 3){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
     }
@@ -2538,32 +2600,50 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     unsigned long idx = 0;
     if (config->GetExtraOutput()) {
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAProduction;
-      OutputHeadingNames[idx] = "SAProduction";
+      
+      int nResidual = mynum->NumResidual();
+      
+      for (iDim = 0; iDim<nResidual;iDim++){
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->Residual[iDim];
+        stringstream intstr;
+        intstr << iDim;
+        string intAsStr = intstr.str();
+        OutputHeadingNames[idx] = "Residual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAResidual[iDim];
+        OutputHeadingNames[idx] = "SAResidual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->ResidualDiff[iDim];
+        OutputHeadingNames[idx] = "ResidualDiff_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->NondimResidual[iDim];
+        OutputHeadingNames[idx] = "NondimResidual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimResidual[iDim];
+        OutputHeadingNames[idx] = "SANondimResidual_" + intAsStr;
+        idx++;
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->NondimResidualDiff[iDim];
+        OutputHeadingNames[idx] = "NondimResidualDiff_" + intAsStr;
+        idx++;
+      }
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->Chi;
+      OutputHeadingNames[idx] = "Chi";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SADestruction;
-      OutputHeadingNames[idx] = "SADestruction";
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->OmegaBar;
+      OutputHeadingNames[idx] = "OmegaBar";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SACrossProduction;
-      OutputHeadingNames[idx] = "SACrossProduction";
+      for (iDim = 0; iDim<nDim;iDim++){
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->DNuHatDXBar[iDim];
+        stringstream intstr;
+        intstr << iDim;
+        OutputHeadingNames[idx] = "DNuHatDXBar_" + intstr.str();
+        idx++;
+      }
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->NuHatGradNorm;
+      OutputHeadingNames[idx] = "NuHatGradNorm";
       idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SASource;
-      OutputHeadingNames[idx] = "SASource";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLProduction;
-      OutputHeadingNames[idx] = "Production";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLDestruction;
-      OutputHeadingNames[idx] = "Destruction";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLCrossProduction;
-      OutputHeadingNames[idx] = "CrossProduction";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->MLSource;
-      OutputHeadingNames[idx] = "Source";
-      idx++;
-      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SourceDiff;
-      OutputHeadingNames[idx] = "SourceDiff";
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->NuHatGradNormBar;
+      OutputHeadingNames[idx] = "NuHatGradNormBar";
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->Laminar_Viscosity_i/numerics->Density_i;
       OutputHeadingNames[idx] = "KinematicViscosity";
@@ -2573,6 +2653,15 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->dist_i;
       OutputHeadingNames[idx] = "WallDist";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->NuGradNondim;
+      OutputHeadingNames[idx] = "NuGradNondimer";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->OmegaNondim;
+      OutputHeadingNames[idx] = "OmegaNondimer";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->SourceNondim;
+      OutputHeadingNames[idx] = "SourceNondimer";
       idx++;
       for (iDim = 0; iDim<nDim;iDim++){
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = numerics->TurbVar_Grad_i[0][iDim];
@@ -3514,10 +3603,6 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
-      
-      /*--- Grid Movement ---*/
-      if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
       
       conv_numerics->SetPrimitive(V_domain, V_infty);
       

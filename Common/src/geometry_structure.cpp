@@ -353,14 +353,17 @@ double CGeometry::GetSpline(vector<double>&xa, vector<double>&ya, vector<double>
   return y;
 }
 
-unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double *Plane_P0, double *Plane_Normal, double *Intersection) {
-  double u[3], v[3], Denominator, Numerator, Aux;
+unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, double *Segment_P1, double Variable_P0, double Variable_P1,
+                                                           double *Plane_P0, double *Plane_Normal, double *Intersection, double &Variable_Interp) {
+  double u[3], v[3], Denominator, Numerator, Aux, ModU;
   unsigned short iDim;
   
   for (iDim = 0; iDim < 3; iDim++) {
     u[iDim] = Segment_P1[iDim] - Segment_P0[iDim];
     v[iDim] = Plane_P0[iDim] - Segment_P0[iDim];
   }
+  
+  ModU = sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
   
   Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
   Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
@@ -381,6 +384,8 @@ unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, d
     v[iDim] = Segment_P1[iDim] - Intersection[iDim];
   }
   
+  Variable_Interp = Variable_P0 + (Variable_P1 - Variable_P0)*sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2])/ModU;
+  
   Denominator = Plane_Normal[0]*u[0] + Plane_Normal[1]*u[1] + Plane_Normal[2]*u[2];
   Numerator = Plane_Normal[0]*v[0] + Plane_Normal[1]*v[1] + Plane_Normal[2]*v[2];
   
@@ -388,6 +393,330 @@ unsigned short CGeometry::ComputeSegmentPlane_Intersection(double *Segment_P0, d
   
   if (Aux > 0.0) return 3; // Intersection outside the segment.
   else return 1;
+  
+}
+
+void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection,
+                                               double MinXCoord, double MaxXCoord, double *FlowVariable,
+                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
+                                               vector<double> &Zcoord_Airfoil, vector<double> &Variable_Airfoil,
+                                               bool original_surface, CConfig *config) {
+  
+  unsigned short iMarker, iNode, jNode, iDim, intersect;
+  long MinDist_Point, MinDistAngle_Point;
+  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex;
+  double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Variable_P0 = 0.0, Variable_P1 = 0.0, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
+  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MaxAngle = 30, *VarCoord = NULL, CosValue, Variable_Interp;
+  vector<double> Xcoord, Ycoord, Zcoord, Variable;
+  vector<unsigned long> Duplicate;
+  vector<unsigned long>::iterator it;
+  int rank = MASTER_NODE;
+  double **Coord_Variation;
+
+#ifndef NO_MPI
+  unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
+  int nProcessor, iProcessor;
+  double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+  
+  Xcoord_Airfoil.clear();
+  Ycoord_Airfoil.clear();
+  Zcoord_Airfoil.clear();
+  Variable_Airfoil.clear();
+  
+  /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
+  
+  if (nDim == 2) {
+    iSection = 0;
+    Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
+    Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
+  }
+  
+  /*--- the grid variation is stored using a vertices information,
+   we should go from vertex to points ---*/
+  
+  if (original_surface == false) {
+    
+    Coord_Variation = new double *[nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      Coord_Variation[iPoint] = new double [nDim];
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          for (iDim = 0; iDim < nDim; iDim++)
+            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
+        }
+      }
+    }
+    
+  }
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_GeoEval(iMarker) == YES) {
+      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+        for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
+            jPoint = bound[iMarker][iElem]->GetNode(jNode);
+            
+            if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
+              
+              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;  Variable_P0 = 0.0;
+              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;  Variable_P1 = 0.0;
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                if (original_surface == true) {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
+                }
+                else {
+                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
+                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
+                }
+              }
+              
+              if (FlowVariable != NULL) {
+                Variable_P0 = FlowVariable[iPoint];
+                Variable_P1 = FlowVariable[jPoint];
+              }
+              
+              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
+              
+              if (nDim == 2) {
+                Xcoord.push_back(Segment_P0[0]);    Xcoord.push_back(Segment_P1[0]);
+                Ycoord.push_back(Segment_P0[2]);    Ycoord.push_back(Segment_P1[2]);
+                Zcoord.push_back(Segment_P0[1]);    Zcoord.push_back(Segment_P1[1]);
+                Variable.push_back(Variable_P0);    Variable.push_back(Variable_P1);
+              }
+              /*--- In 3D compute the intersection ---*/
+              
+              else if (nDim == 3) {
+                intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Variable_P0, Variable_P1, Plane_P0, Plane_Normal, Intersection, Variable_Interp);
+                if (intersect == 1) {
+                  Xcoord.push_back(Intersection[0]);
+                  Ycoord.push_back(Intersection[1]);
+                  Zcoord.push_back(Intersection[2]);
+                  Variable.push_back(Variable_Interp);
+                }
+              }
+              
+            }
+            
+          }
+        }
+      }
+    }
+  }
+  
+  if (original_surface == false) {
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      delete [] Coord_Variation[iPoint];
+    delete [] Coord_Variation;
+    
+  }
+  
+  
+#ifndef NO_MPI
+  
+  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
+  
+  nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
+#ifdef WINDOWS
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+  nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+  
+  Buffer_Send_nVertex = new unsigned long [1];
+  Buffer_Receive_nVertex = new unsigned long [nProcessor];
+  
+  nLocalVertex = Xcoord.size();
+  
+  Buffer_Send_nVertex[0] = nLocalVertex;
+  
+#ifdef WINDOWS
+  MPI_Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+  MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
+  
+  Buffer_Send_Coord = new double [MaxLocalVertex*3];
+  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
+  nBuffer = MaxLocalVertex*3;
+  
+  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
+    Buffer_Send_Coord[iVertex*4 + 0] = Xcoord[iVertex];
+    Buffer_Send_Coord[iVertex*4 + 1] = Ycoord[iVertex];
+    Buffer_Send_Coord[iVertex*4 + 2] = Zcoord[iVertex];
+    Buffer_Send_Coord[iVertex*4 + 3] = Variable[iVertex];
+  }
+  
+#ifdef WINDOWS
+  MPI_Allgather(Buffer_Send_Coord,nBuffer,MPI_DOUBLE,Buffer_Receive_Coord,nBuffer,MPI_DOUBLE,MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
+#endif
+  
+  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
+  
+  Xcoord.clear();
+  Ycoord.clear();
+  Zcoord.clear();
+  Variable.clear();
+  
+  /*--- Copy the boundary to the master node vectors ---*/
+  if (rank == MASTER_NODE) {
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 0] );
+        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 1] );
+        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 2] );
+        Variable.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*4 + iVertex*4 + 3] );
+      }
+    }
+  }
+  
+  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
+  
+#endif
+
+  if ((rank == MASTER_NODE) && (Xcoord.size() != 0)) {
+    
+    /*--- Create a list with the duplicated points ---*/
+    
+    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
+      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
+        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
+        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
+        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        if (Dist_Value < 1E-6) {
+          Duplicate.push_back (jVertex);
+        }
+      }
+    }
+    
+    sort(Duplicate.begin(), Duplicate.end());
+    it = unique(Duplicate.begin(), Duplicate.end());
+    Duplicate.resize(it - Duplicate.begin());
+    
+    /*--- Remove duplicated points (starting from the back) ---*/
+    
+    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
+      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
+      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
+      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
+      Variable.erase (Variable.begin() + Duplicate[iVertex-1]);
+    }
+
+    if (Xcoord.size() != 1) {
+      
+      /*--- Find the trailing edge ---*/
+      
+      Trailing_Point = 0; Trailing_Coord = Xcoord[0];
+      for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
+        if (Xcoord[iVertex] > Trailing_Coord) {
+          Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
+        }
+      }
+      
+      /*--- Add the trailing edge to the list, and remove from the original list ---*/
+      Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]); Variable_Airfoil.push_back(Variable[Trailing_Point]);
+      Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point); Variable.erase (Variable.begin() + Trailing_Point);
+
+      /*--- Find the next point using the right hand side rule ---*/
+      MinDist_Value = 1E6; MinDist_Point = 0;
+      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
+        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
+        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+        
+        if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
+      }
+
+      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);  Variable_Airfoil.push_back(Variable[MinDist_Point]);
+      Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);    Variable.erase (Variable.begin() + MinDist_Point);
+      
+      /*--- Algorithm for the rest of the points ---*/
+      do {
+        
+        /*--- Last added point in the list ---*/
+        Airfoil_Point = Xcoord_Airfoil.size() - 1;
+        
+        /*--- Compute the slope of the curve ---*/
+        Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
+        Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
+        Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
+        Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
+        Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
+        
+        /*--- Find the closest point with the right slope ---*/
+        MinDist_Value = 1E6; MinDistAngle_Value = 180;
+        MinDist_Point = -1; MinDistAngle_Point = -1;
+        for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
+          
+          Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
+          Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
+          Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
+          
+          /*--- Compute the distance to each point ---*/
+          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+          
+          /*--- Compute the angle of the point ---*/
+          Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
+          
+          /*--- Clip the value of the cosine, this is important due to the round errors ---*/
+          CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
+          if (CosValue >= 1.0) CosValue = 1.0;
+          if (CosValue <= -1.0) CosValue = -1.0;
+          
+          Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
+          
+          if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
+          if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
+          
+        }
+        
+        if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
+        
+        /*--- Add and remove the min distance to the list ---*/
+        Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);    Variable_Airfoil.push_back(Variable[MinDist_Point]);
+        Xcoord.erase(Xcoord.begin() + MinDist_Point);     Ycoord.erase(Ycoord.begin() + MinDist_Point);     Zcoord.erase(Zcoord.begin() + MinDist_Point);       Variable.erase(Variable.begin() + MinDist_Point);
+        
+      } while (Xcoord.size() != 0);
+      
+      /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
+      
+      Xcoord.clear(); Ycoord.clear(); Zcoord.clear(); Variable.clear();
+      
+    }
+    
+    
+  }
+  
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Barrier(MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Barrier();
+#endif
+#endif
   
 }
 
@@ -1305,6 +1634,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
           
         }
         
@@ -2123,6 +2453,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
         }
         iMarker++;
       }
@@ -2542,6 +2873,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
     config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
     config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
     config->SetMarker_All_SendRecv(iMarker, NONE);
+    config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
   }
   
 }
@@ -2941,17 +3273,23 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    of the no-slip boundary nodes. Store the minimum distance to the wall for
    each interior mesh node. ---*/
   
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    coord = node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
-        *(coord[iDim]-Coord_bound[iVertex][iDim]);
-      if (dist2 < dist) dist = dist2;
+  if (nVertex_SolidWall != 0) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      coord = node[iPoint]->GetCoord();
+      dist = 1E20;
+      for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
+        dist2 = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
+          *(coord[iDim]-Coord_bound[iVertex][iDim]);
+        if (dist2 < dist) dist = dist2;
+      }
+      node[iPoint]->SetWall_Distance(sqrt(dist));
     }
-    node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  else {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+      node[iPoint]->SetWall_Distance(0.0);
   }
   
   /*--- Deallocate the vector of boundary coordinates. ---*/
@@ -3037,18 +3375,29 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    the distances to each of the no-slip boundary nodes in the entire mesh.
    Store the minimum distance to the wall for each interior mesh node. ---*/
   
-  for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-    coord = node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-        if (dist2 < dist) dist = dist2;
-      }
-    node[iPoint]->SetWall_Distance(sqrt(dist));
+  nVertex_SolidWall = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    nVertex_SolidWall += Buffer_Receive_nVertex[iProcessor];
+  }
+  
+  if (nVertex_SolidWall != 0) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+      coord = node[iPoint]->GetCoord();
+      dist = 1E20;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+          dist2 = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
+            (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+          if (dist2 < dist) dist = dist2;
+        }
+      node[iPoint]->SetWall_Distance(sqrt(dist));
+    }
+  }
+  else {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+      node[iPoint]->SetWall_Distance(0.0);
   }
   
   /*--- Deallocate the buffers needed for the MPI communication. ---*/
@@ -4114,13 +4463,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
     if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
   }
   
-  //	/*--- Set the volume for the iterations n and n-1 (dual time stteping with grid movement) ---*/
-  //	if (config->GetUnsteady_Simulation() != NO) {
-  //		for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  //			node[iPoint]->SetVolume_n();
-  //			node[iPoint]->SetVolume_nM1();
-  //		}
-  //	}
   
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -4144,6 +4486,338 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   delete[] Coord_Elem_CG;
   delete[] Coord_FaceiPoint;
   delete[] Coord_FacejPoint;
+}
+
+void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) {
+  unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, jPoint, iElem, iPoint_Viz;
+  long iEdge;
+  unsigned short nEdgesFace = 1, iFace, iEdgesFace, iDim;
+  double *Coord_Edge_CG, *Coord_FaceElem_CG, *Coord_Elem_CG, *Coord_FaceiPoint,
+  *Coord_FacejPoint;
+  bool change_face_orientation;
+  int rank;
+  int counter = 0;
+  char cstr[200], buffer[50];
+  ofstream Tecplot_File;
+  string mesh_filename;
+  vector<double> X, Y, Z;
+  unsigned short iNodes, nNodes = 4;
+  unsigned long PointCorners[4];
+  double CoordCorners[4][3];
+  double r1[3], r2[3], CrossProduct[3];
+  double Vol, Area_Jameson = 0.0, Area_Dual = 0.0;
+  double r[3][3]; unsigned short node_counter;
+  
+  /*--- This routine is only meant for visualization in serial currently ---*/
+#ifdef NO_MPI
+  rank = MASTER_NODE;
+  
+  /*--- Access the point number for control volume we want to vizualize ---*/
+  
+  iPoint_Viz = config->GetVisualize_CV();
+  
+  /*--- Allocate some structures for building the dual CVs ---*/
+  
+  Coord_Edge_CG     = new double [nDim];
+  Coord_FaceElem_CG = new double [nDim];
+  Coord_Elem_CG     = new double [nDim];
+  Coord_FaceiPoint  = new double [nDim];
+  Coord_FacejPoint  = new double [nDim];
+  
+  /*--- Loop over each face of each element ---*/
+  
+  for(iElem = 0; iElem < nElem; iElem++) {
+    
+    for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+      
+      /*--- In 2D all the faces have only one edge ---*/
+      if (nDim == 2) nEdgesFace = 1;
+      /*--- In 3D the number of edges per face is the same as the number of point per face ---*/
+      if (nDim == 3) nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+      
+      /*-- Loop over the edges of a face ---*/
+      for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+        
+        /*--- In 2D only one edge (two points) per edge ---*/
+        if (nDim == 2) {
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,1));
+        }
+        
+        /*--- In 3D there are several edges in each face ---*/
+        if (nDim == 3) {
+          face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+          if (iEdgesFace != nEdgesFace-1)
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace+1));
+          else
+            face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+        }
+        
+        /*--- We define a direction (from the smallest index to the greatest) --*/
+        change_face_orientation = false;
+        if (face_iPoint > face_jPoint) change_face_orientation = true;
+        iEdge = FindEdge(face_iPoint, face_jPoint);
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
+          Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
+          Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace,iDim);
+          Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
+          Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
+        }
+        
+        /*--- Print out the coordinates for a set of triangles making
+         up a single dual control volume for visualization. ---*/
+        
+        if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+          //cout << face_iPoint << "    " << face_jPoint << endl;
+          if (nDim == 2) {
+            X.push_back(Coord_Elem_CG[0]); X.push_back(Coord_Edge_CG[0]);
+            Y.push_back(Coord_Elem_CG[1]); Y.push_back(Coord_Edge_CG[1]);
+          } else if (nDim == 3) {
+            X.push_back(Coord_FaceElem_CG[0]); X.push_back(Coord_Edge_CG[0]); X.push_back(Coord_Elem_CG[0]);
+            Y.push_back(Coord_FaceElem_CG[1]); Y.push_back(Coord_Edge_CG[1]); Y.push_back(Coord_Elem_CG[1]);
+            Z.push_back(Coord_FaceElem_CG[2]); Z.push_back(Coord_Edge_CG[2]); Z.push_back(Coord_Elem_CG[2]);
+            
+            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+              for (iDim = 0; iDim < nDim; iDim++) {
+                r1[iDim] = Coord_FaceElem_CG[iDim]-Coord_Elem_CG[iDim];
+                r2[iDim] = Coord_Edge_CG[iDim]-Coord_Elem_CG[iDim];
+              }
+              
+              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
+              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
+              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+              
+              Area_Dual += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
+                                    +CrossProduct[1]*CrossProduct[1]
+                                    +CrossProduct[2]*CrossProduct[2]);
+            }
+          }
+          counter++;
+        }
+      }
+    }
+  }
+  
+  /*--- Write a Tecplot file to visualize the CV ---*/
+  
+  strcpy(cstr,"dual_cv");
+  sprintf (buffer, "_%d.dat", int(iPoint_Viz));
+  strcat(cstr,buffer);
+  
+  Tecplot_File.open(cstr, ios::out);
+  Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+  
+  if (nDim == 2) {
+    Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+    Tecplot_File << "ZONE NODES= "<< counter*2 <<", ELEMENTS= ";
+    Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+  } if (nDim == 3) {
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+    Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
+    Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+  }
+  
+  /*--- Write coordinates for the nodes in the order that they were found
+   for each of the edges/triangles making up a dual control volume. ---*/
+  
+  for(vector<double>::size_type i = 0; i != X.size(); i++) {
+    Tecplot_File << X[i] << "\t" << Y[i];
+    if (nDim == 3) Tecplot_File << "\t" << Z[i];
+    Tecplot_File << "\n";
+  }
+  
+  /*--- Create a new connectivity table in the order the faces were found ---*/
+  
+  int j;
+  for (int i= 0; i < counter; i++){
+    if (nDim == 2) {
+      j = i*2;
+      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
+    } if (nDim == 3) {
+      j = i*3;
+      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t";
+      Tecplot_File << j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
+    }
+  }
+  
+  Tecplot_File.close();
+  X.clear();
+  Y.clear();
+  Z.clear();
+  
+  
+  /*--- Now plot Jameson's control volume for the same node (assumes tets) ---*/
+  
+  Area_Jameson = 0.0; Vol = 0.0; counter = 0; nNodes = 4;
+  for(iElem = 0; iElem < nElem; iElem++) {
+    
+    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+      
+      for (iNodes = 0; iNodes < nNodes; iNodes++) {
+        PointCorners[iNodes] = elem[iElem]->GetNode(iNodes);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          CoordCorners[iNodes][iDim] = node[PointCorners[iNodes]]->GetCoord(iDim);
+        }
+      }
+      
+      for (iFace = 0; iFace < elem[iElem]->GetnFaces(); iFace++) {
+        
+        nEdgesFace = elem[iElem]->GetnNodesFace(iFace);
+        
+        /*-- Loop over the edges of a face ---*/
+        for (iEdgesFace = 0; iEdgesFace < nEdgesFace; iEdgesFace++) {
+          
+          /*--- In 3D there are several edges in each face ---*/
+          if (nDim == 3) {
+            face_iPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace));
+            if (iEdgesFace != nEdgesFace-1)
+              face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,iEdgesFace+1));
+            else
+              face_jPoint = elem[iElem]->GetNode(elem[iElem]->GetFaces(iFace,0));
+          }
+          
+          /*--- We define a direction (from the smallest index to the greatest) --*/
+          
+          change_face_orientation = false;
+          if (face_iPoint > face_jPoint) change_face_orientation = true;
+          iEdge = FindEdge(face_iPoint, face_jPoint);
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Coord_Edge_CG[iDim] = edge[iEdge]->GetCG(iDim);
+            Coord_Elem_CG[iDim] = elem[iElem]->GetCG(iDim);
+            Coord_FaceElem_CG[iDim] = elem[iElem]->GetFaceCG(iFace,iDim);
+            Coord_FaceiPoint[iDim] = node[face_iPoint]->GetCoord(iDim);
+            Coord_FacejPoint[iDim] = node[face_jPoint]->GetCoord(iDim);
+          }
+          
+          
+          if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+            
+            node_counter = 0;
+            for (iNodes = 0; iNodes < nNodes; iNodes++) {
+              
+              jPoint = elem[iElem]->GetNode(iNodes);
+              
+              /*--- Add the other three nodes to the triangle list, except for
+               the point that we are trying to visualize ---*/
+              if (jPoint != iPoint_Viz) {
+                
+                X.push_back(CoordCorners[iNodes][0]);
+                Y.push_back(CoordCorners[iNodes][1]);
+                Z.push_back(CoordCorners[iNodes][2]);
+                
+                r[node_counter][0] = CoordCorners[iNodes][0];
+                r[node_counter][1] = CoordCorners[iNodes][1];
+                r[node_counter][2] = CoordCorners[iNodes][2];
+                
+                node_counter++;
+                
+              }
+            }
+            counter++;
+            
+            /*--- For only the selected edge, increment the surface area ---*/
+            
+            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+              
+              for (iDim = 0; iDim < nDim; iDim++) {
+                r1[iDim] = r[1][iDim]-r[0][iDim];
+                r2[iDim] = r[2][iDim]-r[0][iDim];
+              }
+              
+              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
+              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
+              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+              
+              Area_Jameson += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
+                                       +CrossProduct[1]*CrossProduct[1]
+                                       +CrossProduct[2]*CrossProduct[2]);
+              
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Write a Tecplot file to visualize the CV ---*/
+  
+  if (counter > 0 && nDim ==3) {
+    
+    /*--- Compare total surface areas for the two types of control volumes
+     along a single edge --*/
+    
+    double Area_Dual = 0.0; double Area_Tmp; double *Normal;
+    for (iEdge = 0; iEdge < nEdge; iEdge++) {
+      
+      /*--- Points in edge, set normal vectors, and number of neighbors ---*/
+      
+      iPoint = edge[iEdge]->GetNode(0);
+      jPoint = edge[iEdge]->GetNode(1);
+      
+      if ((jPoint == 123 && iPoint == iPoint_Viz) ||
+          (iPoint == 123 && jPoint == iPoint_Viz) ) {
+        
+        Normal = edge[iEdge]->GetNormal();
+        
+        Area_Tmp = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area_Tmp += Normal[iDim]*Normal[iDim];
+        Area_Dual += sqrt(Area_Tmp);
+        
+      }
+    }
+    
+    cout << "Area comparison for node " << iPoint_Viz << ": ";
+    cout << Area_Dual << ", " << Area_Jameson << ", Ratio: ";
+    cout << Area_Jameson/Area_Dual << endl;
+    
+    strcpy(cstr,"jameson_cv");
+    sprintf (buffer, "_%d.dat", int(iPoint_Viz));
+    strcat(cstr,buffer);
+    
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+    Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
+    Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+    
+    /*--- Write coordinates for the nodes in the order that they were found
+     for each of the edges/triangles making up a dual control volume. ---*/
+    
+    for(vector<double>::size_type i = 0; i != X.size(); i++) {
+      Tecplot_File << X[i] << "\t" << Y[i];
+      if (nDim == 3) Tecplot_File << "\t" << Z[i];
+      Tecplot_File << "\n";
+    }
+    
+    /*--- Create a new connectivity table in the order the faces were found ---*/
+    
+    int j;
+    for (int i= 0; i < counter; i++){
+      j = i*3;
+      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+3 <<"\t"<<j+3 <<"\t";
+      Tecplot_File << j+3<<"\t" <<j+3 <<"\t"<<j+3 <<"\t"<<j+3 << endl;
+    }
+    
+    Tecplot_File.close();
+    X.clear();
+    Y.clear();
+    Z.clear();
+    
+  }
+  
+  delete[] Coord_Edge_CG;
+  delete[] Coord_FaceElem_CG;
+  delete[] Coord_Elem_CG;
+  delete[] Coord_FaceiPoint;
+  delete[] Coord_FacejPoint;
+  
+#endif
 }
 
 void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
@@ -5230,23 +5904,23 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	  /*--- Send/Receive information using Sendrecv ---*/   
-	  MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-					Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
+                   Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/   
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Coord, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Coord, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif 
+#endif
 #else
       
-      /*--- Receive information without MPI ---*/    
+      /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = vertex[MarkerR][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Receive_Coord[iDim*nVertexR+iVertex] = Buffer_Send_Coord[iDim*nVertexR+iVertex];
       }
-
+      
 #endif
       
       /*--- Deallocate send buffer ---*/
@@ -5289,21 +5963,21 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
         /*--- Rotate the coordinates. ---*/
         
         if (nDim == 2) {
-          newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Coord[2*nVertexR+iVertex];
-          newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Coord[2*nVertexR+iVertex];
+          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
         }
         else {
-          newCoord[0] = rotMatrix[0][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
-          newCoord[1] = rotMatrix[1][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
-          newCoord[2] = rotMatrix[2][0]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_Coord[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_Coord[3*nVertexR+iVertex];
+          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[0][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
+          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[1][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
+          newCoord[2] = (rotMatrix[2][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
+                         rotMatrix[2][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
+                         rotMatrix[2][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
         }
         
         /*--- Copy transformed coordinates back into buffer. ---*/
@@ -5371,17 +6045,17 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	  /*--- Send/Receive information using Sendrecv ---*/   
-	MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-					Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
+                   Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/     
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_GridVel, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_GridVel, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif  
+#endif
 #else
       
-      /*--- Receive information without MPI ---*/    
+      /*--- Receive information without MPI ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
         iPoint = vertex[MarkerR][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -5427,21 +6101,21 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
           newGridVel[iDim] = Buffer_Receive_GridVel[iDim*nVertexR+iVertex];
         
         if (nDim == 2) {
-          newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex];
-          newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex];
+          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
+          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
         }
         else {
-          newGridVel[0] = rotMatrix[0][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[0][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[0][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
-          newGridVel[1] = rotMatrix[1][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[1][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[1][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
-          newGridVel[2] = rotMatrix[2][0]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-          rotMatrix[2][1]*Buffer_Receive_GridVel[2*nVertexR+iVertex] +
-          rotMatrix[2][2]*Buffer_Receive_GridVel[3*nVertexR+iVertex];
+          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[0][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
+          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[1][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
+          newGridVel[2] = (rotMatrix[2][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
+                           rotMatrix[2][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
+                           rotMatrix[2][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
         }
         
         /*--- Copy transformed grid velocity back into buffer. ---*/
@@ -6379,795 +7053,6 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   delete[] FaceArea;
 }
 
-void CPhysicalGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
-                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
-                                               vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil,
-                                               vector<unsigned long> &point2_Airfoil, bool original_surface) {
-  unsigned short iMarker, iNode, jNode, iDim, intersect;
-  long MinDist_Point, MinDistAngle_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex;
-  //    unsigned long n;
-  double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
-  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, MaxAngle = 15, CosValue;
-  //    double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, auxpoint1, auxpoint2, zp1, zpn, Camber_Line;
-  vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
-  vector<unsigned long> Duplicate, point1, point2;
-  vector<unsigned long>::iterator it;
-  int rank = MASTER_NODE;
-  //    double **Coord_Variation;
-  unsigned short Boundary;
-  bool Monitoring;
-  
-#ifndef NO_MPI
-  unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
-  int nProcessor, iProcessor;
-  double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#endif
-  
-  // clean the vector, just to be safe
-  Xcoord_Airfoil.clear();
-  Ycoord_Airfoil.clear();
-  Zcoord_Airfoil.clear();
-  point1_Airfoil.clear();
-  point2_Airfoil.clear();
-  
-  /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
-  if (nDim == 2) {
-    iSection = 0;
-    Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
-    Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
-  }
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Boundary   = config->GetMarker_All_Boundary(iMarker);
-      Monitoring = config->GetMarker_All_Monitoring(iMarker);
-      
-      if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-          (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
-        
-        if (Monitoring) {
-          
-          for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-            for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-              iPoint = bound[iMarker][iElem]->GetNode(iNode);
-              for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-                jPoint = bound[iMarker][iElem]->GetNode(jNode);
-                
-                if (jPoint > iPoint) {
-                  
-                  Segment_P0[0] = 0.0;
-                  Segment_P0[1] = 0.0;
-                  Segment_P0[2] = 0.0;
-                  
-                  Segment_P1[0] = 0.0;
-                  Segment_P1[1] = 0.0;
-                  Segment_P1[2] = 0.0;
-                  
-                  for (iDim = 0; iDim < nDim; iDim++) {
-                    Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                    Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-                    // get pressure as well
-                  }
-                  
-                  /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
-                  if (nDim == 2) {
-                    Xcoord.push_back(Segment_P0[0]);  Xcoord.push_back(Segment_P1[0]);
-                    Ycoord.push_back(Segment_P0[2]);  Ycoord.push_back(Segment_P1[2]);
-                    Zcoord.push_back(Segment_P0[1]);  Zcoord.push_back(Segment_P1[1]);
-                  }
-                  /*--- In 3D compute the intersection ---*/
-                  else if (nDim == 3) {
-                    intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Plane_P0, Plane_Normal, Intersection);
-                    if (intersect == 1) {
-                      Xcoord.push_back(Intersection[0]);
-                      Ycoord.push_back(Intersection[1]);
-                      Zcoord.push_back(Intersection[2]);
-                      point1.push_back(iPoint);			// let point1 be i
-                      point2.push_back(jPoint);			// let point2 be j
-                      //interpolate the pressures at the endpoints.
-                    }
-                  }
-                  
-                }
-                
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  
-  
-#ifndef NO_MPI
-  
-  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
-  nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
-  
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  nLocalVertex = Xcoord.size();
-  
-  Buffer_Send_nVertex[0] = nLocalVertex;
-  
-#ifdef WINDOWS
-  MPI_Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI::UNSIGNED_LONG, MPI::MAX);
-  MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-#endif
-  
-  Buffer_Send_Coord = new double [MaxLocalVertex*3];
-  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
-  nBuffer = MaxLocalVertex*3;
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*3 + 0] = Xcoord[iVertex];
-    Buffer_Send_Coord[iVertex*3 + 1] = Ycoord[iVertex];
-    Buffer_Send_Coord[iVertex*3 + 2] = Zcoord[iVertex];
-  }
-  
-#ifdef WINDOWS
-  MPI_Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
-#endif
-  
-  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
-  Xcoord.clear();
-  Ycoord.clear();
-  Zcoord.clear();
-  
-  /*--- Copy the boundary to the master node vectors ---*/
-  if (rank == MASTER_NODE) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 0] );
-        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 1] );
-        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 2] );
-      }
-    }
-  }
-  
-  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
-  if (rank == MASTER_NODE) {
-    
-    /*--- Create a list with the duplicated points ---*/
-    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
-      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
-        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
-        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
-        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        if (Dist_Value < 1E-6) {
-          Duplicate.push_back (jVertex);
-        }
-      }
-    }
-    
-    sort(Duplicate.begin(), Duplicate.end());
-    it = unique(Duplicate.begin(), Duplicate.end());
-    Duplicate.resize(it - Duplicate.begin());
-    
-    /*--- Remove duplicated points (starting from the back) ---*/
-    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
-      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
-      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
-      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
-      //also erase the points from i and j
-      point1.erase(point1.begin() + Duplicate.at(iVertex-1));
-      point2.erase(point2.begin() + Duplicate.at(iVertex-1));
-    }
-    
-    /*--- Find the trailing edge ---*/
-    Trailing_Point = 0; Trailing_Coord = Xcoord[0];
-    for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-      if (Xcoord[iVertex] > Trailing_Coord) {
-        Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
-      }
-    }
-    
-    /*--- Add the trailing edge to the list, and remove from the original list ---*/
-    Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]);
-    Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]);
-    Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
-    
-    Xcoord.erase (Xcoord.begin() + Trailing_Point);
-    Ycoord.erase (Ycoord.begin() + Trailing_Point);
-    Zcoord.erase (Zcoord.begin() + Trailing_Point);
-    
-    point1_Airfoil.push_back(point1.at(Trailing_Point));
-    point2_Airfoil.push_back(point2.at(Trailing_Point));
-    
-    point1.erase(point1.begin() + Trailing_Point);
-    point2.erase(point2.begin() + Trailing_Point);
-    
-    /*--- Find the next point using the right hand side rule ---*/
-    MinDist_Value = 1E6;
-    for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-      Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
-      Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
-      Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
-      Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-      Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-      
-      if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-    }
-    
-    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);
-    Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);
-    Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-    
-    Xcoord.erase (Xcoord.begin() + MinDist_Point);
-    Ycoord.erase (Ycoord.begin() + MinDist_Point);
-    Zcoord.erase (Zcoord.begin() + MinDist_Point);
-    
-    point1_Airfoil.push_back(point1.at(MinDist_Point));
-    point2_Airfoil.push_back(point2.at(MinDist_Point));
-    
-    point1.erase(point1.begin() + MinDist_Point);
-    point2.erase(point2.begin() + MinDist_Point);
-    
-    
-    /*--- Algorithm for the rest of the points ---*/
-    do {
-      
-      /*--- Last added point in the list ---*/
-      Airfoil_Point = Xcoord_Airfoil.size() - 1;
-      
-      /*--- Compute the slope of the curve ---*/
-      Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
-      Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
-      Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
-      Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
-      Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
-      
-      /*--- Find the closest point with the right slope ---*/
-      MinDist_Value = 1E6; MinDistAngle_Value = 180;
-      MinDist_Point = -1; MinDistAngle_Point = -1;
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        
-        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
-        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
-        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
-        
-        /*--- Compute the distance to each point ---*/
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        
-        /*--- Compute the angle of the point ---*/
-        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-        
-        /*--- Clip the value of the cosine, this is important due to the round errors ---*/
-        CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
-        if (CosValue >= 1.0) CosValue = 1.0;
-        if (CosValue <= -1.0) CosValue = -1.0;
-        
-        Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
-        
-        if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
-        
-      }
-      
-      if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
-      
-      /*--- Add and remove the min distance to the list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);
-      Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);
-      Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-      
-      Xcoord.erase(Xcoord.begin() + MinDist_Point);
-      Ycoord.erase(Ycoord.begin() + MinDist_Point);
-      Zcoord.erase(Zcoord.begin() + MinDist_Point);
-      
-      point1_Airfoil.push_back(point1.at(MinDist_Point));
-      point2_Airfoil.push_back(point2.at(MinDist_Point));
-      
-      point1.erase(point1.begin() + MinDist_Point);
-      point2.erase(point2.begin() + MinDist_Point);
-      
-    } while (Xcoord.size() != 0);
-    
-    /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-    Xcoord.clear();
-    Ycoord.clear();
-    Zcoord.clear();
-    
-    point1.clear();
-    point2.clear();
-    
-    
-    ////cout << endl << "About to start the tracing algorithm!" << endl;
-    //
-    //  	/*--- THIS IS THE START OF THE AIRFOIL-TRACING ALGORITHM
-    //		(it requires vectors of the X, Y, and Z coordinates
-    //		of the airfoil section, with no points repeated.) ---*/
-    //	unsigned long iNode, trailing_loc;
-    //	unsigned long nNode = Xcoord_Airfoil.size();
-    //	double max_x;
-    //	vector<double> X_dummy(nNode), Y_dummy(nNode), Z_dummy(nNode);
-    //
-    ////cout << endl << "finished first initializations!" << endl;
-    //
-    //	/*--- find the trailing-edge point
-    //		(we're assuming that the airfoil is facing
-    //		left and that it isn't sitting upside down.
-    //		If either of those happens to be true, this
-    //		algorithm will not work.) ---*/
-    //	max_x = -1.0;
-    //	for (iNode = 0; iNode < nNode; iNode++) {
-    //		if (Xcoord_Airfoil.at(iNode) >= max_x) {
-    //			max_x = Xcoord_Airfoil.at(iNode);
-    //			trailing_loc = iNode;
-    //		}
-    //	}
-    //
-    ////cout << endl << "found the trailing edge!" << endl;
-    //	/*--- move the trailing-edge point to the
-    //		top of the coordinates lists ---*/
-    //	//X_dummy.clear();
-    //	//Y_dummy.clear();
-    //	//Z_dummy.clear();
-    //
-    ////cout << endl << "cleared the vectors!" << endl;
-    //
-    //	X_dummy.at(0) = Xcoord_Airfoil.at(trailing_loc);
-    //	Y_dummy.at(0) = Ycoord_Airfoil.at(trailing_loc);
-    //	Z_dummy.at(0) = Zcoord_Airfoil.at(trailing_loc);
-    //
-    //	//X_dummy.push_back(Xcoord_Airfoil.at(trailing_loc));
-    //	//Y_dummy.push_back(Ycoord_Airfoil.at(trailing_loc));
-    //	//Z_dummy.push_back(Zcoord_Airfoil.at(trailing_loc));
-    //
-    ////cout << endl << "assigned trailing edge to beginning." << endl;
-    //	if (trailing_loc != 0) {
-    //		for (iNode = 0; iNode <= trailing_loc-1; iNode++) {
-    //		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(iNode);
-    //		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(iNode);
-    //		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(iNode);
-    //
-    ////cout << endl << "nNode = " << nNode << endl;
-    ////cout << endl << "trailing_loc = " << trailing_loc << endl;
-    //
-    //	//		X_dummy.push_back(Xcoord_Airfoil.at(iNode));
-    //	//		Y_dummy.push_back(Ycoord_Airfoil.at(iNode));
-    //	//		Z_dummy.push_back(Zcoord_Airfoil.at(iNode));
-    //		}
-    //	}
-    //
-    ////cout << endl << "wrote points to just before the trailing_loc" << endl;
-    //
-    //	for (iNode = trailing_loc+1; iNode < nNode; iNode++) {
-    //		X_dummy.at(iNode) = Xcoord_Airfoil.at(iNode);
-    //		Y_dummy.at(iNode) = Ycoord_Airfoil.at(iNode);
-    //		Z_dummy.at(iNode) = Zcoord_Airfoil.at(iNode);
-    //
-    //	//	X_dummy.push_back(Xcoord_Airfoil.at(iNode));
-    //	//	Y_dummy.push_back(Ycoord_Airfoil.at(iNode));
-    //	//	Z_dummy.push_back(Zcoord_Airfoil.at(iNode));
-    //	}
-    //
-    ////cout << endl << "wrote points from the trailing loc to the end of the vector" << endl;
-    //
-    //	Xcoord_Airfoil.swap(X_dummy);
-    //	Ycoord_Airfoil.swap(Y_dummy);
-    //	Zcoord_Airfoil.swap(Z_dummy);
-    //
-    //	X_dummy.clear();
-    //	Y_dummy.clear();
-    //	Z_dummy.clear();
-    //
-    ////cout << endl << "moved the trailing edge to the beginning!" << endl;
-    //
-    //	/*--- name the trailing-edge point, for convenience ---*/
-    //	double trailing_point [3];
-    //	trailing_point[0] = Xcoord_Airfoil.at(0);
-    //	trailing_point[1] = Ycoord_Airfoil.at(0);
-    //	trailing_point[2] = Zcoord_Airfoil.at(0);
-    //
-    //	/*--- find the leading-edge point ---*/
-    //	double maxDistance, xDist, yDist, zDist, distance;
-    //	double leading_point [3];
-    //	maxDistance = 0.0;
-    //	for (iNode = 1; iNode < nNode; iNode++) {
-    //
-    //		/*--- compute the distance of the each
-    //			point from the trailing edge ---*/
-    //		xDist = trailing_point[0] - Xcoord_Airfoil.at(iNode);
-    //		yDist = trailing_point[1] - Ycoord_Airfoil.at(iNode);
-    //		zDist = trailing_point[2] - Zcoord_Airfoil.at(iNode);
-    //		distance = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
-    //
-    //		/*--- assume the leading-edge point
-    //			is the one that is farthest
-    //			from the trailing edge ---*/
-    //		if (distance > maxDistance) {
-    //			maxDistance = distance;
-    //			leading_point[0] = Xcoord_Airfoil.at(iNode);
-    //			leading_point[1] = Ycoord_Airfoil.at(iNode);
-    //			leading_point[2] = Zcoord_Airfoil.at(iNode);
-    //		}
-    //	}
-    //
-    ////cout << endl << "found the leading edge!" << endl;
-    //
-    //	/*--- find the chord length ---*/
-    //	double chord;
-    //	xDist = trailing_point[0] - leading_point[0];
-    //	yDist = trailing_point[1] - leading_point[1];
-    //	zDist = trailing_point[2] - leading_point[2];
-    //	chord = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
-    //
-    //	/*--- define a vector pointing from the
-    //		trailing edge to the leading edge ---*/
-    //	double chord_line [3];
-    //	for (iDim = 0; iDim < nDim; iDim++) {
-    //		chord_line[iDim] = leading_point[iDim]-trailing_point[iDim];
-    //	}
-    //
-    //	/*--- define a point that lies "above" the
-    //		leading edge, in the plane of the
-    //		airfoil. (Here, we need to hope
-    //		that the Z-axis points "upward.") ---*/
-    //	double above_point [3];
-    //	above_point[0] = leading_point[0];
-    //	above_point[1] = leading_point[1];
-    //	above_point[2] = leading_point[2] + 1;
-    //
-    //	/*--- define a vector point from the trailing
-    //		edge to the newly created "point above" ---*/
-    //	double above_line [3];
-    //	for (iDim = 0; iDim < nDim; iDim++) {
-    //		above_line[iDim] = above_point[iDim] - trailing_point[iDim];
-    //	}
-    //
-    //	/*--- find the vector that points "into the page,"
-    //		i.e. if the airfoil is facing  left, this
-    //		vector points away from you and lies
-    //		normal to the section. ---*/
-    //	double section_normal [3];
-    //	section_normal[0] = chord_line[1]*above_line[2] - chord_line[2]*above_line[1];
-    //	section_normal[1] = chord_line[2]*above_line[0] - chord_line[0]*above_line[2];
-    //	section_normal[2] = chord_line[0]*above_line[1] - chord_line[1]*above_line[0];
-    //
-    //	/*--- beginning at the trailing edge,
-    //		connect the points, in order. ---*/
-    //	double startingPossibles, magnitude, outward_vec_mag, a_dot_b, cos_angle, weight_dist, weight_ang;
-    //	double *dist, **vec, *vec_mag, *angles;
-    //	double tangent [3], unit_tangent [3], unit_vec [3], inward_vec [3], outward_vec [3], penalty [2];
-    //	vector<double> minDist, list, ang_list;
-    //	vector<long> min_loc;
-    //	unsigned long jNode, next_loc;
-    //	unsigned long min_ang_loc [2];
-    //	unsigned short  nPossibles, k, jPoss;
-    //	unsigned short ang_index [2];
-    //
-    //	dist = new double [nNode];
-    //
-    ////cout << endl << "about to start the loop over the points!" << endl;
-    //
-    //	for (iNode = 0; iNode < nNode-1; iNode++) {
-    //
-    //		/*--- as we move around the airfoil, and as more
-    //			points are connected, we don't need to
-    //			test as many "possibles" at each station.
-    //			here, we will begin with four and, by the
-    //			end, linearly decrease the number to one. ---*/
-    //		startingPossibles = 5.9;
-    //		nPossibles = int(floor(((1.0-startingPossibles)/double(nNode))*double(iNode) + startingPossibles));
-    //
-    //		/*--- initialize the minimum-distance
-    //			and corresponding index arrays ---*/
-    //		minDist.clear();
-    //		min_loc.clear();
-    //
-    //		minDist.assign(nPossibles, pow(chord,2.0));
-    //		min_loc.assign(nPossibles, 0);
-    //
-    ////cout << endl << "initialized minDist and min_loc" << endl;
-    //
-    //		/*--- intialize all distances from the
-    //			current point equal to zero ---*/
-    //		for (jNode = 0; jNode < nNode; jNode++) {
-    //			dist[jNode] = 0;
-    //		}
-    //
-    //		/*--- of the points left to be connected,
-    //			find the nPossible closest ones ---*/
-    //		for (jNode = iNode+1; jNode < nNode; jNode++) {
-    //
-    //			/*--- compute th distance from the current point ---*/
-    //			xDist = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(jNode);
-    //			yDist = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(jNode);
-    //			zDist = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(jNode);
-    //			dist[jNode] = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
-    //
-    //			/*--- let the "list" be the nPossible minimum distances
-    //				and also the newly computed distance ---*/
-    //			list = minDist;
-    //
-    //			list.push_back(dist[jNode]);
-    //
-    //			/*--- sort the list, in ascending order ---*/
-    //			sort(list.begin(),list.end());
-    //
-    //			/*--- let the new minimum-distance vector hold the
-    //
-    //				first nPossible entries of the list ---*/
-    //			minDist.assign(list.begin(),list.begin()+nPossibles);
-    //		}
-    //
-    ////cout << endl << "found the nPossible closest points" << endl;
-    //
-    //		/*--- find the index of the four closest nodes.
-    //			(N.B. There might be a more elegant way
-    //			to do this using unordered_sets. That
-    //			being said, this should work, since the
-    //			grids will be unstructured and the chance
-    //			that two separate points have the same
-    //			distance is slim.) ---*/
-    //		for (jNode = iNode+1; jNode < nNode; jNode++){
-    //
-    //			/*--- check against the nPossible distances ---*/
-    //			for(k = 0; k < nPossibles; k++) {
-    //
-    //				/*--- if the distances match,
-    //					record the index ---*/
-    //				if (minDist.at(k) == dist[jNode]) {
-    //					min_loc.at(k) = jNode;
-    //				}
-    //			}
-    //		}
-    //
-    ////cout << endl << "found the indices of the nPossible closest points" << endl;
-    //
-    //		/*--- move on to comparing angles. ---*/
-    //		if (nPossibles == 1) {
-    //
-    //			/*--- if we only have one "possible" point,
-    //				then there is nothing to compare ---*/
-    //			 next_loc = min_loc.at(0);
-    //
-    //		}
-    //		else {
-    //			/*--- define vectors pointing from the current
-    //				point to each of the nPossible points ---*/
-    //			vec = new double * [nPossibles];
-    //			for (k = 0; k < nPossibles; k ++) {
-    //				vec[k] = new double [3];
-    //			}
-    //			vec_mag = new double [nPossibles];
-    //
-    //			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
-    //				vec[jPoss][0] = Xcoord_Airfoil.at(min_loc.at(jPoss)) - Xcoord_Airfoil.at(iNode);
-    //				vec[jPoss][1] = Ycoord_Airfoil.at(min_loc.at(jPoss)) - Ycoord_Airfoil.at(iNode);
-    //				vec[jPoss][2] = Zcoord_Airfoil.at(min_loc.at(jPoss)) - Zcoord_Airfoil.at(iNode);
-    //				vec_mag[jPoss] = sqrt(pow(vec[jPoss][0],2.0) + pow(vec[jPoss][1],2.0) + pow(vec[jPoss][2],2.0));
-    //			}
-    //
-    //			/*-- find the vector that points "inward." if there is a
-    //				previous point, then use it to find a unit tangent
-    //				vector along the surface. use this tangent as a
-    //				component of the "inward" vector, along with the
-    //				nPossible directions. If we're at the trailing edge,
-    //				where there is not previous point, then just use
-    //				the "mean" of the nPossible directions. ---*/
-    //			if (iNode > 1) {
-    //
-    //				/*-- define the tangent vector ---*/
-    //				tangent[0] = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(iNode-1);
-    //				tangent[1] = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(iNode-1);
-    //				tangent[2] = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(iNode-1);
-    //				magnitude = sqrt(pow(tangent[0],2.0) + pow(tangent[1],2.0) + pow(tangent[2],2.0));
-    //
-    //				/*--- define the unit tangent vector ---*/
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //					unit_tangent[iDim] = tangent[iDim]/magnitude;
-    //				}
-    //
-    //				/*--- initialize the "inward"-pointing vector ---*/
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //					inward_vec[iDim] = unit_tangent[iDim];
-    //				}
-    //			}
-    //			else {
-    //				/*--- if there is no tangent vector to include ---*/
-    //				for (iDim = 0; iDim < nDim; iDim ++) {
-    //					inward_vec[iDim] = 0.0;
-    //				}
-    //			}
-    //
-    //			/*--- add the nPossible directions as components
-    //				of the "inward"-pointing vector ---*/
-    //			for (jPoss = 0; jPoss < nPossibles; jPoss++){
-    //
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //
-    //					/*--- compute the i-th component of the unit vector
-    //						pointing in the j-th "possible" direction ---*/
-    //					unit_vec[iDim] = vec[jPoss][iDim]/vec_mag[jPoss];
-    //
-    //					/*--- add it to the definition of
-    //						the "inward" vector ---*/
-    //					inward_vec[iDim] += unit_vec[iDim];
-    //				}
-    //			}
-    //
-    ////cout << endl << "set the direction of the \"inward\" vector" << endl;
-    //
-    //			/*--- rotate the "inward" vector clockwise 90 degrees
-    //				to get the "outward"-facing vector ---*/
-    //			outward_vec[0] = section_normal[1]*inward_vec[2] - section_normal[2]*inward_vec[1];
-    //			outward_vec[1] = section_normal[2]*inward_vec[0] - section_normal[0]*inward_vec[2];
-    //			outward_vec[2] = section_normal[0]*inward_vec[1] - section_normal[1]*inward_vec[0];
-    //			outward_vec_mag = sqrt(pow(outward_vec[0],2.0) + pow(outward_vec[1],2.0) + pow(outward_vec[2],2.0));
-    //
-    //			/*--- compute the angles between the "outward" vector and the nPossible "possible" points ---*/
-    //			angles = new double [nPossibles];
-    //			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
-    //
-    //				/*--- dot the "outward" vector with the j-th possible direction ---*/
-    //				a_dot_b = outward_vec[0]*vec[jPoss][0] + outward_vec[1]*vec[jPoss][1] + outward_vec[2]*vec[jPoss][2];
-    //				/*--- compute the cosine of the angle between them ---*/
-    //				cos_angle = a_dot_b/(outward_vec_mag*vec_mag[jPoss]);
-    //
-    //				/*--- store the actual angle ---*/
-    //				angles[jPoss] = acos(cos_angle);
-    //			}
-    //
-    //			/*--- copy the nPossible angles to the angle-list ---*/
-    //			ang_list.assign(angles,angles+nPossibles);
-    //
-    //			/*--- sort the angle-list ---*/
-    //			sort(ang_list.begin(),ang_list.end());
-    //
-    //			/*--- find the indices corresponding to the
-    //				two smallest angles in the angle-list ---*/
-    //			for (jPoss = 0; jPoss < 2; jPoss++) {
-    //
-    //				/*--- check against the
-    //					nPossible angles ---*/
-    //				for (k = 0; k < nPossibles; k++) {
-    //
-    //					/*--- if there is a match,
-    //						note the index ---*/
-    //					if (ang_list.at(jPoss) == angles[k]) {
-    //						min_ang_loc[jPoss] = min_loc.at(k);
-    //						ang_index[jPoss] = k;
-    //					}
-    //				}
-    //			}
-    //
-    //			/*--- assign nondimensional penalties for long distanes and large angles
-    //				(distances are nondimensionalized by chord length, while angles
-    //				are nondimensionalized by 90 degrees) ---*/
-    //			weight_dist = 2.0;
-    //			weight_ang = 1.0;
-    //			for (jPoss = 0; jPoss < 2; jPoss++) {
-    //				penalty[jPoss] = weight_dist*(dist[min_ang_loc[jPoss]]/chord) + weight_ang*(angles[ang_index[jPoss]]/(3.14159/2));
-    //			}
-    //
-    //			/*--- of the two points with the smallest angle,
-    //				choose the one with the smaller penalty ---*/
-    //			if (penalty[1] > penalty[0]) {
-    //				next_loc = min_ang_loc[0];
-    //			}
-    //			else {
-    //				next_loc = min_ang_loc[1];
-    //			}
-    //
-    //			/*--- delete dynamically allocated memory
-    //				within the else statement ---*/
-    //			for (k = 0; k < nPossibles; k++) {
-    //				delete [] vec[k];
-    //			}
-    //			delete [] vec;
-    //			delete [] vec_mag;
-    //			delete [] angles;
-    //		}
-    //
-    //		/*--- re-initialize the dummy coordinate
-    //			vectors to a length of nNode ---*/
-    //		X_dummy.assign(nNode,0.0);
-    //		Y_dummy.assign(nNode,0.0);
-    //		Z_dummy.assign(nNode,0.0);
-    //
-    //		/*--- move the newly found "next point" to the
-    //			appropriate location in the coordiates vectors ---*/
-    //		for (jNode = 0; jNode <= iNode; jNode++) {
-    //			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
-    //			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
-    //			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
-    //		}
-    //
-    //		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(next_loc);
-    //		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(next_loc);
-    //		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(next_loc);
-    //
-    //		for (jNode = iNode+1; jNode <= next_loc-1; jNode++) {
-    //			X_dummy.at(jNode+1) = Xcoord_Airfoil.at(jNode);
-    //			Y_dummy.at(jNode+1) = Ycoord_Airfoil.at(jNode);
-    //			Z_dummy.at(jNode+1) = Zcoord_Airfoil.at(jNode);
-    //		}
-    //
-    //		for (jNode = next_loc+1; jNode < nNode; jNode++) {
-    //			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
-    //			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
-    //			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
-    //		}
-    //
-    //		Xcoord_Airfoil.swap(X_dummy);
-    //		Ycoord_Airfoil.swap(Y_dummy);
-    //		Zcoord_Airfoil.swap(Z_dummy);
-    //
-    //		X_dummy.clear();
-    //		Y_dummy.clear();
-    //		Z_dummy.clear();
-    //
-    //	}
-    //
-    //	delete [] dist;
-    
-    
-    /*--- Write the output file (tecplot format) ---*/
-    if (original_surface == true) {
-      
-      ofstream Tecplot_File;
-      if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-      else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-      
-      if (iSection == 0) {
-        Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
-        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
-      }
-      
-      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
-      
-      /*--- Coordinates ---*/
-      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
-      }
-      
-      /*--- Conectivity ---*/
-      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
-      }
-      
-      Tecplot_File.close();
-    }
-    
-  }
-  
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
-#endif
-  
-}
-
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
@@ -7584,18 +7469,18 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       
 #ifndef NO_MPI
 #ifdef WINDOWS
-	/*--- Send/Receive information using Sendrecv ---*/   
-	MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
-					Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
-	MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
-					Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
+                   Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
+      MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
+                   Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
 #else
-      /*--- Send/Receive information using Sendrecv ---*/      
+      /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Children, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 0,
                                Buffer_Receive_Children, nBufferR_Vector, MPI::UNSIGNED_LONG, receive_from, 0);
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Parent, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 1,
                                Buffer_Receive_Parent, nBufferR_Vector, MPI::UNSIGNED_LONG, receive_from, 1);
-#endif  
+#endif
 #else
       
       /*--- Receive information without MPI ---*/
@@ -8982,6 +8867,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
           config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
           
         }
         
@@ -9376,1278 +9262,6 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
   }
   
   delete[] Point2Vertex;
-}
-
-void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection,
-                                               double MinXCoord, double MaxXCoord, CConfig *config,
-                                               vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil,
-                                               vector<double> &Zcoord_Airfoil, bool original_surface) {
-  
-  unsigned short iMarker, iNode, jNode, iDim, intersect;
-  long MinDist_Point, MinDistAngle_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point, iVertex, jVertex, n;
-  double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] = {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0}, Trailing_Coord, MinDist_Value, MinDistAngle_Value, Dist_Value,
-  Airfoil_Tangent[3] = {0.0, 0.0, 0.0}, Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value, Normal[3], Tangent[3], BiNormal[3], auxXCoord,
-  auxYCoord, auxZCoord, zp1, zpn, Camber_Line, MaxAngle = 30, *VarCoord = NULL, CosValue;
-  vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Camber, Ycoord_Camber, Zcoord_Camber;
-  vector<unsigned long> Duplicate;
-  vector<unsigned long>::iterator it;
-  int rank = MASTER_NODE;
-  double **Coord_Variation;
-  
-#ifndef NO_MPI
-  unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
-  int nProcessor, iProcessor;
-  double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#endif
-  
-  Xcoord_Airfoil.clear();
-  Ycoord_Airfoil.clear();
-  Zcoord_Airfoil.clear();
-  
-  /*--- Set the right plane in 2D (note the change in Y-Z plane) ---*/
-  
-  if (nDim == 2) {
-    iSection = 0;
-    Plane_P0[0] = 0.0;      Plane_P0[1] = 0.0;      Plane_P0[2] = 0.0;
-    Plane_Normal[0] = 0.0;  Plane_Normal[1] = 1.0;  Plane_Normal[2] = 0.0;
-  }
-  
-  /*--- the grid variation is stored using a vertices information,
-   we should go from vertex to points ---*/
-  
-  if (original_surface == false) {
-    
-    Coord_Variation = new double *[nPoint];
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      Coord_Variation[iPoint] = new double [nDim];
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          VarCoord = vertex[iMarker][iVertex]->GetVarCoord();
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          for (iDim = 0; iDim < nDim; iDim++)
-            Coord_Variation[iPoint][iDim] = VarCoord[iDim];
-        }
-      }
-    }
-    
-  }
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-      for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-        for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-          iPoint = bound[iMarker][iElem]->GetNode(iNode);
-          for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = bound[iMarker][iElem]->GetNode(jNode);
-            
-            if ((jPoint > iPoint) && ((node[iPoint]->GetCoord(0) > MinXCoord) && (node[iPoint]->GetCoord(0) < MaxXCoord))) {
-              
-              Segment_P0[0] = 0.0;  Segment_P0[1] = 0.0;  Segment_P0[2] = 0.0;
-              Segment_P1[0] = 0.0;  Segment_P1[1] = 0.0;  Segment_P1[2] = 0.0;
-              
-              for (iDim = 0; iDim < nDim; iDim++) {
-                if (original_surface == true) {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-                }
-                else {
-                  Segment_P0[iDim] = node[iPoint]->GetCoord(iDim) + Coord_Variation[iPoint][iDim];
-                  Segment_P1[iDim] = node[jPoint]->GetCoord(iDim) + Coord_Variation[jPoint][iDim];
-                }
-              }
-              
-              /*--- In 2D add the points directly (note the change between Y and Z coordinate) ---*/
-              
-              if (nDim == 2) {
-                Xcoord.push_back(Segment_P0[0]);  Xcoord.push_back(Segment_P1[0]);
-                Ycoord.push_back(Segment_P0[2]);  Ycoord.push_back(Segment_P1[2]);
-                Zcoord.push_back(Segment_P0[1]);  Zcoord.push_back(Segment_P1[1]);
-              }
-              /*--- In 3D compute the intersection ---*/
-              
-              else if (nDim == 3) {
-                intersect = ComputeSegmentPlane_Intersection(Segment_P0, Segment_P1, Plane_P0, Plane_Normal, Intersection);
-                if (intersect == 1) {
-                  Xcoord.push_back(Intersection[0]);
-                  Ycoord.push_back(Intersection[1]);
-                  Zcoord.push_back(Intersection[2]);
-                }
-              }
-              
-            }
-            
-          }
-        }
-      }
-    }
-  }
-  
-  if (original_surface == false) {
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      delete [] Coord_Variation[iPoint];
-    delete [] Coord_Variation;
-    
-  }
-  
-  
-#ifndef NO_MPI
-  
-  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
-  
-  nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
-  
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  nLocalVertex = Xcoord.size();
-  
-  Buffer_Send_nVertex[0] = nLocalVertex;
-  
-#ifdef WINDOWS
-  MPI_Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI::UNSIGNED_LONG, MPI::MAX);
-  MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-#endif
-  
-  Buffer_Send_Coord = new double [MaxLocalVertex*3];
-  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
-  nBuffer = MaxLocalVertex*3;
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*3 + 0] = Xcoord[iVertex];
-    Buffer_Send_Coord[iVertex*3 + 1] = Ycoord[iVertex];
-    Buffer_Send_Coord[iVertex*3 + 2] = Zcoord[iVertex];
-  }
-  
-#ifdef WINDOWS
-  MPI_Allgather(Buffer_Send_Coord,nBuffer,MPI_DOUBLE,Buffer_Receive_Coord,nBuffer,MPI_DOUBLE,MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
-#endif
-  
-  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
-  
-  Xcoord.clear();
-  Ycoord.clear();
-  Zcoord.clear();
-  
-  /*--- Copy the boundary to the master node vectors ---*/
-  if (rank == MASTER_NODE) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 0] );
-        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 1] );
-        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 2] );
-      }
-    }
-  }
-  
-  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
-  if ((rank == MASTER_NODE) && (Xcoord.size() != 0)) {
-    
-    /*--- Create a list with the duplicated points ---*/
-    
-    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
-      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
-        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
-        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
-        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        if (Dist_Value < 1E-6) {
-          Duplicate.push_back (jVertex);
-        }
-      }
-    }
-    
-    sort(Duplicate.begin(), Duplicate.end());
-    it = unique(Duplicate.begin(), Duplicate.end());
-    Duplicate.resize(it - Duplicate.begin());
-    
-    /*--- Remove duplicated points (starting from the back) ---*/
-    
-    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
-      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
-      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
-      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
-    }
-    
-    if (Xcoord.size() != 1) {
-      
-      /*--- Find the trailing edge ---*/
-      
-      Trailing_Point = 0; Trailing_Coord = Xcoord[0];
-      for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-        if (Xcoord[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex; Trailing_Coord = Xcoord[iVertex];
-        }
-      }
-      
-      /*--- Add the trailing edge to the list, and remove from the original list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]); Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]); Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
-      Xcoord.erase (Xcoord.begin() + Trailing_Point); Ycoord.erase (Ycoord.begin() + Trailing_Point); Zcoord.erase (Zcoord.begin() + Trailing_Point);
-      
-      /*--- Find the next point using the right hand side rule ---*/
-      MinDist_Value = 1E6; MinDist_Point = 0;
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
-        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
-        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-        
-        if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-      }
-      
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-      Xcoord.erase (Xcoord.begin() + MinDist_Point);    Ycoord.erase (Ycoord.begin() + MinDist_Point);    Zcoord.erase (Zcoord.begin() + MinDist_Point);
-      
-      /*--- Algorithm for the rest of the points ---*/
-      do {
-        
-        /*--- Last added point in the list ---*/
-        Airfoil_Point = Xcoord_Airfoil.size() - 1;
-        
-        /*--- Compute the slope of the curve ---*/
-        Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
-        Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
-        Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
-        Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
-        Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
-        
-        /*--- Find the closest point with the right slope ---*/
-        MinDist_Value = 1E6; MinDistAngle_Value = 180;
-        MinDist_Point = -1; MinDistAngle_Point = -1;
-        for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-          
-          Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
-          Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
-          Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
-          
-          /*--- Compute the distance to each point ---*/
-          Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-          
-          /*--- Compute the angle of the point ---*/
-          Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-          
-          /*--- Clip the value of the cosine, this is important due to the round errors ---*/
-          CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
-          if (CosValue >= 1.0) CosValue = 1.0;
-          if (CosValue <= -1.0) CosValue = -1.0;
-          
-          Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
-          
-          if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-          if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
-          
-        }
-        
-        if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
-        
-        /*--- Add and remove the min distance to the list ---*/
-        Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);  Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);  Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-        Xcoord.erase(Xcoord.begin() + MinDist_Point);    Ycoord.erase(Ycoord.begin() + MinDist_Point);    Zcoord.erase(Zcoord.begin() + MinDist_Point);
-        
-      } while (Xcoord.size() != 0);
-      
-      /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-      Xcoord.clear(); Ycoord.clear(); Zcoord.clear();
-      
-      /*--- Identify upper and lower side using the value of the normal vector --*/
-      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tangent[0] = Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[iVertex-1];
-        Tangent[1] = Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[iVertex-1];
-        Tangent[2] = Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[iVertex-1];
-        Length = sqrt(pow(Tangent[0], 2.0) + pow(Tangent[1], 2.0) + pow(Tangent[2], 2.0));
-        Tangent[0] /= Length; Tangent[1] /= Length; Tangent[2] /= Length;
-        
-        BiNormal[0] = Plane_Normal[0];
-        BiNormal[1] = Plane_Normal[1];
-        BiNormal[2] = Plane_Normal[2];
-        Length = sqrt(pow(BiNormal[0], 2.0) + pow(BiNormal[1], 2.0) + pow(BiNormal[2], 2.0));
-        BiNormal[0] /= Length; BiNormal[1] /= Length; BiNormal[2] /= Length;
-        
-        Normal[0] = Tangent[1]*BiNormal[2] - Tangent[2]*BiNormal[1];
-        Normal[1] = Tangent[2]*BiNormal[0] - Tangent[0]*BiNormal[2];
-        Normal[2] = Tangent[0]*BiNormal[1] - Tangent[1]*BiNormal[0];
-        
-        Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
-        
-        unsigned short index = 2;
-        if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
-        
-        if (Normal[index] >= 0.0) {
-          Xcoord.push_back(Xcoord_Airfoil[iVertex]);
-          Ycoord.push_back(Ycoord_Airfoil[iVertex]);
-          Zcoord.push_back(Zcoord_Airfoil[iVertex]);
-        }
-        
-      }
-      
-      n = Xcoord.size();
-      
-      /*--- Order the arrays using the X component ---*/
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
-          if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
-            auxXCoord = Xcoord[jVertex]; Xcoord[jVertex] = Xcoord[jVertex+1]; Xcoord[jVertex+1] = auxXCoord;
-            auxYCoord = Ycoord[jVertex]; Ycoord[jVertex] = Ycoord[jVertex+1]; Ycoord[jVertex+1] = auxYCoord;
-            auxZCoord = Zcoord[jVertex]; Zcoord[jVertex] = Zcoord[jVertex+1]; Zcoord[jVertex+1] = auxZCoord;
-          }
-        }
-      }
-      
-      zp1=(Zcoord[1]-Zcoord[0]) / (Xcoord[1]-Xcoord[0]);
-      zpn=(Zcoord[n-1]-Zcoord[n-2]) / (Xcoord[n-1]-Xcoord[n-2]);
-      Z2coord.resize(n+1);
-      SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
-      
-      /*--- Compute the camber--*/
-      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        if (Zcoord_Normal[iVertex] < 0.0) {
-          Camber_Line = 0.5 * (Zcoord_Airfoil[iVertex] + GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil[iVertex]));
-          Xcoord_Camber.push_back(Xcoord_Airfoil[iVertex]);
-          Ycoord_Camber.push_back(Ycoord_Airfoil[iVertex]);
-          Zcoord_Camber.push_back(Camber_Line);
-        }
-      }
-      
-      /*--- Write the output file (tecplot format) ---*/
-      if (original_surface == true) {
-        ofstream Tecplot_File;
-        if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-        else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-        
-        if (iSection == 0) {
-          Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
-          Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
-        }
-        
-        Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
-        
-        /*--- Coordinates ---*/
-        for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-          Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
-        }
-        /*--- Conectivity ---*/
-        for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-          Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
-        }
-        
-        Tecplot_File.close();
-      }
-    }
-    
-    
-  }
-  
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
-#endif
-  
-}
-
-void CBoundaryGeometry::ComputeAirfoil_Section(double *Plane_P0,
-                                               double *Plane_Normal,
-                                               unsigned short iSection,
-                                               CConfig *config,
-                                               vector<double> &Xcoord_Airfoil,
-                                               vector<double> &Ycoord_Airfoil,
-                                               vector<double> &Zcoord_Airfoil,
-                                               vector<unsigned long> &point1_Airfoil,
-                                               vector<unsigned long> &point2_Airfoil,
-                                               vector<double> &weight1_Airfoil,
-                                               bool original_surface,
-                                               bool CCW_orientation) {
-  
-  unsigned short iMarker, iNode, jNode, iDim, intersect;
-  long MinDist_Point, MinDistAngle_Point;
-  unsigned long iPoint, jPoint, iElem, Trailing_Point, Airfoil_Point,
-  iVertex, jVertex;
-  double Segment_P0[3] = {0.0, 0.0, 0.0}, Segment_P1[3] =
-  {0.0, 0.0, 0.0}, Intersection[3] = {0.0, 0.0, 0.0},
-  Trailing_Coord, MinDist_Value, MinDistAngle_Value,
-  Dist_Value, Airfoil_Tangent[3] = {0.0, 0.0, 0.0},
-  Segment[3] = {0.0, 0.0, 0.0}, Length, Angle_Value,
-  MaxAngle = 15, CosValue, coord1 [3], coord2 [3], Xdist,
-  Ydist, Zdist, dist1, dist2;;
-  vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal,
-  Ycoord_Normal, Zcoord_Normal, Xcoord_Camber,
-  Ycoord_Camber, Zcoord_Camber, weight1;
-  vector<unsigned long> Duplicate, point1, point2;
-  vector<unsigned long>::iterator it;
-  int rank = MASTER_NODE;
-  unsigned short Boundary;
-  bool Monitoring;
-  
-#ifndef NO_MPI
-  unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex,
-  *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
-  int nProcessor, iProcessor;
-  double *Buffer_Send_Coord, *Buffer_Receive_Coord;
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#endif
-  
-  /*--- clear the vectors, for safety ---*/
-  Xcoord_Airfoil.clear();
-  Ycoord_Airfoil.clear();
-  Zcoord_Airfoil.clear();
-  point1_Airfoil.clear();
-  point2_Airfoil.clear();
-  weight1_Airfoil.clear();
-  
-  /*--- Set the right plane in 2D
-   (N.B. change in Y-Z plane) ---*/
-  if (nDim == 2) {
-    iSection = 0;
-    
-    Plane_P0[0] = 0.0;
-    Plane_P0[1] = 0.0;
-    Plane_P0[2] = 0.0;
-    
-    Plane_Normal[0] = 0.0;
-    Plane_Normal[1] = 1.0;
-    Plane_Normal[2] = 0.0;
-  }
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Boundary = config->GetMarker_All_Boundary(iMarker);
-      Monitoring = config->GetMarker_All_Monitoring(iMarker);
-      if ((Boundary == EULER_WALL) ||
-          (Boundary == HEAT_FLUX) ||
-          (Boundary == ISOTHERMAL) ||
-          (Boundary == NEARFIELD_BOUNDARY)) {
-        if (Monitoring) {
-          for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
-            for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
-              iPoint = bound[iMarker][iElem]->GetNode(iNode);
-              for(jNode = 0; jNode < bound[iMarker][iElem]->GetnNodes(); jNode++) {
-                jPoint = bound[iMarker][iElem]->GetNode(jNode);
-                
-                if (jPoint > iPoint) {
-                  
-                  Segment_P0[0] = 0.0;
-                  Segment_P0[1] = 0.0;
-                  Segment_P0[2] = 0.0;
-                  
-                  Segment_P1[0] = 0.0;
-                  Segment_P1[1] = 0.0;
-                  Segment_P1[2] = 0.0;
-                  
-                  for (iDim = 0; iDim < nDim; iDim++) {
-                    Segment_P0[iDim] = node[iPoint]->GetCoord(iDim);
-                    Segment_P1[iDim] = node[jPoint]->GetCoord(iDim);
-                  }
-                  
-                  /*--- In 2D add the points directly
-                   (N.B. change between Y and Z coordinate) ---*/
-                  if (nDim == 2) {
-                    Xcoord.push_back(Segment_P0[0]);
-                    Xcoord.push_back(Segment_P1[0]);
-                    Ycoord.push_back(Segment_P0[2]);
-                    Ycoord.push_back(Segment_P1[2]);
-                    Zcoord.push_back(Segment_P0[1]);
-                    Zcoord.push_back(Segment_P1[1]);
-                  }
-                  /*--- In 3D compute the intersection ---*/
-                  else if (nDim == 3) {
-                    intersect = ComputeSegmentPlane_Intersection(Segment_P0,
-                                                                 Segment_P1,
-                                                                 Plane_P0,
-                                                                 Plane_Normal,
-                                                                 Intersection);
-                    if (intersect == 1) {
-                      Xcoord.push_back(Intersection[0]);
-                      Ycoord.push_back(Intersection[1]);
-                      Zcoord.push_back(Intersection[2]);
-                      point1.push_back(iPoint);
-                      point2.push_back(jPoint);
-                      
-                      /*--- compute the weight corresponding the point1
-                       (N.B. The "weight" of point1 is is the distance
-                       between point2 and the airfoil point.) ---*/
-                      
-                      /*--- find the coordinates of points 1 and 2 ---*/
-                      for (iDim = 0; iDim < nDim; iDim++) {
-                        coord1[iDim] = node[iPoint]->GetCoord(iDim);
-                        coord2[iDim] = node[jPoint]->GetCoord(iDim);
-                      }
-                      
-                      /*--- find the distance of point 1 from the airfoil profile ---*/
-                      Xdist = Intersection[0] - coord1[0];
-                      Ydist = Intersection[1] - coord1[1];
-                      Zdist = Intersection[2] - coord1[2];
-                      dist1 = sqrt(pow(Xdist,2.0) + pow(Ydist,2.0) + pow(Zdist,2.0));
-                      
-                      /*--- find the distance of point 2 from the airfoil profile ---*/
-                      Xdist = Intersection[0] - coord2[0];
-                      Ydist = Intersection[1] - coord2[1];
-                      Zdist = Intersection[2] - coord2[2];
-                      dist2 = sqrt(pow(Xdist,2.0) + pow(Ydist,2.0) + pow(Zdist,2.0));
-                      
-                      /*--- assign the weight ---*/
-                      weight1.push_back(dist2/(dist1+dist2));
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  
-  
-#ifndef NO_MPI
-  
-  /*--- Copy the coordinates of all the points in the plane to the master node ---*/
-  nLocalVertex = 0, nGlobalVertex = 0, MaxLocalVertex = 0;
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-  nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
-  
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  nLocalVertex = Xcoord.size();
-  
-  Buffer_Send_nVertex[0] = nLocalVertex;
-  
-#ifdef WINDOWS
-  MPI_Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &nGlobalVertex, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI::UNSIGNED_LONG, MPI::MAX);
-  MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
-#endif
-  
-  Buffer_Send_Coord = new double [MaxLocalVertex*3];
-  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
-  nBuffer = MaxLocalVertex*3;
-  
-  for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
-    Buffer_Send_Coord[iVertex*3 + 0] = Xcoord[iVertex];
-    Buffer_Send_Coord[iVertex*3 + 1] = Ycoord[iVertex];
-    Buffer_Send_Coord[iVertex*3 + 2] = Zcoord[iVertex];
-  }
-  
-#ifdef WINDOWS
-  MPI_Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer, MPI::DOUBLE);
-#endif
-  
-  /*--- Clean the vectors before adding the new vertices only to the master node ---*/
-  Xcoord.clear();
-  Ycoord.clear();
-  Zcoord.clear();
-  
-  /*--- Copy the boundary to the master node vectors ---*/
-  if (rank == MASTER_NODE) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        Xcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 0] );
-        Ycoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 1] );
-        Zcoord.push_back( Buffer_Receive_Coord[ iProcessor*MaxLocalVertex*3 + iVertex*3 + 2] );
-      }
-    }
-  }
-  
-  delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex; delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
-  if (rank == MASTER_NODE) {
-    
-    /*--- Create a list with the duplicated points ---*/
-    for (iVertex = 0; iVertex < Xcoord.size()-1; iVertex++) {
-      for (jVertex = iVertex+1; jVertex < Xcoord.size(); jVertex++) {
-        Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
-        Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
-        Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        if (Dist_Value < 1E-6) {
-          Duplicate.push_back (jVertex);
-        }
-      }
-    }
-    
-    sort(Duplicate.begin(), Duplicate.end());
-    it = unique(Duplicate.begin(), Duplicate.end());
-    Duplicate.resize(it - Duplicate.begin());
-    
-    /*--- Remove duplicated points (starting from the back) ---*/
-    for (iVertex = Duplicate.size(); iVertex > 0; iVertex--) {
-      Xcoord.erase (Xcoord.begin() + Duplicate[iVertex-1]);
-      Ycoord.erase (Ycoord.begin() + Duplicate[iVertex-1]);
-      Zcoord.erase (Zcoord.begin() + Duplicate[iVertex-1]);
-      point1.erase(point1.begin() + Duplicate.at(iVertex-1));
-      point2.erase(point2.begin() + Duplicate.at(iVertex-1));
-      weight1.erase(weight1.begin() + Duplicate.at(iVertex-1));
-    }
-    
-    /*--- Find the trailing edge ---*/
-    Trailing_Point = 0;
-    Trailing_Coord = Xcoord[0];
-    for (iVertex = 1; iVertex < Xcoord.size(); iVertex++) {
-      
-      /*--- blade parallel to Y-axis, TE has largest X ---*/
-      if ((Plane_Normal[1] ==  1 && CCW_orientation == 1) ||
-          (Plane_Normal[1] == -1 && CCW_orientation == 0)) {
-        if (Xcoord[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex;
-          Trailing_Coord = Xcoord[iVertex];
-        }
-      }
-      
-      /*--- blade parallel to Y-axis, TE has smallest X ---*/
-      if ((Plane_Normal[1] ==  1 && CCW_orientation == 0) ||
-          (Plane_Normal[1] == -1 && CCW_orientation == 1)) {
-        if (Xcoord[iVertex] < Trailing_Coord) {
-          Trailing_Point = iVertex;
-          Trailing_Coord = Xcoord[iVertex];
-        }
-      }
-      
-      /*--- blade parallel to X-axis, TE has largest Y ---*/
-      if ((Plane_Normal[0] ==  1 && CCW_orientation == 1) ||
-          (Plane_Normal[0] == -1 && CCW_orientation == 0)) {
-        if (Ycoord[iVertex] < Trailing_Coord) {
-          Trailing_Point = iVertex;
-          Trailing_Coord = Ycoord[iVertex];
-        }
-      }
-      
-      /*--- blade parallel to X-axis, TE has smallest Y ---*/
-      if ((Plane_Normal[0] ==  1 && CCW_orientation == 0) ||
-          (Plane_Normal[0] == -1 && CCW_orientation == 1)) {
-        if (Ycoord[iVertex] > Trailing_Coord) {
-          Trailing_Point = iVertex;
-          Trailing_Coord = Ycoord[iVertex];
-        }
-      }
-      
-    }
-    
-    /*--- Add the trailing edge to the list, and remove from the original list ---*/
-    Xcoord_Airfoil.push_back(Xcoord[Trailing_Point]);
-    Ycoord_Airfoil.push_back(Ycoord[Trailing_Point]);
-    Zcoord_Airfoil.push_back(Zcoord[Trailing_Point]);
-    point1_Airfoil.push_back(point1.at(Trailing_Point));
-    point2_Airfoil.push_back(point2.at(Trailing_Point));
-    weight1_Airfoil.push_back(weight1.at(Trailing_Point));
-    
-    Xcoord.erase (Xcoord.begin() + Trailing_Point);
-    Ycoord.erase (Ycoord.begin() + Trailing_Point);
-    Zcoord.erase (Zcoord.begin() + Trailing_Point);
-    point1.erase(point1.begin() + Trailing_Point);
-    point2.erase(point2.begin() + Trailing_Point);
-    weight1.erase(weight1.begin() + Trailing_Point);
-    
-    /*--- Find the next point using the right hand side rule ---*/
-    MinDist_Value = 1E6;
-    for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-      Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[0];
-      Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[0];
-      Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[0];
-      Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-      Segment[0] /= Dist_Value; Segment[1] /= Dist_Value; Segment[2] /= Dist_Value;
-      
-      if ((Dist_Value < MinDist_Value) && (Segment[2] > 0.0)) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-    }
-    
-    Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);
-    Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);
-    Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-    point1_Airfoil.push_back(point1.at(MinDist_Point));
-    point2_Airfoil.push_back(point2.at(MinDist_Point));
-    weight1_Airfoil.push_back(weight1.at(MinDist_Point));
-    
-    Xcoord.erase (Xcoord.begin() + MinDist_Point);
-    Ycoord.erase (Ycoord.begin() + MinDist_Point);
-    Zcoord.erase (Zcoord.begin() + MinDist_Point);
-    point1.erase(point1.begin() + MinDist_Point);
-    point2.erase(point2.begin() + MinDist_Point);
-    weight1.erase(weight1.begin() + MinDist_Point);
-    
-    /*--- Algorithm for the rest of the points ---*/
-    do {
-      
-      /*--- Last added point in the list ---*/
-      Airfoil_Point = Xcoord_Airfoil.size() - 1;
-      
-      /*--- Compute the slope of the curve ---*/
-      Airfoil_Tangent[0] = Xcoord_Airfoil[Airfoil_Point] - Xcoord_Airfoil[Airfoil_Point-1];
-      Airfoil_Tangent[1] = Ycoord_Airfoil[Airfoil_Point] - Ycoord_Airfoil[Airfoil_Point-1];
-      Airfoil_Tangent[2] = Zcoord_Airfoil[Airfoil_Point] - Zcoord_Airfoil[Airfoil_Point-1];
-      Length = sqrt(pow(Airfoil_Tangent[0], 2.0) + pow(Airfoil_Tangent[1], 2.0) + pow(Airfoil_Tangent[2], 2.0));
-      Airfoil_Tangent[0] /= Length; Airfoil_Tangent[1] /= Length; Airfoil_Tangent[2] /= Length;
-      
-      /*--- Find the closest point with the right slope ---*/
-      MinDist_Value = 1E6; MinDistAngle_Value = 180;
-      MinDist_Point = -1; MinDistAngle_Point = -1;
-      for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
-        
-        Segment[0] = Xcoord[iVertex] - Xcoord_Airfoil[Airfoil_Point];
-        Segment[1] = Ycoord[iVertex] - Ycoord_Airfoil[Airfoil_Point];
-        Segment[2] = Zcoord[iVertex] - Zcoord_Airfoil[Airfoil_Point];
-        
-        /*--- Compute the distance to each point ---*/
-        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
-        
-        /*--- Compute the angle of the point ---*/
-        Segment[0] /= Dist_Value;
-        Segment[1] /= Dist_Value;
-        Segment[2] /= Dist_Value;
-        
-        /*--- Clip the value of the cosine, this is important due to the round errors ---*/
-        CosValue = Airfoil_Tangent[0]*Segment[0] + Airfoil_Tangent[1]*Segment[1] + Airfoil_Tangent[2]*Segment[2];
-        if (CosValue >= 1.0) CosValue = 1.0;
-        if (CosValue <= -1.0) CosValue = -1.0;
-        
-        Angle_Value = acos(CosValue) * 180 / PI_NUMBER;
-        
-        if (Dist_Value < MinDist_Value) { MinDist_Point = iVertex; MinDist_Value = Dist_Value; }
-        if ((Dist_Value < MinDistAngle_Value) && (Angle_Value < MaxAngle)) {MinDistAngle_Point = iVertex; MinDistAngle_Value = Dist_Value;}
-        
-      }
-      
-      if ( MinDistAngle_Point != -1) MinDist_Point = MinDistAngle_Point;
-      
-      /*--- Add and remove the min distance to the list ---*/
-      Xcoord_Airfoil.push_back(Xcoord[MinDist_Point]);
-      Ycoord_Airfoil.push_back(Ycoord[MinDist_Point]);
-      Zcoord_Airfoil.push_back(Zcoord[MinDist_Point]);
-      point1_Airfoil.push_back(point1.at(MinDist_Point));
-      point2_Airfoil.push_back(point2.at(MinDist_Point));
-      weight1_Airfoil.push_back(weight1.at(MinDist_Point));
-      
-      Xcoord.erase(Xcoord.begin() + MinDist_Point);
-      Ycoord.erase(Ycoord.begin() + MinDist_Point);
-      Zcoord.erase(Zcoord.begin() + MinDist_Point);
-      point1.erase(point1.begin() + MinDist_Point);
-      point2.erase(point2.begin() + MinDist_Point);
-      weight1.erase(weight1.begin() + MinDist_Point);
-      
-      
-    } while (Xcoord.size() != 0);
-    
-    /*--- Clean the vector before using them again for storing the upper or the lower side ---*/
-    Xcoord.clear();
-    Ycoord.clear();
-    Zcoord.clear();
-    point1.clear();
-    point2.clear();
-    weight1.clear();
-    
-    
-    ////cout << endl << "About to start the tracing algorithm!" << endl;
-    //
-    //  	/*--- THIS IS THE START OF THE AIRFOIL-TRACING ALGORITHM
-    //		(it requires vectors of the X, Y, and Z coordinates
-    //		of the airfoil section, with no points repeated.) ---*/
-    //	unsigned long iNode, trailing_loc;
-    //	unsigned long nNode = Xcoord_Airfoil.size();
-    //	double max_x;
-    //	vector<double> X_dummy(nNode), Y_dummy(nNode), Z_dummy(nNode);
-    //
-    ////cout << endl << "finished first initializations!" << endl;
-    //
-    //	/*--- find the trailing-edge point
-    //		(we're assuming that the airfoil is facing
-    //		left and that it isn't sitting upside down.
-    //		If either of those happens to be true, this
-    //		algorithm will not work.) ---*/
-    //	max_x = -1.0;
-    //	for (iNode = 0; iNode < nNode; iNode++) {
-    //		if (Xcoord_Airfoil.at(iNode) >= max_x) {
-    //			max_x = Xcoord_Airfoil.at(iNode);
-    //			trailing_loc = iNode;
-    //		}
-    //	}
-    //
-    ////cout << endl << "found the trailing edge!" << endl;
-    //	/*--- move the trailing-edge point to the
-    //		top of the coordinates lists ---*/
-    //	//X_dummy.clear();
-    //	//Y_dummy.clear();
-    //	//Z_dummy.clear();
-    //
-    ////cout << endl << "cleared the vectors!" << endl;
-    //
-    //	X_dummy.at(0) = Xcoord_Airfoil.at(trailing_loc);
-    //	Y_dummy.at(0) = Ycoord_Airfoil.at(trailing_loc);
-    //	Z_dummy.at(0) = Zcoord_Airfoil.at(trailing_loc);
-    //
-    //	//X_dummy.push_back(Xcoord_Airfoil.at(trailing_loc));
-    //	//Y_dummy.push_back(Ycoord_Airfoil.at(trailing_loc));
-    //	//Z_dummy.push_back(Zcoord_Airfoil.at(trailing_loc));
-    //
-    ////cout << endl << "assigned trailing edge to beginning." << endl;
-    //	if (trailing_loc != 0) {
-    //		for (iNode = 0; iNode <= trailing_loc-1; iNode++) {
-    //		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(iNode);
-    //		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(iNode);
-    //		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(iNode);
-    //
-    ////cout << endl << "nNode = " << nNode << endl;
-    ////cout << endl << "trailing_loc = " << trailing_loc << endl;
-    //
-    //	//		X_dummy.push_back(Xcoord_Airfoil.at(iNode));
-    //	//		Y_dummy.push_back(Ycoord_Airfoil.at(iNode));
-    //	//		Z_dummy.push_back(Zcoord_Airfoil.at(iNode));
-    //		}
-    //	}
-    //
-    ////cout << endl << "wrote points to just before the trailing_loc" << endl;
-    //
-    //	for (iNode = trailing_loc+1; iNode < nNode; iNode++) {
-    //		X_dummy.at(iNode) = Xcoord_Airfoil.at(iNode);
-    //		Y_dummy.at(iNode) = Ycoord_Airfoil.at(iNode);
-    //		Z_dummy.at(iNode) = Zcoord_Airfoil.at(iNode);
-    //
-    //	//	X_dummy.push_back(Xcoord_Airfoil.at(iNode));
-    //	//	Y_dummy.push_back(Ycoord_Airfoil.at(iNode));
-    //	//	Z_dummy.push_back(Zcoord_Airfoil.at(iNode));
-    //	}
-    //
-    ////cout << endl << "wrote points from the trailing loc to the end of the vector" << endl;
-    //
-    //	Xcoord_Airfoil.swap(X_dummy);
-    //	Ycoord_Airfoil.swap(Y_dummy);
-    //	Zcoord_Airfoil.swap(Z_dummy);
-    //
-    //	X_dummy.clear();
-    //	Y_dummy.clear();
-    //	Z_dummy.clear();
-    //
-    ////cout << endl << "moved the trailing edge to the beginning!" << endl;
-    //
-    //	/*--- name the trailing-edge point, for convenience ---*/
-    //	double trailing_point [3];
-    //	trailing_point[0] = Xcoord_Airfoil.at(0);
-    //	trailing_point[1] = Ycoord_Airfoil.at(0);
-    //	trailing_point[2] = Zcoord_Airfoil.at(0);
-    //
-    //	/*--- find the leading-edge point ---*/
-    //	double maxDistance, xDist, yDist, zDist, distance;
-    //	double leading_point [3];
-    //	maxDistance = 0.0;
-    //	for (iNode = 1; iNode < nNode; iNode++) {
-    //
-    //		/*--- compute the distance of the each
-    //			point from the trailing edge ---*/
-    //		xDist = trailing_point[0] - Xcoord_Airfoil.at(iNode);
-    //		yDist = trailing_point[1] - Ycoord_Airfoil.at(iNode);
-    //		zDist = trailing_point[2] - Zcoord_Airfoil.at(iNode);
-    //		distance = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
-    //
-    //		/*--- assume the leading-edge point
-    //			is the one that is farthest
-    //			from the trailing edge ---*/
-    //		if (distance > maxDistance) {
-    //			maxDistance = distance;
-    //			leading_point[0] = Xcoord_Airfoil.at(iNode);
-    //			leading_point[1] = Ycoord_Airfoil.at(iNode);
-    //			leading_point[2] = Zcoord_Airfoil.at(iNode);
-    //		}
-    //	}
-    //
-    ////cout << endl << "found the leading edge!" << endl;
-    //
-    //	/*--- find the chord length ---*/
-    //	double chord;
-    //	xDist = trailing_point[0] - leading_point[0];
-    //	yDist = trailing_point[1] - leading_point[1];
-    //	zDist = trailing_point[2] - leading_point[2];
-    //	chord = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
-    //
-    //	/*--- define a vector pointing from the
-    //		trailing edge to the leading edge ---*/
-    //	double chord_line [3];
-    //	for (iDim = 0; iDim < nDim; iDim++) {
-    //		chord_line[iDim] = leading_point[iDim]-trailing_point[iDim];
-    //	}
-    //
-    //	/*--- define a point that lies "above" the
-    //		leading edge, in the plane of the
-    //		airfoil. (Here, we need to hope
-    //		that the Z-axis points "upward.") ---*/
-    //	double above_point [3];
-    //	above_point[0] = leading_point[0];
-    //	above_point[1] = leading_point[1];
-    //	above_point[2] = leading_point[2] + 1;
-    //
-    //	/*--- define a vector point from the trailing
-    //		edge to the newly created "point above" ---*/
-    //	double above_line [3];
-    //	for (iDim = 0; iDim < nDim; iDim++) {
-    //		above_line[iDim] = above_point[iDim] - trailing_point[iDim];
-    //	}
-    //
-    //	/*--- find the vector that points "into the page,"
-    //		i.e. if the airfoil is facing  left, this
-    //		vector points away from you and lies
-    //		normal to the section. ---*/
-    //	double section_normal [3];
-    //	section_normal[0] = chord_line[1]*above_line[2] - chord_line[2]*above_line[1];
-    //	section_normal[1] = chord_line[2]*above_line[0] - chord_line[0]*above_line[2];
-    //	section_normal[2] = chord_line[0]*above_line[1] - chord_line[1]*above_line[0];
-    //
-    //	/*--- beginning at the trailing edge,
-    //		connect the points, in order. ---*/
-    //	double startingPossibles, magnitude, outward_vec_mag, a_dot_b, cos_angle, weight_dist, weight_ang;
-    //	double *dist, **vec, *vec_mag, *angles;
-    //	double tangent [3], unit_tangent [3], unit_vec [3], inward_vec [3], outward_vec [3], penalty [2];
-    //	vector<double> minDist, list, ang_list;
-    //	vector<long> min_loc;
-    //	unsigned long jNode, next_loc;
-    //	unsigned long min_ang_loc [2];
-    //	unsigned short  nPossibles, k, jPoss;
-    //	unsigned short ang_index [2];
-    //
-    //	dist = new double [nNode];
-    //
-    ////cout << endl << "about to start the loop over the points!" << endl;
-    //
-    //	for (iNode = 0; iNode < nNode-1; iNode++) {
-    //
-    //		/*--- as we move around the airfoil, and as more
-    //			points are connected, we don't need to
-    //			test as many "possibles" at each station.
-    //			here, we will begin with four and, by the
-    //			end, linearly decrease the number to one. ---*/
-    //		startingPossibles = 5.9;
-    //		nPossibles = int(floor(((1.0-startingPossibles)/double(nNode))*double(iNode) + startingPossibles));
-    //
-    //		/*--- initialize the minimum-distance
-    //			and corresponding index arrays ---*/
-    //		minDist.clear();
-    //		min_loc.clear();
-    //
-    //		minDist.assign(nPossibles, pow(chord,2.0));
-    //		min_loc.assign(nPossibles, 0);
-    //
-    ////cout << endl << "initialized minDist and min_loc" << endl;
-    //
-    //		/*--- intialize all distances from the
-    //			current point equal to zero ---*/
-    //		for (jNode = 0; jNode < nNode; jNode++) {
-    //			dist[jNode] = 0;
-    //		}
-    //
-    //		/*--- of the points left to be connected,
-    //			find the nPossible closest ones ---*/
-    //		for (jNode = iNode+1; jNode < nNode; jNode++) {
-    //
-    //			/*--- compute th distance from the current point ---*/
-    //			xDist = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(jNode);
-    //			yDist = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(jNode);
-    //			zDist = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(jNode);
-    //			dist[jNode] = sqrt(pow(xDist,2.0) + pow(yDist,2.0) + pow(zDist,2.0));
-    //
-    //			/*--- let the "list" be the nPossible minimum distances
-    //				and also the newly computed distance ---*/
-    //			list = minDist;
-    //
-    //			list.push_back(dist[jNode]);
-    //
-    //			/*--- sort the list, in ascending order ---*/
-    //			sort(list.begin(),list.end());
-    //
-    //			/*--- let the new minimum-distance vector hold the
-    //
-    //				first nPossible entries of the list ---*/
-    //			minDist.assign(list.begin(),list.begin()+nPossibles);
-    //		}
-    //
-    ////cout << endl << "found the nPossible closest points" << endl;
-    //
-    //		/*--- find the index of the four closest nodes.
-    //			(N.B. There might be a more elegant way
-    //			to do this using unordered_sets. That
-    //			being said, this should work, since the
-    //			grids will be unstructured and the chance
-    //			that two separate points have the same
-    //			distance is slim.) ---*/
-    //		for (jNode = iNode+1; jNode < nNode; jNode++){
-    //
-    //			/*--- check against the nPossible distances ---*/
-    //			for(k = 0; k < nPossibles; k++) {
-    //
-    //				/*--- if the distances match,
-    //					record the index ---*/
-    //				if (minDist.at(k) == dist[jNode]) {
-    //					min_loc.at(k) = jNode;
-    //				}
-    //			}
-    //		}
-    //
-    ////cout << endl << "found the indices of the nPossible closest points" << endl;
-    //
-    //		/*--- move on to comparing angles. ---*/
-    //		if (nPossibles == 1) {
-    //
-    //			/*--- if we only have one "possible" point,
-    //				then there is nothing to compare ---*/
-    //			 next_loc = min_loc.at(0);
-    //
-    //		}
-    //		else {
-    //			/*--- define vectors pointing from the current
-    //				point to each of the nPossible points ---*/
-    //			vec = new double * [nPossibles];
-    //			for (k = 0; k < nPossibles; k ++) {
-    //				vec[k] = new double [3];
-    //			}
-    //			vec_mag = new double [nPossibles];
-    //
-    //			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
-    //				vec[jPoss][0] = Xcoord_Airfoil.at(min_loc.at(jPoss)) - Xcoord_Airfoil.at(iNode);
-    //				vec[jPoss][1] = Ycoord_Airfoil.at(min_loc.at(jPoss)) - Ycoord_Airfoil.at(iNode);
-    //				vec[jPoss][2] = Zcoord_Airfoil.at(min_loc.at(jPoss)) - Zcoord_Airfoil.at(iNode);
-    //				vec_mag[jPoss] = sqrt(pow(vec[jPoss][0],2.0) + pow(vec[jPoss][1],2.0) + pow(vec[jPoss][2],2.0));
-    //			}
-    //
-    //			/*-- find the vector that points "inward." if there is a
-    //				previous point, then use it to find a unit tangent
-    //				vector along the surface. use this tangent as a
-    //				component of the "inward" vector, along with the
-    //				nPossible directions. If we're at the trailing edge,
-    //				where there is not previous point, then just use
-    //				the "mean" of the nPossible directions. ---*/
-    //			if (iNode > 1) {
-    //
-    //				/*-- define the tangent vector ---*/
-    //				tangent[0] = Xcoord_Airfoil.at(iNode) - Xcoord_Airfoil.at(iNode-1);
-    //				tangent[1] = Ycoord_Airfoil.at(iNode) - Ycoord_Airfoil.at(iNode-1);
-    //				tangent[2] = Zcoord_Airfoil.at(iNode) - Zcoord_Airfoil.at(iNode-1);
-    //				magnitude = sqrt(pow(tangent[0],2.0) + pow(tangent[1],2.0) + pow(tangent[2],2.0));
-    //
-    //				/*--- define the unit tangent vector ---*/
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //					unit_tangent[iDim] = tangent[iDim]/magnitude;
-    //				}
-    //
-    //				/*--- initialize the "inward"-pointing vector ---*/
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //					inward_vec[iDim] = unit_tangent[iDim];
-    //				}
-    //			}
-    //			else {
-    //				/*--- if there is no tangent vector to include ---*/
-    //				for (iDim = 0; iDim < nDim; iDim ++) {
-    //					inward_vec[iDim] = 0.0;
-    //				}
-    //			}
-    //
-    //			/*--- add the nPossible directions as components
-    //				of the "inward"-pointing vector ---*/
-    //			for (jPoss = 0; jPoss < nPossibles; jPoss++){
-    //
-    //				for (iDim = 0; iDim < nDim; iDim++) {
-    //
-    //					/*--- compute the i-th component of the unit vector
-    //						pointing in the j-th "possible" direction ---*/
-    //					unit_vec[iDim] = vec[jPoss][iDim]/vec_mag[jPoss];
-    //
-    //					/*--- add it to the definition of
-    //						the "inward" vector ---*/
-    //					inward_vec[iDim] += unit_vec[iDim];
-    //				}
-    //			}
-    //
-    ////cout << endl << "set the direction of the \"inward\" vector" << endl;
-    //
-    //			/*--- rotate the "inward" vector clockwise 90 degrees
-    //				to get the "outward"-facing vector ---*/
-    //			outward_vec[0] = section_normal[1]*inward_vec[2] - section_normal[2]*inward_vec[1];
-    //			outward_vec[1] = section_normal[2]*inward_vec[0] - section_normal[0]*inward_vec[2];
-    //			outward_vec[2] = section_normal[0]*inward_vec[1] - section_normal[1]*inward_vec[0];
-    //			outward_vec_mag = sqrt(pow(outward_vec[0],2.0) + pow(outward_vec[1],2.0) + pow(outward_vec[2],2.0));
-    //
-    //			/*--- compute the angles between the "outward" vector and the nPossible "possible" points ---*/
-    //			angles = new double [nPossibles];
-    //			for (jPoss = 0; jPoss < nPossibles; jPoss++) {
-    //
-    //				/*--- dot the "outward" vector with the j-th possible direction ---*/
-    //				a_dot_b = outward_vec[0]*vec[jPoss][0] + outward_vec[1]*vec[jPoss][1] + outward_vec[2]*vec[jPoss][2];
-    //				/*--- compute the cosine of the angle between them ---*/
-    //				cos_angle = a_dot_b/(outward_vec_mag*vec_mag[jPoss]);
-    //
-    //				/*--- store the actual angle ---*/
-    //				angles[jPoss] = acos(cos_angle);
-    //			}
-    //
-    //			/*--- copy the nPossible angles to the angle-list ---*/
-    //			ang_list.assign(angles,angles+nPossibles);
-    //
-    //			/*--- sort the angle-list ---*/
-    //			sort(ang_list.begin(),ang_list.end());
-    //
-    //			/*--- find the indices corresponding to the
-    //				two smallest angles in the angle-list ---*/
-    //			for (jPoss = 0; jPoss < 2; jPoss++) {
-    //
-    //				/*--- check against the
-    //					nPossible angles ---*/
-    //				for (k = 0; k < nPossibles; k++) {
-    //
-    //					/*--- if there is a match,
-    //						note the index ---*/
-    //					if (ang_list.at(jPoss) == angles[k]) {
-    //						min_ang_loc[jPoss] = min_loc.at(k);
-    //						ang_index[jPoss] = k;
-    //					}
-    //				}
-    //			}
-    //
-    //			/*--- assign nondimensional penalties for long distanes and large angles
-    //				(distances are nondimensionalized by chord length, while angles
-    //				are nondimensionalized by 90 degrees) ---*/
-    //			weight_dist = 2.0;
-    //			weight_ang = 1.0;
-    //			for (jPoss = 0; jPoss < 2; jPoss++) {
-    //				penalty[jPoss] = weight_dist*(dist[min_ang_loc[jPoss]]/chord) + weight_ang*(angles[ang_index[jPoss]]/(3.14159/2));
-    //			}
-    //
-    //			/*--- of the two points with the smallest angle,
-    //				choose the one with the smaller penalty ---*/
-    //			if (penalty[1] > penalty[0]) {
-    //				next_loc = min_ang_loc[0];
-    //			}
-    //			else {
-    //				next_loc = min_ang_loc[1];
-    //			}
-    //
-    //			/*--- delete dynamically allocated memory
-    //				within the else statement ---*/
-    //			for (k = 0; k < nPossibles; k++) {
-    //				delete [] vec[k];
-    //			}
-    //			delete [] vec;
-    //			delete [] vec_mag;
-    //			delete [] angles;
-    //		}
-    //
-    //		/*--- re-initialize the dummy coordinate
-    //			vectors to a length of nNode ---*/
-    //		X_dummy.assign(nNode,0.0);
-    //		Y_dummy.assign(nNode,0.0);
-    //		Z_dummy.assign(nNode,0.0);
-    //
-    //		/*--- move the newly found "next point" to the
-    //			appropriate location in the coordiates vectors ---*/
-    //		for (jNode = 0; jNode <= iNode; jNode++) {
-    //			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
-    //			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
-    //			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
-    //		}
-    //
-    //		X_dummy.at(iNode+1) = Xcoord_Airfoil.at(next_loc);
-    //		Y_dummy.at(iNode+1) = Ycoord_Airfoil.at(next_loc);
-    //		Z_dummy.at(iNode+1) = Zcoord_Airfoil.at(next_loc);
-    //
-    //		for (jNode = iNode+1; jNode <= next_loc-1; jNode++) {
-    //			X_dummy.at(jNode+1) = Xcoord_Airfoil.at(jNode);
-    //			Y_dummy.at(jNode+1) = Ycoord_Airfoil.at(jNode);
-    //			Z_dummy.at(jNode+1) = Zcoord_Airfoil.at(jNode);
-    //		}
-    //
-    //		for (jNode = next_loc+1; jNode < nNode; jNode++) {
-    //			X_dummy.at(jNode) = Xcoord_Airfoil.at(jNode);
-    //			Y_dummy.at(jNode) = Ycoord_Airfoil.at(jNode);
-    //			Z_dummy.at(jNode) = Zcoord_Airfoil.at(jNode);
-    //		}
-    //
-    //		Xcoord_Airfoil.swap(X_dummy);
-    //		Ycoord_Airfoil.swap(Y_dummy);
-    //		Zcoord_Airfoil.swap(Z_dummy);
-    //
-    //		X_dummy.clear();
-    //		Y_dummy.clear();
-    //		Z_dummy.clear();
-    //
-    //	}
-    //
-    //	delete [] dist;
-    
-    
-    /*--- Write the output file (tecplot format) ---*/
-    if (original_surface == true) {
-      
-      ofstream Tecplot_File;
-      //if (iSection == 0) Tecplot_File.open("Airfoil_Sections.plt", ios::out);
-      //else Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-      Tecplot_File.open("Airfoil_Sections.plt", ios::app);
-      
-      if (iSection == 0) {
-        Tecplot_File << "TITLE = \"Wing airfoil sections\"" << endl;
-        Tecplot_File << "VARIABLES = \"X\",\"Y\",\"Z\"" << endl;
-      }
-      
-      Tecplot_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
-      
-      /*--- Coordinates ---*/
-      for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] << endl;
-      }
-      
-      /*--- Conectivity ---*/
-      for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-        Tecplot_File << iVertex << "\t" << iVertex+1 << "\n";
-      }
-      
-      Tecplot_File.close();
-    }
-    
-  }
-  
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
-#endif
-  
 }
 
 double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
@@ -11056,17 +9670,17 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_BoundTriangle,       *Buffer_Receive_BoundTriangle;
   unsigned long *Buffer_Send_BoundRectangle,      *Buffer_Receive_BoundRectangle;
   unsigned long *Buffer_Send_Local2Global_Marker, *Buffer_Receive_Local2Global_Marker;
-
+  
   int rank, size;
-
+  
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&rank);
-	MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
+  rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
   /*--- Basic dimensionalization ---*/
   nDomain = size;
   
@@ -11231,7 +9845,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(&nElemHexahedron,    1,  MPI::UNSIGNED_LONG,   iDomain, 9);
       MPI::COMM_WORLD.Bsend(&nElemWedge,         1,  MPI::UNSIGNED_LONG,   iDomain, 10);
       MPI::COMM_WORLD.Bsend(&nElemPyramid,       1,  MPI::UNSIGNED_LONG,   iDomain, 11);
-#endif    
+#endif
       /*--- Allocate the send buffer vector ---*/
       Buffer_Send_BoundLine =           new unsigned long [nBoundLineTotal*2];
       Buffer_Send_BoundTriangle =       new unsigned long [nBoundTriangleTotal*3];
@@ -11240,7 +9854,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the size of buffers ---*/
 #ifdef WINDOWS
-	  MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
+      MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundTriangleTotal,  1, MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundRectangleTotal, 1, MPI_UNSIGNED_LONG, iDomain, 14, MPI_COMM_WORLD);
       MPI_Bsend(&nMarkerDomain,        1, MPI_UNSIGNED_LONG, iDomain, 15, MPI_COMM_WORLD);
@@ -11267,14 +9881,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the size of buffers ---*/
       MPI::COMM_WORLD.Bsend(&nPeriodic, 1, MPI::UNSIGNED_SHORT, iDomain, 22);
-#endif     
+#endif
     }
     
     if (rank == iDomain) {
       
 #ifdef WINDOWS
-	  /*--- Receive the size of buffers---*/
-	  MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
+      /*--- Receive the size of buffers---*/
+      MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointTotal,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 1, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointDomainTotal,  1, MPI_UNSIGNED_LONG,    MASTER_NODE, 2, MPI_COMM_WORLD, NULL);
       MPI_Recv(&nPointGhost,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 3, MPI_COMM_WORLD, NULL);
@@ -11299,7 +9913,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI_SHORT, MASTER_NODE, 20, MPI_COMM_WORLD, NULL);
       MPI_Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI_CHAR, MASTER_NODE, 21, MPI_COMM_WORLD, NULL);
 #else
-	  /*--- Receive the size of buffers---*/
+      /*--- Receive the size of buffers---*/
       MPI::COMM_WORLD.Recv(&nDim,               1, MPI::UNSIGNED_SHORT,   MASTER_NODE, 0);
       MPI::COMM_WORLD.Recv(&nPointTotal,        1, MPI::UNSIGNED_LONG,    MASTER_NODE, 1);
       MPI::COMM_WORLD.Recv(&nPointDomainTotal,  1, MPI::UNSIGNED_LONG,    MASTER_NODE, 2);
@@ -11325,18 +9939,18 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Marker_All_SendRecv,   MAX_NUMBER_MARKER, MPI::SHORT, MASTER_NODE, 20);
       MPI::COMM_WORLD.Recv(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI::CHAR, MASTER_NODE, 21);
 #endif
-
+      
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
       }
       
       /*--- Receive the size of buffers ---*/
 #ifdef WINDOWS
-	  MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, NULL);
+      MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Recv(&nPeriodic, 1, MPI::UNSIGNED_SHORT, MASTER_NODE, 22);
 #endif
-
+      
       config->SetnPeriodicIndex(nPeriodic);
       double* center = new double[3]; double* rotation  = new double[3]; double* translate = new double[3];
       for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
@@ -11524,7 +10138,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the buffers with the geometrical information ---*/
 #ifdef WINDOWS
-	  MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_GlobalPointIndex,      nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Color,                 nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Triangle,              nElemTriangle*3,    MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
@@ -11544,7 +10158,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(Buffer_Send_Wedge,                 nElemWedge*6,       MPI::UNSIGNED_LONG, iDomain, 8);
       MPI::COMM_WORLD.Bsend(Buffer_Send_Pyramid,               nElemPyramid*5,     MPI::UNSIGNED_LONG, iDomain, 9);
 #endif
-
+      
       delete[] Buffer_Send_Coord;
       delete[] Buffer_Send_GlobalPointIndex;
       delete[] Buffer_Send_Color;
@@ -11554,9 +10168,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Send_Hexahedron;
       delete[] Buffer_Send_Wedge;
       delete[] Buffer_Send_Pyramid;
- 
+      
 #ifdef WINDOWS
-	  MPI_Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, iDomain, 10, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, iDomain, 11, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
@@ -11566,7 +10180,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Bsend(Buffer_Send_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, iDomain, 12);
       MPI::COMM_WORLD.Bsend(Buffer_Send_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, iDomain, 13);
 #endif
-
+      
       delete[] Buffer_Send_BoundLine;
       delete[] Buffer_Send_BoundTriangle;
       delete[] Buffer_Send_BoundRectangle;
@@ -11577,7 +10191,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Set a communitation barrier before
      receiving to reduce the buffering ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 #else
     MPI::COMM_WORLD.Barrier();
 #endif
@@ -11586,7 +10200,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Receive the buffers with the geometrical information ---*/
 #ifdef WINDOWS
-	  MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
+      MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_GlobalPointIndex,      nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Color,                 nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Triangle,              nElemTriangle*3,     MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, NULL);
@@ -11594,7 +10208,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI_UNSIGNED_LONG, MASTER_NODE, 6, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI_UNSIGNED_LONG, MASTER_NODE, 7, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI_UNSIGNED_LONG, MASTER_NODE, 8, MPI_COMM_WORLD, NULL);
-      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, NULL);      
+      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, MASTER_NODE, 10, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, NULL);
       MPI_Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, NULL);
@@ -11608,13 +10222,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI::UNSIGNED_LONG, MASTER_NODE, 6);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI::UNSIGNED_LONG, MASTER_NODE, 7);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI::UNSIGNED_LONG, MASTER_NODE, 8);
-      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);    
+      MPI::COMM_WORLD.Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI::UNSIGNED_LONG, MASTER_NODE, 9);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI::UNSIGNED_LONG, MASTER_NODE, 10);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI::UNSIGNED_LONG, MASTER_NODE, 11);
       MPI::COMM_WORLD.Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI::UNSIGNED_LONG, MASTER_NODE, 12);
       MPI::COMM_WORLD.Recv(Buffer_Receive_Local2Global_Marker,   nMarkerDomain,          MPI::UNSIGNED_LONG, MASTER_NODE, 13);
 #endif
-
+      
       /*--- Create the domain structures for the points ---*/
       nPoint = nPointTotal; iPoint = 0;
       nPointDomain = nPointDomainTotal;
@@ -11721,11 +10335,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
 #endif
-
+  
   //  /*--- Set the periodic boundary conditions ---*/
   //  unsigned long ReceptorColor, DonorColor, Transformation;
   //  unsigned short jMarker;
@@ -11968,9 +10582,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
 #ifdef WINDOWS
-	MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Barrier();
+  MPI::COMM_WORLD.Barrier();
 #endif
   
   if (rank == MASTER_NODE) {
@@ -12435,15 +11049,15 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   unsigned long  nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem;
   unsigned short iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
-
+  
   int rank, size;
-
+  
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&rank);
-	MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
+  rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
   
   int nDomain = size;
@@ -12630,13 +11244,13 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   /*--- Send after receive in the .su2 file ---*/
   unsigned short iDomain, nDomain;
   int size;
-
+  
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&size);
 #else
-	size = MPI::COMM_WORLD.Get_size();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
-
+  
   nDomain = size+1;
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -13589,7 +12203,7 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   RemoveCV(iPoint);
   for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
-    if (fine_grid->node[jPoint]->GetAgglomerate() == false) 
+    if (fine_grid->node[jPoint]->GetAgglomerate() == false)
       IncrPriorityCV(jPoint);
   }
   

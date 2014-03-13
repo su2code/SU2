@@ -1,5 +1,5 @@
 /*!
- * \file functions_turbulent.hpp
+ * \file numerics_machine_learning_direct_turbulent.hpp
  * \brief Header for caller functions of the turbulence models.
  *
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
@@ -61,6 +61,7 @@ public:
   double* GetTurbKinViscGradient();
   bool rotating_frame;
   bool transition;
+  double Omega;
   double dist; // Wall distance
   double Laminar_Viscosity;
   double Density;
@@ -69,7 +70,7 @@ public:
 };
 
 /* \brief computes spalart allmaras source term. See
-  functions_turbulent.cpp */
+  numerics_machine_learning_direct_turbulent.cpp */
 void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian);
 
 /* \brief Computes the vorticity from the velocity gradient
