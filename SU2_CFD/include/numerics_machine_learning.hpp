@@ -12,6 +12,7 @@
 #include <json/json.h>
 #endif
 
+#include "../include/numerics_machine_learning_turbulent.hpp"
 
 using namespace std;
 
@@ -141,3 +142,24 @@ public:
 	void Predict(double *, double *);
     double*** parameters; // Array of parameters for each neuron
 };
+
+class CSANondimInputs{
+private:
+  int nDim;
+public:
+  CSANondimInputs(int);
+  ~CSANondimInputs();
+  void Set(SpalartAllmarasInputs*);
+  void NondimensionalizeSource(int,double*);
+  void DimensionalizeSource(int,double*);
+  double Chi;
+  double OmegaNondim;
+  double OmegaBar;
+  double SourceNondim;
+  double NuGradNondim;
+  double * DNuHatDXBar;
+  double NuHatGradNorm;
+  double NuHatGradNormBar;
+};
+
+#include "numerics_machine_learning.inl"

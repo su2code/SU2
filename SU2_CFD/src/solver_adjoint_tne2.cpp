@@ -32,8 +32,8 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(void) : CSolver() {
 	Sens_Geo     = NULL;
 	Sens_Press   = NULL;
 	Sens_Temp    = NULL;
-	p1_Und_Lapl  = NULL;
-	p2_Und_Lapl  = NULL;
+	iPoint_UndLapl  = NULL;
+	jPoint_UndLapl  = NULL;
 	CSensitivity = NULL;
   Jacobian_Axisymmetric = NULL;
   
@@ -66,8 +66,8 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 	Sens_Geo     = NULL;
 	Sens_Press   = NULL;
 	Sens_Temp    = NULL;
-	p1_Und_Lapl  = NULL;
-	p2_Und_Lapl  = NULL;
+	iPoint_UndLapl  = NULL;
+	jPoint_UndLapl  = NULL;
 	CSensitivity = NULL;
   
   /*--- Set booleans for solver settings ---*/
@@ -112,8 +112,8 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   
 	/*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
 	if (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED) {
-		p1_Und_Lapl = new double [nPoint];
-		p2_Und_Lapl = new double [nPoint];
+		iPoint_UndLapl = new double [nPoint];
+		jPoint_UndLapl = new double [nPoint];
 	}
   
 	/*--- Define some auxiliary vectors related to the geometry ---*/
@@ -320,8 +320,8 @@ CAdjTNE2EulerSolver::~CAdjTNE2EulerSolver(void) {
 	if (Sens_Geo    != NULL) delete [] Sens_Geo;
 	if (Sens_Press  != NULL) delete [] Sens_Press;
 	if (Sens_Temp   != NULL) delete [] Sens_Temp;
-	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
-	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
+	if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
+	if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   
 	if (CSensitivity != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -2773,8 +2773,8 @@ CAdjTNE2NSSolver::~CAdjTNE2NSSolver(void) {
 	if (Sens_Geo    != NULL) delete [] Sens_Geo;
 	if (Sens_Press  != NULL) delete [] Sens_Press;
 	if (Sens_Temp   != NULL) delete [] Sens_Temp;
-	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
-	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
+	if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
+	if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   
 	if (CSensitivity != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)

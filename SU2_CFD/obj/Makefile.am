@@ -19,7 +19,9 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
-		../include/functions_turbulent.hpp \
+	       	../include/numerics_machine_learning.hpp \
+		../include/numerics_machine_learning.inl \
+		../include/numerics_machine_learning_turbulent.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
 		../include/solver_structure.hpp \
@@ -43,11 +45,11 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_direct_transition.cpp \
 		../src/numerics_direct_turbulent.cpp \
 		../src/numerics_direct_wave.cpp \
-		../src/nnet.cpp \
+		../src/numerics_machine_learning.cpp \
 		../src/numerics_linearized_mean.cpp \
 		../src/numerics_linearized_turbulent.cpp \
 		../src/numerics_structure.cpp \
-		../src/functions_turbulent.cpp \
+		../src/numerics_machine_learning_turbulent.cpp \
 		../src/numerics_template.cpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
