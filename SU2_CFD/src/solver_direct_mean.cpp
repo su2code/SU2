@@ -3782,6 +3782,135 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
   
 }
 
+void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config,
+                                          unsigned long val_Point) {
+  
+  unsigned short iVar, iDim, jDim, iNeigh;
+  unsigned long iPoint, jPoint;
+  double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j;
+  double r11, r12, r13, r22, r23, r23_a,
+  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
+  bool singular;
+  
+  iPoint = val_Point;
+    
+  /*--- Set the value of the singular ---*/
+  singular = false;
+  
+  /*--- Get coordinates ---*/
+  
+  Coord_i = geometry->node[iPoint]->GetCoord();
+  
+  /*--- Get primitives from CVariable ---*/
+  
+  PrimVar_i = node[iPoint]->GetPrimVar();
+  
+  /*--- Inizialization of variables ---*/
+  
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      cvector[iVar][iDim] = 0.0;
+  
+  r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
+  r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0; detR2 = 0.0;
+  
+  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+    jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+    Coord_j = geometry->node[jPoint]->GetCoord();
+    
+    PrimVar_j = node[jPoint]->GetPrimVar();
+    
+    weight = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+    
+    /*--- Sumations for entries of upper triangular matrix R ---*/
+    
+    if (weight != 0.0) {
+      
+      r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+      r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+      r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+      
+      if (nDim == 3) {
+        r13   += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+        r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+        r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+        r33   += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+      }
+      
+      /*--- Entries of c:= transpose(A)*b ---*/
+      
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+        for (iDim = 0; iDim < nDim; iDim++)
+          cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+      
+    }
+  }
+  
+  /*--- Entries of upper triangular matrix R ---*/
+  
+  if (r11 >= 0.0)         r11 = sqrt(r11);         else r11 = 0.0;
+  if (r11 != 0.0)         r12 = r12/r11;           else r12 = 0.0;
+  if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+  
+  if (nDim == 3) {
+    if (r11 != 0.0)                       r13 = r13/r11;                         else r13 = 0.0;
+    if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+    if (r33-r23*r23-r13*r13 >= 0.0)       r33 = sqrt(r33-r23*r23-r13*r13);       else r33 = 0.0;
+  }
+  
+  /*--- Compute determinant ---*/
+  if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
+  else detR2 = (r11*r22*r33)*(r11*r22*r33);
+  
+  /*--- Detect singular matrices ---*/
+  
+  if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
+  
+  /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+  
+  if (singular) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      for (jDim = 0; jDim < nDim; jDim++)
+        Smatrix[iDim][jDim] = 0.0;
+  }
+  else {
+    if (nDim == 2) {
+      Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+      Smatrix[0][1] = -r11*r12/detR2;
+      Smatrix[1][0] = Smatrix[0][1];
+      Smatrix[1][1] = r11*r11/detR2;
+    }
+    else {
+      z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
+      z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
+      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+      Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+      Smatrix[0][2] = (z13*z33)/detR2;
+      Smatrix[1][0] = Smatrix[0][1];
+      Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+      Smatrix[1][2] = (z23*z33)/detR2;
+      Smatrix[2][0] = Smatrix[0][2];
+      Smatrix[2][1] = Smatrix[1][2];
+      Smatrix[2][2] = (z33*z33)/detR2;
+    }
+  }
+  
+  /*--- Computation of the gradient: S*c ---*/
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      product = 0.0;
+      for (jDim = 0; jDim < nDim; jDim++) {
+        product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+      }
+      
+      node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
+    }
+  }
+}
+
+
 void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
   
 	unsigned long iEdge, iPoint, jPoint;
@@ -8063,9 +8192,11 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   /*--- Local variables ---*/
+  bool check_T;
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
   
+  double **PrimVarGrad;
   double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
   double Twall, Temperature, dTdn, dTdrho, thermal_conductivity;
   double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
@@ -8100,12 +8231,10 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Compute dual-grid area and boundary normal ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
       
@@ -8149,11 +8278,18 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
       node[iPoint]->SetVel_ResTruncError_Zero();
       
-      /*--- Retrieve temperatures from boundary nearest neighbor --*/
-      Temperature = node[Point_Normal]->GetPrimVar(0);
+      /*--- Assign Twall to primitive vector on surface ---*/
+      node[iPoint]->SetPrimVar(0, Twall);
       
-      /*--- Calculate temperature gradient normal to the wall using FD ---*/
-      dTdn                 = (Twall - Temperature)/dist_ij;
+      /*--- Compute the normal gradient in temperature ---*/
+      SetPrimVar_Gradient_LS(geometry, config, iPoint);
+      PrimVarGrad = node[iPoint]->GetGradient_Primitive();
+      dTdn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dTdn += PrimVarGrad[0][iDim]*UnitNormal[iDim];
+      }
+      
+      /*--- Get transport coefficients ---*/
       laminar_viscosity    = node[iPoint]->GetLaminarViscosity();
       eddy_viscosity       = node[iPoint]->GetEddyViscosity();
       thermal_conductivity = cp * ( laminar_viscosity/Prandtl_Lam

@@ -2102,6 +2102,16 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] val_Point - ID of desired point to update gradient
+	 */
+	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config,
+                              unsigned long val_Point);
     
     /*!
 	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
