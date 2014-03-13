@@ -189,8 +189,9 @@ def get_headerMap():
                  "CT"              : "THRUST"             ,
                  "CEquivArea"      : "EQUIVALENT_AREA"    ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE" ,
-                 "Time(min)"       : "TIME"               ,
-                 "CHeat_Load"      : "HEAT_LOAD"           }
+                 "Heat"            : "HEAT"               ,
+                 "Norm_Heat"       : "NORM_HEAT"          ,
+                 "Time(min)"       : "TIME"         }
     
     return map_dict
 
@@ -218,7 +219,8 @@ optnames_aero = [ "LIFT"               ,
                   "THRUST"             ,
                   "EQUIVALENT_AREA"    ,
                   "NEARFIELD_PRESSURE" ,
-                  "HEAT_LOAD"           ]
+                  "HEAT"               ,
+                  "NORM_HEAT"           ]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -396,6 +398,8 @@ def get_adjointSuffix(adj_objfunc=None):
                  "FORCE_Y"            : "cfy"   ,
                  "FORCE_Z"            : "cfz"   ,
                  "EFFICIENCY"         : "eff"   ,
+                 "HEAT"               : "heat"  ,
+                 "NORM_HEAT"          : "normheat"   ,
                  "EQUIVALENT_AREA"    : "ea"    ,
                  "NEARFIELD_PRESSURE" : "nfp"   ,
                  "THRUST"             : "ct"    ,
@@ -519,8 +523,8 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz"')
-        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_Heat","Grad_Norm_Heat"')
+        write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
         for key in special_cases: 
             if key == "FREE_SURFACE"   : 
@@ -621,8 +625,8 @@ def get_optFileFormat(plot_format,special_cases=None):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff"])
-    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
+    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","Heat","Norm_Heat"])
+    write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
     for key in special_cases: 
