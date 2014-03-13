@@ -73,11 +73,11 @@ am____bin_SU2_CFD_OBJECTS =  \
 	../src/___bin_SU2_CFD-numerics_direct_transition.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_direct_wave.$(OBJEXT) \
-	../src/___bin_SU2_CFD-nnet.$(OBJEXT) \
+	../src/___bin_SU2_CFD-numerics_machine_learning.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_linearized_mean.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_linearized_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_structure.$(OBJEXT) \
-	../src/___bin_SU2_CFD-functions_turbulent.$(OBJEXT) \
+	../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.$(OBJEXT) \
 	../src/___bin_SU2_CFD-numerics_template.$(OBJEXT) \
 	../src/___bin_SU2_CFD-output_cgns.$(OBJEXT) \
 	../src/___bin_SU2_CFD-output_structure.$(OBJEXT) \
@@ -162,12 +162,12 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+JSONCPP_CXX = @JSONCPP_CXX@
+JSONCPP_LD = @JSONCPP_LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
-Libjson_CXX = @Libjson_CXX@
-Libjson_LD = @Libjson_LD@
 MAKEINFO = @MAKEINFO@
 METIS_CXX = @METIS_CXX@
 METIS_LD = @METIS_LD@
@@ -240,7 +240,9 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
-		../include/functions_turbulent.hpp \
+	       	../include/numerics_machine_learning.hpp \
+		../include/numerics_machine_learning.inl \
+		../include/numerics_machine_learning_turbulent.hpp \
 		../include/numerics_structure.inl \
 		../include/output_structure.hpp \
 		../include/solver_structure.hpp \
@@ -264,11 +266,11 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/numerics_direct_transition.cpp \
 		../src/numerics_direct_turbulent.cpp \
 		../src/numerics_direct_wave.cpp \
-		../src/nnet.cpp \
+		../src/numerics_machine_learning.cpp \
 		../src/numerics_linearized_mean.cpp \
 		../src/numerics_linearized_turbulent.cpp \
 		../src/numerics_structure.cpp \
-		../src/functions_turbulent.cpp \
+		../src/numerics_machine_learning_turbulent.cpp \
 		../src/numerics_template.cpp \
 		../src/output_cgns.cpp \
 		../src/output_structure.cpp \
@@ -319,10 +321,13 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 # endif
 
 # if BUILD_MUTATIONPP
+# endif
+
+# if BUILD_JSONCPP
 ___bin_SU2_CFD_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @TECIO_CXX@ \
-	@MUTATIONPP_CXX@ $(am__empty)
+	@MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
 ___bin_SU2_CFD_LDADD = ../../Common/lib/libSU2.a @CGNS_LD@ @METIS_LD@ \
-	@TECIO_LD@ @MUTATIONPP_LD@ $(am__empty)
+	@TECIO_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:
@@ -432,15 +437,15 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_direct_wave.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-nnet.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD-numerics_machine_learning.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_linearized_mean.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_linearized_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/___bin_SU2_CFD-functions_turbulent.$(OBJEXT):  \
+../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD-numerics_template.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -529,11 +534,9 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-SU2_CFD.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-definition_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-functions_turbulent.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-integration_structure.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-integration_time.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-iteration_structure.$(OBJEXT)
-	-rm -f ../src/___bin_SU2_CFD-nnet.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_levelset.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_mean.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_adjoint_tne2.$(OBJEXT)
@@ -548,6 +551,8 @@ mostlyclean-compile:
 	-rm -f ../src/___bin_SU2_CFD-numerics_direct_wave.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_linearized_mean.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_linearized_turbulent.$(OBJEXT)
+	-rm -f ../src/___bin_SU2_CFD-numerics_machine_learning.$(OBJEXT)
+	-rm -f ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_structure.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-numerics_template.$(OBJEXT)
 	-rm -f ../src/___bin_SU2_CFD-output_cgns.$(OBJEXT)
@@ -592,11 +597,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-definition_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-integration_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-integration_time.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-iteration_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_levelset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_adjoint_tne2.Po@am__quote@
@@ -611,6 +614,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_direct_wave.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_linearized_mean.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_linearized_turbulent.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-numerics_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD-output_cgns.Po@am__quote@
@@ -890,19 +895,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_direct_wave.obj `if test -f '../src/numerics_direct_wave.cpp'; then $(CYGPATH_W) '../src/numerics_direct_wave.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_direct_wave.cpp'; fi`
 
-../src/___bin_SU2_CFD-nnet.o: ../src/nnet.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-nnet.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo -c -o ../src/___bin_SU2_CFD-nnet.o `test -f '../src/nnet.cpp' || echo '$(srcdir)/'`../src/nnet.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/nnet.cpp' object='../src/___bin_SU2_CFD-nnet.o' libtool=no @AMDEPBACKSLASH@
+../src/___bin_SU2_CFD-numerics_machine_learning.o: ../src/numerics_machine_learning.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_machine_learning.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Tpo -c -o ../src/___bin_SU2_CFD-numerics_machine_learning.o `test -f '../src/numerics_machine_learning.cpp' || echo '$(srcdir)/'`../src/numerics_machine_learning.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_machine_learning.cpp' object='../src/___bin_SU2_CFD-numerics_machine_learning.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-nnet.o `test -f '../src/nnet.cpp' || echo '$(srcdir)/'`../src/nnet.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_machine_learning.o `test -f '../src/numerics_machine_learning.cpp' || echo '$(srcdir)/'`../src/numerics_machine_learning.cpp
 
-../src/___bin_SU2_CFD-nnet.obj: ../src/nnet.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-nnet.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo -c -o ../src/___bin_SU2_CFD-nnet.obj `if test -f '../src/nnet.cpp'; then $(CYGPATH_W) '../src/nnet.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/nnet.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-nnet.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/nnet.cpp' object='../src/___bin_SU2_CFD-nnet.obj' libtool=no @AMDEPBACKSLASH@
+../src/___bin_SU2_CFD-numerics_machine_learning.obj: ../src/numerics_machine_learning.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_machine_learning.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Tpo -c -o ../src/___bin_SU2_CFD-numerics_machine_learning.obj `if test -f '../src/numerics_machine_learning.cpp'; then $(CYGPATH_W) '../src/numerics_machine_learning.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_machine_learning.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_machine_learning.cpp' object='../src/___bin_SU2_CFD-numerics_machine_learning.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-nnet.obj `if test -f '../src/nnet.cpp'; then $(CYGPATH_W) '../src/nnet.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/nnet.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_machine_learning.obj `if test -f '../src/numerics_machine_learning.cpp'; then $(CYGPATH_W) '../src/numerics_machine_learning.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_machine_learning.cpp'; fi`
 
 ../src/___bin_SU2_CFD-numerics_linearized_mean.o: ../src/numerics_linearized_mean.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_linearized_mean.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_linearized_mean.Tpo -c -o ../src/___bin_SU2_CFD-numerics_linearized_mean.o `test -f '../src/numerics_linearized_mean.cpp' || echo '$(srcdir)/'`../src/numerics_linearized_mean.cpp
@@ -946,19 +951,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_structure.obj `if test -f '../src/numerics_structure.cpp'; then $(CYGPATH_W) '../src/numerics_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_structure.cpp'; fi`
 
-../src/___bin_SU2_CFD-functions_turbulent.o: ../src/functions_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-functions_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Tpo -c -o ../src/___bin_SU2_CFD-functions_turbulent.o `test -f '../src/functions_turbulent.cpp' || echo '$(srcdir)/'`../src/functions_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/functions_turbulent.cpp' object='../src/___bin_SU2_CFD-functions_turbulent.o' libtool=no @AMDEPBACKSLASH@
+../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o: ../src/numerics_machine_learning_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Tpo -c -o ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o `test -f '../src/numerics_machine_learning_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_machine_learning_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_machine_learning_turbulent.cpp' object='../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-functions_turbulent.o `test -f '../src/functions_turbulent.cpp' || echo '$(srcdir)/'`../src/functions_turbulent.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o `test -f '../src/numerics_machine_learning_turbulent.cpp' || echo '$(srcdir)/'`../src/numerics_machine_learning_turbulent.cpp
 
-../src/___bin_SU2_CFD-functions_turbulent.obj: ../src/functions_turbulent.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-functions_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Tpo -c -o ../src/___bin_SU2_CFD-functions_turbulent.obj `if test -f '../src/functions_turbulent.cpp'; then $(CYGPATH_W) '../src/functions_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/functions_turbulent.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-functions_turbulent.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/functions_turbulent.cpp' object='../src/___bin_SU2_CFD-functions_turbulent.obj' libtool=no @AMDEPBACKSLASH@
+../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.obj: ../src/numerics_machine_learning_turbulent.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Tpo -c -o ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.obj `if test -f '../src/numerics_machine_learning_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_machine_learning_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_machine_learning_turbulent.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_machine_learning_turbulent.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='../src/numerics_machine_learning_turbulent.cpp' object='../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-functions_turbulent.obj `if test -f '../src/functions_turbulent.cpp'; then $(CYGPATH_W) '../src/functions_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/functions_turbulent.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD-numerics_machine_learning_turbulent.obj `if test -f '../src/numerics_machine_learning_turbulent.cpp'; then $(CYGPATH_W) '../src/numerics_machine_learning_turbulent.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/numerics_machine_learning_turbulent.cpp'; fi`
 
 ../src/___bin_SU2_CFD-numerics_template.o: ../src/numerics_template.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD-numerics_template.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD-numerics_template.Tpo -c -o ../src/___bin_SU2_CFD-numerics_template.o `test -f '../src/numerics_template.cpp' || echo '$(srcdir)/'`../src/numerics_template.cpp

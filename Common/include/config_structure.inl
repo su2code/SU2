@@ -90,10 +90,6 @@ inline bool CConfig::GetVisualize_Partition(void) { return Visualize_Partition; 
 
 inline bool CConfig::GetExtraOutput(void) { return ExtraOutput; }
 
-inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
-
-inline bool CConfig::GetDeform_ScaleVolume(void) { return Deform_ScaleVolume; }
-
 inline double CConfig::GetRefAreaCoeff(void) { return RefAreaCoeff; }
 
 inline double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
@@ -191,6 +187,8 @@ inline double* CConfig::GetVelocity_FreeStream(void) { return Velocity_FreeStrea
 inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND; }
 
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
+
+inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
 
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
@@ -387,8 +385,11 @@ inline double CConfig::GetArrheniusEta(unsigned short iReaction) { return Arrhen
 inline double CConfig::GetArrheniusTheta(unsigned short iReaction) { return ArrheniusTheta[iReaction]; }
 
 inline double* CConfig::GetRxnTcf_a(void) { return Tcf_a; }
+
 inline double* CConfig::GetRxnTcf_b(void) { return Tcf_b; }
+
 inline double* CConfig::GetRxnTcb_a(void) { return Tcb_a; }
+
 inline double* CConfig::GetRxnTcb_b(void) { return Tcb_b; }
 
 inline double* CConfig::GetDissociationPot(void) { return Diss; }
@@ -443,7 +444,17 @@ inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Lin
 
 inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff; }
 
-inline unsigned long CConfig::GetGridDef_Iter(void) { return GridDef_Iter; }
+inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Linear_Iter; }
+
+inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_Nonlinear_Iter; }
+
+inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
+
+inline double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
+
+inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
+
+inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
 
 inline unsigned short CConfig::GetKind_Adaptation(void) { return Kind_Adaptation; }
 
@@ -703,6 +714,10 @@ inline short CConfig::GetMarker_All_PerBound(unsigned short val_marker) { return
 
 inline unsigned short CConfig::GetMarker_All_Monitoring(unsigned short val_marker) { return Marker_All_Monitoring[val_marker]; }
 
+inline void CConfig::SetMarker_All_Out_1D(unsigned short val_marker, unsigned short val_boundary) { Marker_All_Out_1D[val_marker] = val_boundary; }
+
+inline unsigned short CConfig::GetMarker_All_Out_1D(unsigned short val_marker) { return Marker_All_Out_1D[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_GeoEval(unsigned short val_marker) { return Marker_All_GeoEval[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_Designing(unsigned short val_marker) { return Marker_All_Designing[val_marker]; }
@@ -726,6 +741,8 @@ inline unsigned short CConfig::GetnMarker_NacelleExhaust(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
+
+inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
@@ -865,6 +882,8 @@ inline string CConfig::GetML_Turb_Model_File(void) { return ML_Turb_Model_File; 
 
 inline string CConfig::GetML_Turb_Model_Check_File(void) { return ML_Turb_Model_Check_File; }
 
+inline string CConfig::GetML_Turb_Model_FeatureSet(void) { return ML_Turb_Model_FeatureSet; }
+
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
 inline bool CConfig::GetFrozen_Visc(void) { return Frozen_Visc; }
@@ -909,7 +928,9 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
-inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
+inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
+
+inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
 
 inline vector<vector<double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) {return Aeroelastic_np1[iMarker]; }
 
@@ -956,3 +977,5 @@ inline double CConfig::GetGust_Ampl(void) {return Gust_Ampl; }
 inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time; }
 
 inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc; }
+
+inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }

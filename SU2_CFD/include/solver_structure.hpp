@@ -50,7 +50,7 @@
 #include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "nnet.hpp"
+#include "numerics_machine_learning.hpp"
 
 
 using namespace std;
@@ -746,14 +746,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Inviscid_Forces(CGeometry *geometry, CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
-  
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -919,9 +912,15 @@ public:
     
     /*!
 	 * \brief A virtual member.
-	 * \param[in] val_Total_NormHeatFlux - Value of the total heat load.
+	 * \param[in] val_Total_Heat - Value of the total heat load.
 	 */
-	virtual void SetTotal_NormHeatFlux(double val_Total_NormHeatFlux);
+	virtual void SetTotal_Heat(double val_Total_Heat);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] val_Total_NormHeat - Value of the total heat load.
+	 */
+	virtual void SetTotal_NormHeat(double val_Total_NormHeat);
     
 	/*!
 	 * \brief A virtual member.
@@ -1117,7 +1116,13 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_NormHeatFlux(void);
+	virtual double GetTotal_Heat(void);
+    
+    /*!
+	 * \brief A virtual member.
+	 * \return Value of the heat load (integrated heat flux).
+	 */
+	virtual double GetTotal_NormHeat(void);
     
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1445,13 +1450,25 @@ public:
 	 * \return Value of the velocity at the infinity.
 	 */
 	virtual double GetVelocity_Inf(unsigned short val_dim);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the velocity at the infinity.
+	 */
+	virtual double *GetVelocity_Inf(void);
     
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the viscosity at the infinity.
 	 */
 	virtual double GetViscosity_Inf(void);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the turbulent kinetic energy.
+	 */
+	virtual double GetTke_Inf(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1459,44 +1476,6 @@ public:
 	 * \return Value of the sensitivity coefficient.
 	 */
 	virtual double GetCSensitivity(unsigned short val_marker, unsigned short val_vertex);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the density at the inlet.
-	 */
-	virtual double GetDensity_Inlet(void);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the density x energy at the inlet.
-	 */
-	virtual double GetDensity_Energy_Inlet(void);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_dim - Index of the adjoint velocity vector.
-	 * \return Value of the density x velocity at the inlet.
-	 */
-	virtual double GetDensity_Velocity_Inlet(unsigned short val_dim);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the density at the outlet.
-	 */
-	virtual double GetDensity_Outlet(void);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the density x energy at the outlet.
-	 */
-	virtual double GetDensity_Energy_Outlet(void);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_dim - Index of the adjoint velocity vector.
-	 * \return Value of the density x velocity at the outlet.
-	 */
-	virtual double GetDensity_Velocity_Outlet(unsigned short val_dim);
     
 	/*!
 	 * \brief A virtual member.
@@ -1510,7 +1489,31 @@ public:
 	 * \return A pointer to an array containing a set of constants
 	 */
 	virtual double* GetConstants();
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return average total pressure evaluated at an exit boundary marker
+   */
+  virtual double GetOneDStagPressure(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_exit_pt: value of the total average pressure at the exit.
+   */
+  virtual void SetOneDStagPressure(double val_exit_pt);
+
+  /*!
+   * \brief A virtual member.
+   * \return average Mach number evaluated at an exit boundary marker
+   */
+  virtual double GetOneDMach(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return average Mach number evaluated at an exit boundary marker
+   */
+  virtual double GetOneDTemperature(void);
+
   /*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1684,24 +1687,10 @@ protected:
 	
   double
   Mach_Inf,	/*!< \brief Mach number at the infinity. */
-	Mach_Inlet,		/*!< \brief Mach number at the inlet. */
-	Mach_Outlet,		/*!< \brief Mach number at the outlet. */
 	Density_Inf,	/*!< \brief Density at the infinity. */
-	Density_Inlet,		/*!< \brief Density at the inlet. */
-	Density_Outlet,		/*!< \brief Density at the outlet. */
-	Density_Back,		/*!< \brief Density at infinity behind the Shock. */
 	Energy_Inf,			/*!< \brief Energy at the infinity. */
-	Energy_Inlet,		/*!< \brief Energy at the inlet. */
-	Energy_Outlet,		/*!< \brief Energy at the outlet. */
-	Energy_Back,		/*!< \brief Energy at the infinity behind the Shock. */
 	Pressure_Inf,		/*!< \brief Pressure at the infinity. */
-	Pressure_Inlet,		/*!< \brief Pressure at the inlet. */
-	Pressure_Outlet,	/*!< \brief Pressure at the outlet. */
-	Pressure_Back,		/*!< \brief Pressure at the infinity behind the Shock. */
-	*Velocity_Inf,		/*!< \brief Flow Velocity vector at the infinity. */
-	*Velocity_Inlet,	/*!< \brief Flow Velocity vector at the inlet. */
-	*Velocity_Outlet,	/*!< \brief Flow Velocity vector at the outlet. */
-	*Velocity_Back;		/*!< \brief Flow Velocity vector at the infinity behind the Shock. */
+	*Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
 	
   double
   *CDrag_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
@@ -1760,6 +1749,9 @@ protected:
 	AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
 	
   double
+  OneD_Pt, /*!< \brief average total pressure evaluated at an exit */
+  OneD_M, /*!< \brief area average Mach evaluated at an exit */
+  OneD_T, /*!< \brief area average Temperature evaluated at an exit */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -1773,7 +1765,8 @@ protected:
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-  Total_NormHeatFlux, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
+  Total_NormHeat, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
@@ -1782,21 +1775,17 @@ protected:
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
-	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
+	double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
+	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-	double **Precon_Mat_inv; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
+	double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
-	roe_turkel,         /*!< \brief True if computing preconditioning matrix for roe-turkel method. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-  unsigned short nSection;    /*!< \brief Total number of airfoil sections to be cut from each specified marker. */
-  vector<unsigned long> **point1_Airfoil;     /*!< \brief Vector of first points in the list of edges making up an airfoil section. */
-  vector<unsigned long> **point2_Airfoil;     /*!< \brief Vector of second points in the list of edges making up an airfoil section. */
   
   double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
 	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
@@ -1855,56 +1844,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
-  
-	/*!
-	 * \brief Compute the density at the inlet.
-	 * \return Value of the density at the infinity.
-	 */
-	double GetDensity_Inlet(void);
-    
-	/*!
-	 * \brief Compute the density multiply by energy at the inlet.
-	 * \return Value of the density multiply by energy at the inlet.
-	 */
-	double GetDensity_Energy_Inlet(void);
-    
-	/*!
-	 * \brief Compute the density multiply by velocity at the inlet.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the density multiply by the velocity at the inlet.
-	 */
-	double GetDensity_Velocity_Inlet(unsigned short val_dim);
-    
-	/*!
-	 * \brief Compute the density at the inlet.
-	 * \return Value of the density at the infinity.
-	 */
-	double GetDensity_Outlet(void);
-    
-	/*!
-	 * \brief Compute the density multiply by energy at the inlet.
-	 * \return Value of the density multiply by energy at the inlet.
-	 */
-	double GetDensity_Energy_Outlet(void);
-    
-	/*!
-	 * \brief Compute the density multiply by velocity at the inlet.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the density multiply by the velocity at the inlet.
-	 */
-	double GetDensity_Velocity_Outlet(unsigned short val_dim);
     
 	/*!
 	 * \brief Compute the density at the infinity.
 	 * \return Value of the density at the infinity.
 	 */
 	double GetDensity_Inf(void);
-    
-	/*!
-	 * \brief Compute the density at infinity  behind the Shock.
-	 * \return Value of the density at infinity behind the Shock .
-	 */
-	double GetDensity_Back(void);
     
 	/*!
 	 * \brief Compute 2-norm of the velocity at the infinity.
@@ -1919,22 +1864,10 @@ public:
 	double GetDensity_Energy_Inf(void);
     
 	/*!
-	 * \brief Compute the density multiply by energy at infinity behind the Shock.
-	 * \return Value of the density multiply by  energy at infinity behind the Shock.
-	 */
-	double GetDensity_Energy_Back(void);
-    
-	/*!
 	 * \brief Compute the pressure at the infinity.
 	 * \return Value of the pressure at the infinity.
 	 */
 	double GetPressure_Inf(void);
-    
-	/*!
-	 * \brief Compute the pressure at infinity behind the Shock.
-	 * \return Value of the pressure at infinity behind the Shock.
-	 */
-	double GetPressure_Back(void);
     
 	/*!
 	 * \brief Compute the density multiply by velocity at the infinity.
@@ -1944,26 +1877,18 @@ public:
 	double GetDensity_Velocity_Inf(unsigned short val_dim);
     
 	/*!
-	 * \brief Compute the density multiply by velocity at infinity  behind the Shock.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the density multiply by the velocity at infinity  behind the Shock.
-	 */
-	double GetDensity_Velocity_Back(unsigned short val_dim);
-    
-	/*!
 	 * \brief Get the velocity at the infinity.
 	 * \param[in] val_dim - Index of the velocity vector.
 	 * \return Value of the velocity at the infinity.
 	 */
 	double GetVelocity_Inf(unsigned short val_dim);
-    
-	/*!
-	 * \brief Get the velocity at infinity behind the Shock.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the velocity at the Shock.
+  
+  /*!
+	 * \brief Get the velocity at the infinity.
+	 * \return Value of the velocity at the infinity.
 	 */
-	double GetVelocity_Back(unsigned short val_dim);
-    
+	double *GetVelocity_Inf(void);
+  
 	/*!
 	 * \brief Compute the time step for solving the Euler equations.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2291,14 +2216,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
-    
-    /*!
-	 * \brief Compute the pressure forces and all the adimensional coefficients.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Inviscid_Forces_Sections(CGeometry *geometry, CConfig *config);
-    
+
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coefficient is going to be computed.
@@ -2509,7 +2427,13 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_NormHeatFlux(void);
+	double GetTotal_Heat(void);
+    
+    /*!
+	 * \brief Provide the total heat load.
+	 * \return Value of the heat load (viscous contribution).
+	 */
+	double GetTotal_NormHeat(void);
     
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
@@ -2519,9 +2443,15 @@ public:
     
     /*!
 	 * \brief Store the total heat load.
-	 * \param[in] val_Total_Q - Value of the heat load.
+	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_NormHeatFlux(double val_Total_NormHeatFlux);
+	void SetTotal_Heat(double val_Total_Heat);
+    
+    /*!
+	 * \brief Store the total heat load.
+	 * \param[in] val_Total_Heat - Value of the heat load.
+	 */
+	void SetTotal_NormHeat(double val_Total_NormHeat);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
@@ -2586,7 +2516,29 @@ public:
 	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
 	 */
 	void SetTotal_CFreeSurface(double val_cfreesurface);
-  
+
+	/*!
+	   * \brief Provide the averaged total pressure at a marker.
+	   */
+	double GetOneDStagPressure(void);
+
+	/*!
+	   * \brief Set the value of averaged total pressure
+	   * \param[in] val_exit_pt - value of the averaged pressure
+	   */
+	void SetOneDStagPressure(double exit_pt);
+
+  /*!
+     * \brief Provide the averaged Mach number at a marker.
+     */
+  double GetOneDMach(void);
+
+  /*!
+     * \brief Provide the averaged Mach number at a marker.
+     */
+  double GetOneDTemperature(void);
+
+
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2647,6 +2599,7 @@ public:
 class CNSSolver : public CEulerSolver {
 private:
 	double Viscosity_Inf;	/*!< \brief Viscosity at the infinity. */
+  double Tke_Inf;	/*!< \brief Turbulent kinetic energy at the infinity. */
 	double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
 	Prandtl_Turb;         /*!< \brief Turbulent Prandtl number. */
 	double *CDrag_Visc,	/*!< \brief Drag coefficient (viscous contribution) for each boundary. */
@@ -2667,7 +2620,8 @@ private:
 	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-  *NormHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
+  *NormHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -2685,7 +2639,8 @@ private:
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-  AllBound_NormHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_NormHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
@@ -2711,6 +2666,12 @@ public:
 	 * \return Value of the viscosity at the infinity.
 	 */
 	double GetViscosity_Inf(void);
+  
+  /*!
+	 * \brief Get the turbulent kinetic energy at the infinity.
+	 * \return Value of the turbulent kinetic energy at the infinity.
+	 */
+	double GetTke_Inf(void);
     
 	/*!
 	 * \brief Compute the time step for solving the Navier-Stokes equations with turbulence model.
@@ -3635,8 +3596,8 @@ protected:
 	double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
 	double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
 	double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
-	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
+	double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
+	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
     double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
@@ -4285,8 +4246,8 @@ private:
 	double DeltaRho_Inf,	/*!< \brief Linearized density variable at the infinity. */
 	DeltaE_Inf,				/*!< \brief Linearized energy at the infinity. */
 	*DeltaVel_Inf;			/*!< \brief Linearized velocity vector at the infinity. */
-	double *p1_Und_Lapl,	/*!< \brief Undivided Laplacians for centered scheme. */
-	*p2_Und_Lapl;			/*!< \brief Undivided Laplacians for centered scheme. */
+	double *iPoint_UndLapl,	/*!< \brief Undivided Laplacians for centered scheme. */
+	*jPoint_UndLapl;			/*!< \brief Undivided Laplacians for centered scheme. */
 	double *CDeltaDrag_Inv, /*!< \brief Linearized drag coefficient (inviscid contribution) for each boundary. */
 	*CDeltaLift_Inv,		/*!< \brief Linearized lift coefficient (inviscid contribution) for each boundary. */
 	*DeltaForceInviscid;	/*!< \brief Linearized inviscid force for each boundary. */
@@ -5384,16 +5345,10 @@ protected:
 	
   double
   Mach_Inf,       	        /*!< \brief Free stream Mach number. */
-	Mach_Inlet,		            /*!< \brief Inlet Mach number. */
-	Mach_Outlet,		          /*!< \brief Outlet Mach number. */
   *Density,                 /*!< \brief Free stream species density. */
   Energy_ve_Inf,            /*!< \brief Vib.-el. free stream energy. */
 	Pressure_Inf,		          /*!< \brief Free stream pressure. */
-	Pressure_Inlet,		        /*!< \brief Inlet pressure. */
-	Pressure_Outlet,	        /*!< \brief Outlet pressure. */
 	*Velocity_Inf,		        /*!< \brief Free stream flow velocity. */
-	*Velocity_Inlet,	        /*!< \brief Inlet flow velocity. */
-	*Velocity_Outlet,	        /*!< \brief Outlet flow velocity. */
   *MassFrac_Inf,            /*!< \brief Free stream species mass fraction. */
   Temperature_Inf,          /*!< \brief Trans.-rot. free stream temperature. */
   Temperature_ve_Inf;       /*!< \brief Vib.-el. free stream temperature. */
@@ -5440,21 +5395,20 @@ protected:
 	Total_CFy,                /*!< \brief Total CFy. */
 	Total_CFz,                /*!< \brief Total CFz. */
 	Total_CEff,               /*!< \brief Total CEff. */
-  Total_NormHeatFlux;               /*!< \brief Maximum heat flux on all boundaries. */
+  Total_Heat,                  /*!< \brief Total heat load. */
+  Total_NormHeat;               /*!< \brief Maximum heat flux on all boundaries. */
 
 	double
   *PrimVar_i,	      /*!< \brief Vector for storing primitives at node i. */
 	*PrimVar_j;			  /*!< \brief Vector for storing primitives at node j. */
 
 	double
-  **Precon_Mat_inv; /*!< \brief Matrix for storing the inverse of preconditioner. */
+  **LowMach_Precontioner; /*!< \brief Matrix for storing the inverse of preconditioner. */
 	
   unsigned long
   nMarker;				  /*!< \brief Total number of domain boundaries. */
   
-	bool
-  roe_turkel,        /*!< \brief Indicator for roe-turkel preconditioning. */
-	least_squares;     /*!< \brief Indicator for least-squares computed grads. */
+	bool least_squares;     /*!< \brief Indicator for least-squares computed grads. */
   
 public:
   
@@ -5544,44 +5498,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-  
-	/*!
-	 * \brief Compute the density at the inlet.
-	 * \return Value of the density at the infinity.
-	 */
-	double GetDensity_Inlet(void);
-  
-	/*!
-	 * \brief Compute the density multiply by energy at the inlet.
-	 * \return Value of the density multiply by energy at the inlet.
-	 */
-	double GetDensity_Energy_Inlet(void);
-  
-	/*!
-	 * \brief Compute the density multiply by velocity at the inlet.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the density multiply by the velocity at the inlet.
-	 */
-	double GetDensity_Velocity_Inlet(unsigned short val_dim);
-  
-	/*!
-	 * \brief Compute the density at the inlet.
-	 * \return Value of the density at the infinity.
-	 */
-	double GetDensity_Outlet(void);
-  
-	/*!
-	 * \brief Compute the density multiply by energy at the inlet.
-	 * \return Value of the density multiply by energy at the inlet.
-	 */
-	double GetDensity_Energy_Outlet(void);
-  
-	/*!
-	 * \brief Compute the density multiply by velocity at the inlet.
-	 * \param[in] val_dim - Index of the velocity vector.
-	 * \return Value of the density multiply by the velocity at the inlet.
-	 */
-	double GetDensity_Velocity_Outlet(unsigned short val_dim);
   
 	/*!
 	 * \brief Compute the density at the infinity.
@@ -5908,13 +5824,25 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_NormHeatFlux(void);
+	double GetTotal_Heat(void);
+  
+  /*!
+	 * \brief Provide the total heat load.
+	 * \return Value of the heat load (viscous contribution).
+	 */
+	double GetTotal_NormHeat(void);
   
   /*!
 	 * \brief Store the total heat load.
-	 * \param[in] val_Total_Q - Value of the heat load.
+	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_NormHeatFlux(double val_Total_NormHeatFlux);
+	void SetTotal_Heat(double val_Total_Heat);
+  
+  /*!
+	 * \brief Store the total heat load.
+	 * \param[in] val_Total_Heat - Value of the heat load.
+	 */
+	void SetTotal_NormHeat(double val_Total_NormHeat);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -6006,7 +5934,8 @@ private:
 	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
-  *NormHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
+  *NormHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -6020,7 +5949,8 @@ private:
 	AllBound_CFx_Visc,			/*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_NormHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_NormHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
@@ -6197,8 +6127,8 @@ protected:
 	double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
 	double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
 	double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
-	double *p1_Und_Lapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-	*p2_Und_Lapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
+	double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
+	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
   double Gamma, Gamma_Minus_One;
