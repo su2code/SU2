@@ -3055,8 +3055,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
 		case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
 		case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-    case HEAT_LOAD: cout << "Integrated heat flux objective function." << endl; break;
-		case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
+    case NORM_HEAT_FLUX: cout << "Norm heat flux objective function." << endl; break;
+    case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
 		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
 		}
 
@@ -4667,8 +4667,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
       case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
       case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-      case HEAT_LOAD:             AdjExt = "_Q";    break;
-      case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
+      case NORM_HEAT_FLUX:        AdjExt = "_qnorm"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
       case FREE_SURFACE:          AdjExt = "_fs";   break;
     }
