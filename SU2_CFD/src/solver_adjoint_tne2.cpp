@@ -236,7 +236,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
       case TORQUE_COEFFICIENT:    AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit.dat"; break;
       case FREE_SURFACE:          AdjExt = "_fs.dat"; break;
-      case HEAT_LOAD:             AdjExt = "_Q.dat"; break;
+      case NORM_HEAT_FLUX:        AdjExt = "_qnorm.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
@@ -1124,16 +1124,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta); ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
-          case EQUIVALENT_AREA :
-            WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
-            break;
-          case NEARFIELD_PRESSURE :
-            WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
-            break;
           case FORCE_X_COEFFICIENT :
             if (nDim == 2) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
@@ -1148,31 +1138,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
-          case THRUST_COEFFICIENT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(1);
-            }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
-            break;
-          case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
-            break;
-          case FIGURE_OF_MERIT :
-            if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
-              exit(1);
-            }
-            if (nDim == 3) {
-              ForceProj_Vector[0] = -C_p*invCQ;
-              ForceProj_Vector[1] = -C_p*CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  C_p*CTRCQ2*(y - y_origin);
-            }
-            break;
-          case FREE_SURFACE :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
-            break;
-          case HEAT_LOAD:
+          case NORM_HEAT_FLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -2653,7 +2619,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     PsiRho_Inf[iSpecies] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Phi_Inf[iDim] = 0.0;
-  if (config->GetKind_ObjFunc() == HEAT_LOAD) {
+  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX) {
     PsiE_Inf = -1.0;
     PsiEve_Inf = -1.0;
   } else {
@@ -2694,7 +2660,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
       case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
       case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
       case FREE_SURFACE: AdjExt = "_fs.dat"; break;
-      case HEAT_LOAD: AdjExt = "_Q.dat"; break;
+      case NORM_HEAT_FLUX: AdjExt = "_qnorm.dat"; break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
