@@ -5920,62 +5920,68 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+        
       
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
       
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-      
+     
       /*--- Get the solution at the current disk node ---*/
       U_disk = node[iPoint]->GetSolution();
       
       /*--- Set the residual using the pressure ---*/
       if (compressible)                   Pressure = node[iPoint]->GetPressure();
       if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
-      
+        double delta_P =0;
+        double force = Area*delta_P;
+        double volume = geometry->node[iPoint]->GetVolume();
+        double direction[3]={1.0,0,0};
       Residual[0] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
+        double energy = 0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim+1] = force*volume*direction[iDim];
+            energy+=Residual[iDim+1]*node[iPoint]->GetVelocity(iDim);
+        }
       
-      if (compressible || freesurface) {
-        Residual[nVar-1] = 0.0;
-      }
+        Residual[nDim+1]=energy;
+     
       
       /*--- Add value to the residual ---*/
-      LinSysRes.AddBlock(iPoint, Residual);
+      //LinSysRes.AddBlock(iPoint, Residual);
       
-      /*--- Form Jacobians for implicit computations ---*/
-      if (implicit) {
-        
-        /*--- Initialize jacobian ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-        
-        if (compressible)  {
-          a2 = Gamma-1.0;
-          phi = 0.5*a2*node[iPoint]->GetVelocity2();
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Jacobian_i[0][iVar] = 0.0;
-            Jacobian_i[nDim+1][iVar] = 0.0;
-          }
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
-            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
-          }
-          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-        }
-        if (incompressible || freesurface)  {
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_i[iDim+1][0] = -Normal[iDim];
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        }
-        
-      }
+//      /*--- Form Jacobians for implicit computations ---*/
+//      if (implicit) {
+//        
+//        /*--- Initialize jacobian ---*/
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          for (jVar = 0; jVar < nVar; jVar++)
+//            Jacobian_i[iVar][jVar] = 0.0;
+//        }
+//        
+//        if (compressible)  {
+//          a2 = Gamma-1.0;
+//          phi = 0.5*a2*node[iPoint]->GetVelocity2();
+//          for (iVar = 0; iVar < nVar; iVar++) {
+//            Jacobian_i[0][iVar] = 0.0;
+//            Jacobian_i[nDim+1][iVar] = 0.0;
+//          }
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
+//            for (jDim = 0; jDim < nDim; jDim++)
+//              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
+//            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
+//          }
+//          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+//        }
+//        if (incompressible || freesurface)  {
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            Jacobian_i[iDim+1][0] = -Normal[iDim];
+//          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//        }
+//        
+//      }
     }
   }
   
