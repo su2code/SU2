@@ -24,6 +24,7 @@
 # Mac files
 *.DS_Store
 *.xcuserdatad
+*.xcuserstate
 
 # Compiled Makefiles
 Makefile

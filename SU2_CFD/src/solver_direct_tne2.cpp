@@ -26,8 +26,6 @@
 CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
   
 	/*--- Array initialization ---*/
-	Velocity_Inlet  = NULL;
-	Velocity_Outlet = NULL;
   Velocity_Inf    = NULL;
 	CDrag_Inv       = NULL;
 	CLift_Inv       = NULL;
@@ -43,7 +41,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 	MomentInviscid  = NULL;
 	PrimVar_i       = NULL;
 	PrimVar_j       = NULL;
-	Precon_Mat_inv  = NULL;
+	LowMach_Precontioner  = NULL;
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
   lowerlimit      = NULL;
@@ -71,8 +69,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 #endif
   
 	/*--- Array initialization ---*/
-	Velocity_Inlet  = NULL;
-	Velocity_Outlet = NULL;
   Velocity_Inf    = NULL;
 	CDrag_Inv       = NULL;
 	CLift_Inv       = NULL;
@@ -88,7 +84,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	MomentInviscid  = NULL;
 	PrimVar_i       = NULL;
 	PrimVar_j       = NULL;
-	Precon_Mat_inv  = NULL;
+	LowMach_Precontioner  = NULL;
 	CPressure       = NULL;
 	CHeatTransfer   = NULL;
   lowerlimit      = NULL;
@@ -96,7 +92,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   
   /*--- Set booleans for solver settings ---*/
   restart    = (config->GetRestart() || config->GetRestart_Flow());
-	roe_turkel = false;
   
   /*--- Define constants in the solver structure ---*/	
 	nSpecies     = config->GetnSpecies();
@@ -242,7 +237,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
 	Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
   Total_CEff  = 0.0;
-  Total_Maxq  = 0.0;
+  Total_NormHeat  = 0.0;
   
 	/*--- Read farfield conditions from the config file ---*/
 	Pressure_Inf       = config->GetPressure_FreeStream();
@@ -531,8 +526,6 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 	unsigned short iVar, iMarker;
   
 	/*--- Array initialization ---*/
-	if (Velocity_Inlet != NULL) delete [] Velocity_Inlet;
-	if (Velocity_Outlet != NULL) delete [] Velocity_Outlet;
   if (Velocity_Inf != NULL) delete [] Velocity_Inf;
 	if (CDrag_Inv != NULL) delete [] CDrag_Inv;
 	if (CLift_Inv != NULL) delete [] CLift_Inv;
@@ -551,10 +544,10 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
   
-	if (Precon_Mat_inv != NULL) {
+	if (LowMach_Precontioner != NULL) {
 		for (iVar = 0; iVar < nVar; iVar ++)
-			delete Precon_Mat_inv[iVar];
-		delete [] Precon_Mat_inv;
+			delete LowMach_Precontioner[iVar];
+		delete [] LowMach_Precontioner;
 	}
   
 	if (CPressure != NULL) {
@@ -2175,8 +2168,8 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CDrag = 0.0; Total_CLift = 0.0;  Total_CSideForce = 0.0;
 	Total_CMx = 0.0;   Total_CMy = 0.0;    Total_CMz = 0.0;
 	Total_CFx = 0.0;   Total_CFy = 0.0;    Total_CFz = 0.0;
-	Total_CEff = 0.0;  Total_Q = 0.0;
-  Total_Maxq = 0.0;
+	Total_CEff = 0.0;  Total_Heat = 0.0;
+  Total_NormHeat = 0.0;
 	AllBound_CDrag_Inv = 0.0;        AllBound_CLift_Inv = 0.0;  AllBound_CSideForce_Inv = 0.0;
 	AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;    AllBound_CMz_Inv = 0.0;
 	AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;    AllBound_CFz_Inv = 0.0;
@@ -2895,30 +2888,30 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 	sq_vel = node[iPoint]->GetVelocity2();
   
 	/*---Calculating the inverse of the preconditioning matrix that multiplies the time derivative  */
-	Precon_Mat_inv[0][0] = 0.5*sq_vel;
-	Precon_Mat_inv[0][nVar-1] = 1.0;
+	LowMach_Precontioner[0][0] = 0.5*sq_vel;
+	LowMach_Precontioner[0][nVar-1] = 1.0;
 	for (iDim = 0; iDim < nDim; iDim ++)
-		Precon_Mat_inv[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
+		LowMach_Precontioner[0][1+iDim] = -1.0*U_i[iDim+1]/rho;
   
 	for (iDim = 0; iDim < nDim; iDim ++) {
-		Precon_Mat_inv[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
-		Precon_Mat_inv[iDim+1][nVar-1] = U_i[iDim+1]/rho;
+		LowMach_Precontioner[iDim+1][0] = 0.5*sq_vel*U_i[iDim+1]/rho;
+		LowMach_Precontioner[iDim+1][nVar-1] = U_i[iDim+1]/rho;
 		for (jDim = 0; jDim < nDim; jDim ++) {
-			Precon_Mat_inv[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
+			LowMach_Precontioner[iDim+1][1+jDim] = -1.0*U_i[jDim+1]/rho*U_i[iDim+1]/rho;
 		}
 	}
   
-	Precon_Mat_inv[nVar-1][0] = 0.5*sq_vel*enthalpy;
-	Precon_Mat_inv[nVar-1][nVar-1] = enthalpy;
+	LowMach_Precontioner[nVar-1][0] = 0.5*sq_vel*enthalpy;
+	LowMach_Precontioner[nVar-1][nVar-1] = enthalpy;
 	for (iDim = 0; iDim < nDim; iDim ++)
-		Precon_Mat_inv[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
+		LowMach_Precontioner[nVar-1][1+iDim] = -1.0*U_i[iDim+1]/rho*enthalpy;
   
   
 	for (iVar = 0; iVar < nVar; iVar ++ ) {
 		for (jVar = 0; jVar < nVar; jVar ++ ) {
-			Precon_Mat_inv[iVar][jVar] = (1.0/(Beta2+EPS) - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*Precon_Mat_inv[iVar][jVar];
+			LowMach_Precontioner[iVar][jVar] = (1.0/(Beta2+EPS) - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*LowMach_Precontioner[iVar][jVar];
 			if (iVar == jVar)
-				Precon_Mat_inv[iVar][iVar] += 1.0;
+				LowMach_Precontioner[iVar][iVar] += 1.0;
 		}
 	}
   
@@ -4088,8 +4081,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFy_Visc      = NULL;
 	CFz_Visc      = NULL;
 	CEff_Visc     = NULL;
-  Q_Visc        = NULL;
-  Maxq_Visc     = NULL;
+  Heat_Visc        = NULL;
+  NormHeat_Visc     = NULL;
 	ForceViscous  = NULL;
 	MomentViscous = NULL;
 	CSkinFriction = NULL;
@@ -4100,7 +4093,6 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   
   /*--- Set booleans from settings in CConfig ---*/
   restart = (config->GetRestart() || config->GetRestart_Flow());
-  roe_turkel = false;
   
 	/*--- Define geometry constants in the solver structure ---*/
   nSpecies     = config->GetnSpecies();
@@ -4256,8 +4248,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
 	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
 	Total_CEff  = 0.0;
-  Total_Q     = 0.0;
-  Total_Maxq  = 0.0;
+  Total_Heat     = 0.0;
+  Total_NormHeat  = 0.0;
   
 	ForceViscous  = new double[3];
 	MomentViscous = new double[3];
@@ -4270,8 +4262,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFx_Visc      = new double[nMarker];
 	CFy_Visc      = new double[nMarker];
 	CFz_Visc      = new double[nMarker];
-  Q_Visc        = new double[nMarker];
-  Maxq_Visc     = new double[nMarker];
+  Heat_Visc        = new double[nMarker];
+  NormHeat_Visc     = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
 	Pressure_Inf       = config->GetPressure_FreeStream();
@@ -4556,8 +4548,8 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 	if (CFy_Visc != NULL) delete [] CFy_Visc;
 	if (CFz_Visc != NULL) delete [] CFz_Visc;
 	if (CEff_Visc != NULL) delete [] CEff_Visc;
-  if (Q_Visc != NULL) delete [] Q_Visc;
-  if (Maxq_Visc != NULL) delete [] Maxq_Visc;
+  if (Heat_Visc != NULL) delete [] Heat_Visc;
+  if (NormHeat_Visc != NULL) delete [] NormHeat_Visc;
 	if (ForceViscous != NULL) delete [] ForceViscous;
 	if (MomentViscous != NULL) delete [] MomentViscous;
   
@@ -4933,7 +4925,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
 	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
-	AllBound_Q_Visc     = 0.0; AllBound_Maxq_Visc  = 0.0;
+	AllBound_Heat_Visc     = 0.0; AllBound_NormHeat_Visc  = 0.0;
 	AllBound_CEff_Visc  = 0.0;
   
 	/*--- Vector and variables initialization ---*/
@@ -4948,7 +4940,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		Boundary   = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    Maxq_Visc[iMarker] = 0.0;
+    NormHeat_Visc[iMarker] = 0.0;
 		if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
       
 			for (iDim = 0; iDim < nDim; iDim++) ForceViscous[iDim] = 0.0;
@@ -5029,10 +5021,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
         CHeatTransfer[iMarker][iVertex] = (ThermalCond*dTn + ThermalCond_ve*dTven);
 //				CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-        HeatLoad += CHeatTransfer[iMarker][iVertex]*Area;
         
-        if (CHeatTransfer[iMarker][iVertex] > Maxq_Visc[iMarker])
-          Maxq_Visc[iMarker] = CHeatTransfer[iMarker][iVertex];
+        NormHeat_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex]*Area,8.0);
         
 				/*--- Compute viscous forces, and moment using the stress tensor ---*/
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
@@ -5063,7 +5053,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker]   = ForceViscous[0];
 					CFy_Visc[iMarker]   = ForceViscous[1];
 					CFz_Visc[iMarker]   = 0.0;
-          Q_Visc[iMarker]     = HeatLoad;
+          NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker], 1.0/8.0);
+          Heat_Visc[iMarker]     = HeatLoad;
 				}
 				if (nDim == 3) {
 					CDrag_Visc[iMarker] = ForceViscous[0]*cos(Alpha)*cos(Beta)
@@ -5078,7 +5069,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker]   = ForceViscous[0];
 					CFy_Visc[iMarker]   = ForceViscous[1];
 					CFz_Visc[iMarker]   = ForceViscous[2];
-          Q_Visc[iMarker]     = HeatLoad;
+          NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker], 1.0/8.0);
 				}
         
 				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
@@ -5090,9 +5081,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				AllBound_CFx_Visc   += CFx_Visc[iMarker];
 				AllBound_CFy_Visc   += CFy_Visc[iMarker];
 				AllBound_CFz_Visc   += CFz_Visc[iMarker];
-        AllBound_Q_Visc     += Q_Visc[iMarker];
-        if (Maxq_Visc[iMarker] > AllBound_Maxq_Visc)
-          AllBound_Maxq_Visc = Maxq_Visc[iMarker];
+        AllBound_NormHeat_Visc += NormHeat_Visc[iMarker];
+        AllBound_Heat_Visc     += Heat_Visc[iMarker];
 			}
 		}
 	}
@@ -5105,8 +5095,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFx   += AllBound_CFx_Visc;
 	Total_CFy   += AllBound_CFy_Visc;
 	Total_CFz   += AllBound_CFz_Visc;
-  Total_Q     += AllBound_Q_Visc;
-  Total_Maxq   = AllBound_Maxq_Visc;
+  Total_Heat     += AllBound_Heat_Visc;
+  Total_NormHeat   = AllBound_NormHeat_Visc;
   
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Tau[iDim];

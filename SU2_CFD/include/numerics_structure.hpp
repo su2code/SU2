@@ -31,8 +31,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
-#include "nnet.hpp"
-#include "functions_turbulent.hpp"
+#include "numerics_machine_learning.hpp"
+#include "numerics_machine_learning_turbulent.hpp"
 #include "variable_structure.hpp"
 
 using namespace std;
@@ -3919,28 +3919,6 @@ public:
 	 */
     double GetCrossProduction(void);
 };
-
-
-class CSANondimInputs{
-private:
-  int nDim;
-public:
-  CSANondimInputs(int);
-  ~CSANondimInputs();
-  void Set(SpalartAllmarasInputs*);
-  void NondimensionalizeSource(int,double*);
-  void DimensionalizeSource(int,double*);
-  double Chi;
-  double OmegaNondim;
-  double OmegaBar;
-  double SourceNondim;
-  double NuGradNondim;
-  double Turb_Kin_Visc_Grad_Norm_Bar;
-  double * DNuHatDXBar;
-  double NuHatGradNorm;
-  double NuHatGradNormBar;
-};
-
 
 /*!
  * \class CSourcePieceWise_TurbML
