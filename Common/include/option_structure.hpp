@@ -651,8 +651,8 @@ enum ENUM_OBJECTIVE {
 	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
   CLEARANCE = 22,       /*!< \brief Clearance. */
   MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
-  HEAT_LOAD = 24,        /*!< \brief Integrated heat flux (heat load). */
-  MAX_HEAT_FLUX = 25,    /*!< \brief Maximum heat flux. */
+  NORM_HEAT = 25,    /*!< \brief Norm heat flux. */
+  HEAT = 31,    /*!< \brief Norm heat flux. */
   MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
 	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
 	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
@@ -676,7 +676,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
-("HEAT_LOAD", HEAT_LOAD)
+("NORM_HEAT", NORM_HEAT)
+("HEAT", HEAT)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
 ("TOTAL_VOLUME", TOTAL_VOLUME)

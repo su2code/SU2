@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#include <iomanip> 
 #include <fstream>
 #include <cmath>
 #include <sstream>
@@ -11,6 +12,7 @@
 #include <json/json.h>
 #endif
 
+#include "../include/numerics_machine_learning_turbulent.hpp"
 
 using namespace std;
 
@@ -120,7 +122,6 @@ private:
   int maxNeurons; // Number of neurons in the largest layer
   int nLayers;
   CNeuron ***neurons; // Array of arrays to pointers to neuron
-  double*** parameters; // Array of parameters for each neuron
   int* nNeuronsInLayer; //one list for each layer
   int** nParameters; // Number of parameters for the neuron
 //  int inputDim;
@@ -139,4 +140,26 @@ public:
 //	int InputDim();
 //	int OutputDim();
 	void Predict(double *, double *);
+    double*** parameters; // Array of parameters for each neuron
 };
+
+class CSANondimInputs{
+private:
+  int nDim;
+public:
+  CSANondimInputs(int);
+  ~CSANondimInputs();
+  void Set(SpalartAllmarasInputs*);
+  void NondimensionalizeSource(int,double*);
+  void DimensionalizeSource(int,double*);
+  double Chi;
+  double OmegaNondim;
+  double OmegaBar;
+  double SourceNondim;
+  double NuGradNondim;
+  double * DNuHatDXBar;
+  double NuHatGradNorm;
+  double NuHatGradNormBar;
+};
+
+#include "numerics_machine_learning.inl"

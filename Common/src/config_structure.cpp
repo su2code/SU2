@@ -611,7 +611,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
 	/* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
 	AddScalarOption("GEO_NUMBER_SECTIONS", nSections, 5);
-  	/* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
+  /* DESCRIPTION: Output sectional forces for specified markers. */
+	AddSpecialOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, SetBoolOption, false);
+  /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
 	AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
 	/* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
 	AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
@@ -709,8 +711,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
 	AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
-  /* DESCRIPTION: Output sectional forces for specified markers. */
-	AddSpecialOption("WRT_SECTIONAL_FORCES", Wrt_Sectional_Forces, SetBoolOption, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
   AddSpecialOption("WRT_1D_OUTPUT", Wrt_1D_Output, SetBoolOption, false);
 
@@ -3063,8 +3063,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
 		case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
 		case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-    case HEAT_LOAD: cout << "Integrated heat flux objective function." << endl; break;
-		case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
+    case NORM_HEAT: cout << "Norm heat flux objective function." << endl; break;
+    case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
 		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
 		}
 
@@ -4684,8 +4684,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz";  break;
       case THRUST_COEFFICIENT:    AdjExt = "_ct";   break;
       case TORQUE_COEFFICIENT:    AdjExt = "_cq";   break;
-      case HEAT_LOAD:             AdjExt = "_Q";    break;
-      case MAX_HEAT_FLUX:         AdjExt = "_qmax"; break;
+      case HEAT:                  AdjExt = "_heat"; break;
+      case NORM_HEAT:             AdjExt = "_normheat"; break;
       case FIGURE_OF_MERIT:       AdjExt = "_merit";break;
       case FREE_SURFACE:          AdjExt = "_fs";   break;
     }
