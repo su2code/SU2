@@ -329,7 +329,7 @@ int main(int argc, char *argv[]) {
         case HEAT :
 					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
 					cout << "Heat load gradient: "<< Gradient << "." << endl; break;
-        case NORMAL_HEAT :
+        case NORM_HEAT :
 					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
 					cout << "Heat load gradient: "<< Gradient << "." << endl; break;
           
