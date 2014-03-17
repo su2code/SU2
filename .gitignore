@@ -25,6 +25,7 @@
 *.DS_Store
 *.xcuserdatad
 *.xcuserstate
+UserInterfaceState.xcuserstate
 
 # Compiled Makefiles
 Makefile

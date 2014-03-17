@@ -419,13 +419,20 @@ public:
 	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
 	 */
 	virtual void SetTecPlot(char config_filename[200]);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
+	 */
+	virtual void SetTecPlot(char config_filename[200], bool new_file);
 
 	/*! 
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
+   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
+   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
+	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetBoundTecPlot(CConfig *config, char mesh_filename[200]);
+	virtual void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -976,24 +983,27 @@ public:
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
+   * \param[in] new_file - Create a new file.
 	 */
-	void SetTecPlot(char config_filename[200]);
+	void SetTecPlot(char config_filename[200], bool new_file);
 
 	/*! 
 	 * \brief Set the output file for boundaries in Tecplot
 	 * \param[in] config - Definition of the particular problem.		 
 	 * \param[in] mesh_filename - Name of the file where the Tecplot 
-	 *            information is going to be stored.
+	 *            information is going to be stored.   
+   * \param[in] new_file - Create a new file.
 	 */
-	void SetBoundTecPlot(CConfig *config, char mesh_filename[200]);
+	void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
 
 	/*! 
 	 * \brief Set the output file for boundaries in STL CAD format
 	 * \param[in] config - Definition of the particular problem.		 
 	 * \param[in] mesh_filename - Name of the file where the STL 
 	 *            information is going to be stored.
+   * \param[in] new_file - Create a new file.
 	 */
-	void SetBoundSTL(CConfig *config, char mesh_filename[200]);
+	void SetBoundSTL(char mesh_filename[200], bool new_file, CConfig *config) ;
 
 	/*! 
 	 * \brief Check the volume element orientation.

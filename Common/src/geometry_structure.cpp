@@ -4608,7 +4608,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   strcat(cstr,buffer);
   
   Tecplot_File.open(cstr, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+  Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
   
   if (nDim == 2) {
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
@@ -4781,7 +4781,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
     strcat(cstr,buffer);
     
     Tecplot_File.open(cstr, ios::out);
-    Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+    Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
     Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
     Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
     Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
@@ -5134,73 +5134,6 @@ void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filenam
   
 }
 
-void CPhysicalGeometry::SetTecPlot(char mesh_filename[200]) {
-  unsigned long iElem, iPoint;
-  unsigned short iDim;
-  ofstream Tecplot_File;
-  
-  Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the volumetric grid\"" << endl;
-  
-  if (nDim == 2) {
-    Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
-    Tecplot_File << "ZONE NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-  }
-  if (nDim == 3) {
-    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
-    Tecplot_File << "ZONE NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
-  }
-  
-  for(iPoint = 0; iPoint < nPoint; iPoint++) {
-    for(iDim = 0; iDim < nDim; iDim++)
-      Tecplot_File << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-    Tecplot_File << "\n";
-  }
-  
-  for(iElem = 0; iElem < nElem; iElem++) {
-    if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
-      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
-      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 <<" "<<
-      elem[iElem]->GetNode(6)+1 <<" "<< elem[iElem]->GetNode(7)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == WEDGE) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(1)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
-      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 << endl;
-    }
-  }
-  
-  Tecplot_File.close();
-}
-
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) {
   unsigned short iSmooth, nneigh, iMarker;
   double *Coord_Old, *Coord_Sum, *Coord, *Coord_i, *Coord_j, Position_Plane = 0.0;
@@ -5351,13 +5284,92 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
   
 }
 
-void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200]) {
+void CPhysicalGeometry::SetTecPlot(char mesh_filename[200], bool new_file) {
+  
+  unsigned long iElem, iPoint;
+  unsigned short iDim;
+  ofstream Tecplot_File;
+  
+  /*--- Open the tecplot file and write the header ---*/
+  
+  if (new_file) {
+    Tecplot_File.open(mesh_filename, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the volumetric grid\"" << endl;
+    if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+    if (nDim == 3) Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+  }
+  else Tecplot_File.open(mesh_filename, ios::out | ios::app);
+
+  Tecplot_File << "ZONE T= ";
+  if (new_file) Tecplot_File << "\"Original grid\", ";
+  else Tecplot_File << "\"Deformed grid\", ";
+  Tecplot_File << "NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING= POINT";
+  if (nDim == 2) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
+  if (nDim == 3) Tecplot_File << ", ZONETYPE= FEBRICK"<< endl;
+  
+  /*--- Adding coordinates ---*/
+
+  for(iPoint = 0; iPoint < nPoint; iPoint++) {
+    for(iDim = 0; iDim < nDim; iDim++)
+      Tecplot_File << scientific << node[iPoint]->GetCoord(iDim) << "\t";
+    Tecplot_File << "\n";
+  }
+  
+  /*--- Adding conectivity ---*/
+
+  for(iElem = 0; iElem < nElem; iElem++) {
+    if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
+      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
+      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 <<" "<<
+      elem[iElem]->GetNode(6)+1 <<" "<< elem[iElem]->GetNode(7)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == WEDGE) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(1)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
+      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 << endl;
+    }
+  }
+  
+  Tecplot_File.close();
+}
+
+void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config) {
+  
   ofstream Tecplot_File;
   unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
   unsigned short Coord_i, iMarker;
   
   /*--- It is important to do a renumering to don't add points
    that do not belong to the surfaces ---*/
+  
   PointSurface = new unsigned long[nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     if (node[iPoint]->GetBoundary()) {
@@ -5366,6 +5378,7 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
     }
   
   /*--- Compute the total number of elements ---*/
+  
   Total_nElem_Bound = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -5373,23 +5386,29 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
     }
   }
   
-  /*--- Open the tecplot file ---*/
-  Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the surface grid\"" << endl;
+  /*--- Open the tecplot file and write the header ---*/
+  
+  if (new_file) {
+    Tecplot_File.open(mesh_filename, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the surface grid\"" << endl;
+      if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+      if (nDim == 3) Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+  }
+  else Tecplot_File.open(mesh_filename, ios::out | ios::app);
   
   if (Total_nElem_Bound != 0) {
     
     /*--- Write the header of the file ---*/
-    if (nDim == 2) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
-      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-    }
-    if (nDim == 3) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
-      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-    }
+    
+    Tecplot_File << "ZONE T= ";
+    if (new_file) Tecplot_File << "\"Original grid\", ";
+    else Tecplot_File << "\"Deformed grid\", ";
+    Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
+    if (nDim == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
+    if (nDim == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
     
     /*--- Only write the coordiantes of the points that are on the surfaces ---*/
+    
     if (nDim == 3) {
       for(iPoint = 0; iPoint < nPoint; iPoint++)
         if (node[iPoint]->GetBoundary()) {
@@ -5408,6 +5427,7 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
     }
     
     /*--- Write the cells using the new numbering ---*/
+    
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -5432,28 +5452,30 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
         }
   }
   else {
+    
     /*--- No elements in the surface ---*/
+    
     if (nDim == 2) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
       Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
       Tecplot_File << "0.0 0.0"<< endl;
       Tecplot_File << "1 1"<< endl;
     }
     if (nDim == 3) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
       Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
       Tecplot_File << "0.0 0.0 0.0"<< endl;
       Tecplot_File << "1 1 1 1"<< endl;
     }
   }
   
-  
   /*--- Dealocate memory and close the file ---*/
+  
   delete[] PointSurface;
   Tecplot_File.close();
+  
 }
 
-void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
+void CPhysicalGeometry::SetBoundSTL(char mesh_filename[200], bool new_file, CConfig *config) {
+  
   ofstream STL_File;
   unsigned long this_node, iNode, nNode, iElem;
   unsigned short iDim, iMarker;
@@ -5474,27 +5496,30 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
    --- */
   
   /*--- Open the STL file ---*/
-  STL_File.open(mesh_filename, ios::out);
+  
+  if (new_file) STL_File.open(mesh_filename, ios::out);
+  else STL_File.open(mesh_filename, ios::out | ios::app);
   
   /*--- Write the header of the file ---*/
+  
   STL_File << "solid surface_mesh" << endl;
   
   /*--- Write facets of surface markers ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_Plotting(iMarker) == YES)
       for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
         
         /*--- number of nodes for this elemnt ---*/
+        
         nNode = bound[iMarker][iElem]->GetnNodes();
         
         /*--- Calculate Normal Vector ---*/
+        
         for (iDim=0; iDim<nDim; iDim++){
           p[0] = node[bound[iMarker][iElem]->GetNode(0)]      ->GetCoord(iDim);
           p[1] = node[bound[iMarker][iElem]->GetNode(1)]      ->GetCoord(iDim);
           p[2] = node[bound[iMarker][iElem]->GetNode(nNode-1)]->GetCoord(iDim);
-          /*cout << p[0] <<endl;
-           cout << p[1] <<endl;
-           cout << p[2] <<endl;*/
           u[iDim] = p[1]-p[0];
           v[iDim] = p[2]-p[0];
         }
@@ -5503,12 +5528,9 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
         n[1] = u[2]*v[0]-u[0]*v[2];
         n[2] = u[0]*v[1]-u[1]*v[0];
         a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
-        /*cout << n[0] <<endl;
-         cout << n[1] <<endl;
-         cout << n[2] <<endl;
-         cout << a << endl;*/
         
         /*--- Print normal vector ---*/
+        
         STL_File << "  facet normal ";
         for (iDim=0; iDim<nDim; iDim++){
           STL_File << n[iDim]/a << " ";
@@ -5516,9 +5538,11 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
         STL_File << endl;
         
         /*--- STL Facet Loop --*/
+        
         STL_File << "    outer loop" << endl;
         
         /*--- Print Nodes for Facet ---*/
+        
         for(iNode=0; iNode<nNode; iNode++) {
           this_node = bound[iMarker][iElem]->GetNode(iNode);
           STL_File << "      vertex ";
@@ -5533,10 +5557,13 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
       }
   
   /*--- Done with Surface Mesh ---*/
+  
   STL_File << "endsolid" << endl;
   
   /*--- Close the file ---*/
+  
   STL_File.close();
+  
 }
 
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
@@ -11340,7 +11367,7 @@ void CDomainGeometry::SetTecPlot(char mesh_filename[200]) {
   ofstream Tecplot_File;
   
   Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the volumetric grid\"" << endl;
+  Tecplot_File << "TITLE= \"Visualization of the volumetric grid\"" << endl;
   
   if (nDim == 2) {
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
@@ -11929,7 +11956,7 @@ void CPeriodicGeometry::SetTecPlot(char mesh_filename[200]) {
   ofstream Tecplot_File;
   
   Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the volumetric grid\"" << endl;
+  Tecplot_File << "TITLE= \"Visualization of the volumetric grid\"" << endl;
   
   if (nDim == 2) {
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
