@@ -5579,15 +5579,18 @@ public:
  */
 class CAvgGrad_AdjTNE2 : public CNumerics {
 private:
-	double *Velocity_i;	/*!< \brief Auxiliary vector for storing the velocity of point i. */
-	double *Velocity_j;	/*!< \brief Auxiliary vector for storing the velocity of point j. */
-	double *Mean_Velocity;
+//	double *Velocity_i;	/*!< \brief Auxiliary vector for storing the velocity of point i. */
+//	double *Velocity_j;	/*!< \brief Auxiliary vector for storing the velocity of point j. */
+  double *vel, *vel_i, *vel_j;
+//	double *Mean_Velocity;
 	double *Mean_GradPsiE;	/*!< \brief Counter for dimensions of the problem. */
 	double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
   double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
 	double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
+  double **SigmaPhi;
+  double **SigmaPsiE;
   bool implicit;			/*!< \brief Implicit calculus. */
-  double **Dxx, **Dxy, **Dxz, **Dyx, **Dyy, **Dyz, **Dzx, **Dzy, **Dzz;
+//  double **Dxx, **Dxy, **Dxz, **Dyx, **Dyy, **Dyz, **Dzx, **Dzy, **Dzz;
 public:
   
 	/*!
