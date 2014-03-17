@@ -381,10 +381,10 @@ public:
 	
 	/*! 
 	 * \brief Set the tecplot file of the FFD chuck structure.
-	 * \param[in] FFDBox_filename - Name of the output file with the FFD FFDBox structure.
-	 * \param[in] new_file - New file or add to the existing file.
+	 * \param[in] iFFDBox - Index of the FFD box.
+	 * \param[in] original - Original box (before deformation).
 	 */		
-	void SetTecplot(char FFDBox_filename[200], bool new_file);
+	void SetTecplot(unsigned short iFFDBox, bool original);
 	
 	/*! 
 	 * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of

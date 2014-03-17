@@ -3582,10 +3582,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	cout << endl <<"-------------------------- Output information ---------------------------" << endl;
 
-	if ((Output_FileFormat==STL) && (val_software != SU2_MDC)){
-		cerr << "Error: STL output file format only valid for SU2_MDC" << endl; throw(-1);
-	}
-
 	if (val_software == SU2_CFD) {
 
 		cout << "Writing a flow solution every " << Wrt_Sol_Freq <<" iterations."<<endl;
