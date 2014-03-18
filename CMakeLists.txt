@@ -33,3 +33,28 @@ ADD_SUBDIRECTORY ( SU2_MDC )
 ADD_SUBDIRECTORY ( SU2_PBC )
 ADD_SUBDIRECTORY ( SU2_SOL )
 ADD_SUBDIRECTORY ( SU2_UMC )
+
+INSTALL ( FILES
+  SU2_PY/2DChannel.py
+  SU2_PY/3DChannel.py
+  SU2_PY/compute_polar.py
+  SU2_PY/config_gui.py
+  SU2_PY/continuous_adjoint.py
+  SU2_PY/filter_adjoint.py
+  SU2_PY/finite_differences.py
+  SU2_PY/merge_solution.py
+  SU2_PY/mesh_adaptation.py
+  SU2_PY/mesh_deformation.py
+  SU2_PY/package_tests.py
+  SU2_PY/parallel_computation.py
+  SU2_PY/patient_designspace.py
+  SU2_PY/shape_optimization.py
+  DESTINATION
+  bin
+)
+
+INSTALL ( DIRECTORY
+  SU2_PY/SU2
+  DESTINATION
+  bin
+  )
