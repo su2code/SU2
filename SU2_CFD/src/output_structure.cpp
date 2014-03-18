@@ -5501,13 +5501,18 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
       
       /*--- Compute the airfoil sections ---*/
+      
       geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, Pressure,
                                        Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
                                        Pressure_Airfoil, true, config);
       
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+        cout << "Please check the config file, the section "<< iSection+1 <<" has not been detected." << endl;
+      }
+      
       /*--- Output the pressure on each section (tecplot format) ---*/
       
-      if (rank == MASTER_NODE) {
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
         
         /*--- Write Cp at each section ---*/
         
