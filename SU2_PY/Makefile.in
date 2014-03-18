@@ -66,7 +66,8 @@ subdir = SU2_PY
 DIST_COMMON = $(nobase_dist_mypkg_DATA) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/tecio.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/tecio.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -161,8 +162,8 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
-METIS_CXX = @METIS_CXX@
-METIS_LD = @METIS_LD@
+METIS_INCLUDE = @METIS_INCLUDE@
+METIS_LIB = @METIS_LIB@
 MKDIR_P = @MKDIR_P@
 MUTATIONPP_CXX = @MUTATIONPP_CXX@
 MUTATIONPP_LD = @MUTATIONPP_LD@

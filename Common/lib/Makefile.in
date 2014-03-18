@@ -66,7 +66,8 @@ subdir = Common/lib
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/tecio.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/tecio.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -186,8 +187,8 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
-METIS_CXX = @METIS_CXX@
-METIS_LD = @METIS_LD@
+METIS_INCLUDE = @METIS_INCLUDE@
+METIS_LIB = @METIS_LIB@
 MKDIR_P = @MKDIR_P@
 MUTATIONPP_CXX = @MUTATIONPP_CXX@
 MUTATIONPP_LD = @MUTATIONPP_LD@
@@ -299,20 +300,14 @@ libSU2_a_SOURCES = \
 		../src/matrix_structure.cpp
 
 
+# always link to built dependencies from ./contrib
+
 # if BUILD_CGNS
 # endif
 
-# if BUILD_METIS
-# endif
-
-# if BUILD_TECIO
-# endif
-
 # if BUILD_MUTATIONPP
-libSU2_a_CXXFLAGS = @CGNS_CXX@ @METIS_CXX@ @su2_contrib_INCLUDES@ \
-	@MUTATIONPP_CXX@ $(am__empty)
-libSU2_a_LIBADD = @CGNS_LD@ @METIS_LD@ @su2_contrib_LIBS@ \
-	@MUTATIONPP_LD@ $(am__empty)
+libSU2_a_CXXFLAGS = @su2_contrib_INCLUDES@ @CGNS_CXX@ @MUTATIONPP_CXX@
+libSU2_a_LIBADD = @su2_contrib_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@
 all: all-am
 
 .SUFFIXES:

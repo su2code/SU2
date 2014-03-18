@@ -20,8 +20,8 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
 # AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
-# AC_PROG_CC
-# AM_PROG_CC_C_O
+AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 
@@ -54,6 +54,17 @@ else
 fi
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
 AC_CONFIG_FILES([contrib/tecio/Makefile])
+
+# Metis
+CONFIGURE_METIS
+if (test $enablemetis = yes); then
+  su2_contrib_INCLUDES="$METIS_INCLUDE $su2_contrib_INCLUDES"
+  su2_contrib_LIBS="$METIS_LIB $su2_contrib_LIBS"
+else
+  su2_contrib_INCLUDES="-DNO_METIS $su2_contrib_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
+AC_CONFIG_FILES([contrib/metis/Makefile])
 
 
 
@@ -165,60 +176,6 @@ else
 fi
 AC_SUBST([CGNS_CXX])
 AC_SUBST([CGNS_LD])
-
-###########################
-
-# check for lib
-METISlib=libmetis.a
-METISheader=metis.h
-METISversion=
-have_METIS="no"
-
-if test "$with_Metis_lib" != "no"
-then
-  	AC_CHECK_FILE([$with_Metis_lib/$METISlib],[have_METIS="yes"],[have_METIS="no"])
-	if test "$have_METIS" == "no"
-	then
-		AC_MSG_ERROR([METIS requested but library file not found.])
-	fi
-fi
-
-# check for header
-if test "$have_METIS" != "no"
-then
-	if test "$with_Metis_include" != "no"
-	then
-		AC_CHECK_FILE([$with_Metis_include/$METISheader],[have_METIS="yes"],[have_METIS="no"])
-		if test "$have_METIS" == "no"
-		then
-			AC_MSG_ERROR([METIS requested but header file not found.])
-		fi
-	else
-		have_METIS="no"
-	fi
-fi
-
-# METIS version check
-if test "$with_Metis_version" == "5"
-then
-	METISversion=-DMETIS_5
-fi
-
-if test "$have_METIS" != "no"
-then
-  	AM_CONDITIONAL(BUILD_METIS,true)
-	METIS_CXX="-I"$with_Metis_include" "$METISversion""
-	METIS_LD="$with_Metis_lib"/$METISlib
-else
-	AM_CONDITIONAL(BUILD_METIS,false)
-	METIS_CXX=-DNO_METIS
-	METIS_LD=
-
-fi
-AC_SUBST([METIS_CXX])
-AC_SUBST([METIS_LD])
-
-
 
 ##########################
 
@@ -365,7 +322,7 @@ Build Configuration Summary:
     Linker flags:         ${LDFLAGS}
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
-    Metis support:        $have_METIS
+    Metis support:        $enablemetis
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
