@@ -9,7 +9,7 @@
 #
 ##########################
 
-AC_INIT([SU^2], [3.0.0 "eagle"], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [3.0.0], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -89,10 +89,10 @@ AC_ARG_WITH(Mutationpp-include,
    	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]),
 	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
 AC_ARG_WITH(Jsoncpp-lib,
-   	AS_HELP_STRING([--with-Jsoncpp-lib[=ARG]], [Jsoncpp library directory, ARG = path to jsoncpp_SYS.a]), 
+   	AS_HELP_STRING([--with-Jsoncpp-lib[=ARG]], [Jsoncpp library directory, ARG = path to jsoncpp_SYS.a]),
 	[with_Jsoncpp_lib=$withval], [with_Jsoncpp_lib="no"])
 AC_ARG_WITH(Jsoncpp-include,
-   	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]), 
+   	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]),
 	[with_Jsoncpp_include=$withval], [with_Jsoncpp_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
@@ -271,9 +271,9 @@ Jsoncpplib=libjson.a
 Jsoncppheader=json/json.h
 have_Jsoncpp="no"
 
-if test "$with_Jsoncpp_lib" != "no" 
+if test "$with_Jsoncpp_lib" != "no"
 then
-  	AC_CHECK_FILE([$with_Jsoncpp_lib/$Jsoncpplib],[have_Jsoncpp="yes"],[have_Jsoncpp="no"])   
+  	AC_CHECK_FILE([$with_Jsoncpp_lib/$Jsoncpplib],[have_Jsoncpp="yes"],[have_Jsoncpp="no"])
 	if test "$have_Jsoncpp" == "no"
 	then
 		AC_MSG_ERROR([Jsoncpp requested but library file not found.])
@@ -285,14 +285,14 @@ if test "$have_Jsoncpp" != "no"
 then
 	if test "$with_Jsoncpp_include" != "no"
 	then
-		AC_CHECK_FILE([$with_Jsoncpp_include/$Jsoncppheader],[have_Jsoncpp='yes'],[have_Jsoncpp='no']) 
+		AC_CHECK_FILE([$with_Jsoncpp_include/$Jsoncppheader],[have_Jsoncpp='yes'],[have_Jsoncpp='no'])
 		if test "$have_Jsoncpp" == "no"
 		then
 			AC_MSG_ERROR([Jsoncpp requested but header file not found.])
 		fi
 	else
 		have_Jsoncpp="no"
-	fi  
+	fi
 fi
 
 if test "$have_Jsoncpp" != "no"

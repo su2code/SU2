@@ -300,6 +300,7 @@ nobase_dist_mypkg_DATA = \
     SU2/util/which.py \
     SU2/util/__init__.py
 
+EXTRA_DIST = $(bin_SCRIPTS)
 all: all-am
 
 .SUFFIXES:
