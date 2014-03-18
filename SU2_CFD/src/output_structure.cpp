@@ -4128,9 +4128,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         }
 
         if (output_1d) {
-          OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDStagPressure();
-          OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDMach();
-          OneD_Temp=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDTemperature();
+          OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+          OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Pt();
+          OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_M();
+          OneD_Temp=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_T();
         }
         
         /*--- Flow Residuals ---*/
@@ -5440,10 +5441,9 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   /*--- Set Area Averaged Stagnation Pressure Output ---*/
   
-//  solver_container->SetOneD_Pt(AveragePressure);
-//  solver_container->SetOneD_M(AverageMach);
-//  solver_container->SetOneD_T(AverageTemperature);
-  
+  solver_container->SetOneD_Pt(AveragePressure);
+  solver_container->SetOneD_M(AverageMach);
+  solver_container->SetOneD_T(AverageTemperature);
 }
 
 void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
