@@ -5941,8 +5941,9 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
       Residual[0] = 0.0;
         double energy = 0;
         for (iDim = 0; iDim < nDim; iDim++){
-          Residual[iDim+1] = force*volume*direction[iDim];
+          Residual[iDim+1] = force*direction[iDim];
             energy+=Residual[iDim+1]*node[iPoint]->GetVelocity(iDim);
+            //cout<<Residual[iDim+1]<<"  "<<iDim<<"  "<<iPoint<<endl;
         }
       
         Residual[nDim+1]=energy;
