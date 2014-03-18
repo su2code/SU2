@@ -59,3 +59,12 @@ ADD_EXECUTABLE ( SU2_CFD
   src/variable_structure.cpp
   src/variable_template.cpp
   )
+
+TARGET_LINK_LIBRARIES ( SU2_CFD
+  SU2
+  ${JSONCPP_json_LIBRARY}
+  ${CGNS_cgns_LIBRARY}
+  ${Metis_metis_LIBRARY}
+  ${MPI_EXTRA_LIBRARY}
+  ${MPI_LIBRARY}
+  )
