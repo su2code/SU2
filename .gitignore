@@ -8,6 +8,7 @@
 *.dirstamp
 *.log
 *.status
+autom4te.cache
 
 # Compiled Dynamic libraries
 *.so
@@ -32,3 +33,8 @@ Makefile
 
 # Emacs temporary files
 *~
+
+# installed autotools
+contrib/autotools/bin
+contrib/autotools/include
+contrib/autotools/share
