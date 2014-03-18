@@ -5108,10 +5108,11 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
 
 void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CNumerics *conv_numerics,
-                                    CNumerics *visc_numerics, CConfig *config,
-                                    unsigned short val_marker) {
+                                 CSolver **solver_container,
+                                 CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics,
+                                 CConfig *config,
+                                 unsigned short val_marker) {
 //  bool implicit;
 //  unsigned short iDim, jDim, iVar;
 //  unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
@@ -5129,7 +5130,8 @@ void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,
 //  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Call the Euler wall routine ---*/
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config,
+                val_marker);
   
 //  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
 //  visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );

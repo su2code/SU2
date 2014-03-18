@@ -1793,7 +1793,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (transition) ThirdIndex=TRANS_SOL;
       else ThirdIndex = NONE;
       break;
-    case TNE2_EULER :
+    case TNE2_EULER : case TNE2_NAVIER_STOKES:
       FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
       break;
     case POISSON_EQUATION:
@@ -1973,9 +1973,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
   }
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == ADJ_RANS)  || (Kind_Solver == ADJ_TNE2_EULER)    ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER)         ||
+      (Kind_Solver == ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_RANS)            ) {
     
     Aux_Sens = new double [geometry->GetnPointDomain()];
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
@@ -1986,7 +1986,20 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex);
         }
       }
+  }
+  
+  if ((Kind_Solver == ADJ_TNE2_EULER)         ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
     
+    Aux_Sens = new double [geometry->GetnPointDomain()];
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Sens[iPoint] = solver[ADJTNE2_SOL]->GetCSensitivity(iMarker,iVertex);
+        }
+      }
   }
   
   /*--- Loop over all points in the mesh, but only write data
@@ -2173,13 +2186,20 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           break;
           
         case ADJ_EULER:      case ADJ_NAVIER_STOKES:     case ADJ_RANS:
-        case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
           
           Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
           if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
           { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(); jVar++; }
           if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
           { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
+          break;
+          
+        case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+          Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
+          if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
+          { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetSensor(); jVar++; }
+          if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
+          { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
           break;
           
         case LINEAR_ELASTICITY:
@@ -2278,9 +2298,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     Aux_yPlus = new double[geometry->GetnPoint()];
   }
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_RANS)  || (Kind_Solver == ADJ_TNE2_EULER)    ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)                            ) {
     Aux_Sens = new double[geometry->GetnPoint()];
-    
   }
   
   /*--- Prepare the receive buffers in the master node only. ---*/
@@ -3163,7 +3184,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Communicate the surface sensitivity ---*/
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER)         ||
+      (Kind_Solver == ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_RANS)          ||
+      (Kind_Solver == ADJ_TNE2_EULER)    ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
     
     /*--- First, loop through the mesh in order to find and store the
      value of the surface sensitivity at any surface nodes. They
@@ -4224,8 +4249,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         Total_CFy         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFz();
         if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
-          Total_Heat           = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Heat();
-          Total_NormHeat        = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_NormHeat();
+//          Total_Heat      = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Heat();
+//          Total_NormHeat  = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_NormHeat();
+          Total_Heat = 0.0;
+          Total_NormHeat = 0.0;
         }
         /*--- Residuals ---*/
         
@@ -4441,7 +4468,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             /*--- Direct coefficients ---*/
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                        Total_CEff, Total_Heat, Total_NormHeat);

@@ -702,32 +702,49 @@ bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
   
   // NOTE: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties().
   
-  unsigned short iSpecies, nHeavy, nEl;
-  double dPdrhoE, factor, Ru, radical;
-  double *Ms, *xi;
+//  unsigned short iDim, iSpecies, nHeavy, nEl;
+//  double dPdrhoE, factor, Ru, radical, radical2;
+//  double *Ms, *xi;
+//  
+//  /*--- Determine the number of heavy species ---*/
+//  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+//  else            { nHeavy = nSpecies;   nEl = 0; }
+//  
+//  /*--- Read gas mixture properties from config ---*/
+//  Ms = config->GetMolar_Mass();
+//  xi = config->GetRotationModes();
+//  
+//  /*--- Rename for convenience ---*/
+//  Ru = UNIVERSAL_GAS_CONSTANT;
+//  
+//  /*--- Calculate partial derivative of pressure w.r.t. rhoE ---*/
+//  factor = 0.0;
+//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+//    factor += Solution[iSpecies] / Ms[iSpecies];
+//  dPdrhoE = Ru/Primitive[RHOCVTR_INDEX] * factor;
+//  
+//  /*--- Calculate a^2 using Gnoffo definition (NASA TP 2867) ---*/
+//  radical = (1.0+dPdrhoE) * Primitive[P_INDEX]/Primitive[RHO_INDEX];
   
-  /*--- Determine the number of heavy species ---*/
-  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-  else            { nHeavy = nSpecies;   nEl = 0; }
   
-  /*--- Read gas mixture properties from config ---*/
-  Ms = config->GetMolar_Mass();
-  xi = config->GetRotationModes();
   
-  /*--- Rename for convenience ---*/
-  Ru = UNIVERSAL_GAS_CONSTANT;
+  /// alternative
+  unsigned short iSpecies, iDim;
+  double radical2;
   
-  /*--- Calculate partial derivative of pressure w.r.t. rhoE ---*/
-  factor = 0.0;
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    factor += Solution[iSpecies] / Ms[iSpecies];
-  dPdrhoE = Ru/Primitive[RHOCVTR_INDEX] * factor;
+  radical2 = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    radical2 += Primitive[RHOS_INDEX+iSpecies]/Primitive[RHO_INDEX] * dPdU[iSpecies];
+  for (iDim = 0; iDim < nDim; iDim++)
+    radical2 += Primitive[VEL_INDEX+iDim]*dPdU[nSpecies+iDim];
+  radical2 += (Solution[nSpecies+nDim]+Primitive[P_INDEX])/Primitive[RHO_INDEX] * dPdU[nSpecies+nDim];
+  radical2 += Solution[nSpecies+nDim+1]/Primitive[RHO_INDEX] * dPdU[nSpecies+nDim+1];
   
-  /*--- Calculate a^2 using Gnoffo definition (NASA TP 2867) ---*/
-  radical = (1.0+dPdrhoE) * Primitive[P_INDEX]/Primitive[RHO_INDEX];
+  if (radical2 < 0.0) return true;
+  else {Primitive[A_INDEX] = sqrt(radical2); return false; }
   
-  if (radical < 0.0) return true;
-  else { Primitive[A_INDEX] = sqrt(radical); return false; }
+//  if (radical < 0.0) return true;
+//  else { Primitive[A_INDEX] = sqrt(radical); return false; }
 }
 
 void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) {
@@ -1073,10 +1090,10 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
     check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
   check_temp  = SetTemperature(config);     // Compute temperatures (T & Tve) (req. mixture density).
  	check_press = SetPressure(config);        // Requires T & Tve computation.
-	check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   CalcdPdU(Primitive, config, dPdU);        // Requires density, pressure, rhoCvtr, & rhoCvve.
   CalcdTdU(Primitive, config, dTdU);
   CalcdTvedU(Primitive, config, dTvedU);
+  check_sos   = SetSoundSpeed(config);      // Requires density, pressure, rhoCvtr, & rhoCvve.
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
@@ -1090,10 +1107,10 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
     SetVelocity2();                         // Compute square of the velocity (req. mixture density).
     check_temp  = SetTemperature(config);   // Compute temperatures (T & Tve)
     check_press = SetPressure(config);      // Requires T & Tve computation.
-    check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
     CalcdPdU(Primitive, config, dPdU);                       // Requires density, pressure, rhoCvtr, & rhoCvve.
     CalcdTdU(Primitive, config, dTdU);
     CalcdTvedU(Primitive, config, dTvedU);
+    check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
   
     RightVol = false;
   }
@@ -1284,9 +1301,9 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
                              / denom;
   }
   
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    DiffusionCoeff[iSpecies] = 0.0;
-//  }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    DiffusionCoeff[iSpecies] = 0.0;
+  }
 }
 
 
@@ -1509,10 +1526,10 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
     check_dens = ((Solution[iSpecies] < 0.0) || check_dens);  // Check the density
   check_temp  = SetTemperature(config);     // Compute temperatures (T & Tve)
  	check_press = SetPressure(config);        // Requires T & Tve computation.
-	check_sos   = SetSoundSpeed(config);      // Requires density & pressure computation.
   CalcdPdU(Primitive, config, dPdU);        // Requires density, pressure, rhoCvtr, & rhoCvve.
   CalcdTdU(Primitive, config, dTdU);
   CalcdTvedU(Primitive, config, dTvedU);
+  check_sos   = SetSoundSpeed(config);      // Requires density & pressure computation.
   
   /*--- Check that the solution has a physical meaning ---*/
   if (check_dens || check_press || check_sos || check_temp) {
@@ -1526,10 +1543,10 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
     SetVelocity2();                         // Compute square of the velocity (req. mixture density).
     check_temp  = SetTemperature(config);   // Compute temperatures (T & Tve)
     check_press = SetPressure(config);      // Requires T & Tve computation.
-    check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
     CalcdPdU(Primitive, config, dPdU);      // Requires density, pressure, rhoCvtr, & rhoCvve.
     CalcdTdU(Primitive, config, dTdU);
     CalcdTvedU(Primitive, config, dTvedU);
+    check_sos   = SetSoundSpeed(config);    // Requires density & pressure computation.
     
     RightVol = false;
   }

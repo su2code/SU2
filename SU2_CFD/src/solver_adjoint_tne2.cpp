@@ -2917,19 +2917,19 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Gradient of Adjoint Variables ---*/
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
     
-//    /*--- Compute residual in a non-conservative way, and update ---*/
-//    numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-//    
-//    /*--- Update adjoint viscous residual ---*/
-//    LinSysRes.SubtractBlock(iPoint, Residual_i);
-//    LinSysRes.AddBlock(jPoint, Residual_j);
-//    
-//    if (implicit) {
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
-//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
-//    }
+    /*--- Compute residual in a non-conservative way, and update ---*/
+    numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+    
+    /*--- Update adjoint viscous residual ---*/
+    LinSysRes.SubtractBlock(iPoint, Residual_i);
+    LinSysRes.AddBlock(jPoint, Residual_j);
+
+    if (implicit) {
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    }
   }
 }
 

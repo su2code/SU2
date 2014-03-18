@@ -282,7 +282,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
   
   /*--- Set parameters in the numerical method ---*/
-	epsilon = 1E-4;
+	epsilon = 1E-5;
   alpha = 6.0;
   
   /*--- Calculate supporting geometry parameters ---*/
@@ -354,12 +354,18 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
   /*--- Flow eigenvalues at i (Lambda+) --- */
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
-    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
-  Lambda_i[nSpecies+nDim-1] = 0.5*(     ProjVelst_i + Vst_i[A_INDEX] +
-                                   fabs(ProjVelst_i + Vst_i[A_INDEX])  );
-  Lambda_i[nSpecies+nDim]   = 0.5*(     ProjVelst_i - Vst_i[A_INDEX] +
-                                   fabs(ProjVelst_i - Vst_i[A_INDEX])  );
-  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
+    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                      epsilon*epsilon));
+  Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
+                                   sqrt((ProjVelst_i + Vst_i[A_INDEX])*
+                                        (ProjVelst_i + Vst_i[A_INDEX])+
+                                        epsilon*epsilon)                );
+  Lambda_i[nSpecies+nDim]   = 0.5*(ProjVelst_i - Vst_i[A_INDEX] +
+                                   sqrt((ProjVelst_i - Vst_i[A_INDEX])*
+                                        (ProjVelst_i - Vst_i[A_INDEX]) +
+                                        epsilon*epsilon)                );
+  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                      epsilon*epsilon));
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix    (Ust_i, Vst_i, dPdU_i, UnitNormal, l, m, P_Tensor   );
@@ -380,12 +386,18 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
 	/*--- Flow eigenvalues at j (Lambda-) --- */
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
-    Lambda_j[iVar]          = 0.5*(ProjVelst_j - fabs(ProjVelst_j));
-  Lambda_j[nSpecies+nDim-1] = 0.5*(     ProjVelst_j + Vst_j[A_INDEX] -
-                                   fabs(ProjVelst_j + Vst_j[A_INDEX])  );
-  Lambda_j[nSpecies+nDim]   = 0.5*(     ProjVelst_j - Vst_j[A_INDEX] -
-                                   fabs(ProjVelst_j - Vst_j[A_INDEX])  );
-  Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_i - fabs(ProjVelst_i));
+    Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
+                                                      epsilon*epsilon));
+  Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -
+                                   sqrt((ProjVelst_j + Vst_j[A_INDEX])*
+                                        (ProjVelst_j + Vst_j[A_INDEX])+
+                                        epsilon*epsilon)                 );
+  Lambda_j[nSpecies+nDim]   = 0.5*(ProjVelst_j - Vst_j[A_INDEX] -
+                                   sqrt((ProjVelst_j - Vst_j[A_INDEX])*
+                                        (ProjVelst_j - Vst_j[A_INDEX])+
+                                        epsilon*epsilon)                 );
+  Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j+
+                                                      epsilon*epsilon));
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
