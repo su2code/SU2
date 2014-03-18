@@ -629,6 +629,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddScalarOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
 	/* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
 	AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
+  /* DESCRIPTION: P-norm for heat-flux based objective functions. */
+	AddScalarOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
   
 	/*--- Options related to input/output files and formats ---*/
 	/* CONFIG_CATEGORY: Input/output files and formats */

@@ -539,7 +539,8 @@ private:
 	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
-	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
+	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
+  pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
 	double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
 	***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
@@ -1190,6 +1191,12 @@ public:
 	 * \return Value of the Blottner coefficient
 	 */
 	double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+  
+  /*!
+	 * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
+	 * \return Value of the heat flux p-norm
+	 */
+	double GetPnormHeat(void);
 
 	/*!
 	 * \brief Get the value of wall temperature.
