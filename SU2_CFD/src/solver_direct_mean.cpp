@@ -5934,10 +5934,10 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
       /*--- Set the residual using the pressure ---*/
       if (compressible)                   Pressure = node[iPoint]->GetPressure();
       if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
-        double delta_P =0;
+        double delta_P =1805;
         double force = Area*delta_P;
         double volume = geometry->node[iPoint]->GetVolume();
-        double direction[3]={1.0,0,0};
+        double direction[3]={-1.0,0,0};
       Residual[0] = 0.0;
         double energy = 0;
         for (iDim = 0; iDim < nDim; iDim++){
@@ -5949,7 +5949,7 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
      
       
       /*--- Add value to the residual ---*/
-      //LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.AddBlock(iPoint, Residual);
       
 //      /*--- Form Jacobians for implicit computations ---*/
 //      if (implicit) {
