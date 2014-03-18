@@ -1494,25 +1494,35 @@ public:
    * \brief A virtual member.
    * \return average total pressure evaluated at an exit boundary marker
    */
-  virtual double GetOneDStagPressure(void);
+  virtual double GetOneD_Pt(void);
 
   /*!
    * \brief A virtual member.
    * \param[in] val_exit_pt: value of the total average pressure at the exit.
    */
-  virtual void SetOneDStagPressure(double val_exit_pt);
+  virtual void SetOneD_Pt(double AveragePressure);
 
   /*!
    * \brief A virtual member.
    * \return average Mach number evaluated at an exit boundary marker
    */
-  virtual double GetOneDMach(void);
+  virtual double GetOneD_M(void);
 
   /*!
    * \brief A virtual member.
-   * \return average Mach number evaluated at an exit boundary marker
+   * \set average Mach number evaluated at an exit boundary marker
    */
-  virtual double GetOneDTemperature(void);
+  virtual void SetOneD_M(double AverageMach);
+  /*!
+   * \brief A virtual member.
+   * \return average temperature evaluated at an exit boundary marker
+   */
+  virtual double GetOneD_T(void);
+  /*!
+   * \brief A virtual member.
+   * \set average temperature evaluated at an exit boundary marker
+   */
+  virtual void SetOneD_T(double AverageTemperature);
 
   /*!
 	 * \brief A virtual member.
@@ -2530,23 +2540,33 @@ public:
 	/*!
 	   * \brief Provide the averaged total pressure at a marker.
 	   */
-	double GetOneDStagPressure(void);
+	double GetOneD_Pt(void);
 
 	/*!
 	   * \brief Set the value of averaged total pressure
 	   * \param[in] val_exit_pt - value of the averaged pressure
 	   */
-	void SetOneDStagPressure(double exit_pt);
+	void SetOneD_Pt(double AveragePressure);
 
   /*!
      * \brief Provide the averaged Mach number at a marker.
      */
-  double GetOneDMach(void);
+  double GetOneD_M(void);
+
+  /*!
+     * \brief Set the averaged Mach number at a marker.
+     */
+  void SetOneD_M(double AverageMach);
 
   /*!
      * \brief Provide the averaged Mach number at a marker.
      */
-  double GetOneDTemperature(void);
+  double GetOneD_T(void);
+
+  /*!
+     * \brief Set the averaged Temperature number at a marker.
+     */
+  void SetOneD_T(double AverageTemperature);
 
 
 	/*!
