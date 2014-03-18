@@ -1,0 +1,12 @@
+ADD_EXECUTABLE ( SU2_GPC
+  src/SU2_GPC.cpp
+  )
+
+TARGET_LINK_LIBRARIES ( SU2_GPC
+  SU2
+  ${JSONCPP_json_LIBRARY}
+  ${CGNS_cgns_LIBRARY}
+  ${Metis_metis_LIBRARY}
+  ${MPI_EXTRA_LIBRARY}
+  ${MPI_LIBRARY}
+  )
