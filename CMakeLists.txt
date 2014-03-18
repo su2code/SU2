@@ -23,20 +23,9 @@ INCLUDE_DIRECTORIES ( ${CGNS_INCLUDE_DIR} )
 
 ADD_DEFINITIONS ( -DNO_MUTATIONPP -DNO_TECIO -DMETIS_5 )
 
-# -rwxr-xr-x 1 nicholas nicholas 108470127 Mar 18 18:12 SU2_CFD
-# -rwxr-xr-x 1 nicholas nicholas  18062197 Mar 18 18:12 SU2_DDC
-# -rwxr-xr-x 1 nicholas nicholas  18080686 Mar 18 18:12 SU2_GDC
-# -rwxr-xr-x 1 nicholas nicholas  18086590 Mar 18 18:12 SU2_GPC
-# -rwxr-xr-x 1 nicholas nicholas  15736738 Mar 18 18:12 SU2_MAC
-# -rwxr-xr-x 1 nicholas nicholas  18073825 Mar 18 18:12 SU2_MDC
-# -rwxr-xr-x 1 nicholas nicholas  13832117 Mar 18 18:12 SU2_PBC
-# -rwxr-xr-x 1 nicholas nicholas  27834701 Mar 18 18:12 SU2_SOL
-# -rwxr-xr-x 1 nicholas nicholas  15763208 Mar 18 18:12 SU2_UMC
-
 ADD_SUBDIRECTORY ( Common )
 ADD_SUBDIRECTORY ( SU2_CFD )
 ADD_SUBDIRECTORY ( SU2_DDC )
-
 ADD_SUBDIRECTORY ( SU2_GDC )
 ADD_SUBDIRECTORY ( SU2_GPC )
 ADD_SUBDIRECTORY ( SU2_MAC )
