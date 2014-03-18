@@ -272,14 +272,17 @@ inline double CSolver::GetTke_Inf(void) { return 0; }
 
 inline double* CSolver::GetConstants() {return NULL;}
 
-inline double CSolver::GetOneDStagPressure(void){return 0;}
+inline double CSolver::GetOneD_Pt(void){return 0;}
 
-inline void CSolver::SetOneDStagPressure(double val_exit_pt){ }
+inline void CSolver::SetOneD_Pt(double AveragePressure){ }
 
-inline double CSolver::GetOneDMach(void){return 0;}
+inline double CSolver::GetOneD_M(void){return 0;}
 
-inline double CSolver::GetOneDTemperature(void){return 0;}
+inline void CSolver::SetOneD_M(double AverageMach){ }
 
+inline double CSolver::GetOneD_T(void){return 0;}
+
+inline void CSolver::SetOneD_T(double AverageTemperature){ }
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -548,13 +551,17 @@ inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface;
 
 inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
-inline double CEulerSolver::GetOneDStagPressure(void) { return OneD_Pt; }
+inline double CEulerSolver::GetOneD_Pt(void) { return OneD_Pt; }
 
-inline void CEulerSolver::SetOneDStagPressure(double oneD_pt) { OneD_Pt=oneD_pt; }
+inline void CEulerSolver::SetOneD_Pt(double AveragePressure) { OneD_Pt=AveragePressure; }
 
-inline double CEulerSolver::GetOneDMach(void){return OneD_M;}
+inline double CEulerSolver::GetOneD_M(void){return OneD_M;}
 
-inline double CEulerSolver::GetOneDTemperature(void){return OneD_T;}
+inline void CEulerSolver::SetOneD_M(double AverageMach) { OneD_M=AverageMach; }
+
+inline double CEulerSolver::GetOneD_T(void){return OneD_T;}
+
+inline void CEulerSolver::SetOneD_T(double AverageTemperature) { OneD_T=AverageTemperature; }
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
