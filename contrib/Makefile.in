@@ -51,10 +51,12 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @BUILD_TECIO_TRUE@am__append_1 = tecio
+@BUILD_METIS_TRUE@am__append_2 = metis
 subdir = contrib
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/tecio.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/tecio.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -94,7 +96,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = tecio
+DIST_SUBDIRS = tecio metis
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -159,8 +161,8 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
-METIS_CXX = @METIS_CXX@
-METIS_LD = @METIS_LD@
+METIS_INCLUDE = @METIS_INCLUDE@
+METIS_LIB = @METIS_LIB@
 MKDIR_P = @MKDIR_P@
 MUTATIONPP_CXX = @MUTATIONPP_CXX@
 MUTATIONPP_LD = @MUTATIONPP_LD@
@@ -237,7 +239,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(am__append_1)
+SUBDIRS = $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

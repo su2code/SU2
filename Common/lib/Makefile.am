@@ -47,19 +47,13 @@ libSU2_a_SOURCES = \
 libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
 
+# always link to built dependencies from ./contrib
+libSU2_a_CXXFLAGS += @su2_contrib_INCLUDES@
+libSU2_a_LIBADD += @su2_contrib_LIBS@
+
 # if BUILD_CGNS
 libSU2_a_CXXFLAGS += @CGNS_CXX@
 libSU2_a_LIBADD += @CGNS_LD@
-# endif
-
-# if BUILD_METIS
-libSU2_a_CXXFLAGS += @METIS_CXX@
-libSU2_a_LIBADD += @METIS_LD@
-# endif
-
-# if BUILD_TECIO
-libSU2_a_CXXFLAGS += @su2_contrib_INCLUDES@
-libSU2_a_LIBADD += @su2_contrib_LIBS@
 # endif
 
 # if BUILD_MUTATIONPP
