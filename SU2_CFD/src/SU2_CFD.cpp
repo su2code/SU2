@@ -155,8 +155,7 @@ int main(int argc, char *argv[]) {
      & boundary markers. MESH_0 is the index of the finest mesh. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone],
-                                                              iZone+1, nZone);
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
     
   }
   
