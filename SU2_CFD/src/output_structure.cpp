@@ -4441,7 +4441,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             /*--- Direct coefficients ---*/
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                        Total_CEff, Total_Heat, Total_NormHeat);

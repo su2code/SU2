@@ -158,13 +158,13 @@ public:
 	void Set_ParametricCoord(double *val_coord);
 	
 	/*! 
-	 * \brief Add to the vector of parent FFDBoxs a new FFD FFDBox.
+	 * \brief Add to the vector of parent FFDBoxes a new FFD FFDBox.
 	 * \param[in] val_iParentFFDBox - New parent FFDBox in the vector.
 	 */	
 	void SetParentFFDBox(string val_iParentFFDBox);
 	
 	/*! 
-	 * \brief Add to the vector of child FFDBoxs a new FFD FFDBox.
+	 * \brief Add to the vector of child FFDBoxes a new FFD FFDBox.
 	 * \param[in] val_iChildFFDBox - New child FFDBox in the vector.
 	 */	
 	void SetChildFFDBox(string val_iChildFFDBox);
@@ -925,8 +925,8 @@ public:
 class CSurfaceMovement : public CGridMovement {
 protected:
   CFreeFormDefBox** FFDBox;	/*!< \brief Definition of the Free Form Deformation Box. */
-	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxs. */
-	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxs (parent/child). */
+	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
+	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
 
 public:
@@ -1128,7 +1128,7 @@ public:
 	 *        in the free form FFDBox.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 */		
 	void SetParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
@@ -1137,7 +1137,7 @@ public:
 	 *        in the free form FFDBox.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 */		
 	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
@@ -1161,7 +1161,7 @@ public:
 	 * \brief Recompute the cartesian coordinates using the control points position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 */		
 	void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
@@ -1169,7 +1169,7 @@ public:
 	 * \brief Set the deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1179,7 +1179,7 @@ public:
 	 * \brief Set a camber deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1189,7 +1189,7 @@ public:
 	 * \brief Set a thickness deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1199,7 +1199,7 @@ public:
 	 * \brief Set a volume deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1209,7 +1209,7 @@ public:
 	 * \brief Set a dihedral angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1219,7 +1219,7 @@ public:
 	 * \brief Set a twist angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1229,7 +1229,7 @@ public:
 	 * \brief Set a rotation angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
@@ -1241,7 +1241,7 @@ public:
 	 *       coordinates information, the code will compute that information.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid input file.
    * \param[in] val_vertex - With vertex information.
 	 */		
@@ -1251,7 +1251,7 @@ public:
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
 	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename);
@@ -1260,7 +1260,7 @@ public:
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxs of the computation.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */
 	void WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename);
@@ -1273,8 +1273,8 @@ public:
 	bool GetFFDBoxDefinition(void);
 	
 	/*! 
-	 * \brief Obtain the number of FFDBoxs.
-	 * \return Number of FFD FFDBoxs.
+	 * \brief Obtain the number of FFDBoxes.
+	 * \return Number of FFD FFDBoxes.
 	 */		
 	unsigned short GetnFFDBox(void);
 	

@@ -932,7 +932,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   /*--- If more than one, find the zone in the mesh file ---*/
   if (val_nZone > 1 || time_spectral) {
     if (time_spectral) {
-      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone << ":" << endl;
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -940,8 +940,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         if (position != string::npos) {
           text_line.erase (0,6);
           unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == val_iZone) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone << ":" << endl;
+          if (jDomain == val_iZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << ":" << endl;
             break;
           }
         }

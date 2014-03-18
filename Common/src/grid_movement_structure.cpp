@@ -2475,7 +2475,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
         cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
       
-      /*--- Create a unitary FFDBox as baseline for other FFDBoxs shapes ---*/
+      /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
       CFreeFormDefBox FFDBox_unitary(1,1,1);
       FFDBox_unitary.SetUnitCornerPoints();
       
@@ -2510,7 +2510,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     /*--- Loop over all the FFD boxes levels ---*/
     for (iLevel = 0; iLevel < GetnLevel(); iLevel++) {
       
-      /*--- Loop over all FFD FFDBoxs ---*/
+      /*--- Loop over all FFD FFDBoxes ---*/
       for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
         
         /*--- Check the level of the FFD box ---*/
@@ -2923,7 +2923,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 			Ampl = config->GetDV_Value(iDV);
 			
 			design_FFDBox = int(config->GetParamDV(iDV, 0));
-			if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxs!!"<< endl; exit(1); }
+			if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxes!!"<< endl; exit(1); }
 			
 			index[0] = int(config->GetParamDV(iDV, 1));
 			index[1] = int(config->GetParamDV(iDV, 2)); 
@@ -5232,7 +5232,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 		if (position != string::npos) {
 			text_line.erase (0,9);
 			nFFDBox = atoi(text_line.c_str());
-			if (rank == MASTER_NODE) cout << nFFDBox << " Free Form Deformation (FFD) FFDBoxs." << endl;
+			if (rank == MASTER_NODE) cout << nFFDBox << " Free Form Deformation (FFD) FFDBoxes." << endl;
 			unsigned short *nCornerPoints = new unsigned short[nFFDBox];
 			unsigned short *nControlPoints = new unsigned short[nFFDBox];
 			unsigned long *nSurfacePoints = new unsigned long[nFFDBox];
