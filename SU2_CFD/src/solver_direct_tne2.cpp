@@ -2086,13 +2086,6 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
-//    if (iPoint == 31) {
-//      cout << "Source calc: " << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << Residual[iVar] << endl;
-//      cin.get();
-//    }
-    
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       if (Residual[iVar] != Residual[iVar])
@@ -4893,7 +4886,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   double MomentDist[3], WallDist[3];
   double RefDensity, Density;
   double Velocity_Inf[3], Vel[3], VelTang[3], VelNormal, VelTangMod, div_vel, RefVel2;
-  double dTn, dTven, HeatLoad;
+  double dTn, dTven, pnorm, HeatLoad;
   double Alpha, Beta, RefLengthMoment, RefAreaCoeff, *Origin;
   double factor;
   
@@ -4901,6 +4894,9 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   VEL_INDEX = node[0]->GetVelIndex();
   T_INDEX   = node[0]->GetTIndex();
   TVE_INDEX = node[0]->GetTveIndex();
+  
+  /*--- Retrieve data from CConfig ---*/
+  pnorm = config->GetPnormHeat();
   
   /*--- Calculate angle of attack & sideslip ---*/
 	Alpha = config->GetAoA()*PI_NUMBER/180.0;
@@ -4922,10 +4918,10 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
   
 	/*-- Initialization --*/
-  AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
-	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
-	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
-	AllBound_Heat_Visc     = 0.0; AllBound_NormHeat_Visc  = 0.0;
+  AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc      = 0.0; AllBound_CMz_Visc = 0.0;
+	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc      = 0.0; AllBound_CFz_Visc = 0.0;
+	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc    = 0.0;
+	AllBound_Heat_Visc  = 0.0; AllBound_NormHeat_Visc = 0.0;
 	AllBound_CEff_Visc  = 0.0;
   
 	/*--- Vector and variables initialization ---*/
@@ -4941,11 +4937,15 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 		Boundary   = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
     NormHeat_Visc[iMarker] = 0.0;
+    HeatLoad = 0.0;
+    
 		if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
       
-			for (iDim = 0; iDim < nDim; iDim++) ForceViscous[iDim] = 0.0;
-			MomentViscous[0] = 0.0; MomentViscous[1] = 0.0; MomentViscous[2] = 0.0;
-      HeatLoad = 0.0;
+      /*--- Initialize boundary force vectors ---*/
+			for (iDim = 0; iDim < nDim; iDim++) {
+        ForceViscous[iDim]  = 0.0;
+        MomentViscous[iDim] = 0.0;
+      }
       
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -4998,13 +4998,13 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				WallShearStress = sqrt(WallShearStress);
         
 				/*--- Compute wall shear stress (using mu(delta u/delta y) ---*/
-				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
-				VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitaryNormal[iDim];
-				for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitaryNormal[iDim];
-				VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
-				for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-				WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
-				//				WallShearStress = Viscosity*VelTangMod/WallDistMod;
+//				for (iDim = 0; iDim < nDim; iDim++) Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
+//				VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitaryNormal[iDim];
+//				for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitaryNormal[iDim];
+//				VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
+//				for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+//				WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
+//				WallShearStress = Viscosity*VelTangMod/WallDistMod;
         
 				/*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
 				CSkinFriction[iMarker][iVertex] = WallShearStress / (0.5*RefDensity*RefVel2);
@@ -5019,10 +5019,9 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           dTven += Grad_PrimVar[TVE_INDEX][iDim]*Normal[iDim];
         }
         
-        CHeatTransfer[iMarker][iVertex] = (ThermalCond*dTn + ThermalCond_ve*dTven);
-//				CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-        
-        NormHeat_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex]*Area,8.0);
+        CHeatTransfer[iMarker][iVertex] = ThermalCond*dTn + ThermalCond_ve*dTven;
+        NormHeat_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex], pnorm)*Area;
+        HeatLoad               += CHeatTransfer[iMarker][iVertex]*Area;
         
 				/*--- Compute viscous forces, and moment using the stress tensor ---*/
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
@@ -5033,27 +5032,31 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					}
           
 					if (iDim == 3) {
-            MomentViscous[0] += (TauElem[2]*MomentDist[1] - TauElem[1]*MomentDist[2])*Area*factor/RefLengthMoment;
-            MomentViscous[1] += (TauElem[0]*MomentDist[2] - TauElem[2]*MomentDist[0])*Area*factor/RefLengthMoment;
+            MomentViscous[0] += (TauElem[2]*MomentDist[1] -
+                                 TauElem[1]*MomentDist[2])*Area*factor/RefLengthMoment;
+            MomentViscous[1] += (TauElem[0]*MomentDist[2] -
+                                 TauElem[2]*MomentDist[0])*Area*factor/RefLengthMoment;
           }
-					MomentViscous[2] += (TauElem[1]*MomentDist[0] - TauElem[0]*MomentDist[1])*Area*factor/RefLengthMoment;
-          
+					MomentViscous[2] += (TauElem[1]*MomentDist[0] -
+                               TauElem[0]*MomentDist[1])*Area*factor/RefLengthMoment;
 				}
 			}
       
 			/*--- Transform ForceInviscid into CLift and CDrag ---*/
 			if  (Monitoring == YES) {
 				if (nDim == 2) {
-					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
-					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
-					CMx_Visc[iMarker]   = 0.0;
-					CMy_Visc[iMarker]   = 0.0;
-					CMz_Visc[iMarker]   = MomentViscous[2];
-					CEff_Visc[iMarker]  = CLift_Visc[iMarker]/(CDrag_Visc[iMarker]+EPS);
-					CFx_Visc[iMarker]   = ForceViscous[0];
-					CFy_Visc[iMarker]   = ForceViscous[1];
-					CFz_Visc[iMarker]   = 0.0;
-          NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker], 1.0/8.0);
+					CDrag_Visc[iMarker]    =  ForceViscous[0]*cos(Alpha) +
+                                    ForceViscous[1]*sin(Alpha);
+					CLift_Visc[iMarker]    = -ForceViscous[0]*sin(Alpha) +
+                                    ForceViscous[1]*cos(Alpha);
+					CMx_Visc[iMarker]      = 0.0;
+					CMy_Visc[iMarker]      = 0.0;
+					CMz_Visc[iMarker]      = MomentViscous[2];
+					CEff_Visc[iMarker]     = CLift_Visc[iMarker]/(CDrag_Visc[iMarker]+EPS);
+					CFx_Visc[iMarker]      = ForceViscous[0];
+					CFy_Visc[iMarker]      = ForceViscous[1];
+					CFz_Visc[iMarker]      = 0.0;
+          NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker], 1.0/pnorm);
           Heat_Visc[iMarker]     = HeatLoad;
 				}
 				if (nDim == 3) {
@@ -5069,34 +5072,35 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFx_Visc[iMarker]   = ForceViscous[0];
 					CFy_Visc[iMarker]   = ForceViscous[1];
 					CFz_Visc[iMarker]   = ForceViscous[2];
-          NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker], 1.0/8.0);
+          NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker], 1.0/pnorm);
+          Heat_Visc[iMarker] = HeatLoad;
 				}
         
-				AllBound_CDrag_Visc += CDrag_Visc[iMarker];
-				AllBound_CLift_Visc += CLift_Visc[iMarker];
-				AllBound_CMx_Visc   += CMx_Visc[iMarker];
-				AllBound_CMy_Visc   += CMy_Visc[iMarker];
-				AllBound_CMz_Visc   += CMz_Visc[iMarker];
-				AllBound_CEff_Visc  += CEff_Visc[iMarker];
-				AllBound_CFx_Visc   += CFx_Visc[iMarker];
-				AllBound_CFy_Visc   += CFy_Visc[iMarker];
-				AllBound_CFz_Visc   += CFz_Visc[iMarker];
+				AllBound_CDrag_Visc    += CDrag_Visc[iMarker];
+				AllBound_CLift_Visc    += CLift_Visc[iMarker];
+				AllBound_CMx_Visc      += CMx_Visc[iMarker];
+				AllBound_CMy_Visc      += CMy_Visc[iMarker];
+				AllBound_CMz_Visc      += CMz_Visc[iMarker];
+				AllBound_CEff_Visc     += CEff_Visc[iMarker];
+				AllBound_CFx_Visc      += CFx_Visc[iMarker];
+				AllBound_CFy_Visc      += CFy_Visc[iMarker];
+				AllBound_CFz_Visc      += CFz_Visc[iMarker];
         AllBound_NormHeat_Visc += NormHeat_Visc[iMarker];
         AllBound_Heat_Visc     += Heat_Visc[iMarker];
 			}
 		}
 	}
-	Total_CDrag += AllBound_CDrag_Visc;
-	Total_CLift += AllBound_CLift_Visc;
-	Total_CMx   += AllBound_CMx_Visc;
-	Total_CMy   += AllBound_CMy_Visc;
-	Total_CMz   += AllBound_CMz_Visc;
-	Total_CEff   = Total_CLift/(Total_CDrag+EPS);
-	Total_CFx   += AllBound_CFx_Visc;
-	Total_CFy   += AllBound_CFy_Visc;
-	Total_CFz   += AllBound_CFz_Visc;
-  Total_Heat     += AllBound_Heat_Visc;
-  Total_NormHeat   = AllBound_NormHeat_Visc;
+	Total_CDrag   += AllBound_CDrag_Visc;
+	Total_CLift   += AllBound_CLift_Visc;
+	Total_CMx     += AllBound_CMx_Visc;
+	Total_CMy     += AllBound_CMy_Visc;
+	Total_CMz     += AllBound_CMz_Visc;
+	Total_CEff     = Total_CLift/(Total_CDrag+EPS);
+	Total_CFx     += AllBound_CFx_Visc;
+	Total_CFy     += AllBound_CFy_Visc;
+	Total_CFz     += AllBound_CFz_Visc;
+  Total_Heat    += AllBound_Heat_Visc;
+  Total_NormHeat = AllBound_NormHeat_Visc;
   
 	for (iDim = 0; iDim < nDim; iDim++)
 		delete [] Tau[iDim];
