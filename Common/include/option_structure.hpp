@@ -103,7 +103,7 @@ const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processo
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_INDEX_VALUE = 100;	/*!< \brief Maximum value for a marker index. */
 const unsigned int MAX_NUMBER_MARKER = 200;	/*!< \brief Maximum number of domains. */
-const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxs for the FFD. */
+const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3; /*!< \brief Maximum number of zones. */
@@ -389,11 +389,13 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
 enum ENUM_CENTERED {
 	NO_CENTERED = 0,               /*!< \brief No centered scheme is used. */
 	JST = 1,			/*!< \brief Jameson-Smith-Turkel centered numerical method. */
-	LAX = 2			/*!< \brief Lax-Friedrich centered numerical method. */
+	LAX = 2,			/*!< \brief Lax-Friedrich centered numerical method. */
+        JST_KE = 3                     /*!< \brief . */
 };
 static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_CENTERED>
 ("NONE", NO_CENTERED)
 ("JST", JST)
+("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
 /*!
@@ -648,8 +650,8 @@ enum ENUM_OBJECTIVE {
 	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
   CLEARANCE = 22,       /*!< \brief Clearance. */
   MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
-  HEAT_LOAD = 24,        /*!< \brief Integrated heat flux (heat load). */
-  MAX_HEAT_FLUX = 25,    /*!< \brief Maximum heat flux. */
+  NORM_HEAT = 25,    /*!< \brief Norm heat flux. */
+  HEAT = 31,    /*!< \brief Norm heat flux. */
   MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
 	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
 	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
@@ -673,7 +675,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
-("HEAT_LOAD", HEAT_LOAD)
+("NORM_HEAT", NORM_HEAT)
+("HEAT", HEAT)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
 ("TOTAL_VOLUME", TOTAL_VOLUME)
@@ -802,16 +805,14 @@ enum ENUM_OUTPUT {
 	TECPLOT = 1,  		/*!< \brief Tecplot format for the solution output. */
 	EXCEL = 2,			/*!< \brief Excel format for the solution output. */
 	CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
-	STL = 4,				/*!< \brief STL CAD format for the solution output. */
-  TECPLOT_BINARY = 5,  		/*!< \brief Tecplot binary format for the solution output. */
-	CGNS_SOL = 6,  		/*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 7  		/*!< \brief Paraview format for the solution output. */
+  TECPLOT_BINARY = 4,  		/*!< \brief Tecplot binary format for the solution output. */
+	CGNS_SOL = 5,  		/*!< \brief CGNS format for the solution output. */
+  PARAVIEW = 6  		/*!< \brief Paraview format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
 ("EXCEL", EXCEL)
 ("CSV", CSV)
-("STL", STL)
 ("TECPLOT_BINARY", TECPLOT_BINARY)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);

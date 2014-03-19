@@ -473,7 +473,7 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Wrt_Sectional_Forces,       /*!< \brief Write sectional forces for specified markers. */
+  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
@@ -617,7 +617,7 @@ private:
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
-
+  long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
@@ -1835,7 +1835,7 @@ public:
 	 * \brief Get information about writing sectional force files.
 	 * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
 	 */
-	bool GetWrt_Sectional_Forces(void);
+	bool GetPlot_Section_Forces(void);
 
   /*!
    * \brief Get information about writing average stagnation pressure
@@ -4518,6 +4518,11 @@ public:
 	 */
 	double GetGust_Begin_Loc(void);
 
+  /*!
+	 * \brief Get the node number of the CV to visualize.
+	 * \return Node number of the CV to visualize.
+	 */
+	long GetVisualize_CV(void);
 
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
