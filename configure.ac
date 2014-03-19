@@ -9,7 +9,7 @@
 #
 ##########################
 
-AC_INIT([SU^2], [3.0.0 "eagle"], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [3.0.0], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -20,8 +20,8 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
 # AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
-# AC_PROG_CC
-# AM_PROG_CC_C_O
+AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 
@@ -55,12 +55,20 @@ fi
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
 AC_CONFIG_FILES([contrib/tecio/Makefile])
 
+# Metis
+CONFIGURE_METIS
+if (test $enablemetis = yes); then
+  su2_contrib_INCLUDES="$METIS_INCLUDE $su2_contrib_INCLUDES"
+  su2_contrib_LIBS="$METIS_LIB $su2_contrib_LIBS"
+else
+  su2_contrib_INCLUDES="-DNO_METIS $su2_contrib_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
+AC_CONFIG_FILES([contrib/metis/Makefile])
 
 
 AC_SUBST([su2_contrib_INCLUDES])
 AC_SUBST([su2_contrib_LIBS])
-
-
 
 
 # optional bindings
@@ -89,10 +97,10 @@ AC_ARG_WITH(Mutationpp-include,
    	AS_HELP_STRING([--with-Mutationpp-include[=ARG]], [Mutation++ include directory, ARG = path to mutation++.h]),
 	[with_Mutationpp_include=$withval], [with_Mutationpp_include="no"])
 AC_ARG_WITH(Jsoncpp-lib,
-   	AS_HELP_STRING([--with-Jsoncpp-lib[=ARG]], [Jsoncpp library directory, ARG = path to jsoncpp_SYS.a]), 
+   	AS_HELP_STRING([--with-Jsoncpp-lib[=ARG]], [Jsoncpp library directory, ARG = path to jsoncpp_SYS.a]),
 	[with_Jsoncpp_lib=$withval], [with_Jsoncpp_lib="no"])
 AC_ARG_WITH(Jsoncpp-include,
-   	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]), 
+   	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]),
 	[with_Jsoncpp_include=$withval], [with_Jsoncpp_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
@@ -166,60 +174,6 @@ fi
 AC_SUBST([CGNS_CXX])
 AC_SUBST([CGNS_LD])
 
-###########################
-
-# check for lib
-METISlib=libmetis.a
-METISheader=metis.h
-METISversion=
-have_METIS="no"
-
-if test "$with_Metis_lib" != "no"
-then
-  	AC_CHECK_FILE([$with_Metis_lib/$METISlib],[have_METIS="yes"],[have_METIS="no"])
-	if test "$have_METIS" == "no"
-	then
-		AC_MSG_ERROR([METIS requested but library file not found.])
-	fi
-fi
-
-# check for header
-if test "$have_METIS" != "no"
-then
-	if test "$with_Metis_include" != "no"
-	then
-		AC_CHECK_FILE([$with_Metis_include/$METISheader],[have_METIS="yes"],[have_METIS="no"])
-		if test "$have_METIS" == "no"
-		then
-			AC_MSG_ERROR([METIS requested but header file not found.])
-		fi
-	else
-		have_METIS="no"
-	fi
-fi
-
-# METIS version check
-if test "$with_Metis_version" == "5"
-then
-	METISversion=-DMETIS_5
-fi
-
-if test "$have_METIS" != "no"
-then
-  	AM_CONDITIONAL(BUILD_METIS,true)
-	METIS_CXX="-I"$with_Metis_include" "$METISversion""
-	METIS_LD="$with_Metis_lib"/$METISlib
-else
-	AM_CONDITIONAL(BUILD_METIS,false)
-	METIS_CXX=-DNO_METIS
-	METIS_LD=
-
-fi
-AC_SUBST([METIS_CXX])
-AC_SUBST([METIS_LD])
-
-
-
 ##########################
 
 # check for lib
@@ -267,13 +221,13 @@ AC_SUBST([MUTATIONPP_LD])
 ##########################
 
 # check for lib
-Jsoncpplib=libjson_linux-gcc-4.2.1_libmt.a
+Jsoncpplib=libjson.a
 Jsoncppheader=json/json.h
 have_Jsoncpp="no"
 
-if test "$with_Jsoncpp_lib" != "no" 
+if test "$with_Jsoncpp_lib" != "no"
 then
-  	AC_CHECK_FILE([$with_Jsoncpp_lib/$Jsoncpplib],[have_Jsoncpp="yes"],[have_Jsoncpp="no"])   
+  	AC_CHECK_FILE([$with_Jsoncpp_lib/$Jsoncpplib],[have_Jsoncpp="yes"],[have_Jsoncpp="no"])
 	if test "$have_Jsoncpp" == "no"
 	then
 		AC_MSG_ERROR([Jsoncpp requested but library file not found.])
@@ -285,14 +239,14 @@ if test "$have_Jsoncpp" != "no"
 then
 	if test "$with_Jsoncpp_include" != "no"
 	then
-		AC_CHECK_FILE([$with_Jsoncpp_include/$Jsoncppheader],[have_Jsoncpp='yes'],[have_Jsoncpp='no']) 
+		AC_CHECK_FILE([$with_Jsoncpp_include/$Jsoncppheader],[have_Jsoncpp='yes'],[have_Jsoncpp='no'])
 		if test "$have_Jsoncpp" == "no"
 		then
 			AC_MSG_ERROR([Jsoncpp requested but header file not found.])
 		fi
 	else
 		have_Jsoncpp="no"
-	fi  
+	fi
 fi
 
 if test "$have_Jsoncpp" != "no"
@@ -365,7 +319,7 @@ Build Configuration Summary:
     Linker flags:         ${LDFLAGS}
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
-    Metis support:        $have_METIS
+    Metis support:        $enablemetis
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp

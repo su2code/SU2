@@ -928,7 +928,7 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
-inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
+inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
 inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
 
@@ -977,3 +977,5 @@ inline double CConfig::GetGust_Ampl(void) {return Gust_Ampl; }
 inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time; }
 
 inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc; }
+
+inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }

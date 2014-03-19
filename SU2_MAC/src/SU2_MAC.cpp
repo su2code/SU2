@@ -176,9 +176,9 @@ int main(int argc, char *argv[]) {
 		grid_adaptation->WriteAdaptSensor(geometry, file_name);
 		
     strcpy (file_name, "adapted_grid.plt");
-    geo_adapt->SetTecPlot(file_name);
+    geo_adapt->SetTecPlot(file_name, true);
     strcpy (file_name, "adapted_surface.plt");
-    geo_adapt->SetBoundTecPlot(config,file_name);
+    geo_adapt->SetBoundTecPlot(file_name, true, config);
 		
 		/*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
 		geo_adapt->SetMeshFile(config, config->GetMesh_Out_FileName());
