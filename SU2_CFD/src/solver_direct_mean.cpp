@@ -5911,6 +5911,7 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
+  double *radius = new double[3];
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5935,13 +5936,26 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
       if (compressible)                   Pressure = node[iPoint]->GetPressure();
       if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
         double delta_P =1805;
+        double delta_P_swirl = 53.9;
         double force = Area*delta_P;
+        double force_swirl = Area*delta_P_swirl;
         double volume = geometry->node[iPoint]->GetVolume();
+        //double origin[3]={0.14,0,0};
+        double origin_test[3]={0.0,0,0};
         double direction[3]={-1.0,0,0};
+        double *coo = geometry->node[iPoint]->GetCoord();
+        double *radius = new double[3];
+        for (iDim = 0; iDim < 3; iDim++){
+            radius[iDim]=coo[iDim]-origin_test[iDim];
+        }
+        double tangent[3];
+        tangent[0] = (radius[1]*direction[2] - radius[2]*direction[1]);
+        tangent[1] = (radius[2]*direction[0] - radius[0]*direction[2]);
+        tangent[2] = (radius[0]*direction[1] - radius[1]*direction[0]);
       Residual[0] = 0.0;
         double energy = 0;
         for (iDim = 0; iDim < nDim; iDim++){
-          Residual[iDim+1] = force*direction[iDim];
+          Residual[iDim+1] = force*direction[iDim]+force_swirl*tangent[iDim];
             energy+=Residual[iDim+1]*node[iPoint]->GetVelocity(iDim);
             //cout<<Residual[iDim+1]<<"  "<<iDim<<"  "<<iPoint<<endl;
         }
@@ -5985,7 +5999,7 @@ void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solv
 //      }
     }
   }
-  
+    delete [] radius;
 }
 
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
