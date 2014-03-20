@@ -4390,10 +4390,10 @@ unsigned short CConfig::GetMarker_Config_PerBound(string val_marker) {
 
 CConfig::~CConfig(void)
 {
-	delete [] RK_Alpha_Step;
-	delete [] MG_PreSmooth;
-	delete [] MG_PostSmooth;
-	delete [] U_FreeStreamND;
+  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
+  if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
 
 	/*--- If allocated, delete arrays for Plasma solver ---*/
 	if (Molar_Mass           != NULL) delete [] Molar_Mass;
@@ -4503,40 +4503,100 @@ CConfig::~CConfig(void)
 	if (RefOriginMoment_Z != NULL)
 		delete [] RefOriginMoment_Z;
 
-	/*Marker pointers*/
+  /*Marker pointers*/
+  if (Marker_Config_Out_1D!=NULL)   delete[] Marker_Config_Out_1D;
+  if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
+  if (Marker_Config_GeoEval!=NULL)  delete[] Marker_Config_GeoEval;
+  if (Marker_All_GeoEval!=NULL)     delete[] Marker_All_GeoEval;
+  if (Marker_Config_Tag!=NULL)      delete[] Marker_Config_Tag;
+  if (Marker_All_Tag!=NULL)         delete[] Marker_All_Tag;
+  if (Marker_Config_Boundary!=NULL) delete[] Marker_Config_Boundary;
+  if (Marker_All_Boundary!=NULL)    delete[] Marker_All_Boundary;
+  if (Marker_Config_Monitoring!=NULL)    delete[] Marker_Config_Monitoring;
+  if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
+  if (Marker_Config_Designing!=NULL) delete[] Marker_Config_Designing;
+  if (Marker_All_Designing!=NULL)    delete[] Marker_All_Designing;
+  if (Marker_Config_Plotting!=NULL)  delete[] Marker_Config_Plotting;
+  if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
+  if (Marker_Config_DV!=NULL)        delete[] Marker_Config_DV;
+  if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
+  if (Marker_DV!=NULL)               delete[] Marker_DV;
+  if (Marker_Moving!=NULL)           delete[] Marker_Moving;
+  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
+  if (Marker_Config_Moving!=NULL)   delete[] Marker_Config_Moving;
+  if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
+  if (Marker_Designing!=NULL)       delete[] Marker_Designing;
+  if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
+  if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
+  if (Marker_Config_PerBound!=NULL) delete[] Marker_Config_PerBound;
+  if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
+  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
 
-	if (Marker_Config_Out_1D!=NULL)
-	  delete[] Marker_Config_Out_1D;
-	if (Marker_All_Out_1D!=NULL)
-    delete[] Marker_All_Out_1D;
-  if (Marker_Config_GeoEval!=NULL)
-    delete[] Marker_Config_GeoEval;
-  if (Marker_All_GeoEval!=NULL)
-    delete[] Marker_All_GeoEval;
-  if (Marker_Config_Tag!=NULL)
-    delete[] Marker_Config_Tag;
-  if (Marker_All_Tag!=NULL)
-    delete[] Marker_All_Tag;
-  if (Marker_Config_Boundary!=NULL)
-    delete[] Marker_Config_Boundary;
-  if (Marker_All_Boundary!=NULL)
-    delete[] Marker_All_Boundary;
-  if (Marker_Config_Monitoring!=NULL)
-    delete[] Marker_Config_Monitoring;
-  if (Marker_All_Monitoring!=NULL)
-    delete[] Marker_All_Monitoring;
-  if (Marker_Config_Designing!=NULL)
-    delete[] Marker_Config_Designing;
-  if (Marker_All_Designing!=NULL)
-    delete[] Marker_All_Designing;
-  if (Marker_Config_Plotting!=NULL)
-    delete[] Marker_Config_Plotting;
-  if (Marker_All_Plotting!=NULL)
-    delete[] Marker_All_Plotting;
-  if (Marker_Config_DV!=NULL)
-    delete[] Marker_Config_DV;
-  if (Marker_All_DV!=NULL)
-    delete[] Marker_All_DV;
+  if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
+  if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
+  if (DV_Value!=NULL)    delete[] DV_Value;
+  if (Design_Variable!=NULL)    delete[] Design_Variable;
+  if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
+  if (Nozzle_Ttotal!=NULL)    delete[]  Nozzle_Ttotal;
+  if (Nozzle_Ptotal!=NULL)    delete[]  Nozzle_Ptotal;
+  if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
+  if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
+  if (Inlet_Temperature!=NULL)    delete[] Inlet_Temperature;
+  if (Inlet_Pressure!=NULL)    delete[] Inlet_Pressure;
+  if (Inlet_Velocity!=NULL)    delete[] Inlet_Velocity ;
+  if (FanFace_Mach_Target!=NULL)    delete[] FanFace_Mach_Target;
+  if (FanFace_Mach!=NULL)    delete[]  FanFace_Mach;
+  if (FanFace_Pressure!=NULL)    delete[] FanFace_Pressure;
+  if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
+  if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
+  if (Heat_Flux!=NULL)    delete[] Heat_Flux;
+  if (Displ_Value!=NULL)    delete[] Displ_Value;
+  if (Load_Value!=NULL)    delete[] Load_Value;
+  if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
+  if (Periodic_RotCenter!=NULL)    delete[] Periodic_RotCenter;
+  if (Periodic_RotAngles!=NULL)    delete[] Periodic_RotAngles;
+  if (Periodic_Translation!=NULL)    delete[] Periodic_Translation;
+  if (Periodic_Center!=NULL)    delete[] Periodic_Center;
+  if (Periodic_Rotation!=NULL)    delete[] Periodic_Rotation;
+  if (Periodic_Translate!=NULL)    delete[] Periodic_Translate;
+
+  if (ParamDV!=NULL  )    delete[] ParamDV;
+  if (MG_CorrecSmooth!=NULL    )    delete[] MG_CorrecSmooth;
+  if (Section_Location!=NULL)    delete[] Section_Location;
+  if (Kappa_Flow!=NULL      )    delete[] Kappa_Flow;
+  if (Kappa_AdjFlow!=NULL             )    delete[] Kappa_AdjFlow;
+  if (Kappa_TNE2!=NULL   )    delete[] Kappa_TNE2;
+  if (Kappa_AdjTNE2!=NULL        )    delete[] Kappa_AdjTNE2;
+  if (Kappa_LinFlow!=NULL  )    delete[] Kappa_LinFlow;
+  if (PlaneTag!=NULL)    delete[] PlaneTag;
+  if (CFLRamp!=NULL)    delete[] CFLRamp;
+  if (CFL!=NULL)    delete[] CFL;
+  /*String markers*/
+  if (Marker_Euler!=NULL )              delete[] Marker_Euler;
+  if (Marker_FarField!=NULL )           delete[] Marker_FarField;
+  if (Marker_Custom!=NULL )             delete[] Marker_Custom;
+  if (Marker_SymWall!=NULL )            delete[] Marker_SymWall;
+  if (Marker_Pressure!=NULL )           delete[] Marker_Pressure;
+  if (Marker_PerBound!=NULL )           delete[] Marker_PerBound;
+  if (Marker_PerDonor!=NULL )           delete[] Marker_PerDonor;
+  if (Marker_NearFieldBound!=NULL )     delete[] Marker_NearFieldBound;
+  if (Marker_InterfaceBound!=NULL )     delete[] Marker_InterfaceBound;
+  if (Marker_Dirichlet!=NULL )          delete[] Marker_Dirichlet;
+  if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
+  if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
+  if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
+  if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
+  if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
+  if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
+  if (Marker_HeatFlux!=NULL )           delete[] Marker_HeatFlux;
+  if (Marker_NacelleInflow!=NULL )      delete[] Marker_NacelleInflow;
+  if (Marker_NacelleExhaust!=NULL )     delete[] Marker_NacelleExhaust;
+  if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
+  if (Marker_Load!=NULL )               delete[] Marker_Load;
+  if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
+  if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
+  if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
 
 }
 
