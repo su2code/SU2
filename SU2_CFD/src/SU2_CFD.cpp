@@ -501,9 +501,9 @@ int main(int argc, char *argv[]) {
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           
           /*--- Compute 1D output. ---*/
-          if (config->GetWrt_1D_Output())
-            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+         // if (config->GetWrt_1D_Output())
+           // output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+             //                            geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
           
         }
     
@@ -522,35 +522,16 @@ int main(int argc, char *argv[]) {
     cout << endl <<"History file, closed." << endl;
   }
   
-  /*--- Solver class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-  //        if (solver_container[iZone][iMesh][iSol] != NULL) {
-  //          delete solver_container[iZone][iMesh][iSol];
-  //        }
-  //      }
-  //      delete solver_container[iZone][iMesh];
-  //    }
-  //    delete solver_container[iZone];
-  //  }
-  //  delete [] solver_container;
-  //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
-  
-  /*--- Geometry class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      delete geometry_container[iZone][iMesh];
-  //    }
-  //    delete geometry_container[iZone];
-  //  }
-  //  delete [] geometry_container;
-  //  cout <<"Geometry container, deallocated." << endl;
-  
-  /*--- Integration class deallocation ---*/
-  //  cout <<"Integration container, deallocated." << endl;
-  
-  
+    /*Deallocate config container*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (config_container[iZone]!=NULL){
+      delete config_container[iZone];
+    }
+  }
+  if (config_container!=NULL)       delete[] config_container;
+
+
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
