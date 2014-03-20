@@ -501,9 +501,9 @@ int main(int argc, char *argv[]) {
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           
           /*--- Compute 1D output. ---*/
-          if (config->GetWrt_1D_Output())
-            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+         // if (config->GetWrt_1D_Output())
+           // output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+             //                            geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
           
         }
     
@@ -521,7 +521,7 @@ int main(int argc, char *argv[]) {
     ConvHist_file.close();
     cout << endl <<"History file closed." << endl;
   }
-  
+
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {
   //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
@@ -567,7 +567,17 @@ int main(int argc, char *argv[]) {
   /*--- Grid movement class deallocation ---*/
   delete [] grid_movement;
   cout <<"Grid movement container deallocated." << endl;
-  
+
+    /*Deallocate config container*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (config_container[iZone]!=NULL){
+      delete config_container[iZone];
+    }
+  }
+  if (config_container!=NULL)       delete[] config_container;
+
+
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
