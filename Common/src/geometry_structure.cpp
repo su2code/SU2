@@ -4500,7 +4500,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   char cstr[200], buffer[50];
   ofstream Tecplot_File;
   string mesh_filename;
-  vector<double> X, Y, Z;
+  vector<double> X, Y, Z, X_n, Y_n, Z_n;
   unsigned short iNodes, nNodes = 4;
   unsigned long PointCorners[4];
   double CoordCorners[4][3];
@@ -4509,7 +4509,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   double r[3][3]; unsigned short node_counter;
   
   /*--- This routine is only meant for visualization in serial currently ---*/
-#ifdef NO_MPI
+  //#ifdef NO_MPI
   rank = MASTER_NODE;
   
   /*--- Access the point number for control volume we want to vizualize ---*/
@@ -4525,6 +4525,8 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   Coord_FacejPoint  = new double [nDim];
   
   /*--- Loop over each face of each element ---*/
+  
+  CrossProduct[0] = 0.0; CrossProduct[1] = 0.0; CrossProduct[2] = 0.0;
   
   for(iElem = 0; iElem < nElem; iElem++) {
     
@@ -4569,7 +4571,16 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         /*--- Print out the coordinates for a set of triangles making
          up a single dual control volume for visualization. ---*/
         
-        if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+        if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+            (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+        
+//        if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+          
+//          if (face_iPoint == 123 && face_jPoint == iPoint_Viz) {
+
+//            if (face_jPoint == 124 && face_iPoint == iPoint_Viz) {
+
+            
           //cout << face_iPoint << "    " << face_jPoint << endl;
           if (nDim == 2) {
             X.push_back(Coord_Elem_CG[0]); X.push_back(Coord_Edge_CG[0]);
@@ -4579,27 +4590,33 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
             Y.push_back(Coord_FaceElem_CG[1]); Y.push_back(Coord_Edge_CG[1]); Y.push_back(Coord_Elem_CG[1]);
             Z.push_back(Coord_FaceElem_CG[2]); Z.push_back(Coord_Edge_CG[2]); Z.push_back(Coord_Elem_CG[2]);
             
-            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
-                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+//            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+//                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 r1[iDim] = Coord_FaceElem_CG[iDim]-Coord_Elem_CG[iDim];
                 r2[iDim] = Coord_Edge_CG[iDim]-Coord_Elem_CG[iDim];
               }
               
-              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
-              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
-              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+              CrossProduct[0] += 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
+              CrossProduct[1] += 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
+              CrossProduct[2] += 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
               
-              Area_Dual += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
-                                    +CrossProduct[1]*CrossProduct[1]
-                                    +CrossProduct[2]*CrossProduct[2]);
-            }
+
+            
+//            }
           }
           counter++;
         }
       }
     }
   }
+  
+  Area_Dual = sqrt( CrossProduct[0]*CrossProduct[0]
+                        +CrossProduct[1]*CrossProduct[1]
+                        +CrossProduct[2]*CrossProduct[2]);
+//  cout << face_iPoint << "    " << face_jPoint << "  Dual face area: " << Area_Dual << endl;
+//  cout << CrossProduct[0] << "    " << CrossProduct[1] << "    " << CrossProduct[2] << endl;
+
   
   /*--- Write a Tecplot file to visualize the CV ---*/
   
@@ -4652,6 +4669,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   /*--- Now plot Jameson's control volume for the same node (assumes tets) ---*/
   
   Area_Jameson = 0.0; Vol = 0.0; counter = 0; nNodes = 4;
+  CrossProduct[0] = 0.0; CrossProduct[1] = 0.0; CrossProduct[2] = 0.0;
   for(iElem = 0; iElem < nElem; iElem++) {
     
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
@@ -4694,8 +4712,16 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
           }
           
           
-          if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
-            
+//          if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+          
+//            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+//                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+          
+              if (face_iPoint == 123 && face_jPoint == iPoint_Viz) {
+          
+//                if (face_jPoint == 124 && face_iPoint == iPoint_Viz) {
+
+                  
             node_counter = 0;
             for (iNodes = 0; iNodes < nNodes; iNodes++) {
               
@@ -4714,35 +4740,84 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
                 r[node_counter][2] = CoordCorners[iNodes][2];
                 
                 node_counter++;
-                
+                cout << iNodes<<endl;
               }
             }
             counter++;
             
             /*--- For only the selected edge, increment the surface area ---*/
             
-            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
-                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+//            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+//                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
               
               for (iDim = 0; iDim < nDim; iDim++) {
                 r1[iDim] = r[1][iDim]-r[0][iDim];
                 r2[iDim] = r[2][iDim]-r[0][iDim];
               }
               
-              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
-              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
-              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+                
+                double centroid[3];
+                for (iDim = 0; iDim < nDim; iDim++)
+                  centroid[iDim] = (1.0/3.0)*(r[0][iDim] + r[1][iDim] + r[2][iDim]);
+                
+                X_n.push_back(centroid[0]);
+                Y_n.push_back(centroid[1]);
+                Z_n.push_back(centroid[2]);
+                
+                if (counter == 2) {
+                X_n.push_back(centroid[0] + 0.5*(r1[1]*r2[2] - r1[2]*r2[1]));
+                Y_n.push_back(centroid[1] + 0.5*(r1[2]*r2[0] - r1[0]*r2[2]));
+                Z_n.push_back(centroid[2] + 0.5*(r1[0]*r2[1] - r1[1]*r2[0]));
+                
+                  
+                  
+                  cout << centroid[0] << "    " << centroid[1] << "     " << centroid[2] << endl;
+                  cout << centroid[0] + 0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << centroid[1] + 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "     " << centroid[2] + 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << endl;
+                  cout << face_iPoint << "    " << face_jPoint << "  Jameson face area: " << Area_Jameson << endl;
+                  
+                  CrossProduct[0] += 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
+                  CrossProduct[1] += 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
+                  CrossProduct[2] += 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
+                  
+                  cout << "Jameson face " << counter << " area vector: "<< 0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "    " << 0.5*(r1[0]*r2[1] - r1[1]*r2[0]) << endl;
+                  
+                } else {
+                  X_n.push_back(centroid[0] - 0.5*(r1[1]*r2[2] - r1[2]*r2[1]));
+                  Y_n.push_back(centroid[1] - 0.5*(r1[2]*r2[0] - r1[0]*r2[2]));
+                  Z_n.push_back(centroid[2] - 0.5*(r1[0]*r2[1] - r1[1]*r2[0]));
+                  
+                  
+                  
+                  cout << centroid[0] << "    " << centroid[1] << "     " << centroid[2] << endl;
+                  cout << centroid[0] - 0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << centroid[1] - 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "     " << centroid[2] - 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << endl;
+                  cout << face_iPoint << "    " << face_jPoint << "  Jameson face area: " << Area_Jameson << endl;
+                  
+                  CrossProduct[0] -= 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
+                  CrossProduct[1] -= 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
+                  CrossProduct[2] -= 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
+                  
+                  cout << "Jameson face " << counter << " area vector: "<< -0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << -0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "    " << -0.5*(r1[0]*r2[1] - r1[1]*r2[0]) << endl;
+                  
+                }
+
+
+                //cout << face_iPoint << "    " << face_jPoint << "  Jameson face area: " << Area_Jameson << endl;
+
               
-              Area_Jameson += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
-                                       +CrossProduct[1]*CrossProduct[1]
-                                       +CrossProduct[2]*CrossProduct[2]);
-              
-            }
+//            }
           }
         }
       }
     }
   }
+  
+  Area_Jameson = sqrt( CrossProduct[0]*CrossProduct[0]
+                       +CrossProduct[1]*CrossProduct[1]
+                       +CrossProduct[2]*CrossProduct[2]);
+  
+  cout << "  Jameson face area mag: " << Area_Jameson << endl;
+  cout << "Jameson face area vector: " << CrossProduct[0] << "    " << CrossProduct[1] << "    " << CrossProduct[2] << endl;
+
   
   /*--- Write a Tecplot file to visualize the CV ---*/
   
@@ -4759,8 +4834,13 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
       iPoint = edge[iEdge]->GetNode(0);
       jPoint = edge[iEdge]->GetNode(1);
       
-      if ((jPoint == 123 && iPoint == iPoint_Viz) ||
-          (iPoint == 123 && jPoint == iPoint_Viz) ) {
+      if (iPoint == 123 && jPoint == iPoint_Viz)  {
+      
+//        if (jPoint == 124 && iPoint == iPoint_Viz) {
+
+          
+//      if ((jPoint == 123 && iPoint == iPoint_Viz) ||
+//          (iPoint == 123 && jPoint == iPoint_Viz) ) {
         
         Normal = edge[iEdge]->GetNormal();
         
@@ -4768,6 +4848,32 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         for (iDim = 0; iDim < nDim; iDim++)
           Area_Tmp += Normal[iDim]*Normal[iDim];
         Area_Dual += sqrt(Area_Tmp);
+        cout << iPoint << "    " << jPoint << "  dual face area 2: " << Area_Dual << endl;
+
+        
+        Tecplot_File.open("edge.dat", ios::out);
+        Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
+        Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+        Tecplot_File << "ZONE I=2, J=1, K=1, DATAPACKING=POINT"<< endl;
+        
+        /*--- Write coordinates for the nodes in the order that they were found
+         for each of the edges/triangles making up a dual control volume. ---*/
+        
+        Tecplot_File << node[iPoint]->GetCoord(0) << "\t" << node[iPoint]->GetCoord(1) ;
+        if (nDim == 3) Tecplot_File << "\t" << node[iPoint]->GetCoord(2) ;
+        Tecplot_File << "\n";
+        
+        Tecplot_File << node[jPoint]->GetCoord(0) << "\t" << node[jPoint]->GetCoord(1) ;
+        if (nDim == 3) Tecplot_File << "\t" << node[jPoint]->GetCoord(2) ;
+        Tecplot_File << "\n";
+        
+        /*--- Create a new connectivity table in the order the faces were found ---*/
+        
+        //      j = i*2;
+        //      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t";
+        //      Tecplot_File << j+2<<"\t" <<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
+        
+        Tecplot_File.close();
         
       }
     }
@@ -4809,6 +4915,47 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
     Y.clear();
     Z.clear();
     
+    
+    for (int i= 0; i < counter; i++){
+      
+    strcpy(cstr,"jameson_cv_norms");
+    sprintf (buffer, "_%d.dat", i);
+    strcat(cstr,buffer);
+    
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+    Tecplot_File << "ZONE I=2, J=1, K=1, DATAPACKING=POINT"<< endl;
+    
+    /*--- Write coordinates for the nodes in the order that they were found
+     for each of the edges/triangles making up a dual control volume. ---*/
+    
+      j = i*2;
+      
+      Tecplot_File << X_n[j] << "\t" << Y_n[j];
+      if (nDim == 3) Tecplot_File << "\t" << Z_n[j];
+      Tecplot_File << "\n";
+    
+      Tecplot_File << X_n[j+1] << "\t" << Y_n[j+1];
+      if (nDim == 3) Tecplot_File << "\t" << Z_n[j+1];
+      Tecplot_File << "\n";
+      
+    /*--- Create a new connectivity table in the order the faces were found ---*/
+    
+//      j = i*2;
+//      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t";
+//      Tecplot_File << j+2<<"\t" <<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
+    
+    Tecplot_File.close();
+
+    
+  }
+    
+  
+    X_n.clear();
+    Y_n.clear();
+    Z_n.clear();
+    
   }
   
   delete[] Coord_Edge_CG;
@@ -4817,7 +4964,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   delete[] Coord_FaceiPoint;
   delete[] Coord_FacejPoint;
   
-#endif
+  //#endif
 }
 
 void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
