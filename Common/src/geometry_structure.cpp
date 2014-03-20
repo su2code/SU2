@@ -553,9 +553,9 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, u
   MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
 #endif
   
-  Buffer_Send_Coord = new double [MaxLocalVertex*3];
-  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
-  nBuffer = MaxLocalVertex*3;
+  Buffer_Send_Coord = new double [MaxLocalVertex*4];
+  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*4];
+  nBuffer = MaxLocalVertex*4;
   
   for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
     Buffer_Send_Coord[iVertex*4 + 0] = Xcoord[iVertex];
