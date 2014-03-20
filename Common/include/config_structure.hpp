@@ -145,61 +145,61 @@ private:
 	nMarker_Config;					/*!< \brief Total number of markers using the config file 
 									(note that using parallel computation this number can be different 
 									from nMarker_All). */
-	string *Marker_Euler,			/*!< \brief Euler wall markers. */
-	*Marker_FarField,				/*!< \brief Far field markers. */
-	*Marker_Custom,
-	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
-  *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
-	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
-	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
-	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
-	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
-	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
-	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
-	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
-	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
-	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
-	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
-	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
-	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
-	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
-	*Marker_NacelleExhaust,					/*!< \brief Nacelle Exhaust flow markers. */
-	*Marker_Displacement,					/*!< \brief Displacement markers. */
-	*Marker_Load,					/*!< \brief Load markers. */
-	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
-	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
-	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
-	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
-	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
-	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
-	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
-	double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
-	double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
-	double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
-	double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
-	double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
-	double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
-	double *FanFace_Mach_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *FanFace_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-    double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
-	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
-	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
-	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
-	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
-	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
-	double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
-	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
-	double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
+	string *Marker_Euler=NULL,			/*!< \brief Euler wall markers. */
+	*Marker_FarField=NULL,				/*!< \brief Far field markers. */
+	*Marker_Custom=NULL,
+	*Marker_SymWall=NULL,				/*!< \brief Symmetry wall markers. */
+  *Marker_Pressure=NULL,				/*!< \brief Pressure boundary markers. */
+	*Marker_PerBound=NULL,				/*!< \brief Periodic boundary markers. */
+	*Marker_PerDonor=NULL,				/*!< \brief Rotationally periodic boundary donor markers. */
+	*Marker_NearFieldBound=NULL,				/*!< \brief Near Field boundaries markers. */
+	*Marker_InterfaceBound=NULL,				/*!< \brief Interface boundaries markers. */
+	*Marker_Dirichlet=NULL,				/*!< \brief Interface boundaries markers. */
+	*Marker_Dirichlet_Elec=NULL,				/*!< \brief Interface boundaries markers. */
+	*Marker_Inlet=NULL,					/*!< \brief Inlet flow markers. */
+	*Marker_Supersonic_Inlet=NULL,					/*!< \brief Supersonic inlet flow markers. */
+	*Marker_Outlet=NULL,					/*!< \brief Outlet flow markers. */
+	*Marker_Out_1D=NULL,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
+	*Marker_Isothermal=NULL,     /*!< \brief Isothermal wall markers. */
+	*Marker_HeatFlux=NULL,       /*!< \brief Constant heat flux wall markers. */
+	*Marker_NacelleInflow=NULL,					/*!< \brief Nacelle Inflow flow markers. */
+	*Marker_NacelleExhaust=NULL,					/*!< \brief Nacelle Exhaust flow markers. */
+	*Marker_Displacement=NULL,					/*!< \brief Displacement markers. */
+	*Marker_Load=NULL,					/*!< \brief Load markers. */
+	*Marker_FlowLoad=NULL,					/*!< \brief Flow Load markers. */
+	*Marker_Neumann=NULL,					/*!< \brief Neumann flow markers. */
+	*Marker_Neumann_Elec=NULL,					/*!< \brief Neumann flow markers. */
+	*Marker_All_Tag=NULL;				/*!< \brief Global index for markers using grid information. */
+	double *Dirichlet_Value=NULL;    /*!< \brief Specified Dirichlet value at the boundaries. */
+	double *Nozzle_Ttotal=NULL;    /*!< \brief Specified total temperatures for nacelle boundaries. */
+	double *Nozzle_Ptotal=NULL;    /*!< \brief Specified total pressures for nacelle boundaries. */
+	double *Inlet_Ttotal=NULL;    /*!< \brief Specified total temperatures for inlet boundaries. */
+	double *Inlet_Ptotal=NULL;    /*!< \brief Specified total pressures for inlet boundaries. */
+	double **Inlet_FlowDir=NULL;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+	double *Inlet_Temperature=NULL;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
+	double *Inlet_Pressure=NULL;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
+	double **Inlet_Velocity=NULL;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
+	double *FanFace_Mach_Target=NULL;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	double *FanFace_Mach=NULL;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+	double *FanFace_Pressure=NULL;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+    double *Outlet_Pressure=NULL;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
+	double *Isothermal_Temperature=NULL; /*!< \brief Specified isothermal wall temperatures (static). */
+	double *Heat_Flux=NULL;  /*!< \brief Specified wall heat fluxes. */
+	double *Displ_Value=NULL;    /*!< \brief Specified displacement for displacement boundaries. */
+	double *Load_Value=NULL;    /*!< \brief Specified force for load boundaries. */
+	double *FlowLoad_Value=NULL;    /*!< \brief Specified force for flow load boundaries. */
+	double **Periodic_RotCenter=NULL;  /*!< \brief Rotational center for each periodic boundary. */
+	double **Periodic_RotAngles=NULL;      /*!< \brief Rotation angles for each periodic boundary. */
+	double **Periodic_Translation=NULL;      /*!< \brief Translation vector for each periodic boundary. */
 	unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
-	double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
-	double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
-	double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
-	string *Marker_Config_Tag;			/*!< \brief Global index for markers using config file. */
-	unsigned short *Marker_All_Boundary,			/*!< \brief Global index for boundaries using grid information. */
-	*Marker_Config_Boundary;		/*!< \brief Global index for boundaries using config file. */
-	short *Marker_All_SendRecv;		/*!< \brief Information about if the boundary is sended (+), received (-). */
-	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
+	double **Periodic_Center=NULL;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
+	double **Periodic_Rotation=NULL;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
+	double **Periodic_Translate=NULL;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
+	string *Marker_Config_Tag=NULL;			/*!< \brief Global index for markers using config file. */
+	unsigned short *Marker_All_Boundary=NULL,			/*!< \brief Global index for boundaries using grid information. */
+	*Marker_Config_Boundary=NULL;		/*!< \brief Global index for boundaries using config file. */
+	short *Marker_All_SendRecv=NULL;		/*!< \brief Information about if the boundary is sended (+), received (-). */
+	short *Marker_All_PerBound=NULL;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
@@ -207,7 +207,7 @@ private:
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
 	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
-	double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
+	double *RK_Alpha_Step=NULL;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double
@@ -371,7 +371,7 @@ private:
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
 	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
-	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */ 
+	double *U_FreeStreamND=NULL;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
@@ -394,28 +394,28 @@ private:
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
-	string *Marker_Monitoring,			/*!< \brief Markers to monitor. */
-	*Marker_Designing,					/*!< \brief Markers to plot. */
-	*Marker_GeoEval,					/*!< \brief Markers to plot. */
-	*Marker_Plotting,					/*!< \brief Markers to plot. */
-  *Marker_Moving,						/*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-	*Marker_DV;						/*!< \brief Markers affected by the design variables. */
-	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
-	*Marker_All_GeoEval,				/*!< \brief Global index for geometrical evaluation. */
-	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
-	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
-  *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
-	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
-	*Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
-	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
-	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
-	*Marker_Config_GeoEval,			/*!< \brief Global index for monitoring using the config information. */
-	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
-	*Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
-	*Marker_Config_DV,				/*!< \brief Global index for design variable markers using the config information. */
-	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
-	string *PlaneTag;			/*!< \brief Global index for the plane adaptation (upper, lower). */
+  string *Marker_Monitoring=NULL,     /*!< \brief Markers to monitor. */
+  *Marker_Designing=NULL,         /*!< \brief Markers to plot. */
+  *Marker_GeoEval=NULL,         /*!< \brief Markers to plot. */
+  *Marker_Plotting=NULL,          /*!< \brief Markers to plot. */
+  *Marker_Moving=NULL,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_DV=NULL;            /*!< \brief Markers affected by the design variables. */
+  unsigned short  *Marker_All_Monitoring=NULL,        /*!< \brief Global index for monitoring using the grid information. */
+  *Marker_All_GeoEval=NULL,       /*!< \brief Global index for geometrical evaluation. */
+  *Marker_All_Plotting=NULL,        /*!< \brief Global index for plotting using the grid information. */
+  *Marker_All_DV=NULL,          /*!< \brief Global index for design variable markers using the grid information. */
+  *Marker_All_Moving=NULL,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_Designing=NULL,         /*!< \brief Global index for moving using the grid information. */
+  *Marker_All_Out_1D=NULL,      /*!< \brief Global index for moving using 1D integrated output. */
+  *Marker_Config_Monitoring=NULL,     /*!< \brief Global index for monitoring using the config information. */
+  *Marker_Config_Designing=NULL,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_Config_GeoEval=NULL,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_Config_Plotting=NULL,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_Config_Out_1D=NULL,      /*!< \brief Global index for plotting using the config information. */
+  *Marker_Config_Moving=NULL,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_Config_DV=NULL,       /*!< \brief Global index for design variable markers using the config information. */
+  *Marker_Config_PerBound=NULL;     /*!< \brief Global index for periodic boundaries using the config information. */
+  string *PlaneTag=NULL;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
@@ -426,12 +426,12 @@ private:
 	RefElemLength,				/*!< \brief Reference element length for computing the slope limiting epsilon. */
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
-  *RefOriginMoment,           /*!< \brief Origin for moment computation. */
-	*RefOriginMoment_X,			/*!< \brief X Origin for moment computation. */
-  *RefOriginMoment_Y,			/*!< \brief Y Origin for moment computation. */
-	*RefOriginMoment_Z,			/*!< \brief Z Origin for moment computation. */
-	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
-  *CFL,
+  *RefOriginMoment=NULL,           /*!< \brief Origin for moment computation. */
+  *RefOriginMoment_X=NULL,      /*!< \brief X Origin for moment computation. */
+  *RefOriginMoment_Y=NULL,      /*!< \brief Y Origin for moment computation. */
+  *RefOriginMoment_Z=NULL,      /*!< \brief Z Origin for moment computation. */
+  *CFLRamp=NULL,      /*!< \brief Information about the CFL ramp. */
+  *CFL=NULL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
 	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
@@ -475,31 +475,31 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
-	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
-	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
-	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
-	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
-  *RotationModes,				/*!< \brief Rotational modes of energy storage */
-  *Ref_Temperature,   			/*!< \brief Reference temperature for thermodynamic relations */
-  *Tcf_a,   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcf_b,   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Diss;                /*!< \brief Dissociation potential. */
+	double *ArrheniusCoefficient=NULL,					/*!< \brief Arrhenius reaction coefficient */
+	*ArrheniusEta=NULL,								/*!< \brief Arrhenius reaction temperature exponent */
+	*ArrheniusTheta=NULL,							/*!< \brief Arrhenius reaction characteristic temperature */
+	*CharVibTemp=NULL,									/*!< \brief Characteristic vibrational temperature for e_vib */
+  *RotationModes=NULL,				/*!< \brief Rotational modes of energy storage */
+  *Ref_Temperature=NULL,   			/*!< \brief Reference temperature for thermodynamic relations */
+  *Tcf_a=NULL,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcf_b=NULL,   /*!< \brief Rate controlling temperature exponent (fwd) */
+  *Tcb_a=NULL,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Tcb_b=NULL,   /*!< \brief Rate controlling temperature exponent (bkw) */
+  *Diss=NULL;                /*!< \brief Dissociation potential. */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp;						/*!< \brief No of freestream temperatures specified */
 	bool Inlet_Outlet_Defined; /*!< \brief  that inlet and outlet conditions are defined for each species*/
-	double *Particle_Mass,					/*!< \brief Mass of all particles present in the plasma */
-	*Molar_Mass,								/*!< \brief Molar mass of species in the plasma [kg/kmol] */
-	Mixture_Molar_mass,				/*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
-	*Gas_Composition,					/*!< \brief Initial mass fractions of flow [dimensionless] */
-	*Enthalpy_Formation,			/*!< \brief Enthalpy of formation */
-	**Blottner,               /*!< \brief Blottner viscosity coefficients */
-	*Species_Ref_Temperature,	/*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
-	*Species_Ref_Viscosity;		/*!< \brief Reference viscosity  of all particles present in the plasma */
-  unsigned short *nElStates; /*!< \brief Number of electron states. */
-  double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
-  **degen; /*!< \brief Degeneracy of electron states. */
+  double *Particle_Mass=NULL,         /*!< \brief Mass of all particles present in the plasma */
+  *Molar_Mass=NULL,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
+  Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
+  *Gas_Composition=NULL,          /*!< \brief Initial mass fractions of flow [dimensionless] */
+  *Enthalpy_Formation=NULL,     /*!< \brief Enthalpy of formation */
+  **Blottner=NULL,               /*!< \brief Blottner viscosity coefficients */
+  *Species_Ref_Temperature=NULL,  /*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
+  *Species_Ref_Viscosity=NULL;    /*!< \brief Reference viscosity  of all particles present in the plasma */
+  unsigned short *nElStates=NULL; /*!< \brief Number of electron states. */
+  double **CharElTemp=NULL, /*!< \brief Characteristic temperature of electron states. */
+  **degen=NULL; /*!< \brief Degeneracy of electron states. */
 	double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */ 
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -536,13 +536,13 @@ private:
 	Pressure_FreeStreamND,     /*!< \brief Farfield pressure value (external flow). */
 	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
-	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
+  *Velocity_FreeStreamND=NULL,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
-	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
-	double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
-	***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+	int ***Reactions=NULL;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
+  double ***Omega00=NULL,        /*!< \brief Collision integrals (Omega(0,0)) */
+  ***Omega11=NULL;                  /*!< \brief Collision integrals (Omega(1,1)) */
 	bool Write_Converted_Mesh; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
@@ -553,30 +553,30 @@ private:
 	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
 	double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
-	double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
-	*Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
-	*Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-	*Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
-	*Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
-	*Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
-	*Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-	*Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
-	*Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
-	*Pitching_Omega_X,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-	*Pitching_Omega_Y,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
-	*Pitching_Omega_Z,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
-	*Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
-	*Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
-	*Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
-	*Pitching_Phase_X,           /*!< \brief Pitching phase offset about the x-axis. */
-	*Pitching_Phase_Y,           /*!< \brief Pitching phase offset about the y-axis. */
-	*Pitching_Phase_Z,           /*!< \brief Pitching phase offset about the z-axis. */
-	*Plunging_Omega_X,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
-	*Plunging_Omega_Y,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
-	*Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
-	*Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
-	*Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-	*Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+  double *Motion_Origin_X=NULL,    /*!< \brief X-coordinate of the mesh motion origin. */
+  *Motion_Origin_Y=NULL,           /*!< \brief Y-coordinate of the mesh motion origin. */
+  *Motion_Origin_Z=NULL,           /*!< \brief Z-coordinate of the mesh motion origin. */
+  *Translation_Rate_X=NULL,           /*!< \brief Translational velocity of the mesh in the x-direction. */
+  *Translation_Rate_Y=NULL,           /*!< \brief Translational velocity of the mesh in the y-direction. */
+  *Translation_Rate_Z=NULL,           /*!< \brief Translational velocity of the mesh in the z-direction. */
+  *Rotation_Rate_X=NULL,           /*!< \brief Angular velocity of the mesh about the x-axis. */
+  *Rotation_Rate_Y=NULL,           /*!< \brief Angular velocity of the mesh about the y-axis. */
+  *Rotation_Rate_Z=NULL,           /*!< \brief Angular velocity of the mesh about the z-axis. */
+  *Pitching_Omega_X=NULL,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
+  *Pitching_Omega_Y=NULL,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
+  *Pitching_Omega_Z=NULL,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
+  *Pitching_Ampl_X=NULL,           /*!< \brief Pitching amplitude about the x-axis. */
+  *Pitching_Ampl_Y=NULL,           /*!< \brief Pitching amplitude about the y-axis. */
+  *Pitching_Ampl_Z=NULL,           /*!< \brief Pitching amplitude about the z-axis. */
+  *Pitching_Phase_X=NULL,           /*!< \brief Pitching phase offset about the x-axis. */
+  *Pitching_Phase_Y=NULL,           /*!< \brief Pitching phase offset about the y-axis. */
+  *Pitching_Phase_Z=NULL,           /*!< \brief Pitching phase offset about the z-axis. */
+  *Plunging_Omega_X=NULL,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
+  *Plunging_Omega_Y=NULL,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
+  *Plunging_Omega_Z=NULL,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
+  *Plunging_Ampl_X=NULL,           /*!< \brief Plunging amplitude in the x-direction. */
+  *Plunging_Ampl_Y=NULL,           /*!< \brief Plunging amplitude in the y-direction. */
+  *Plunging_Ampl_Z=NULL;           /*!< \brief Plunging amplitude in the z-direction. */
   unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
 	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
 	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
