@@ -519,7 +519,7 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) {
     ConvHist_file.close();
-    cout << endl <<"History file, closed." << endl;
+    cout << endl <<"History file closed." << endl;
   }
   
   /*--- Solver class deallocation ---*/
@@ -548,8 +548,25 @@ int main(int argc, char *argv[]) {
   //  cout <<"Geometry container, deallocated." << endl;
   
   /*--- Integration class deallocation ---*/
-  //  cout <<"Integration container, deallocated." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete integration_container[iZone];
+  }
+  delete [] integration_container;
+  cout <<"Integration container deallocated." << endl;
   
+  /*--- Free-form deformation class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete FFDBox[iZone];
+  }
+  delete [] FFDBox;
+  cout <<"FFD container deallocated." << endl;
+  
+  delete [] surface_movement;
+  cout <<"Surface movement container deallocated." << endl;
+  
+  /*--- Grid movement class deallocation ---*/
+  delete [] grid_movement;
+  cout <<"Grid movement container deallocated." << endl;
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
