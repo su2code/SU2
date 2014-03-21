@@ -1466,7 +1466,7 @@ public:
 
 /*! 
  * \class CDomainGeometry
- * \brief Class for defining an especial kind of grid used in the partioning stage.
+ * \brief Class for defining a special kind of grid used in the partioning stage.
  * \author F. Palacios.
  * \version 3.0.0 "eagle"
  */

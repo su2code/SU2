@@ -241,24 +241,19 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 }
 
 CPoint::~CPoint() {
-  
-	Elem.~vector();
-	Point.~vector();
-	Edge.~vector();
-  Children_CV.~vector();
 
-	if (Volume != NULL) delete[] Volume;
-	if (vertex != NULL) delete[] vertex;
-	if (coord != NULL) delete[] coord;
+	if (Volume != NULL)    delete[] Volume;
+	if (vertex != NULL)    delete[] vertex;
+	if (coord != NULL)     delete[] coord;
 	if (Coord_old != NULL) delete[] Coord_old;
 	if (Coord_sum != NULL) delete[] Coord_sum;
-	if (Coord_n != NULL) delete[] Coord_n;
-	if (Coord_n1 != NULL) delete[] Coord_n1;
-	if (Coord_p1 != NULL) delete[] Coord_p1;
-	if (GridVel != NULL) delete[] GridVel;
+	if (Coord_n != NULL)   delete[] Coord_n;
+	if (Coord_n1 != NULL)  delete[] Coord_n1;
+	if (Coord_p1 != NULL)  delete[] Coord_p1;
+	if (GridVel != NULL)   delete[] GridVel;
   if (GridVel_Grad != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      delete [] GridVel_Grad[iDim];
+      if (GridVel_Grad[iDim] != NULL) delete GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
   
