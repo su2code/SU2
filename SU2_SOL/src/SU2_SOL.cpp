@@ -63,9 +63,9 @@ int main(int argc, char *argv[]) {
 	for (iZone = 0; iZone < nZone; iZone++) {
 		
 		/*--- Definition of the configuration class per zones ---*/
-		if (argc == 2) config[iZone] = new CConfig(argv[1], SU2_SOL, iZone, nZone, VERB_HIGH);
+		if (argc == 2) config[iZone] = new CConfig(argv[1], SU2_SOL, iZone, nZone, 0, VERB_HIGH);
 		else { strcpy (file_name, "default.cfg"); config[iZone] = new CConfig(file_name, SU2_SOL,
-                                                                          iZone, nZone, VERB_HIGH); }
+                                                                          iZone, nZone, 0, VERB_HIGH); }
 		
 #ifndef NO_MPI
 		/*--- Change the name of the input-output files for a parallel computation ---*/

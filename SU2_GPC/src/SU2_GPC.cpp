@@ -25,7 +25,6 @@ using namespace std;
 
 int main(int argc, char *argv[]) {	
   
-  /*--- Local variables ---*/
 	unsigned short iMarker, iDim, iDV, iFFDBox, nZone = 1;
 	unsigned long iVertex, iPoint;
 	double delta_eps, my_Gradient, Gradient, *Normal, dS;
@@ -51,46 +50,54 @@ int main(int argc, char *argv[]) {
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
+  
 	CFreeFormDefBox** FFDBox = NULL;
 	CConfig *config = NULL;
 	CGeometry *boundary = NULL;
 	CSurfaceMovement *surface_mov = NULL;
 	
 	/*--- Definition of the Class for the definition of the problem ---*/
-	if (argc == 2) config = new CConfig(argv[1], SU2_GPC, ZONE_0, nZone, VERB_HIGH);
+  
+	if (argc == 2) config = new CConfig(argv[1], SU2_GPC, ZONE_0, nZone, 0, VERB_HIGH);
 	else {
 		char grid_file[200];
 		strcpy (grid_file, "default.cfg");
-		config = new CConfig(grid_file, SU2_GPC, ZONE_0, nZone, VERB_HIGH);
+		config = new CConfig(grid_file, SU2_GPC, ZONE_0, nZone, 0, VERB_HIGH);
 	}
 	
 #ifndef NO_MPI
 	/*--- Change the name of the input-output files for the 
 	 parallel computation ---*/
+  
 	config->SetFileNameDomain(rank+1);
 #endif
 	
 	/*--- Definition of the Class for the boundary of the geometry,
    note that the orientation of the elements is not checked ---*/
+  
 	boundary = new CBoundaryGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
   /*--- Perform the non-dimensionalization, in case any values are needed ---*/
+  
   config->SetNondimensionalization(boundary->GetnDim(), ZONE_0);
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
   /*--- Boundary geometry preprocessing ---*/
+  
 	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl; 
 	boundary->SetVertex();
 	
 	/*--- Create the control volume structures ---*/
+  
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl; 
 	boundary->SetBoundControlVolume(config, ALLOCATE);
   
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
+  
   if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl; 
   boundary->SetBoundSensitivity(config);
   
@@ -326,7 +333,10 @@ int main(int argc, char *argv[]) {
 				case FREE_SURFACE :
 					if (iDV == 0) Gradient_file << "Free-Surface grad. using cont. adj."<< endl;
 					cout << "Free-surface gradient: "<< Gradient << "." << endl; break;
-        case HEAT_LOAD :
+        case HEAT :
+					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
+					cout << "Heat load gradient: "<< Gradient << "." << endl; break;
+        case NORM_HEAT :
 					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
 					cout << "Heat load gradient: "<< Gradient << "." << endl; break;
           
