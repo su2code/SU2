@@ -553,9 +553,9 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, u
   MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
 #endif
   
-  Buffer_Send_Coord = new double [MaxLocalVertex*3];
-  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*3];
-  nBuffer = MaxLocalVertex*3;
+  Buffer_Send_Coord = new double [MaxLocalVertex*4];
+  Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex*4];
+  nBuffer = MaxLocalVertex*4;
   
   for (iVertex = 0; iVertex < nLocalVertex; iVertex++) {
     Buffer_Send_Coord[iVertex*4 + 0] = Xcoord[iVertex];
@@ -724,12 +724,11 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {}
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
-  /*--- Local variables and initialization ---*/
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  unsigned short iNode_Surface, iMarker;
-  unsigned long Point_Surface, iElem_Surface;
-  double Conversion_Factor = 1.0;
+  unsigned short iNode_Surface, iMarker, iDim;
+  unsigned long Point_Surface, iElem_Surface, iPoint;
+  double Mesh_Scale_Change = 1.0, NewCoord[3];
   int rank = MASTER_NODE;
   nZone = val_nZone;
   
@@ -737,6 +736,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   unsigned short val_format = config->GetMesh_FileFormat();
   
   /*--- Initialize counters for local/global points & elements ---*/
+  
 #ifndef NO_MPI
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -759,7 +759,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       Read_NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     default:
-      cout << "geometry_structure.cpp" << endl;
       cout << "Unrecognized mesh format specified!!" << endl;
 #ifdef NO_MPI
       exit(1);
@@ -775,10 +774,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       break;
   }
   
-  if (config->GetKind_SU2() == SU2_CFD) Conversion_Factor = config->GetConversion_Factor();
-  else Conversion_Factor = 1.0;
-  
   /*--- Loop over the surface element to set the boundaries ---*/
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
       for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
@@ -791,25 +788,27 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           node[Point_Surface]->SetPhysicalBoundary(true);
       }
   
-  /*--- Write a new copy of the grid in meters if requested ---*/
-  if (config->GetKind_SU2() == SU2_CFD)
-    if (config->GetWrite_Converted_Mesh()) {
-      SetMeshFile(config,config->GetMesh_Out_FileName());
-      cout.precision(4);
-      cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
-      cout << "  and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
-    }
+  /*--- Loop over the points element to re-scale the mesh, and plot it ---*/
   
-#ifndef NO_MPI
-  /*--- Synchronization point after reading the grid ---*/
-  if (config->GetKind_SU2() != SU2_DDC) {
-#ifdef WINDOWS
-    MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
+  if (config->GetKind_SU2() == SU2_CFD) {
+    
+    Mesh_Scale_Change = config->GetMesh_Scale_Change();
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
+      }
+      node[iPoint]->SetCoord(NewCoord);
+    }
+    
+    if (config->GetMesh_Output()) {
+      SetMeshFile(config, config->GetMesh_Out_FileName());
+      cout.precision(4);
+      cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
+      cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+    }
+    
   }
-#endif
   
 }
 
@@ -819,13 +818,12 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
 
 void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
   
-  /*--- Local variables and initialization ---*/
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type, iMarker, iChar, iCount = 0;
   unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
   char cstr[200];
-  double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0, dummyDouble;
+  double Coord_2D[2], Coord_3D[3], dummyDouble;
   string::size_type position;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   int rank = MASTER_NODE, size = SINGLE_NODE;
@@ -932,7 +930,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   /*--- If more than one, find the zone in the mesh file ---*/
   if (val_nZone > 1 || time_spectral) {
     if (time_spectral) {
-      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone << ":" << endl;
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -940,8 +938,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         if (position != string::npos) {
           text_line.erase (0,6);
           unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == val_iZone) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone << ":" << endl;
+          if (jDomain == val_iZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << ":" << endl;
             break;
           }
         }
@@ -1472,14 +1470,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #endif
       }
       
-      /*--- Retrieve grid conversion factor. The conversion is only
-       applied for SU2_CFD. All other SU2 components leave the mesh
-       as is. ---*/
-      if (config->GetKind_SU2() == SU2_CFD)
-        Conversion_Factor = config->GetConversion_Factor();
-      else
-        Conversion_Factor = 1.0;
-      
       node = new CPoint*[nPoint];
       iPoint = 0;
       while (iPoint < nPoint) {
@@ -1494,7 +1484,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
             if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
             else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = iPoint; }
 #endif
-            node[iPoint] = new CPoint(Conversion_Factor*Coord_2D[0], Conversion_Factor*Coord_2D[1], GlobalIndex, config);
+            node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
             iPoint++; break;
           case 3:
             GlobalIndex = iPoint;
@@ -1504,7 +1494,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
             if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
             else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = iPoint; }
 #endif
-            node[iPoint] = new CPoint(Conversion_Factor*Coord_3D[0], Conversion_Factor*Coord_3D[1], Conversion_Factor*Coord_3D[2], GlobalIndex, config);
+            node[iPoint] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], GlobalIndex, config);
             iPoint++; break;
         }
       }
@@ -1760,7 +1750,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   unsigned long Point_Surface, iElem_Surface, iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0,
   vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummy, GlobalIndex;
   char cstr[200];
-  double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0;
+  double Coord_2D[2], Coord_3D[3];
   string::size_type position;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   int rank = MASTER_NODE, size = SINGLE_NODE;
@@ -2192,25 +2182,12 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         }
       }
       
-      /*--- Now write the node coordinates. First write
-       the total number of vertices. Convert the mesh
-       if requesed. ---*/
-      if (config->GetKind_SU2() == SU2_CFD) {
-        if (config->GetWrite_Converted_Mesh()) {
-          Conversion_Factor = config->GetConversion_Factor();
-          cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
-        } else {
-          Conversion_Factor = 1.0;
-        }
-      } else {
-        Conversion_Factor = 1.0;
-      }
       fprintf( SU2File, "NPOIN= %i\n", totalVerts);
       counter = 0;
       for ( int k = 0; k < nzones; k ++ ) {
         for ( int i = 0; i < vertices[k]; i++ ) {
           for ( int j = 0; j < cell_dim; j++ ) {
-            fprintf( SU2File, "%.16le\t", Conversion_Factor*gridCoords[k][j][i]);
+            fprintf( SU2File, "%.16le\t", gridCoords[k][j][i]);
           }
           fprintf( SU2File, "%d\n", counter);
           counter++;
@@ -2345,14 +2322,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       cout << Global_nelem_pyramid << " pyramids." << endl;
   }
   
-  /*--- Retrieve grid conversion factor. The conversion is only
-   applied for SU2_CFD. All other SU2 components leave the mesh
-   as is. ---*/
-  if (config->GetKind_SU2() == SU2_CFD)
-    Conversion_Factor = config->GetConversion_Factor();
-  else
-    Conversion_Factor = 1.0;
-  
   /*--- Read node coordinates. Note this assumes serial mode. ---*/
   nPoint = totalVerts;
   nPointDomain = nPoint;
@@ -2366,11 +2335,11 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       switch(nDim) {
         case 2:
           GlobalIndex = i;
-          node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], GlobalIndex, config);
+          node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], GlobalIndex, config);
           iPoint++; break;
         case 3:
           GlobalIndex = i;
-          node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], Conversion_Factor*Coord_cgns[2], GlobalIndex, config);
+          node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], Coord_cgns[2], GlobalIndex, config);
           iPoint++; break;
       }
     }
@@ -4500,7 +4469,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   char cstr[200], buffer[50];
   ofstream Tecplot_File;
   string mesh_filename;
-  vector<double> X, Y, Z;
+  vector<double> X, Y, Z, X_n, Y_n, Z_n;
   unsigned short iNodes, nNodes = 4;
   unsigned long PointCorners[4];
   double CoordCorners[4][3];
@@ -4509,7 +4478,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   double r[3][3]; unsigned short node_counter;
   
   /*--- This routine is only meant for visualization in serial currently ---*/
-#ifdef NO_MPI
+  //#ifdef NO_MPI
   rank = MASTER_NODE;
   
   /*--- Access the point number for control volume we want to vizualize ---*/
@@ -4525,6 +4494,8 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   Coord_FacejPoint  = new double [nDim];
   
   /*--- Loop over each face of each element ---*/
+  
+  CrossProduct[0] = 0.0; CrossProduct[1] = 0.0; CrossProduct[2] = 0.0;
   
   for(iElem = 0; iElem < nElem; iElem++) {
     
@@ -4569,7 +4540,16 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         /*--- Print out the coordinates for a set of triangles making
          up a single dual control volume for visualization. ---*/
         
-        if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+        if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+            (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+        
+//        if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+          
+//          if (face_iPoint == 123 && face_jPoint == iPoint_Viz) {
+
+//            if (face_jPoint == 124 && face_iPoint == iPoint_Viz) {
+
+            
           //cout << face_iPoint << "    " << face_jPoint << endl;
           if (nDim == 2) {
             X.push_back(Coord_Elem_CG[0]); X.push_back(Coord_Edge_CG[0]);
@@ -4579,27 +4559,33 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
             Y.push_back(Coord_FaceElem_CG[1]); Y.push_back(Coord_Edge_CG[1]); Y.push_back(Coord_Elem_CG[1]);
             Z.push_back(Coord_FaceElem_CG[2]); Z.push_back(Coord_Edge_CG[2]); Z.push_back(Coord_Elem_CG[2]);
             
-            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
-                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+//            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+//                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
               for (iDim = 0; iDim < nDim; iDim++) {
                 r1[iDim] = Coord_FaceElem_CG[iDim]-Coord_Elem_CG[iDim];
                 r2[iDim] = Coord_Edge_CG[iDim]-Coord_Elem_CG[iDim];
               }
               
-              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
-              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
-              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+              CrossProduct[0] += 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
+              CrossProduct[1] += 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
+              CrossProduct[2] += 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
               
-              Area_Dual += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
-                                    +CrossProduct[1]*CrossProduct[1]
-                                    +CrossProduct[2]*CrossProduct[2]);
-            }
+
+            
+//            }
           }
           counter++;
         }
       }
     }
   }
+  
+  Area_Dual = sqrt( CrossProduct[0]*CrossProduct[0]
+                        +CrossProduct[1]*CrossProduct[1]
+                        +CrossProduct[2]*CrossProduct[2]);
+//  cout << face_iPoint << "    " << face_jPoint << "  Dual face area: " << Area_Dual << endl;
+//  cout << CrossProduct[0] << "    " << CrossProduct[1] << "    " << CrossProduct[2] << endl;
+
   
   /*--- Write a Tecplot file to visualize the CV ---*/
   
@@ -4608,7 +4594,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   strcat(cstr,buffer);
   
   Tecplot_File.open(cstr, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+  Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
   
   if (nDim == 2) {
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
@@ -4652,6 +4638,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   /*--- Now plot Jameson's control volume for the same node (assumes tets) ---*/
   
   Area_Jameson = 0.0; Vol = 0.0; counter = 0; nNodes = 4;
+  CrossProduct[0] = 0.0; CrossProduct[1] = 0.0; CrossProduct[2] = 0.0;
   for(iElem = 0; iElem < nElem; iElem++) {
     
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
@@ -4694,8 +4681,16 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
           }
           
           
-          if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
-            
+//          if (face_iPoint == iPoint_Viz || face_jPoint == iPoint_Viz) {
+          
+//            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+//                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+          
+              if (face_iPoint == 123 && face_jPoint == iPoint_Viz) {
+          
+//                if (face_jPoint == 124 && face_iPoint == iPoint_Viz) {
+
+                  
             node_counter = 0;
             for (iNodes = 0; iNodes < nNodes; iNodes++) {
               
@@ -4714,35 +4709,84 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
                 r[node_counter][2] = CoordCorners[iNodes][2];
                 
                 node_counter++;
-                
+                cout << iNodes<<endl;
               }
             }
             counter++;
             
             /*--- For only the selected edge, increment the surface area ---*/
             
-            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
-                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
+//            if ((face_jPoint == 123 && face_iPoint == iPoint_Viz) ||
+//                (face_iPoint == 123 && face_jPoint == iPoint_Viz) ) {
               
               for (iDim = 0; iDim < nDim; iDim++) {
                 r1[iDim] = r[1][iDim]-r[0][iDim];
                 r2[iDim] = r[2][iDim]-r[0][iDim];
               }
               
-              CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1]);
-              CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2]);
-              CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0]);
+                
+                double centroid[3];
+                for (iDim = 0; iDim < nDim; iDim++)
+                  centroid[iDim] = (1.0/3.0)*(r[0][iDim] + r[1][iDim] + r[2][iDim]);
+                
+                X_n.push_back(centroid[0]);
+                Y_n.push_back(centroid[1]);
+                Z_n.push_back(centroid[2]);
+                
+                if (counter == 2) {
+                X_n.push_back(centroid[0] + 0.5*(r1[1]*r2[2] - r1[2]*r2[1]));
+                Y_n.push_back(centroid[1] + 0.5*(r1[2]*r2[0] - r1[0]*r2[2]));
+                Z_n.push_back(centroid[2] + 0.5*(r1[0]*r2[1] - r1[1]*r2[0]));
+                
+                  
+                  
+                  cout << centroid[0] << "    " << centroid[1] << "     " << centroid[2] << endl;
+                  cout << centroid[0] + 0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << centroid[1] + 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "     " << centroid[2] + 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << endl;
+                  cout << face_iPoint << "    " << face_jPoint << "  Jameson face area: " << Area_Jameson << endl;
+                  
+                  CrossProduct[0] += 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
+                  CrossProduct[1] += 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
+                  CrossProduct[2] += 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
+                  
+                  cout << "Jameson face " << counter << " area vector: "<< 0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "    " << 0.5*(r1[0]*r2[1] - r1[1]*r2[0]) << endl;
+                  
+                } else {
+                  X_n.push_back(centroid[0] - 0.5*(r1[1]*r2[2] - r1[2]*r2[1]));
+                  Y_n.push_back(centroid[1] - 0.5*(r1[2]*r2[0] - r1[0]*r2[2]));
+                  Z_n.push_back(centroid[2] - 0.5*(r1[0]*r2[1] - r1[1]*r2[0]));
+                  
+                  
+                  
+                  cout << centroid[0] << "    " << centroid[1] << "     " << centroid[2] << endl;
+                  cout << centroid[0] - 0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << centroid[1] - 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "     " << centroid[2] - 0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << endl;
+                  cout << face_iPoint << "    " << face_jPoint << "  Jameson face area: " << Area_Jameson << endl;
+                  
+                  CrossProduct[0] -= 0.5*(r1[1]*r2[2] - r1[2]*r2[1]);
+                  CrossProduct[1] -= 0.5*(r1[2]*r2[0] - r1[0]*r2[2]);
+                  CrossProduct[2] -= 0.5*(r1[0]*r2[1] - r1[1]*r2[0]);
+                  
+                  cout << "Jameson face " << counter << " area vector: "<< -0.5*(r1[1]*r2[2] - r1[2]*r2[1]) << "    " << -0.5*(r1[2]*r2[0] - r1[0]*r2[2]) << "    " << -0.5*(r1[0]*r2[1] - r1[1]*r2[0]) << endl;
+                  
+                }
+
+
+                //cout << face_iPoint << "    " << face_jPoint << "  Jameson face area: " << Area_Jameson << endl;
+
               
-              Area_Jameson += 0.5*sqrt( CrossProduct[0]*CrossProduct[0]
-                                       +CrossProduct[1]*CrossProduct[1]
-                                       +CrossProduct[2]*CrossProduct[2]);
-              
-            }
+//            }
           }
         }
       }
     }
   }
+  
+  Area_Jameson = sqrt( CrossProduct[0]*CrossProduct[0]
+                       +CrossProduct[1]*CrossProduct[1]
+                       +CrossProduct[2]*CrossProduct[2]);
+  
+  cout << "  Jameson face area mag: " << Area_Jameson << endl;
+  cout << "Jameson face area vector: " << CrossProduct[0] << "    " << CrossProduct[1] << "    " << CrossProduct[2] << endl;
+
   
   /*--- Write a Tecplot file to visualize the CV ---*/
   
@@ -4759,8 +4803,13 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
       iPoint = edge[iEdge]->GetNode(0);
       jPoint = edge[iEdge]->GetNode(1);
       
-      if ((jPoint == 123 && iPoint == iPoint_Viz) ||
-          (iPoint == 123 && jPoint == iPoint_Viz) ) {
+      if (iPoint == 123 && jPoint == iPoint_Viz)  {
+      
+//        if (jPoint == 124 && iPoint == iPoint_Viz) {
+
+          
+//      if ((jPoint == 123 && iPoint == iPoint_Viz) ||
+//          (iPoint == 123 && jPoint == iPoint_Viz) ) {
         
         Normal = edge[iEdge]->GetNormal();
         
@@ -4768,6 +4817,32 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
         for (iDim = 0; iDim < nDim; iDim++)
           Area_Tmp += Normal[iDim]*Normal[iDim];
         Area_Dual += sqrt(Area_Tmp);
+        cout << iPoint << "    " << jPoint << "  dual face area 2: " << Area_Dual << endl;
+
+        
+        Tecplot_File.open("edge.dat", ios::out);
+        Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
+        Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+        Tecplot_File << "ZONE I=2, J=1, K=1, DATAPACKING=POINT"<< endl;
+        
+        /*--- Write coordinates for the nodes in the order that they were found
+         for each of the edges/triangles making up a dual control volume. ---*/
+        
+        Tecplot_File << node[iPoint]->GetCoord(0) << "\t" << node[iPoint]->GetCoord(1) ;
+        if (nDim == 3) Tecplot_File << "\t" << node[iPoint]->GetCoord(2) ;
+        Tecplot_File << "\n";
+        
+        Tecplot_File << node[jPoint]->GetCoord(0) << "\t" << node[jPoint]->GetCoord(1) ;
+        if (nDim == 3) Tecplot_File << "\t" << node[jPoint]->GetCoord(2) ;
+        Tecplot_File << "\n";
+        
+        /*--- Create a new connectivity table in the order the faces were found ---*/
+        
+        //      j = i*2;
+        //      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t";
+        //      Tecplot_File << j+2<<"\t" <<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
+        
+        Tecplot_File.close();
         
       }
     }
@@ -4781,7 +4856,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
     strcat(cstr,buffer);
     
     Tecplot_File.open(cstr, ios::out);
-    Tecplot_File << "TITLE = \"Visualization of the control volume\"" << endl;
+    Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
     Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
     Tecplot_File << "ZONE NODES= "<< counter*3 <<", ELEMENTS= ";
     Tecplot_File << counter <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
@@ -4809,6 +4884,47 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
     Y.clear();
     Z.clear();
     
+    
+    for (int i= 0; i < counter; i++){
+      
+    strcpy(cstr,"jameson_cv_norms");
+    sprintf (buffer, "_%d.dat", i);
+    strcat(cstr,buffer);
+    
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the control volume\"" << endl;
+    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+    Tecplot_File << "ZONE I=2, J=1, K=1, DATAPACKING=POINT"<< endl;
+    
+    /*--- Write coordinates for the nodes in the order that they were found
+     for each of the edges/triangles making up a dual control volume. ---*/
+    
+      j = i*2;
+      
+      Tecplot_File << X_n[j] << "\t" << Y_n[j];
+      if (nDim == 3) Tecplot_File << "\t" << Z_n[j];
+      Tecplot_File << "\n";
+    
+      Tecplot_File << X_n[j+1] << "\t" << Y_n[j+1];
+      if (nDim == 3) Tecplot_File << "\t" << Z_n[j+1];
+      Tecplot_File << "\n";
+      
+    /*--- Create a new connectivity table in the order the faces were found ---*/
+    
+//      j = i*2;
+//      Tecplot_File << j+1 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t"<<j+2 <<"\t";
+//      Tecplot_File << j+2<<"\t" <<j+2 <<"\t"<<j+2 <<"\t"<<j+2 << endl;
+    
+    Tecplot_File.close();
+
+    
+  }
+    
+  
+    X_n.clear();
+    Y_n.clear();
+    Z_n.clear();
+    
   }
   
   delete[] Coord_Edge_CG;
@@ -4817,7 +4933,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   delete[] Coord_FaceiPoint;
   delete[] Coord_FacejPoint;
   
-#endif
+  //#endif
 }
 
 void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filename) {
@@ -5134,73 +5250,6 @@ void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filenam
   
 }
 
-void CPhysicalGeometry::SetTecPlot(char mesh_filename[200]) {
-  unsigned long iElem, iPoint;
-  unsigned short iDim;
-  ofstream Tecplot_File;
-  
-  Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the volumetric grid\"" << endl;
-  
-  if (nDim == 2) {
-    Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
-    Tecplot_File << "ZONE NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-  }
-  if (nDim == 3) {
-    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
-    Tecplot_File << "ZONE NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
-  }
-  
-  for(iPoint = 0; iPoint < nPoint; iPoint++) {
-    for(iDim = 0; iDim < nDim; iDim++)
-      Tecplot_File << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-    Tecplot_File << "\n";
-  }
-  
-  for(iElem = 0; iElem < nElem; iElem++) {
-    if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
-      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
-      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 <<" "<<
-      elem[iElem]->GetNode(6)+1 <<" "<< elem[iElem]->GetNode(7)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 << endl;
-    }
-    if (elem[iElem]->GetVTK_Type() == WEDGE) {
-      Tecplot_File <<
-      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
-      elem[iElem]->GetNode(1)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
-      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
-      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 << endl;
-    }
-  }
-  
-  Tecplot_File.close();
-}
-
 void CPhysicalGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) {
   unsigned short iSmooth, nneigh, iMarker;
   double *Coord_Old, *Coord_Sum, *Coord, *Coord_i, *Coord_j, Position_Plane = 0.0;
@@ -5351,13 +5400,92 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
   
 }
 
-void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200]) {
+void CPhysicalGeometry::SetTecPlot(char mesh_filename[200], bool new_file) {
+  
+  unsigned long iElem, iPoint;
+  unsigned short iDim;
+  ofstream Tecplot_File;
+  
+  /*--- Open the tecplot file and write the header ---*/
+  
+  if (new_file) {
+    Tecplot_File.open(mesh_filename, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the volumetric grid\"" << endl;
+    if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+    if (nDim == 3) Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+  }
+  else Tecplot_File.open(mesh_filename, ios::out | ios::app);
+
+  Tecplot_File << "ZONE T= ";
+  if (new_file) Tecplot_File << "\"Original grid\", ";
+  else Tecplot_File << "\"Deformed grid\", ";
+  Tecplot_File << "NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING= POINT";
+  if (nDim == 2) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
+  if (nDim == 3) Tecplot_File << ", ZONETYPE= FEBRICK"<< endl;
+  
+  /*--- Adding coordinates ---*/
+
+  for(iPoint = 0; iPoint < nPoint; iPoint++) {
+    for(iDim = 0; iDim < nDim; iDim++)
+      Tecplot_File << scientific << node[iPoint]->GetCoord(iDim) << "\t";
+    Tecplot_File << "\n";
+  }
+  
+  /*--- Adding conectivity ---*/
+
+  for(iElem = 0; iElem < nElem; iElem++) {
+    if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
+      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
+      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(3)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 <<" "<<
+      elem[iElem]->GetNode(6)+1 <<" "<< elem[iElem]->GetNode(7)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(2)+1 <<" "<< elem[iElem]->GetNode(3)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(4)+1 << endl;
+    }
+    if (elem[iElem]->GetVTK_Type() == WEDGE) {
+      Tecplot_File <<
+      elem[iElem]->GetNode(0)+1 <<" "<< elem[iElem]->GetNode(1)+1 <<" "<<
+      elem[iElem]->GetNode(1)+1 <<" "<< elem[iElem]->GetNode(2)+1 <<" "<<
+      elem[iElem]->GetNode(3)+1 <<" "<< elem[iElem]->GetNode(4)+1 <<" "<<
+      elem[iElem]->GetNode(4)+1 <<" "<< elem[iElem]->GetNode(5)+1 << endl;
+    }
+  }
+  
+  Tecplot_File.close();
+}
+
+void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config) {
+  
   ofstream Tecplot_File;
   unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
   unsigned short Coord_i, iMarker;
   
   /*--- It is important to do a renumering to don't add points
    that do not belong to the surfaces ---*/
+  
   PointSurface = new unsigned long[nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     if (node[iPoint]->GetBoundary()) {
@@ -5366,6 +5494,7 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
     }
   
   /*--- Compute the total number of elements ---*/
+  
   Total_nElem_Bound = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -5373,23 +5502,29 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
     }
   }
   
-  /*--- Open the tecplot file ---*/
-  Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the surface grid\"" << endl;
+  /*--- Open the tecplot file and write the header ---*/
+  
+  if (new_file) {
+    Tecplot_File.open(mesh_filename, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the surface grid\"" << endl;
+      if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
+      if (nDim == 3) Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
+  }
+  else Tecplot_File.open(mesh_filename, ios::out | ios::app);
   
   if (Total_nElem_Bound != 0) {
     
     /*--- Write the header of the file ---*/
-    if (nDim == 2) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
-      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
-    }
-    if (nDim == 3) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
-      Tecplot_File << "ZONE NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-    }
+    
+    Tecplot_File << "ZONE T= ";
+    if (new_file) Tecplot_File << "\"Original grid\", ";
+    else Tecplot_File << "\"Deformed grid\", ";
+    Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
+    if (nDim == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
+    if (nDim == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
     
     /*--- Only write the coordiantes of the points that are on the surfaces ---*/
+    
     if (nDim == 3) {
       for(iPoint = 0; iPoint < nPoint; iPoint++)
         if (node[iPoint]->GetBoundary()) {
@@ -5408,6 +5543,7 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
     }
     
     /*--- Write the cells using the new numbering ---*/
+    
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_Plotting(iMarker) == YES)
         for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
@@ -5432,28 +5568,30 @@ void CPhysicalGeometry::SetBoundTecPlot (CConfig *config, char mesh_filename[200
         }
   }
   else {
+    
     /*--- No elements in the surface ---*/
+    
     if (nDim == 2) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
       Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
       Tecplot_File << "0.0 0.0"<< endl;
       Tecplot_File << "1 1"<< endl;
     }
     if (nDim == 3) {
-      Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\" " << endl;
       Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
       Tecplot_File << "0.0 0.0 0.0"<< endl;
       Tecplot_File << "1 1 1 1"<< endl;
     }
   }
   
-  
   /*--- Dealocate memory and close the file ---*/
+  
   delete[] PointSurface;
   Tecplot_File.close();
+  
 }
 
-void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
+void CPhysicalGeometry::SetBoundSTL(char mesh_filename[200], bool new_file, CConfig *config) {
+  
   ofstream STL_File;
   unsigned long this_node, iNode, nNode, iElem;
   unsigned short iDim, iMarker;
@@ -5474,27 +5612,30 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
    --- */
   
   /*--- Open the STL file ---*/
-  STL_File.open(mesh_filename, ios::out);
+  
+  if (new_file) STL_File.open(mesh_filename, ios::out);
+  else STL_File.open(mesh_filename, ios::out | ios::app);
   
   /*--- Write the header of the file ---*/
+  
   STL_File << "solid surface_mesh" << endl;
   
   /*--- Write facets of surface markers ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_Plotting(iMarker) == YES)
       for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
         
         /*--- number of nodes for this elemnt ---*/
+        
         nNode = bound[iMarker][iElem]->GetnNodes();
         
         /*--- Calculate Normal Vector ---*/
+        
         for (iDim=0; iDim<nDim; iDim++){
           p[0] = node[bound[iMarker][iElem]->GetNode(0)]      ->GetCoord(iDim);
           p[1] = node[bound[iMarker][iElem]->GetNode(1)]      ->GetCoord(iDim);
           p[2] = node[bound[iMarker][iElem]->GetNode(nNode-1)]->GetCoord(iDim);
-          /*cout << p[0] <<endl;
-           cout << p[1] <<endl;
-           cout << p[2] <<endl;*/
           u[iDim] = p[1]-p[0];
           v[iDim] = p[2]-p[0];
         }
@@ -5503,12 +5644,9 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
         n[1] = u[2]*v[0]-u[0]*v[2];
         n[2] = u[0]*v[1]-u[1]*v[0];
         a = sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
-        /*cout << n[0] <<endl;
-         cout << n[1] <<endl;
-         cout << n[2] <<endl;
-         cout << a << endl;*/
         
         /*--- Print normal vector ---*/
+        
         STL_File << "  facet normal ";
         for (iDim=0; iDim<nDim; iDim++){
           STL_File << n[iDim]/a << " ";
@@ -5516,9 +5654,11 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
         STL_File << endl;
         
         /*--- STL Facet Loop --*/
+        
         STL_File << "    outer loop" << endl;
         
         /*--- Print Nodes for Facet ---*/
+        
         for(iNode=0; iNode<nNode; iNode++) {
           this_node = bound[iMarker][iElem]->GetNode(iNode);
           STL_File << "      vertex ";
@@ -5533,10 +5673,13 @@ void CPhysicalGeometry::SetBoundSTL (CConfig *config, char mesh_filename[200]) {
       }
   
   /*--- Done with Surface Mesh ---*/
+  
   STL_File << "endsolid" << endl;
   
   /*--- Close the file ---*/
+  
   STL_File.close();
+  
 }
 
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
@@ -11340,7 +11483,7 @@ void CDomainGeometry::SetTecPlot(char mesh_filename[200]) {
   ofstream Tecplot_File;
   
   Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the volumetric grid\"" << endl;
+  Tecplot_File << "TITLE= \"Visualization of the volumetric grid\"" << endl;
   
   if (nDim == 2) {
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;
@@ -11929,7 +12072,7 @@ void CPeriodicGeometry::SetTecPlot(char mesh_filename[200]) {
   ofstream Tecplot_File;
   
   Tecplot_File.open(mesh_filename, ios::out);
-  Tecplot_File << "TITLE = \"Visualization of the volumetric grid\"" << endl;
+  Tecplot_File << "TITLE= \"Visualization of the volumetric grid\"" << endl;
   
   if (nDim == 2) {
     Tecplot_File << "VARIABLES = \"x\",\"y\" " << endl;

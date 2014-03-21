@@ -3830,7 +3830,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   /*--- Header for the coefficients ---*/
   
   char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
-  char heat_coeff[]= ",\"CHeat_Load\",\"CHeat_Max\"";
+  char heat_coeff[]= ",\"Heat\",\"Norm_Heat\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   //char aeroelastic_coeff[]= Monitoring_coeff;
@@ -3997,7 +3997,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0;
+    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CFEA = 0.0, Total_Heat = 0.0, Total_NormHeat = 0.0;
     double OneD_Stagnation_Pressure= 0.0, OneD_Mach=0.0, OneD_Temp=0.0;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
@@ -4092,7 +4092,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         
         if (isothermal) {
           Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Heat();
-          Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeat();
+          Total_NormHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_NormHeat();
         }
         
         if (equiv_area) {
@@ -4128,9 +4128,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         }
 
         if (output_1d) {
-          OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDStagPressure();
-          OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDMach();
-          OneD_Temp=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneDTemperature();
+          OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+          OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Pt();
+          OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_M();
+          OneD_Temp=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_T();
         }
         
         /*--- Flow Residuals ---*/
@@ -4225,7 +4226,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         Total_CFz         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFz();
         if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
           Total_Heat           = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_Heat();
-          Total_MaxHeat        = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxHeat();
+          Total_NormHeat        = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_NormHeat();
         }
         /*--- Residuals ---*/
         
@@ -4338,7 +4339,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
                      Total_CFz, Total_CEff);
             if (isothermal)
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
-                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
+                       Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_NormHeat);
             if (equiv_area)
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
@@ -4444,7 +4445,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
-                       Total_CEff, Total_Heat, Total_MaxHeat);
+                       Total_CEff, Total_Heat, Total_NormHeat);
             else
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
@@ -4802,7 +4803,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           cout.width(15); cout << Total_CDrag;
           if (config[val_iZone]->GetKind_Solver()==TNE2_NAVIER_STOKES) {
             cout.precision(1);
-            cout.width(11); cout << Total_MaxHeat;
+            cout.width(11); cout << Total_NormHeat;
           }
           cout << endl;
           break;
@@ -5440,10 +5441,9 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   /*--- Set Area Averaged Stagnation Pressure Output ---*/
   
-//  solver_container->SetOneD_Pt(AveragePressure);
-//  solver_container->SetOneD_M(AverageMach);
-//  solver_container->SetOneD_T(AverageTemperature);
-  
+  solver_container->SetOneD_Pt(AveragePressure);
+  solver_container->SetOneD_M(AverageMach);
+  solver_container->SetOneD_T(AverageTemperature);
 }
 
 void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
@@ -5501,13 +5501,18 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
       
       /*--- Compute the airfoil sections ---*/
+      
       geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, Pressure,
                                        Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
                                        Pressure_Airfoil, true, config);
       
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+        cout << "Please check the config file, the section "<< iSection+1 <<" has not been detected." << endl;
+      }
+      
       /*--- Output the pressure on each section (tecplot format) ---*/
       
-      if (rank == MASTER_NODE) {
+      if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
         
         /*--- Write Cp at each section ---*/
         

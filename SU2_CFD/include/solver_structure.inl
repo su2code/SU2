@@ -169,7 +169,7 @@ inline double CSolver::GetTotal_CQ() { return 0; }
 
 inline double CSolver::GetTotal_Heat() { return 0; }
 
-inline double CSolver::GetTotal_MaxHeat() { return 0; }
+inline double CSolver::GetTotal_NormHeat() { return 0; }
 
 inline double CSolver::Get_PressureDrag() { return 0; }
 
@@ -179,7 +179,7 @@ inline void CSolver::SetTotal_CQ(double val_Total_CQ) { }
 
 inline void CSolver::SetTotal_Heat(double val_Total_Heat) { }
 
-inline void CSolver::SetTotal_MaxHeat(double val_Total_Heat) { }
+inline void CSolver::SetTotal_NormHeat(double val_Total_Heat) { }
 
 inline double CSolver::GetTotal_CMerit() { return 0; }
 
@@ -272,14 +272,17 @@ inline double CSolver::GetTke_Inf(void) { return 0; }
 
 inline double* CSolver::GetConstants() {return NULL;}
 
-inline double CSolver::GetOneDStagPressure(void){return 0;}
+inline double CSolver::GetOneD_Pt(void){return 0;}
 
-inline void CSolver::SetOneDStagPressure(double val_exit_pt){ }
+inline void CSolver::SetOneD_Pt(double AveragePressure){ }
 
-inline double CSolver::GetOneDMach(void){return 0;}
+inline double CSolver::GetOneD_M(void){return 0;}
 
-inline double CSolver::GetOneDTemperature(void){return 0;}
+inline void CSolver::SetOneD_M(double AverageMach){ }
 
+inline double CSolver::GetOneD_T(void){return 0;}
+
+inline void CSolver::SetOneD_T(double AverageTemperature){ }
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -514,13 +517,13 @@ inline double CEulerSolver::GetTotal_CQ() { return Total_CQ; }
 
 inline double CEulerSolver::GetTotal_Heat() { return Total_Heat; }
 
-inline double CEulerSolver::GetTotal_MaxHeat() { return Total_MaxHeat; }
+inline double CEulerSolver::GetTotal_NormHeat() { return Total_NormHeat; }
 
 inline void CEulerSolver::SetTotal_CQ(double val_Total_CQ) { Total_CQ = val_Total_CQ; }
 
 inline void CEulerSolver::SetTotal_Heat(double val_Total_Heat) { Total_Heat = val_Total_Heat; }
 
-inline void CEulerSolver::SetTotal_MaxHeat(double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
+inline void CEulerSolver::SetTotal_NormHeat(double val_Total_NormHeat) { Total_NormHeat = val_Total_NormHeat; }
 
 inline double CEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
@@ -548,13 +551,17 @@ inline double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface;
 
 inline void CEulerSolver::SetTotal_CFreeSurface(double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
-inline double CEulerSolver::GetOneDStagPressure(void) { return OneD_Pt; }
+inline double CEulerSolver::GetOneD_Pt(void) { return OneD_Pt; }
 
-inline void CEulerSolver::SetOneDStagPressure(double oneD_pt) { OneD_Pt=oneD_pt; }
+inline void CEulerSolver::SetOneD_Pt(double AveragePressure) { OneD_Pt=AveragePressure; }
 
-inline double CEulerSolver::GetOneDMach(void){return OneD_M;}
+inline double CEulerSolver::GetOneD_M(void){return OneD_M;}
 
-inline double CEulerSolver::GetOneDTemperature(void){return OneD_T;}
+inline void CEulerSolver::SetOneD_M(double AverageMach) { OneD_M=AverageMach; }
+
+inline double CEulerSolver::GetOneD_T(void){return OneD_T;}
+
+inline void CEulerSolver::SetOneD_T(double AverageTemperature) { OneD_T=AverageTemperature; }
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
@@ -661,11 +668,11 @@ inline double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
 
 inline double CTNE2EulerSolver::GetTotal_Heat() { return Total_Heat; }
 
-inline double CTNE2EulerSolver::GetTotal_MaxHeat() { return Total_MaxHeat; }
+inline double CTNE2EulerSolver::GetTotal_NormHeat() { return Total_NormHeat; }
 
 inline void CTNE2EulerSolver::SetTotal_Heat(double val_Total_Heat) { Total_Heat = val_Total_Heat; }
 
-inline void CTNE2EulerSolver::SetTotal_MaxHeat(double val_Total_MaxHeat) { Total_MaxHeat = val_Total_MaxHeat; }
+inline void CTNE2EulerSolver::SetTotal_NormHeat(double val_Total_NormHeat) { Total_NormHeat = val_Total_NormHeat; }
 
 inline void CTNE2EulerSolver::SetTotal_CLift(double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 
