@@ -538,14 +538,14 @@ int main(int argc, char *argv[]) {
   //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
   
   /*--- Geometry class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      delete geometry_container[iZone][iMesh];
-  //    }
-  //    delete geometry_container[iZone];
-  //  }
-  //  delete [] geometry_container;
-  //  cout <<"Geometry container, deallocated." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      delete geometry_container[iZone][iMesh];
+    }
+    delete geometry_container[iZone];
+  }
+  delete [] geometry_container;
+  cout <<"Geometry container deallocated." << endl;
   
   /*--- Integration class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -574,9 +574,11 @@ int main(int argc, char *argv[]) {
       delete config_container[iZone];
     }
   }
-  if (config_container!=NULL)       delete[] config_container;
+  if (config_container!=NULL) delete [] config_container;
+  cout <<"Config container deallocated." << endl;
 
-
+  delete output;
+  cout <<"Output container deallocated." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
