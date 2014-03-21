@@ -575,7 +575,7 @@ int main(int argc, char *argv[]) {
     }
   }
   if (config_container!=NULL)       delete[] config_container;
-
+  cout <<"Config container deallocated." << endl;
 
 
   /*--- Synchronization point after a single solver iteration. Compute the
