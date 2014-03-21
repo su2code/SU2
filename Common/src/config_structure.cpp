@@ -33,6 +33,9 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 #endif
 #endif
   
+	/*--- Initialize pointers to Null---*/
+	SetPointersNull();
+
   /*--- Reading config options  ---*/
   SetConfig_Options(val_iZone, val_nZone);
   
@@ -87,6 +90,67 @@ CConfig::CConfig(char case_filename[200]) {
   
 }
 
+void CConfig::SetPointersNull(void){
+  /*Marker Pointers*/
+  Marker_Euler=NULL;          Marker_FarField=NULL;         Marker_Custom=NULL;
+  Marker_SymWall=NULL;        Marker_Pressure=NULL;         Marker_PerBound=NULL;
+  Marker_PerDonor=NULL;       Marker_NearFieldBound=NULL;   Marker_InterfaceBound=NULL;
+  Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
+  Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
+  Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_NacelleInflow=NULL;
+  Marker_NacelleExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
+  Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
+  Marker_All_Tag=NULL;        Marker_Config_Tag=NULL;       Marker_All_Boundary=NULL;
+  Marker_Config_Boundary=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
+  /*Boundary Condition settings*/
+  Dirichlet_Value=NULL;       Nozzle_Ttotal=NULL;
+  Nozzle_Ptotal=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
+  Inlet_FlowDir=NULL;         Inlet_Temperature=NULL;       Inlet_Pressure=NULL;
+  Inlet_Velocity=NULL;        FanFace_Mach_Target=NULL;     FanFace_Mach=NULL;
+  FanFace_Pressure=NULL;      Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
+  Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
+  FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
+  Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
+  Periodic_Translate=NULL;
+  /*Miscellaneous/unsorted*/
+  Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
+  Velocity_FreeStreamND=NULL; MassFrac_FreeStream=NULL;
+  Velocity_FreeStream=NULL;
+  RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
+  RefOriginMoment_Z=NULL;   CFLRamp=NULL;            CFL=NULL;
+  PlaneTag=NULL;
+  Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
+  Kappa_AdjTNE2=NULL;  Kappa_LinFlow=NULL;
+  Section_Location=NULL;
+  U_FreeStreamND=NULL;
+  /*--- Moving mesh pointers---*/
+  Kind_GridMovement = NULL;
+  Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
+  Translation_Rate_X = NULL;  Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
+  Rotation_Rate_X = NULL;     Rotation_Rate_Y = NULL;     Rotation_Rate_Z = NULL;
+  Pitching_Omega_X = NULL;    Pitching_Omega_Y = NULL;    Pitching_Omega_Z = NULL;
+  Pitching_Ampl_X = NULL;     Pitching_Ampl_Y = NULL;     Pitching_Ampl_Z = NULL;
+  Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
+  Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
+  Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
+  RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
+  MoveMotion_Origin = NULL;
+
+  /*Reacting chemistry, collisions, plasma*/
+  Reactions=NULL;                 Omega00=NULL;               Omega11=NULL;
+  Gas_Composition=NULL;           Enthalpy_Formation=NULL;    Blottner=NULL;
+  Species_Ref_Temperature=NULL;   Species_Ref_Viscosity=NULL; nElStates=NULL;
+  CharElTemp=NULL;                degen=NULL;
+  Molar_Mass=NULL;                Particle_Mass=NULL;
+  ArrheniusCoefficient=NULL;    ArrheniusEta=NULL;    ArrheniusTheta=NULL;
+  CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
+  Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
+  Diss=NULL;
+
+
+
+}
+
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
 	double default_vec_3d[3];
   double default_vec_2d[2];
@@ -94,20 +158,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	nZone = val_nZone;
 	iZone = val_iZone;
   
-	/*--- Intialize pointers to NULL. If we don't find these values
-   in the config file, they will all be set to zero. ---*/
-  Kind_GridMovement = NULL;
-	Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
-	Translation_Rate_X = NULL;  Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
-	Rotation_Rate_X = NULL;     Rotation_Rate_Y = NULL;     Rotation_Rate_Z = NULL;
-	Pitching_Omega_X = NULL;    Pitching_Omega_Y = NULL;    Pitching_Omega_Z = NULL;
-	Pitching_Ampl_X = NULL;     Pitching_Ampl_Y = NULL;     Pitching_Ampl_Z = NULL;
-	Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
-	Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
-	Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
-  RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
-  MoveMotion_Origin = NULL;
-
     
 	/* BEGIN_CONFIG_OPTIONS */
   
