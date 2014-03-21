@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
 	CFreeFormDefBox** FFDBox = NULL;
   
 	/*--- Definition of the config problem ---*/
-	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
-	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
+	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, 0, VERB_HIGH); }
+	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, 0, VERB_HIGH); }
   
   if (rank == MASTER_NODE) {
     

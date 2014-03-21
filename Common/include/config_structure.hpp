@@ -523,7 +523,7 @@ private:
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-	Conversion_Factor,       /*!< \brief Conversion factor from grid units to meters. */
+	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
 	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization. */
 	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization. */
 	Density_Ref,      /*!< \brief Reference density for non-dimensionalization. */
@@ -543,7 +543,7 @@ private:
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-	bool Write_Converted_Mesh; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
+	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
@@ -628,7 +628,7 @@ public:
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short verb_level);
+	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
@@ -1382,7 +1382,7 @@ public:
 	 * \brief Get the conversion factor for converting the grid to meters.
 	 * \return Conversion factor for converting the grid to meters.
 	 */
-	double GetConversion_Factor(void);
+	double GetMesh_Scale_Change(void);
 
 	/*! 
 	 * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
@@ -4099,7 +4099,7 @@ public:
 	 * \brief Get information about whether a converted mesh should be written.
 	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
 	 */
-	bool GetWrite_Converted_Mesh(void);
+	bool GetMesh_Output(void);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.
@@ -4395,7 +4395,7 @@ public:
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
-	void SetPostprocessing(unsigned short val_software, unsigned short val_izone);	
+	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim);
 
 	/*! 
 	 * \brief Config file markers processing.

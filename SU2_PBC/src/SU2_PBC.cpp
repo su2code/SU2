@@ -39,11 +39,11 @@ int main(int argc, char *argv[]) {
   
 	/*--- Definition of the class for the definition of the problem ---*/
 	CConfig *config;
-	if (argc == 2) config = new CConfig(argv[1], SU2_PBC, ZONE_0, nZone, VERB_HIGH);
+	if (argc == 2) config = new CConfig(argv[1], SU2_PBC, ZONE_0, nZone, 0, VERB_HIGH);
 	else {
 		char grid_file[200];
 		strcpy (grid_file, "default.cfg");
-		config = new CConfig(grid_file, SU2_PBC, ZONE_0, nZone, VERB_HIGH);
+		config = new CConfig(grid_file, SU2_PBC, ZONE_0, nZone, 0, VERB_HIGH);
 	}
 
 	/*--- Definition of the class for the geometry ---*/

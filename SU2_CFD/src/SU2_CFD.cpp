@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
 #ifndef NO_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
