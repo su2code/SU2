@@ -90,6 +90,190 @@ CConfig::CConfig(char case_filename[200]) {
   
 }
 
+CConfig::~CConfig(void)
+{
+  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
+  if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
+
+  /*--- If allocated, delete arrays for Plasma solver ---*/
+  if (Molar_Mass           != NULL) delete [] Molar_Mass;
+  if (Gas_Composition      != NULL) delete [] Gas_Composition;
+  if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
+  if (ArrheniusCoefficient != NULL) delete [] ArrheniusCoefficient;
+  if (ArrheniusEta         != NULL) delete [] ArrheniusEta;
+  if (ArrheniusTheta       != NULL) delete [] ArrheniusTheta;
+  if (CharVibTemp          != NULL) delete [] CharVibTemp;
+  if (CharElTemp           != NULL) {
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete[] CharElTemp[iSpecies];
+    delete [] CharElTemp;
+  }
+  if (degen                != NULL) {
+    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete[] degen[iSpecies];
+    delete [] degen;
+  }
+  unsigned short ii, iReaction;
+  if (Reactions            != NULL) {
+    for (iReaction = 0; iReaction < nReactions; iReaction++) {
+      for (ii = 0; ii < 2; ii++) {
+        delete [] Reactions[iReaction][ii];
+      }
+      delete[] Reactions[iReaction];
+    }
+    delete [] Reactions;
+  }
+
+  /*--- Free memory for Aeroelastic problems. ---*/
+  if (Grid_Movement && Aeroelastic_Simulation) {
+    delete[] Aeroelastic_pitch;
+    delete[] Aeroelastic_plunge;
+  }
+
+  /*--- Free memory for unspecified grid motion parameters ---*/
+
+  if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
+  
+  /*--- motion origin: ---*/
+  if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
+  if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
+  if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
+
+  /*--- rotation: ---*/
+  if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
+  if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
+  if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
+
+  /*--- pitching: ---*/
+  if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
+  if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
+  if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
+
+  /*--- pitching amplitude: ---*/
+  if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
+  if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
+  if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
+
+  /*--- pitching phase: ---*/
+  if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
+  if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
+  if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
+
+  /*--- plunging: ---*/
+  if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
+  if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
+  if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
+
+  /*--- plunging amplitude: ---*/
+  if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
+  if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
+  if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
+
+  if (RefOriginMoment != NULL)    delete [] RefOriginMoment;
+  if (RefOriginMoment_X != NULL)    delete [] RefOriginMoment_X;
+  if (RefOriginMoment_Y != NULL)    delete [] RefOriginMoment_Y;
+  if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
+
+  /*Marker pointers*/
+  if (Marker_Config_Out_1D!=NULL)  delete[] Marker_Config_Out_1D;
+  if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
+  if (Marker_Config_GeoEval!=NULL)  delete[] Marker_Config_GeoEval;
+  if (Marker_All_GeoEval!=NULL)     delete[] Marker_All_GeoEval;
+  if (Marker_Config_Tag!=NULL)      delete[] Marker_Config_Tag;
+  if (Marker_All_Tag!=NULL)         delete[] Marker_All_Tag;
+  if (Marker_Config_Boundary!=NULL) delete[] Marker_Config_Boundary;
+  if (Marker_All_Boundary!=NULL)    delete[] Marker_All_Boundary;
+  if (Marker_Config_Monitoring!=NULL)    delete[] Marker_Config_Monitoring;
+  if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
+  if (Marker_Config_Designing!=NULL) delete[] Marker_Config_Designing;
+  if (Marker_All_Designing!=NULL)    delete[] Marker_All_Designing;
+  if (Marker_Config_Plotting!=NULL)  delete[] Marker_Config_Plotting;
+  if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
+  if (Marker_Config_DV!=NULL)        delete[] Marker_Config_DV;
+  if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
+  if (Marker_DV!=NULL)               delete[] Marker_DV;
+  if (Marker_Moving!=NULL)           delete[] Marker_Moving;
+  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
+  if (Marker_Config_Moving!=NULL)   delete[] Marker_Config_Moving;
+  if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
+  if (Marker_Designing!=NULL)       delete[] Marker_Designing;
+  if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
+  if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
+  if (Marker_Config_PerBound!=NULL) delete[] Marker_Config_PerBound;
+  if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
+  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
+  /*String markers*/
+  if (Marker_Euler!=NULL )              delete[] Marker_Euler;
+  if (Marker_FarField!=NULL )           delete[] Marker_FarField;
+  if (Marker_Custom!=NULL )             delete[] Marker_Custom;
+  if (Marker_SymWall!=NULL )            delete[] Marker_SymWall;
+  if (Marker_Pressure!=NULL )           delete[] Marker_Pressure;
+  if (Marker_PerBound!=NULL )           delete[] Marker_PerBound;
+  if (Marker_PerDonor!=NULL )           delete[] Marker_PerDonor;
+  if (Marker_NearFieldBound!=NULL )     delete[] Marker_NearFieldBound;
+  if (Marker_InterfaceBound!=NULL )     delete[] Marker_InterfaceBound;
+  if (Marker_Dirichlet!=NULL )          delete[] Marker_Dirichlet;
+  if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
+  if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
+  if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
+  if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
+  if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
+  if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
+  if (Marker_HeatFlux!=NULL )           delete[] Marker_HeatFlux;
+  if (Marker_NacelleInflow!=NULL )      delete[] Marker_NacelleInflow;
+  if (Marker_NacelleExhaust!=NULL )     delete[] Marker_NacelleExhaust;
+  if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
+  if (Marker_Load!=NULL )               delete[] Marker_Load;
+  if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
+  if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
+  if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
+  /*other*/
+  if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
+  if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
+  if (DV_Value!=NULL)    delete[] DV_Value;
+  if (Design_Variable!=NULL)    delete[] Design_Variable;
+  if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
+  if (Nozzle_Ttotal!=NULL)    delete[]  Nozzle_Ttotal;
+  if (Nozzle_Ptotal!=NULL)    delete[]  Nozzle_Ptotal;
+  if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
+  if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
+  if (Inlet_Temperature!=NULL)    delete[] Inlet_Temperature;
+  if (Inlet_Pressure!=NULL)    delete[] Inlet_Pressure;
+  if (Inlet_Velocity!=NULL)    delete[] Inlet_Velocity ;
+  if (FanFace_Mach_Target!=NULL)    delete[] FanFace_Mach_Target;
+  if (FanFace_Mach!=NULL)    delete[]  FanFace_Mach;
+  if (FanFace_Pressure!=NULL)    delete[] FanFace_Pressure;
+  if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
+  if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
+  if (Heat_Flux!=NULL)    delete[] Heat_Flux;
+  if (Displ_Value!=NULL)    delete[] Displ_Value;
+  if (Load_Value!=NULL)    delete[] Load_Value;
+  if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
+  if (Periodic_RotCenter!=NULL)    delete[] Periodic_RotCenter;
+  if (Periodic_RotAngles!=NULL)    delete[] Periodic_RotAngles;
+  if (Periodic_Translation!=NULL)    delete[] Periodic_Translation;
+  if (Periodic_Center!=NULL)    delete[] Periodic_Center;
+  if (Periodic_Rotation!=NULL)    delete[] Periodic_Rotation;
+  if (Periodic_Translate!=NULL)    delete[] Periodic_Translate;
+
+  if (ParamDV!=NULL  )    delete[] ParamDV;
+  if (MG_CorrecSmooth!=NULL    )    delete[] MG_CorrecSmooth;
+  if (Section_Location!=NULL)    delete[] Section_Location;
+  if (Kappa_Flow!=NULL      )    delete[] Kappa_Flow;
+  if (Kappa_AdjFlow!=NULL             )    delete[] Kappa_AdjFlow;
+  if (Kappa_TNE2!=NULL   )    delete[] Kappa_TNE2;
+  if (Kappa_AdjTNE2!=NULL        )    delete[] Kappa_AdjTNE2;
+  if (Kappa_LinFlow!=NULL  )    delete[] Kappa_LinFlow;
+  if (PlaneTag!=NULL)    delete[] PlaneTag;
+  if (CFLRamp!=NULL)    delete[] CFLRamp;
+  if (CFL!=NULL)    delete[] CFL;
+
+}
+
 void CConfig::SetPointersNull(void){
   /*Marker Pointers*/
   Marker_Euler=NULL;          Marker_FarField=NULL;         Marker_Custom=NULL;
@@ -112,17 +296,6 @@ void CConfig::SetPointersNull(void){
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
   Periodic_Translate=NULL;
-  /*Miscellaneous/unsorted*/
-  Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
-  Velocity_FreeStreamND=NULL; MassFrac_FreeStream=NULL;
-  Velocity_FreeStream=NULL;
-  RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFLRamp=NULL;            CFL=NULL;
-  PlaneTag=NULL;
-  Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
-  Kappa_AdjTNE2=NULL;  Kappa_LinFlow=NULL;
-  Section_Location=NULL;
-  U_FreeStreamND=NULL;
   /*--- Moving mesh pointers---*/
   Kind_GridMovement = NULL;
   Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
@@ -135,20 +308,27 @@ void CConfig::SetPointersNull(void){
   Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
-
   /*Reacting chemistry, collisions, plasma*/
   Reactions=NULL;                 Omega00=NULL;               Omega11=NULL;
   Gas_Composition=NULL;           Enthalpy_Formation=NULL;    Blottner=NULL;
   Species_Ref_Temperature=NULL;   Species_Ref_Viscosity=NULL; nElStates=NULL;
   CharElTemp=NULL;                degen=NULL;
   Molar_Mass=NULL;                Particle_Mass=NULL;
-  ArrheniusCoefficient=NULL;    ArrheniusEta=NULL;    ArrheniusTheta=NULL;
-  CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
-  Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
-  Diss=NULL;
-
-
-
+  ArrheniusCoefficient=NULL;      ArrheniusEta=NULL;    ArrheniusTheta=NULL;
+  CharVibTemp=NULL;               RotationModes=NULL;   Ref_Temperature=NULL;
+  Tcf_a=NULL;                     Tcf_b=NULL;           Tcb_a=NULL;
+  Tcb_b=NULL;                     Diss=NULL;
+  /*Miscellaneous/unsorted*/
+  Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
+  Velocity_FreeStreamND=NULL; MassFrac_FreeStream=NULL;
+  Velocity_FreeStream=NULL;
+  RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
+  RefOriginMoment_Z=NULL;   CFLRamp=NULL;            CFL=NULL;
+  PlaneTag=NULL;
+  Kappa_Flow=NULL;        Kappa_AdjFlow=NULL;  Kappa_TNE2=NULL;
+  Kappa_AdjTNE2=NULL;     Kappa_LinFlow=NULL;
+  Section_Location=NULL;  U_FreeStreamND=NULL;  EA_IntLimit=NULL;
+  Hold_GridFixed_Coord=NULL;  DV_Value=NULL;  Design_Variable=NULL;
 }
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
@@ -157,10 +337,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	double default_vec_6d[6];
 	nZone = val_nZone;
 	iZone = val_iZone;
-  
-    
+
+
 	/* BEGIN_CONFIG_OPTIONS */
-  
+
 	/*--- Options related to problem definition and partitioning ---*/
 	/* CONFIG_CATEGORY: Problem Definition */
   
@@ -471,7 +651,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
   AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "Y_DIR");
-  
+
 	/*--- Options related to convergence ---*/
 	/* CONFIG_CATEGORY: Convergence*/
   
@@ -559,7 +739,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
-	
+
 	/* DESCRIPTION: Slope limiter */
 	AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
 	/* DESCRIPTION: Convective numerical method */
@@ -608,7 +788,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
-  
+
   /* DESCRIPTION: Convective numerical method */
 	AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
 	/* DESCRIPTION: Viscous numerical method */
@@ -620,7 +800,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
 	/* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
 	AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
-  
+
 	/* DESCRIPTION: Viscous numerical method */
 	AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
 	/* DESCRIPTION: Source term numerical method */
@@ -798,7 +978,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
 	AddScalarOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
 	/* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-	AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);  
+	AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
   /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
 	AddScalarOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
 	/* DESCRIPTION: Free-stream velocity (m/s) */
@@ -883,7 +1063,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
 	/* CONFIG_CATEGORY: Grid deformation */
-  
+
 	/* DESCRIPTION: Kind of deformation */
 	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
@@ -932,11 +1112,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
 	AddScalarOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
 	AddScalarOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
-  
-  
+
+
 	/*--- Options related to the FEA solver ---*/
 	/* CONFIG_CATEGORY: FEA solver */
-  
+
 	/* DESCRIPTION: Modulus of elasticity */
 	AddScalarOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
 	/* DESCRIPTION: Poisson ratio */
@@ -961,19 +1141,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Node number for the CV to be visualized */
 	AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
-  
+
 	/* DESCRIPTION: Thermal diffusivity constant */
-  
-  
+
+
 	/* END_CONFIG_OPTIONS */
-  
+
 }
 
 void CConfig::SetParsing(char case_filename[200]) {
 	string text_line, option_name;
 	ifstream case_file;
 	vector<string> option_value;
-  
+
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -982,15 +1162,15 @@ void CConfig::SetParsing(char case_filename[200]) {
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
 #endif
-  
+
   /*--- Read the configuration file ---*/
   case_file.open(case_filename, ios::in);
-  
+
   if (case_file.fail()) {
     cout << "There is no configuration file!!" << endl;
     exit(1);
 	}
-  
+
 	/*--- Parse the configuration file and set the options ---*/
 	while (getline (case_file,text_line)) {
 		if (TokenizeString(text_line, option_name, option_value)) {
@@ -1004,9 +1184,9 @@ void CConfig::SetParsing(char case_filename[200]) {
 			}
 		}
 	}
-  
+
 	case_file.close();
-  
+
 }
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone) {
@@ -1023,7 +1203,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	size = MPI::COMM_WORLD.Get_size();
 #endif
 #endif
-  
+
 #ifdef NO_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
     cout << "Tecplot binary file requested but SU^2 was built without TecIO support." << "\n";
@@ -1033,7 +1213,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Store the SU2 module that we are executing. ---*/
 	Kind_SU2 = val_software;
-  
+
   /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
   if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
@@ -1041,24 +1221,24 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(1);
     }
   }
-  
+
   /*--- Don't do any deformation if there is no Design variable information ---*/
   if (Design_Variable == NULL) {
     Design_Variable = new unsigned short [1];
     nDV = 1; Design_Variable[0] = NONE;
   }
-  
+
   /*--- If multiple processors the grid should be always in native .su2 format ---*/
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
 
   /*--- Don't divide the numerical grid unless running SU2_MDC ---*/
   if (Kind_SU2 != SU2_MDC) Divide_Element = false;
-  
+
 	/*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
 	if (Kind_Regime == FREESURFACE) {
 		if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
 	}
-  
+
   if (Kind_Solver == POISSON_EQUATION) {
     Unsteady_Simulation = STEADY;
   }
@@ -1069,7 +1249,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
-  
+
 	/*--- Decide whether we should be writing unsteady solution files. ---*/
 	if (Unsteady_Simulation == STEADY ||
 			Unsteady_Simulation == TIME_STEPPING ||
@@ -1078,7 +1258,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	else { Wrt_Unsteady = true; }
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
-   that we also set the Grid_Movement flag to false. We initialize to the 
+   that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/
   if (Kind_GridMovement == NULL) {
     Kind_GridMovement = new unsigned short[nZone];
@@ -1089,7 +1269,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       exit(1);
     }
   }
-  
+
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
@@ -1098,18 +1278,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME)))
 		Grid_Movement = false;
-  
+
 	/*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
 	if (Grid_Movement && Mach_Motion == 0.0)
 		Mach_Motion = Mach;
-  
+
   /*--- Set the boolean flag if we are in a rotating frame (source term). ---*/
 	if (Grid_Movement && Kind_GridMovement[ZONE_0] == ROTATING_FRAME)
 		Rotating_Frame = true;
   else
     Rotating_Frame = false;
-  
+
   /*--- Check the number of moving markers against the number of grid movement
    types provided (should be equal, except that rigid motion and rotating frame
    do not depend on surface specification). ---*/
@@ -1119,8 +1299,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(1);
   }
-  
-  /*--- Make sure that there aren't more than one rigid motion or 
+
+  /*--- Make sure that there aren't more than one rigid motion or
    rotating frame specified in GRID_MOVEMENT_KIND. ---*/
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 1)) {
@@ -1132,7 +1312,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
     exit(1);
   }
-  
+
 	/*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -1140,7 +1320,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   unsigned short nMoving;
   if (nGridMovement > nZone) nMoving = nGridMovement;
   else nMoving = nZone;
-  
+
 		/*--- Motion Origin: ---*/
 		if (Motion_Origin_X == NULL) {
 			Motion_Origin_X = new double[nMoving];
@@ -4133,7 +4313,7 @@ void CConfig::AddMarkerDirichlet(const string & name, unsigned short & nMarker_D
 
 }
 
-void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet, 
+void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet,
 		string* & Marker_Outlet, double* & Pressure) {
 	nMarker_Outlet = 0;
 	CAnyOptionRef* option_ref = new CMarkerOutletRef(nMarker_Outlet, Marker_Outlet,
@@ -4141,21 +4321,21 @@ void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outl
 	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
-void CConfig::AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement, 
+void CConfig::AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
 		string* & Marker_Displacement, double* & Displ) {
 	nMarker_Displacement = 0;
 	CAnyOptionRef* option_ref = new CMarkerDisplacementRef(nMarker_Displacement, Marker_Displacement, Displ);
 	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
-void CConfig::AddMarkerLoad(const string & name, unsigned short & nMarker_Load, 
+void CConfig::AddMarkerLoad(const string & name, unsigned short & nMarker_Load,
 		string* & Marker_Load, double* & Force) {
 	nMarker_Load = 0;
 	CAnyOptionRef* option_ref = new CMarkerLoadRef(nMarker_Load, Marker_Load, Force);
 	param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
-void CConfig::AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad, 
+void CConfig::AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad,
 		string* & Marker_FlowLoad, double* & FlowForce) {
 	nMarker_FlowLoad = 0;
 	CAnyOptionRef* option_ref = new CMarkerLoadRef(nMarker_FlowLoad, Marker_FlowLoad, FlowForce);
@@ -4176,7 +4356,7 @@ void CConfig::SetBoolOption(bool* ref, const vector<string> & value) {
 	}
 }
 
-bool CConfig::TokenizeString(string & str, string & option_name, 
+bool CConfig::TokenizeString(string & str, string & option_name,
 		vector<string> & option_value) {
 	const string delimiters(" ()[]{}:,\t\n\v\f\r");
 	// check for comments or empty string
@@ -4255,7 +4435,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
 		throw(-1);
 	}
 
-#if 0	
+#if 0
 	cout << "option value(s) = ";
 	for (unsigned int i = 0; i < option_value.size(); i++)
 		cout << option_value[i] << " ";
@@ -4294,7 +4474,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
 			it++;
 		}
 	}
-#if 0  
+#if 0
 	cout << "option value(s) = ";
 	for (unsigned int i = 0; i < option_value.size(); i++)
 		cout << option_value[i] << " ";
@@ -4436,218 +4616,6 @@ unsigned short CConfig::GetMarker_Config_PerBound(string val_marker) {
 	for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
 		if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
 	return Marker_Config_PerBound[iMarker_Config];
-}
-
-CConfig::~CConfig(void)
-{
-  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
-  if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
-
-	/*--- If allocated, delete arrays for Plasma solver ---*/
-	if (Molar_Mass           != NULL) delete [] Molar_Mass;
-	if (Gas_Composition      != NULL) delete [] Gas_Composition;
-	if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
-	if (ArrheniusCoefficient != NULL) delete [] ArrheniusCoefficient;
-	if (ArrheniusEta         != NULL) delete [] ArrheniusEta;
-	if (ArrheniusTheta       != NULL) delete [] ArrheniusTheta;
-	if (CharVibTemp          != NULL) delete [] CharVibTemp;
-  if (CharElTemp           != NULL) {
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete[] CharElTemp[iSpecies];
-    delete [] CharElTemp;
-  }
-  if (degen                != NULL) {
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete[] degen[iSpecies];
-    delete [] degen;
-  }
-	unsigned short ii, iReaction;
-	if (Reactions            != NULL) {
-		for (iReaction = 0; iReaction < nReactions; iReaction++) {
-			for (ii = 0; ii < 2; ii++) {
-				delete [] Reactions[iReaction][ii];
-			}
-			delete[] Reactions[iReaction];
-		}
-		delete [] Reactions;
-	}
-
-	/*--- Free memory for Aeroelastic problems. ---*/
-	if (Grid_Movement && Aeroelastic_Simulation) {
-        
-    delete[] Aeroelastic_pitch;
-    delete[] Aeroelastic_plunge;
-	}
-
-	/*--- Free memory for unspecified grid motion parameters ---*/
-
-  if (Kind_GridMovement != NULL)
-    delete [] Kind_GridMovement;
-  
-	/*--- motion origin: ---*/
-	if (Motion_Origin_X != NULL)
-		delete [] Motion_Origin_X;
-	if (Motion_Origin_Y != NULL)
-		delete [] Motion_Origin_Y;
-	if (Motion_Origin_Z != NULL)
-		delete [] Motion_Origin_Z;
-  if (MoveMotion_Origin != NULL)
-    delete [] MoveMotion_Origin;
-
-	/*--- rotation: ---*/
-	if (Rotation_Rate_X != NULL)
-		delete [] Rotation_Rate_X;
-	if (Rotation_Rate_Y != NULL)
-		delete [] Rotation_Rate_Y;
-	if (Rotation_Rate_Z != NULL)
-		delete [] Rotation_Rate_Z;
-
-	/*--- pitching: ---*/
-	if (Pitching_Omega_X != NULL)
-		delete [] Pitching_Omega_X;
-	if (Pitching_Omega_Y != NULL)
-		delete [] Pitching_Omega_Y;
-	if (Pitching_Omega_Z != NULL)
-		delete [] Pitching_Omega_Z;
-
-	/*--- pitching amplitude: ---*/
-	if (Pitching_Ampl_X != NULL)
-		delete [] Pitching_Ampl_X;
-	if (Pitching_Ampl_Y != NULL)
-		delete [] Pitching_Ampl_Y;
-	if (Pitching_Ampl_Z != NULL)
-		delete [] Pitching_Ampl_Z;
-
-	/*--- pitching phase: ---*/
-	if (Pitching_Phase_X != NULL)
-		delete [] Pitching_Phase_X;
-	if (Pitching_Phase_Y != NULL)
-		delete [] Pitching_Phase_Y;
-	if (Pitching_Phase_Z != NULL)
-		delete [] Pitching_Phase_Z;
-
-	/*--- plunging: ---*/
-	if (Plunging_Omega_X != NULL)
-		delete [] Plunging_Omega_X;
-	if (Plunging_Omega_Y != NULL)
-		delete [] Plunging_Omega_Y;
-	if (Plunging_Omega_Z != NULL)
-		delete [] Plunging_Omega_Z;
-
-	/*--- plunging amplitude: ---*/
-	if (Plunging_Ampl_X != NULL)
-		delete [] Plunging_Ampl_X;
-	if (Plunging_Ampl_Y != NULL)
-		delete [] Plunging_Ampl_Y;
-	if (Plunging_Ampl_Z != NULL)
-		delete [] Plunging_Ampl_Z;
-
-  if (RefOriginMoment != NULL)
-		delete [] RefOriginMoment;
-  if (RefOriginMoment_X != NULL)
-		delete [] RefOriginMoment_X;
-	if (RefOriginMoment_Y != NULL)
-		delete [] RefOriginMoment_Y;
-	if (RefOriginMoment_Z != NULL)
-		delete [] RefOriginMoment_Z;
-
-  /*Marker pointers*/
-  if (Marker_Config_Out_1D!=NULL)   delete[] Marker_Config_Out_1D;
-  if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
-  if (Marker_Config_GeoEval!=NULL)  delete[] Marker_Config_GeoEval;
-  if (Marker_All_GeoEval!=NULL)     delete[] Marker_All_GeoEval;
-  if (Marker_Config_Tag!=NULL)      delete[] Marker_Config_Tag;
-  if (Marker_All_Tag!=NULL)         delete[] Marker_All_Tag;
-  if (Marker_Config_Boundary!=NULL) delete[] Marker_Config_Boundary;
-  if (Marker_All_Boundary!=NULL)    delete[] Marker_All_Boundary;
-  if (Marker_Config_Monitoring!=NULL)    delete[] Marker_Config_Monitoring;
-  if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
-  if (Marker_Config_Designing!=NULL) delete[] Marker_Config_Designing;
-  if (Marker_All_Designing!=NULL)    delete[] Marker_All_Designing;
-  if (Marker_Config_Plotting!=NULL)  delete[] Marker_Config_Plotting;
-  if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
-  if (Marker_Config_DV!=NULL)        delete[] Marker_Config_DV;
-  if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
-  if (Marker_DV!=NULL)               delete[] Marker_DV;
-  if (Marker_Moving!=NULL)           delete[] Marker_Moving;
-  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
-  if (Marker_Config_Moving!=NULL)   delete[] Marker_Config_Moving;
-  if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
-  if (Marker_Designing!=NULL)       delete[] Marker_Designing;
-  if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
-  if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_Config_PerBound!=NULL) delete[] Marker_Config_PerBound;
-  if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
-  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
-
-  if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
-  if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
-  if (DV_Value!=NULL)    delete[] DV_Value;
-  if (Design_Variable!=NULL)    delete[] Design_Variable;
-  if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
-  if (Nozzle_Ttotal!=NULL)    delete[]  Nozzle_Ttotal;
-  if (Nozzle_Ptotal!=NULL)    delete[]  Nozzle_Ptotal;
-  if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
-  if (Inlet_Temperature!=NULL)    delete[] Inlet_Temperature;
-  if (Inlet_Pressure!=NULL)    delete[] Inlet_Pressure;
-  if (Inlet_Velocity!=NULL)    delete[] Inlet_Velocity ;
-  if (FanFace_Mach_Target!=NULL)    delete[] FanFace_Mach_Target;
-  if (FanFace_Mach!=NULL)    delete[]  FanFace_Mach;
-  if (FanFace_Pressure!=NULL)    delete[] FanFace_Pressure;
-  if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
-  if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
-  if (Heat_Flux!=NULL)    delete[] Heat_Flux;
-  if (Displ_Value!=NULL)    delete[] Displ_Value;
-  if (Load_Value!=NULL)    delete[] Load_Value;
-  if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
-  if (Periodic_RotCenter!=NULL)    delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles!=NULL)    delete[] Periodic_RotAngles;
-  if (Periodic_Translation!=NULL)    delete[] Periodic_Translation;
-  if (Periodic_Center!=NULL)    delete[] Periodic_Center;
-  if (Periodic_Rotation!=NULL)    delete[] Periodic_Rotation;
-  if (Periodic_Translate!=NULL)    delete[] Periodic_Translate;
-
-  if (ParamDV!=NULL  )    delete[] ParamDV;
-  if (MG_CorrecSmooth!=NULL    )    delete[] MG_CorrecSmooth;
-  if (Section_Location!=NULL)    delete[] Section_Location;
-  if (Kappa_Flow!=NULL      )    delete[] Kappa_Flow;
-  if (Kappa_AdjFlow!=NULL             )    delete[] Kappa_AdjFlow;
-  if (Kappa_TNE2!=NULL   )    delete[] Kappa_TNE2;
-  if (Kappa_AdjTNE2!=NULL        )    delete[] Kappa_AdjTNE2;
-  if (Kappa_LinFlow!=NULL  )    delete[] Kappa_LinFlow;
-  if (PlaneTag!=NULL)    delete[] PlaneTag;
-  if (CFLRamp!=NULL)    delete[] CFLRamp;
-  if (CFL!=NULL)    delete[] CFL;
-  /*String markers*/
-  if (Marker_Euler!=NULL )              delete[] Marker_Euler;
-  if (Marker_FarField!=NULL )           delete[] Marker_FarField;
-  if (Marker_Custom!=NULL )             delete[] Marker_Custom;
-  if (Marker_SymWall!=NULL )            delete[] Marker_SymWall;
-  if (Marker_Pressure!=NULL )           delete[] Marker_Pressure;
-  if (Marker_PerBound!=NULL )           delete[] Marker_PerBound;
-  if (Marker_PerDonor!=NULL )           delete[] Marker_PerDonor;
-  if (Marker_NearFieldBound!=NULL )     delete[] Marker_NearFieldBound;
-  if (Marker_InterfaceBound!=NULL )     delete[] Marker_InterfaceBound;
-  if (Marker_Dirichlet!=NULL )          delete[] Marker_Dirichlet;
-  if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
-  if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
-  if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
-  if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
-  if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
-  if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
-  if (Marker_HeatFlux!=NULL )           delete[] Marker_HeatFlux;
-  if (Marker_NacelleInflow!=NULL )      delete[] Marker_NacelleInflow;
-  if (Marker_NacelleExhaust!=NULL )     delete[] Marker_NacelleExhaust;
-  if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
-  if (Marker_Load!=NULL )               delete[] Marker_Load;
-  if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
-  if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
-  if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
-
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
