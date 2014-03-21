@@ -107,7 +107,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
   
   CEquivArea_Inv = NULL;  CNearFieldOF_Inv = NULL;
-
+  
   FanFace_MassFlow = NULL;  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   FanFace_Pressure = NULL;  FanFace_Mach = NULL;  FanFace_Area = NULL;
   
@@ -3686,7 +3686,7 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config,
   bool singular;
   
   iPoint = val_Point;
-    
+  
   /*--- Set the value of the singular ---*/
   singular = false;
   
@@ -6921,7 +6921,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     FanFace_Pressure[iMarker] = Pressure_Inf;
     FanFace_Mach[iMarker] = Mach_Inf;
   }
-    
+  
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
@@ -7618,7 +7618,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           
           NormHeat_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex], 2.0);
           Heat_Visc[iMarker] += CHeatTransfer[iMarker][iVertex];
-
+          
         }
         
         /*--- Note that y+, and heat are computed at the
@@ -7660,7 +7660,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           CQ_Visc[iMarker]      = -CMz_Visc[iMarker];
           CMerit_Visc[iMarker]  = CT_Visc[iMarker]/CQ_Visc[iMarker];
           NormHeat_Visc[iMarker] = pow(NormHeat_Visc[iMarker],1.0/8.0);
-
+          
         }
         if (nDim == 3) {
           CDrag_Visc[iMarker]       =  ForceViscous[0]*cos(Alpha)*cos(Beta) + ForceViscous[1]*sin(Beta) + ForceViscous[2]*sin(Alpha)*cos(Beta);
@@ -8347,6 +8347,167 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         }
       }
       
+    }
+  }
+}
+
+void CNSSolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  /*--- Local variables ---*/
+  unsigned short iDim, jDim, iVar, jVar;
+  unsigned long iVertex, iPoint, Point_Normal, total_index;
+  
+  double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
+  double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
+  double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure;
+  double total_viscosity, div_vel, Density, turb_ke, tau_vel[3], UnitNormal[3];
+  double laminar_viscosity, eddy_viscosity, **grad_primvar, tau[3][3];
+  double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  
+  double Vel[3], VelNormal, VelTang[3], VelTangMod, WallDist[3], WallDistMod;
+  double T_Normal, P_Normal;
+  double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
+  double *Coord, *Coord_Normal;
+  double diff, tol = 1e-10, Delta;
+  double U_Tau, U_Plus, Gam, Beta, Phi, Q, Y_Plus_White, Y_Plus;
+  double TauElem[3], TauNormal, TauTangent[3], WallShearStress;
+  double Gas_Constant = config->GetGas_ConstantND();
+  double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  
+  
+  // Laminar or turbulent Pr for this?
+  double Recovery = pow(config->GetPrandtl_Lam(),(1.0/3.0));
+  
+  // Typical constants for the BL theory
+  double kappa = 0.4;
+  double B = 5.5;
+  
+  
+  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool grid_movement  = config->GetGrid_Movement();
+  
+  /*--- Identify the boundary by string name ---*/
+  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  
+  /*--- Get the specified wall heat flux from config ---*/
+  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      Coord = geometry->node[iPoint]->GetCoord();
+      Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+      
+      /*--- Compute dual-grid area and boundary normal ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+      
+      /*--- Get the velocity, pressure, and temperature at the first interior point ---*/
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        Vel[iDim] = node[Point_Normal]->GetVelocity(iDim);
+      P_Normal = node[Point_Normal]->GetPressure();
+      T_Normal = node[Point_Normal]->GetTemperature();
+      
+      /*--- Compute the parallel velocity at the first point off the wall
+       and also the normal distance of the point from the wall ---*/
+      
+      VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitNormal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+      VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
+      for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+      WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
+      
+      
+      /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
+      
+      T_Wall = T_Normal/(1.0 + (0.5*Gamma_Minus_One*Recovery)*VelTangMod*VelTangMod);
+      
+      /*--- Extrapolate the pressure from the interior & compute the
+       wall density using the equation of state ---*/
+      
+      P_Wall = P_Normal;
+      Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+      
+      /*--- Set up several quantities and iteratively solve for the new
+       wall shear stress based on boundary layer theory fits ---*/
+      
+      Lam_Visc_Wall = node[iPoint]->GetLaminarViscosity();
+      
+      diff = 1.0; Tau_Wall_Old = 1.0; int counter = 0;
+      while (diff > tol) {
+        
+        U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
+        
+        U_Plus = VelTangMod/U_Tau;
+        
+        Gam = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+        
+        /*--- Turbulent kinetic energy ---*/
+        if (config->GetKind_Turb_Model() == SST)
+          turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+        else
+          turb_ke = 0.0;
+        
+        
+        //Adiabatic, need to double check for heat flux... if that turb_ke for sure?
+        Beta = 0.0; //Wall_HeatFlux*Lam_Visc_Wall/(Density_Wall*T_Wall*turb_ke*U_Tau+tol);
+        
+        Q = sqrt(Beta*Beta + 4.0*Gam);
+        
+        Phi = asin(-1.0*Beta/Q);
+        
+        Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+        
+        Y_Plus = U_Plus + Y_Plus_White - exp(-1.0*kappa*B)*(1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0 + kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0);
+        
+        Tau_Wall = Density_Wall*pow(Y_Plus*Lam_Visc_Wall/(Density_Wall*WallDistMod),2.0);
+        
+        diff = fabs(Tau_Wall-Tau_Wall_Old);
+        Tau_Wall_Old += 0.1*(Tau_Wall-Tau_Wall_Old);
+        counter++;
+        //cout << counter << "   " << Tau_Wall << endl;
+      }
+      
+      /*--- Compute the shear stress at the wall and compare magnitudes ---*/
+      grad_primvar      = node[iPoint]->GetGradient_Primitive();
+      
+      div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += grad_primvar[iDim+1][iDim];
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0 ; jDim < nDim; jDim++) {
+          Delta = 0.0; if (iDim == jDim) Delta = 1.0;
+          tau[iDim][jDim] = Lam_Visc_Wall*(grad_primvar[jDim+1][iDim] + grad_primvar[iDim+1][jDim]) -
+          TWO3*Lam_Visc_Wall*div_vel*Delta;
+        }
+        TauElem[iDim] = 0.0;
+        for (jDim = 0; jDim < nDim; jDim++)
+          TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
+      }
+      
+      /*--- Compute wall shear stress (using the stress tensor) ---*/
+      
+      TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+      WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+      WallShearStress = sqrt(WallShearStress);
+      
+      cout << Tau_Wall << "    " << WallShearStress << "   Ratio: "<< Tau_Wall/WallShearStress << endl;
     }
   }
 }
