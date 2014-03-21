@@ -202,7 +202,7 @@ inline double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStrea
 
 inline double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 
-inline double CConfig::GetConversion_Factor(void) { return Conversion_Factor; }
+inline double CConfig::GetMesh_Scale_Change(void) { return Mesh_Scale_Change; }
 
 inline unsigned short CConfig::GetnStartUpIter(void) { return nStartUpIter; }
 
@@ -894,7 +894,7 @@ inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
 inline bool CConfig::GetCGNS_To_SU2(void) {return CGNS_To_SU2; }
 
-inline bool CConfig::GetWrite_Converted_Mesh(void) { return Write_Converted_Mesh; }
+inline bool CConfig::GetMesh_Output(void) { return Mesh_Output; }
 
 inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index; }
 
