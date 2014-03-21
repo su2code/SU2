@@ -39,7 +39,19 @@ COutput::COutput(void) {
   nGlobal_Line      = 0;
   nGlobal_BoundTria = 0;
   nGlobal_BoundQuad = 0;
-  
+
+  /*--- Initialize pointers to NULL ---*/
+  Coords=NULL;
+  Conn_Line=NULL;     Conn_BoundTria=NULL;  Conn_BoundQuad=NULL;
+  Conn_Tria=NULL;     Conn_Quad=NULL;       Conn_Tetr=NULL;
+  Conn_Hexa=NULL;     Conn_Wedg=NULL;       Conn_Pyra=NULL;
+  Volume=NULL;        Data=NULL;
+  residuals=NULL;     consv_vars=NULL;
+  p=NULL; rho=NULL; M=NULL; Cp=NULL; Cf=NULL; Ch=NULL; h=NULL; yplus=NULL;
+
+  nOutput_Vars=NULL;
+  data_container=NULL;
+
   /*--- Initialize CGNS write flag ---*/
   wrote_base_file = false;
   
@@ -440,6 +452,34 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #endif
   
+  /* delete pointers initialized at construction*/
+
+  if(  Coords!=NULL)          delete [] Coords;
+  if(  Conn_Line!=NULL)       delete [] Conn_Line;
+  if(  Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
+  if(Conn_BoundQuad!=NULL)    delete [] Conn_BoundQuad;
+  if(   Conn_Tria!=NULL)      delete [] Conn_Tria;
+  if(Conn_Quad!=NULL)      delete [] Conn_Quad;
+  if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
+  if(Conn_Hexa!=NULL)      delete [] Conn_Hexa;
+  if(Conn_Wedg!=NULL)      delete [] Conn_Wedg;
+  if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
+  if(Volume!=NULL)      delete [] Volume;
+  if(Data!=NULL)        delete [] Data;
+  if(residuals!=NULL)   delete [] residuals;
+  if(consv_vars!=NULL)  delete [] consv_vars;
+  if(p!=NULL)      delete [] p;
+  if(rho!=NULL)    delete [] rho;
+  if(M!=NULL)      delete [] M;
+  if(Cp!=NULL)     delete [] Cp;
+  if(Cf!=NULL)     delete [] Cf;
+  if(Ch!=NULL)     delete [] Ch;
+  if(h!=NULL)      delete [] h;
+  if(yplus!=NULL)  delete [] yplus;
+  /*public pointers*/
+  if(nOutput_Vars!=NULL) delete[] nOutput_Vars;
+  if(data_container!=NULL) delete[] data_container;
+
 }
 
 void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {

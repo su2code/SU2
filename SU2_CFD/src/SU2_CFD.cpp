@@ -577,6 +577,8 @@ int main(int argc, char *argv[]) {
   if (config_container!=NULL)       delete[] config_container;
   cout <<"Config container deallocated." << endl;
 
+  delete output;
+  cout <<"Output container deallocated." << endl;
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
