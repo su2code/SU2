@@ -275,6 +275,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   Primitive[T_INDEX]   = val_temperature;
   Primitive[TVE_INDEX] = val_temperature_ve;
   Primitive[P_INDEX]   = val_pressure;
+  
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
