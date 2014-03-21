@@ -84,9 +84,9 @@ CGeometry::~CGeometry(void) {
   }
   
   if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+    for (iPoint = 0; iPoint < nPoint; iPoint ++) {
       if (node[iPoint] != NULL) delete node[iPoint];
-    delete[] node;
+    }delete[] node;
   }
   
   if (edge != NULL) {
