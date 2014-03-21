@@ -568,7 +568,7 @@ int main(int argc, char *argv[]) {
   delete [] grid_movement;
   cout <<"Grid movement container deallocated." << endl;
 
-    /*Deallocate config container*/
+  /*---Deallocate config container---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]!=NULL){
       delete config_container[iZone];
@@ -576,7 +576,7 @@ int main(int argc, char *argv[]) {
   }
   if (config_container!=NULL)       delete[] config_container;
   cout <<"Config container deallocated." << endl;
-
+  /*--- Deallocate output container ---*/
   delete output;
   cout <<"Output container deallocated." << endl;
 
