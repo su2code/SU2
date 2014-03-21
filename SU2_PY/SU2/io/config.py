@@ -84,8 +84,11 @@ class Config(ordered_bunch):
         super(Config,self).__init__(*args,**kwarg)
         
         # read config if it exists
-        if filename and os.path.exists(filename):
-            self.read(filename)
+        if filename:
+            try:
+                self.read(filename)
+            except:
+                raise IOError , 'Could not find config file: %s' % filename
         
         self._filename = filename
     
