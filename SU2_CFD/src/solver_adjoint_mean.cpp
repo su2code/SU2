@@ -6373,12 +6373,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Get the force projection vector (based on the objective function) ---*/
 			d = node[iPoint]->GetForceProj_Vector();
-
-      ////////////////  DEBUGGING //////////////////
-      for (iDim = 0; iDim < nDim; iDim++)
-        d[iDim] = 0.0;
-      ////////////////  DEBUGGING //////////////////
-      
       
       /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
       if ( grid_movement) {
@@ -6416,17 +6410,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Calculate Dirichlet condition for energy equation ---*/
       if (!heat_flux_obj) {
         q = 0.0;
-        
-        if (geometry->node[iPoint]->GetCoord(0) < 0.9) {
-          GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
-          kGTdotn = 0;
-          Xi = solver_container[FLOW_SOL]->GetTotal_NormHeat();
-          Xi = 1.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
-          q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
-        }
-        
       } else {
         GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
         kGTdotn = 0;
