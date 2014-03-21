@@ -521,7 +521,28 @@ int main(int argc, char *argv[]) {
     ConvHist_file.close();
     cout << endl <<"History file closed." << endl;
   }
-
+  
+  /*--- Numerics class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+        for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++){
+        if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
+          delete numerics_container[iZone][iMesh][iSol][iTerm];
+        }
+        }
+        if (numerics_container[iZone][iMesh][iSol] != NULL)
+        delete numerics_container[iZone][iMesh][iSol];
+      }
+      if (numerics_container[iZone][iMesh]!= NULL)
+      delete numerics_container[iZone][iMesh];
+    }
+    if (numerics_container[iZone] != NULL)
+    delete numerics_container[iZone];
+  }
+  delete [] numerics_container;
+  if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
+  
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {
   //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
@@ -538,14 +559,14 @@ int main(int argc, char *argv[]) {
   //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
   
   /*--- Geometry class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      delete geometry_container[iZone][iMesh];
-  //    }
-  //    delete geometry_container[iZone];
-  //  }
-  //  delete [] geometry_container;
-  //  cout <<"Geometry container, deallocated." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      delete geometry_container[iZone][iMesh];
+    }
+    delete geometry_container[iZone];
+  }
+  delete [] geometry_container;
+  cout <<"Geometry container deallocated." << endl;
   
   /*--- Integration class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -568,13 +589,13 @@ int main(int argc, char *argv[]) {
   delete [] grid_movement;
   cout <<"Grid movement container deallocated." << endl;
 
-  /*---Deallocate config container---*/
+    /*Deallocate config container*/
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]!=NULL){
       delete config_container[iZone];
     }
   }
-  if (config_container!=NULL)       delete[] config_container;
+  if (config_container!=NULL) delete [] config_container;
   cout <<"Config container deallocated." << endl;
   /*--- Deallocate output container ---*/
   delete output;

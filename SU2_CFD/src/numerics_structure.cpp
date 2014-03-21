@@ -69,6 +69,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
   
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
+  var = NULL;
+  
   Ys          = NULL;
   dFdYj       = NULL;
   dFdYi       = NULL;
@@ -104,11 +108,13 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new double [nDim];
   m = new double [nDim];
+  
+  dVdU = NULL;
 }
 
 CNumerics::~CNumerics(void) {
 
-  delete [] Normal;
+  //delete [] Normal;
 	delete [] UnitNormal;
 
 	delete [] U_n;
@@ -118,7 +124,7 @@ CNumerics::~CNumerics(void) {
 	// visc
 	delete [] Proj_Flux_Tensor;
 
-	for (unsigned short iVar = 0; iVar < nDim+3; iVar++) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 		delete [] Flux_Tensor[iVar];
 	}
 	delete [] Flux_Tensor;
@@ -129,9 +135,8 @@ CNumerics::~CNumerics(void) {
 	}
 	delete [] tau;
 	delete [] delta;
-	delete [] Normal;
-	delete [] Enthalpy_formation;
-	delete [] Theta_v;
+	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
+	if(Theta_v != NULL) delete [] Theta_v;
   if (Ys != NULL) delete [] Ys;
   if (dFdYi != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -152,12 +157,14 @@ CNumerics::~CNumerics(void) {
   if (Vector != NULL) delete [] Vector;
   if (var != NULL) delete [] var;
 
+  if (dVdU != NULL) {
 	unsigned short iVar;
 	for (iVar = 0; iVar < nVar; iVar++) {
-		delete [] dVdU[iVar];
+		if (dVdU[iVar] != NULL) delete dVdU[iVar];
 	}
 	delete [] dVdU;
-
+  }
+  
 }
 
 void CNumerics::GetInviscidFlux(double val_density, double *val_velocity,

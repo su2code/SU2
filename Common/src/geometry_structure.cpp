@@ -41,20 +41,20 @@ CGeometry::CGeometry(void) {
   nNewElem_Bound = NULL;
   Marker_All_SendRecv = NULL;
   
-  //	PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-  //	PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-  //	OldBoundaryElems[MAX_NUMBER_MARKER].clear();
-  //  SendTransfLocal[MAX_NUMBER_DOMAIN].clear();
-  //  ReceivedTransfLocal[MAX_NUMBER_DOMAIN].clear();
-  //	SendDomainLocal[MAX_NUMBER_DOMAIN].clear();
-  //	ReceivedDomainLocal[MAX_NUMBER_DOMAIN].clear();
-  //	XCoordList.clear();
-  
-  //	Xcoord_plane.clear();
-  //	Ycoord_plane.clear();
-  //	Zcoord_plane.clear();
-  //	FaceArea_plane.clear();
-  //	Plane_points.clear();
+	PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+	PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+	OldBoundaryElems[MAX_NUMBER_MARKER].clear();
+  SendTransfLocal[MAX_NUMBER_DOMAIN].clear();
+  ReceivedTransfLocal[MAX_NUMBER_DOMAIN].clear();
+	SendDomainLocal[MAX_NUMBER_DOMAIN].clear();
+	ReceivedDomainLocal[MAX_NUMBER_DOMAIN].clear();
+	XCoordList.clear();
+
+	Xcoord_plane.clear();
+	Ycoord_plane.clear();
+	Zcoord_plane.clear();
+	FaceArea_plane.clear();
+	Plane_points.clear();
   
 }
 
@@ -84,9 +84,9 @@ CGeometry::~CGeometry(void) {
   }
   
   if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+    for (iPoint = 0; iPoint < nPoint; iPoint ++) {
       if (node[iPoint] != NULL) delete node[iPoint];
-    delete[] node;
+    }delete[] node;
   }
   
   if (edge != NULL) {
@@ -112,27 +112,26 @@ CGeometry::~CGeometry(void) {
     }
     delete[] newBound;
   }
-  
   if (nElem_Bound != NULL) delete[] nElem_Bound;
   if (nVertex != NULL) delete[] nVertex;
   if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
   if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
   
-  //	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
-  //	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-  //	OldBoundaryElems[MAX_NUMBER_MARKER].~vector();
-  //  SendTransfLocal[MAX_NUMBER_DOMAIN].~vector();
-  //  ReceivedTransfLocal[MAX_NUMBER_DOMAIN].~vector();
-  //	SendDomainLocal[MAX_NUMBER_DOMAIN].~vector();
-  //	ReceivedDomainLocal[MAX_NUMBER_DOMAIN].~vector();
-  //	XCoordList.~vector();
-  
-  //	Xcoord_plane.~vector()
-  //	Ycoord_plane.~vector()
-  //	Zcoord_plane.~vector()
-  //	FaceArea_plane.~vector()
-  //	Plane_points.~vector()
+	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
+	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
+	OldBoundaryElems[MAX_NUMBER_MARKER].~vector();
+  SendTransfLocal[MAX_NUMBER_DOMAIN].~vector();
+  ReceivedTransfLocal[MAX_NUMBER_DOMAIN].~vector();
+	SendDomainLocal[MAX_NUMBER_DOMAIN].~vector();
+	ReceivedDomainLocal[MAX_NUMBER_DOMAIN].~vector();
+	XCoordList.~vector();
+
+	Xcoord_plane.~vector();
+	Ycoord_plane.~vector();
+	Zcoord_plane.~vector();
+	FaceArea_plane.~vector();
+	Plane_points.~vector();
   
 }
 
@@ -11898,10 +11897,12 @@ CPeriodicGeometry::~CPeriodicGeometry(void) {
   unsigned long iElem_Bound;
   unsigned short iMarker;
   
+  if (newBoundPer[iMarker][iElem_Bound] != NULL) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-      if (newBoundPer[iMarker][iElem_Bound] != NULL) delete newBoundPer[iMarker][iElem_Bound];
+      delete newBoundPer[iMarker][iElem_Bound];
     }
+  }
   }
   if (newBoundPer != NULL) delete[] newBoundPer;
   
