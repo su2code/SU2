@@ -523,13 +523,14 @@ int main(int argc, char *argv[]) {
   }
   
     /*Deallocate config container*/
+  /*
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]!=NULL){
       delete config_container[iZone];
     }
   }
   if (config_container!=NULL)       delete[] config_container;
-
+*/
 
 
   /*--- Synchronization point after a single solver iteration. Compute the
