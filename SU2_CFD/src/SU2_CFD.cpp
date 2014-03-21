@@ -521,7 +521,28 @@ int main(int argc, char *argv[]) {
     ConvHist_file.close();
     cout << endl <<"History file closed." << endl;
   }
-
+  
+  /*--- Numerics class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+        for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++){
+        if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
+          delete numerics_container[iZone][iMesh][iSol][iTerm];
+        }
+        }
+        if (numerics_container[iZone][iMesh][iSol] != NULL)
+        delete numerics_container[iZone][iMesh][iSol];
+      }
+      if (numerics_container[iZone][iMesh]!= NULL)
+      delete numerics_container[iZone][iMesh];
+    }
+    if (numerics_container[iZone] != NULL)
+    delete numerics_container[iZone];
+  }
+  delete [] numerics_container;
+  if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
+  
   /*--- Solver class deallocation ---*/
   //  for (iZone = 0; iZone < nZone; iZone++) {
   //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
