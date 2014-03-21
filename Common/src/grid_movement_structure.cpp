@@ -2376,13 +2376,8 @@ CSurfaceMovement::~CSurfaceMovement(void) {}
 
 void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox;
-	int rank = MASTER_NODE, iExtIter = 0;
+	int rank = MASTER_NODE;
 	string FFDBoxTag;
-  
-  unsigned short nDim = geometry->GetnDim();
-	
-  /*--- Definition of the FFD deformation class ---*/
-	FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
   
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -2392,186 +2387,310 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 #endif
 #endif
   
-  /*--- Arbitrary definition of surface coordinates from file. ---*/
-  if (config->GetDesign_Variable(0) == SURFACE_FILE) {
-    
-    /*--- Check whether a surface file exists for input ---*/
-    ofstream Surface_File;
-    string filename = config->GetMotion_FileName();
-    Surface_File.open(filename.c_str(), ios::in);
-    
-    /*--- A surface file does not exist, so write a new one for the
-     markers that are specified as part of the motion. ---*/
-    if (Surface_File.fail()) {
-      
-      if (rank == MASTER_NODE)
-        cout << "No surface file found. Writing a new file: " << filename << "." << endl;
-      
-      Surface_File.open(filename.c_str(), ios::out);
-      Surface_File.precision(15);
-      unsigned long iMarker, jPoint, GlobalIndex, iVertex; double *Coords;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
-            Coords = geometry->node[jPoint]->GetCoord();
-            Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
-            if (nDim == 2) Surface_File << endl;
-            else Surface_File << "\t" << Coords[2] << endl;
-          }
-        }
-      }
-      Surface_File.close();
-      
-      /*--- A surface file exists, so read in the coordinates ---*/
-    } else {
-      Surface_File.close();
-      if (rank == MASTER_NODE)
-        cout << "Updating the surface coordinates from the input file." << endl;
-      SetExternal_Deformation(geometry, config, ZONE_0, iExtIter);
-    }
-    
-    /*--- Spherical parameterization ---*/
-  } else if (config->GetDesign_Variable(0) == SPHERICAL)  {
-    if (rank == MASTER_NODE) cout << "Perform 3D deformation of the surface." << endl;
-    SetSpherical(geometry, config, 0, false); // Note that the loop over the design variables is inside the subroutine
-    
-    /*--- Bump deformation for 2D problems ---*/
-  } else if (nDim == 2) {
-    
-    /*--- Apply rotation, displacement and stretching design variables (this
-     should be done before the bump function design variables) ---*/
-    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-			switch ( config->GetDesign_Variable(iDV) ) {
-				case ROTATION :     SetRotation(geometry, config, iDV, false); break;
-				case DISPLACEMENT : SetDisplacement(geometry, config, iDV, false); break;
-			}
-		}
-    
-		/*--- Apply the design variables to the control point position ---*/
-		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-			switch ( config->GetDesign_Variable(iDV) ) {
-				case HICKS_HENNE :  SetHicksHenne(geometry, config, iDV, false); break;
-				case COSINE_BUMP :  SetCosBump(geometry, config, iDV, false); break;
-				case FOURIER :      SetFourier(geometry, config, iDV, false); break;
-				case NACA_4DIGITS : SetNACA_4Digits(geometry, config); break;
-				case PARABOLIC :    SetParabolic(geometry, config); break;
-				case OBSTACLE :     SetObstacle(geometry, config); break;
-				case AIRFOIL :      SetAirfoil(geometry, config); break;
-        case SURFACE_FILE : SetExternal_Deformation(geometry, config, ZONE_0, iExtIter); break;
-			}
-		}
-        
-    /*--- Free Form Deformation for 3D problems ---*/
-	} else if (nDim == 3) {
-		    
-    /*--- Read the FFD information fron the grid file ---*/
-    ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName(), true);
-    
-    /*--- If the FFDBox was not defined in the input file ---*/
-    if (!GetFFDBoxDefinition()) {
-      
-      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
-        cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
-      
-      /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
-      CFreeFormDefBox FFDBox_unitary(1,1,1);
-      FFDBox_unitary.SetUnitCornerPoints();
-      
-      /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
-      FFDBox_unitary.SetControlPoints_Parallelepiped();
-      
-      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-        /*--- Compute the support control points for the final FFD using the unitary box ---*/
-        FFDBox_unitary.SetSupportCP(FFDBox[iFFDBox]);
-        
-        /*--- Compute control points in the support box ---*/
-        FFDBox_unitary.SetSupportCPChange(FFDBox[iFFDBox]);
-        
-        /*--- Compute the parametric coordinates, it also find the points in
-         the FFDBox using the parametrics coordinates ---*/
-        SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
-        
-      }
-      
-    }
-    
-    /*--- Output original FFD FFDBox ---*/
-    if (rank == MASTER_NODE) {
-      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-        FFDBox[iFFDBox]->SetTecplot(iFFDBox, true);
-      }
-    }
+  /*--- Definition of the FFD deformation class ---*/
+  
+	FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+
+  
+  /*--- Read the FFD information fron the grid file ---*/
+  
+  ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName(), true);
+  
+  /*--- If the FFDBox was not defined in the input file ---*/
+  if (!GetFFDBoxDefinition()) {
     
     if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
-      cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
+      cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
     
-    /*--- Loop over all the FFD boxes levels ---*/
-    for (iLevel = 0; iLevel < GetnLevel(); iLevel++) {
+    /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
+    CFreeFormDefBox FFDBox_unitary(1,1,1);
+    FFDBox_unitary.SetUnitCornerPoints();
+    
+    /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
+    FFDBox_unitary.SetControlPoints_Parallelepiped();
+    
+    for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+      /*--- Compute the support control points for the final FFD using the unitary box ---*/
+      FFDBox_unitary.SetSupportCP(FFDBox[iFFDBox]);
       
-      /*--- Loop over all FFD FFDBoxes ---*/
-      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-        
-        /*--- Check the level of the FFD box ---*/
-        if(FFDBox[iFFDBox]->GetLevel() == iLevel) {
-          
-          /*--- Compute the parametric coordinates of the child box
-           control points (using the parent FFDBox)  ---*/
-          for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
-            FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
-            for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
-              if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
-            SetParametricCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
-          }
-          
-          /*--- Update the parametric coordinates if it is a child FFDBox ---*/
-          if (iLevel > 0) UpdateParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
-          
-          /*--- Apply the design variables to the control point position ---*/
-          for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-            switch ( config->GetDesign_Variable(iDV) ) {
-              case FFD_CONTROL_POINT : SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-              case FFD_DIHEDRAL_ANGLE : SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-              case FFD_TWIST_ANGLE : SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-              case FFD_ROTATION : SetFFDRotation(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-              case FFD_CAMBER : SetFFDCamber(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-              case FFD_THICKNESS : SetFFDThickness(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-              case FFD_VOLUME : SetFFDVolume(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-            }
-          }
-          
-          /*--- Recompute cartesian coordinates using the new control point location ---*/
-          SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
-          
-          /*--- Reparametrization of the parent FFD box ---*/
-          for (iParent = 0; iParent < FFDBox[iFFDBox]->GetnParentFFDBox(); iParent++) {
-            FFDBoxTag = FFDBox[iFFDBox]->GetParentFFDBoxTag(iParent);
-            for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
-              if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
-            UpdateParametricCoord(geometry, config, FFDBox[jFFDBox], jFFDBox);
-          }
-          
-          /*--- Compute the new location of the control points of the child boxes
-           (using the parent FFDBox) ---*/
-          for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
-            FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
-            for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
-              if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
-            GetCartesianCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
-          }
-        }
-      }
+      /*--- Compute control points in the support box ---*/
+      FFDBox_unitary.SetSupportCPChange(FFDBox[iFFDBox]);
       
-      /*--- Output the deformed FFD Boxes ---*/
-      if (rank == MASTER_NODE) {
-        for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-          FFDBox[iFFDBox]->SetTecplot(iFFDBox, false);
-        }
-      }
+      /*--- Compute the parametric coordinates, it also find the points in
+       the FFDBox using the parametrics coordinates ---*/
+      SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
       
     }
-	}
+    
+  }
+//
+//  /*--- Output original FFD FFDBox ---*/
+//  if (rank == MASTER_NODE) {
+//    for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//      FFDBox[iFFDBox]->SetTecplot(iFFDBox, true);
+//    }
+//  }
+//  
+//  if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
+//    cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
+//  
+//  /*--- Loop over all the FFD boxes levels ---*/
+//  for (iLevel = 0; iLevel < GetnLevel(); iLevel++) {
+//    
+//    /*--- Loop over all FFD FFDBoxes ---*/
+//    for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//      
+//      /*--- Check the level of the FFD box ---*/
+//      if(FFDBox[iFFDBox]->GetLevel() == iLevel) {
+//        
+//        /*--- Compute the parametric coordinates of the child box
+//         control points (using the parent FFDBox)  ---*/
+//        for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
+//          FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
+//          for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+//            if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+//          SetParametricCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
+//        }
+//        
+//        /*--- Update the parametric coordinates if it is a child FFDBox ---*/
+//        if (iLevel > 0) UpdateParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+//        
+//        /*--- Apply the design variables to the control point position ---*/
+//        for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+//          switch ( config->GetDesign_Variable(iDV) ) {
+//            case FFD_CONTROL_POINT : SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            case FFD_DIHEDRAL_ANGLE : SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            case FFD_TWIST_ANGLE : SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            case FFD_ROTATION : SetFFDRotation(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            case FFD_CAMBER : SetFFDCamber(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            case FFD_THICKNESS : SetFFDThickness(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            case FFD_VOLUME : SetFFDVolume(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//          }
+//        }
+//        
+//        /*--- Recompute cartesian coordinates using the new control point location ---*/
+//        SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+//        
+//        /*--- Reparametrization of the parent FFD box ---*/
+//        for (iParent = 0; iParent < FFDBox[iFFDBox]->GetnParentFFDBox(); iParent++) {
+//          FFDBoxTag = FFDBox[iFFDBox]->GetParentFFDBoxTag(iParent);
+//          for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+//            if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+//          UpdateParametricCoord(geometry, config, FFDBox[jFFDBox], jFFDBox);
+//        }
+//        
+//        /*--- Compute the new location of the control points of the child boxes
+//         (using the parent FFDBox) ---*/
+//        for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
+//          FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
+//          for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+//            if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+//          GetCartesianCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
+//        }
+//      }
+//    }
+//    
+//    /*--- Output the deformed FFD Boxes ---*/
+//    if (rank == MASTER_NODE) {
+//      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//        FFDBox[iFFDBox]->SetTecplot(iFFDBox, false);
+//      }
+//    }
+//    
+//  }
+  
+  
+  
+  
+  
+  
+//  
+//  /*--- Arbitrary definition of surface coordinates from file. ---*/
+//  
+//  if (config->GetDesign_Variable(0) == SURFACE_FILE) {
+//    
+//    /*--- Check whether a surface file exists for input ---*/
+//    ofstream Surface_File;
+//    string filename = config->GetMotion_FileName();
+//    Surface_File.open(filename.c_str(), ios::in);
+//    
+//    /*--- A surface file does not exist, so write a new one for the
+//     markers that are specified as part of the motion. ---*/
+//    if (Surface_File.fail()) {
+//      
+//      if (rank == MASTER_NODE)
+//        cout << "No surface file found. Writing a new file: " << filename << "." << endl;
+//      
+//      Surface_File.open(filename.c_str(), ios::out);
+//      Surface_File.precision(15);
+//      unsigned long iMarker, jPoint, GlobalIndex, iVertex; double *Coords;
+//      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//        if (config->GetMarker_All_DV(iMarker) == YES) {
+//          for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//            jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//            GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
+//            Coords = geometry->node[jPoint]->GetCoord();
+//            Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
+//            if (nDim == 2) Surface_File << endl;
+//            else Surface_File << "\t" << Coords[2] << endl;
+//          }
+//        }
+//      }
+//      Surface_File.close();
+//      
+//      /*--- A surface file exists, so read in the coordinates ---*/
+//      
+//    } else {
+//      Surface_File.close();
+//      if (rank == MASTER_NODE)
+//        cout << "Updating the surface coordinates from the input file." << endl;
+//      SetExternal_Deformation(geometry, config, ZONE_0, iExtIter);
+//    }
+//    
+//    /*--- Spherical parameterization ---*/
+//    
+//  } else if (config->GetDesign_Variable(0) == SPHERICAL)  {
+//    if (rank == MASTER_NODE) cout << "Perform 3D deformation of the surface." << endl;
+//    SetSpherical(geometry, config, 0, false); // Note that the loop over the design variables is inside the subroutine
+//    
+//    /*--- Bump deformation for 2D problems ---*/
+//    
+//  } else if (nDim == 2) {
+//    
+//    /*--- Apply rotation, displacement and stretching design variables (this
+//     should be done before the bump function design variables) ---*/
+//    
+//    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+//			switch ( config->GetDesign_Variable(iDV) ) {
+//				case ROTATION :     SetRotation(geometry, config, iDV, false); break;
+//				case DISPLACEMENT : SetDisplacement(geometry, config, iDV, false); break;
+//			}
+//		}
+//    
+//		/*--- Apply the design variables to the control point position ---*/
+//    
+//		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+//			switch ( config->GetDesign_Variable(iDV) ) {
+//				case HICKS_HENNE :  SetHicksHenne(geometry, config, iDV, false); break;
+//				case COSINE_BUMP :  SetCosBump(geometry, config, iDV, false); break;
+//				case FOURIER :      SetFourier(geometry, config, iDV, false); break;
+//				case NACA_4DIGITS : SetNACA_4Digits(geometry, config); break;
+//				case PARABOLIC :    SetParabolic(geometry, config); break;
+//				case OBSTACLE :     SetObstacle(geometry, config); break;
+//				case AIRFOIL :      SetAirfoil(geometry, config); break;
+//        case SURFACE_FILE : SetExternal_Deformation(geometry, config, ZONE_0, iExtIter); break;
+//			}
+//		}
+//        
+//    /*--- Free Form Deformation for 3D problems ---*/
+//	} else if (nDim == 3) {
+//		    
+//    /*--- Read the FFD information fron the grid file ---*/
+//    ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName(), true);
+//    
+//    /*--- If the FFDBox was not defined in the input file ---*/
+//    if (!GetFFDBoxDefinition()) {
+//      
+//      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
+//        cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
+//      
+//      /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
+//      CFreeFormDefBox FFDBox_unitary(1,1,1);
+//      FFDBox_unitary.SetUnitCornerPoints();
+//      
+//      /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
+//      FFDBox_unitary.SetControlPoints_Parallelepiped();
+//      
+//      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//        /*--- Compute the support control points for the final FFD using the unitary box ---*/
+//        FFDBox_unitary.SetSupportCP(FFDBox[iFFDBox]);
+//        
+//        /*--- Compute control points in the support box ---*/
+//        FFDBox_unitary.SetSupportCPChange(FFDBox[iFFDBox]);
+//        
+//        /*--- Compute the parametric coordinates, it also find the points in
+//         the FFDBox using the parametrics coordinates ---*/
+//        SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+//        
+//      }
+//      
+//    }
+//    
+//    /*--- Output original FFD FFDBox ---*/
+//    if (rank == MASTER_NODE) {
+//      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//        FFDBox[iFFDBox]->SetTecplot(iFFDBox, true);
+//      }
+//    }
+//    
+//    if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
+//      cout << endl <<"----------------- FFD technique (parametric -> cartesian) ---------------" << endl;
+//    
+//    /*--- Loop over all the FFD boxes levels ---*/
+//    for (iLevel = 0; iLevel < GetnLevel(); iLevel++) {
+//      
+//      /*--- Loop over all FFD FFDBoxes ---*/
+//      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//        
+//        /*--- Check the level of the FFD box ---*/
+//        if(FFDBox[iFFDBox]->GetLevel() == iLevel) {
+//          
+//          /*--- Compute the parametric coordinates of the child box
+//           control points (using the parent FFDBox)  ---*/
+//          for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
+//            FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
+//            for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+//              if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+//            SetParametricCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
+//          }
+//          
+//          /*--- Update the parametric coordinates if it is a child FFDBox ---*/
+//          if (iLevel > 0) UpdateParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+//          
+//          /*--- Apply the design variables to the control point position ---*/
+//          for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+//            switch ( config->GetDesign_Variable(iDV) ) {
+//              case FFD_CONTROL_POINT : SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//              case FFD_DIHEDRAL_ANGLE : SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//              case FFD_TWIST_ANGLE : SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//              case FFD_ROTATION : SetFFDRotation(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//              case FFD_CAMBER : SetFFDCamber(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//              case FFD_THICKNESS : SetFFDThickness(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//              case FFD_VOLUME : SetFFDVolume(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+//            }
+//          }
+//          
+//          /*--- Recompute cartesian coordinates using the new control point location ---*/
+//          SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+//          
+//          /*--- Reparametrization of the parent FFD box ---*/
+//          for (iParent = 0; iParent < FFDBox[iFFDBox]->GetnParentFFDBox(); iParent++) {
+//            FFDBoxTag = FFDBox[iFFDBox]->GetParentFFDBoxTag(iParent);
+//            for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+//              if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+//            UpdateParametricCoord(geometry, config, FFDBox[jFFDBox], jFFDBox);
+//          }
+//          
+//          /*--- Compute the new location of the control points of the child boxes
+//           (using the parent FFDBox) ---*/
+//          for (iChild = 0; iChild < FFDBox[iFFDBox]->GetnChildFFDBox(); iChild++) {
+//            FFDBoxTag = FFDBox[iFFDBox]->GetChildFFDBoxTag(iChild);
+//            for (jFFDBox = 0; jFFDBox < GetnFFDBox(); jFFDBox++)
+//              if (FFDBoxTag == FFDBox[jFFDBox]->GetTag()) break;
+//            GetCartesianCoordCP(geometry, config, FFDBox[iFFDBox], FFDBox[jFFDBox]);
+//          }
+//        }
+//      }
+//      
+//      /*--- Output the deformed FFD Boxes ---*/
+//      if (rank == MASTER_NODE) {
+//        for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+//          FFDBox[iFFDBox]->SetTecplot(iFFDBox, false);
+//        }
+//      }
+//      
+//    }
+//	}
   
 }
 
@@ -5168,11 +5287,14 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
 }
 
 void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh) {
-	string text_line, iTag;
+	
+  string text_line, iTag;
 	ifstream mesh_file;
 	double coord[3];
-	unsigned short degree[3], iFFDBox, iCornerPoints, iControlPoints, iMarker, iDegree, jDegree, kDegree, iChar, LevelFFDBox, nParentFFDBox, iParentFFDBox, nChildFFDBox, iChildFFDBox, nMarker;
-	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nVertex, nPoint, iElem = 0, nElem, my_nSurfPoints, nSurfPoints;
+	unsigned short degree[3], iFFDBox, iCornerPoints, iControlPoints, iMarker, iDegree, jDegree, kDegree,
+  iChar, LevelFFDBox, nParentFFDBox, iParentFFDBox, nChildFFDBox, iChildFFDBox, nMarker;
+	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nVertex, nPoint, iElem = 0,
+  nElem, my_nSurfPoints, nSurfPoints;
 
   int rank = MASTER_NODE;
 
@@ -5196,6 +5318,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	while (getline (mesh_file, text_line)) {
 		
 		/*--- Read the inner elements ---*/
+    
 		string::size_type position = text_line.find ("NELEM=",0);
 		if (position != string::npos) {
 			text_line.erase (0,6); nElem = atoi(text_line.c_str());
@@ -5205,6 +5328,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 		}
 		
 		/*--- Read the inner points ---*/
+    
 		position = text_line.find ("NPOINT=",0);
 		if (position != string::npos) {
 			text_line.erase (0,6); nPoint = atoi(text_line.c_str());
@@ -5214,6 +5338,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 		}
 
     /*--- Read the boundaries  ---*/
+    
 		position = text_line.find ("NMARK=",0);
 		if (position != string::npos) {
 			text_line.erase (0,6); nMarker = atoi(text_line.c_str());
@@ -5228,6 +5353,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 		}
     
     /*--- Read the FFDBox information  ---*/
+    
 		position = text_line.find ("FFD_NBOX=",0);
 		if (position != string::npos) {
 			text_line.erase (0,9);
@@ -5245,10 +5371,12 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 			for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
 				
 				/*--- Read the name of the FFD box ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,8);
 				
 				/*--- Remove extra data from the FFDBox name ---*/
+        
 				string::size_type position;
 				for (iChar = 0; iChar < 20; iChar++) {
 					position = text_line.find( " ", 0 );
@@ -5263,12 +5391,14 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				if (rank == MASTER_NODE) cout << "FFD box tag: " << TagFFDBox <<". ";
 
 				/*--- Read the level of the FFD box ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,10);
 				LevelFFDBox = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "FFD box level: " << LevelFFDBox <<". ";
 				
 				/*--- Read the degree of the FFD box ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,13); degree[0] = atoi(text_line.c_str());
 				getline (mesh_file,text_line);
@@ -5280,6 +5410,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
 				/*--- Read the number of parents boxes ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,12);
 				nParentFFDBox = atoi(text_line.c_str());
@@ -5288,6 +5419,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 					getline(mesh_file, text_line);
 					
 					/*--- Remove extra data from the FFDBox name ---*/
+          
 					string::size_type position;
 					for (iChar = 0; iChar < 20; iChar++) {
 						position = text_line.find( " ", 0 );
@@ -5303,6 +5435,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				}
 				
 				/*--- Read the number of children boxes ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,13);
 				nChildFFDBox = atoi(text_line.c_str());
@@ -5311,6 +5444,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 					getline(mesh_file, text_line);
 					
 					/*--- Remove extra data from the FFDBox name ---*/
+          
 					string::size_type position;
 					for (iChar = 0; iChar < 20; iChar++) {
 						position = text_line.find( " ", 0 );
@@ -5326,11 +5460,13 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				}
 								
 				/*--- Read the number of the corner points ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,18); nCornerPoints[iFFDBox] = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Corner points: " << nCornerPoints[iFFDBox] <<". ";
 				
 				/*--- Read the coordinates of the corner points ---*/
+        
 				for (iCornerPoints = 0; iCornerPoints < nCornerPoints[iFFDBox]; iCornerPoints++) {
 					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
@@ -5338,14 +5474,17 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				}
 				
 				/*--- Read the number of the control points ---*/
+        
 				getline (mesh_file,text_line);
 				text_line.erase (0,19); nControlPoints[iFFDBox] = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Control points: " << nControlPoints[iFFDBox] <<". ";
 				
 				/*--- Method to identify if there is a FFDBox definition ---*/
+        
 				if (nControlPoints[iFFDBox] != 0) FFDBoxDefinition = true;
 
 				/*--- Read the coordinates of the control points ---*/
+        
 				for (iControlPoints = 0; iControlPoints < nControlPoints[iFFDBox]; iControlPoints++) {
 					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iDegree; FFDBox_line >> jDegree; FFDBox_line >> kDegree; 
@@ -5356,7 +5495,8 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				getline (mesh_file,text_line);
 				text_line.erase (0,19); nSurfacePoints[iFFDBox] = atoi(text_line.c_str());
 
-				/*--- The the surface points parametric coordinates ---*/
+				/*--- The surface points parametric coordinates ---*/
+        
         my_nSurfPoints = 0;
 				for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++) {
 					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
@@ -5376,9 +5516,11 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
                 my_nSurfPoints++;
               }
             }
+            
             /*--- It is possible to remove some points in the FFD that are
              not associated with surface vertices, this is the case of send receive
              points that are on the surface, but the surface is not in the domain ---*/
+            
 					}
           else {  // Without vertices information (partitioning).
             FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
@@ -5983,7 +6125,7 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *guess
 	double **Hessian, Indep_Term[3], under_relax = 1.0, MinNormError, NormError;
 	unsigned short iDim, RandonCounter;
 	unsigned long iter;
-	
+	 
 	/*--- Allocate the Hessian ---*/
 	Hessian = new double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++) {
