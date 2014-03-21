@@ -49,6 +49,8 @@ INSTALL ( FILES
   SU2_PY/parallel_computation.py
   SU2_PY/patient_designspace.py
   SU2_PY/shape_optimization.py
+  PERMISSIONS
+  OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
   DESTINATION
   bin
 )
