@@ -451,22 +451,23 @@ def add_suffix(base_name,suffix):
 def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
-    dv_map = { 1   : "HICKS_HENNE"        ,
-               2   : "COSINE_BUMP"        ,
-               3   : "SPHERICAL"          ,
-               4   : "NACA_4DIGITS"       ,
-               5   : "DISPLACEMENT"       ,
-               6   : "ROTATION"           ,
-               7   : "FFD_CONTROL_POINT"  ,
-               8   : "FFD_DIHEDRAL_ANGLE" ,
-               9   : "FFD_TWIST_ANGLE"    ,
-               10  : "FFD_ROTATION"       ,
-               11  : "FFD_CAMBER"         ,
-               12  : "FFD_THICKNESS"      ,
-               13  : "FFD_VOLUME"         ,
-               14  : "FOURIER"            ,
-               101 : "MACH_NUMBER"        ,
-               102 : "AOA"                 }
+    dv_map = { 1   : "HICKS_HENNE"           ,
+               2   : "COSINE_BUMP"           ,
+               3   : "SPHERICAL"             ,
+               4   : "NACA_4DIGITS"          ,
+               5   : "DISPLACEMENT"          ,
+               6   : "ROTATION"              ,
+               7   : "FFD_CONTROL_POINT"     ,
+               8   : "FFD_DIHEDRAL_ANGLE"    ,
+               9   : "FFD_TWIST_ANGLE"       ,
+               10  : "FFD_ROTATION"          ,
+               11  : "FFD_CAMBER"            ,
+               12  : "FFD_THICKNESS"         ,
+               13  : "FFD_VOLUME"            ,
+               14  : "FOURIER"               ,
+               15  : "FFD_CONTROL_POINT_2D"  ,
+               101 : "MACH_NUMBER"           ,
+               102 : "AOA"                    }
     
     return dv_map
 
@@ -541,7 +542,10 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     else: raise Exception('Unrecognized Gradient Type')          
         
     # design variable parameters
-    if   kindID == "HICKS_HENNE"        : 
+    if kindID == "FFD_CONTROL_POINT_2D"  :
+        header.append(r',"FFD_Box_ID","xIndex","yIndex","xAxis","yAxis"')
+        write_format.append(r', %s, %s, %s, %s, %s')
+    elif kindID == "HICKS_HENNE"        :
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r', %s, %s')
     elif kindID == "GAUSS_BUMP"       :
@@ -560,25 +564,25 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         header.append(r',"x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s')
     elif kindID == "FFD_CONTROL_POINT"  : 
-        header.append(r',"Chunk","xIndex","yIndex","zIndex","xAxis","yAxis","zAxis"')
+        header.append(r',"FFD_Box_ID","xIndex","yIndex","zIndex","xAxis","yAxis","zAxis"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
     elif kindID == "FFD_DIHEDRAL_ANGLE" : 
-        header.append(r',"Chunk","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
+        header.append(r',"FFD_Box_ID","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
     elif kindID == "FFD_TWIST_ANGLE"    : 
-        header.append(r',"Chunk","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
+        header.append(r',"FFD_Box_ID","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
     elif kindID == "FFD_ROTATION"       : 
-        header.append(r',"Chunk","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
+        header.append(r',"FFD_Box_ID","x_Orig","y_Orig","z_Orig","x_End","y_End","z_End"')
         write_format.append(r', %s, %s, %s, %s, %s, %s, %s')
     elif kindID == "FFD_CAMBER"         : 
-        header.append(r',"Chunk","xIndex","yIndex"')
+        header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "FFD_THICKNESS"      : 
-        header.append(r',"Chunk","xIndex","yIndex"')
+        header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "FFD_VOLUME"         : 
-        header.append(r',"Chunk","xIndex","yIndex"')
+        header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "MACH_NUMBER"        : pass
     elif kindID == "AOA"                : pass
