@@ -254,8 +254,8 @@ psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
-su2_contrib_INCLUDES = @su2_contrib_INCLUDES@
-su2_contrib_LIBS = @su2_contrib_LIBS@
+su2_externals_INCLUDES = @su2_externals_INCLUDES@
+su2_externals_LIBS = @su2_externals_LIBS@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@
@@ -300,14 +300,15 @@ libSU2_a_SOURCES = \
 		../src/matrix_structure.cpp
 
 
-# always link to built dependencies from ./contrib
+# always link to built dependencies from ./externals
 
 # if BUILD_CGNS
 # endif
 
 # if BUILD_MUTATIONPP
-libSU2_a_CXXFLAGS = @su2_contrib_INCLUDES@ @CGNS_CXX@ @MUTATIONPP_CXX@
-libSU2_a_LIBADD = @su2_contrib_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@
+libSU2_a_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
+	@MUTATIONPP_CXX@ $(am__empty)
+libSU2_a_LIBADD = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@
 all: all-am
 
 .SUFFIXES:

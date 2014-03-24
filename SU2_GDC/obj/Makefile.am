@@ -19,9 +19,9 @@ ___bin_SU2_GDC_SOURCES = ../include/SU2_GDC.hpp \
 ___bin_SU2_GDC_CXXFLAGS =
 ___bin_SU2_GDC_LDADD = ../../Common/lib/libSU2.a
 
-# always link to built dependencies from ./contrib
-___bin_SU2_GDC_CXXFLAGS += @su2_contrib_INCLUDES@
-___bin_SU2_GDC_LDADD += @su2_contrib_LIBS@
+# always link to built dependencies from ./externals
+___bin_SU2_GDC_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_GDC_LDADD += @su2_externals_LIBS@
 
 # if BUILD_CGNS
 ___bin_SU2_GDC_CXXFLAGS += @CGNS_CXX@

@@ -41,13 +41,13 @@ AC_DEFUN([CONFIGURE_TECIO],
         ;;
 
         *)
-	AC_MSG_RESULT([>>> Unrecognized TecIO platform, see contrib/tecio/Runmake for hints on how to extend <<<])
+	AC_MSG_RESULT([>>> Unrecognized TecIO platform, see externals/tecio/Runmake for hints on how to extend <<<])
 	;;
     esac
 
 
-     TECIO_INCLUDE="-I\$(top_srcdir)/contrib/tecio/include"
-     TECIO_LIB="\$(top_builddir)/contrib/tecio/libtecio.a"
+     TECIO_INCLUDE="-I\$(top_srcdir)/externals/tecio/include"
+     TECIO_LIB="\$(top_builddir)/externals/tecio/libtecio.a"
      AC_DEFINE(HAVE_TECPLOT_API, 1, [Flag indicating whether the library will be compiled with Tecplot TecIO API support])
      AC_DEFINE(HAVE_TECPLOT_API_112, 1, [Flag indicating tecplot API understands newer features])
      AC_MSG_RESULT(<<< Configuring library with Tecplot TecIO support >>>)

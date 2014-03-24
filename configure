@@ -655,8 +655,8 @@ CGNS_LD
 CGNS_CXX
 BUILD_CGNS_FALSE
 BUILD_CGNS_TRUE
-su2_contrib_LIBS
-su2_contrib_INCLUDES
+su2_externals_LIBS
+su2_externals_INCLUDES
 BUILD_METIS_FALSE
 BUILD_METIS_TRUE
 METIS_LIB
@@ -5271,8 +5271,8 @@ _ACEOF
 # --------------------------------------------------------------
 # Build up contributed packages that we will build from source
 # --------------------------------------------------------------
-su2_contrib_INCLUDES=""
-su2_contrib_LIBS=""
+su2_externals_INCLUDES=""
+su2_externals_LIBS=""
 
 # Tecplot
 
@@ -5291,8 +5291,8 @@ fi
 
   # The TECIO APU requires some header files...
   if (test $enabletecio = yes); then
-    ac_fn_c_check_header_mongrel "$LINENO" "/usr/X11R6/include/X11/Intrinsic.h" "ac_cv_header__usr_X11R6_include_X11_Intrinsic_h" "$ac_includes_default"
-if test "x$ac_cv_header__usr_X11R6_include_X11_Intrinsic_h" = xyes; then :
+    ac_fn_c_check_header_mongrel "$LINENO" "X11/Intrinsic.h" "ac_cv_header_X11_Intrinsic_h" "$ac_includes_default"
+if test "x$ac_cv_header_X11_Intrinsic_h" = xyes; then :
 
 else
   enabletecio=no
@@ -5353,14 +5353,14 @@ _ACEOF
         ;;
 
         *)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: >>> Unrecognized TecIO platform, see contrib/tecio/Runmake for hints on how to extend <<<" >&5
-$as_echo ">>> Unrecognized TecIO platform, see contrib/tecio/Runmake for hints on how to extend <<<" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: >>> Unrecognized TecIO platform, see externals/tecio/Runmake for hints on how to extend <<<" >&5
+$as_echo ">>> Unrecognized TecIO platform, see externals/tecio/Runmake for hints on how to extend <<<" >&6; }
 	;;
     esac
 
 
-     TECIO_INCLUDE="-I\$(top_srcdir)/contrib/tecio/include"
-     TECIO_LIB="\$(top_builddir)/contrib/tecio/libtecio.a"
+     TECIO_INCLUDE="-I\$(top_srcdir)/externals/tecio/include"
+     TECIO_LIB="\$(top_builddir)/externals/tecio/libtecio.a"
 
 $as_echo "#define HAVE_TECPLOT_API 1" >>confdefs.h
 
@@ -5380,10 +5380,10 @@ $as_echo "<<< Configuring library with Tecplot TecIO support >>>" >&6; }
 
 
 if (test $enabletecio = yes); then
-  su2_contrib_INCLUDES="$TECIO_INCLUDE $su2_contrib_INCLUDES"
-  su2_contrib_LIBS="$TECIO_LIB $su2_contrib_LIBS"
+  su2_externals_INCLUDES="$TECIO_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
 else
-  su2_contrib_INCLUDES="-DNO_TECIO $su2_contrib_INCLUDES"
+  su2_externals_INCLUDES="-DNO_TECIO $su2_externals_INCLUDES"
 fi
  if test x$enabletecio = xyes; then
   BUILD_TECIO_TRUE=
@@ -5393,7 +5393,7 @@ else
   BUILD_TECIO_FALSE=
 fi
 
-ac_config_files="$ac_config_files contrib/tecio/Makefile"
+ac_config_files="$ac_config_files externals/tecio/Makefile"
 
 
 # Metis
@@ -5411,8 +5411,8 @@ fi
 
 
       if (test $enablemetis = yes); then
-     METIS_INCLUDE="-DMETIS_5 -I\$(top_srcdir)/contrib/metis/include"
-     METIS_LIB="\$(top_builddir)/contrib/metis/libmetis.a"
+     METIS_INCLUDE="-DMETIS_5 -I\$(top_srcdir)/externals/metis/include"
+     METIS_LIB="\$(top_builddir)/externals/metis/libmetis.a"
 
 $as_echo "#define HAVE_METIS 1" >>confdefs.h
 
@@ -5480,10 +5480,10 @@ $as_echo "$ac_cv_tls" >&6; }
 
 
 if (test $enablemetis = yes); then
-  su2_contrib_INCLUDES="$METIS_INCLUDE $su2_contrib_INCLUDES"
-  su2_contrib_LIBS="$METIS_LIB $su2_contrib_LIBS"
+  su2_externals_INCLUDES="$METIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
 else
-  su2_contrib_INCLUDES="-DNO_METIS $su2_contrib_INCLUDES"
+  su2_externals_INCLUDES="-DNO_METIS $su2_externals_INCLUDES"
 fi
  if test x$enablemetis = xyes; then
   BUILD_METIS_TRUE=
@@ -5493,7 +5493,7 @@ else
   BUILD_METIS_FALSE=
 fi
 
-ac_config_files="$ac_config_files contrib/metis/Makefile"
+ac_config_files="$ac_config_files externals/metis/Makefile"
 
 
 
@@ -6041,7 +6041,7 @@ fi
 
 ###########################
 
-ac_config_files="$ac_config_files Makefile contrib/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DDC/obj/Makefile SU2_GPC/obj/Makefile SU2_MAC/obj/Makefile SU2_MDC/obj/Makefile SU2_PBC/obj/Makefile SU2_SOL/obj/Makefile SU2_GDC/obj/Makefile SU2_UMC/obj/Makefile SU2_PY/Makefile"
+ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DDC/obj/Makefile SU2_GPC/obj/Makefile SU2_MAC/obj/Makefile SU2_MDC/obj/Makefile SU2_PBC/obj/Makefile SU2_SOL/obj/Makefile SU2_GDC/obj/Makefile SU2_UMC/obj/Makefile SU2_PY/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6858,10 +6858,10 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
-    "contrib/tecio/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/tecio/Makefile" ;;
-    "contrib/metis/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/metis/Makefile" ;;
+    "externals/tecio/Makefile") CONFIG_FILES="$CONFIG_FILES externals/tecio/Makefile" ;;
+    "externals/metis/Makefile") CONFIG_FILES="$CONFIG_FILES externals/metis/Makefile" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "contrib/Makefile") CONFIG_FILES="$CONFIG_FILES contrib/Makefile" ;;
+    "externals/Makefile") CONFIG_FILES="$CONFIG_FILES externals/Makefile" ;;
     "Common/lib/Makefile") CONFIG_FILES="$CONFIG_FILES Common/lib/Makefile" ;;
     "SU2_CFD/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_CFD/obj/Makefile" ;;
     "SU2_DDC/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_DDC/obj/Makefile" ;;
@@ -7456,8 +7456,8 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
 
-    su2_contrib_INCLUDES = $su2_contrib_INCLUDES
-    su2_contrib_LIBS     = $su2_contrib_LIBS
+    External includes:    $su2_externals_INCLUDES
+    External libs:        $su2_externals_LIBS
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC
@@ -7497,8 +7497,8 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
 
-    su2_contrib_INCLUDES = $su2_contrib_INCLUDES
-    su2_contrib_LIBS     = $su2_contrib_LIBS
+    External includes:    $su2_externals_INCLUDES
+    External libs:        $su2_externals_LIBS
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC

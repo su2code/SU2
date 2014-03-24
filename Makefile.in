@@ -18,10 +18,13 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	10/30/13
+# Last updated: 	03/24/14
 #
 # Created by: 		M. Colonno
 # Updated by: 		T. Economon
+#
+# Major Changes/Contributions:
+# METIS & TECIO integration added by Ben Kirk, 3/24/2014
 #
 ##########################
 VPATH = @srcdir@
@@ -120,7 +123,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = contrib Common/lib SU2_PY SU2_CFD/obj SU2_DDC/obj \
+DIST_SUBDIRS = externals Common/lib SU2_PY SU2_CFD/obj SU2_DDC/obj \
 	SU2_GPC/obj SU2_MAC/obj SU2_MDC/obj SU2_PBC/obj SU2_SOL/obj \
 	SU2_GDC/obj SU2_UMC/obj
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -270,8 +273,8 @@ psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
-su2_contrib_INCLUDES = @su2_contrib_INCLUDES@
-su2_contrib_LIBS = @su2_contrib_LIBS@
+su2_externals_INCLUDES = @su2_externals_INCLUDES@
+su2_externals_LIBS = @su2_externals_LIBS@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@
@@ -286,7 +289,7 @@ top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
 # build third-party optional dependencies first
-SUBDIRS = contrib Common/lib SU2_PY $(am__append_1) $(am__append_2) \
+SUBDIRS = externals Common/lib SU2_PY $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
 	$(am__append_6) $(am__append_7) $(am__append_8) \
 	$(am__append_9)
