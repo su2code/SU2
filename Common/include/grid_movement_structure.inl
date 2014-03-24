@@ -77,10 +77,10 @@ inline double *CFreeFormDefBox::Get_CartesianCoord(unsigned long val_iSurfacePoi
 																																										return cart_coord_; }
 
 inline double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePoints) { 
-																																										param_coord_[0] = ParametricCoord[0][val_iSurfacePoints];
-																																										param_coord_[1] = ParametricCoord[1][val_iSurfacePoints];
-																																										param_coord_[2] = ParametricCoord[2][val_iSurfacePoints];
-																																										return param_coord_; }
+																																										ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
+																																										ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
+																																										ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
+																																										return ParamCoord_; }
 																																										
 inline unsigned long CFreeFormDefBox::GetnSurfacePoint(void) { return PointIndex.size(); }
 

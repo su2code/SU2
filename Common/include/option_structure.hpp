@@ -866,10 +866,12 @@ enum ENUM_PARAM {
   COSINE_BUMP = 21,		/*!< \brief Gauss bump function for airfoil deformation. */
   FOURIER = 22,		/*!< \brief Fourier function for airfoil deformation. */
   SPHERICAL = 23,		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
-  AIRFOIL = 24		/*!< \brief Airfoil definition as design variables. */
+  AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
+  FFD_CONTROL_POINT_2D = 25	/*!< \brief Free form deformation for 2D design (change a control point). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
+("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
 ("HICKS_HENNE", HICKS_HENNE)
 ("SPHERICAL", SPHERICAL)
 ("MACH_NUMBER", MACH_NUMBER)
@@ -2233,6 +2235,7 @@ public:
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			switch ((*Design_Variable_)[iDV]) {
 			case NO_DEFORMATION: nParamDV = 0; break;
+      case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
 			case HICKS_HENNE: nParamDV = 2; break;
       case SPHERICAL: nParamDV = 3; break;
       case COSINE_BUMP: nParamDV = 3; break;
@@ -2279,11 +2282,12 @@ public:
 	 * \brief write the value of the option to std out (mostly for debugging)
 	 */
 	void WriteValue() {
-		//cout << "CDVParamOptionRef::WriteValue(): not implemented yet" << endl;
+
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			unsigned short nParamDV = 0;
 			switch ((*Design_Variable_)[iDV]) {
 			case NO_DEFORMATION: nParamDV = 0; break;
+      case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
 			case HICKS_HENNE: nParamDV = 2; break;
       case SPHERICAL: nParamDV = 3; break;
       case COSINE_BUMP: nParamDV = 3; break;

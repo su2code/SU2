@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
   unsigned short nZone = 1, ZONE_0;
   char buffer_char[50], out_file[200], in_file[200], mesh_file[200];
   int rank = MASTER_NODE, size = SINGLE_NODE;
+  string str;
   
 #ifndef NO_MPI
 
@@ -190,15 +191,15 @@ int main(int argc, char *argv[]) {
   
   if (config[ZONE_0]->GetVisualize_Deformation()) {
     
-    if (rank == MASTER_NODE) cout << "Writing an Tecplot file of the volumetric mesh." << endl;
+    if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the volumetric mesh." << endl;
     if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
     strcpy (out_file, "Volumetric_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetTecPlot(out_file, false);
     
-    if (rank == MASTER_NODE) cout << "Writing an Tecplot file of the surface mesh." << endl;
+    if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface mesh." << endl;
     if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
     strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundTecPlot(out_file, false, config[ZONE_0]);
 
-    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
+    if (rank == MASTER_NODE) cout << "Writing a STL file of the surface mesh." << endl;
     if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
     strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, false, config[ZONE_0] );
     
@@ -206,20 +207,22 @@ int main(int argc, char *argv[]) {
   
   /*--- Write the new SU2 native mesh after deformation. ---*/
   
-  if (rank == MASTER_NODE) cout << "Writing an SU2 file of the volumetric mesh." << endl;
+  if (rank == MASTER_NODE) cout << "Writing a SU2 file of the volumetric mesh." << endl;
   
-  if (size > 1) sprintf (buffer_char, "_%d.su2", rank+1);
-  else sprintf (buffer_char, ".su2");
-  
-  string str = config[ZONE_0]->GetMesh_Out_FileName();
-  str.erase (str.end()-4, str.end()); strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
+  if (size > 1) sprintf (buffer_char, "_%d.su2", rank+1); else sprintf (buffer_char, ".su2");
+
+  str = config[ZONE_0]->GetMesh_Out_FileName(); str.erase (str.end()-4, str.end());
+  strcpy (out_file, str.c_str()); strcat(out_file, buffer_char);
   
   str = config[ZONE_0]->GetMesh_FileName();
   strcpy (in_file, str.c_str());
   
   geometry[ZONE_0]->SetMeshFile(config[ZONE_0], out_file, in_file);
   
-  if (geometry[ZONE_0]->GetnDim() == 3)
+  /*--- Write the the free-form deformation boxes after deformation. ---*/
+  
+  if (rank == MASTER_NODE) cout << "Adding FFD information to the SU2 file." << endl;
+
   surface_movement->WriteFFDInfo(geometry[ZONE_0], config[ZONE_0], out_file);
   
   /*--- Synchronization point after a single solver iteration. Compute the
