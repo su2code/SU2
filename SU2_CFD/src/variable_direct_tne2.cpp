@@ -152,21 +152,23 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   /*--- If using limiters, allocate the arrays ---*/
   if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
 			(config->GetKind_SlopeLimit_Flow() != NONE)) {
-		Limiter      = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
+		Limiter           = new double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Limiter[iVar]      = 0.0;
-			Solution_Max[iVar] = 0.0;
-			Solution_Min[iVar] = 0.0;
 		}
 	}
   
   /*--- Allocate & initialize primitive variable & gradient arrays ---*/
-  Primitive = new double [nPrimVar];
+  Primitive         = new double [nPrimVar];
+  Limiter_Primitive = new double [nPrimVarGrad];
+  Solution_Max      = new double [nPrimVarGrad];
+  Solution_Min      = new double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   Gradient_Primitive = new double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    Limiter_Primitive[iVar] = 0.0;
+    Solution_Min[iVar]      = 0.0;
+    Solution_Max[iVar]      = 0.0;
     Gradient_Primitive[iVar] = new double [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
@@ -331,14 +333,17 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
   /*--- If using limiters, allocate the arrays ---*/
   if ((config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND) &&
 			(config->GetKind_SlopeLimit_Flow() != NONE)) {
-		Limiter      = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++) {
+		Limiter           = new double [nVar];
+    Limiter_Primitive = new double [nPrimVarGrad];
+		Solution_Max      = new double [nPrimVarGrad];
+		Solution_Min      = new double [nPrimVarGrad];
+		for (iVar = 0; iVar < nVar; iVar++)
 			Limiter[iVar]      = 0.0;
-			Solution_Max[iVar] = 0.0;
-			Solution_Min[iVar] = 0.0;
-		}
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Limiter_Primitive[iVar] = 0.0;
+			Solution_Max[iVar]      = 0.0;
+			Solution_Min[iVar]      = 0.0;
+    }
 	}
   
   /*--- Allocate & initialize primitive variable & gradient arrays ---*/
@@ -1119,6 +1124,104 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   SetEnthalpy();                            // Requires density & pressure computation.
   
   return RightVol;
+}
+
+void CTNE2EulerVariable::SetConsVar_Compressible(CConfig *config, double *V,
+                                                 double *U) {
+  unsigned short iDim, iEl, iSpecies, nEl, nHeavy;
+  unsigned short *nElStates;
+  double Ru, Tve, T, sqvel, rhoE, rhoEve, Ef, Ev, Ee, rhos, rhoCvtr, num, denom;
+  double *thetav, *Ms, *xi, *hf, *Tref;
+  double **thetae, **g;
+  
+  /*--- Determine the number of heavy species ---*/
+  ionization = config->GetIonization();
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+  
+  /*--- Load variables from the config class --*/
+  xi        = config->GetRotationModes();      // Rotational modes of energy storage
+  Ms        = config->GetMolar_Mass();         // Species molar mass
+  thetav    = config->GetCharVibTemp();        // Species characteristic vib. temperature [K]
+  thetae    = config->GetCharElTemp();         // Characteristic electron temperature [K]
+  g         = config->GetElDegeneracy();       // Degeneracy of electron states
+  nElStates = config->GetnElStates();          // Number of electron states
+  Tref      = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
+  hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
+  
+  /*--- Rename & initialize for convenience ---*/
+  Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+  Tve     = V[TVE_INDEX];                   // Vibrational temperature [K]
+  T       = V[T_INDEX];                     // Translational-rotational temperature [K]
+  sqvel   = 0.0;                            // Velocity^2 [m2/s2]
+  rhoE    = 0.0;                            // Mixture total energy per mass [J/kg]
+  rhoEve  = 0.0;                            // Mixture vib-el energy per mass [J/kg]
+  denom   = 0.0;
+  rhoCvtr = 0.0;
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    sqvel += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+  
+  /*--- Set species density ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    U[iSpecies] = V[RHOS_INDEX+iSpecies];
+  
+  /*--- Set momentum ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
+  
+  /*--- Set the total energy ---*/
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    rhos = U[iSpecies];
+    
+    // Species formation energy
+    Ef = hf[iSpecies] - Ru/Ms[iSpecies]*Tref[iSpecies];
+    
+    // Species vibrational energy
+    if (thetav[iSpecies] != 0.0)
+      Ev = Ru/Ms[iSpecies] * thetav[iSpecies] / (exp(thetav[iSpecies]/Tve)-1.0);
+    else
+      Ev = 0.0;
+    
+    // Species electronic energy
+    num = 0.0;
+    denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+      num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+      denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+    }
+    Ee = Ru/Ms[iSpecies] * (num/denom);
+    
+    // Mixture total energy
+    rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
+                    + Ev + Ee + Ef + 0.5*sqvel);
+    
+    // Mixture vibrational-electronic energy
+    rhoEve += rhos * (Ev + Ee);
+  }
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+    // Species formation energy
+    Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
+    
+    // Electron t-r mode contributes to mixture vib-el energy
+    rhoEve += (3.0/2.0) * Ru/Ms[nSpecies-1] * (Tve - Tref[nSpecies-1]);
+  }
+  
+  /*--- Set energies ---*/
+  U[nSpecies+nDim]   = rhoE;
+  U[nSpecies+nDim+1] = rhoEve;
+  
+//  unsigned short iVar;
+//  cout << "In CVariable:" << endl;
+//  cout << "U: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    cout << U[iVar] << endl;
+//  cout << "V: " << endl;
+//  for (iVar = 0; iVar < nPrimVar; iVar++)
+//    cout << V[iVar] << endl;
+//  cin.get();
+ 
+  return;
 }
 
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }
