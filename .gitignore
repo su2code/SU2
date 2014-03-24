@@ -8,6 +8,7 @@
 *.dirstamp
 *.log
 *.status
+autom4te.cache
 
 # Compiled Dynamic libraries
 *.so
@@ -29,3 +30,11 @@ UserInterfaceState.xcuserstate
 
 # Compiled Makefiles
 Makefile
+
+# Emacs temporary files
+*~
+
+# installed autotools
+contrib/autotools/bin
+contrib/autotools/include
+contrib/autotools/share
