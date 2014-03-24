@@ -841,6 +841,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: New value of the shape deformation */
 	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
+   - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
    - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
    - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
@@ -2911,6 +2912,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 				switch (Design_Variable[iDV]) {
 				case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
+        case FFD_CONTROL_POINT_2D: cout << "FFD (control point) <-> "; break;
 				case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
 				case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
 				case FOURIER: cout << "Fourier <-> " ; break;
@@ -2939,6 +2941,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << DV_Value[iDV] << " <-> ";
 
 				if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
+        if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
 				if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
 				if (Design_Variable[iDV] == SPHERICAL) nParamDV = 3;
 				if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
@@ -2974,6 +2977,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 			switch (Design_Variable[iDV]) {
 			case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
+      case FFD_CONTROL_POINT_2D: cout << "FFD 2D (control point) <-> "; break;
 			case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
 			case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
 			case FOURIER: cout << "Fourier <-> " ; break;
@@ -3002,6 +3006,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout << DV_Value[iDV] << " <-> ";
 
 			if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
+      if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
 			if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
 			if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
 			if (Design_Variable[iDV] == FOURIER) nParamDV = 3;

@@ -88,12 +88,13 @@ public:
 	unsigned short lOrder,	/*!< \brief Order of the FFDBox in the i direction. */
 	mOrder,									/*!< \brief Order of the FFDBox in the j direction. */
 	nOrder;									/*!< \brief Order of the FFDBox in the k direction. */
-	unsigned short lDegree, /*!< \brief Degree of the FFDBox in the i direction. */
-	mDegree,								/*!< \brief Degree of the FFDBox in the j direction. */
-	nDegree;								/*!< \brief Degree of the FFDBox in the k direction. */
-	double *param_coord, *param_coord_,	/*!< \brief Parametric coordinates of a point. */
+	unsigned short lDegree, /*!< \brief Degree of the FFDBox in the i direction. (lOrder - 1)*/
+	mDegree,								/*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
+	nDegree;								/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
+	double *ParamCoord, *ParamCoord_,	/*!< \brief Parametric coordinates of a point. */
 	*cart_coord, *cart_coord_;			/*!< \brief Cartesian coordinates of a point. */
-	double *gradient;			/*!< \brief Gradient of the point inversion process. */
+	double *Gradient;			/*!< \brief Gradient of the point inversion process. */
+  double **Hessian;    /*!< \brief Hessian of the point inversion process. */
 	double MaxCoord[3];		/*!< \brief Maximum coordinates of the FFDBox. */
 	double MinCoord[3];		/*!< \brief Minimum coordinates of the FFDBox. */
 	string Tag;						/*!< \brief Tag to identify the FFDBox. */
@@ -384,7 +385,7 @@ public:
 	 * \param[in] iFFDBox - Index of the FFD box.
 	 * \param[in] original - Original box (before deformation).
 	 */		
-	void SetTecplot(unsigned short iFFDBox, bool original);
+	void SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bool original);
 	
 	/*! 
 	 * \brief Set the cartesian coords of a point in R^3 and convert them to the parametric coords of
@@ -423,11 +424,11 @@ public:
 	
 	/*! 
 	 * \brief Here we take the parametric coords of a point in the box and we convert them to the 
-	 *        physical cartesian coords by plugging the param_coords on the Bezier parameterization of our box.
-	 * \param[in] param_coord - Parametric coordinates of a point.
+	 *        physical cartesian coords by plugging the ParamCoords on the Bezier parameterization of our box.
+	 * \param[in] ParamCoord - Parametric coordinates of a point.
 	 * \return Pointer to the cartesian coordinates of a point.
 	 */		
-	double *EvalCartesianCoord(double *param_coord);
+	double *EvalCartesianCoord(double *ParamCoord);
 	
 	/*! 
 	 * \brief Set the Bernstein polynomial, defined as B_i^n(t) = Binomial(n,i)*t^i*(1-t)^(n-i).
@@ -1165,6 +1166,16 @@ public:
 	 */		
 	void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
+  /*!
+	 * \brief Set the deformation of the Free From box using the control point position.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+  
 	/*! 
 	 * \brief Set the deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
