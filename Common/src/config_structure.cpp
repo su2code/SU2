@@ -3127,8 +3127,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_Upwind_TNE2 == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the inviscid terms of the two-temperature model."<< endl;
 			}
 			if ((Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) &&
-					((Kind_Upwind_TNE2 == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-           || (Kind_Upwind_TNE2 == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
+					((Kind_Upwind_TNE2 == ROE_2ND)  || (Kind_Upwind_Flow == AUSM_2ND) ||
+           (Kind_Upwind_Flow == HLLC_2ND) || (Kind_Upwind_TNE2 == SW_2ND)   ||
+           (Kind_Upwind_Flow == MSW_2ND)  || (Kind_Upwind_Flow == TURKEL_2ND))) {
             if (Kind_Upwind_TNE2 == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
             if (Kind_Upwind_TNE2 == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;

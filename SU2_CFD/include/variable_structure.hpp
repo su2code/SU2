@@ -1021,6 +1021,11 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
+  virtual void SetConsVar_Compressible(CConfig *config, double *V, double *U);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
 	virtual bool SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config);
 	
   /*!
@@ -3195,6 +3200,11 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(CConfig *config);
+  
+  /*!
+	 * \brief Set all the conserved variables.
+	 */
+	void SetConsVar_Compressible(CConfig *config, double *V, double *U);
 	
 	/*!
 	 * \brief Get the primitive variables.
@@ -3327,6 +3337,24 @@ public:
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
 	void SetVelocity_Old(double *val_velocity);
+  
+  /*!
+	 * \brief Get the value of the limiter.
+	 */
+  double *GetLimiter_Primitive(void);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double GetLimiter_Primitive(unsigned short val_var);
+  
+  /*!
+	 * \brief Set the value of the limiter.
+	 */
+  void SetLimiter_Primitive(unsigned short val_var, double val_value);
   
 	/*!
 	 * \brief Get the value of the preconditioner Beta.

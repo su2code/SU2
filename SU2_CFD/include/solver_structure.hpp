@@ -5472,6 +5472,13 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
+  void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
   void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
 
   /*!

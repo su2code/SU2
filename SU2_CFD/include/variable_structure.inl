@@ -290,6 +290,8 @@ inline void CVariable::SetPrimVar(unsigned short val_var, double val_prim) { }
 
 inline void CVariable::SetPrimVar(double *val_prim) { }
 
+inline void CVariable::SetConsVar_Compressible(CConfig *config, double *V, double *U) { return; }
+
 inline double *CVariable::GetPrimVar(void) { return NULL; }
 
 inline void CVariable::SetBetaInc2(double val_betainc2) { }
@@ -754,6 +756,12 @@ inline double CTNE2EulerVariable::GetGradient_Primitive(unsigned short val_var, 
 inline void CTNE2EulerVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] = val_value; }
 
 inline double **CTNE2EulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
+
+inline double *CTNE2EulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
+
+inline double CTNE2EulerVariable::GetLimiter_Primitive(unsigned short val_var) { return Limiter_Primitive[val_var]; }
+
+inline void CTNE2EulerVariable::SetLimiter_Primitive(unsigned short val_var, double val_value) { Limiter_Primitive[val_var] = val_value; }
 
 inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
