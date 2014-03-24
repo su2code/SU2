@@ -842,6 +842,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	AddListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
+   - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
+   - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
    - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
    - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
@@ -856,8 +858,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
-   - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind )
-   - FFD_VOLUME ( FFDBox ID, i_Ind, j_Ind ) */
+   - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
 	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
 	AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
@@ -2911,27 +2912,28 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout << "Geo. design var. definition (markers <-> value def. <-> param):" <<endl;
 			for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 				switch (Design_Variable[iDV]) {
-				case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
-        case FFD_CONTROL_POINT_2D: cout << "FFD (control point) <-> "; break;
-				case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
-				case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
-				case FOURIER: cout << "Fourier <-> " ; break;
-				case SPHERICAL: cout << "Spherical design <-> " ; break;
-				case MACH_NUMBER: cout << "Mach number <-> " ; break;
-				case DISPLACEMENT: cout << "Displacement design variable."; break;
-				case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
-				case PARABOLIC: cout << "Parabolic <-> "; break;
-				case OBSTACLE: cout << "Obstacle <-> "; break;
-        case AIRFOIL: cout << "Airfoil <-> "; break;
-				case STRETCH: cout << "Stretch <-> "; break;
-				case ROTATION: cout << "Rotation <-> "; break;
-				case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
-				case FFD_DIHEDRAL_ANGLE: cout << "FFD (dihedral angle) <-> "; break;
-				case FFD_TWIST_ANGLE: cout << "FFD (twist angle) <-> "; break;
-				case FFD_ROTATION: cout << "FFD (rotation) <-> "; break;
-				case FFD_CAMBER: cout << "FFD (camber) <-> "; break;
-				case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
-				case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
+          case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
+          case FFD_CONTROL_POINT_2D: cout << "FFD 2D (control point) <-> "; break;
+          case FFD_CAMBER_2D: cout << "FFD 2D (camber) <-> "; break;
+          case FFD_THICKNESS_2D: cout << "FFD 2D (thickness) <-> "; break;
+          case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
+          case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
+          case FOURIER: cout << "Fourier <-> " ; break;
+          case SPHERICAL: cout << "Spherical design <-> " ; break;
+          case MACH_NUMBER: cout << "Mach number <-> " ; break;
+          case DISPLACEMENT: cout << "Displacement design variable."; break;
+          case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
+          case PARABOLIC: cout << "Parabolic <-> "; break;
+          case OBSTACLE: cout << "Obstacle <-> "; break;
+          case AIRFOIL: cout << "Airfoil <-> "; break;
+          case STRETCH: cout << "Stretch <-> "; break;
+          case ROTATION: cout << "Rotation <-> "; break;
+          case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
+          case FFD_DIHEDRAL_ANGLE: cout << "FFD (dihedral angle) <-> "; break;
+          case FFD_TWIST_ANGLE: cout << "FFD (twist angle) <-> "; break;
+          case FFD_ROTATION: cout << "FFD (rotation) <-> "; break;
+          case FFD_CAMBER: cout << "FFD (camber) <-> "; break;
+          case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
 				}
 				for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
 					cout << Marker_DV[iMarker_DV];
@@ -2942,6 +2944,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 				if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
+        if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
+				if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
 				if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
 				if (Design_Variable[iDV] == SPHERICAL) nParamDV = 3;
 				if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
@@ -2959,7 +2963,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
 				if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
 				if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
-				if (Design_Variable[iDV] == FFD_VOLUME) nParamDV = 3;
 
 				for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 					if (iParamDV == 0) cout << "( ";
@@ -2976,27 +2979,28 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
 		for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 			switch (Design_Variable[iDV]) {
-			case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
-      case FFD_CONTROL_POINT_2D: cout << "FFD 2D (control point) <-> "; break;
-			case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
-			case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
-			case FOURIER: cout << "Fourier <-> " ; break;
-			case SPHERICAL: cout << "Spherical design <-> " ; break;
-			case MACH_NUMBER: cout << "Mach number <-> " ; break;
-			case DISPLACEMENT: cout << "Displacement design variable."; break;
-			case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
-			case PARABOLIC: cout << "Parabolic <-> "; break;
-			case OBSTACLE: cout << "Obstacle <-> "; break;
-      case AIRFOIL: cout << "Airfoil <-> "; break;
-			case STRETCH: cout << "Stretch <-> "; break;
-			case ROTATION: cout << "Rotation <-> "; break;
-			case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
-			case FFD_DIHEDRAL_ANGLE: cout << "FFD (dihedral angle) <-> "; break;
-			case FFD_TWIST_ANGLE: cout << "FFD (twist angle) <-> "; break;
-			case FFD_ROTATION: cout << "FFD (rotation) <-> "; break;
-			case FFD_CAMBER: cout << "FFD (camber) <-> "; break;
-			case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
-			case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
+        case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
+        case FFD_CONTROL_POINT_2D: cout << "FFD 2D (control point) <-> "; break;
+        case FFD_CAMBER_2D: cout << "FFD 2D (camber) <-> "; break;
+        case FFD_THICKNESS_2D: cout << "FFD 2D (thickness) <-> "; break;
+        case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
+        case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
+        case FOURIER: cout << "Fourier <-> " ; break;
+        case SPHERICAL: cout << "Spherical design <-> " ; break;
+        case MACH_NUMBER: cout << "Mach number <-> " ; break;
+        case DISPLACEMENT: cout << "Displacement design variable."; break;
+        case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
+        case PARABOLIC: cout << "Parabolic <-> "; break;
+        case OBSTACLE: cout << "Obstacle <-> "; break;
+        case AIRFOIL: cout << "Airfoil <-> "; break;
+        case STRETCH: cout << "Stretch <-> "; break;
+        case ROTATION: cout << "Rotation <-> "; break;
+        case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
+        case FFD_DIHEDRAL_ANGLE: cout << "FFD (dihedral angle) <-> "; break;
+        case FFD_TWIST_ANGLE: cout << "FFD (twist angle) <-> "; break;
+        case FFD_ROTATION: cout << "FFD (rotation) <-> "; break;
+        case FFD_CAMBER: cout << "FFD (camber) <-> "; break;
+        case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
 			}
 			for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
 				cout << Marker_DV[iMarker_DV];
@@ -3007,6 +3011,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 			if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
       if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
+      if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
+			if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
 			if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
 			if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
 			if (Design_Variable[iDV] == FOURIER) nParamDV = 3;
@@ -3024,7 +3030,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
 			if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
 			if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
-			if (Design_Variable[iDV] == FFD_VOLUME) nParamDV = 3;
 
 			for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 				if (iParamDV == 0) cout << "( ";

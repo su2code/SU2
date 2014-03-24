@@ -48,9 +48,10 @@ class DEFINITION_DV(ordered_bunch):
         - FFD_ROTATION ( 10, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
         - FFD_CAMBER ( 11, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
         - FFD_THICKNESS ( 12, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
-        - FFD_VOLUME ( 13, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
         - FOURIER ( 14, Scale | Mark. List | Lower(0)/Upper(1) side, index, cos(0)/sin(1) )
         - FFD_CONTROL_POINT_2D ( 15, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, x_Mov, y_Mov )
+        - FFD_CAMBER_2D ( 16, Scale | Mark. List | FFD_Box_ID, i_Ind )
+        - FFD_THICKNESS_2D ( 17, Scale | Mark. List | FFD_Box_ID, i_Ind )
         
     """
     

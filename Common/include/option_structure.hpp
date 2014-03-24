@@ -858,7 +858,6 @@ enum ENUM_PARAM {
 	FFD_ROTATION = 13,		/*!< \brief Free form deformation for 3D design (rotation around a line). */
 	FFD_CAMBER = 14,		/*!< \brief Free form deformation for 3D design (camber change). */
 	FFD_THICKNESS = 15,		/*!< \brief Free form deformation for 3D design (thickness change). */
-	FFD_VOLUME = 16,		/*!< \brief Free form deformation for 3D design (volume change). */
 	PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
 	OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
 	STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
@@ -867,11 +866,15 @@ enum ENUM_PARAM {
   FOURIER = 22,		/*!< \brief Fourier function for airfoil deformation. */
   SPHERICAL = 23,		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
   AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
-  FFD_CONTROL_POINT_2D = 25	/*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
+	FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
+	FFD_THICKNESS_2D = 27		/*!< \brief Free form deformation for 3D design (thickness change). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_CAMBER_2D", FFD_CAMBER_2D)
+("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
 ("SPHERICAL", SPHERICAL)
 ("MACH_NUMBER", MACH_NUMBER)
@@ -884,7 +887,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
-("FFD_VOLUME", FFD_VOLUME)
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
 ("STRETCH", STRETCH)
@@ -2234,27 +2236,28 @@ public:
 		unsigned int i = 0;
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			switch ((*Design_Variable_)[iDV]) {
-			case NO_DEFORMATION: nParamDV = 0; break;
-      case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-			case HICKS_HENNE: nParamDV = 2; break;
-      case SPHERICAL: nParamDV = 3; break;
-      case COSINE_BUMP: nParamDV = 3; break;
-      case FOURIER: nParamDV = 3; break;
-      case DISPLACEMENT: nParamDV = 3; break;
-			case ROTATION: nParamDV = 6; break;
-			case NACA_4DIGITS: nParamDV = 3; break;
-			case PARABOLIC: nParamDV = 2; break;
-			case OBSTACLE: nParamDV = 2; break;
-      case AIRFOIL: nParamDV = 2; break;
-			case STRETCH: nParamDV = 2; break;
-			case FFD_CONTROL_POINT: nParamDV = 7; break;
-			case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-			case FFD_TWIST_ANGLE: nParamDV = 7; break;
-			case FFD_ROTATION: nParamDV = 7; break;
-			case FFD_CAMBER: nParamDV = 3; break;
-			case FFD_THICKNESS: nParamDV = 3; break;
-			case FFD_VOLUME: nParamDV = 3; break;
-      case SURFACE_FILE: nParamDV = 0; break;
+        case NO_DEFORMATION: nParamDV = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_CAMBER_2D: nParamDV = 2; break;
+        case FFD_THICKNESS_2D: nParamDV = 2; break;
+        case HICKS_HENNE: nParamDV = 2; break;
+        case SPHERICAL: nParamDV = 3; break;
+        case COSINE_BUMP: nParamDV = 3; break;
+        case FOURIER: nParamDV = 3; break;
+        case DISPLACEMENT: nParamDV = 3; break;
+        case ROTATION: nParamDV = 6; break;
+        case NACA_4DIGITS: nParamDV = 3; break;
+        case PARABOLIC: nParamDV = 2; break;
+        case OBSTACLE: nParamDV = 2; break;
+        case AIRFOIL: nParamDV = 2; break;
+        case STRETCH: nParamDV = 2; break;
+        case FFD_CONTROL_POINT: nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
+        case FFD_TWIST_ANGLE: nParamDV = 7; break;
+        case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_THICKNESS: nParamDV = 3; break;
+        case SURFACE_FILE: nParamDV = 0; break;
 			default : {
 				cerr << "Error in CDVParamOptionRef::SetValue(): "
 						<< "undefined design variable type found in configuration file." << endl; break;
@@ -2286,24 +2289,25 @@ public:
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			unsigned short nParamDV = 0;
 			switch ((*Design_Variable_)[iDV]) {
-			case NO_DEFORMATION: nParamDV = 0; break;
-      case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-			case HICKS_HENNE: nParamDV = 2; break;
-      case SPHERICAL: nParamDV = 3; break;
-      case COSINE_BUMP: nParamDV = 3; break;
-      case FOURIER: nParamDV = 3; break;
-      case DISPLACEMENT: nParamDV = 3; break;
-			case ROTATION: nParamDV = 6; break;
-			case NACA_4DIGITS: nParamDV = 3; break;
-			case PARABOLIC: nParamDV = 2; break;
-			case FFD_CONTROL_POINT: nParamDV = 7; break;
-			case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-			case FFD_TWIST_ANGLE: nParamDV = 7; break;
-			case FFD_ROTATION: nParamDV = 7; break;
-			case FFD_CAMBER: nParamDV = 3; break;
-			case FFD_THICKNESS: nParamDV = 3; break;
-			case FFD_VOLUME: nParamDV = 3; break;
-			default : {
+        case NO_DEFORMATION: nParamDV = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_CAMBER_2D: nParamDV = 2; break;
+        case FFD_THICKNESS_2D: nParamDV = 2; break;
+        case HICKS_HENNE: nParamDV = 2; break;
+        case SPHERICAL: nParamDV = 3; break;
+        case COSINE_BUMP: nParamDV = 3; break;
+        case FOURIER: nParamDV = 3; break;
+        case DISPLACEMENT: nParamDV = 3; break;
+        case ROTATION: nParamDV = 6; break;
+        case NACA_4DIGITS: nParamDV = 3; break;
+        case PARABOLIC: nParamDV = 2; break;
+        case FFD_CONTROL_POINT: nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
+        case FFD_TWIST_ANGLE: nParamDV = 7; break;
+        case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_THICKNESS: nParamDV = 3; break;
+        default : {
 				cerr << "Error in CDVParamOptionRef::SetValue(): "
 						<< "undefined design variable type found in configuration file." << endl; break;
 			}
