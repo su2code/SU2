@@ -243,8 +243,8 @@ psdir = @psdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
-su2_contrib_INCLUDES = @su2_contrib_INCLUDES@
-su2_contrib_LIBS = @su2_contrib_LIBS@
+su2_externals_INCLUDES = @su2_externals_INCLUDES@
+su2_externals_LIBS = @su2_externals_LIBS@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@
@@ -259,7 +259,7 @@ ___bin_SU2_UMC_SOURCES = ../include/SU2_UMC.hpp \
 		../src/SU2_UMC.cpp
 
 
-# always link to built dependencies from ./contrib
+# always link to built dependencies from ./externals
 
 # if BUILD_CGNS
 # endif
@@ -268,9 +268,9 @@ ___bin_SU2_UMC_SOURCES = ../include/SU2_UMC.hpp \
 # endif
 
 # if BUILD_JSONCPP
-___bin_SU2_UMC_CXXFLAGS = @su2_contrib_INCLUDES@ @CGNS_CXX@ \
+___bin_SU2_UMC_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
 	@MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
-___bin_SU2_UMC_LDADD = ../../Common/lib/libSU2.a @su2_contrib_LIBS@ \
+___bin_SU2_UMC_LDADD = ../../Common/lib/libSU2.a @su2_externals_LIBS@ \
 	@CGNS_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
 all: all-am
 

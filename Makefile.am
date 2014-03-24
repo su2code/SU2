@@ -2,10 +2,13 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated: 	10/30/13
+# Last updated: 	03/24/14
 #
 # Created by: 		M. Colonno
 # Updated by: 		T. Economon
+#
+# Major Changes/Contributions:
+# METIS & TECIO integration added by Ben Kirk, 3/24/2014
 #
 ##########################
 
@@ -13,7 +16,7 @@
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
 # build third-party optional dependencies first
-SUBDIRS = contrib
+SUBDIRS = externals
 
 SUBDIRS += Common/lib
 

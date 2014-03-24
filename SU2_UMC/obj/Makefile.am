@@ -19,9 +19,9 @@ ___bin_SU2_UMC_SOURCES = ../include/SU2_UMC.hpp \
 ___bin_SU2_UMC_CXXFLAGS =
 ___bin_SU2_UMC_LDADD = ../../Common/lib/libSU2.a
 
-# always link to built dependencies from ./contrib
-___bin_SU2_UMC_CXXFLAGS += @su2_contrib_INCLUDES@
-___bin_SU2_UMC_LDADD += @su2_contrib_LIBS@
+# always link to built dependencies from ./externals
+___bin_SU2_UMC_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_UMC_LDADD += @su2_externals_LIBS@
 
 # if BUILD_CGNS
 ___bin_SU2_UMC_CXXFLAGS += @CGNS_CXX@

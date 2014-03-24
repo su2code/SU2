@@ -28,9 +28,9 @@ ___bin_SU2_SOL_SOURCES = ../include/SU2_SOL.hpp \
 ___bin_SU2_SOL_CXXFLAGS =
 ___bin_SU2_SOL_LDADD = ../../Common/lib/libSU2.a
 
-# always link to built dependencies from ./contrib
-___bin_SU2_SOL_CXXFLAGS += @su2_contrib_INCLUDES@
-___bin_SU2_SOL_LDADD += @su2_contrib_LIBS@
+# always link to built dependencies from ./externals
+___bin_SU2_SOL_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_SOL_LDADD += @su2_externals_LIBS@
 
 # if BUILD_CGNS
 ___bin_SU2_SOL_CXXFLAGS += @CGNS_CXX@

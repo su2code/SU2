@@ -2,10 +2,13 @@
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
-# Last updated:         10/11/13
+# Last updated:         03/24/14
 #
 # Created by: 		M. Colonno  10/26/12
-# Updated by: 		B. Tracey 	2/12/14
+# Updated by: 		T. Economon 	3/24/14
+#
+# Major Changes/Contributions:
+# METIS & TECIO integration added by Ben Kirk, 3/24/2014
 #
 ##########################
 
@@ -41,34 +44,34 @@ AC_CHECK_SIZEOF(void *)
 # --------------------------------------------------------------
 # Build up contributed packages that we will build from source
 # --------------------------------------------------------------
-su2_contrib_INCLUDES=""
-su2_contrib_LIBS=""
+su2_externals_INCLUDES=""
+su2_externals_LIBS=""
 
 # Tecplot
 CONFIGURE_TECIO
 if (test $enabletecio = yes); then
-  su2_contrib_INCLUDES="$TECIO_INCLUDE $su2_contrib_INCLUDES"
-  su2_contrib_LIBS="$TECIO_LIB $su2_contrib_LIBS"
+  su2_externals_INCLUDES="$TECIO_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
 else
-  su2_contrib_INCLUDES="-DNO_TECIO $su2_contrib_INCLUDES"
+  su2_externals_INCLUDES="-DNO_TECIO $su2_externals_INCLUDES"
 fi
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
-AC_CONFIG_FILES([contrib/tecio/Makefile])
+AC_CONFIG_FILES([externals/tecio/Makefile])
 
 # Metis
 CONFIGURE_METIS
 if (test $enablemetis = yes); then
-  su2_contrib_INCLUDES="$METIS_INCLUDE $su2_contrib_INCLUDES"
-  su2_contrib_LIBS="$METIS_LIB $su2_contrib_LIBS"
+  su2_externals_INCLUDES="$METIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
 else
-  su2_contrib_INCLUDES="-DNO_METIS $su2_contrib_INCLUDES"
+  su2_externals_INCLUDES="-DNO_METIS $su2_externals_INCLUDES"
 fi
 AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
-AC_CONFIG_FILES([contrib/metis/Makefile])
+AC_CONFIG_FILES([externals/metis/Makefile])
 
 
-AC_SUBST([su2_contrib_INCLUDES])
-AC_SUBST([su2_contrib_LIBS])
+AC_SUBST([su2_externals_INCLUDES])
+AC_SUBST([su2_externals_LIBS])
 
 
 # optional bindings
@@ -289,7 +292,7 @@ AM_CONDITIONAL([BUILD_UMC],[test $build_UMC != "no"])
 ###########################
 
 AC_OUTPUT(Makefile \
-        contrib/Makefile \
+        externals/Makefile \
 	Common/lib/Makefile \
 	SU2_CFD/obj/Makefile \
 	SU2_DDC/obj/Makefile \
@@ -324,8 +327,8 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
 
-    su2_contrib_INCLUDES = $su2_contrib_INCLUDES
-    su2_contrib_LIBS     = $su2_contrib_LIBS
+    External includes:    $su2_externals_INCLUDES
+    External libs:        $su2_externals_LIBS
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DDC:        $build_DDC

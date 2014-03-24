@@ -47,9 +47,9 @@ libSU2_a_SOURCES = \
 libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
 
-# always link to built dependencies from ./contrib
-libSU2_a_CXXFLAGS += @su2_contrib_INCLUDES@
-libSU2_a_LIBADD += @su2_contrib_LIBS@
+# always link to built dependencies from ./externals
+libSU2_a_CXXFLAGS += @su2_externals_INCLUDES@
+libSU2_a_LIBADD += @su2_externals_LIBS@
 
 # if BUILD_CGNS
 libSU2_a_CXXFLAGS += @CGNS_CXX@

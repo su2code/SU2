@@ -20,9 +20,9 @@ ___bin_SU2_GPC_SOURCES = ../include/SU2_GPC.hpp \
 ___bin_SU2_GPC_CXXFLAGS =
 ___bin_SU2_GPC_LDADD = ../../Common/lib/libSU2.a
 
-# always link to built dependencies from ./contrib
-___bin_SU2_GPC_CXXFLAGS += @su2_contrib_INCLUDES@
-___bin_SU2_GPC_LDADD += @su2_contrib_LIBS@
+# always link to built dependencies from ./externals
+___bin_SU2_GPC_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_GPC_LDADD += @su2_externals_LIBS@
 
 # if BUILD_CGNS
 ___bin_SU2_GPC_CXXFLAGS += @CGNS_CXX@

@@ -111,7 +111,7 @@ if (test "x$build_autotools" = "x1"); then
     echo "Inadequate autotools in your path, I'll build new ones..."
 
     top_srcdir=`pwd`
-    autotools_distdir=$top_srcdir/contrib/autotools
+    autotools_distdir=$top_srcdir/externals/autotools
 
 
     if (test -d $autotools_distdir); then
