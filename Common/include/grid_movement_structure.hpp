@@ -1186,6 +1186,26 @@ public:
 	 */		
 	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
+  /*!
+	 * \brief Set a camber deformation of the Free From box using the control point position.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	
+	/*!
+	 * \brief Set a thickness deformation of the Free From box using the control point position.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+  
 	/*! 
 	 * \brief Set a camber deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1205,16 +1225,6 @@ public:
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
 	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
-	
-	/*! 
-	 * \brief Set a volume deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDVolume(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a dihedral angle deformation of the Free From box using the control point position.
