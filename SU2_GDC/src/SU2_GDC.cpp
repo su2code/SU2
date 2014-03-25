@@ -105,17 +105,30 @@ int main(int argc, char *argv[]) {
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-	
+
+  
   /*--- Boundary geometry preprocessing ---*/
   
 	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
 	boundary->SetVertex();
-	
+  
+  /*--- Compute elements surrounding points & points surrounding points ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
+  boundary->SetEsuP();
+	boundary->SetPsuP();
+  boundary->SetEdges();
+
 	/*--- Create the control volume structures ---*/
   
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl;
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
+  /*--- Compute the surface curvature ---*/
+  
+  if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+  boundary->ComputeSurf_Curvature(config);
+  
 	/*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;

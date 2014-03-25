@@ -1414,7 +1414,17 @@ public:
 	 * \brief Set boundary vertex.
 	 */
 	void SetVertex(void);
-
+  
+	/*!
+	 * \brief Store boundary elements that surround a point.
+	 */
+	void SetEsuP(void);
+  
+  /*!
+	 * \brief Store boundary points which surround a point.
+	 */
+	void SetPsuP(void);
+  
 	/*! 
 	 * \brief Compute the boundary geometrical structure.
 	 * \param[in] config - Definition of the particular problem.
