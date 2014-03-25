@@ -544,20 +544,22 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
   
   /*--- Solver class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-  //        if (solver_container[iZone][iMesh][iSol] != NULL) {
-  //          delete solver_container[iZone][iMesh][iSol];
-  //        }
-  //      }
-  //      delete solver_container[iZone][iMesh];
-  //    }
-  //    delete solver_container[iZone];
-  //  }
-  //  delete [] solver_container;
-  //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
-  
+  //delete solver_container;//[0][0];
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
+        for (iSol = 0; iSol < MAX_SOLS; iSol++) {
+          if (solver_container[iZone][iMesh][iSol] != NULL) {
+            delete solver_container[iZone][iMesh][iSol];
+          }
+        }
+        delete [] solver_container[iZone][iMesh];
+      }
+      delete [] solver_container[iZone];
+    }
+    delete [] solver_container;
+    if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
+
   /*--- Geometry class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {

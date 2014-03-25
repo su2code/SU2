@@ -64,6 +64,10 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  node_infty=NULL;
+  PrimVar_i=NULL;
+  PrimVar_j=NULL;
+
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -116,6 +120,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  node_infty=NULL;
+  PrimVar_i=NULL;
+  PrimVar_j=NULL;
+
   /*--- Set the gamma value ---*/
   
   Gamma = config->GetGamma();
@@ -338,7 +346,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
   }
-  
+
   else {
     
     /*--- Initialize the solution from the restart file information ---*/
@@ -474,7 +482,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CEulerSolver::~CEulerSolver(void) {
-  unsigned short iVar, iMarker;
+  unsigned short iVar, iMarker, iPoint, iVertex, iDim;
+
+  /*--- Pointers from CEuler ---*/
+  if (node_infty!=NULL)       delete [] node_infty;
+  //if (Velocity_Inf!=NULL)     delete [] Velocity_Inf;
+  if (iPoint_UndLapl!=NULL)   delete [] iPoint_UndLapl;
+  if (jPoint_UndLapl!=NULL)   delete [] jPoint_UndLapl;
+  if (PrimVar_i!=NULL)        delete [] PrimVar_i;
+  if (PrimVar_j!=NULL)        delete [] PrimVar_j;
   
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
@@ -510,8 +526,8 @@ CEulerSolver::~CEulerSolver(void) {
   if (FanFace_Pressure != NULL)  delete [] FanFace_Pressure;
   if (FanFace_Mach != NULL)      delete [] FanFace_Mach;
   if (FanFace_Area != NULL)      delete [] FanFace_Area;
-  if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+  //if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
+  //if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
@@ -524,19 +540,23 @@ CEulerSolver::~CEulerSolver(void) {
   
   if (CPressure != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CPressure[iMarker];
+      delete [] CPressure[iMarker];
     delete [] CPressure;
   }
+
+  if (CharacPrimVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] CharacPrimVar[iMarker];
+    }
+    delete [] CharacPrimVar;
+  }
   
-  //  if (CharacPrimVar != NULL) {
-  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //      for (iVertex = 0; iVertex < nVertex; iVertex++) {
-  //        delete CharacPrimVar[iMarker][iVertex];
-  //      }
-  //    }
-  //    delete [] CharacPrimVar;
-  //  }
-  
+  if (node != NULL) {
+    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+      delete node[iPoint];
+    delete [] node;
+  }
+
   if (CHeatTransfer != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete CHeatTransfer[iMarker];
@@ -550,7 +570,66 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  
+
+
+  /*---Pointers from Solver parent Class---*/
+  if(Residual_RMS!=NULL)    delete [] Residual_RMS;
+  if(Residual_Max!=NULL)    delete [] Residual_Max;
+  if(Residual!=NULL)    delete [] Residual;
+  if(Residual_i!=NULL)    delete [] Residual_i;
+  if(Residual_j!=NULL)    delete []Residual_j ;
+  if(Point_Max!=NULL)    delete [] Point_Max;
+  if(Solution!=NULL)    delete [] Solution;
+  if(Solution_i!=NULL)    delete [] Solution_i;
+  if(Solution_j!=NULL)    delete [] Solution_j;
+  if(Vector!=NULL)    delete [] Vector;
+  if(Vector_i!=NULL)    delete [] Vector_i;
+  if(Vector_j!=NULL)    delete [] Vector_j;
+  if(Res_Conv!=NULL)    delete [] Res_Conv;
+  if(Res_Visc!=NULL)    delete [] Res_Visc;
+  if(Res_Sour!=NULL)    delete [] Res_Sour;
+  if(Res_Conv_i!=NULL)    delete [] Res_Conv_i;
+  if(Res_Visc_i!=NULL)    delete [] Res_Visc_i;
+  if(Res_Conv_j!=NULL)    delete [] Res_Conv_j;
+  if(Res_Visc_j!=NULL)    delete [] Res_Visc_j;
+
+  if(Jacobian_i!=NULL){
+    for  (iDim = 0; iDim < nDim; iDim++) {
+      delete [] Jacobian_i[iDim];
+    }
+    delete [] Jacobian_i;
+  }
+  if(Jacobian_j!=NULL){
+    for  (iDim = 0; iDim < nDim; iDim++) {
+      delete [] Jacobian_j[iDim];
+    }
+    delete [] Jacobian_j;
+  }
+  if(Jacobian_ii!=NULL and Jacobian_ij!=NULL and Jacobian_ji!=NULL and Jacobian_jj!=NULL ){
+    for  (iDim = 0; iDim < nDim; iDim++) {
+      delete [] Jacobian_ii[iDim];
+      delete [] Jacobian_ij[iDim];
+      delete [] Jacobian_ji[iDim];
+      delete [] Jacobian_jj[iDim];
+    }
+    delete [] Jacobian_ii;
+    delete [] Jacobian_ij;
+    delete [] Jacobian_ji;
+    delete [] Jacobian_jj;
+  }
+  if (Smatrix!=NULL){
+    for (iDim=0; iDim<nDim; iDim++){
+      delete [] Smatrix[iDim];
+    }
+    delete [] Smatrix;
+  }
+  if (cvector!=NULL){
+    for (iVar=0; iVar<nPrimVarGrad; iVar++){
+      delete [] cvector[iVar];
+    }
+    delete [] cvector;
+  }
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
