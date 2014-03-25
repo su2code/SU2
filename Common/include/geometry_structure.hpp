@@ -576,10 +576,10 @@ public:
 	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
 	/*!
-	 * \brief A virtual member.
+	 * \brief Find and store all vertices on a sharp corner in the geometry.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeSurf_Curvature(CConfig *config);
+  void ComputeSurf_Curvature(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
