@@ -2660,7 +2660,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint;
-	double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], max_diff, my_max_diff = 0.0, Diff;
+	double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff;
 	int rank;
   unsigned short nDim = geometry->GetnDim();
   
@@ -2721,7 +2721,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 						for (iDim = 0; iDim < nDim; iDim++)
 							Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
 						Diff = sqrt(Diff);
-						my_max_diff = max(my_max_diff, Diff);
+						my_MaxDiff = max(my_MaxDiff, Diff);
 						
 						ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
             
@@ -2733,16 +2733,16 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 		
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX); 	
+	MPI::COMM_WORLD.Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI::DOUBLE, MPI::MAX); 	
 #endif
 #else
-	max_diff = my_max_diff;
+	MaxDiff = my_MaxDiff;
 #endif
 	
 	if (rank == MASTER_NODE) 
-		cout << "Compute parametric coord      | FFD box: " << FFDBox->GetTag() << ". Max diff: " << max_diff <<"."<< endl;
+		cout << "Compute parametric coord      | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
 	
 }
 
@@ -2814,8 +2814,8 @@ void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config,
 void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, iSurfacePoints;
-	double CartCoord[3], *CartCoordNew, *CartCoord_old, *ParamCoord, *var_coord, ParamCoordGuess[3], max_diff, 
-	my_max_diff = 0.0, diff;
+	double CartCoord[3], *CartCoordNew, *CartCoordOld, *ParamCoord, *var_coord, ParamCoordGuess[3], MaxDiff, 
+	my_MaxDiff = 0.0, Diff;
 	int rank;
 	
 #ifndef NO_MPI
@@ -2829,72 +2829,84 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 #endif
 			
 	/*--- Recompute the parametric coordinates ---*/
+  
 	for (iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
 		
 		/*--- Get the marker of the surface point ---*/
+    
 		iMarker = FFDBox->Get_MarkerIndex(iSurfacePoints);
 		
 		if (config->GetMarker_All_DV(iMarker) == YES) {
 			
 			/*--- Get the vertex of the surface point ---*/
+      
 			iVertex = FFDBox->Get_VertexIndex(iSurfacePoints);
 			iPoint = FFDBox->Get_PointIndex(iSurfacePoints);
 	
 			/*--- Get the parametric and cartesians coordinates of the 
 			 surface point (they don't mach) ---*/
+      
 			ParamCoord = FFDBox->Get_ParametricCoord(iSurfacePoints);
 			
 			/*--- Compute and set the cartesian coord using the variation computed 
 			 with the previous deformation ---*/
+      
 			var_coord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-			CartCoord_old = geometry->node[iPoint]->GetCoord();
+			CartCoordOld = geometry->node[iPoint]->GetCoord();
 			for (iDim = 0; iDim < 3; iDim++)
-				CartCoord[iDim] = CartCoord_old[iDim] + var_coord[iDim];
+				CartCoord[iDim] = CartCoordOld[iDim] + var_coord[iDim];
 			FFDBox->Set_CartesianCoord(CartCoord, iSurfacePoints);
 
-			/*--- Find the parametric coordinate using as ParamCoordGuess the previous value ---*/	
+			/*--- Find the parametric coordinate using as ParamCoordGuess the previous value ---*/
+      
 			ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
 			ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, 1E-10, 99999);
 					
 			/*--- Set the new value of the parametric coordinates ---*/
+      
 			FFDBox->Set_ParametricCoord(ParamCoord, iSurfacePoints);
 			
 			/*--- Compute the cartesian coordinates using the parametric coordinates 
 			 to check that everithing is right ---*/
+      
 			CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
 			
 			/*--- Compute max difference between original value and the recomputed value ---*/
-			diff = 0.0; 
+      
+			Diff = 0.0;
 			for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-				diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
-			diff = sqrt(diff);
-			my_max_diff = max(my_max_diff, diff);
+				Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
+			Diff = sqrt(Diff);
+			my_MaxDiff = max(my_MaxDiff, Diff);
 				
 		}
 	}
 		
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX); 	
+	MPI::COMM_WORLD.Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI::DOUBLE, MPI::MAX); 	
 #endif
 #else
-	max_diff = my_max_diff;
+	MaxDiff = my_MaxDiff;
 #endif
 	
 	if (rank == MASTER_NODE) 
-		cout << "Update parametric coord       | FFD box: " << FFDBox->GetTag() << ". Max diff: " << max_diff <<"."<< endl;
+		cout << "Update parametric coord       | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
 	
 }
 
 void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
-	double *CartCoord_old, *CartCoordNew, diff, my_max_diff = 0.0, max_diff,
-	*ParamCoord, VarCoord[3];
+  
+	double *CartCoordNew, Diff, my_MaxDiff = 0.0, MaxDiff,
+	*ParamCoord, VarCoord[3] = {0.0, 0.0, 0.0}, CartCoordOld[3] = {0.0, 0.0, 0.0};
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint, iSurfacePoints;
 	int rank;
 	
+  unsigned short nDim = geometry->GetnDim();
+  
 #ifndef NO_MPI
 #ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -2906,45 +2918,54 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 #endif
 	
 	/*--- Recompute the cartesians coordinates ---*/
+  
 	for (iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
 		
 		/*--- Get the marker of the surface point ---*/
+    
 		iMarker = FFDBox->Get_MarkerIndex(iSurfacePoints);
 		
 		if (config->GetMarker_All_DV(iMarker) == YES) {
 			
 			/*--- Get the vertex of the surface point ---*/
+      
 			iVertex = FFDBox->Get_VertexIndex(iSurfacePoints);
 			iPoint = FFDBox->Get_PointIndex(iSurfacePoints);
       
 			/*--- Set to zero the variation of the coordinates ---*/
-			for (iDim = 0; iDim < 3; iDim++) VarCoord[iDim] = 0.0;
+      
 			geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
       
 			/*--- Get the parametric coordinate of the surface point ---*/
+      
 			ParamCoord = FFDBox->Get_ParametricCoord(iSurfacePoints);
 			
 			/*--- Compute the new cartesian coordinate, and set the value in
 			 the FFDBox structure ---*/
+      
 			CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
 			FFDBox->Set_CartesianCoord(CartCoordNew, iSurfacePoints);
 			
 			/*--- Get the original cartesian coordinates of the surface point ---*/
-			CartCoord_old = geometry->node[iPoint]->GetCoord();
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        CartCoordOld[iDim] = geometry->node[iPoint]->GetCoord(iDim);
+      }
       
 			/*--- Set the value of the variation of the coordinates ---*/
-			for (iDim = 0; iDim < 3; iDim++) {
-				VarCoord[iDim] = CartCoordNew[iDim] - CartCoord_old[iDim];
-				if (fabs(VarCoord[iDim]) < EPS) VarCoord[iDim] = 0.0;
+      
+      Diff = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				VarCoord[iDim] = CartCoordNew[iDim] - CartCoordOld[iDim];
+				if (fabs(VarCoord[iDim]) <= EPS) VarCoord[iDim] = 0.0;
+        Diff += (VarCoord[iDim]*VarCoord[iDim]);
 			}
+			Diff = sqrt(Diff);
 			
-			diff = sqrt((CartCoordNew[0]-CartCoord_old[0])*(CartCoordNew[0]-CartCoord_old[0]) +
-									(CartCoordNew[1]-CartCoord_old[1])*(CartCoordNew[1]-CartCoord_old[1]) +
-									(CartCoordNew[2]-CartCoord_old[2])*(CartCoordNew[2]-CartCoord_old[2]));
-			
-			my_max_diff = max(my_max_diff, diff);
+			my_MaxDiff = max(my_MaxDiff, Diff);
 			
 			/*--- Set the variation of the coordinates ---*/
+      
 			geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
       
 		}
@@ -2952,16 +2973,16 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
   
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	MPI_Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX);
+	MPI::COMM_WORLD.Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI::DOUBLE, MPI::MAX);
 #endif
 #else
-	max_diff = my_max_diff;
+	MaxDiff = my_MaxDiff;
 #endif
 	
 	if (rank == MASTER_NODE)
-		cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max diff: " << max_diff <<"."<< endl;
+		cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
 	
 }
 
@@ -6017,7 +6038,7 @@ void CFreeFormDefBox::SetSupportCP(CFreeFormDefBox *FFDBox) {
 
 void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox *FFDBox) {
 	unsigned short iDim, iOrder, jOrder, kOrder;
-	double movement[3], *CartCoord_old, *CartCoordNew, *ParamCoord;
+	double movement[3], *CartCoordOld, *CartCoordNew, *ParamCoord;
 	unsigned short lOrder = FFDBox->GetlOrder();
 	unsigned short mOrder = FFDBox->GetmOrder();
 	unsigned short nOrder = FFDBox->GetnOrder();
@@ -6056,11 +6077,11 @@ void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox *FFDBox) {
 			for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
 				ParamCoord = ParamCoord_SupportCP[iOrder][jOrder][kOrder];
 				CartCoordNew = EvalCartesianCoord(ParamCoord);
-				CartCoord_old = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
+				CartCoordOld = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
 				index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
-				movement[0] = CartCoordNew[0] - CartCoord_old[0]; 
-				movement[1] = CartCoordNew[1] - CartCoord_old[1]; 
-				movement[2] = CartCoordNew[2] - CartCoord_old[2]; 
+				movement[0] = CartCoordNew[0] - CartCoordOld[0]; 
+				movement[1] = CartCoordNew[1] - CartCoordOld[1]; 
+				movement[2] = CartCoordNew[2] - CartCoordOld[2]; 
 				FFDBox->SetControlPoints(index, movement);
 			}
 }
