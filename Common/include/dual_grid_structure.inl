@@ -183,9 +183,13 @@ inline bool CPoint::GetDomain(void) { return Domain; }
 
 inline void CPoint::SetWall_Distance(double val_distance) { Wall_Distance = val_distance; }
 
+inline void CPoint::SetCurvature(double val_curvature) { Curvature = val_curvature; }
+
 inline void CPoint::SetSharpEdge_Distance(double val_distance) { SharpEdge_Distance = val_distance; }
 
 inline double CPoint::GetWall_Distance(void) { return Wall_Distance; }
+
+inline double CPoint::GetCurvature(void) { return Curvature; }
 
 inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 

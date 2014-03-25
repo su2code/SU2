@@ -1472,6 +1472,15 @@ public:
 	 */
   double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 
+  /*!
+	 * \brief Set the output file for boundaries in Tecplot with surface curvature.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] mesh_filename - Name of the file where the Tecplot
+	 *            information is going to be stored.
+   * \param[in] new_file - Create a new file.
+	 */
+	void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
+  
 };
 
 /*! 

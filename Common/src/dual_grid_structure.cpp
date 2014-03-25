@@ -93,6 +93,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
       Coord_n1 = new double[nDim];
     }
 	}
+  
+  /*--- Intialize the value of the curvature ---*/
+  Curvature = 0.0;
 
 }
 
@@ -166,6 +169,10 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
       }
     }
 	}
+  
+  /*--- Intialize the value of the curvature ---*/
+  Curvature = 0.0;
+  
 }
 
 CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
@@ -238,6 +245,10 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
       }
     }
 	}
+  
+  /*--- Intialize the value of the curvature ---*/
+  Curvature = 0.0;
+  
 }
 
 CPoint::~CPoint() {
