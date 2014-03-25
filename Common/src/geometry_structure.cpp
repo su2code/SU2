@@ -724,12 +724,11 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {}
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
-  /*--- Local variables and initialization ---*/
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  unsigned short iNode_Surface, iMarker;
-  unsigned long Point_Surface, iElem_Surface;
-  double Conversion_Factor = 1.0;
+  unsigned short iNode_Surface, iMarker, iDim;
+  unsigned long Point_Surface, iElem_Surface, iPoint;
+  double Mesh_Scale_Change = 1.0, NewCoord[3];
   int rank = MASTER_NODE;
   nZone = val_nZone;
   
@@ -737,6 +736,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   unsigned short val_format = config->GetMesh_FileFormat();
   
   /*--- Initialize counters for local/global points & elements ---*/
+  
 #ifndef NO_MPI
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -759,7 +759,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       Read_NETCDF_Format(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     default:
-      cout << "geometry_structure.cpp" << endl;
       cout << "Unrecognized mesh format specified!!" << endl;
 #ifdef NO_MPI
       exit(1);
@@ -775,10 +774,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       break;
   }
   
-  if (config->GetKind_SU2() == SU2_CFD) Conversion_Factor = config->GetConversion_Factor();
-  else Conversion_Factor = 1.0;
-  
   /*--- Loop over the surface element to set the boundaries ---*/
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
       for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
@@ -791,25 +788,27 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           node[Point_Surface]->SetPhysicalBoundary(true);
       }
   
-  /*--- Write a new copy of the grid in meters if requested ---*/
-  if (config->GetKind_SU2() == SU2_CFD)
-    if (config->GetWrite_Converted_Mesh()) {
-      SetMeshFile(config,config->GetMesh_Out_FileName());
-      cout.precision(4);
-      cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
-      cout << "  and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
-    }
+  /*--- Loop over the points element to re-scale the mesh, and plot it ---*/
   
-#ifndef NO_MPI
-  /*--- Synchronization point after reading the grid ---*/
-  if (config->GetKind_SU2() != SU2_DDC) {
-#ifdef WINDOWS
-    MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
+  if (config->GetKind_SU2() == SU2_CFD) {
+    
+    Mesh_Scale_Change = config->GetMesh_Scale_Change();
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
+      }
+      node[iPoint]->SetCoord(NewCoord);
+    }
+    
+    if (config->GetMesh_Output()) {
+      SetMeshFile(config, config->GetMesh_Out_FileName());
+      cout.precision(4);
+      cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
+      cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+    }
+    
   }
-#endif
   
 }
 
@@ -819,13 +818,12 @@ CPhysicalGeometry::~CPhysicalGeometry(void) {
 
 void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
   
-  /*--- Local variables and initialization ---*/
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type, iMarker, iChar, iCount = 0;
   unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
   char cstr[200];
-  double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0, dummyDouble;
+  double Coord_2D[2], Coord_3D[3], dummyDouble;
   string::size_type position;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   int rank = MASTER_NODE, size = SINGLE_NODE;
@@ -1472,14 +1470,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #endif
       }
       
-      /*--- Retrieve grid conversion factor. The conversion is only
-       applied for SU2_CFD. All other SU2 components leave the mesh
-       as is. ---*/
-      if (config->GetKind_SU2() == SU2_CFD)
-        Conversion_Factor = config->GetConversion_Factor();
-      else
-        Conversion_Factor = 1.0;
-      
       node = new CPoint*[nPoint];
       iPoint = 0;
       while (iPoint < nPoint) {
@@ -1494,7 +1484,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
             if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
             else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = iPoint; }
 #endif
-            node[iPoint] = new CPoint(Conversion_Factor*Coord_2D[0], Conversion_Factor*Coord_2D[1], GlobalIndex, config);
+            node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
             iPoint++; break;
           case 3:
             GlobalIndex = iPoint;
@@ -1504,7 +1494,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
             if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
             else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = iPoint; }
 #endif
-            node[iPoint] = new CPoint(Conversion_Factor*Coord_3D[0], Conversion_Factor*Coord_3D[1], Conversion_Factor*Coord_3D[2], GlobalIndex, config);
+            node[iPoint] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], GlobalIndex, config);
             iPoint++; break;
         }
       }
@@ -1760,7 +1750,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   unsigned long Point_Surface, iElem_Surface, iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0,
   vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummy, GlobalIndex;
   char cstr[200];
-  double Coord_2D[2], Coord_3D[3], Conversion_Factor = 1.0;
+  double Coord_2D[2], Coord_3D[3];
   string::size_type position;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   int rank = MASTER_NODE, size = SINGLE_NODE;
@@ -2192,25 +2182,12 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         }
       }
       
-      /*--- Now write the node coordinates. First write
-       the total number of vertices. Convert the mesh
-       if requesed. ---*/
-      if (config->GetKind_SU2() == SU2_CFD) {
-        if (config->GetWrite_Converted_Mesh()) {
-          Conversion_Factor = config->GetConversion_Factor();
-          cout << "Converted mesh by a factor of " << Conversion_Factor << endl;
-        } else {
-          Conversion_Factor = 1.0;
-        }
-      } else {
-        Conversion_Factor = 1.0;
-      }
       fprintf( SU2File, "NPOIN= %i\n", totalVerts);
       counter = 0;
       for ( int k = 0; k < nzones; k ++ ) {
         for ( int i = 0; i < vertices[k]; i++ ) {
           for ( int j = 0; j < cell_dim; j++ ) {
-            fprintf( SU2File, "%.16le\t", Conversion_Factor*gridCoords[k][j][i]);
+            fprintf( SU2File, "%.16le\t", gridCoords[k][j][i]);
           }
           fprintf( SU2File, "%d\n", counter);
           counter++;
@@ -2345,14 +2322,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       cout << Global_nelem_pyramid << " pyramids." << endl;
   }
   
-  /*--- Retrieve grid conversion factor. The conversion is only
-   applied for SU2_CFD. All other SU2 components leave the mesh
-   as is. ---*/
-  if (config->GetKind_SU2() == SU2_CFD)
-    Conversion_Factor = config->GetConversion_Factor();
-  else
-    Conversion_Factor = 1.0;
-  
   /*--- Read node coordinates. Note this assumes serial mode. ---*/
   nPoint = totalVerts;
   nPointDomain = nPoint;
@@ -2366,11 +2335,11 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       switch(nDim) {
         case 2:
           GlobalIndex = i;
-          node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], GlobalIndex, config);
+          node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], GlobalIndex, config);
           iPoint++; break;
         case 3:
           GlobalIndex = i;
-          node[iPoint] = new CPoint(Conversion_Factor*Coord_cgns[0], Conversion_Factor*Coord_cgns[1], Conversion_Factor*Coord_cgns[2], GlobalIndex, config);
+          node[iPoint] = new CPoint(Coord_cgns[0], Coord_cgns[1], Coord_cgns[2], GlobalIndex, config);
           iPoint++; break;
       }
     }
