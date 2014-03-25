@@ -743,7 +743,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   /*--- Allocate surface curvature ---*/
   K = new double [nPoint];
   
-  
   if (nDim == 2) {
     
     /*--- Loop over all the markers ---*/
@@ -788,7 +787,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
               (2.0*fabs(X1*Y2+X2*Y3+X3*Y1-X1*Y3-X2*Y1-X3*Y2));
               
               K[iPoint] = 1.0/radius;
-              
+              node[iPoint]->SetCurvature(K[iPoint]);
             }
             
           }
@@ -939,7 +938,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
             
             /*--- Store the curvature value ---*/
             K[iPoint] = MaxPrinK;
-            
+            node[iPoint]->SetCurvature(K[iPoint]);
           }
           
         }
@@ -9869,6 +9868,127 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
     Area_Value += fabs((Xcoord_Lower[iVertex+1] - Xcoord_Lower[iVertex]) * 0.5*(Zcoord_Lower[iVertex+1] + Zcoord_Lower[iVertex]));
   
   return Area_Value;
+  
+}
+
+void CBoundaryGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config) {
+  
+  ofstream Tecplot_File;
+  unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
+  unsigned short Coord_i, iMarker;
+  
+  /*--- It is important to do a renumbering to don't add points
+   that do not belong to the surfaces ---*/
+  
+  PointSurface = new unsigned long[nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    if (node[iPoint]->GetBoundary()) {
+      PointSurface[iPoint] = nPointSurface;
+      nPointSurface++;
+    }
+  
+  /*--- Compute the total number of elements ---*/
+  
+  Total_nElem_Bound = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      Total_nElem_Bound += nElem_Bound[iMarker];
+    }
+  }
+  
+  /*--- Open the tecplot file and write the header ---*/
+  
+  if (new_file) {
+    Tecplot_File.open(mesh_filename, ios::out);
+    Tecplot_File << "TITLE= \"Visualization of the surface grid\"" << endl;
+    if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\",\"Curvature\"  " << endl;
+    if (nDim == 3) Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\",\"Curvature\"  " << endl;
+  }
+  else Tecplot_File.open(mesh_filename, ios::out | ios::app);
+  
+  if (Total_nElem_Bound != 0) {
+    
+    /*--- Write the header of the file ---*/
+    
+    Tecplot_File << "ZONE T= ";
+    if (new_file) Tecplot_File << "\"Original grid\", ";
+    else Tecplot_File << "\"Deformed grid\", ";
+    Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
+    if (nDim == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
+    if (nDim == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
+    
+    /*--- Only write the coordinates of the points that are on the surfaces ---*/
+    
+//    if (nDim == 3) {
+//      for(iPoint = 0; iPoint < nPoint; iPoint++)
+//        if (node[iPoint]->GetBoundary()) {
+//          for(Coord_i = 0; Coord_i < nDim-1; Coord_i++)
+//            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+//          Tecplot_File << node[iPoint]->GetCoord(nDim-1) << "\n";
+//        }
+//    }
+//    else {
+//      for(iPoint = 0; iPoint < nPoint; iPoint++)
+//        if (node[iPoint]->GetBoundary()){
+//          for(Coord_i = 0; Coord_i < nDim; Coord_i++)
+//            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+//          Tecplot_File << "\n";
+//        }
+//    }
+    
+      for(iPoint = 0; iPoint < nPoint; iPoint++)
+        if (node[iPoint]->GetBoundary()) {
+          for(Coord_i = 0; Coord_i < nDim; Coord_i++)
+            Tecplot_File << node[iPoint]->GetCoord(Coord_i) << " ";
+          Tecplot_File << node[iPoint]->GetCurvature() << "\n";
+        }
+
+    
+    /*--- Write the cells using the new numbering ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES)
+        for(iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+          if (nDim == 2) {
+            Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+            << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << endl;
+          }
+          if (nDim == 3) {
+            if (bound[iMarker][iElem]->GetnNodes() == 3) {
+              Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << endl;
+            }
+            if (bound[iMarker][iElem]->GetnNodes() == 4) {
+              Tecplot_File << PointSurface[bound[iMarker][iElem]->GetNode(0)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(1)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(2)]+1 << " "
+              << PointSurface[bound[iMarker][iElem]->GetNode(3)]+1 << endl;
+            }
+          }
+        }
+  }
+  else {
+    
+    /*--- No elements in the surface ---*/
+    
+    if (nDim == 2) {
+      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+      Tecplot_File << "0.0 0.0"<< endl;
+      Tecplot_File << "1 1"<< endl;
+    }
+    if (nDim == 3) {
+      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+      Tecplot_File << "0.0 0.0 0.0"<< endl;
+      Tecplot_File << "1 1 1 1"<< endl;
+    }
+  }
+  
+  /*--- Dealocate memory and close the file ---*/
+  
+  delete[] PointSurface;
+  Tecplot_File.close();
   
 }
 
