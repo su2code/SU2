@@ -303,7 +303,7 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      delete Gradient_Primitive[iVar];
+      delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
   

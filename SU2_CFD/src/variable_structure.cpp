@@ -140,7 +140,7 @@ CVariable::~CVariable(void) {
   
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Gradient[iVar];
+      delete [] Gradient[iVar];
     delete [] Gradient;
   }
 
