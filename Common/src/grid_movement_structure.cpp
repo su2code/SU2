@@ -2916,22 +2916,22 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 			/*--- Get the vertex of the surface point ---*/
 			iVertex = FFDBox->Get_VertexIndex(iSurfacePoints);
 			iPoint = FFDBox->Get_PointIndex(iSurfacePoints);
-
+      
 			/*--- Set to zero the variation of the coordinates ---*/
 			for (iDim = 0; iDim < 3; iDim++) VarCoord[iDim] = 0.0;
 			geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-
+      
 			/*--- Get the parametric coordinate of the surface point ---*/
 			ParamCoord = FFDBox->Get_ParametricCoord(iSurfacePoints);
 			
-			/*--- Compute the new cartesian coordinate, and set the value in 
+			/*--- Compute the new cartesian coordinate, and set the value in
 			 the FFDBox structure ---*/
 			CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
 			FFDBox->Set_CartesianCoord(CartCoordNew, iSurfacePoints);
 			
 			/*--- Get the original cartesian coordinates of the surface point ---*/
 			CartCoord_old = geometry->node[iPoint]->GetCoord();
-
+      
 			/*--- Set the value of the variation of the coordinates ---*/
 			for (iDim = 0; iDim < 3; iDim++) {
 				VarCoord[iDim] = CartCoordNew[iDim] - CartCoord_old[iDim];
@@ -2946,21 +2946,21 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 			
 			/*--- Set the variation of the coordinates ---*/
 			geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-
+      
 		}
 	}
-		
+  
 #ifndef NO_MPI
 #ifdef WINDOWS
 	MPI_Allreduce(&my_max_diff, &max_diff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX); 	
+	MPI::COMM_WORLD.Allreduce(&my_max_diff, &max_diff, 1, MPI::DOUBLE, MPI::MAX);
 #endif
 #else
 	max_diff = my_max_diff;
 #endif
 	
-	if (rank == MASTER_NODE) 
+	if (rank == MASTER_NODE)
 		cout << "Update cartesian coord        | FFD box: " << FFDBox->GetTag() << ". Max diff: " << max_diff <<"."<< endl;
 	
 }

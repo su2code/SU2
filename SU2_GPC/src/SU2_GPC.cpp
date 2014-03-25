@@ -27,9 +27,8 @@ int main(int argc, char *argv[]) {
   
 	unsigned short iMarker, iDim, iDV, iFFDBox, nZone = 1;
 	unsigned long iVertex, iPoint;
-	double delta_eps, my_Gradient, Gradient, *Normal, dS;
-  double *VarCoord, Sensitivity;
-	double dalpha[3], deps[3], dalpha_deps;
+	double delta_eps, my_Gradient, Gradient, *Normal, dS, *VarCoord, Sensitivity,
+  MeshScale, dalpha[3], deps[3], dalpha_deps;
 	char *cstr;
 	ofstream Gradient_file, Jacobian_file;
 	bool *UpdatePoint, Comma;
@@ -316,7 +315,8 @@ int main(int argc, char *argv[]) {
 							Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
 							VarCoord = boundary->vertex[iMarker][iVertex]->GetVarCoord();
 							Sensitivity = boundary->vertex[iMarker][iVertex]->GetAuxVar();
-							
+              MeshScale = config->GetMesh_Scale_Change();
+
 							dS = 0.0; 
 							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
 								dS += Normal[iDim]*Normal[iDim];
@@ -335,7 +335,7 @@ int main(int argc, char *argv[]) {
                 Jacobian_file  << ", " << dalpha_deps;
               }
               
-							my_Gradient += Sensitivity*dalpha_deps;
+							my_Gradient += MeshScale*Sensitivity*dalpha_deps;
 							UpdatePoint[iPoint] = false;
 						}
 					}
