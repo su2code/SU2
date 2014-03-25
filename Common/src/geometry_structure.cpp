@@ -757,7 +757,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
           iPoint  = vertex[iMarker][iVertex]->GetNode();
           
           if (node[iPoint]->GetDomain()) {
-            
             /*--- Loop through neighbors. In 2-D, there should be 2 nodes on either
              side of this vertex that lie on the same surface. ---*/
             Point_Edge.clear();
@@ -9196,6 +9195,93 @@ void CBoundaryGeometry::SetVertex(void) {
         }
       }
   }
+}
+
+void CBoundaryGeometry::SetEsuP(void) {
+  unsigned long iPoint, iElem;
+  unsigned short iNode, iMarker;
+  
+  /*--- Loop over all of the markers ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    /*--- Loop over all of the elements on this marker ---*/
+    
+    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+      
+      /*--- Loop over all the nodes of an element ---*/
+      
+      for(iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        
+        /*--- Store this element as a neighbor of this point ---*/
+        iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        node[iPoint]->SetElem(iElem);
+        
+      }
+    }
+  }
+}
+
+void CBoundaryGeometry::SetPsuP(void) {
+  
+  unsigned short Node_Neighbor, iNode, iNeighbor, iMarker, jMarker;
+  unsigned long jElem, Point_Neighbor, iPoint, iElem, iVertex, kElem;
+  
+  /*--- Loop over all of the markers ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    /*--- Loop over all the vertices on this boundary marker ---*/
+    
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      
+      iPoint = vertex[iMarker][iVertex]->GetNode();
+      
+      /*--- Loop over all elements shared by the point ---*/
+      
+      for(iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+        
+        jElem = node[iPoint]->GetElem(iElem);
+        
+        for (jMarker = 0; jMarker < nMarker; jMarker++) {
+          for (kElem = 0; kElem < nElem_Bound[jMarker]; kElem++) {
+            
+            /*--- We've found this boundary element (could be in another marker) ---*/
+            if (kElem == jElem) {
+              
+              /*--- If we find the point iPoint in the surrounding element ---*/
+              
+              for(iNode = 0; iNode < bound[jMarker][kElem]->GetnNodes(); iNode++)
+                
+                if (bound[jMarker][kElem]->GetNode(iNode) == iPoint)
+                  
+                /*--- Localize the local index of the neighbor of iPoint in the element ---*/
+                  
+                  for(iNeighbor = 0; iNeighbor < bound[jMarker][kElem]->GetnNeighbor_Nodes(iNode); iNeighbor++) {
+                    Node_Neighbor = bound[jMarker][kElem]->GetNeighbor_Nodes(iNode,iNeighbor);
+                    Point_Neighbor = bound[jMarker][kElem]->GetNode(Node_Neighbor);
+                    
+                    /*--- Store the point into the point ---*/
+                    
+                    node[iPoint]->SetPoint(Point_Neighbor);
+                  }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Set the number of neighbors variable, this is
+   important for JST and multigrid in parallel ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      iPoint = vertex[iMarker][iVertex]->GetNode();
+      node[iPoint]->SetnNeighbor(node[iPoint]->GetnPoint());
+    }
+  }
+  
 }
 
 void CBoundaryGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) {
