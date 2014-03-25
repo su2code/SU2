@@ -14,25 +14,26 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 noinst_LIBRARIES = libSU2.a
 
-libSU2_a_SOURCES = ../src/config_structure.hpp \
-		../src/config_structure.inl \
-		../src/dual_grid_structure.hpp \
-		../src/dual_grid_structure.inl \
-		../src/geometry_structure.hpp \
-		../src/geometry_structure.inl \
-		../src/grid_adaptation_structure.hpp \
-		../src/grid_adaptation_structure.inl \
-		../src/grid_movement_structure.hpp \
-		../src/grid_movement_structure.inl \
-		../src/linear_solvers_structure.hpp \
-		../src/linear_solvers_structure.inl \
-		../src/option_structure.hpp \
-		../src/primal_grid_structure.hpp \
-		../src/primal_grid_structure.inl \
-		../src/vector_structure.hpp \
-		../src/vector_structure.inl \
-	       ../src/matrix_structure.hpp \
-	       ../src/matrix_structure.inl \
+libSU2_a_SOURCES = \
+                ../include/config_structure.hpp \
+		../include/config_structure.inl \
+		../include/dual_grid_structure.hpp \
+		../include/dual_grid_structure.inl \
+		../include/geometry_structure.hpp \
+		../include/geometry_structure.inl \
+		../include/grid_adaptation_structure.hpp \
+		../include/grid_adaptation_structure.inl \
+		../include/grid_movement_structure.hpp \
+		../include/grid_movement_structure.inl \
+		../include/linear_solvers_structure.hpp \
+		../include/linear_solvers_structure.inl \
+		../include/option_structure.hpp \
+		../include/primal_grid_structure.hpp \
+		../include/primal_grid_structure.inl \
+		../include/vector_structure.hpp \
+		../include/vector_structure.inl \
+	        ../include/matrix_structure.hpp \
+	        ../include/matrix_structure.inl \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
@@ -40,25 +41,19 @@ libSU2_a_SOURCES = ../src/config_structure.hpp \
 		../src/grid_movement_structure.cpp \
 		../src/linear_solvers_structure.cpp \
 		../src/primal_grid_structure.cpp \
-	       ../src/vector_structure.cpp \
+	        ../src/vector_structure.cpp \
 		../src/matrix_structure.cpp
 
-libSU2_a_CXXFLAGS = 
+libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
 
+# always link to built dependencies from ./externals
+libSU2_a_CXXFLAGS += @su2_externals_INCLUDES@
+libSU2_a_LIBADD += @su2_externals_LIBS@
+
 # if BUILD_CGNS
-libSU2_a_CXXFLAGS += @CGNS_CXX@ 
-libSU2_a_LIBADD += @CGNS_LD@ 
-# endif
-
-# if BUILD_METIS
-libSU2_a_CXXFLAGS += @METIS_CXX@
-libSU2_a_LIBADD += @METIS_LD@
-# endif
-
-# if BUILD_TECIO
-libSU2_a_CXXFLAGS += @TECIO_CXX@
-libSU2_a_LIBADD += @TECIO_LD@
+libSU2_a_CXXFLAGS += @CGNS_CXX@
+libSU2_a_LIBADD += @CGNS_LD@
 # endif
 
 # if BUILD_MUTATIONPP

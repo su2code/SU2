@@ -61,10 +61,10 @@ int main(int argc, char *argv[]) {
   
   /*--- Definition of the configuration class, and open the config file ---*/
   
-  if (argc == 2) config[ZONE_0] = new CConfig(argv[1], SU2_MDC, ZONE_0, nZone, VERB_HIGH);
+  if (argc == 2) config[ZONE_0] = new CConfig(argv[1], SU2_MDC, ZONE_0, nZone, 0, VERB_HIGH);
   else {
     strcpy (mesh_file, "default.cfg");
-    config[ZONE_0] = new CConfig(mesh_file, SU2_MDC, ZONE_0, nZone, VERB_HIGH);
+    config[ZONE_0] = new CConfig(mesh_file, SU2_MDC, ZONE_0, nZone, 0, VERB_HIGH);
   }
   
 #ifndef NO_MPI
