@@ -6179,8 +6179,8 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
 	else FFDBox_file.open(FFDBox_filename, ios::out | ios::app);
 
 	FFDBox_file << "ZONE T= \"ID " << iFFDBox;
-  if (original) FFDBox_file << " (Original FFD)\"";
-  else FFDBox_file << " (Deformed FFD)\"";
+  if (original) FFDBox_file << " (Original FFD)\", C=BLACK";
+  else FFDBox_file << " (Deformed FFD)\", C=RED";
   if (nDim == 2) FFDBox_file << ", I="<<lDegree+1<<", J="<<mDegree+1<<", DATAPACKING=POINT" << endl;
   else FFDBox_file << ", I="<<lDegree+1<<", J="<<mDegree+1<<", K="<<nDegree+1<<", DATAPACKING=POINT" << endl;
 
@@ -6253,7 +6253,7 @@ double *CFreeFormDefBox::EvalCartesianCoord(double *ParamCoord) {
 	unsigned short iDim, iDegree, jDegree, kDegree;
 	
 	for (iDim = 0; iDim < nDim; iDim++)
-		cart_coord[iDim] = 0;
+		cart_coord[iDim] = 0.0;
 	
 	for (iDegree = 0; iDegree <= lDegree; iDegree++)
 		for (jDegree = 0; jDegree <= mDegree; jDegree++)
@@ -6314,7 +6314,20 @@ double CFreeFormDefBox::GetBernsteinDerivative(short val_n, short val_i,
 	return value;
 }
 
-double *CFreeFormDefBox::GetGradient_Analytical(double *val_coord, double *xyz) {
+double CFreeFormDefBox::GetFFDObjFunc(double *val_coord, double *xyz) {
+  
+	unsigned short iDim;
+  
+  ObjFunc = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    ObjFunc += (val_coord[iDim]-xyz[iDim])*(val_coord[iDim]-xyz[iDim]);
+
+	return ObjFunc;
+  
+}
+
+double *CFreeFormDefBox::GetFFDGradient(double *val_coord, double *xyz) {
+  
 	unsigned short iDim, jDim, lmn[3];
 	
 	/*--- Set the Degree of the Berstein polynomials ---*/
@@ -6329,66 +6342,13 @@ double *CFreeFormDefBox::GetGradient_Analytical(double *val_coord, double *xyz) 
 			GetDerivative3(val_coord, iDim, jDim, lmn);
 	
 	return Gradient;
-}
-
-double *CFreeFormDefBox::GetGradient_Numerical(double *uvw, double *xyz) {
-	double delta = 1E-6, parametric[3], *coord_eval, functional_plus, functional_minus;
-	
-	parametric[0] = uvw[0] + delta;
-	parametric[1] = uvw[1]; 
-	parametric[2] = uvw[2]; 
-	coord_eval = EvalCartesianCoord(parametric);
-	functional_plus = ((coord_eval[0]-xyz[0])*(coord_eval[0]-xyz[0]) + 
-					   (coord_eval[1]-xyz[1])*(coord_eval[1]-xyz[1]) +
-					   (coord_eval[2]-xyz[2])*(coord_eval[2]-xyz[2]));
-	parametric[0] = uvw[0] - delta;
-	parametric[1] = uvw[1]; 
-	parametric[2] = uvw[2]; 
-	coord_eval = EvalCartesianCoord(parametric);
-	functional_minus = ((coord_eval[0]-xyz[0])*(coord_eval[0]-xyz[0]) + 
-						(coord_eval[1]-xyz[1])*(coord_eval[1]-xyz[1]) +
-						(coord_eval[2]-xyz[2])*(coord_eval[2]-xyz[2]));
-	Gradient[0] = 0.5*(functional_plus-functional_minus)/delta;
-	
-	parametric[0] = uvw[0];
-	parametric[1] = uvw[1] + delta;
-	parametric[2] = uvw[2]; 
-	coord_eval = EvalCartesianCoord(parametric);
-	functional_plus = ((coord_eval[0]-xyz[0])*(coord_eval[0]-xyz[0]) + 
-					   (coord_eval[1]-xyz[1])*(coord_eval[1]-xyz[1]) +
-					   (coord_eval[2]-xyz[2])*(coord_eval[2]-xyz[2]));
-	parametric[0] = uvw[0];
-	parametric[1] = uvw[1] - delta;
-	parametric[2] = uvw[2]; 
-	coord_eval = EvalCartesianCoord(parametric);
-	functional_minus = ((coord_eval[0]-xyz[0])*(coord_eval[0]-xyz[0]) + 
-						(coord_eval[1]-xyz[1])*(coord_eval[1]-xyz[1]) +
-						(coord_eval[2]-xyz[2])*(coord_eval[2]-xyz[2]));
-	Gradient[1] = 0.5*(functional_plus-functional_minus)/delta;
-	
-	parametric[0] = uvw[0];
-	parametric[1] = uvw[1]; 
-	parametric[2] = uvw[2] + delta;
-	coord_eval = EvalCartesianCoord(parametric);
-	functional_plus = ((coord_eval[0]-xyz[0])*(coord_eval[0]-xyz[0]) + 
-					   (coord_eval[1]-xyz[1])*(coord_eval[1]-xyz[1]) +
-					   (coord_eval[2]-xyz[2])*(coord_eval[2]-xyz[2]));
-	parametric[0] = uvw[0];
-	parametric[1] = uvw[1]; 
-	parametric[2] = uvw[2] - delta;
-	coord_eval = EvalCartesianCoord(parametric);
-	functional_minus = ((coord_eval[0]-xyz[0])*(coord_eval[0]-xyz[0]) + 
-						(coord_eval[1]-xyz[1])*(coord_eval[1]-xyz[1]) +
-						(coord_eval[2]-xyz[2])*(coord_eval[2]-xyz[2]));
-	Gradient[2] = 0.5*(functional_plus-functional_minus)/delta;
-	
-	return Gradient;
+  
 }
 
 double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, double tol, 
 																										 unsigned long it_max) {
   
-	double IndepTerm[3], under_relax = 0.1, MinNormError, NormError;
+	double IndepTerm[3], under_relax = 1.0, MinNormError, NormError, *CartCoord, ObjFunc;
 	unsigned short iDim, RandonCounter;
 	unsigned long iter;
   
@@ -6407,9 +6367,27 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 
 	for (iter = 0; iter < it_max; iter++) {
 		
+    
+    
 		/*--- The independent term of the solution of our system is -Gradient(sol_old) ---*/
     
-		Gradient = GetGradient_Analytical(ParamCoord, xyz);
+    ParamCoord[0] -= 1E-8; CartCoord = EvalCartesianCoord(ParamCoord); ParamCoord[0] += 1E-8;
+    ObjFunc = GetFFDObjFunc(CartCoord, xyz); Gradient[0] = -ObjFunc;
+    ParamCoord[0] += 1E-8; CartCoord = EvalCartesianCoord(ParamCoord); ParamCoord[0] -= 1E-8;
+    ObjFunc = GetFFDObjFunc(CartCoord, xyz); Gradient[0] += ObjFunc; Gradient[0] /= 2E-8;
+    
+    ParamCoord[1] -= 1E-8; CartCoord = EvalCartesianCoord(ParamCoord); ParamCoord[1] += 1E-8;
+    ObjFunc = GetFFDObjFunc(CartCoord, xyz); Gradient[1] = -ObjFunc;
+    ParamCoord[1] += 1E-8; CartCoord = EvalCartesianCoord(ParamCoord); ParamCoord[1] -= 1E-8;
+    ObjFunc = GetFFDObjFunc(CartCoord, xyz); Gradient[1] += ObjFunc; Gradient[1] /= 2E-8;
+    
+    ParamCoord[2] -= 1E-8; CartCoord = EvalCartesianCoord(ParamCoord); ParamCoord[2] += 1E-8;
+    ObjFunc = GetFFDObjFunc(CartCoord, xyz); Gradient[2] = -ObjFunc;
+    ParamCoord[2] += 1E-8; CartCoord = EvalCartesianCoord(ParamCoord); ParamCoord[2] -= 1E-8;
+    ObjFunc = GetFFDObjFunc(CartCoord, xyz); Gradient[2] += ObjFunc; Gradient[2] /= 2E-8;
+    
+    
+//		Gradient = GetFFDGradient(ParamCoord, xyz);
     
     /*--- Relaxation of the Newton Method ---*/
 
@@ -6418,23 +6396,23 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
     
     /*--- Compute 2-point Finite differences Hessian ---*/
 		
-    ParamCoord[0] -= 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[0] += 1E-6;
+    ParamCoord[0] -= 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz); ParamCoord[0] += 1E-8;
     Hessian[0][0] = -Gradient[0]; Hessian[0][1] = -Gradient[1]; Hessian[0][2] = -Gradient[2];
-    ParamCoord[0] += 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[0] -= 1E-6;
+    ParamCoord[0] += 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz); ParamCoord[0] -= 1E-8;
     Hessian[0][0] += Gradient[0]; Hessian[0][1] += Gradient[1]; Hessian[0][2] += Gradient[2];
-    Hessian[0][0] /= 2E-6; Hessian[0][1] /= 2E-6; Hessian[0][2] /= 2E-6;
+    Hessian[0][0] /= 2E-8; Hessian[0][1] /= 2E-8; Hessian[0][2] /= 2E-8;
 
-    ParamCoord[1] -= 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[1] += 1E-6;
+    ParamCoord[1] -= 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz); ParamCoord[1] += 1E-8;
     Hessian[1][0] = -Gradient[0]; Hessian[1][1] = -Gradient[1]; Hessian[1][2] = -Gradient[2];
-    ParamCoord[1] += 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[1] -= 1E-6;
+    ParamCoord[1] += 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz); ParamCoord[1] -= 1E-8;
     Hessian[1][0] += Gradient[0]; Hessian[1][1] += Gradient[1]; Hessian[1][2] += Gradient[2];
-    Hessian[1][0] /= 2E-6; Hessian[1][1] /= 2E-6; Hessian[1][2] /= 2E-6;
+    Hessian[1][0] /= 2E-8; Hessian[1][1] /= 2E-8; Hessian[1][2] /= 2E-8;
     
-    ParamCoord[2] -= 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[2] += 1E-6;
+    ParamCoord[2] -= 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz); ParamCoord[2] += 1E-8;
     Hessian[2][0] = -Gradient[0]; Hessian[2][1] = -Gradient[1]; Hessian[2][2] = -Gradient[2];
-    ParamCoord[2] += 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[2] -= 1E-6;
+    ParamCoord[2] += 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz); ParamCoord[2] -= 1E-8;
     Hessian[2][0] += Gradient[0]; Hessian[2][1] += Gradient[1]; Hessian[2][2] += Gradient[2];
-    Hessian[2][0] /= 2E-6; Hessian[2][1] /= 2E-6; Hessian[2][2] /= 2E-6;
+    Hessian[2][0] /= 2E-8; Hessian[2][1] /= 2E-8; Hessian[2][2] /= 2E-8;
     
 //    cout << endl;
 //    cout <<"FINITE DIFFERENCES HESSIAN"<< endl;
@@ -6446,7 +6424,7 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 
 //		/*--- Hessian = The Matrix of our system, getHessian(sol_old,xyz,...) ---*/
 //    
-//		GetHessian_Analytical(ParamCoord, xyz, Hessian);
+//		GetFFDHessian(ParamCoord, xyz, Hessian);
 //
 //    cout << endl;
 //    cout <<"ANALYTICAL HESSIAN"<< endl;
@@ -6489,7 +6467,7 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
         ParamCoord[iDim] = double(rand())/double(RAND_MAX);
       
       if (RandonCounter == 10) {
-        cout << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<"."<< endl;
+        cout << endl << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<"."<< endl;
         break;
       }
       
@@ -6723,7 +6701,7 @@ double CFreeFormDefBox::GetDerivative5(double *uvw, unsigned short dim, unsigned
 	return value;
 }
 
-void CFreeFormDefBox::GetHessian_Analytical(double *uvw, double *xyz, double **val_Hessian) {
+void CFreeFormDefBox::GetFFDHessian(double *uvw, double *xyz, double **val_Hessian) {
 	
 	unsigned short iDim, jDim;
 	unsigned short l, m, n, lmn[3];

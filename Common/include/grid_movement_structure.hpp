@@ -93,6 +93,7 @@ public:
 	nDegree;								/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
 	double *ParamCoord, *ParamCoord_,	/*!< \brief Parametric coordinates of a point. */
 	*cart_coord, *cart_coord_;			/*!< \brief Cartesian coordinates of a point. */
+  double ObjFunc;			/*!< \brief Objective function of the point inversion process. */
 	double *Gradient;			/*!< \brief Gradient of the point inversion process. */
   double **Hessian;    /*!< \brief Hessian of the point inversion process. */
 	double MaxCoord[3];		/*!< \brief Maximum coordinates of the FFDBox. */
@@ -510,22 +511,32 @@ public:
 	 */		
 	double GetBernsteinDerivative(short val_n, short val_i, double val_t, short val_order);
 	
+  /*!
+	 * \brief The routine computes F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
+	 * \param[in] val_coord - Parametric coordiates of the target point.
+	 * \param[in] xyz - Cartesians coordinates of the point.
+	 * \return Value of the analytical objective function.
+	 */
+	double GetFFDObjFunc(double *val_coord, double *xyz);
+  
 	/*! 
 	 * \brief The routine computes the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
 	 * \param[in] val_coord - Parametric coordiates of the target point.
 	 * \param[in] xyz - Cartesians coordinates of the point.
 	 * \return Value of the analytical gradient.
 	 */		
-	double *GetGradient_Analytical(double *val_coord, double *xyz);
+	double *GetFFDGradient(double *val_coord, double *xyz);
 	
-	/*! 
-	 * \brief The routine computes the numerical gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
+	/*!
+	 * \brief The routine that computes the Hessian of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 evaluated at (u,v,w)
+	 *        Input: (u,v,w), (x,y,z)
+	 *        Output: Hessian F (u,v,w).
 	 * \param[in] uvw - Current value of the parametrics coordinates.
 	 * \param[in] xyz - Cartesians coordinates of the target point to compose the functional.
-	 * \return Value of the numerical gradient.
-	 */		
-	double *GetGradient_Numerical(double *uvw, double *xyz);
-	
+	 * \param[in] val_Hessian - Value of the hessian.
+	 */
+	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian);
+  
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 = 
 	 *        (Sum_ijk^lmn P1_ijk Bi Bj Bk -x)^2+(Sum_ijk^lmn P2_ijk Bi Bj Bk -y)^2+(Sum_ijk^lmn P3_ijk Bi Bj Bk -z)^2
@@ -604,16 +615,6 @@ public:
 	 */		
 	double GetDerivative5(double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
 						  unsigned short *lmn);
-	
-	/*! 
-	 * \brief The routine that computes the Hessian of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 evaluated at (u,v,w)
-	 *        Input: (u,v,w), (x,y,z)
-	 *        Output: Hessian F (u,v,w).
-	 * \param[in] uvw - Current value of the parametrics coordinates.
-	 * \param[in] xyz - Cartesians coordinates of the target point to compose the functional.
-	 * \param[in] val_Hessian - Value of the hessian.
-	 */		
-	void GetHessian_Analytical(double *uvw, double *xyz, double **val_Hessian);
 	
 	/*! 
 	 * \brief Euclidean norm of a vector.
