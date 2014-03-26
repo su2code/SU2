@@ -5418,8 +5418,8 @@ void CPhysicalGeometry::SetTecPlot(char mesh_filename[200], bool new_file) {
   else Tecplot_File.open(mesh_filename, ios::out | ios::app);
 
   Tecplot_File << "ZONE T= ";
-  if (new_file) Tecplot_File << "\"Original grid\", ";
-  else Tecplot_File << "\"Deformed grid\", ";
+  if (new_file) Tecplot_File << "\"Original grid\", C=BLACK, ";
+  else Tecplot_File << "\"Deformed grid\", C=RED, ";
   Tecplot_File << "NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING= POINT";
   if (nDim == 2) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
   if (nDim == 3) Tecplot_File << ", ZONETYPE= FEBRICK"<< endl;
@@ -5518,8 +5518,8 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, 
     /*--- Write the header of the file ---*/
     
     Tecplot_File << "ZONE T= ";
-    if (new_file) Tecplot_File << "\"Original grid\", ";
-    else Tecplot_File << "\"Deformed grid\", ";
+    if (new_file) Tecplot_File << "\"Original grid\", C=BLACK, ";
+    else Tecplot_File << "\"Deformed grid\", C=RED, ";
     Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
     if (nDim == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
     if (nDim == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
