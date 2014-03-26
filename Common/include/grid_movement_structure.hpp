@@ -523,9 +523,10 @@ public:
 	 * \brief The routine computes the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2  evaluated at (u,v,w).
 	 * \param[in] val_coord - Parametric coordiates of the target point.
 	 * \param[in] xyz - Cartesians coordinates of the point.
+   * \param[in] analytical - Compute the analytical gradient.
 	 * \return Value of the analytical gradient.
 	 */		
-	double *GetFFDGradient(double *val_coord, double *xyz);
+	double *GetFFDGradient(double *val_coord, double *xyz, bool analytical);
 	
 	/*!
 	 * \brief The routine that computes the Hessian of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 evaluated at (u,v,w)
@@ -535,7 +536,7 @@ public:
 	 * \param[in] xyz - Cartesians coordinates of the target point to compose the functional.
 	 * \param[in] val_Hessian - Value of the hessian.
 	 */
-	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian);
+	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian, bool analytical);
   
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 = 
@@ -654,6 +655,15 @@ public:
 	 * \return Value of the nested level of the the FFDBox.
 	 */	
 	unsigned short GetLevel(void);
+  
+  /*!
+	 * \brief Compute the determinant of a 3 by 3 matrix.
+	 * \param[in] val_matrix 3 by 3 matrix.
+	 * \result Determinant of the matrix
+	 */
+	double Determinant_3x3(double A00, double A01, double A02, double A10, double A11,
+                         double A12, double A20, double A21, double A22);
+  
 };
 
 /*! 
