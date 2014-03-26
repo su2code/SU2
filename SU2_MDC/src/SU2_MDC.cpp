@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Volumetric grid deformation ---*/
   
-  if (config[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
+  if (config[ZONE_0]->GetDesign_Variable(0) != FFD_SETTING) {
     
     if (rank == MASTER_NODE) cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;
     
