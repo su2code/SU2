@@ -846,7 +846,7 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
  * \brief types of design parameterizations
  */
 enum ENUM_PARAM {
-	NO_DEFORMATION = 0,		/*!< \brief No surface deformation. */
+	FFD_SETTING = 0,		/*!< \brief No surface deformation. */
 	HICKS_HENNE = 1,		/*!< \brief Hicks-Henne bump function for airfoil deformation. */
 	MACH_NUMBER = 5,		/*!< \brief Mach number as design variable. */
 	NACA_4DIGITS = 6,		/*!< \brief The four digits NACA airfoil family as design variables. */
@@ -871,7 +871,7 @@ enum ENUM_PARAM {
 	FFD_THICKNESS_2D = 27		/*!< \brief Free form deformation for 3D design (thickness change). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
-("NO_DEFORMATION", NO_DEFORMATION)
+("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
@@ -2236,7 +2236,7 @@ public:
 		unsigned int i = 0;
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			switch ((*Design_Variable_)[iDV]) {
-        case NO_DEFORMATION: nParamDV = 0; break;
+        case FFD_SETTING: nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
         case FFD_CAMBER_2D: nParamDV = 2; break;
         case FFD_THICKNESS_2D: nParamDV = 2; break;
@@ -2289,7 +2289,7 @@ public:
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			unsigned short nParamDV = 0;
 			switch ((*Design_Variable_)[iDV]) {
-        case NO_DEFORMATION: nParamDV = 0; break;
+        case FFD_SETTING: nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
         case FFD_CAMBER_2D: nParamDV = 2; break;
         case FFD_THICKNESS_2D: nParamDV = 2; break;

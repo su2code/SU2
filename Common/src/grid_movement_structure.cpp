@@ -2389,6 +2389,73 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 #endif
 #endif
   
+  /*--- Setting the Free Form Deformation ---*/
+
+  if (config->GetDesign_Variable(0) == FFD_SETTING) {
+    
+    /*--- Definition of the FFD deformation class ---*/
+    
+    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    
+    /*--- Read the FFD information fron the grid file ---*/
+    
+    ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName(), true);
+    
+    /*--- If there is a FFDBox in the input file ---*/
+    
+    if (nFFDBox != 0) {
+      
+      /*--- If the FFDBox was not defined in the input file ---*/
+      
+      if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
+        cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
+      
+      /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
+      
+      CFreeFormDefBox FFDBox_unitary(1,1,1);
+      FFDBox_unitary.SetUnitCornerPoints();
+      
+      /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
+      
+      FFDBox_unitary.SetControlPoints_Parallelepiped();
+      
+      for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+        
+        /*--- Compute the support control points for the final FFD using the unitary box ---*/
+        
+        FFDBox_unitary.SetSupportCP(FFDBox[iFFDBox]);
+        
+        /*--- Compute control points in the support box ---*/
+        
+        FFDBox_unitary.SetSupportCPChange(FFDBox[iFFDBox]);
+        
+        /*--- Compute the parametric coordinates, it also find the points in
+         the FFDBox using the parametrics coordinates ---*/
+        
+        SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+        
+        /*--- Output original FFD FFDBox ---*/
+        
+        if (rank == MASTER_NODE) {
+          cout << "Writing a Tecplot file of the FFD boxes." << endl;
+          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+          }
+        }
+        
+      }
+      
+    }
+    
+    else {
+      
+      cout << "There are not FFD boxes in the mesh file!!" << endl;
+      exit(1);
+      
+    }
+    
+  }
+  
   /*--- Free Form deformation based ---*/
 
   if ((config->GetDesign_Variable(0) == FFD_CONTROL_POINT_2D) ||
@@ -2417,34 +2484,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       if (!GetFFDBoxDefinition()) {
         
-        if ((rank == MASTER_NODE) && (GetnFFDBox() != 0))
-          cout << endl <<"----------------- FFD technique (cartesian -> parametric) ---------------" << endl;
-        
-        /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
-        
-        CFreeFormDefBox FFDBox_unitary(1,1,1);
-        FFDBox_unitary.SetUnitCornerPoints();
-        
-        /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
-        
-        FFDBox_unitary.SetControlPoints_Parallelepiped();
-        
-        for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-          
-          /*--- Compute the support control points for the final FFD using the unitary box ---*/
-          
-          FFDBox_unitary.SetSupportCP(FFDBox[iFFDBox]);
-          
-          /*--- Compute control points in the support box ---*/
-          
-          FFDBox_unitary.SetSupportCPChange(FFDBox[iFFDBox]);
-          
-          /*--- Compute the parametric coordinates, it also find the points in
-           the FFDBox using the parametrics coordinates ---*/
-          
-          SetParametricCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
-          
-        }
+        cout << "There is not FFD box definition in the mesh file, run FFD_SETTING first !!" << endl;
+        exit(1);
         
       }
       
@@ -2540,6 +2581,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
       }
     }
+    
+    else {
+      
+      cout << "There are not FFD boxes in the mesh file!!" << endl;
+      exit(1);
+      
+    }
+    
   }
   
   /*--- External surface file based ---*/
@@ -2659,7 +2708,7 @@ void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
 void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
   
 	unsigned short iMarker, iDim;
-	unsigned long iVertex, iPoint;
+	unsigned long iVertex, iPoint, TotalVertex = 0, Counter = 0;
 	double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff;
 	int rank;
   unsigned short nDim = geometry->GetnDim();
@@ -2677,10 +2726,18 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	ParamCoordGuess[0]  = 0.5; ParamCoordGuess[1] = 0.5; ParamCoordGuess[2] = 0.5;
   CartCoord[0]        = 0.0; CartCoord[1]       = 0.0; CartCoord[2]       = 0.0;
 
+  /*--- Count the number of vertices ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		if (config->GetMarker_All_DV(iMarker) == YES)
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++)
+        TotalVertex++;
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (config->GetMarker_All_DV(iMarker) == YES) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
+        Counter++;
+
         /*--- Get the cartesian coordinates ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2695,7 +2752,20 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 					/*--- Find the parametric coordinate ---*/
           
 					ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, 1E-10, 99999);
-					
+          
+          if (Counter == 1) cout <<"0\% ";
+          else if (Counter == int(TotalVertex*0.1)) cout <<" 10\% ";
+          else if (Counter == int(TotalVertex*0.2)) cout <<" 20\% ";
+          else if (Counter == int(TotalVertex*0.3)) cout <<" 30\% ";
+          else if (Counter == int(TotalVertex*0.4)) cout <<" 40\% ";
+          else if (Counter == int(TotalVertex*0.5)) cout <<" 50\% ";
+          else if (Counter == int(TotalVertex*0.6)) cout <<" 60\% ";
+          else if (Counter == int(TotalVertex*0.7)) cout <<" 70\% ";
+          else if (Counter == int(TotalVertex*0.8)) cout <<" 80\% ";
+          else if (Counter == int(TotalVertex*0.9)) cout <<" 90\% ";
+          else if (Counter == TotalVertex) cout <<" 100\%."<< endl;
+          cout.flush();
+          
 					/*--- If the parametric coordinates are in (0,1) the point belongs to the FFDBox ---*/
           
 					if (((ParamCoord[0] >= - EPS) && (ParamCoord[0] <= 1.0 + EPS)) && 
@@ -6318,10 +6388,10 @@ double *CFreeFormDefBox::GetGradient_Numerical(double *uvw, double *xyz) {
 double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, double tol, 
 																										 unsigned long it_max) {
   
-	double IndepTerm[3], under_relax = 1.0, MinNormError, NormError;
+	double IndepTerm[3], under_relax = 0.1, MinNormError, NormError;
 	unsigned short iDim, RandonCounter;
 	unsigned long iter;
-	 
+  
 	/*--- Allocate the Hessian ---*/
   
 	Hessian = new double* [nDim];
@@ -6340,23 +6410,58 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 		/*--- The independent term of the solution of our system is -Gradient(sol_old) ---*/
     
 		Gradient = GetGradient_Analytical(ParamCoord, xyz);
-		
-		for (iDim = 0; iDim < nDim; iDim++) 
-			IndepTerm[iDim] = -Gradient[iDim];
     
-		/*--- Relaxation of the Newton Method ---*/
+    /*--- Relaxation of the Newton Method ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+			IndepTerm[iDim] = - under_relax * Gradient[iDim];
     
-		for (iDim = 0; iDim < nDim; iDim++) 
-			IndepTerm[iDim] = under_relax * IndepTerm[iDim];
+    /*--- Compute 2-point Finite differences Hessian ---*/
 		
-		/*--- Hessian = The Matrix of our system, getHessian(sol_old,xyz,...) ---*/
+    ParamCoord[0] -= 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[0] += 1E-6;
+    Hessian[0][0] = -Gradient[0]; Hessian[0][1] = -Gradient[1]; Hessian[0][2] = -Gradient[2];
+    ParamCoord[0] += 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[0] -= 1E-6;
+    Hessian[0][0] += Gradient[0]; Hessian[0][1] += Gradient[1]; Hessian[0][2] += Gradient[2];
+    Hessian[0][0] /= 2E-6; Hessian[0][1] /= 2E-6; Hessian[0][2] /= 2E-6;
+
+    ParamCoord[1] -= 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[1] += 1E-6;
+    Hessian[1][0] = -Gradient[0]; Hessian[1][1] = -Gradient[1]; Hessian[1][2] = -Gradient[2];
+    ParamCoord[1] += 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[1] -= 1E-6;
+    Hessian[1][0] += Gradient[0]; Hessian[1][1] += Gradient[1]; Hessian[1][2] += Gradient[2];
+    Hessian[1][0] /= 2E-6; Hessian[1][1] /= 2E-6; Hessian[1][2] /= 2E-6;
     
-		GetHessian_Analytical(ParamCoord, xyz, Hessian);
-		
+    ParamCoord[2] -= 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[2] += 1E-6;
+    Hessian[2][0] = -Gradient[0]; Hessian[2][1] = -Gradient[1]; Hessian[2][2] = -Gradient[2];
+    ParamCoord[2] += 1E-6; Gradient = GetGradient_Analytical(ParamCoord, xyz); ParamCoord[2] -= 1E-6;
+    Hessian[2][0] += Gradient[0]; Hessian[2][1] += Gradient[1]; Hessian[2][2] += Gradient[2];
+    Hessian[2][0] /= 2E-6; Hessian[2][1] /= 2E-6; Hessian[2][2] /= 2E-6;
+    
+//    cout << endl;
+//    cout <<"FINITE DIFFERENCES HESSIAN"<< endl;
+//
+//    cout << Hessian[0][0] <<" "<<  Hessian[0][1] <<" "<<  Hessian[0][2] << endl;
+//    cout << Hessian[1][0] <<" "<<  Hessian[1][1] <<" "<<  Hessian[1][2] << endl;
+//    cout << Hessian[2][0] <<" "<<  Hessian[2][1] <<" "<<  Hessian[2][2] << endl;
+
+
+//		/*--- Hessian = The Matrix of our system, getHessian(sol_old,xyz,...) ---*/
+//    
+//		GetHessian_Analytical(ParamCoord, xyz, Hessian);
+//
+//    cout << endl;
+//    cout <<"ANALYTICAL HESSIAN"<< endl;
+//    
+//    cout << Hessian[0][0] <<" "<<  Hessian[0][1] <<" "<<  Hessian[0][2] << endl;
+//    cout << Hessian[1][0] <<" "<<  Hessian[1][1] <<" "<<  Hessian[1][2] << endl;
+//    cout << Hessian[2][0] <<" "<<  Hessian[2][1] <<" "<<  Hessian[2][2] << endl;
+//
+//    cin.get();
+
+    
 		/*--- Gauss elimination algorithm. Solution will be stored on IndepTerm ---*/
+
+		Gauss_Elimination(Hessian, IndepTerm, nDim);
     
-		Gauss_Elimination(Hessian, IndepTerm, nDim);				
-		
 		/*--- Solution is in fact par_new-par_old; Must Update doing par_new=par_old + solution ---*/
     
 		for (iDim = 0; iDim < nDim; iDim++) 
@@ -6375,44 +6480,36 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 
 		MinNormError = min(NormError, MinNormError);
 		
-		/*--- If we have no convergence with 50 iterations probably we are out of the FFDBox, then 
-		 we try with a ramdom choice ---*/
+		/*--- If we have no convergence with 200 iterations probably we are in a local minima.
+     If we are outside the FFDBox then NormError > sqrt(3) ---*/
     
-		if (((iter % 50) == 0) && (iter != 0)) {
+		if ( (((iter % 500) == 0) && (iter != 0)) || (NormError > 1.8) ) {
 			RandonCounter++;
       for (iDim = 0; iDim < nDim; iDim++)
         ParamCoord[iDim] = double(rand())/double(RAND_MAX);
-		}
-		
-		if (RandonCounter == 100) {
       
-      if (nDim == 2) {
-        cout << "I can not localize this point: " << xyz[0] <<" "<< xyz[1] <<". Min Error: "<< MinNormError <<"."<< endl;
-        ParamCoord[0] = 0.0; ParamCoord[1] = 0.0;
-        IndepTerm[0] = 0.0; IndepTerm[1] = 0.0;
+      if (RandonCounter == 10) {
+        cout << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<"."<< endl;
+        break;
       }
-      else {
-        cout << "I can not localize this point: " << xyz[0] <<" "<< xyz[1] <<" "<< xyz[2] <<". Min Error: "<< MinNormError <<"."<< endl;
-        ParamCoord[0] = 0.0; ParamCoord[1] = 0.0; ParamCoord[2] = 0.0;
-        IndepTerm[0] = 0.0; IndepTerm[1] = 0.0; IndepTerm[2] = 0.0;
-      }
-      
-			break;
       
 		}
     
 	}
 	
-	/*--- There is no convergence of the point inversion algorithm ---*/
-  
-  if (((nDim == 3) && ((fabs(IndepTerm[0]) > tol) || (fabs(IndepTerm[1]) > tol) || (fabs(IndepTerm[2]) > tol))) ||
-      ((nDim == 2) && ((fabs(IndepTerm[0]) > tol) || (fabs(IndepTerm[1]) > tol))))
-		cout << "No Convergence Detected After " << iter << " Iterations" << endl;
-	
 	for (iDim = 0; iDim < nDim; iDim++) 
 		delete [] Hessian[iDim];
 	delete [] Hessian;
-	
+
+//  /*--- Compute analytical value ---*/
+//  
+//  cout <<" Numerics "<< ParamCoord[0] <<" "<<  ParamCoord[1] <<" "<<  ParamCoord[2] << endl;
+//  ParamCoord[0] = 1.0-(xyz[0]+0.1)/1.2;
+//  ParamCoord[1] = (xyz[1]+0.1)/0.2;
+//  ParamCoord[2] = 0.5;
+//  cout <<" Analytical " << ParamCoord[0] <<" "<<  ParamCoord[1] <<" "<<  ParamCoord[2] << endl;
+//  cin.get();
+  
 	/*--- Real Solution is now ParamCoord; Return it ---*/
   
 	return ParamCoord;
