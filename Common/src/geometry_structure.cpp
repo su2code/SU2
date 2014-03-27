@@ -6117,7 +6117,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron, kPoint, jPoint, iVertex;
   unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
-  int ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
+  idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
   int rank, size;
   
 #ifdef WINDOWS
@@ -6143,21 +6143,21 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
   if (GetnDim() == 2) {
     ne = nElem_Triangle;
-    elmnts = new int [ne*3];
+    elmnts = new idx_t [ne*3];
     etype = 1;
   }
   if (GetnDim() == 3) {
     ne = nElem_Tetrahedron;
-    elmnts = new int [ne*4];
+    elmnts = new idx_t [ne*4];
     etype = 2;
   }
   
   nn = nPoint;
   numflag = 0;
   nparts = nDomain;
-  epart = new int [ne];
-  npart = new int [nn];
-  eptr  = new int[ne+1];
+  epart = new idx_t [ne];
+  npart = new idx_t [nn];
+  eptr  = new idx_t[ne+1];
   if (nparts < 2) {
     cout << "The number of domains must be greater than 1!" << endl;
     exit(1);
@@ -6282,6 +6282,8 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
   delete[] epart;
   delete[] npart;
+  delete[] elmnts;
+  delete[] eptr;
   
 #endif
 #endif
