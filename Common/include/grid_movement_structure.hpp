@@ -447,23 +447,7 @@ public:
 	 * \param[in] m - Lower coefficient.
 	 * \return Value of the binomial coefficient n over m.
 	 */		
-	unsigned short Binomial(unsigned short n, unsigned short m);
-	
-	/*! 
-	 * \brief Get the binomial (optimized) coefficient n over m, defined as n!/(m!(n-m)!)
-	 * \note If the denominator is 0, the value is 1.
-	 * \param[in] n - Upper coefficient.
-	 * \param[in] m - Lower coefficient.
-	 * \return Value of the binomial coefficient n over m.
-	 */		
-	unsigned long BinomialOpt(unsigned long n, unsigned long m);
-
-	/*! 
-	 * \brief The Factorial Number n! is defined as n!=n*(n-1)*...*2*1.
-	 * \param[in] n - Index of the factorial.
-	 * \return Value of the factorial.
-	 */		
-	unsigned short Factorial(unsigned short n);
+	unsigned long Binomial(unsigned short n, unsigned short m);
 	
 	/*! 
 	 * \brief Get the order in the l direction of the FFD FFDBox.
@@ -526,7 +510,7 @@ public:
    * \param[in] analytical - Compute the analytical gradient.
 	 * \return Value of the analytical gradient.
 	 */		
-	double *GetFFDGradient(double *val_coord, double *xyz, bool analytical);
+	double *GetFFDGradient(double *val_coord, double *xyz);
 	
 	/*!
 	 * \brief The routine that computes the Hessian of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 evaluated at (u,v,w)
@@ -536,7 +520,7 @@ public:
 	 * \param[in] xyz - Cartesians coordinates of the target point to compose the functional.
 	 * \param[in] val_Hessian - Value of the hessian.
 	 */
-	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian, bool analytical);
+	void GetFFDHessian(double *uvw, double *xyz, double **val_Hessian);
   
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u,v,w)=||X(u,v,w)-(x,y,z)||^2 = 
@@ -623,14 +607,6 @@ public:
 	 * \return __________.
 	 */		
 	double GetNorm(double *a);
-	
-	/*! 
-	 * \brief Gauss method for solving a linear system.
-	 * \param[in] A - __________.
-	 * \param[in] rhs - __________.
-	 * \param[in] nVar - __________.
-	 */		
-	void Gauss_Elimination(double** A, double* rhs, unsigned short nVar);
 	
 	/*! 
 	 * \brief Set the tag that identify a FFDBox.
