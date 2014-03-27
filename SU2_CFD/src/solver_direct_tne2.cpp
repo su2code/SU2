@@ -912,7 +912,9 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
 }
 
 
-void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry,
+                                                CConfig *config) {
+  
 	unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint;
   unsigned long nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
