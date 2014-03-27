@@ -31,11 +31,12 @@ int main(int argc, char *argv[]) {
 	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
-  char grid_file[200];
+  char grid_file[200], buffer_char[50], out_file[200];
 
  	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   
   /*--- MPI initialization ---*/
 
@@ -43,9 +44,11 @@ int main(int argc, char *argv[]) {
 #ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
 #else
 	MPI::Init(argc,argv);
 	rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
 #endif
 	
@@ -105,17 +108,34 @@ int main(int argc, char *argv[]) {
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-	
+
+  
   /*--- Boundary geometry preprocessing ---*/
   
 	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
 	boundary->SetVertex();
-	
+  
+  /*--- Compute elements surrounding points & points surrounding points ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
+  boundary->SetEsuP();
+	boundary->SetPsuP();
+  boundary->SetEdges();
+
 	/*--- Create the control volume structures ---*/
   
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl;
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
+  /*--- Compute the surface curvature ---*/
+  
+  if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+  boundary->ComputeSurf_Curvature(config);
+  
+  if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface curvature." << endl;
+  if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
+  strcpy (out_file, "Surface_Curvature"); strcat(out_file, buffer_char); boundary->SetBoundTecPlot(out_file, true, config);
+  
 	/*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
