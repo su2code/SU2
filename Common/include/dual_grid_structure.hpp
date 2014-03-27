@@ -153,6 +153,7 @@ private:
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
 	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
   double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
+  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GDC). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
 
@@ -220,6 +221,18 @@ public:
 	 */
 	double GetWall_Distance(void);
 	
+  /*!
+	 * \brief Set the value of the curvature at a surface node.
+	 * \param[in] val_distance - Value of the curvature.
+	 */
+	void SetCurvature(double val_curvature);
+	
+	/*!
+	 * \brief Get the value of the curvature at a surface node.
+	 * \return Value of the curvature.
+	 */
+	double GetCurvature(void);
+  
   /*!
 	 * \brief Get the value of the distance to a sharp edge
 	 * \return Value of the distance to the nearest wall.
