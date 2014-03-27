@@ -27,7 +27,6 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	/*--- Variable definitions ---*/
 	unsigned short iZone, nZone;
-	unsigned long iExtIter, nExtIter;
 	ofstream ConvHist_file;
 	char file_name[200];
 	int rank = MASTER_NODE;
@@ -121,6 +120,7 @@ int main(int argc, char *argv[]) {
     double Physical_dt, Physical_t;
     unsigned long iExtIter = 0;
     bool StopCalc = false;
+    bool SolutionInstantiated = false;
     
     /*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
     if (config[ZONE_0]->GetWrt_Unsteady() && config[ZONE_0]->GetRestart())
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
           (((config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
             (config[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
            ((iExtIter == 0) || (iExtIter % config[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
-          
+
         /*--- Set the current iteration number in the config class. ---*/
         config[ZONE_0]->SetExtIter(iExtIter);
         
@@ -150,8 +150,13 @@ int main(int argc, char *argv[]) {
         for (iZone = 0; iZone < nZone; iZone++) {
           
           /*--- Either instantiate the solution class or load a restart file. ---*/
-          if (iExtIter == 0 || (config[ZONE_0]->GetRestart() && iExtIter == config[ZONE_0]->GetUnst_RestartIter()))
+          if (SolutionInstantiated == false && (iExtIter == 0 ||
+              (config[ZONE_0]->GetRestart() && (iExtIter == config[ZONE_0]->GetUnst_RestartIter() ||
+                                                iExtIter % config[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
+                                                iExtIter+1 == config[ZONE_0]->GetnExtIter())))) {
             solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], MESH_0);
+            SolutionInstantiated = true;
+          }
           else
             solver[iZone]->LoadRestart(geometry, &solver, config[iZone], int(MESH_0));
         }
