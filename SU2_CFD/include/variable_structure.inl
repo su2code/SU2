@@ -290,7 +290,11 @@ inline void CVariable::SetPrimVar(unsigned short val_var, double val_prim) { }
 
 inline void CVariable::SetPrimVar(double *val_prim) { }
 
-inline void CVariable::SetConsVar_Compressible(CConfig *config, double *V, double *U) { return; }
+inline bool CVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
+                                    double *val_dPdU, double *val_dTdU,
+                                    double *val_dTvedU) { return false; }
+
+inline void CVariable::Prim2ConsVar(CConfig *config, double *V, double *U) { return; }
 
 inline double *CVariable::GetPrimVar(void) { return NULL; }
 

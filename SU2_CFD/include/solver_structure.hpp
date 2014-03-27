@@ -5640,6 +5640,13 @@ public:
 	 */
 	void SetPrimVar_Limiter(CGeometry *geometry, CConfig *config);
   
+  /*!
+	 * \brief Compute slope limiter.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
 	 * \param[in] iPoint - Index of the grid point

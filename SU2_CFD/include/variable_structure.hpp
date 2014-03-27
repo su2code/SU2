@@ -1021,7 +1021,13 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual void SetConsVar_Compressible(CConfig *config, double *V, double *U);
+  virtual bool Cons2PrimVar(CConfig *config, double *U, double *V,
+                            double *dPdU, double *dTdU,
+                            double *dTvedU);
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void Prim2ConsVar(CConfig *config, double *V, double *U);
   
   /*!
 	 * \brief A virtual member.
@@ -3204,7 +3210,13 @@ public:
   /*!
 	 * \brief Set all the conserved variables.
 	 */
-	void SetConsVar_Compressible(CConfig *config, double *V, double *U);
+	bool Cons2PrimVar(CConfig *config, double *U, double *V, double *dPdU,
+                    double *dTdU, double *dTvedU);
+  
+  /*!
+	 * \brief Set all the conserved variables.
+	 */
+	void Prim2ConsVar(CConfig *config, double *V, double *U);
 	
 	/*!
 	 * \brief Get the primitive variables.
