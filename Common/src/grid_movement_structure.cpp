@@ -6179,8 +6179,8 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
 	else FFDBox_file.open(FFDBox_filename, ios::out | ios::app);
 
 	FFDBox_file << "ZONE T= \"ID " << iFFDBox;
-  if (original) FFDBox_file << " (Original FFD)\", C=BLACK";
-  else FFDBox_file << " (Deformed FFD)\", C=RED";
+  if (original) FFDBox_file << " (Original FFD)\"";
+  else FFDBox_file << " (Deformed FFD)\"";
   if (nDim == 2) FFDBox_file << ", I="<<lDegree+1<<", J="<<mDegree+1<<", DATAPACKING=POINT" << endl;
   else FFDBox_file << ", I="<<lDegree+1<<", J="<<mDegree+1<<", K="<<nDegree+1<<", DATAPACKING=POINT" << endl;
 
@@ -6326,117 +6326,67 @@ double CFreeFormDefBox::GetFFDObjFunc(double *val_coord, double *xyz) {
   
 }
 
-double *CFreeFormDefBox::GetFFDGradient(double *val_coord, double *xyz, bool analytical) {
+double *CFreeFormDefBox::GetFFDGradient(double *val_coord, double *xyz) {
   
 	unsigned short iDim, jDim, lmn[3];
-	
-  if (analytical) {
-    
-    lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
-    
-    for (iDim = 0; iDim < nDim; iDim++) Gradient[iDim] = 0.0;
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-      for (jDim = 0; jDim < nDim; jDim++)
-        Gradient[jDim] += GetDerivative2(val_coord, iDim, xyz,  lmn) *
-        GetDerivative3(val_coord, iDim, jDim, lmn);
-    
-  }
-  else {
-    
-    ParamCoord[0] -= 1E-8; val_coord = EvalCartesianCoord(ParamCoord); ParamCoord[0] += 1E-8;
-    ObjFunc = GetFFDObjFunc(val_coord, xyz); Gradient[0] = -ObjFunc;
-    ParamCoord[0] += 1E-8; val_coord = EvalCartesianCoord(ParamCoord); ParamCoord[0] -= 1E-8;
-    ObjFunc = GetFFDObjFunc(val_coord, xyz); Gradient[0] += ObjFunc; Gradient[0] /= 2E-8;
-    
-    ParamCoord[1] -= 1E-8; val_coord = EvalCartesianCoord(ParamCoord); ParamCoord[1] += 1E-8;
-    ObjFunc = GetFFDObjFunc(val_coord, xyz); Gradient[1] = -ObjFunc;
-    ParamCoord[1] += 1E-8; val_coord = EvalCartesianCoord(ParamCoord); ParamCoord[1] -= 1E-8;
-    ObjFunc = GetFFDObjFunc(val_coord, xyz); Gradient[1] += ObjFunc; Gradient[1] /= 2E-8;
-    
-    ParamCoord[2] -= 1E-8; val_coord = EvalCartesianCoord(ParamCoord); ParamCoord[2] += 1E-8;
-    ObjFunc = GetFFDObjFunc(val_coord, xyz); Gradient[2] = -ObjFunc;
-    ParamCoord[2] += 1E-8; val_coord = EvalCartesianCoord(ParamCoord); ParamCoord[2] -= 1E-8;
-    ObjFunc = GetFFDObjFunc(val_coord, xyz); Gradient[2] += ObjFunc; Gradient[2] /= 2E-8;
-    
-  }
-	
+  
+  /*--- Set the Degree of the Berstein polynomials ---*/
+  
+  lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
+  
+  for (iDim = 0; iDim < nDim; iDim++) Gradient[iDim] = 0.0;
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      Gradient[jDim] += GetDerivative2(val_coord, iDim, xyz,  lmn) *
+      GetDerivative3(val_coord, iDim, jDim, lmn);
+  
 	return Gradient;
   
 }
 
-void CFreeFormDefBox::GetFFDHessian(double *uvw, double *xyz, double **val_Hessian, bool analytical) {
+void CFreeFormDefBox::GetFFDHessian(double *uvw, double *xyz, double **val_Hessian) {
   
-  unsigned short iDim, jDim;
-	unsigned short l, m, n, lmn[3];
+  unsigned short iDim, jDim, lmn[3];
   
-  if (analytical) {
+  /*--- Set the Degree of the Berstein polynomials ---*/
+  
+  lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      val_Hessian[iDim][jDim] = 0.0;
+  
+  /*--- Note that being all the functions linear combinations of polynomials, they are C^\infty,
+   and the Hessian will be symmetric; no need to compute the under-diagonal part, for example ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    val_Hessian[0][0] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,0,lmn) +
+    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,0,lmn);
     
-    /*--- Set the Degree of the Berstein polynomials ---*/
+    val_Hessian[1][1] += 2.0 * GetDerivative3(uvw,iDim,1,lmn) * GetDerivative3(uvw,iDim,1,lmn) +
+    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,1,1,lmn);
     
-    lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
+    val_Hessian[2][2] += 2.0 * GetDerivative3(uvw,iDim,2,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
+    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,2,2,lmn);
     
-    /*--- Berstein polynomials degrees ---*/
+    val_Hessian[0][1] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,1,lmn) +
+    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,1,lmn);
     
-    l = lmn[0]; m = lmn[1]; n = lmn[2];
+    val_Hessian[0][2] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
+    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,2,lmn);
     
-    for (iDim = 0; iDim < nDim; iDim++)
-      for (jDim = 0; jDim < nDim; jDim++)
-        val_Hessian[iDim][jDim] = 0.0;
-    
-    /*--- Note that being all the functions linear combinations of polynomials, they are C^\infty,
-     and the Hessian will be symmetric; no need to compute the under-diagonal part, for example ---*/
-    
-    for (iDim = 0; iDim < nDim; iDim++) {
-      val_Hessian[0][0] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,0,lmn) +
-      GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,0,lmn);
-      
-      val_Hessian[1][1] += 2.0 * GetDerivative3(uvw,iDim,1,lmn) * GetDerivative3(uvw,iDim,1,lmn) +
-      GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,1,1,lmn);
-      
-      val_Hessian[2][2] += 2.0 * GetDerivative3(uvw,iDim,2,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
-      GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,2,2,lmn);
-      
-      val_Hessian[0][1] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,1,lmn) +
-      GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,1,lmn);
-      
-      val_Hessian[0][2] += 2.0 * GetDerivative3(uvw,iDim,0,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
-      GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,0,2,lmn);
-      
-      val_Hessian[1][2] += 2.0 * GetDerivative3(uvw,iDim,1,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
-      GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,1,2,lmn);
-    }
-    
-    val_Hessian[1][0] = val_Hessian[0][1];
-    val_Hessian[2][0] = val_Hessian[0][2];
-    val_Hessian[2][1] = val_Hessian[1][2];
-    
+    val_Hessian[1][2] += 2.0 * GetDerivative3(uvw,iDim,1,lmn) * GetDerivative3(uvw,iDim,2,lmn) +
+    GetDerivative2(uvw,iDim,xyz,lmn) * GetDerivative5(uvw,iDim,1,2,lmn);
   }
-  else {
-    
-    ParamCoord[0] -= 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz, false); ParamCoord[0] += 1E-8;
-    Hessian[0][0] = -Gradient[0]; Hessian[0][1] = -Gradient[1]; Hessian[0][2] = -Gradient[2];
-    ParamCoord[0] += 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz, false); ParamCoord[0] -= 1E-8;
-    Hessian[0][0] += Gradient[0]; Hessian[0][1] += Gradient[1]; Hessian[0][2] += Gradient[2];
-    Hessian[0][0] /= 2E-8; Hessian[0][1] /= 2E-8; Hessian[0][2] /= 2E-8;
-    
-    ParamCoord[1] -= 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz, false); ParamCoord[1] += 1E-8;
-    Hessian[1][0] = -Gradient[0]; Hessian[1][1] = -Gradient[1]; Hessian[1][2] = -Gradient[2];
-    ParamCoord[1] += 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz, false); ParamCoord[1] -= 1E-8;
-    Hessian[1][0] += Gradient[0]; Hessian[1][1] += Gradient[1]; Hessian[1][2] += Gradient[2];
-    Hessian[1][0] /= 2E-8; Hessian[1][1] /= 2E-8; Hessian[1][2] /= 2E-8;
-    
-    ParamCoord[2] -= 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz, false); ParamCoord[2] += 1E-8;
-    Hessian[2][0] = -Gradient[0]; Hessian[2][1] = -Gradient[1]; Hessian[2][2] = -Gradient[2];
-    ParamCoord[2] += 1E-8; Gradient = GetFFDGradient(ParamCoord, xyz, false); ParamCoord[2] -= 1E-8;
-    Hessian[2][0] += Gradient[0]; Hessian[2][1] += Gradient[1]; Hessian[2][2] += Gradient[2];
-    Hessian[2][0] /= 2E-8; Hessian[2][1] /= 2E-8; Hessian[2][2] /= 2E-8;
-    
-  }
+  
+  val_Hessian[1][0] = val_Hessian[0][1];
+  val_Hessian[2][0] = val_Hessian[0][2];
+  val_Hessian[2][1] = val_Hessian[1][2];
   
 }
 
-double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, double tol, 
+double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, double tol,
 																										 unsigned long it_max) {
   
 	double IndepTerm[3], SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3];
@@ -6460,13 +6410,13 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 		  
 		/*--- The independent term of the solution of our system is -Gradient(sol_old) ---*/
 
-		Gradient = GetFFDGradient(ParamCoord, xyz, false);
+		Gradient = GetFFDGradient(ParamCoord, xyz);
     
     for (iDim = 0; iDim < nDim; iDim++) IndepTerm[iDim] = - Gradient[iDim];
 
 		/*--- Hessian = The Matrix of our system, getHessian(sol_old,xyz,...) ---*/
     
-		GetFFDHessian(ParamCoord, xyz, Hessian, false);
+		GetFFDHessian(ParamCoord, xyz, Hessian);
     
     /*--- Adjoint to Hessian ---*/
 
@@ -6497,13 +6447,6 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
         IndepTerm[iDim] = Temp[iDim];
       }
     }
-
-//    /*--- Gauss elimination algorithm. Solution will be stored on IndepTerm ---*/
-//    if (Determinant != 0) Gauss_Elimination(Hessian, IndepTerm, nDim);
-//    else {
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        IndepTerm[iDim] = 0.01*IndepTerm[iDim];
-//    }
     
 		/*--- Update with Successive over-relaxation ---*/
     
@@ -6527,12 +6470,12 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 		/*--- If we have no convergence with 200 iterations probably we are in a local minima.
      If we are outside the FFDBox then NormError > sqrt(3) ---*/
     
-		if ( (((iter % 1000) == 0) && (iter != 0)) || (NormError > 1.8) ) {
+		if ( (((iter % 200) == 0) && (iter != 0)) || (NormError > 1.8) ) {
 			RandonCounter++;
       for (iDim = 0; iDim < nDim; iDim++)
         ParamCoord[iDim] = double(rand())/double(RAND_MAX);
       
-      if (RandonCounter == 100) {
+      if (RandonCounter == 50) {
         cout << endl << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<"."<< endl;
         break;
       }
@@ -6551,35 +6494,21 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
   
 }
 
-unsigned short CFreeFormDefBox::Binomial (unsigned short n, unsigned short m) {
-	unsigned short result;
-
-	if ( (m == 0) || (m == n) ) result = 1;
-	else result = Factorial(n) / (Factorial(n-m)*Factorial(m));
-		
-	return result;
-}
-
-unsigned long CFreeFormDefBox::BinomialOpt (unsigned long n, unsigned long m) {
-	unsigned long b[100], i , j;
-	if (n+1 > 100) cout << "ERROR!!! Increase the size of b in the BinomialOpt subroutine!" <<endl;
-	
-	b[0] = 1;
+unsigned long CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
+  
+  unsigned short i, j;
+  unsigned long binomial[1000];
+  
+	binomial[0] = 1;
 	for (i = 1; i <= n; ++i) {
-		b[i] = 1;
-		for(j = i-1U; j > 0; --j)
-			b[j] += b[j-1U];
+		binomial[i] = 1;
+		for(j = i-1U; j > 0; --j) {
+			binomial[j] += binomial[j-1U];
+    }
 	}
-	
-	return b[m];
-}
 
-unsigned short CFreeFormDefBox::Factorial (unsigned short n) {
-	
-	if ( n > 1 ) n = n*Factorial(n-1);
-	if ( n == 0 ) n = 1;
-	
-	return n;
+	return binomial[m];
+  
 }
 
 
@@ -6756,33 +6685,4 @@ double CFreeFormDefBox::GetDerivative5(double *uvw, unsigned short dim, unsigned
 			}
 	
 	return value;
-}
-
-void CFreeFormDefBox::Gauss_Elimination(double** A, double* rhs, unsigned short nVar) {
-	unsigned short jVar, kVar, iVar;
-    double weight, aux;
-	 
-  /*--- Transform system in Upper Matrix ---*/
-  
-  for (iVar = 1; iVar < nVar; iVar++) {
-
-    for (jVar = 0; jVar < iVar; jVar++) {
-      weight = A[iVar][jVar]/A[jVar][jVar];
-      for (kVar = jVar; kVar < nVar; kVar++)
-        A[iVar][kVar] -= weight*A[jVar][kVar];
-      rhs[iVar] -= weight*rhs[jVar];
-    }
-  }
-  
-  /*--- Backwards substitution ---*/
-  
-  rhs[nVar-1] = rhs[nVar-1]/A[nVar-1][nVar-1];
-  for (short iVar = nVar-2; iVar >= 0; iVar--) {
-    aux = 0;
-    for (jVar = iVar+1; jVar < nVar; jVar++)
-      aux += A[iVar][jVar]*rhs[jVar];
-    rhs[iVar] = (rhs[iVar]-aux)/A[iVar][iVar];
-    if (iVar == 0) break;
-  }
-  
 }
