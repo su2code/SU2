@@ -5029,25 +5029,26 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       cout.unsetf(ios::fixed);
       
       delete [] residual_flow;
-      delete [] residual_levelset;
-      delete [] residual_TNE2;
       delete [] residual_turbulent;
       delete [] residual_transition;
+      delete [] residual_TNE2;
+      delete [] residual_levelset;
       delete [] residual_wave;
       delete [] residual_fea;
       delete [] residual_heat;
       
       delete [] residual_adjflow;
+      delete [] residual_adjturbulent;
       delete [] residual_adjTNE2;
       delete [] residual_adjlevelset;
-      delete [] residual_adjturbulent;
       
       delete [] Surface_CLift;
       delete [] Surface_CDrag;
       delete [] Surface_CMx;
       delete [] Surface_CMy;
       delete [] Surface_CMz;
-      
+      delete [] aeroelastic_pitch;
+      delete [] aeroelastic_plunge;
     }
   }
 }
