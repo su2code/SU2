@@ -847,57 +847,60 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
   AddScalarOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /* DESCRIPTION: Reference coefficient for detecting sharp edges */
-  AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-  /* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
-  AddScalarOption("REF_PRESSURE", Pressure_Ref, 1.0);
-  /* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
-  AddScalarOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
-  /* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
-  AddScalarOption("REF_DENSITY", Density_Ref, 1.0);
-  /* DESCRIPTION: Reference velocity (incompressible only) */
-  AddScalarOption("REF_VELOCITY", Velocity_Ref, -1.0);
-  /* DESCRIPTION: Reference viscosity (incompressible only) */
-  AddScalarOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
+	AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
+	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
+	AddScalarOption("REF_PRESSURE", Pressure_Ref, 1.0);
+	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
+	AddScalarOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
+	/* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
+	AddScalarOption("REF_DENSITY", Density_Ref, 1.0);
+	/* DESCRIPTION: Reference velocity (incompressible only) */
+	AddScalarOption("REF_VELOCITY", Velocity_Ref, -1.0);
+	/* DESCRIPTION: Reference viscosity (incompressible only) */
+	AddScalarOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   
-  /*--- Options related to the reacting gas mixtures ---*/
-  /* CONFIG_CATEGORY: Reacting Flow */
+	/*--- Options related to the reacting gas mixtures ---*/
+	/* CONFIG_CATEGORY: Reacting Flow */
   
-  /* DESCRIPTION: Specify chemical model for multi-species simulations */
-  AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
-  /* DESCRIPTION:  */
-  AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
+	/* DESCRIPTION: Specify chemical model for multi-species simulations */
+	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
+	/* DESCRIPTION:  */
+	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
   
-  /*--- Options related to free surface simulation ---*/
-  /* CONFIG_CATEGORY: Free surface simulation */
+	/*--- Options related to free surface simulation ---*/
+	/* CONFIG_CATEGORY: Free surface simulation */
   
-  /* DESCRIPTION: Ratio of density for two phase problems */
-  AddScalarOption("RATIO_DENSITY", RatioDensity, 0.1);
-  /* DESCRIPTION: Ratio of viscosity for two phase problems */
-  AddScalarOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
-  /* DESCRIPTION: Location of the freesurface (y or z coordinate) */
-  AddScalarOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
-  /* DESCRIPTION: Free surface depth surface (x or y coordinate) */
-  AddScalarOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
-  /* DESCRIPTION: Thickness of the interface in a free surface problem */
-  AddScalarOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
-  /* DESCRIPTION: Free surface damping coefficient */
-  AddScalarOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
-  /* DESCRIPTION: Free surface damping length (times the baseline wave) */
-  AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
-  /* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
-  AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
+	/* DESCRIPTION: Ratio of density for two phase problems */
+	AddScalarOption("RATIO_DENSITY", RatioDensity, 0.1);
+	/* DESCRIPTION: Ratio of viscosity for two phase problems */
+	AddScalarOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
+	/* DESCRIPTION: Location of the freesurface (y or z coordinate) */
+	AddScalarOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
+	/* DESCRIPTION: Free surface depth surface (x or y coordinate) */
+	AddScalarOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
+	/* DESCRIPTION: Thickness of the interface in a free surface problem */
+	AddScalarOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
+	/* DESCRIPTION: Free surface damping coefficient */
+	AddScalarOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
+	/* DESCRIPTION: Free surface damping length (times the baseline wave) */
+	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
+	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
+	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
   
-  /*--- Options related to the grid deformation ---*/
-  // these options share nDV as their size in the option references; not a good idea
-  /* CONFIG_CATEGORY: Grid deformation */
+	/*--- Options related to the grid deformation ---*/
+	// these options share nDV as their size in the option references; not a good idea
+	/* CONFIG_CATEGORY: Grid deformation */
   
-  /* DESCRIPTION: Kind of deformation */
-  AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
-  /* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
-  AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
-  /* DESCRIPTION: New value of the shape deformation */
-  AddListOption("DV_VALUE", nDV, DV_Value);
-  /* DESCRIPTION: Parameters of the shape deformation
+	/* DESCRIPTION: Kind of deformation */
+	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
+	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
+	/* DESCRIPTION: New value of the shape deformation */
+	AddListOption("DV_VALUE", nDV, DV_Value);
+	/* DESCRIPTION: Parameters of the shape deformation
+   - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
+   - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
+   - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
    - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
    - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
@@ -912,17 +915,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
-   - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind )
-   - FFD_VOLUME ( FFDBox ID, i_Ind, j_Ind ) */
-  AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
-  /* DESCRIPTION: Hold the grid fixed in a region */
-  AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
-  default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-  default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
-  /* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
-  /* DESCRIPTION: Visualize the deformation */
-  AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
+   - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
+	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
+	/* DESCRIPTION: Hold the grid fixed in a region */
+	AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
+	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
+	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
+	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
+	/* DESCRIPTION: Visualize the deformation */
+	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
@@ -2983,59 +2985,72 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   
   cout << "Input mesh file name: " << Mesh_FileName << endl;
   
-  if (Divide_Element) cout << "Divide grid elements into triangles and tetrahedra." << endl;
+	if (val_software == SU2_GPC) {
+		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
+	}
+
+	if (val_software == SU2_MAC) {
+		switch (Kind_Adaptation) {
+		case FULL: case WAKE: case TWOPHASE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
+			break;
+		case GRAD_FLOW:
+			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			break;
+		case GRAD_ADJOINT:
+			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
+			break;
+		case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE_ROBUST: case COMPUTABLE: case REMAINING:
+			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
+			break;
+		}
+	}
+
+	if (val_software == SU2_MDC) {
+		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
+		cout << "Grid deformation using a linear elasticity method." << endl;
+
+    if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
+  }
   
   if (val_software == SU2_GPC) {
-    cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
+  cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
   
-  if (val_software == SU2_MAC) {
-    switch (Kind_Adaptation) {
-      case FULL: case WAKE: case TWOPHASE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
-        break;
-      case GRAD_FLOW:
-        cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-        break;
-      case GRAD_ADJOINT:
-        cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-        break;
-      case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE_ROBUST: case COMPUTABLE: case REMAINING:
-        cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-        cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
-        break;
-    }
-  }
-  
-  if (val_software == SU2_MDC) {
-    cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
-    cout << "Grid deformation using a linear elasticity method." << endl;
+  if ((val_software == SU2_MDC) || (val_software == SU2_GPC)) {
     
-    if (Design_Variable[0] != NO_DEFORMATION && Design_Variable[0] != SURFACE_FILE) {
-      if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
-      cout << "Geo. design var. definition (markers <-> value def. <-> param):" <<endl;
-      for (unsigned short iDV = 0; iDV < nDV; iDV++) {
-        switch (Design_Variable[iDV]) {
-          case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
-          case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
-          case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
-          case FOURIER: cout << "Fourier <-> " ; break;
-          case SPHERICAL: cout << "Spherical design <-> " ; break;
-          case MACH_NUMBER: cout << "Mach number <-> " ; break;
-          case DISPLACEMENT: cout << "Displacement design variable."; break;
-          case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
-          case PARABOLIC: cout << "Parabolic <-> "; break;
-          case OBSTACLE: cout << "Obstacle <-> "; break;
-          case AIRFOIL: cout << "Airfoil <-> "; break;
-          case STRETCH: cout << "Stretch <-> "; break;
-          case ROTATION: cout << "Rotation <-> "; break;
-          case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
-          case FFD_DIHEDRAL_ANGLE: cout << "FFD (dihedral angle) <-> "; break;
-          case FFD_TWIST_ANGLE: cout << "FFD (twist angle) <-> "; break;
-          case FFD_ROTATION: cout << "FFD (rotation) <-> "; break;
-          case FFD_CAMBER: cout << "FFD (camber) <-> "; break;
-          case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
-          case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
-        }
+    cout << "Design variables definition (markers <-> value <-> param):" <<endl;
+    
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      
+      switch (Design_Variable[iDV]) {
+        case FFD_SETTING:           cout << "Setting the FFD box structure." ; break;
+        case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
+        case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
+        case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
+        case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+        case COSINE_BUMP:           cout << "Cosine bump <-> " ; break;
+        case FOURIER:               cout << "Fourier <-> " ; break;
+        case SPHERICAL:             cout << "Spherical design <-> " ; break;
+        case DISPLACEMENT:          cout << "Displacement design variable."; break;
+        case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
+        case PARABOLIC:             cout << "Parabolic <-> "; break;
+        case OBSTACLE:              cout << "Obstacle <-> "; break;
+        case AIRFOIL:               cout << "Airfoil <-> "; break;
+        case STRETCH:               cout << "Stretch <-> "; break;
+        case ROTATION:              cout << "Rotation <-> "; break;
+        case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
+        case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
+        case FFD_TWIST_ANGLE:       cout << "FFD (twist angle) <-> "; break;
+        case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
+        case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
+        case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+        case SURFACE_FILE:          cout << "Surface file based deformation." ; break;
+      }
+      
+      if ((Design_Variable[iDV] != FFD_SETTING) &&
+          (Design_Variable[iDV] != SURFACE_FILE)) {
+        
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
           cout << Marker_DV[iMarker_DV];
           if (iMarker_DV < nMarker_DV-1) cout << ", ";
@@ -3043,7 +3058,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         cout << DV_Value[iDV] << " <-> ";
         
-        if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
+        if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
+        if (Design_Variable[iDV] == SURFACE_FILE) nParamDV = 0;
+        if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
+        if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
+        if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
         if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
         if (Design_Variable[iDV] == SPHERICAL) nParamDV = 3;
         if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
@@ -3061,7 +3080,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
         if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
-        if (Design_Variable[iDV] == FFD_VOLUME) nParamDV = 3;
         
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
           if (iParamDV == 0) cout << "( ";
@@ -3069,154 +3087,94 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (iParamDV < nParamDV-1) cout << ", ";
           else cout <<" )"<<endl;
         }
-      }
-    }
-  }
-  
-  if (((val_software == SU2_CFD) && ( Linearized )) || (val_software == SU2_GPC)) {
-    cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
-    cout << "Geo. design var. definition (markers <-> old def., new def. <-> param):" <<endl;
-    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
-      switch (Design_Variable[iDV]) {
-        case NO_DEFORMATION: cout << "There isn't any deformation." ; break;
-        case HICKS_HENNE: cout << "Hicks Henne <-> " ; break;
-        case COSINE_BUMP: cout << "Cosine bump <-> " ; break;
-        case FOURIER: cout << "Fourier <-> " ; break;
-        case SPHERICAL: cout << "Spherical design <-> " ; break;
-        case MACH_NUMBER: cout << "Mach number <-> " ; break;
-        case DISPLACEMENT: cout << "Displacement design variable."; break;
-        case NACA_4DIGITS: cout << "NACA four digits <-> "; break;
-        case PARABOLIC: cout << "Parabolic <-> "; break;
-        case OBSTACLE: cout << "Obstacle <-> "; break;
-        case AIRFOIL: cout << "Airfoil <-> "; break;
-        case STRETCH: cout << "Stretch <-> "; break;
-        case ROTATION: cout << "Rotation <-> "; break;
-        case FFD_CONTROL_POINT: cout << "FFD (control point) <-> "; break;
-        case FFD_DIHEDRAL_ANGLE: cout << "FFD (dihedral angle) <-> "; break;
-        case FFD_TWIST_ANGLE: cout << "FFD (twist angle) <-> "; break;
-        case FFD_ROTATION: cout << "FFD (rotation) <-> "; break;
-        case FFD_CAMBER: cout << "FFD (camber) <-> "; break;
-        case FFD_THICKNESS: cout << "FFD (thickness) <-> "; break;
-        case FFD_VOLUME: cout << "FFD (volume) <-> "; break;
-      }
-      for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
-        cout << Marker_DV[iMarker_DV];
-        if (iMarker_DV < nMarker_DV-1) cout << ", ";
-        else cout << " <-> ";
-      }
-      cout << DV_Value[iDV] << " <-> ";
-      
-      if (Design_Variable[iDV] == NO_DEFORMATION) nParamDV = 0;
-      if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
-      if (Design_Variable[iDV] == COSINE_BUMP) nParamDV = 3;
-      if (Design_Variable[iDV] == FOURIER) nParamDV = 3;
-      if (Design_Variable[iDV] == SPHERICAL) nParamDV = 3;
-      if (Design_Variable[iDV] == DISPLACEMENT) nParamDV = 3;
-      if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
-      if (Design_Variable[iDV] == NACA_4DIGITS) nParamDV = 3;
-      if (Design_Variable[iDV] == PARABOLIC) nParamDV = 2;
-      if (Design_Variable[iDV] == OBSTACLE) nParamDV = 2;
-      if (Design_Variable[iDV] == AIRFOIL) nParamDV = 2;
-      if (Design_Variable[iDV] == STRETCH) nParamDV = 2;
-      if (Design_Variable[iDV] == FFD_CONTROL_POINT) nParamDV = 7;
-      if (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) nParamDV = 7;
-      if (Design_Variable[iDV] == FFD_TWIST_ANGLE) nParamDV = 7;
-      if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
-      if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
-      if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
-      if (Design_Variable[iDV] == FFD_VOLUME) nParamDV = 3;
-      
-      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
-        if (iParamDV == 0) cout << "( ";
-        cout << ParamDV[iDV][iParamDV];
-        if (iParamDV < nParamDV-1) cout << ", ";
-        else cout <<" )"<<endl;
-      }
-    }
-  }
-  
-  if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
-    
-    cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-    switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
-      case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
-      case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
-      case PRESSURE_COEFFICIENT: cout << "Pressure objective function." << endl; break;
-      case EQUIVALENT_AREA:
-        cout << "Equivalent area objective function." << endl;
-        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:
-        cout << "Nearfield pressure objective function." << endl;
-        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
         
-        break;
-      case FORCE_X_COEFFICIENT: cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT: cout << "Y-force moment objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
-      case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-      case NORM_HEAT: cout << "Norm heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
-    }
-    
-  }
-  
-  if (val_software == SU2_CFD) {
-    cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
-    
-    if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
-    
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST)) {
-        cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
-        cout << "JST viscous coefficients (1st, 2nd & 4th): " << Kappa_1st_Flow
-        << ", " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"."<< endl;
-        cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
       }
-      if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST_KE)) {
-        cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
-        cout << "JST viscous coefficients (1st, 2nd): " << Kappa_1st_Flow
-        << ", " << Kappa_2nd_Flow << "."<< endl;
-        cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-      }
-      if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == LAX))
-        cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
-      if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-        if (Kind_Upwind_Flow == ROE_1ST) cout << "1st order Roe solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSM_1ST)	cout << "1st order AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-      }
-      if ((Kind_ConvNumScheme_Flow == SPACE_UPWIND) &&
-          ((Kind_Upwind_Flow == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-           || (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
-            if (Kind_Upwind_Flow == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_Flow == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_Flow == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_Flow == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_Flow == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
-            if (Kind_Upwind_Flow == MSW_2ND) cout << "2nd order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-            switch (Kind_SlopeLimit_Flow) {
-              case NONE: cout << "Without slope-limiting method." << endl; break;
-              case VENKATAKRISHNAN:
-                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
-                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-                break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
-                break;
-            }
-          }
-    }
-    
+			
+		}
+	}
+
+	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
+
+		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
+		switch (Kind_ObjFunc) {
+		case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
+		case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
+		case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
+		case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
+		case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
+		case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
+		case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
+		case PRESSURE_COEFFICIENT: cout << "Pressure objective function." << endl; break;
+		case EQUIVALENT_AREA:
+			cout << "Equivalent area objective function." << endl;
+			cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
+		case NEARFIELD_PRESSURE:
+			cout << "Nearfield pressure objective function." << endl;
+			cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
+
+			break;
+		case FORCE_X_COEFFICIENT: cout << "X-force objective function." << endl; break;
+		case FORCE_Y_COEFFICIENT: cout << "Y-force moment objective function." << endl; break;
+		case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
+		case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
+		case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
+    case NORM_HEAT: cout << "Norm heat flux objective function." << endl; break;
+    case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
+		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
+		}
+
+	}
+
+	if (val_software == SU2_CFD) {
+		cout << endl <<"---------------------- Space numerical integration ----------------------" << endl;
+
+		if (SmoothNumGrid) cout << "There are some smoothing iterations on the grid coordinates." <<endl;
+
+		if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+			if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST)) {
+				cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
+				cout << "JST viscous coefficients (1st, 2nd & 4th): " << Kappa_1st_Flow
+						<< ", " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow <<"."<< endl;
+				cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+			}
+                        if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST_KE)) {
+                                cout << "Jameson-Schmidt-Turkel scheme for the flow inviscid terms."<< endl;
+                                cout << "JST viscous coefficients (1st, 2nd): " << Kappa_1st_Flow
+                                                << ", " << Kappa_2nd_Flow << "."<< endl;
+                                cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+                        }
+			if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == LAX))
+				cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
+			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
+				if (Kind_Upwind_Flow == ROE_1ST) cout << "1st order Roe solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL_1ST) cout << "1st order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == AUSM_1ST)	cout << "1st order AUSM solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+			}
+			if ((Kind_ConvNumScheme_Flow == SPACE_UPWIND) &&
+					((Kind_Upwind_Flow == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
+							|| (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
+				if (Kind_Upwind_Flow == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == MSW_2ND) cout << "2nd order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+				switch (Kind_SlopeLimit_Flow) {
+				case NONE: cout << "Without slope-limiting method." << endl; break;
+				case VENKATAKRISHNAN:
+					cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+					cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+					break;
+				case MINMOD:
+					cout << "Minmod slope-limiting method." << endl;
+					break;
+				}
+			}
+		}
+
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
       if (Kind_ConvNumScheme_TNE2 == SPACE_CENTERED) {
         if (Kind_ConvNumScheme_TNE2 == LAX) cout << "Lax-Friedrich convective scheme for the inviscid terms of the two-temperature model." << endl;

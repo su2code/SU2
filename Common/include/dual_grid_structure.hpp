@@ -813,7 +813,7 @@ private:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
 	double *Normal;			/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
 	double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
-	double CarCoord[3];		/*!< \brief Vertex cartesians coordinates. */
+	double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
@@ -943,6 +943,13 @@ public:
 	 * \return Value of the cartesian coordinate of the vertex.
 	 */
 	double *GetCoord(void);
+  
+  /*!
+	 * \brief Get the value of the cartesian coordinate for the vertex.
+   * \param[in] val_dim - Variable of the dimension.
+	 * \return Value of the cartesian coordinate of the vertex.
+	 */
+  double GetCoord(unsigned short val_dim);
 	
 	/*! 
 	 * \brief Set the type of rotation associated to the vertex.
