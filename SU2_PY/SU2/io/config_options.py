@@ -42,14 +42,17 @@ class DEFINITION_DV(ordered_bunch):
         - NACA_4DIGITS ( 4, Scale | Mark. List |  1st digit, 2nd digit, 3rd and 4th digit )
         - DISPLACEMENT ( 5, Scale | Mark. List | x_Disp, y_Disp, z_Disp )
         - ROTATION ( 6, Scale | Mark. List | x_Axis, y_Axis, z_Axis, x_Turn, y_Turn, z_Turn )
-        - FFD_CONTROL_POINT ( 7, Scale | Mark. List | Chunk, i_Ind, j_Ind, k_Ind, x_Mov, y_Mov, z_Mov )
-        - FFD_DIHEDRAL_ANGLE ( 8, Scale | Mark. List | Chunk, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-        - FFD_TWIST_ANGLE ( 9, Scale | Mark. List | Chunk, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-        - FFD_ROTATION ( 10, Scale | Mark. List | Chunk, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
-        - FFD_CAMBER ( 11, Scale | Mark. List | Chunk, i_Ind, j_Ind )
-        - FFD_THICKNESS ( 12, Scale | Mark. List | Chunk, i_Ind, j_Ind )
-        - FFD_VOLUME ( 13, Scale | Mark. List | Chunk, i_Ind, j_Ind )
+        - FFD_CONTROL_POINT ( 7, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, k_Ind, x_Mov, y_Mov, z_Mov )
+        - FFD_DIHEDRAL_ANGLE ( 8, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+        - FFD_TWIST_ANGLE ( 9, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+        - FFD_ROTATION ( 10, Scale | Mark. List | FFD_Box_ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
+        - FFD_CAMBER ( 11, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
+        - FFD_THICKNESS ( 12, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind )
         - FOURIER ( 14, Scale | Mark. List | Lower(0)/Upper(1) side, index, cos(0)/sin(1) )
+        - FFD_CONTROL_POINT_2D ( 15, Scale | Mark. List | FFD_Box_ID, i_Ind, j_Ind, x_Mov, y_Mov )
+        - FFD_CAMBER_2D ( 16, Scale | Mark. List | FFD_Box_ID, i_Ind )
+        - FFD_THICKNESS_2D ( 17, Scale | Mark. List | FFD_Box_ID, i_Ind )
+        
     """
     
     def __init__(self,*args,**kwarg):

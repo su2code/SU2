@@ -5470,6 +5470,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
 }
 
 void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) {
+  
   unsigned long iElem, iPoint, iElem_Bound, nElem_, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], vnodes_vertex;
   unsigned short iMarker, iDim, iChar, iPeriodic, nPeriodic = 0, VTK_Type, nDim_, nMarker_, transform;
   char *cstr;
@@ -5843,8 +5844,8 @@ void CPhysicalGeometry::SetTecPlot(char mesh_filename[200], bool new_file) {
   else Tecplot_File.open(mesh_filename, ios::out | ios::app);
 
   Tecplot_File << "ZONE T= ";
-  if (new_file) Tecplot_File << "\"Original grid\", ";
-  else Tecplot_File << "\"Deformed grid\", ";
+  if (new_file) Tecplot_File << "\"Original grid\", C=BLACK, ";
+  else Tecplot_File << "\"Deformed grid\", C=RED, ";
   Tecplot_File << "NODES= "<< nPoint <<", ELEMENTS= "<< nElem <<", DATAPACKING= POINT";
   if (nDim == 2) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
   if (nDim == 3) Tecplot_File << ", ZONETYPE= FEBRICK"<< endl;
@@ -5943,8 +5944,8 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, 
     /*--- Write the header of the file ---*/
     
     Tecplot_File << "ZONE T= ";
-    if (new_file) Tecplot_File << "\"Original grid\", ";
-    else Tecplot_File << "\"Deformed grid\", ";
+    if (new_file) Tecplot_File << "\"Original grid\", C=BLACK, ";
+    else Tecplot_File << "\"Deformed grid\", C=RED, ";
     Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
     if (nDim == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
     if (nDim == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
@@ -9913,8 +9914,8 @@ void CBoundaryGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, 
     /*--- Write the header of the file ---*/
     
     Tecplot_File << "ZONE T= ";
-    if (new_file) Tecplot_File << "\"Original grid\", ";
-    else Tecplot_File << "\"Deformed grid\", ";
+    if (new_file) Tecplot_File << "\"Original grid\", C=BLACK, ";
+    else Tecplot_File << "\"Deformed grid\", C=RED, ";
     Tecplot_File << "NODES= "<< nPointSurface <<", ELEMENTS= "<< Total_nElem_Bound <<", DATAPACKING= POINT";
     if (nDim == 2) Tecplot_File << ", ZONETYPE= FELINESEG"<< endl;
     if (nDim == 3) Tecplot_File << ", ZONETYPE= FEQUADRILATERAL"<< endl;
@@ -9976,12 +9977,12 @@ void CBoundaryGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, 
     /*--- No elements in the surface ---*/
     
     if (nDim == 2) {
-      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+      Tecplot_File << "ZONE NODES= 1, C=BLACK, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
       Tecplot_File << "0.0 0.0"<< endl;
       Tecplot_File << "1 1"<< endl;
     }
     if (nDim == 3) {
-      Tecplot_File << "ZONE NODES= 1, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+      Tecplot_File << "ZONE NODES= 1, C=RED, ELEMENTS= 1, DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
       Tecplot_File << "0.0 0.0 0.0"<< endl;
       Tecplot_File << "1 1 1 1"<< endl;
     }
