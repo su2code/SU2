@@ -3368,6 +3368,11 @@ public:
 	 */
   void SetLimiter_Primitive(unsigned short val_var, double val_value);
   
+  /*!
+	 * \brief Set the value of the limiter.
+	 */
+  void SetLimiter(unsigned short val_var, double val_value);
+  
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
 	 * \return Value of the low Mach preconditioner variable Beta

@@ -3339,7 +3339,7 @@ void CTNE2EulerSolver::SetSolution_Limiter(CGeometry *geometry,
   
   /*--- Initialize solution max and solution min in the entire domain --*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       node[iPoint]->SetSolution_Max(iVar, -EPS);
       node[iPoint]->SetSolution_Min(iVar, EPS);
     }

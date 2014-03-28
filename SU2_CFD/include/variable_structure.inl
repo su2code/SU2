@@ -767,6 +767,8 @@ inline double CTNE2EulerVariable::GetLimiter_Primitive(unsigned short val_var) {
 
 inline void CTNE2EulerVariable::SetLimiter_Primitive(unsigned short val_var, double val_value) { Limiter_Primitive[val_var] = val_value; }
 
+inline void CTNE2EulerVariable::SetLimiter(unsigned short val_var, double val_value) { Limiter[val_var] = val_value; }
+
 inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CTNE2EulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
