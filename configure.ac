@@ -340,13 +340,14 @@ Build Configuration Summary:
     Build SU2_GDC:        $build_GDC
     Build SU2_UMC:        $build_UMC
 
-Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, and update your [\$]PATH with [\$]SU2_RUN
+Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, 
+and update your [\$]PATH (and [\$]PYTHONPATH if applicable) with [\$]SU2_RUN.
 
-Based on the input to this configuration, add these lines to your .bashrc file -
+Based on the input to this configuration, add these lines to your .bashrc file:
 
 export SU2_RUN="${abs_prefix}/bin"
 export SU2_HOME="${abs_srcdir}"
 export PATH=[\$]PATH:[\$]SU2_RUN
-
+export PYTHONPATH=[\$]PYTHONPATH:[\$]SU2_RUN
 
 ])

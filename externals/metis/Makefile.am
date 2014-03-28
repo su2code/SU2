@@ -1,4 +1,4 @@
-pkg_cppflags  = -DSU2_IS_COMPILING_METIS
+pkg_cppflags  = -DLINUX -D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE
 pkg_cppflags += -I$(srcdir)/include  -I$(srcdir)/GKlib -I$(srcdir)/libmetis
 #pkg_cppflags += -I$(top_builddir)/include #for #include "libmesh/libmesh_config.h"
 pkg_sources = \
@@ -103,7 +103,7 @@ AUTOMAKE_OPTIONS = subdir-objects
 AM_CPPFLAGS  = $(pkg_cppflags) # any defined package-specific include paths
 AM_CFLAGS    =
 AM_CXXFLAGS  =
-AM_LDFLAGS   = $(libmesh_LDFLAGS)
+AM_LDFLAGS   = #$(libmesh_LDFLAGS)
 
 noinst_LIBRARIES = libmetis.a
 
