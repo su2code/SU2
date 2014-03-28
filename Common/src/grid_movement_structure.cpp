@@ -2484,7 +2484,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       if (!GetFFDBoxDefinition()) {
         
-        cout << "There is not FFD box definition in the mesh file, run FFD_SETTING first !!" << endl;
+        cout << endl << "There is not FFD box definition in the mesh file," << endl;
+        cout << "run DV_KIND=FFD_SETTING first !!" << endl;
         exit(1);
         
       }
@@ -5538,7 +5539,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 			text_line.erase (0,9);
 			nFFDBox = atoi(text_line.c_str());
       
-			if (rank == MASTER_NODE) cout << nFFDBox << " Free Form Deformation (FFD) FFDBoxes." << endl;
+			if (rank == MASTER_NODE) cout << nFFDBox << " Free Form Deformation boxes." << endl;
       
 			nCornerPoints = new unsigned short[nFFDBox];
 			nControlPoints = new unsigned short[nFFDBox];
@@ -5548,7 +5549,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 			text_line.erase (0,11);
 			nLevel = atoi(text_line.c_str());
       
-			if (rank == MASTER_NODE) cout << nLevel << " Free Form Deformation (FFD) nested levels." << endl;
+			if (rank == MASTER_NODE) cout << nLevel << " Free Form Deformation nested levels." << endl;
 
 			for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
 				
@@ -5636,7 +5637,8 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				text_line.erase (0,13);
 				nChildFFDBox = atoi(text_line.c_str());
 				if (rank == MASTER_NODE) cout << "Number of child boxes: " << nChildFFDBox <<"." << endl;
-				for (iChildFFDBox = 0; iChildFFDBox < nChildFFDBox; iChildFFDBox++) {
+        
+        for (iChildFFDBox = 0; iChildFFDBox < nChildFFDBox; iChildFFDBox++) {
 					getline(mesh_file, text_line);
 					
 					/*--- Remove extra data from the FFDBox name ---*/
@@ -5654,7 +5656,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 					string ChildFFDBox = text_line.c_str();
 					FFDBox[iFFDBox]->SetChildFFDBox(ChildFFDBox);
 				}
-								
+
 				/*--- Read the number of the corner points ---*/
         
 				getline (mesh_file,text_line);
@@ -5896,6 +5898,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeF
     else {
       mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
       for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
+        coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
         mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
       }
     }
