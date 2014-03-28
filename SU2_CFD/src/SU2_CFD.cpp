@@ -500,10 +500,10 @@ int main(int argc, char *argv[]) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           
-          /*--- Compute 1D output. ---*/
-         // if (config->GetWrt_1D_Output())
-           // output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-             //                            geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+//          /*--- Compute 1D output. ---*/
+//          if (config->GetWrt_1D_Output())
+//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
           
         }
     
@@ -522,15 +522,14 @@ int main(int argc, char *argv[]) {
     cout << endl <<"History file, closed." << endl;
   }
   
-    /*Deallocate config container*/
-  /*
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (config_container[iZone]!=NULL){
-      delete config_container[iZone];
-    }
-  }
-  if (config_container!=NULL)       delete[] config_container;
-*/
+//  /*--- Deallocate config container ---*/
+//  
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (config_container[iZone] != NULL) {
+//      delete config_container[iZone];
+//    }
+//  }
+//  if (config_container != NULL) delete[] config_container;
 
 
   /*--- Synchronization point after a single solver iteration. Compute the

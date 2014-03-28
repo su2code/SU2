@@ -74,6 +74,7 @@ def mesh_deformation( filename           ,
     state.FILES.MESH = config.MESH_FILENAME
     
     # Deformation
+    config.unpack_dvs(config.DV_VALUE)
     info = SU2.run.deform(config)
     state.update(info)
     
