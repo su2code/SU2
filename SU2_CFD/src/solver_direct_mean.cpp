@@ -4309,25 +4309,30 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+  
   unsigned short iDim, iVar, jVar, jDim;
   unsigned long iPoint, iVertex;
   double Pressure, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3],
-  ProjGridVel = 0.0, a2, phi;
+  ProjGridVel = 0.0, a2, phi, turb_ke = 0.0;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       
       Area = 0.0;
@@ -4336,10 +4341,20 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
       
-      /*--- Set the residual using the pressure ---*/
+      /*--- Get the pressure ---*/
+      
       if (compressible)                   Pressure = node[iPoint]->GetPressure();
       if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
+
+      /*--- Add the kinetic energy correction ---*/
+
+      if (tkeNeeded) {
+        turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+        Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
+      }
       
+      /*--- Compute the residual ---*/
+
       Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
@@ -4349,6 +4364,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       }
       
       /*--- Adjustment to energy equation due to grid motion ---*/
+      
       if (grid_movement) {
         ProjGridVel = 0.0;
         GridVel = geometry->node[iPoint]->GetGridVel();
@@ -4358,12 +4374,15 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       }
       
       /*--- Add value to the residual ---*/
+      
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Form Jacobians for implicit computations ---*/
+      
       if (implicit) {
         
         /*--- Initialize jacobian ---*/
+        
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
