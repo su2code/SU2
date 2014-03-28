@@ -848,7 +848,6 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
 enum ENUM_PARAM {
 	FFD_SETTING = 0,		/*!< \brief No surface deformation. */
 	HICKS_HENNE = 1,		/*!< \brief Hicks-Henne bump function for airfoil deformation. */
-	MACH_NUMBER = 5,		/*!< \brief Mach number as design variable. */
 	NACA_4DIGITS = 6,		/*!< \brief The four digits NACA airfoil family as design variables. */
 	DISPLACEMENT = 8,		/*!< \brief Surface movement as design variable. */
 	ROTATION = 9,			/*!< \brief Surface rotation as design variable. */
@@ -877,7 +876,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
 ("SPHERICAL", SPHERICAL)
-("MACH_NUMBER", MACH_NUMBER)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("DISPLACEMENT", DISPLACEMENT)
 ("ROTATION", ROTATION)
