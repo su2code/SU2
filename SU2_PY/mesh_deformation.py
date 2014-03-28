@@ -68,13 +68,14 @@ def mesh_deformation( filename           ,
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
     config.DECOMPOSED  = not divide_grid
+    config.DV_VALUE_NEW = config.DV_VALUE
     
     # State
     state = SU2.io.State()
     state.FILES.MESH = config.MESH_FILENAME
     
     # Deformation
-    info = SU2.run.deform(config)
+    info = SU2.run.MDC(config)
     state.update(info)
     
     return state

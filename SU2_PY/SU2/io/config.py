@@ -326,7 +326,8 @@ def read_config(filename):
             
             # comma delimited lists of floats
             if case("DV_VALUE_OLD")    : pass
-            if case("DV_VALUE_NEW")    :           
+            if case("DV_VALUE_NEW")    : pass
+            if case("DV_VALUE")        :           
                 # remove white space
                 this_value = ''.join(this_value.split())                
                 # split by comma, map to float, store in dictionary
@@ -479,9 +480,9 @@ def read_config(filename):
     
     #hack - twl
     if not data_dict.has_key('DV_VALUE_NEW'):
-      data_dict['DV_VALUE_NEW'] = [0]
+        data_dict['DV_VALUE_NEW'] = [0]
     if not data_dict.has_key('DV_VALUE_OLD'):
-      data_dict['DV_VALUE_OLD'] = [0]
+        data_dict['DV_VALUE_OLD'] = [0]
 
     return data_dict
     
@@ -531,7 +532,8 @@ def write_config(filename,param_dict):
               
             # comma delimited list of floats
             if case("DV_VALUE_NEW") : pass
-            if case("DV_VALUE_OLD") :
+            if case("DV_VALUE_OLD") : pass
+            if case("DV_VALUE")     :           
                 n_lists = len(new_value)
                 for i_value in range(n_lists):
                     output_file.write("%s" % new_value[i_value])
