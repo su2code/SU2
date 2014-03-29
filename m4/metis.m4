@@ -1,6 +1,6 @@
-dnl -------------------------------------------------------------
-dnl Metis
-dnl -------------------------------------------------------------
+# -------------------------------------------------------------
+# Metis
+# -------------------------------------------------------------
 AC_DEFUN([CONFIGURE_METIS],
 [
   AC_ARG_ENABLE(metis,
@@ -13,22 +13,34 @@ AC_DEFUN([CONFIGURE_METIS],
 		 esac],
 		 [enablemetis=yes])
 
-  dnl The METIS API is distributed with SU2, so we don't have to guess
-  dnl where it might be installed...
+  # The METIS API is distributed with SU2, so we don't have to guess
+  # where it might be installed...
   if (test $enablemetis = yes); then
+
+    # look for METIS build cppflags by honoring the --with-metis-cppflags="..." flag,
+    # defaulting to what we know works
+    AC_ARG_WITH([metis-cppflags],
+                 AC_HELP_STRING([--with-metis-cppflags="-DLINUX -D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"],
+                                [Specific METIS C Preprocessor flags to use]),
+                 [SU2_METIS_CPPFLAGS="$withval"],
+                 [SU2_METIS_CPPFLAGS="-DLINUX -D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"])
+
+
      METIS_INCLUDE="-DMETIS_5 -I\$(top_srcdir)/externals/metis/include"
      METIS_LIB="\$(top_builddir)/externals/metis/libmetis.a"
      AC_DEFINE(HAVE_METIS, 1, [Flag indicating whether the library will be compiled with Metis support])
      AC_MSG_RESULT(<<< Configuring library with Metis support >>>)
 
-     dnl look for thread-local storage
+     # look for thread-local storage
      AX_TLS
  else
      METIS_INCLUDE=""
      METIS_LIB=""
+     SU2_METIS_CPPFLAGS=""
      enablemetis=no
   fi
 
   AC_SUBST(METIS_INCLUDE)
   AC_SUBST(METIS_LIB)
+  AC_SUBST(SU2_METIS_CPPFLAGS)
 ])
