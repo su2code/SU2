@@ -5635,6 +5635,10 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
 }
 
+void COutput::SetInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+
+  
+}
 
 void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
   

@@ -222,7 +222,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
       case DRAG_COEFFICIENT:      AdjExt = "_cd.dat"; break;
       case LIFT_COEFFICIENT:      AdjExt = "_cl.dat"; break;
       case SIDEFORCE_COEFFICIENT: AdjExt = "_csf.dat"; break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp.dat"; break;
+      case INVERSE_DESIGN:        AdjExt = "_inv.dat"; break;
       case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx.dat"; break;
       case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy.dat"; break;
       case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz.dat"; break;
@@ -1099,7 +1099,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
             break;
-          case PRESSURE_COEFFICIENT :
+          case INVERSE_DESIGN :
             if (nDim == 2) {
               Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
               ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area;
@@ -2647,7 +2647,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
       case DRAG_COEFFICIENT: AdjExt = "_cd.dat"; break;
       case LIFT_COEFFICIENT: AdjExt = "_cl.dat"; break;
       case SIDEFORCE_COEFFICIENT: AdjExt = "_csf.dat"; break;
-      case PRESSURE_COEFFICIENT: AdjExt = "_cp.dat"; break;
+      case INVERSE_DESIGN: AdjExt = "_inv.dat"; break;
       case MOMENT_X_COEFFICIENT: AdjExt = "_cmx.dat"; break;
       case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
       case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;

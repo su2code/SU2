@@ -971,6 +971,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Node number for the CV to be visualized */
   AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
   
+  /* DESCRIPTION: Evaluate inverse design on the surface  */
+  AddSpecialOption("INV_DESIGN", InvDesign, SetBoolOption, false);
+  
   /* DESCRIPTION: Thermal diffusivity constant */
   
   
@@ -3097,30 +3100,30 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
-		case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
-		case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
-		case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
-		case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
-		case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
-		case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
-		case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
-		case PRESSURE_COEFFICIENT: cout << "Pressure objective function." << endl; break;
-		case EQUIVALENT_AREA:
-			cout << "Equivalent area objective function." << endl;
-			cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-		case NEARFIELD_PRESSURE:
-			cout << "Nearfield pressure objective function." << endl;
-			cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
-
-			break;
-		case FORCE_X_COEFFICIENT: cout << "X-force objective function." << endl; break;
-		case FORCE_Y_COEFFICIENT: cout << "Y-force moment objective function." << endl; break;
-		case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
-		case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
-		case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-    case NORM_HEAT: cout << "Norm heat flux objective function." << endl; break;
-    case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
-		case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
+      case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
+      case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
+      case INVERSE_DESIGN: cout << "Inverse design (Cp) objective function." << endl; break;
+      case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
+      case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
+      case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
+      case MOMENT_Z_COEFFICIENT: cout << "Mz objective function." << endl; break;
+      case EFFICIENCY: cout << "Efficiency objective function." << endl; break;
+      case EQUIVALENT_AREA:
+        cout << "Equivalent area objective function." << endl;
+        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
+      case NEARFIELD_PRESSURE:
+        cout << "Nearfield pressure objective function." << endl;
+        cout << "Drag coefficient weight in the objective function: " << WeightCd <<"."<< endl;  break;
+        
+        break;
+      case FORCE_X_COEFFICIENT: cout << "X-force objective function." << endl; break;
+      case FORCE_Y_COEFFICIENT: cout << "Y-force moment objective function." << endl; break;
+      case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
+      case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
+      case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
+      case NORM_HEAT: cout << "Norm heat flux objective function." << endl; break;
+      case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
+      case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
 		}
 
 	}
@@ -4774,7 +4777,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case DRAG_COEFFICIENT:      AdjExt = "_cd";   break;
       case LIFT_COEFFICIENT:      AdjExt = "_cl";   break;
       case SIDEFORCE_COEFFICIENT: AdjExt = "_csf";  break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp";   break;
+      case INVERSE_DESIGN:        AdjExt = "_inv";   break;
       case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx";  break;
       case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy";  break;
       case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz";  break;
