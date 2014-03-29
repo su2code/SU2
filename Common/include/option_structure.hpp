@@ -633,7 +633,7 @@ enum ENUM_OBJECTIVE {
 	LIFT_COEFFICIENT = 2, 	/*!< \brief Lift objective function definition. */
 	SIDEFORCE_COEFFICIENT = 3,	/*!< \brief Side force objective function definition. */
 	EFFICIENCY = 4,		/*!< \brief Efficiency objective function definition. */
-	PRESSURE_COEFFICIENT = 5,	/*!< \brief Pressure objective function definition. */
+	INVERSE_DESIGN = 5,	/*!< \brief Pressure objective function definition (inverse design). */
 	MOMENT_X_COEFFICIENT = 6,	/*!< \brief Pitching moment objective function definition. */
 	MOMENT_Y_COEFFICIENT = 7,	/*!< \brief Rolling moment objective function definition. */
 	MOMENT_Z_COEFFICIENT = 8,	/*!< \brief Yawing objective function definition. */
@@ -664,7 +664,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("LIFT", LIFT_COEFFICIENT)
 ("SIDEFORCE", SIDEFORCE_COEFFICIENT)
 ("EFFICIENCY", EFFICIENCY)
-("PRESSURE", PRESSURE_COEFFICIENT)
+("INVERSE_DESIGN", INVERSE_DESIGN)
 ("MOMENT_X", MOMENT_X_COEFFICIENT)
 ("MOMENT_Y", MOMENT_Y_COEFFICIENT)
 ("MOMENT_Z", MOMENT_Z_COEFFICIENT)

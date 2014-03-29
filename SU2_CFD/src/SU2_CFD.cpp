@@ -441,6 +441,11 @@ int main(int argc, char *argv[]) {
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     
+    if (config_container[ZONE_0]->GetInvDesign() == YES) {
+      output->SetInverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    }
+    
     /*--- Update the convergence history file (serial and parallel computations). ---*/
     
     output->SetConvergence_History(&ConvHist_file, geometry_container, solver_container,
