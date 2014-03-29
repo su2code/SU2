@@ -20,10 +20,10 @@ AC_DEFUN([CONFIGURE_METIS],
     # look for METIS build cppflags by honoring the --with-metis-cppflags="..." flag,
     # defaulting to what we know works
     AC_ARG_WITH([metis-cppflags],
-                 AC_HELP_STRING([--with-metis-cppflags="-DLINUX -D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"],
+                 AC_HELP_STRING([--with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"],
                                 [Specific METIS C Preprocessor flags to use]),
                  [SU2_METIS_CPPFLAGS="$withval"],
-                 [SU2_METIS_CPPFLAGS="-DLINUX -D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"])
+                 [SU2_METIS_CPPFLAGS="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"])
 
 
      METIS_INCLUDE="-DMETIS_5 -I\$(top_srcdir)/externals/metis/include"
