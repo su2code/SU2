@@ -84,15 +84,6 @@ AC_ARG_WITH(CGNS-lib,
 AC_ARG_WITH(CGNS-include,
     	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]),
 	[with_CGNS_include=$withval], [with_CGNS_include="no"])
-AC_ARG_WITH(Metis-lib,
-   	AS_HELP_STRING([--with-Metis-lib[=ARG]], [Metis library directory, ARG = path to libmetis.a]),
-	[with_Metis_lib=$withval], [with_Metis_lib="no"])
-AC_ARG_WITH(Metis-include,
-   	AS_HELP_STRING([--with-Metis-include[=ARG]], [Metis include directory, ARG = path to metis.h]),
-	[with_Metis_include=$withval], [with_Metis_include="no"])
-AC_ARG_WITH(Metis-version,
-   	AS_HELP_STRING([--with-Metis-version[=ARG]], [Metis major version, ARG = 4 (default) or 5]),
-	[with_Metis_version=$withval], [with_Metis_version="4"])
 AC_ARG_WITH(Mutationpp-lib,
    	AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.dylib]),
 	[with_Mutationpp_lib=$withval], [with_Mutationpp_lib="no"])
@@ -340,7 +331,7 @@ Build Configuration Summary:
     Build SU2_GDC:        $build_GDC
     Build SU2_UMC:        $build_UMC
 
-Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables, 
+Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,
 and update your [\$]PATH (and [\$]PYTHONPATH if applicable) with [\$]SU2_RUN.
 
 Based on the input to this configuration, add these lines to your .bashrc file:
