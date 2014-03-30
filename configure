@@ -659,6 +659,7 @@ su2_externals_LIBS
 su2_externals_INCLUDES
 BUILD_METIS_FALSE
 BUILD_METIS_TRUE
+SU2_METIS_CPPFLAGS
 METIS_LIB
 METIS_INCLUDE
 BUILD_TECIO_FALSE
@@ -776,12 +777,10 @@ enable_silent_rules
 enable_dependency_tracking
 enable_tecio
 enable_metis
+with_metis_cppflags
 with_MPI
 with_CGNS_lib
 with_CGNS_include
-with_Metis_lib
-with_Metis_include
-with_Metis_version
 with_Mutationpp_lib
 with_Mutationpp_include
 with_Jsoncpp_lib
@@ -1448,15 +1447,12 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
+                          Specific METIS C Preprocessor flags to use
   --with-MPI=ARG          Build parallel version with MPI tools, ARG = MPI C++
                           compiler
   --with-CGNS-lib=ARG     CGNS library directory, ARG = path to libcgns.a
   --with-CGNS-include=ARG CGNS include directory, ARG = path to cgnslib.h
-  --with-Metis-lib=ARG    Metis library directory, ARG = path to libmetis.a
-  --with-Metis-include=ARG
-                          Metis include directory, ARG = path to metis.h
-  --with-Metis-version=ARG
-                          Metis major version, ARG = 4 (default) or 5
   --with-Mutationpp-lib=ARG
                           Mutation++ library directory, ARG = path to
                           libmutation++.dylib
@@ -5410,7 +5406,22 @@ else
 fi
 
 
-      if (test $enablemetis = yes); then
+  # The METIS API is distributed with SU2, so we don't have to guess
+  # where it might be installed...
+  if (test $enablemetis = yes); then
+
+    # look for METIS build cppflags by honoring the --with-metis-cppflags="..." flag,
+    # defaulting to what we know works
+
+# Check whether --with-metis-cppflags was given.
+if test "${with_metis_cppflags+set}" = set; then :
+  withval=$with_metis_cppflags; SU2_METIS_CPPFLAGS="$withval"
+else
+  SU2_METIS_CPPFLAGS="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
+fi
+
+
+
      METIS_INCLUDE="-DMETIS_5 -I\$(top_srcdir)/externals/metis/include"
      METIS_LIB="\$(top_builddir)/externals/metis/libmetis.a"
 
@@ -5419,6 +5430,7 @@ $as_echo "#define HAVE_METIS 1" >>confdefs.h
      { $as_echo "$as_me:${as_lineno-$LINENO}: result: <<< Configuring library with Metis support >>>" >&5
 $as_echo "<<< Configuring library with Metis support >>>" >&6; }
 
+     # look for thread-local storage
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for thread local storage (TLS) class" >&5
 $as_echo_n "checking for thread local storage (TLS) class... " >&6; }
@@ -5473,8 +5485,10 @@ $as_echo "$ac_cv_tls" >&6; }
  else
      METIS_INCLUDE=""
      METIS_LIB=""
+     SU2_METIS_CPPFLAGS=""
      enablemetis=no
   fi
+
 
 
 
@@ -5524,30 +5538,6 @@ if test "${with_CGNS_include+set}" = set; then :
   withval=$with_CGNS_include; with_CGNS_include=$withval
 else
   with_CGNS_include="no"
-fi
-
-
-# Check whether --with-Metis-lib was given.
-if test "${with_Metis_lib+set}" = set; then :
-  withval=$with_Metis_lib; with_Metis_lib=$withval
-else
-  with_Metis_lib="no"
-fi
-
-
-# Check whether --with-Metis-include was given.
-if test "${with_Metis_include+set}" = set; then :
-  withval=$with_Metis_include; with_Metis_include=$withval
-else
-  with_Metis_include="no"
-fi
-
-
-# Check whether --with-Metis-version was given.
-if test "${with_Metis_version+set}" = set; then :
-  withval=$with_Metis_version; with_Metis_version=$withval
-else
-  with_Metis_version="4"
 fi
 
 
