@@ -1,6 +1,5 @@
-pkg_cppflags  = -DLINUX -D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE
+pkg_cppflags  = @SU2_METIS_CPPFLAGS@
 pkg_cppflags += -I$(srcdir)/include  -I$(srcdir)/GKlib -I$(srcdir)/libmetis
-#pkg_cppflags += -I$(top_builddir)/include #for #include "libmesh/libmesh_config.h"
 pkg_sources = \
 	include/metis.h \
 	GKlib/b64.c \
