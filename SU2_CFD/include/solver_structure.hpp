@@ -918,9 +918,9 @@ public:
     
     /*!
 	 * \brief A virtual member.
-	 * \param[in] val_Total_NormHeat - Value of the total heat load.
+	 * \param[in] val_Total_MaxHeat - Value of the total heat load.
 	 */
-	virtual void SetTotal_NormHeat(double val_Total_NormHeat);
+	virtual void SetTotal_MaxHeat(double val_Total_MaxHeat);
     
 	/*!
 	 * \brief A virtual member.
@@ -1122,7 +1122,7 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_NormHeat(void);
+	virtual double GetTotal_MaxHeat(void);
     
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1147,7 +1147,19 @@ public:
 	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
 	 */
 	virtual double GetTotal_CEquivArea(void);
-    
+  
+	/*!
+	 * \brief A virtual member.
+	 * \return Value of the difference of the presure and the target pressure.
+	 */
+	virtual double GetTotal_CpDiff(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the difference of the heat and the target heat.
+	 */
+	virtual double GetTotal_HeatDiff(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
@@ -1171,7 +1183,19 @@ public:
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
 	 */
 	virtual void SetTotal_CEquivArea(double val_cequivarea);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_pressure - Value of the difference between pressure and the target pressure.
+	 */
+	virtual void SetTotal_CpDiff(double val_pressure);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_pressure - Value of the difference between heat and the target heat.
+	 */
+	virtual void SetTotal_HeatDiff(double val_heat);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
@@ -1305,6 +1329,22 @@ public:
 	 * \return Value of the pressure coefficient.
 	 */
 	virtual double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	virtual double GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	virtual void SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure);
   
   /*!
 	 * \brief A virtual member.
@@ -1724,6 +1764,7 @@ protected:
 	*CEquivArea_Inv,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
 	*CNearFieldOF_Inv,				/*!< \brief Near field pressure (inviscid contribution) for each boundary. */
 	**CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
+	**CPressureTarget,		/*!< \brief Target Pressure coefficient for each boundary and vertex. */
 	**CHeatTransfer,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
 	**YPlus,		/*!< \brief Yplus for each boundary and vertex. */
   ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
@@ -1776,10 +1817,12 @@ protected:
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
-  Total_NormHeat, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
+  Total_CFreeSurface,			/*!< \brief Total Free Surface coefficient for all the boundaries. */
+  Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+	Total_HeatDiff;			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
@@ -2352,6 +2395,18 @@ public:
 	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
 	 */
 	double GetTotal_CEquivArea(void);
+  
+  /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+	 */
+	double GetTotal_CpDiff(void);
+  
+  /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+	 */
+	double GetTotal_HeatDiff(void);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Near-Field pressure coefficient.
@@ -2364,6 +2419,18 @@ public:
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
 	 */
 	void SetTotal_CEquivArea(double val_cequivarea);
+  
+  /*!
+	 * \brief Set the value of the Equivalent Area coefficient.
+	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
+	 */
+	void SetTotal_CpDiff(double val_pressure);
+  
+  /*!
+	 * \brief Set the value of the Equivalent Area coefficient.
+	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
+	 */
+	void SetTotal_HeatDiff(double val_heat);
     
 	/*!
 	 * \brief Set the value of the Near-Field pressure oefficient.
@@ -2453,7 +2520,7 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_NormHeat(void);
+	double GetTotal_MaxHeat(void);
     
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
@@ -2471,7 +2538,7 @@ public:
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_NormHeat(double val_Total_NormHeat);
+	void SetTotal_MaxHeat(double val_Total_MaxHeat);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
@@ -2516,6 +2583,23 @@ public:
 	 * \return Value of the pressure coefficient.
 	 */
 	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief Provide the Target Pressure coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	double GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief Set the value of the target Pressure coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+  void SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure);
+
   
   /*!
 	 * \brief Value of the characteristic variables at the boundaries.
@@ -2651,7 +2735,7 @@ private:
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-  *NormHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *MaxHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -2670,7 +2754,7 @@ private:
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
   AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_NormHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_MaxHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
@@ -5426,7 +5510,7 @@ protected:
 	Total_CFz,                /*!< \brief Total CFz. */
 	Total_CEff,               /*!< \brief Total CEff. */
   Total_Heat,                  /*!< \brief Total heat load. */
-  Total_NormHeat;               /*!< \brief Maximum heat flux on all boundaries. */
+  Total_MaxHeat;               /*!< \brief Maximum heat flux on all boundaries. */
 
 	double
   *PrimVar_i,	      /*!< \brief Vector for storing primitives at node i. */
@@ -5860,7 +5944,7 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_NormHeat(void);
+	double GetTotal_MaxHeat(void);
   
   /*!
 	 * \brief Store the total heat load.
@@ -5872,7 +5956,7 @@ public:
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_NormHeat(double val_Total_NormHeat);
+	void SetTotal_MaxHeat(double val_Total_MaxHeat);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -5965,7 +6049,7 @@ private:
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-  *NormHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *MaxHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -5980,7 +6064,7 @@ private:
 	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
   AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_NormHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_MaxHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   

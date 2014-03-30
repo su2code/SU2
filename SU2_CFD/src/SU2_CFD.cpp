@@ -355,6 +355,13 @@ int main(int argc, char *argv[]) {
       config_container[iZone]->UpdateCFL(ExtIter);
     }
     
+    /*--- Read the target pressure ---*/
+    
+    if (config_container[ZONE_0]->GetInvDesign() == YES) {
+      output->SetInverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                               geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    }
+    
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
     switch (config_container[ZONE_0]->GetKind_Solver()) {
@@ -438,11 +445,6 @@ int main(int argc, char *argv[]) {
     if ((config_container[ZONE_0]->GetKind_Solver() == EULER) &&
         (config_container[ZONE_0]->GetEquivArea() == YES)) {
       output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-    }
-    
-    if (config_container[ZONE_0]->GetInvDesign() == YES) {
-      output->SetInverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     

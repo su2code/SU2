@@ -196,8 +196,13 @@ def aerodynamics( config, state=None ):
     if ( 'EQUIV_AREA' in special_cases and 
          'TARGET_EA' in files ) : 
         pull.append( files['TARGET_EA'] )
-    
-    # output redirection      
+
+    # files: target pressure distribution
+    if ( 'INV_DESIGN' in special_cases and
+         'TARGET_CP' in files ) :
+        pull.append( files['TARGET_CP'] )
+
+    # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
             
@@ -210,10 +215,15 @@ def aerodynamics( config, state=None ):
             name = info.FILES['DIRECT']
             name = su2io.expand_time(name,config)
             push.extend(name)
+            
             # equivarea files to push
             if 'WEIGHT_NF' in info.FILES:
                 push.append(info.FILES['WEIGHT_NF'])
-            
+
+            # pressure files to push
+            if 'TARGET_CP' in info.FILES:
+                push.append(info.FILES['TARGET_CP'])
+
     #: with output redirection
     
     # return output 
@@ -292,9 +302,13 @@ def stability( config, state=None, step=1e-2 ):
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 
          'TARGET_EA' in files ) : 
-        pull.append( files['TARGET_EA'] )    
-    
-    
+        pull.append( files['TARGET_EA'] )
+
+    # files: target pressure distribution
+    if ( 'INV_DESIGN' in special_cases and
+         'TARGET_CP' in files ) :
+        pull.append( files['TARGET_CP'] )
+
     # pull needed files, start folder
     with redirect_folder( folder, pull, link ) as push:
         with redirect_output(log_direct):     

@@ -633,7 +633,8 @@ enum ENUM_OBJECTIVE {
 	LIFT_COEFFICIENT = 2, 	/*!< \brief Lift objective function definition. */
 	SIDEFORCE_COEFFICIENT = 3,	/*!< \brief Side force objective function definition. */
 	EFFICIENCY = 4,		/*!< \brief Efficiency objective function definition. */
-	INVERSE_DESIGN = 5,	/*!< \brief Pressure objective function definition (inverse design). */
+	INVERSE_DESIGN_PRESSURE = 5,	/*!< \brief Pressure objective function definition (inverse design). */
+  INVERSE_DESIGN_HEAT = 31,    /*!< \brief Norm heat flux. */
 	MOMENT_X_COEFFICIENT = 6,	/*!< \brief Pitching moment objective function definition. */
 	MOMENT_Y_COEFFICIENT = 7,	/*!< \brief Rolling moment objective function definition. */
 	MOMENT_Z_COEFFICIENT = 8,	/*!< \brief Yawing objective function definition. */
@@ -650,8 +651,7 @@ enum ENUM_OBJECTIVE {
 	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
   CLEARANCE = 22,       /*!< \brief Clearance. */
   MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
-  NORM_HEAT = 25,    /*!< \brief Norm heat flux. */
-  HEAT = 31,    /*!< \brief Norm heat flux. */
+  MAXIMUM_HEAT = 25,    /*!< \brief Norm heat flux. */
   MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
 	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
 	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
@@ -664,7 +664,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("LIFT", LIFT_COEFFICIENT)
 ("SIDEFORCE", SIDEFORCE_COEFFICIENT)
 ("EFFICIENCY", EFFICIENCY)
-("INVERSE_DESIGN", INVERSE_DESIGN)
+("INVERSE_DESIGN_PRESSURE", INVERSE_DESIGN_PRESSURE)
+("INVERSE_DESIGN_HEAT", INVERSE_DESIGN_HEAT)
 ("MOMENT_X", MOMENT_X_COEFFICIENT)
 ("MOMENT_Y", MOMENT_Y_COEFFICIENT)
 ("MOMENT_Z", MOMENT_Z_COEFFICIENT)
@@ -675,8 +676,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
-("NORM_HEAT", NORM_HEAT)
-("HEAT", HEAT)
+("MAXIMUM_HEAT", MAXIMUM_HEAT)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
 ("TOTAL_VOLUME", TOTAL_VOLUME)

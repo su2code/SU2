@@ -101,6 +101,8 @@ def direct ( config ):
     info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
     if 'EQUIV_AREA' in special_cases:
         info.FILES.WEIGHT_NF = 'WeightNF.dat'
+    if 'INV_DESIGN' in special_cases:
+        info.FILES.TARGET_CP = 'TargetCp.dat'
     info.HISTORY.DIRECT = history
     
     return info

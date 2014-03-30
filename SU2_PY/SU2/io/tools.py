@@ -171,26 +171,27 @@ def get_headerMap():
         to optimization problem function names
     """
     # header name to config file name map
-    map_dict = { "Iteration"       : "ITERATION"          ,
-                 "CLift"           : "LIFT"               ,
-                 "CDrag"           : "DRAG"               ,
-                 "CSideForce"      : "SIDEFORCE"          ,
-                 "CMx"             : "MOMENT_X"           ,
-                 "CMy"             : "MOMENT_Y"           ,
-                 "CMz"             : "MOMENT_Z"           ,
-                 "CFx"             : "FORCE_X"            ,
-                 "CFy"             : "FORCE_Y"            ,
-                 "CFz"             : "FORCE_Z"            ,
-                 "CL/CD"           : "EFFICIENCY"         ,
-                 "CEff"            : "EFFICIENCY"         ,
-                 "CFreeSurface"    : "FREE_SURFACE"       ,
-                 "CMerit"          : "FIGURE_OF_MERIT"    ,
-                 "CQ"              : "TORQUE"             ,
-                 "CT"              : "THRUST"             ,
-                 "CEquivArea"      : "EQUIVALENT_AREA"    ,
-                 "CNearFieldOF"    : "NEARFIELD_PRESSURE" ,
-                 "Heat"            : "HEAT"               ,
-                 "Norm_Heat"       : "NORM_HEAT"          ,
+    map_dict = { "Iteration"       : "ITERATION"               ,
+                 "CLift"           : "LIFT"                    ,
+                 "CDrag"           : "DRAG"                    ,
+                 "CSideForce"      : "SIDEFORCE"               ,
+                 "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
+                 "Heat_Diff"       : "INVERSE_DESIGN_HEAT"     ,
+                 "CMx"             : "MOMENT_X"                ,
+                 "CMy"             : "MOMENT_Y"                ,
+                 "CMz"             : "MOMENT_Z"                ,
+                 "CFx"             : "FORCE_X"                 ,
+                 "CFy"             : "FORCE_Y"                 ,
+                 "CFz"             : "FORCE_Z"                 ,
+                 "CL/CD"           : "EFFICIENCY"              ,
+                 "CEff"            : "EFFICIENCY"              ,
+                 "CFreeSurface"    : "FREE_SURFACE"            ,
+                 "CMerit"          : "FIGURE_OF_MERIT"         ,
+                 "CQ"              : "TORQUE"                  ,
+                 "CT"              : "THRUST"                  ,
+                 "CEquivArea"      : "EQUIVALENT_AREA"         ,
+                 "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
+                 "Maximum_Heat"    : "MAXIMUM_HEAT"            ,
                  "Time(min)"       : "TIME"         }
     
     return map_dict
@@ -203,24 +204,25 @@ def get_headerMap():
 # -------------------------------------------------------------------
 
 # Aerodynamic Optimizer Function Names
-optnames_aero = [ "LIFT"               ,
-                  "DRAG"               ,
-                  "SIDEFORCE"          ,
-                  "MOMENT_X"           ,
-                  "MOMENT_Y"           ,
-                  "MOMENT_Z"           ,
-                  "FORCE_X"            ,
-                  "FORCE_Y"            ,
-                  "FORCE_Z"            ,
-                  "EFFICIENCY"         ,
-                  "FREE_SURFACE"       ,
-                  "FIGURE_OF_MERIT"    ,
-                  "TORQUE"             ,
-                  "THRUST"             ,
-                  "EQUIVALENT_AREA"    ,
-                  "NEARFIELD_PRESSURE" ,
-                  "HEAT"               ,
-                  "NORM_HEAT"           ]
+optnames_aero = [ "LIFT"                    ,
+                  "DRAG"                    ,
+                  "SIDEFORCE"               ,
+                  "MOMENT_X"                ,
+                  "MOMENT_Y"                ,
+                  "MOMENT_Z"                ,
+                  "FORCE_X"                 ,
+                  "FORCE_Y"                 ,
+                  "FORCE_Z"                 ,
+                  "EFFICIENCY"              ,
+                  "FREE_SURFACE"            ,
+                  "FIGURE_OF_MERIT"         ,
+                  "TORQUE"                  ,
+                  "THRUST"                  ,
+                  "EQUIVALENT_AREA"         ,
+                  "NEARFIELD_PRESSURE"      ,
+                  "INVERSE_DESIGN_PRESSURE" ,
+                  "INVERSE_DESIGN_HEAT"     ,
+                  "MAXIMUM_HEAT"            ]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -388,25 +390,25 @@ def get_adjointSuffix(adj_objfunc=None):
     """ gets the adjoint suffix given an objective function """
     
     # adjoint name map
-    name_map = { "DRAG"               : "cd"    ,
-                 "LIFT"               : "cl"    ,
-                 "SIDEFORCE"          : "csf"   ,
-                 "MOMENT_X"           : "cmx"   ,
-                 "MOMENT_Y"           : "cmy"   ,
-                 "MOMENT_Z"           : "cmz"   ,
-                 "FORCE_X"            : "cfx"   ,
-                 "FORCE_Y"            : "cfy"   ,
-                 "FORCE_Z"            : "cfz"   ,
-                 "EFFICIENCY"         : "eff"   ,
-                 "HEAT"               : "heat"  ,
-                 "NORM_HEAT"          : "normheat"   ,
-                 "EQUIVALENT_AREA"    : "ea"    ,
-                 "NEARFIELD_PRESSURE" : "nfp"   ,
-                 "THRUST"             : "ct"    ,
-                 "TORQUE"             : "cq"    ,
-                 "FIGURE_OF_MERIT"    : "merit" ,  
-                 "FREE_SURFACE"       : "fs"    ,
-                 "HEAT_LOAD"          : "Q"       }
+    name_map = { "DRAG"                    : "cd"        ,
+                 "LIFT"                    : "cl"        ,
+                 "SIDEFORCE"               : "csf"       ,
+                 "MOMENT_X"                : "cmx"       ,
+                 "MOMENT_Y"                : "cmy"       ,
+                 "MOMENT_Z"                : "cmz"       ,
+                 "FORCE_X"                 : "cfx"       ,
+                 "FORCE_Y"                 : "cfy"       ,
+                 "FORCE_Z"                 : "cfz"       ,
+                 "EFFICIENCY"              : "eff"       ,
+                 "INVERSE_DESIGN_PRESSURE" : "invpress"  ,
+                 "INVERSE_DESIGN_HEAT"     : "invheat"   ,
+                 "MAXIMUM_HEAT"            : "maxheat"   ,
+                 "EQUIVALENT_AREA"         : "ea"        ,
+                 "NEARFIELD_PRESSURE"      : "nfp"       ,
+                 "THRUST"                  : "ct"        ,
+                 "TORQUE"                  : "cq"        ,
+                 "FIGURE_OF_MERIT"         : "merit"     ,
+                 "FREE_SURFACE"            : "fs"        }
     
     # if none or false, return map
     if not adj_objfunc:
@@ -525,7 +527,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_Heat","Grad_Norm_Heat"')
+        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_Heat","Grad_Maximum_Heat"')
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
         for key in special_cases: 
@@ -537,7 +539,10 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 write_format.append(", %.10f, %.10f, %.10f")
             if key == "EQUIV_AREA"     : 
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
-                write_format.append(", %.10f, %.10f")  
+                write_format.append(", %.10f, %.10f")
+            if key == "INV_DESIGN"     :
+                header.append(r',"Grad_Cp_Diff"')
+                write_format.append(", %.10f")
 
     # otherwise...
     else: raise Exception('Unrecognized Gradient Type')          
@@ -633,7 +638,7 @@ def get_optFileFormat(plot_format,special_cases=None):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","Heat","Norm_Heat"])
+    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","Total_Heat","Maximum_Heat"])
     write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
@@ -647,8 +652,11 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "EQUIV_AREA"     : 
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
             write_format.append(r', %.10f, %.10f')
-    
-    # finish formats   
+        if key == "INV_DESIGN"     :
+            header.append(r',"Grad_Cp_Diff"')
+            write_format.append(", %.10f")
+
+    # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
     write_format  = ''.join(write_format)  + ' \n'
             
@@ -694,9 +702,10 @@ def get_specialCases(config):
         specified in the config file, and set to 'yes'
     """
     
-    all_special_cases = [ 'FREE_SURFACE'        ,
-                          'ROTATING_FRAME'      ,
-                          'EQUIV_AREA'          ]
+    all_special_cases = [ 'FREE_SURFACE'                     ,
+                          'ROTATING_FRAME'                   ,
+                          'EQUIV_AREA'                       ,
+                          'INV_DESIGN'                       ]
     
     special_cases = []
     for key in all_special_cases:
