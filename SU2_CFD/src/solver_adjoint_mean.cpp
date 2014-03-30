@@ -1096,14 +1096,21 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             }
             if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = Factor*cos(Beta); ForceProj_Vector[2] = -Factor*sin(Beta) * sin(Alpha); }
             break;
-          case INVERSE_DESIGN :
+          case INVERSE_DESIGN_PRESSURE :
             Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker,iVertex);
-//            CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker,iVertex);
+            CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker,iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
             if (nDim == 3) Area += Area;
             ForceProj_Vector[0] = -2.0*Factor*(Cp-CpTarget)*Normal[0]/Area;
             ForceProj_Vector[1] = -2.0*Factor*(Cp-CpTarget)*Normal[1]/Area;
             if (nDim == 3) ForceProj_Vector[2] = -2.0*Factor*(Cp-CpTarget)*Normal[2]/Area;
+            break;
+          case INVERSE_DESIGN_HEAT:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
@@ -1169,7 +1176,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
-          case NORM_HEAT:
+          case MAXIMUM_HEAT:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -4927,7 +4934,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if (config->GetKind_ObjFunc() == NORM_HEAT)
+  if ((config->GetKind_ObjFunc() == MAXIMUM_HEAT) ||
+      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEAT))
     PsiE_Inf = -1.0;
   else
     PsiE_Inf = 0.0;
@@ -6309,7 +6317,8 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = (config->GetKind_ObjFunc() == NORM_HEAT);
+  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == MAXIMUM_HEAT) ||
+                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEAT));
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -6399,7 +6408,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         if (geometry->node[iPoint]->GetCoord(0) < 0.9) {
           GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
           kGTdotn = 0;
-          Xi = solver_container[FLOW_SOL]->GetTotal_NormHeat();
+          Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeat();
           Xi = 1.0;
           for (iDim = 0; iDim < nDim; iDim++)
             kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
@@ -6409,7 +6418,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       } else {
         GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
         kGTdotn = 0;
-        Xi = solver_container[FLOW_SOL]->GetTotal_NormHeat();
+        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeat();
         Xi = 1.0;
         for (iDim = 0; iDim < nDim; iDim++)
           kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
