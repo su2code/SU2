@@ -187,7 +187,7 @@ inline double CSolver::GetTotal_CEquivArea() { return 0; }
 
 inline double CSolver::GetTotal_CpDiff() { return 0; }
 
-inline double CSolver::GetTotal_HeatDiff() { return 0; }
+inline double CSolver::GetTotal_HeatFluxDiff() { return 0; }
 
 inline double CSolver::GetTotal_CFreeSurface() { return 0; }
 
@@ -199,7 +199,7 @@ inline void CSolver::SetTotal_CEquivArea(double val_cequivarea) { }
 
 inline void CSolver::SetTotal_CpDiff(double val_pressure) { }
 
-inline void CSolver::SetTotal_HeatDiff(double val_heat) { }
+inline void CSolver::SetTotal_HeatFluxDiff(double val_heat) { }
 
 inline void CSolver::SetTotal_CFEA(double val_cfea) { }
 
@@ -225,11 +225,15 @@ inline double CSolver::GetCPressureTarget(unsigned short val_marker, unsigned sh
 
 inline void CSolver::SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure) { }
 
+inline void CSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat) { }
+
 inline double *CSolver::GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
 inline double CSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
-inline double CSolver::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+inline double CSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return 0; }
+
+inline double CSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
 inline double CSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return 0; }
 
@@ -547,7 +551,7 @@ inline double CEulerSolver::GetTotal_CEquivArea() { return Total_CEquivArea; }
 
 inline double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
-inline double CEulerSolver::GetTotal_HeatDiff() { return Total_HeatDiff; }
+inline double CEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
 inline double CEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
 
@@ -555,7 +559,7 @@ inline void CEulerSolver::SetTotal_CEquivArea(double cequivarea) { Total_CEquivA
 
 inline void CEulerSolver::SetTotal_CpDiff(double pressure) { Total_CpDiff = pressure; }
 
-inline void CEulerSolver::SetTotal_HeatDiff(double heat) { Total_HeatDiff = heat; }
+inline void CEulerSolver::SetTotal_HeatFluxDiff(double heat) { Total_HeatFluxDiff = heat; }
 
 inline void CEulerSolver::SetTotal_CNearFieldOF(double cnearfieldpress) { Total_CNearFieldOF = cnearfieldpress; }
 
@@ -607,7 +611,11 @@ inline double CNSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; 
 
 inline double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
 
-inline double CNSSolver::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return CHeatTransfer[val_marker][val_vertex]; }
+inline double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+
+inline double CNSSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
+
+inline void CNSSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
 
 inline double CNSSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return YPlus[val_marker][val_vertex]; }
 
@@ -718,7 +726,7 @@ inline double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigne
 
 inline double CTNE2NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
-inline double CTNE2NSSolver::GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex) { return CHeatTransfer[val_marker][val_vertex]; }
+inline double CTNE2NSSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
 inline double CTNE2NSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
 

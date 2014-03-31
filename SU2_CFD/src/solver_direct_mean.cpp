@@ -30,7 +30,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
   
-  CPressure = NULL; CPressureTarget = NULL; CHeatTransfer = NULL; YPlus = NULL;
+  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
   ForceInviscid = NULL; MomentInviscid = NULL;
   
   /*--- Surface based array initialization ---*/
@@ -102,7 +102,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
   
   ForceInviscid = NULL; MomentInviscid = NULL;
-  CPressure = NULL; CPressureTarget = NULL; CHeatTransfer = NULL; YPlus = NULL;
+  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
   
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
   
@@ -318,7 +318,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CFx = 0.0;      Total_CFy = 0.0;        Total_CFz = 0.0;
   Total_CT = 0.0;       Total_CQ = 0.0;         Total_CMerit = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat = 0.0;
-  Total_CpDiff = 0.0;   Total_HeatDiff = 0.0;
+  Total_CpDiff = 0.0;   Total_HeatFluxDiff = 0.0;
   
   /*--- Read farfield conditions ---*/
   
@@ -554,11 +554,18 @@ CEulerSolver::~CEulerSolver(void) {
   //    delete [] CharacPrimVar;
   //  }
   
-  if (CHeatTransfer != NULL) {
+  if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete CHeatTransfer[iMarker];
+      delete HeatFlux[iMarker];
     }
-    delete [] CHeatTransfer;
+    delete [] HeatFlux;
+  }
+  
+  if (HeatFluxTarget != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete HeatFluxTarget[iMarker];
+    }
+    delete [] HeatFluxTarget;
   }
   
   if (YPlus != NULL) {
@@ -6701,7 +6708,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CT_Visc = NULL;
   CQ_Visc = NULL;
   Heat_Visc = NULL;
-  MaxHeat_Visc = NULL;
+  MaxHeatFlux_Visc = NULL;
   ForceViscous = NULL;
   MomentViscous = NULL;
   CSkinFriction = NULL;
@@ -6848,11 +6855,20 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Heat tranfer in all the markers ---*/
-  CHeatTransfer = new double* [nMarker];
+  HeatFlux = new double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CHeatTransfer[iMarker] = new double [geometry->nVertex[iMarker]];
+    HeatFlux[iMarker] = new double [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CHeatTransfer[iMarker][iVertex] = 0.0;
+      HeatFlux[iMarker][iVertex] = 0.0;
+    }
+  }
+  
+  /*--- Heat tranfer in all the markers ---*/
+  HeatFluxTarget = new double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    HeatFluxTarget[iMarker] = new double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      HeatFluxTarget[iMarker][iVertex] = 0.0;
     }
   }
   
@@ -6923,7 +6939,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CFx     = 0.0;	Total_CFy         = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ          = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat        = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatDiff    = 0.0;
+  Total_CpDiff  = 0.0;  Total_HeatFluxDiff    = 0.0;
   
   ForceViscous    = new double[3];
   MomentViscous   = new double[3];
@@ -6941,7 +6957,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CT_Visc         = new double[nMarker];
   CQ_Visc         = new double[nMarker];
   Heat_Visc       = new double[nMarker];
-  MaxHeat_Visc   = new double[nMarker];
+  MaxHeatFlux_Visc   = new double[nMarker];
   
   Surface_CLift_Visc = new double[config->GetnMarker_Monitoring()];
   Surface_CDrag_Visc = new double[config->GetnMarker_Monitoring()];
@@ -7142,7 +7158,7 @@ CNSSolver::~CNSSolver(void) {
   if (CT_Visc != NULL)         delete [] CT_Visc;
   if (CQ_Visc != NULL)         delete [] CQ_Visc;
   if (Heat_Visc != NULL)          delete [] Heat_Visc;
-  if (MaxHeat_Visc != NULL)       delete [] MaxHeat_Visc;
+  if (MaxHeatFlux_Visc != NULL)       delete [] MaxHeatFlux_Visc;
   if (ForceViscous != NULL)    delete [] ForceViscous;
   if (MomentViscous != NULL)   delete [] MomentViscous;
   
@@ -7512,8 +7528,9 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   double Delta, Viscosity, **Grad_PrimVar, div_vel, *Normal, MomentDist[3], WallDist[3],
   *Coord, *Coord_Normal, *Origin, Area, WallShearStress, TauNormal, factor, RefVel2,
-  RefDensity, GradTemperature, Density, Vel[3], VelNormal, VelTangMod, WallDistMod, FrictionVel, VelTang[3],
-  Mach2Vel, Mach_Motion, *Velocity_Inf, UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3], Force[3];
+  RefDensity, GradTemperature, Density, Vel[3], VelTangMod, WallDistMod, FrictionVel, VelTang[3],
+  Mach2Vel, Mach_Motion, *Velocity_Inf, UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3], Force[3], Cp,
+  thermal_conductivity;
   string Marker_Tag, Monitoring_Tag;
   
   double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
@@ -7521,7 +7538,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   double RefAreaCoeff     = config->GetRefAreaCoeff();
   double RefLengthMoment  = config->GetRefLengthMoment();
   double Gas_Constant     = config->GetGas_ConstantND();
-  double Cp               = (Gamma / Gamma_Minus_One) * Gas_Constant;
   bool grid_movement      = config->GetGrid_Movement();
   bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -7551,7 +7567,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMx_Visc = 0.0;    AllBound_CMy_Visc = 0.0;    AllBound_CMz_Visc = 0.0;
   AllBound_CFx_Visc = 0.0;    AllBound_CFy_Visc = 0.0;    AllBound_CFz_Visc = 0.0;
   AllBound_CT_Visc = 0.0;     AllBound_CQ_Visc = 0.0;     AllBound_CMerit_Visc = 0.0;
-  AllBound_Heat_Visc = 0.0;      AllBound_MaxHeat_Visc = 0.0;
+  AllBound_Heat_Visc = 0.0;      AllBound_MaxHeatFlux_Visc = 0.0;
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CLift_Visc[iMarker_Monitoring] = 0.0;
@@ -7583,7 +7599,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
       CMx_Visc[iMarker] = 0.0;    CMy_Visc[iMarker] = 0.0;   CMz_Visc[iMarker] = 0.0;
       CFx_Visc[iMarker] = 0.0;    CFy_Visc[iMarker] = 0.0;   CFz_Visc[iMarker] = 0.0;
       CT_Visc[iMarker] = 0.0;     CQ_Visc[iMarker] = 0.0;    CMerit_Visc[iMarker] = 0.0;
-      Heat_Visc[iMarker] = 0.0;      MaxHeat_Visc[iMarker] = 0.0;
+      Heat_Visc[iMarker] = 0.0;      MaxHeatFlux_Visc[iMarker] = 0.0;
       
       for (iDim = 0; iDim < nDim; iDim++) ForceViscous[iDim] = 0.0;
       MomentViscous[0] = 0.0; MomentViscous[1] = 0.0; MomentViscous[2] = 0.0;
@@ -7638,12 +7654,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++)
           Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
         
-        VelNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelNormal += Vel[iDim] * UnitNormal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
-        VelTangMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) VelTangMod += VelTang[iDim]*VelTang[iDim]; VelTangMod = sqrt(VelTangMod);
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
-        //			WallShearStress = Viscosity*VelTangMod/WallDistMod;
         
         /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
@@ -7655,16 +7667,18 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
         
         /*--- Compute total and max heat flux on the wall (compressible solver only) ---*/
+        
         if (compressible) {
           
           GradTemperature = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
           
-          CHeatTransfer[iMarker][iVertex] = (Cp * Viscosity/PRANDTL)*GradTemperature/(0.5*RefDensity*RefVel2);
-          
-          MaxHeat_Visc[iMarker] += pow(CHeatTransfer[iMarker][iVertex], 2.0);
-          Heat_Visc[iMarker] += CHeatTransfer[iMarker][iVertex];
+          Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+          thermal_conductivity = Cp * Viscosity/PRANDTL;
+          HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
+          Heat_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
+          MaxHeatFlux_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], 8.0);
           
         }
         
@@ -7677,7 +7691,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           
           for (iDim = 0; iDim < nDim; iDim++) {
             Force[iDim] = TauElem[iDim]*Area*factor;
-            //            Force[iDim] = WallShearStress*(VelTang[iDim]/VelTangMod)*Area*factor;
             ForceViscous[iDim] += Force[iDim];
           }
           
@@ -7706,7 +7719,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           CT_Visc[iMarker]      = -CFx_Visc[iMarker];
           CQ_Visc[iMarker]      = -CMz_Visc[iMarker];
           CMerit_Visc[iMarker]  = CT_Visc[iMarker]/CQ_Visc[iMarker];
-          MaxHeat_Visc[iMarker] = pow(MaxHeat_Visc[iMarker],1.0/8.0);
+          MaxHeatFlux_Visc[iMarker] = pow(MaxHeatFlux_Visc[iMarker], 1.0/8.0);
           
         }
         if (nDim == 3) {
@@ -7723,8 +7736,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           CT_Visc[iMarker]          = -CFz_Visc[iMarker];
           CQ_Visc[iMarker]          = -CMz_Visc[iMarker];
           CMerit_Visc[iMarker]      = CT_Visc[iMarker]/CQ_Visc[iMarker];
-          // CT_Visc[iMarker]*sqrt(fabs(CT_Visc[iMarker]))/(sqrt(2.0)*CQ_Visc[iMarker]);
-          MaxHeat_Visc[iMarker] = pow(MaxHeat_Visc[iMarker],1.0/8.0);
+          MaxHeatFlux_Visc[iMarker] = pow(MaxHeatFlux_Visc[iMarker], 1.0/3.0);
         }
         
         AllBound_CDrag_Visc       += CDrag_Visc[iMarker];
@@ -7738,7 +7750,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         AllBound_CFz_Visc         += CFz_Visc[iMarker];
         AllBound_CT_Visc          += CT_Visc[iMarker];
         AllBound_CQ_Visc          += CQ_Visc[iMarker];
-        AllBound_MaxHeat_Visc    += MaxHeat_Visc[iMarker];
+        AllBound_MaxHeatFlux_Visc    += MaxHeatFlux_Visc[iMarker];
         AllBound_Heat_Visc        += Heat_Visc[iMarker];
         
         /*--- Compute the coefficients per surface ---*/
@@ -7781,7 +7793,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   double MyAllBound_CQ_Visc           = AllBound_CQ_Visc;           AllBound_CQ_Visc = 0.0;
   double MyAllBound_CMerit_Visc       = AllBound_CMerit_Visc;       AllBound_CMerit_Visc = 0.0;
   double MyAllBound_Heat_Visc            = AllBound_Heat_Visc;            AllBound_Heat_Visc = 0.0;
-  double MyAllBound_MaxHeat_Visc         = AllBound_MaxHeat_Visc;         AllBound_MaxHeat_Visc = 0.0;
+  double MyAllBound_MaxHeatFlux_Visc         = AllBound_MaxHeatFlux_Visc;         AllBound_MaxHeatFlux_Visc = 0.0;
   
 #ifdef WINDOWS
   MPI_Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -7798,7 +7810,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
   MPI_Allreduce(&MyAllBound_Heat_Visc, &AllBound_Heat_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_MaxHeat_Visc, &AllBound_MaxHeat_Visc, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&MyAllBound_MaxHeatFlux_Visc, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CLift_Visc, &AllBound_CLift_Visc, 1, MPI::DOUBLE, MPI::SUM);
@@ -7814,7 +7826,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI::DOUBLE, MPI::SUM);
   AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_Heat_Visc, &AllBound_Heat_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_MaxHeat_Visc, &AllBound_MaxHeat_Visc, 1, MPI::DOUBLE, MPI::MAX);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_MaxHeatFlux_Visc, &AllBound_MaxHeatFlux_Visc, 1, MPI::DOUBLE, MPI::MAX);
 #endif
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
@@ -7881,7 +7893,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   Total_CQ          += AllBound_CQ_Visc;
   Total_CMerit      += AllBound_CMerit_Visc;
   Total_Heat        += Total_CT / (Total_CQ + EPS);
-  Total_MaxHeat     = AllBound_MaxHeat_Visc;
+  Total_MaxHeat     = AllBound_MaxHeatFlux_Visc;
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -8120,11 +8132,9 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  /*--- Local variables ---*/
   unsigned short iVar, jVar, iDim, jDim;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
   
-  double **PrimVarGrad;
   double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
   double Twall, Temperature, dTdn, dTdrho, thermal_conductivity;
   double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
@@ -8147,34 +8157,40 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   Point_Normal = 0;
   
   /*--- Identify the boundary ---*/
+  
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
   
   /*--- Retrieve the specified wall temperature ---*/
+  
   Twall = config->GetIsothermal_Temperature(Marker_Tag);
   
   /*--- Loop over boundary points ---*/
+  
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Compute dual-grid area and boundary normal ---*/
+      
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt (Area);
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
       
       /*--- Calculate useful quantities ---*/
+      
       theta2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         theta2 += UnitNormal[iDim]*UnitNormal[iDim];
       
       /*--- Compute closest normal neighbor ---*/
+      
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Get coordinates of i & nearest normal and compute distance ---*/
+      
       Coord_i = geometry->node[iPoint]->GetCoord();
       Coord_j = geometry->node[Point_Normal]->GetCoord();
       dist_ij = 0;
@@ -8182,23 +8198,26 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
       dist_ij = sqrt(dist_ij);
       
-      
       /*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there is grid motion (v = u_wall)---*/
+      
       if (grid_movement) {
         GridVel = geometry->node[iPoint]->GetGridVel();
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
-      } else {
+      }
+      else {
         for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
       }
       
       /*--- Initialize the convective & viscous residuals to zero ---*/
+      
       for (iVar = 0; iVar < nVar; iVar++) {
         Res_Conv[iVar] = 0.0;
         Res_Visc[iVar] = 0.0;
       }
       
       /*--- Set the residual, truncation error and velocity value on the boundary ---*/
+      
       if (compressible) node[iPoint]->SetVelocity_Old(Vector);
       if (incompressible || freesurface) node[iPoint]->SetVelocityInc_Old(Vector);
       
@@ -8206,28 +8225,23 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
       node[iPoint]->SetVel_ResTruncError_Zero();
       
-      /*--- Assign Twall to primitive vector on surface ---*/
-      node[iPoint]->SetPrimVar(0, Twall);
+      /*--- Compute the normal gradient in temperature using Twall ---*/
       
-      /*--- Compute the normal gradient in temperature ---*/
-      SetPrimVar_Gradient_LS(geometry, config, iPoint);
-      PrimVarGrad = node[iPoint]->GetGradient_Primitive();
-      dTdn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dTdn += PrimVarGrad[0][iDim]*UnitNormal[iDim];
-      }
+      dTdn = -(node[Point_Normal]->GetPrimVar(0) - Twall)/dist_ij;
       
       /*--- Get transport coefficients ---*/
+      
       laminar_viscosity    = node[iPoint]->GetLaminarViscosity();
       eddy_viscosity       = node[iPoint]->GetEddyViscosity();
-      thermal_conductivity = cp * ( laminar_viscosity/Prandtl_Lam
-                                   +eddy_viscosity/Prandtl_Turb);
+      thermal_conductivity = cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
       
       /*--- Apply a weak boundary condition for the energy equation.
        Compute the residual due to the prescribed heat flux. ---*/
+      
       Res_Visc[nDim+1] = thermal_conductivity * dTdn * Area;
       
       /*--- Calculate Jacobian for implicit time stepping ---*/
+      
       if (implicit) {
         
         for (iVar = 0; iVar < nVar; iVar ++)
@@ -8235,40 +8249,47 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
             Jacobian_i[iVar][jVar] = 0.0;
         
         /*--- Calculate useful quantities ---*/
+        
         Density = node[iPoint]->GetPrimVar(nDim+2);
         Energy  = node[iPoint]->GetSolution(nDim+1);
         Temperature = node[iPoint]->GetPrimVar(0);
         Vel2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           Vel2 += node[iPoint]->GetPrimVar(iDim+1) * node[iPoint]->GetPrimVar(iDim+1);
-        //dTdrho = (Gamma-1.0)/(Density*Gas_Constant) * (-Energy/Density + Vel2);
         dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
         
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
+        
         for (iVar = 1; iVar <= nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
         
         /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations ---*/
+        
         Jacobian_i[nDim+1][0]      = -thermal_conductivity*theta2/dist_ij * dTdrho * Area;
         Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*theta2/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
         
         /*--- Subtract the block from the Global Jacobian structure ---*/
+        
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
       }
       
       /*--- If the wall is moving, there are additional residual contributions
        due to pressure (p v_wall.n) and shear stress (tau.v_wall.n). ---*/
+      
       if (grid_movement) {
         
         /*--- Get the grid velocity at the current boundary node ---*/
+        
         GridVel = geometry->node[iPoint]->GetGridVel();
         ProjGridVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
         
         /*--- Retrieve other primitive quantities and viscosities ---*/
+        
         Density  = node[iPoint]->GetSolution(0);
         if (compressible) {
           Pressure = node[iPoint]->GetPressure();
@@ -8285,17 +8306,20 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         grad_primvar      = node[iPoint]->GetGradient_Primitive();
         
         /*--- Turbulent kinetic energy ---*/
+        
         if (config->GetKind_Turb_Model() == SST)
           turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
         else
           turb_ke = 0.0;
         
         /*--- Divergence of the velocity ---*/
+        
         div_vel = 0.0;
         for (iDim = 0 ; iDim < nDim; iDim++)
           div_vel += grad_primvar[iDim+1][iDim];
         
         /*--- Compute the viscous stress tensor ---*/
+        
         for (iDim = 0; iDim < nDim; iDim++)
           for (jDim = 0; jDim < nDim; jDim++) {
             tau[iDim][jDim] = total_viscosity*( grad_primvar[jDim+1][iDim]
@@ -8305,6 +8329,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           }
         
         /*--- Dot product of the stress tensor with the grid velocity ---*/
+        
         for (iDim = 0 ; iDim < nDim; iDim++) {
           tau_vel[iDim] = 0.0;
           for (jDim = 0 ; jDim < nDim; jDim++)
@@ -8312,14 +8337,17 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         }
         
         /*--- Compute the convective and viscous residuals (energy eqn.) ---*/
+        
         Res_Conv[nDim+1] = Pressure*ProjGridVel;
         for (iDim = 0 ; iDim < nDim; iDim++)
           Res_Visc[nDim+1] += tau_vel[iDim]*UnitNormal[iDim]*Area;
         
         /*--- Implicit Jacobian contributions due to moving walls ---*/
+        
         if (implicit) {
           
           /*--- Jacobian contribution related to the pressure term ---*/
+          
           GridVel2 = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             GridVel2 += GridVel[iDim]*GridVel[iDim];
@@ -8333,9 +8361,11 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           Jacobian_i[nDim+1][nDim+1] = (Gamma-1.0)*ProjGridVel;
           
           /*--- Add the block to the Global Jacobian structure ---*/
+          
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
           
           /*--- Now the Jacobian contribution related to the shear stress ---*/
+          
           for (iVar = 0; iVar < nVar; iVar++)
             for (jVar = 0; jVar < nVar; jVar++)
               Jacobian_i[iVar][jVar] = 0.0;
@@ -8354,7 +8384,8 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
             Jacobian_i[nDim+1][0] -= factor*(-pix*GridVel[0]+piy*GridVel[1]);
             Jacobian_i[nDim+1][1] -= factor*pix;
             Jacobian_i[nDim+1][2] -= factor*piy;
-          } else {
+          }
+          else {
             thetax = theta2 + UnitNormal[0]*UnitNormal[0]/3.0;
             thetay = theta2 + UnitNormal[1]*UnitNormal[1]/3.0;
             thetaz = theta2 + UnitNormal[2]*UnitNormal[2]/3.0;
@@ -8374,19 +8405,23 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
           }
           
           /*--- Subtract the block from the Global Jacobian structure ---*/
+          
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         }
         
       }
       
       /*--- Convective contribution to the residual at the wall ---*/
+      
       LinSysRes.AddBlock(iPoint, Res_Conv);
       
       /*--- Viscous contribution to the residual at the wall ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
       /*--- Enforce the no-slip boundary condition in a strong way by
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+      
       if (implicit) {
         for (iVar = 1; iVar <= nDim; iVar++) {
           total_index = iPoint*nVar+iVar;

@@ -358,7 +358,9 @@ int main(int argc, char *argv[]) {
     /*--- Read the target pressure ---*/
     
     if (config_container[ZONE_0]->GetInvDesign() == YES) {
-      output->SetInverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+      output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                               geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+      output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
     
