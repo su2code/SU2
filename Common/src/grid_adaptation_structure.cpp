@@ -307,7 +307,7 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        sprintf (buffer, "_cl.dat");
 	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   sprintf (buffer, "_csf.dat");
 	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_PRESSURE) sprintf (buffer, "_invpress.dat");
-	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEAT)     sprintf (buffer, "_invheat.dat");
+	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) sprintf (buffer, "_invheat.dat");
 	if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT)    sprintf (buffer, "_cmx.dat");
 	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT)    sprintf (buffer, "_cmy.dat");
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT)    sprintf (buffer, "_cmz.dat");
@@ -315,7 +315,8 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT)     sprintf (buffer, "_cfx.dat");
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT)     sprintf (buffer, "_cfy.dat");
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     sprintf (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == MAXIMUM_HEAT)            sprintf (buffer, "_maxheat.dat");
+  if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          sprintf (buffer, "_totheat.dat");
+  if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        sprintf (buffer, "_maxheat.dat");
 
 	strcat(cstr, buffer);
 	
@@ -3561,7 +3562,7 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
 	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        sprintf (buffer, "_cl.dat");
 	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   sprintf (buffer, "_csf.dat");
 	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_PRESSURE) sprintf (buffer, "_invpress.dat");
-  if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEAT)     sprintf (buffer, "_invheat.dat");
+  if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) sprintf (buffer, "_invheat.dat");
 	if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT)    sprintf (buffer, "_cmx.dat");
 	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT)    sprintf (buffer, "_cmy.dat");
 	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT)    sprintf (buffer, "_cmz.dat");
@@ -3569,7 +3570,8 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT)     sprintf (buffer, "_cfx.dat");
 	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT)     sprintf (buffer, "_cfy.dat");
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     sprintf (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == MAXIMUM_HEAT)            sprintf (buffer, "_maxheat.dat");
+  if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          sprintf (buffer, "_totheat.dat");
+  if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        sprintf (buffer, "_maxheat.dat");
 	strcat(cstr, buffer);
 	
 	ofstream restart_adjfile;
