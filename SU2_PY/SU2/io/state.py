@@ -215,6 +215,7 @@ class State(ordered_bunch):
         adjoint_name  = config.SOLUTION_ADJ_FILENAME
         targetea_name = 'TargetEA.dat'
         targetcp_name = 'TargetCp.dat'
+        targetheatflux_name = 'TargetHeatFlux.dat'
 
         adj_map = get_adjointSuffix()
         
@@ -249,8 +250,12 @@ class State(ordered_bunch):
             register_file('TARGET_EA',targetea_name)
         
         # pressure inverse design
-        if 'INV_DESIGN' in special_cases:
+        if 'INV_DESIGN_CP' in special_cases:
           register_file('TARGET_CP',targetcp_name)
+            
+        # heat flux inverse design
+        if 'INV_DESIGN_HEATFLUX' in special_cases:
+          register_file('TARGET_HEATFLUX',targetheatflux_name)
         
         return
     

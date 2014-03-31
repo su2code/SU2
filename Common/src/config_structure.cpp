@@ -971,11 +971,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Node number for the CV to be visualized */
   AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
   
+  /*--- options related to inverse design problem ---*/
+  /* CONFIG_CATEGORY:Inverse design problem */
+
   /* DESCRIPTION: Evaluate inverse design on the surface  */
-  AddSpecialOption("INV_DESIGN", InvDesign, SetBoolOption, false);
+  AddSpecialOption("INV_DESIGN_CP", InvDesign_Cp, SetBoolOption, false);
   
-  /* DESCRIPTION: Thermal diffusivity constant */
-  
+  /* DESCRIPTION: Evaluate inverse design on the surface  */
+  AddSpecialOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, SetBoolOption, false);
   
   /* END_CONFIG_OPTIONS */
   

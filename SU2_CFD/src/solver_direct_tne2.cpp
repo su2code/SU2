@@ -4925,7 +4925,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
 	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
-	AllBound_Heat_Visc     = 0.0; AllBound_MaxHeatFlux_Visc  = 0.0;
+	AllBound_HeatFlux_Visc     = 0.0; AllBound_MaxHeatFlux_Visc  = 0.0;
 	AllBound_CEff_Visc  = 0.0;
   
 	/*--- Vector and variables initialization ---*/
@@ -5082,7 +5082,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				AllBound_CFy_Visc   += CFy_Visc[iMarker];
 				AllBound_CFz_Visc   += CFz_Visc[iMarker];
         AllBound_MaxHeatFlux_Visc += MaxHeatFlux_Visc[iMarker];
-        AllBound_Heat_Visc     += Heat_Visc[iMarker];
+        AllBound_HeatFlux_Visc     += Heat_Visc[iMarker];
 			}
 		}
 	}
@@ -5095,7 +5095,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFx   += AllBound_CFx_Visc;
 	Total_CFy   += AllBound_CFy_Visc;
 	Total_CFz   += AllBound_CFz_Visc;
-  Total_Heat     += AllBound_Heat_Visc;
+  Total_Heat     += AllBound_HeatFlux_Visc;
   Total_MaxHeat   = AllBound_MaxHeatFlux_Visc;
   
 	for (iDim = 0; iDim < nDim; iDim++)

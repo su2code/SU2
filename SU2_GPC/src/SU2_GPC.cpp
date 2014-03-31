@@ -366,9 +366,15 @@ int main(int argc, char *argv[]) {
         case INVERSE_DESIGN_PRESSURE :
 					if (iDV == 0) Gradient_file << "Pressure inverse design using cont. adj."<< endl;
 					cout << "Pressure inverse design gradient: "<< Gradient << "." << endl; break;
-        case INVERSE_DESIGN_HEAT :
+        case INVERSE_DESIGN_HEATFLUX :
 					if (iDV == 0) Gradient_file << "Heat inverse design using cont. adj."<< endl;
-					cout << "Heat inverse design gradient: "<< Gradient << "." << endl; break;
+					cout << "Heat flux inverse design gradient: "<< Gradient << "." << endl; break;
+        case TOTAL_HEATFLUX :
+					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
+					cout << "Total heat flux gradient: "<< Gradient << "." << endl; break;
+        case MAXIMUM_HEATFLUX :
+					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
+					cout << "Maximum heat flux gradient: "<< Gradient << "." << endl; break;
 				case MOMENT_X_COEFFICIENT :
 					if (iDV == 0) Gradient_file << "Moment x coeff. grad. using cont. adj." << endl;
 					cout << "Moment x coefficient gradient: "<< Gradient << "." << endl; break;
@@ -408,10 +414,6 @@ int main(int argc, char *argv[]) {
 				case FREE_SURFACE :
 					if (iDV == 0) Gradient_file << "Free-Surface grad. using cont. adj."<< endl;
 					cout << "Free-surface gradient: "<< Gradient << "." << endl; break;
-        case MAXIMUM_HEAT :
-					if (iDV == 0) Gradient_file << "Integrated surface heat flux. using cont. adj."<< endl;
-					cout << "Heat load gradient: "<< Gradient << "." << endl; break;
-          
 			}
 			
 			Gradient_file << Gradient << endl;

@@ -63,7 +63,8 @@ private:
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-	InvDesign,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+	InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -3289,12 +3290,17 @@ public:
 	 */		
 	bool GetEquivArea(void);
   
+  /*!
+	 * \brief Information about computing and plotting the equivalent area distribution.
+	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
+	 */
+	bool GetInvDesign_Cp(void);
   
 	/*!
 	 * \brief Information about computing and plotting the equivalent area distribution.
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */
-	bool GetInvDesign(void);
+	bool GetInvDesign_HeatFlux(void);
 
 	/*! 
 	 * \brief Get name of the input grid.

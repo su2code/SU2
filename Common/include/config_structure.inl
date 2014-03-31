@@ -670,7 +670,9 @@ inline bool CConfig::GetFullMG(void) { return FullMG; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
-inline bool CConfig::GetInvDesign(void) { return InvDesign; }
+inline bool CConfig::GetInvDesign_Cp(void) { return InvDesign_Cp; }
+
+inline bool CConfig::GetInvDesign_HeatFlux(void) { return InvDesign_HeatFlux; }
 
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
 
