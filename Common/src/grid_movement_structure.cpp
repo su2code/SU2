@@ -5509,7 +5509,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 		
 		/*--- Read the inner points ---*/
     
-		position = text_line.find ("NPOINT=",0);
+		position = text_line.find ("NPOIN=",0);
 		if (position != string::npos) {
 			text_line.erase (0,6); nPoint = atoi(text_line.c_str());
 			for (iPoint = 0; iPoint < nPoint; iPoint++)  {
