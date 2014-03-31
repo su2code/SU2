@@ -1,0 +1,83 @@
+## automake - create Makefile.in from Makefile.am
+## Copyright (C) 1994-2012 Free Software Foundation, Inc.
+
+## This program is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 2, or (at your option)
+## any later version.
+
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+VPATH = @srcdir@
+
+@SET_MAKE@
+
+## We used to define this.  However, we don't because vendor makes
+## (e.g., Solaris, Irix) won't correctly propagate variables that are
+## defined in Makefile.  This particular variable can't be correctly
+## defined by configure (at least, not the current configure), so we
+## simply avoid defining it to allow the user to use this feature with
+## a vendor make.
+## DESTDIR =
+
+## Shell code that determines whether make is running in "dry mode"
+## ("make -n") or not.  Useful in rules that invoke make recursively,
+## and are thus executed also with "make -n" -- either because they
+## are declared as dependencies to '.MAKE' (NetBSD make), or because
+## their recipes contain the "$(MAKE)" string (GNU and Solaris make).
+
+am__make_dryrun = \
+  { \
+    am__dry=no; \
+    case $$MAKEFLAGS in \
+## If we run "make TESTS='snooze nap'", GNU make will export MAKEFLAGS
+## to "TESTS=foo\ nap", so that the simpler loop below (on word-splitted
+## $$MAKEFLAGS) would see a "make flag" equal to "nap", and would wrongly
+## misinterpret that as and indication that make is running in dry mode.
+## This has already happened in practice.  So we need this hack.
+      *\\[\ \	]*) \
+        echo 'am--echo: ; @echo "AM"  OK' | $(MAKE) -f - 2>/dev/null \
+          | grep '^AM OK$$' >/dev/null || am__dry=yes;; \
+      *) \
+        for am__flg in $$MAKEFLAGS; do \
+          case $$am__flg in \
+            *=*|--*) ;; \
+            *n*) am__dry=yes; break;; \
+          esac; \
+        done;; \
+    esac; \
+    test $$am__dry = yes; \
+  }
+
+## Some derived variables that have been found to be useful.
+pkgdatadir = $(datadir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkglibexecdir = $(libexecdir)/@PACKAGE@
+
+am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
+install_sh_DATA = $(install_sh) -c -m 644
+install_sh_PROGRAM = $(install_sh) -c
+install_sh_SCRIPT = $(install_sh) -c
+INSTALL_HEADER = $(INSTALL_DATA)
+transform = $(program_transform_name)
+
+## These are defined because otherwise make on NetBSD V1.1 will print
+## (eg): $(NORMAL_INSTALL) expands to empty string.
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+
+## dejagnu.am uses these variables.  Some users might rely on them too.
+?BUILD?build_triplet = @build@
+?HOST?host_triplet = @host@
+?TARGET?target_triplet = @target@

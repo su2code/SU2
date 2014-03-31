@@ -570,7 +570,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
       
-      Paraview_File << "\nSCALARS Heat_Transfer float 1\n";
+      Paraview_File << "\nSCALARS Heat_Flux float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {

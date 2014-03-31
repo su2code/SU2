@@ -219,24 +219,26 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 		filename.assign(mesh_filename);
 		filename.erase (filename.end()-4, filename.end());
 		switch (config->GetKind_ObjFunc()) {
-      case DRAG_COEFFICIENT:      AdjExt = "_cd.dat"; break;
-      case LIFT_COEFFICIENT:      AdjExt = "_cl.dat"; break;
-      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf.dat"; break;
-      case PRESSURE_COEFFICIENT:  AdjExt = "_cp.dat"; break;
-      case MOMENT_X_COEFFICIENT:  AdjExt = "_cmx.dat"; break;
-      case MOMENT_Y_COEFFICIENT:  AdjExt = "_cmy.dat"; break;
-      case MOMENT_Z_COEFFICIENT:  AdjExt = "_cmz.dat"; break;
-      case EFFICIENCY:            AdjExt = "_eff.dat"; break;
-      case EQUIVALENT_AREA:       AdjExt = "_ea.dat"; break;
-      case NEARFIELD_PRESSURE:    AdjExt = "_nfp.dat"; break;
-      case FORCE_X_COEFFICIENT:   AdjExt = "_cfx.dat"; break;
-      case FORCE_Y_COEFFICIENT:   AdjExt = "_cfy.dat"; break;
-      case FORCE_Z_COEFFICIENT:   AdjExt = "_cfz.dat"; break;
-      case THRUST_COEFFICIENT:    AdjExt = "_ct.dat"; break;
-      case TORQUE_COEFFICIENT:    AdjExt = "_cq.dat"; break;
-      case FIGURE_OF_MERIT:       AdjExt = "_merit.dat"; break;
-      case FREE_SURFACE:          AdjExt = "_fs.dat"; break;
-      case NORM_HEAT_FLUX:        AdjExt = "_qnorm.dat"; break;
+      case DRAG_COEFFICIENT:        AdjExt = "_cd.dat";       break;
+      case LIFT_COEFFICIENT:        AdjExt = "_cl.dat";       break;
+      case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf.dat";      break;
+      case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress.dat"; break;
+      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat.dat";  break;
+      case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx.dat";      break;
+      case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy.dat";      break;
+      case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz.dat";      break;
+      case EFFICIENCY:              AdjExt = "_eff.dat";      break;
+      case EQUIVALENT_AREA:         AdjExt = "_ea.dat";       break;
+      case NEARFIELD_PRESSURE:      AdjExt = "_nfp.dat";      break;
+      case FORCE_X_COEFFICIENT:     AdjExt = "_cfx.dat";      break;
+      case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy.dat";      break;
+      case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz.dat";      break;
+      case THRUST_COEFFICIENT:      AdjExt = "_ct.dat";       break;
+      case TORQUE_COEFFICIENT:      AdjExt = "_cq.dat";       break;
+      case FIGURE_OF_MERIT:         AdjExt = "_merit.dat";    break;
+      case FREE_SURFACE:            AdjExt = "_fs.dat";       break;
+      case TOTAL_HEATFLUX:          AdjExt = "_totheat.dat";  break;
+      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat.dat";  break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
@@ -1098,7 +1100,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
             break;
-          case PRESSURE_COEFFICIENT :
+          case INVERSE_DESIGN_PRESSURE :
             if (nDim == 2) {
               Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
               ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area;
@@ -1107,6 +1109,13 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
               Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
               ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area; ForceProj_Vector[2] = -C_p*Normal[2]/Area;
             }
+            break;
+          case INVERSE_DESIGN_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
@@ -1138,7 +1147,14 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
             }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
             break;
-          case NORM_HEAT_FLUX:
+          case TOTAL_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
+          case MAXIMUM_HEATFLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -2619,7 +2635,9 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     PsiRho_Inf[iSpecies] = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Phi_Inf[iDim] = 0.0;
-  if (config->GetKind_ObjFunc() == NORM_HEAT_FLUX) {
+  if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX)) {
     PsiE_Inf = -1.0;
     PsiEve_Inf = -1.0;
   } else {
@@ -2643,24 +2661,26 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		filename.assign(mesh_filename);
 		filename.erase (filename.end()-4, filename.end());
 		switch (config->GetKind_ObjFunc()) {
-      case DRAG_COEFFICIENT: AdjExt = "_cd.dat"; break;
-      case LIFT_COEFFICIENT: AdjExt = "_cl.dat"; break;
-      case SIDEFORCE_COEFFICIENT: AdjExt = "_csf.dat"; break;
-      case PRESSURE_COEFFICIENT: AdjExt = "_cp.dat"; break;
-      case MOMENT_X_COEFFICIENT: AdjExt = "_cmx.dat"; break;
-      case MOMENT_Y_COEFFICIENT: AdjExt = "_cmy.dat"; break;
-      case MOMENT_Z_COEFFICIENT: AdjExt = "_cmz.dat"; break;
-      case EFFICIENCY: AdjExt = "_eff.dat"; break;
-      case EQUIVALENT_AREA: AdjExt = "_ea.dat"; break;
-      case NEARFIELD_PRESSURE: AdjExt = "_nfp.dat"; break;
-      case FORCE_X_COEFFICIENT: AdjExt = "_cfx.dat"; break;
-      case FORCE_Y_COEFFICIENT: AdjExt = "_cfy.dat"; break;
-      case FORCE_Z_COEFFICIENT: AdjExt = "_cfz.dat"; break;
-      case THRUST_COEFFICIENT: AdjExt = "_ct.dat"; break;
-      case TORQUE_COEFFICIENT: AdjExt = "_cq.dat"; break;
-      case FIGURE_OF_MERIT: AdjExt = "_merit.dat"; break;
-      case FREE_SURFACE: AdjExt = "_fs.dat"; break;
-      case NORM_HEAT_FLUX: AdjExt = "_qnorm.dat"; break;
+      case DRAG_COEFFICIENT:        AdjExt = "_cd.dat";       break;
+      case LIFT_COEFFICIENT:        AdjExt = "_cl.dat";       break;
+      case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf.dat";      break;
+      case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress.dat"; break;
+      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat.dat";  break;
+      case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx.dat";      break;
+      case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy.dat";      break;
+      case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz.dat";      break;
+      case EFFICIENCY:              AdjExt = "_eff.dat";      break;
+      case EQUIVALENT_AREA:         AdjExt = "_ea.dat";       break;
+      case NEARFIELD_PRESSURE:      AdjExt = "_nfp.dat";      break;
+      case FORCE_X_COEFFICIENT:     AdjExt = "_cfx.dat";      break;
+      case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy.dat";      break;
+      case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz.dat";      break;
+      case THRUST_COEFFICIENT:      AdjExt = "_ct.dat";       break;
+      case TORQUE_COEFFICIENT:      AdjExt = "_cq.dat";       break;
+      case FIGURE_OF_MERIT:         AdjExt = "_merit.dat";    break;
+      case FREE_SURFACE:            AdjExt = "_fs.dat";       break;
+      case TOTAL_HEATFLUX:          AdjExt = "_totheat.dat";  break;
+      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat.dat";  break;
 		}
 		filename.append(AdjExt);
 		restart_file.open(filename.data(), ios::in);
@@ -3926,7 +3946,9 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   
   /*--- Set booleans from CConfig specifications ---*/
   implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-  heat_flux_obj  = (config->GetKind_ObjFunc() == NORM_HEAT_FLUX);
+  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
+                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX));
   
   /*--- Allocate arrays ---*/
   Psi = new double[nVar];
