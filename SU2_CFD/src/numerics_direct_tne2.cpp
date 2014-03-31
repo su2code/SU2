@@ -282,7 +282,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
   
   /*--- Set parameters in the numerical method ---*/
-	epsilon = 1E-5;
+	epsilon = 0.0;
   alpha = 6.0;
   
   /*--- Calculate supporting geometry parameters ---*/
