@@ -3088,10 +3088,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (iParamDV == 0) cout << "( ";
           cout << ParamDV[iDV][iParamDV];
           if (iParamDV < nParamDV-1) cout << ", ";
-          else cout <<" )"<<endl;
+          else cout <<" )"<< endl;;
         }
         
-      }
+      } else cout << endl;
 			
 		}
 	}

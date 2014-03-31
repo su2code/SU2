@@ -7229,7 +7229,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     if (!RightSol) ErrorCounter++;
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
