@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         based on the name of the config file given ---*/
   strcpy(grid_filename, argv[1]);
   config = new CConfig(grid_filename, SU2_GDC, ZONE_0, nZone, 
-                         VERB_HIGH);
+                         0, VERB_HIGH);
 
   /*--- Instantiate an object of the boundary-geometry class ---*/
   boundary = new CBoundaryGeometry(config, 

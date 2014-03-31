@@ -153,6 +153,7 @@ private:
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
 	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
   double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
+  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GDC). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
 
@@ -220,6 +221,18 @@ public:
 	 */
 	double GetWall_Distance(void);
 	
+  /*!
+	 * \brief Set the value of the curvature at a surface node.
+	 * \param[in] val_distance - Value of the curvature.
+	 */
+	void SetCurvature(double val_curvature);
+	
+	/*!
+	 * \brief Get the value of the curvature at a surface node.
+	 * \return Value of the curvature.
+	 */
+	double GetCurvature(void);
+  
   /*!
 	 * \brief Get the value of the distance to a sharp edge
 	 * \return Value of the distance to the nearest wall.
@@ -800,7 +813,7 @@ private:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
 	double *Normal;			/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
 	double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
-	double CarCoord[3];		/*!< \brief Vertex cartesians coordinates. */
+	double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
@@ -930,6 +943,13 @@ public:
 	 * \return Value of the cartesian coordinate of the vertex.
 	 */
 	double *GetCoord(void);
+  
+  /*!
+	 * \brief Get the value of the cartesian coordinate for the vertex.
+   * \param[in] val_dim - Variable of the dimension.
+	 * \return Value of the cartesian coordinate of the vertex.
+	 */
+  double GetCoord(unsigned short val_dim);
 	
 	/*! 
 	 * \brief Set the type of rotation associated to the vertex.

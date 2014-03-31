@@ -183,9 +183,13 @@ inline bool CPoint::GetDomain(void) { return Domain; }
 
 inline void CPoint::SetWall_Distance(double val_distance) { Wall_Distance = val_distance; }
 
+inline void CPoint::SetCurvature(double val_curvature) { Curvature = val_curvature; }
+
 inline void CPoint::SetSharpEdge_Distance(double val_distance) { SharpEdge_Distance = val_distance; }
 
 inline double CPoint::GetWall_Distance(void) { return Wall_Distance; }
+
+inline double CPoint::GetCurvature(void) { return Curvature; }
 
 inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 
@@ -243,7 +247,9 @@ inline double *CVertex::GetNormal(void) { return Normal; }
 
 inline double *CVertex::GetVarCoord(void) { return VarCoord; }
 
-inline double *CVertex::GetCoord(void) { return CarCoord; }
+inline double *CVertex::GetCoord(void) { return CartCoord; }
+
+inline double CVertex::GetCoord(unsigned short val_dim) { return CartCoord[val_dim]; }
 
 inline void CVertex::SetAuxVar(double val_auxvar) { Aux_Var = val_auxvar; }
 
@@ -273,7 +279,7 @@ inline void CVertex::AddVarCoord(double *val_varcoord) {
 
 inline void CVertex::SetCoord(double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		CarCoord[iDim] = val_coord[iDim];
+		CartCoord[iDim] = val_coord[iDim];
 }
 
 inline void CVertex::SetRotation_Type(short val_rotation_type) { Rotation_Type = val_rotation_type; }
