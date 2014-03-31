@@ -143,8 +143,18 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
-	void SetInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
+	void SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
                          unsigned long iExtIter);
+  
+  /*!
+	 * \brief Writes inverse design.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iExtIter - Current external (time) iteration.
+	 */
+	void SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
+                        unsigned long iExtIter);
   
   /*!
 	 * \brief Writes forces at different sections.

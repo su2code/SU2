@@ -105,7 +105,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   switch (solver) {
     case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
-    case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
+    case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
     case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" << endl; break;
     case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
   }
@@ -130,7 +130,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             break;
           case NAVIER_STOKES: case RANS:
             SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+            HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
+            SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
             break;
           case TNE2_EULER:
             Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
@@ -138,7 +139,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             break;
           case TNE2_NAVIER_STOKES:
             SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            HeatFlux = FlowSolver->GetHeatTransferCoeff(iMarker,iVertex);
+            HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
             SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
         }
       }
@@ -259,7 +260,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if (solver == TNE2_NAVIER_STOKES) {
             Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatTransferCoeff(iMarker,iVertex);
+            Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatFlux(iMarker,iVertex);
           }
           nVertex_Surface++;
         }
@@ -360,7 +361,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
       case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
       case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" << endl; break;
-      case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Transfer\"" << endl; break;
+      case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
     }
     
     /*--- Loop through all of the collected data and write each node's values ---*/
@@ -1967,7 +1968,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
-          Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatTransferCoeff(iMarker,iVertex);
+          Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
         }
       }
@@ -2653,7 +2654,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker,iVertex);
-          Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatTransferCoeff(iMarker,iVertex);
+          Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
         }
       }
@@ -3610,7 +3611,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    restart_file << "\t\"Temperature\"\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient\"\t\"Heat_Transfer\"\t\"Y_Plus\"";
+    restart_file << "\t\"Temperature\"\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient\"\t\"Heat_Flux\"\t\"Y_Plus\"";
   }
   
   if (Kind_Solver == RANS) {
@@ -3831,7 +3832,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   /*--- Header for the coefficients ---*/
   
   char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
-  char heat_coeff[]= ",\"Total_Heat\",\"Maximum_Heat\"";
+  char heat_coeff[]= ",\"Total_Heat_Flux\",\"Maximum_Heat_Flux\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char free_surface_coeff[]= ",\"CFreeSurface\"";
@@ -3840,7 +3841,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   char oneD_outputs[]= ",\"1D_Pt\",\"1D_Mach\",\"1D_Temperature\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
-  char Heat_inverse_design[]= ",\"Heat_Diff\"";
+  char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   string aeroelastic_coeff = Monitoring_coeff;
   
   /*--- Header for the residuals ---*/
@@ -4003,7 +4004,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatDiff = 0.0,
+    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0;
     
     double OneD_Stagnation_Pressure = 0.0, OneD_Mach = 0.0, OneD_Temp = 0.0;
@@ -4115,7 +4116,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         if (inv_design) {
           Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
           if (isothermal) {
-            Total_HeatDiff = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatDiff();
+            Total_HeatFluxDiff = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff();
           }
         }
         
@@ -4361,7 +4362,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff);
               Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
               if (isothermal) {
-                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff, Total_HeatDiff);
+                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff, Total_HeatFluxDiff);
               }
             }
             if (rotating_frame)
@@ -5656,7 +5657,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
 }
 
-void COutput::SetInverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
   
   unsigned short iMarker, icommas, Boundary, Monitoring, iDim;
   unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
@@ -5666,19 +5667,7 @@ void COutput::SetInverseDesign(CSolver *solver_container, CGeometry *geometry, C
   ifstream Surface_file;
   char buffer[50], cstr[200];
   
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
-#endif
-  
+
   nPointLocal = geometry->GetnPoint();
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -5716,6 +5705,7 @@ void COutput::SetInverseDesign(CSolver *solver_container, CGeometry *geometry, C
           Point2Vertex[iPoint][0] = iMarker;
           Point2Vertex[iPoint][1] = iVertex;
           PointInDomain[iPoint] = true;
+          solver_container->SetCPressureTarget(iMarker, iVertex, 0.0);
         }
         
       }
@@ -5747,32 +5737,37 @@ void COutput::SetInverseDesign(CSolver *solver_container, CGeometry *geometry, C
   string::size_type position;
   
   Surface_file.open(cstr, ios::in);
-  getline(Surface_file,text_line);
   
-  while (getline(Surface_file,text_line)) {
-    for (icommas = 0; icommas < 50; icommas++) {
-      position = text_line.find( ",", 0 );
-      if(position!=string::npos) text_line.erase (position,1);
-    }
-    stringstream  point_line(text_line);
+  if (!(Surface_file.fail())) {
     
-    if (geometry->GetnDim() == 2) point_line >> iPoint >> XCoord >> YCoord >> Pressure >> PressureCoeff;
-    if (geometry->GetnDim() == 3) point_line >> iPoint >> XCoord >> YCoord >> ZCoord >> Pressure >> PressureCoeff;
+    getline(Surface_file,text_line);
     
-    if (PointInDomain[iPoint]) {
+    while (getline(Surface_file,text_line)) {
+      for (icommas = 0; icommas < 50; icommas++) {
+        position = text_line.find( ",", 0 );
+        if(position!=string::npos) text_line.erase (position,1);
+      }
+      stringstream  point_line(text_line);
       
-      /*--- Find the vertex for the Point and Marker ---*/
+      if (geometry->GetnDim() == 2) point_line >> iPoint >> XCoord >> YCoord >> Pressure >> PressureCoeff;
+      if (geometry->GetnDim() == 3) point_line >> iPoint >> XCoord >> YCoord >> ZCoord >> Pressure >> PressureCoeff;
       
-      iMarker = Point2Vertex[iPoint][0];
-      iVertex = Point2Vertex[iPoint][1];
-      
-      solver_container->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+      if (PointInDomain[iPoint]) {
+        
+        /*--- Find the vertex for the Point and Marker ---*/
+        
+        iMarker = Point2Vertex[iPoint][0];
+        iVertex = Point2Vertex[iPoint][1];
+        
+        solver_container->SetCPressureTarget(iMarker, iVertex, PressureCoeff);
+        
+      }
       
     }
+    
+    Surface_file.close();
     
   }
-  
-  Surface_file.close();
   
   /*--- Compute the pressure difference ---*/
   
@@ -5813,6 +5808,162 @@ void COutput::SetInverseDesign(CSolver *solver_container, CGeometry *geometry, C
   /*--- Update the total Cp difference coeffient ---*/
   
   solver_container->SetTotal_CpDiff(PressDiff);
+  
+  delete[] Point2Vertex;
+  
+}
+
+void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config, unsigned long iExtIter) {
+  
+  unsigned short iMarker, icommas, Boundary, Monitoring, iDim;
+  unsigned long iVertex, iPoint, (*Point2Vertex)[2], nPointLocal = 0, nPointGlobal = 0;
+  double XCoord, YCoord, ZCoord, PressureCoeff, HeatFlux, HeatFluxDiff, HeatFluxTarget, *Normal = NULL, Area,
+  Pressure, Cf;
+  bool *PointInDomain;
+  string text_line, surfHeatFlux_filename;
+  ifstream Surface_file;
+  char buffer[50], cstr[200];
+  
+  
+  nPointLocal = geometry->GetnPoint();
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&nPointLocal, &nPointGlobal, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+#endif
+#else
+  nPointGlobal = nPointLocal;
+#endif
+  
+  Point2Vertex = new unsigned long[nPointGlobal][2];
+  PointInDomain = new bool[nPointGlobal];
+  
+  for (iPoint = 0; iPoint < nPointGlobal; iPoint ++)
+    PointInDomain[iPoint] = false;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        /*--- The Pressure file uses the global numbering ---*/
+        
+#ifdef NO_MPI
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+#else
+        iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
+#endif
+        
+        if (geometry->vertex[iMarker][iVertex]->GetNode() < geometry->GetnPointDomain()) {
+          Point2Vertex[iPoint][0] = iMarker;
+          Point2Vertex[iPoint][1] = iVertex;
+          PointInDomain[iPoint] = true;
+          solver_container->SetHeatFluxTarget(iMarker, iVertex, 0.0);
+        }
+      }
+    }
+  }
+  
+  /*--- Prepare to read the surface pressure files (CSV) ---*/
+  
+  surfHeatFlux_filename = "TargetHeatFlux";
+  strcpy (cstr, surfHeatFlux_filename.c_str());
+  
+  /*--- Write file name with extension if unsteady or steady ---*/
+  
+  if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
+      (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+    if ((int(iExtIter) >= 0)    && (int(iExtIter) < 10))    sprintf (buffer, "_0000%d.dat", int(iExtIter));
+    if ((int(iExtIter) >= 10)   && (int(iExtIter) < 100))   sprintf (buffer, "_000%d.dat",  int(iExtIter));
+    if ((int(iExtIter) >= 100)  && (int(iExtIter) < 1000))  sprintf (buffer, "_00%d.dat",   int(iExtIter));
+    if ((int(iExtIter) >= 1000) && (int(iExtIter) < 10000)) sprintf (buffer, "_0%d.dat",    int(iExtIter));
+    if  (int(iExtIter) >= 10000) sprintf (buffer, "_%d.dat", int(iExtIter));
+  }
+  else
+    sprintf (buffer, ".dat");
+  
+  strcat (cstr, buffer);
+  
+  /*--- Read the surface pressure file ---*/
+  
+  string::size_type position;
+  
+  Surface_file.open(cstr, ios::in);
+  
+  if (!(Surface_file.fail())) {
+    
+    getline(Surface_file,text_line);
+    
+    while (getline(Surface_file,text_line)) {
+      for (icommas = 0; icommas < 50; icommas++) {
+        position = text_line.find( ",", 0 );
+        if(position!=string::npos) text_line.erase (position,1);
+      }
+      stringstream  point_line(text_line);
+      
+      if (geometry->GetnDim() == 2) point_line >> iPoint >> XCoord >> YCoord >> Pressure >> PressureCoeff >> Cf >> HeatFlux;
+      if (geometry->GetnDim() == 3) point_line >> iPoint >> XCoord >> YCoord >> ZCoord >> Pressure >> PressureCoeff >> Cf >> HeatFlux;
+      
+      if (PointInDomain[iPoint]) {
+        
+        /*--- Find the vertex for the Point and Marker ---*/
+        
+        iMarker = Point2Vertex[iPoint][0];
+        iVertex = Point2Vertex[iPoint][1];
+        
+        solver_container->SetHeatFluxTarget(iMarker, iVertex, HeatFlux);
+        
+      }
+      
+    }
+    
+    Surface_file.close();
+  }
+  
+  /*--- Compute the pressure difference ---*/
+  
+  HeatFluxDiff = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
+        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        
+        HeatFlux = solver_container->GetHeatFlux(iMarker, iVertex);
+        HeatFluxTarget = solver_container->GetHeatFluxTarget(iMarker, iVertex);
+        
+        Area = 0.0;
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+        
+        HeatFluxDiff += Area * (HeatFluxTarget - HeatFlux) * (HeatFluxTarget - HeatFlux);
+        
+      }
+      
+    }
+  }
+  
+#ifndef NO_MPI
+  double MyHeatFluxDiff = HeatFluxDiff;   HeatFluxDiff = 0.0;
+#ifdef WINDOWS
+  MPI_Allreduce(&MyHeatFluxDiff, &HeatFluxDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  MPI::COMM_WORLD.Allreduce(&MyHeatFluxDiff, &HeatFluxDiff, 1, MPI::DOUBLE, MPI::SUM);
+#endif
+#endif
+  
+  /*--- Update the total HeatFlux difference coeffient ---*/
+  
+  solver_container->SetTotal_HeatFluxDiff(HeatFluxDiff);
   
   delete[] Point2Vertex;
   

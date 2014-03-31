@@ -183,7 +183,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
+      Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
     }
     
     if (Kind_Solver == RANS) {
@@ -1846,7 +1846,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
+      variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Flux Y_Plus ";
       *NVar += 5;
     }
     
