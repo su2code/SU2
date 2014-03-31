@@ -1105,7 +1105,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             ForceProj_Vector[1] = -2.0*Factor*(Cp-CpTarget)*Normal[1]/Area;
             if (nDim == 3) ForceProj_Vector[2] = -2.0*Factor*(Cp-CpTarget)*Normal[2]/Area;
             break;
-          case INVERSE_DESIGN_HEAT:
+          case INVERSE_DESIGN_HEATFLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -1176,7 +1176,14 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
-          case MAXIMUM_HEAT:
+          case TOTAL_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
+          case MAXIMUM_HEATFLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -4934,8 +4941,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if ((config->GetKind_ObjFunc() == MAXIMUM_HEAT) ||
-      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEAT))
+  if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX))
     PsiE_Inf = -1.0;
   else
     PsiE_Inf = 0.0;
@@ -6317,8 +6325,9 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == MAXIMUM_HEAT) ||
-                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEAT));
+  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();

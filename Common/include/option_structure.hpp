@@ -629,43 +629,41 @@ enum GEO_TYPE {
  * \brief types of objective functions
  */
 enum ENUM_OBJECTIVE {
-	DRAG_COEFFICIENT = 1, 	/*!< \brief Drag objective function definition. */
-	LIFT_COEFFICIENT = 2, 	/*!< \brief Lift objective function definition. */
-	SIDEFORCE_COEFFICIENT = 3,	/*!< \brief Side force objective function definition. */
-	EFFICIENCY = 4,		/*!< \brief Efficiency objective function definition. */
+	DRAG_COEFFICIENT = 1, 	      /*!< \brief Drag objective function definition. */
+	LIFT_COEFFICIENT = 2, 	      /*!< \brief Lift objective function definition. */
+	SIDEFORCE_COEFFICIENT = 3,	  /*!< \brief Side force objective function definition. */
+	EFFICIENCY = 4,		            /*!< \brief Efficiency objective function definition. */
 	INVERSE_DESIGN_PRESSURE = 5,	/*!< \brief Pressure objective function definition (inverse design). */
-  INVERSE_DESIGN_HEAT = 31,    /*!< \brief Norm heat flux. */
-	MOMENT_X_COEFFICIENT = 6,	/*!< \brief Pitching moment objective function definition. */
-	MOMENT_Y_COEFFICIENT = 7,	/*!< \brief Rolling moment objective function definition. */
-	MOMENT_Z_COEFFICIENT = 8,	/*!< \brief Yawing objective function definition. */
-	EQUIVALENT_AREA = 9,		/*!< \brief Equivalent area objective function definition. */
-	NEARFIELD_PRESSURE = 10,	/*!< \brief NearField Pressure objective function definition. */
-	FORCE_X_COEFFICIENT = 12,	/*!< \brief X-direction force objective function definition. */
-	FORCE_Y_COEFFICIENT = 13,	/*!< \brief Y-direction force objective function definition. */
-	FORCE_Z_COEFFICIENT = 14,	/*!< \brief Z-direction force objective function definition. */
-	THRUST_COEFFICIENT = 15,		/*!< \brief Thrust objective function definition. */
-	TORQUE_COEFFICIENT = 16,		/*!< \brief Torque objective function definition. */
-	FIGURE_OF_MERIT = 17,		/*!< \brief Rotor Figure of Merit objective function definition. */
-	FREE_SURFACE = 18,				/*!< \brief Free Surface objective function definition. */
-	MAX_THICKNESS = 20,       /*!< \brief Maximum thickness. */
-	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
-  CLEARANCE = 22,       /*!< \brief Clearance. */
-  MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
-  MAXIMUM_HEAT = 25,    /*!< \brief Norm heat flux. */
-  MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
-	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
-	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
-	MAX_THICK_SEC4 = 29,       /*!< \brief Maximum thickness in section 4. */
-	MAX_THICK_SEC5 = 30       /*!< \brief Maximum thickness in section 5. */
+  INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
+  TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
+  MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
+	MOMENT_X_COEFFICIENT = 9,	    /*!< \brief Pitching moment objective function definition. */
+	MOMENT_Y_COEFFICIENT = 10,    /*!< \brief Rolling moment objective function definition. */
+	MOMENT_Z_COEFFICIENT = 11,    /*!< \brief Yawing objective function definition. */
+	EQUIVALENT_AREA = 12,		      /*!< \brief Equivalent area objective function definition. */
+	NEARFIELD_PRESSURE = 13,	    /*!< \brief NearField Pressure objective function definition. */
+	FORCE_X_COEFFICIENT = 14,	    /*!< \brief X-direction force objective function definition. */
+	FORCE_Y_COEFFICIENT = 15,	    /*!< \brief Y-direction force objective function definition. */
+	FORCE_Z_COEFFICIENT = 16,	    /*!< \brief Z-direction force objective function definition. */
+	THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
+	TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
+	FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
+	FREE_SURFACE = 20,				    /*!< \brief Free Surface objective function definition. */
+	MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
+  MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
+  MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
+	MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
+	MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
+	MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
+	MAX_THICK_SEC5 = 27           /*!< \brief Maximum thickness in section 5. */
 };
-
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
 ("LIFT", LIFT_COEFFICIENT)
 ("SIDEFORCE", SIDEFORCE_COEFFICIENT)
 ("EFFICIENCY", EFFICIENCY)
 ("INVERSE_DESIGN_PRESSURE", INVERSE_DESIGN_PRESSURE)
-("INVERSE_DESIGN_HEAT", INVERSE_DESIGN_HEAT)
+("INVERSE_DESIGN_HEATFLUX", INVERSE_DESIGN_HEATFLUX)
 ("MOMENT_X", MOMENT_X_COEFFICIENT)
 ("MOMENT_Y", MOMENT_Y_COEFFICIENT)
 ("MOMENT_Z", MOMENT_Z_COEFFICIENT)
@@ -676,12 +674,11 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
-("MAXIMUM_HEAT", MAXIMUM_HEAT)
+("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
+("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
-("TOTAL_VOLUME", TOTAL_VOLUME)
 ("MAX_THICKNESS", MAX_THICKNESS)
-("CLEARANCE", CLEARANCE)
 ("MIN_THICKNESS", MIN_THICKNESS)
 ("MAX_THICK_SEC1", MAX_THICK_SEC1)
 ("MAX_THICK_SEC2", MAX_THICK_SEC2)
@@ -695,9 +692,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 enum ENUM_CONTINUOUS_EQNS {
 	EULER_EQNS= 1, 	/*!< \brief Euler equations. */
 	NAVIER_STOKES_EQNS = 2 	/*!< \brief Navier Stokes equations. */
-
 };
-
 static const map<string, ENUM_CONTINUOUS_EQNS> ContinuousEqns_Map = CCreateMap<string, ENUM_CONTINUOUS_EQNS>
 ("EULER", EULER_EQNS)
 ("NAVIER_STOKES", NAVIER_STOKES_EQNS);
@@ -709,14 +704,11 @@ enum ENUM_DISCRETE_EQNS {
 	NONE_EQNS= 1, 	/*!< \brief No equations. */
 	SA_EQNS = 2, 	/*!< \brief Spallart-Almaras equations. */
 	SST_EQNS = 2 	/*!< \brief SST equations. */
-
 };
-
 static const map<string, ENUM_DISCRETE_EQNS> DiscreteEqns_Map = CCreateMap<string, ENUM_DISCRETE_EQNS>
 ("NONE", NONE_EQNS)
 ("SA", SA_EQNS)
 ("SST", SST_EQNS);
-
 
 /*!
  * \brief types of sensitivities to compute

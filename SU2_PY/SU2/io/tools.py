@@ -176,7 +176,9 @@ def get_headerMap():
                  "CDrag"           : "DRAG"                    ,
                  "CSideForce"      : "SIDEFORCE"               ,
                  "Cp_Diff"         : "INVERSE_DESIGN_PRESSURE" ,
-                 "Heat_Diff"       : "INVERSE_DESIGN_HEAT"     ,
+                 "HeatFlux_Diff"   : "INVERSE_DESIGN_HEATFLUX" ,
+                 "HeatFlux_Total"  : "TOTAL_HEATFLUX"          ,
+                 "HeatFlux_Maximum": "MAXIMUM_HEATFLUX"        ,
                  "CMx"             : "MOMENT_X"                ,
                  "CMy"             : "MOMENT_Y"                ,
                  "CMz"             : "MOMENT_Z"                ,
@@ -191,7 +193,6 @@ def get_headerMap():
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
-                 "Maximum_Heat"    : "MAXIMUM_HEAT"            ,
                  "Time(min)"       : "TIME"         }
     
     return map_dict
@@ -221,8 +222,9 @@ optnames_aero = [ "LIFT"                    ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
-                  "INVERSE_DESIGN_HEAT"     ,
-                  "MAXIMUM_HEAT"            ]
+                  "INVERSE_DESIGN_HEATFLUX" ,
+                  "TOTAL_HEATFLUX"          ,
+                  "MAXIMUM_HEATFLUX"        ]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -402,7 +404,8 @@ def get_adjointSuffix(adj_objfunc=None):
                  "EFFICIENCY"              : "eff"       ,
                  "INVERSE_DESIGN_PRESSURE" : "invpress"  ,
                  "INVERSE_DESIGN_HEAT"     : "invheat"   ,
-                 "MAXIMUM_HEAT"            : "maxheat"   ,
+                 "MAXIMUM_HEATFLUX"        : "maxheat"   ,
+                 "TOTAL_HEATFLUX"          : "totheat"   ,
                  "EQUIVALENT_AREA"         : "ea"        ,
                  "NEARFIELD_PRESSURE"      : "nfp"       ,
                  "THRUST"                  : "ct"        ,

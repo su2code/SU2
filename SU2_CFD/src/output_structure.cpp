@@ -3832,7 +3832,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   /*--- Header for the coefficients ---*/
   
   char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
-  char heat_coeff[]= ",\"Total_Heat_Flux\",\"Maximum_Heat_Flux\"";
+  char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char free_surface_coeff[]= ",\"CFreeSurface\"";

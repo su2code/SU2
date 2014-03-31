@@ -3103,7 +3103,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case DRAG_COEFFICIENT: cout << "Drag objective function." << endl; break;
       case LIFT_COEFFICIENT: cout << "Lift objective function." << endl; break;
       case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
-      case INVERSE_DESIGN_HEAT: cout << "Inverse design (Heat) objective function." << endl; break;
+      case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
       case SIDEFORCE_COEFFICIENT: cout << "Side force objective function." << endl; break;
       case MOMENT_X_COEFFICIENT: cout << "Mx objective function." << endl; break;
       case MOMENT_Y_COEFFICIENT: cout << "My objective function." << endl; break;
@@ -3121,7 +3121,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case FORCE_Z_COEFFICIENT: cout << "Z-force moment objective function." << endl; break;
       case THRUST_COEFFICIENT: cout << "Thrust objective function." << endl; break;
       case TORQUE_COEFFICIENT: cout << "Torque efficiency objective function." << endl; break;
-      case MAXIMUM_HEAT: cout << "Maximum heat flux objective function." << endl; break;
+      case TOTAL_HEATFLUX: cout << "Total heat flux objective function." << endl; break;
+      case MAXIMUM_HEATFLUX: cout << "Maximum heat flux objective function." << endl; break;
       case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
       case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
 		}
@@ -4778,7 +4779,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
       case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
       case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress"; break;
-      case INVERSE_DESIGN_HEAT:     AdjExt = "_invheat";  break;
+      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat";  break;
       case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx";      break;
       case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy";      break;
       case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz";      break;
@@ -4790,7 +4791,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz";      break;
       case THRUST_COEFFICIENT:      AdjExt = "_ct";       break;
       case TORQUE_COEFFICIENT:      AdjExt = "_cq";       break;
-      case MAXIMUM_HEAT:            AdjExt = "_maxheat";  break;
+      case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
+      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
     }
