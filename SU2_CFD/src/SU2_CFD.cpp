@@ -357,12 +357,15 @@ int main(int argc, char *argv[]) {
     
     /*--- Read the target pressure ---*/
     
-    if (config_container[ZONE_0]->GetInvDesign() == YES) {
+    if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
       output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                               geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    
+    /*--- Read the target heat flux ---*/
+
+    if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
       output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                               geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-    }
+                                    geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     

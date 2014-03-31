@@ -530,7 +530,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         
     # Case: finite difference  
     elif grad_type == 'FINITE_DIFFERENCE':
-        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_Heat","Grad_Maximum_Heat"')
+        header.append(r'"iVar","Grad_CLift","Grad_CDrag","Grad_CLDRatio","Grad_CSideForce","Grad_CMx","Grad_CMy","Grad_CMz","Grad_CFx","Grad_CFy","Grad_CFz","Grad_HeatFlux_Total","Grad_HeatFlux_Maximum"')
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
         for key in special_cases: 
@@ -543,8 +543,11 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "EQUIV_AREA"     : 
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
                 write_format.append(", %.10f, %.10f")
-            if key == "INV_DESIGN"     :
+            if key == "INV_DESIGN_CP"     :
                 header.append(r',"Grad_Cp_Diff"')
+                write_format.append(", %.10f")
+            if key == "INV_DESIGN_HEATFLUX"     :
+                header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
 
     # otherwise...
@@ -641,7 +644,7 @@ def get_optFileFormat(plot_format,special_cases=None):
     else: raise Exception('output plot format not recognized')
 
     # start header
-    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","Total_Heat","Maximum_Heat"])
+    header_list.extend(["Iteration","CLift","CDrag","CSideForce","CMx","CMy","CMz","CFx","CFy","CFz","CEff","HeatFlux_Total","HeatFlux_Maximum"])
     write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
     # special cases
@@ -655,9 +658,12 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "EQUIV_AREA"     : 
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
             write_format.append(r', %.10f, %.10f')
-        if key == "INV_DESIGN"     :
-            header.append(r',"Grad_Cp_Diff"')
-            write_format.append(", %.10f")
+        if key == "INV_DESIGN_CP"     :
+            header_list.extend(["Cp_Diff"])
+            write_format.append(r', %.10f')
+        if key == "INV_DESIGN_HEATFLUX"     :
+            header_list.extend(["HeatFlux_Diff"])
+            write_format.append(r', %.10f')
 
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -708,7 +714,8 @@ def get_specialCases(config):
     all_special_cases = [ 'FREE_SURFACE'                     ,
                           'ROTATING_FRAME'                   ,
                           'EQUIV_AREA'                       ,
-                          'INV_DESIGN'                       ]
+                          'INV_DESIGN_CP'                    ,
+                          'INV_DESIGN_HEATFLUX'              ]
     
     special_cases = []
     for key in all_special_cases:

@@ -914,13 +914,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_Total_Heat - Value of the total heat load.
 	 */
-	virtual void SetTotal_Heat(double val_Total_Heat);
+	virtual void SetTotal_HeatFlux(double val_Total_Heat);
     
     /*!
 	 * \brief A virtual member.
 	 * \param[in] val_Total_MaxHeat - Value of the total heat load.
 	 */
-	virtual void SetTotal_MaxHeat(double val_Total_MaxHeat);
+	virtual void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
     
 	/*!
 	 * \brief A virtual member.
@@ -1116,13 +1116,13 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_Heat(void);
+	virtual double GetTotal_HeatFlux(void);
     
     /*!
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_MaxHeat(void);
+	virtual double GetTotal_MaxHeatFlux(void);
     
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -2531,13 +2531,13 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_Heat(void);
+	double GetTotal_HeatFlux(void);
     
     /*!
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_MaxHeat(void);
+	double GetTotal_MaxHeatFlux(void);
     
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
@@ -2549,13 +2549,13 @@ public:
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_Heat(double val_Total_Heat);
+	void SetTotal_HeatFlux(double val_Total_Heat);
     
     /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_MaxHeat(double val_Total_MaxHeat);
+	void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
@@ -2769,7 +2769,7 @@ private:
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-  AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
@@ -5970,25 +5970,25 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_Heat(void);
+	double GetTotal_HeatFlux(void);
   
   /*!
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_MaxHeat(void);
+	double GetTotal_MaxHeatFlux(void);
   
   /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_Heat(double val_Total_Heat);
+	void SetTotal_HeatFlux(double val_Total_Heat);
   
   /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_MaxHeat(double val_Total_MaxHeat);
+	void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -6095,7 +6095,7 @@ private:
 	AllBound_CFx_Visc,			/*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:

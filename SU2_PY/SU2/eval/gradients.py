@@ -215,8 +215,12 @@ def adjoint( func_name, config, state=None ):
         pull.append(files['WEIGHT_NF'])    
 
     # files: target pressure coefficient
-    if 'INV_DESIGN' in special_cases:
+    if 'INV_DESIGN_CP' in special_cases:
       pull.append(files['TARGET_CP'])
+
+    # files: target heat flux coefficient
+    if 'INV_DESIGN_HEATFLUX' in special_cases:
+      pull.append(files['TARGET_HEATFLUX'])
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
@@ -488,9 +492,13 @@ def findiff( config, state=None, step=1e-4 ):
         pull.append(files['TARGET_EA'])
 
     # files: target pressure distribution
-    if 'INV_DESIGN' in special_cases and 'TARGET_CP' in files:
+    if 'INV_DESIGN_CP' in special_cases and 'TARGET_CP' in files:
       pull.append(files['TARGET_CP'])
     
+    # files: target heat flux distribution
+    if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
+      pull.append(files['TARGET_HEATFLUX'])
+
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):

@@ -6417,7 +6417,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         if (geometry->node[iPoint]->GetCoord(0) < 0.9) {
           GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
           kGTdotn = 0;
-          Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeat();
+          Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
           Xi = 1.0;
           for (iDim = 0; iDim < nDim; iDim++)
             kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
@@ -6427,7 +6427,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       } else {
         GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
         kGTdotn = 0;
-        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeat();
+        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
         Xi = 1.0;
         for (iDim = 0; iDim < nDim; iDim++)
           kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
