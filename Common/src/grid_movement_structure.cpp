@@ -5823,6 +5823,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, string
     else {
       mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
       for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
+        coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
         mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
       }
     }
