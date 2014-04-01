@@ -5246,12 +5246,13 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
                                  unsigned short iMesh,
                                  unsigned long Iteration) {
   
-	unsigned short iDim, iMarker;
+	unsigned short iDim, iMarker, iSpecies;
   unsigned long iEdge, iVertex, iPoint, jPoint;
 	double *Normal, Area, Vol;
   double Mean_SoundSpeed, Mean_ProjVel;
   double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
-  double Mean_LaminarVisc, Mean_Density;
+  double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
+  double cv, cvve, Ru, *xi, *Ms;
   double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -5265,6 +5266,11 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
   K_v    = 0.25;
   iPoint = 0;
   jPoint = 0;
+  Ru = UNIVERSAL_GAS_CONSTANT;
+  
+  /*--- Get from config ---*/
+  xi = config->GetRotationModes();
+  Ms = config->GetMolar_Mass();
   
 	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5285,8 +5291,10 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     Area = sqrt(Area);
     
 		/*--- Mean Values ---*/
-    Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
-    Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
+    Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) +
+                             node[jPoint]->GetProjVel(Normal)  );
+    Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() +
+                             node[jPoint]->GetSoundSpeed()  ) * Area;
     
 		/*--- Inviscid contribution ---*/
 		Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
@@ -5294,15 +5302,26 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
     
 		/*--- Viscous contribution ---*/
-    Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosity() + node[jPoint]->GetLaminarViscosity());
-    Mean_Density     = 0.5*(node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
+    Mean_LaminarVisc    = 0.5*(node[iPoint]->GetLaminarViscosity() +
+                               node[jPoint]->GetLaminarViscosity()  );
+    Mean_ThermalCond    = 0.5*(node[iPoint]->GetThermalConductivity() +
+                               node[jPoint]->GetThermalConductivity()  );
+    Mean_ThermalCond_ve = 0.5*(node[iPoint]->GetThermalConductivity_ve() +
+                               node[jPoint]->GetThermalConductivity_ve()  );
+    Mean_Density        = 0.5*(node[iPoint]->GetDensity() +
+                               node[jPoint]->GetDensity()  );
+    cv = 0.5*(node[iPoint]->GetRhoCv_ve() + node[jPoint]->GetRhoCv_ve()) +
+         0.5*(node[iPoint]->GetRhoCv_tr() + node[jPoint]->GetRhoCv_tr());
     
 		Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
-		Lambda_2 = 0.0;
+//		Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
+    Lambda_2 = 0.0;
 		Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
     
-		if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
-		if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+		if (geometry->node[iPoint]->GetDomain())
+      node[iPoint]->AddMax_Lambda_Visc(Lambda);
+		if (geometry->node[jPoint]->GetDomain())
+      node[jPoint]->AddMax_Lambda_Visc(Lambda);
     
 	}
   
@@ -5329,11 +5348,16 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 			}
       
 			/*--- Viscous contribution ---*/
-      Mean_LaminarVisc = node[iPoint]->GetLaminarViscosity();
-      Mean_Density     = node[iPoint]->GetDensity();
+      Mean_LaminarVisc    = node[iPoint]->GetLaminarViscosity();
+      Mean_ThermalCond    = node[iPoint]->GetThermalConductivity();
+      Mean_ThermalCond_ve = node[iPoint]->GetThermalConductivity_ve();
+      Mean_Density        = node[iPoint]->GetDensity();
+      
+      cv = node[iPoint]->GetRhoCv_tr() + node[iPoint]->GetRhoCv_ve();
       
 			Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
-			Lambda_2 = 0.0;
+//			Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
+      Lambda_2 = 0.0;
 			Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
       
 			if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
@@ -5347,7 +5371,12 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-//		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+    
+//    cout << "dTinv: " << Local_Delta_Time << endl;
+//    cout << "dTvisc: " << Local_Delta_Time_Visc << endl;
+//    cin.get();
+    
+		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
     /*--- Store minimum and maximum dt's within the grid for printing ---*/
@@ -5839,10 +5868,11 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   
 	/*--- Local variables ---*/
 	unsigned short iDim, iVar;
+  unsigned short T_INDEX, TVE_INDEX;
 	unsigned long iVertex, iPoint, total_index;
-  
-	double Wall_HeatFlux;
+	double Wall_HeatFlux, dTdn, dTvedn, ktr, kve;
 	double *Normal, Area;
+  double **GradV;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
@@ -5851,6 +5881,10 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  
+  /*--- Get the locations of the primitive variables ---*/
+  T_INDEX   = node[0]->GetTIndex();
+  TVE_INDEX = node[0]->GetTveIndex();
   
 //  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
 //  sour_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
@@ -5889,14 +5923,27 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       
 			/*--- Set the residual, truncation error, and velocity value ---*/
 			node[iPoint]->SetVelocity_Old(Vector);
-
       for (iDim = 0; iDim < nDim; iDim++) {
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
         node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
       }
       
+      /*--- Get temperature gradient information ---*/
+      GradV  = node[iPoint]->GetGradient_Primitive();
+      dTdn   = 0.0;
+      dTvedn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
+        dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
+      }
+      
+      /*--- Get node thermal conductivity ---*/
+      ktr = node[iPoint]->GetThermalConductivity();
+      kve = node[iPoint]->GetThermalConductivity_ve();
+      
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
-			Res_Visc[nSpecies+nDim] = Wall_HeatFlux * Area;
+			Res_Visc[nSpecies+nDim]   = ktr*dTdn + kve*dTvedn + Wall_HeatFlux*Area;
+      Res_Visc[nSpecies+nDim+1] = kve*dTvedn + Wall_HeatFlux*Area;
       
 			/*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
