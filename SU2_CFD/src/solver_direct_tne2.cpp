@@ -5867,14 +5867,19 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      unsigned short val_marker) {
   
 	/*--- Local variables ---*/
+  bool implicit;
 	unsigned short iDim, iVar;
   unsigned short T_INDEX, TVE_INDEX;
 	unsigned long iVertex, iPoint, total_index;
-	double Wall_HeatFlux, dTdn, dTvedn, ktr, kve;
+	double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
 	double *Normal, Area;
   double **GradV;
   
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  /*--- Assign booleans ---*/
+	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  
+  /*--- Set "Proportional control" coefficient ---*/
+  pcontrol = 0.6;
   
 	/*--- Identify the boundary by string name ---*/
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
@@ -5942,8 +5947,12 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       kve = node[iPoint]->GetThermalConductivity_ve();
       
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
-			Res_Visc[nSpecies+nDim]   = ktr*dTdn + kve*dTvedn + Wall_HeatFlux*Area;
-      Res_Visc[nSpecies+nDim+1] = kve*dTvedn + Wall_HeatFlux*Area;
+      // Note: Contributions from qtr and qve are used for proportional control
+      //       to drive the solution toward the specified heatflux more quickly.
+			Res_Visc[nSpecies+nDim]   = pcontrol*(ktr*dTdn+kve*dTvedn) +
+                                  Wall_HeatFlux*Area;
+      Res_Visc[nSpecies+nDim+1] = pcontrol*(kve*dTvedn) +
+                                  Wall_HeatFlux*Area;
       
 			/*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -5991,12 +6000,13 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   
   bool ionization, implicit, jnk;
   unsigned short iDim, iSpecies, iVar, jVar;
-  unsigned short T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint, total_index;
-  double rhoCvtr, rhoCvve, ktr, kve, Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
+  double rhoCvtr, rhoCvve, ktr, kve, *dTdU, *dTvedU;
+  double Ti, Tvei, Tj, Tvej;
   double Twall, dTdn, dTvedn, dij, theta;
   double Area, *Normal, UnitNormal[3];
-  double **PrimVarGrad;
+  double *V, **PrimVarGrad;
   
   implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
@@ -6012,6 +6022,11 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
 	/*--- Retrieve the specified wall temperature ---*/
 	Twall = config->GetIsothermal_Temperature(Marker_Tag);
   
+  /*--- Initialize arrays ---*/
+  dTdU   = new double[nVar];
+  dTvedU = new double[nVar];
+  
+  RHOS_INDEX    = node[0]->GetRhosIndex();
   T_INDEX       = node[0]->GetTIndex();
   TVE_INDEX     = node[0]->GetTveIndex();
   RHOCVTR_INDEX = node[0]->GetRhoCvtrIndex();
@@ -6066,30 +6081,49 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       PrimVarGrad = node[iPoint]->GetGradient_Primitive();
       
       /*--- Calculate useful quantities ---*/
-      rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
-      rhoCvve = node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+//      rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
+//      rhoCvve = node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+//      ktr     = node[iPoint]->GetThermalConductivity();
+//      kve     = node[iPoint]->GetThermalConductivity_ve();
+//      Ti      = node[iPoint]->GetPrimVar(T_INDEX);
+//      Tvei    = node[iPoint]->GetPrimVar(TVE_INDEX);
+//      Tj      = node[jPoint]->GetPrimVar(T_INDEX);
+//      Tvej    = node[jPoint]->GetPrimVar(TVE_INDEX);
+//      dTdU    = node[iPoint]->GetdTdU();
+//      dTvedU  = node[iPoint]->GetdTvedU();
+      
+      V       = node[iPoint]->GetPrimVar();
       ktr     = node[iPoint]->GetThermalConductivity();
       kve     = node[iPoint]->GetThermalConductivity_ve();
-      Ti      = node[iPoint]->GetPrimVar(T_INDEX);
-      Tvei    = node[iPoint]->GetPrimVar(TVE_INDEX);
-      Tj      = node[jPoint]->GetPrimVar(T_INDEX);
-      Tvej    = node[jPoint]->GetPrimVar(TVE_INDEX);
-      dTdU   = node[iPoint]->GetdTdU();
-      dTvedU = node[iPoint]->GetdTvedU();
-      
+      node[iPoint]->CalcdTdU(V, config, dTdU);
+      node[iPoint]->CalcdTvedU(V, config, dTvedU);
+      rhoCvtr = V[RHOCVTR_INDEX];
+      rhoCvve = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        rhoCvve += V[RHOS_INDEX+iSpecies] * node[iPoint]->CalcCvve(Twall,
+                                                                   config,
+                                                                   iSpecies);
       
       /*--- Calculate projected gradient of temperature normal to the surface ---*/
+      ////////////////
+      // METHOD 1
+//      Ti = V[T_INDEX];
+//      Tvei = V[TVE_INDEX];
+//      Tj = node[jPoint]->GetTemperature();
+//      Tvej = node[jPoint]->GetTemperature_ve();
+//      dTdn = -(Tj - Ti)/dij;
+//      dTvedn = -(Tvej - Tvei)/dij;
+
+      // METHOD 2
       dTdn = 0.0; dTvedn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        dTdn += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
+        dTdn   += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
         dTvedn += PrimVarGrad[TVE_INDEX][iDim]*UnitNormal[iDim];
       }
-      
-      /*--- Set the wall temperature ---*/
-      node[iPoint]->SetPrimVar(T_INDEX, Twall);
+      ////////////////
       
       /*--- Apply to the linear system ---*/
-      Res_Visc[nSpecies+nDim] = (ktr*dTdn + kve*dTvedn)*Area;
+      Res_Visc[nSpecies+nDim]   = (ktr*dTdn+kve*dTvedn)*Area;
       Res_Visc[nSpecies+nDim+1] = kve*dTvedn*Area;
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
@@ -6112,8 +6146,8 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         }
         // total energy
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies]
-                                               + kve*theta/dij*dTvedU[iSpecies]) * Area;
+          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies] +
+                                               kve*theta/dij*dTvedU[iSpecies]) * Area;
         }
         Jacobian_i[nSpecies+3][nSpecies]   = 0.0;
         Jacobian_i[nSpecies+3][nSpecies+1] = 0.0;
@@ -6142,4 +6176,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       }
     }
   }
+  delete [] dTdU;
+  delete [] dTvedU;
 }
