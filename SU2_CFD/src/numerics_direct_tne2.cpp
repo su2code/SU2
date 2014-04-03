@@ -1656,17 +1656,9 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
 		}
-    if (iVar < nSpecies) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                         (PrimVar_j[RHOS_INDEX+iVar]/PrimVar_j[RHO_INDEX]
-                                          -PrimVar_i[RHOS_INDEX+iVar]/PrimVar_i[RHO_INDEX]))*Edge_Vector[iDim] / dist_ij_2;
-      }
-    } else {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                         (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
-      }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+                                       (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
     }
 	}
   
