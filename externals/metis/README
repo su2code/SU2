@@ -1,0 +1,52 @@
+/*
+ * Copyright 1997, Regents of the University of Minnesota
+ *
+ * metis.h
+ *
+ * This file includes all necessary header files
+ *
+ * Started 8/27/94
+ * George
+ *
+ */
+
+
+The original source code must be distributed.
+
+-------------------------------------------------------------------
+
+Benjamin,
+
+Yes you can as long as you provide proper references and Metis's
+original code and documentation.
+
+regards,
+
+George
+
+
+> My name is Benjamin Kirk.  I'm currently a PhD student in the CFDLab at 
+> The University of Texas at Austin.  For the past year I have been 
+> developing a parallel, unstructured mesh finite element library for 
+> large-scale applications.  I have been using METIS for graph 
+> partitioning to achieve load balancing and domain decomposition.
+> 
+> The project recently moved to http://libmesh.sourceforge.net/
+> It is protected under the GNU Lesser General Public License and is 
+> classified as a non-commercial application.  I would like to distribute 
+> METIS (and eventually PARMETIS) with the application.  May I do so?
+> 
+> Thanks.
+> 
+> Benjamin S. Kirk
+> benkirk@cfdlab.ae.utexas.edu
+> 
+
+
+
+
+------------------------------------------------------------------
+George Karypis                           email: karypis@cs.umn.edu 
+Assistant Professor,          tel: 612-626-7524; fax: 612-625-0572
+University of Minnesota,       URL: http://www.cs.umn.edu/~karypis
+------------------------------------------------------------------
