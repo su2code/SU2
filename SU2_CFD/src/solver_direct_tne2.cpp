@@ -5372,10 +5372,6 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
     
-//    cout << "dTinv: " << Local_Delta_Time << endl;
-//    cout << "dTvisc: " << Local_Delta_Time_Visc << endl;
-//    cin.get();
-    
 		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
@@ -5867,16 +5863,19 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      unsigned short val_marker) {
   
 	/*--- Local variables ---*/
-  bool implicit;
-	unsigned short iDim, iVar;
-  unsigned short T_INDEX, TVE_INDEX;
+  bool implicit, catalytic;
+	unsigned short iDim, iSpecies, iVar;
+  unsigned short T_INDEX, TVE_INDEX, RHOS_INDEX, RHO_INDEX;
 	unsigned long iVertex, iPoint, total_index;
 	double Wall_HeatFlux, dTdn, dTvedn, ktr, kve, pcontrol;
+  double rho, Ys, eves, hs;
 	double *Normal, Area;
-  double **GradV;
+  double *Ds, *V, *dYdn, SdYdn;
+  double **GradV, **GradY;
   
   /*--- Assign booleans ---*/
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  catalytic = false;
   
   /*--- Set "Proportional control" coefficient ---*/
   pcontrol = 0.6;
@@ -5888,8 +5887,16 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
   /*--- Get the locations of the primitive variables ---*/
-  T_INDEX   = node[0]->GetTIndex();
-  TVE_INDEX = node[0]->GetTveIndex();
+  T_INDEX    = node[0]->GetTIndex();
+  TVE_INDEX  = node[0]->GetTveIndex();
+  RHOS_INDEX = node[0]->GetRhosIndex();
+  RHO_INDEX  = node[0]->GetRhoIndex();
+  
+  /*--- Allocate arrays ---*/
+  dYdn = new double[nSpecies];
+  GradY = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    GradY[iSpecies] = new double[nDim];
   
 //  /*--- Pass structure of the primitive variable vector to CNumerics ---*/
 //  sour_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
@@ -5934,12 +5941,47 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       }
       
       /*--- Get temperature gradient information ---*/
+      V = node[iPoint]->GetPrimVar();
       GradV  = node[iPoint]->GetGradient_Primitive();
       dTdn   = 0.0;
       dTvedn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         dTdn   += GradV[T_INDEX][iDim]*Normal[iDim];
         dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
+      }
+      
+      if (catalytic) {
+        cout << "NEED TO IMPLEMENT CATALYTIC BOUNDARIES IN HEATFLUX!!!" << endl;
+        exit(1);
+      }
+      else {
+        
+        /*--- Rename for convenience ---*/
+        rho = V[RHO_INDEX];
+        Ds  = node[iPoint]->GetDiffusionCoeff();
+        
+        /*--- Calculate normal derivative of mass fraction ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Ys = V[RHOS_INDEX+iSpecies]/rho;
+          dYdn[iSpecies] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
+                                         Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
+        }
+        
+        /*--- Calculate supplementary quantities ---*/
+        SdYdn = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+            SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
+        
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Ys   = V[RHOS_INDEX+iSpecies]/rho;
+          hs   = node[iPoint]->CalcHs(V, config, iSpecies);
+          eves = node[iPoint]->CalcEve(V, config, iSpecies);
+//          Res_Visc[iSpecies] = -rho*Ds[iSpecies]*dYdn[iSpecies] + Ys*SdYdn;
+//          Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
+//          Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
+        }
       }
       
       /*--- Get node thermal conductivity ---*/
@@ -5949,10 +5991,10 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 			/*--- Set the residual on the boundary with the specified heat flux ---*/
       // Note: Contributions from qtr and qve are used for proportional control
       //       to drive the solution toward the specified heatflux more quickly.
-			Res_Visc[nSpecies+nDim]   = pcontrol*(ktr*dTdn+kve*dTvedn) +
-                                  Wall_HeatFlux*Area;
-      Res_Visc[nSpecies+nDim+1] = pcontrol*(kve*dTvedn) +
-                                  Wall_HeatFlux*Area;
+			Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
+                                   Wall_HeatFlux*Area;
+      Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
+                                   Wall_HeatFlux*Area;
       
 			/*--- Viscous contribution to the residual at the wall ---*/
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
@@ -5989,6 +6031,11 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       
 		}
 	}
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    delete [] GradY[iSpecies];
+  delete [] GradY;
+  delete [] dYdn;
 }
 
 void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,

@@ -1560,7 +1560,7 @@ CTNE2NSVariable::~CTNE2NSVariable(void) {
 void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
   double rho, T, Tve, P;
-  double *Ms, Mi, Mj, pi, R, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
+  double *Ms, Mi, Mj, pi, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
   double denom, d1_ij, D_ij;
   double ***Omega00, Omega_ij;
   
@@ -1580,10 +1580,8 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
   kb   = BOLTZMANN_CONSTANT;
   
   /*--- Calculate mixture gas constant ---*/
-  R     = 0.0;
   gam_t = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    R     += Ru * Primitive[RHOS_INDEX+iSpecies]/rho;
     gam_t += Primitive[RHOS_INDEX+iSpecies] / (rho*Ms[iSpecies]);
   }
   
@@ -1635,8 +1633,7 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     }
     
     /*--- Assign species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
-                             / denom;
+    DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
   if (ionization) {
     iSpecies = nSpecies-1;
@@ -1669,10 +1666,6 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     }
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
-  }
-  
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    DiffusionCoeff[iSpecies] = 0.0;
   }
 }
 
