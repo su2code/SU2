@@ -20,19 +20,13 @@ ___bin_SU2_GPC_SOURCES = ../include/SU2_GPC.hpp \
 ___bin_SU2_GPC_CXXFLAGS =
 ___bin_SU2_GPC_LDADD = ../../Common/lib/libSU2.a
 
+# always link to built dependencies from ./externals
+___bin_SU2_GPC_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_GPC_LDADD += @su2_externals_LIBS@
+
 # if BUILD_CGNS
 ___bin_SU2_GPC_CXXFLAGS += @CGNS_CXX@
 ___bin_SU2_GPC_LDADD += @CGNS_LD@
-# endif
-
-# if BUILD_METIS
-___bin_SU2_GPC_CXXFLAGS += @METIS_CXX@
-___bin_SU2_GPC_LDADD += @METIS_LD@
-# endif
-
-# if BUILD_TECIO
-___bin_SU2_GPC_CXXFLAGS += @TECIO_CXX@
-___bin_SU2_GPC_LDADD += @TECIO_LD@
 # endif
 
 # if BUILD_MUTATIONPP

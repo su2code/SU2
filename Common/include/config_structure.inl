@@ -188,6 +188,8 @@ inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND
 
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
 
+inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
+
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
 inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
@@ -200,7 +202,7 @@ inline double* CConfig::GetMassFrac_FreeStream(void) { return MassFrac_FreeStrea
 
 inline double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 
-inline double CConfig::GetConversion_Factor(void) { return Conversion_Factor; }
+inline double CConfig::GetMesh_Scale_Change(void) { return Mesh_Scale_Change; }
 
 inline unsigned short CConfig::GetnStartUpIter(void) { return nStartUpIter; }
 
@@ -668,6 +670,10 @@ inline bool CConfig::GetFullMG(void) { return FullMG; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
 
+inline bool CConfig::GetInvDesign_Cp(void) { return InvDesign_Cp; }
+
+inline bool CConfig::GetInvDesign_HeatFlux(void) { return InvDesign_HeatFlux; }
+
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
 
 inline string CConfig::GetMarker_All_Tag(unsigned short val_marker) { return Marker_All_Tag[val_marker]; }
@@ -892,7 +898,7 @@ inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
 inline bool CConfig::GetCGNS_To_SU2(void) {return CGNS_To_SU2; }
 
-inline bool CConfig::GetWrite_Converted_Mesh(void) { return Write_Converted_Mesh; }
+inline bool CConfig::GetMesh_Output(void) { return Mesh_Output; }
 
 inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index; }
 
@@ -926,7 +932,7 @@ inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
-inline bool CConfig::GetWrt_Sectional_Forces(void) { return Wrt_Sectional_Forces; }
+inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
 inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
 
@@ -975,3 +981,5 @@ inline double CConfig::GetGust_Ampl(void) {return Gust_Ampl; }
 inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time; }
 
 inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc; }
+
+inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }

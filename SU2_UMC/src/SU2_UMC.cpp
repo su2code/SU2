@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         based on the name of the config file given ---*/
   strcpy(grid_filename, argv[1]);
   config = new CConfig(grid_filename, SU2_GDC, ZONE_0, nZone, 
-                         VERB_HIGH);
+                         0, VERB_HIGH);
 
   /*--- Instantiate an object of the boundary-geometry class ---*/
   boundary = new CBoundaryGeometry(config, 
@@ -388,16 +388,16 @@ void Make_Sectional_Cuts(CConfig *config, CBoundaryGeometry *boundary) {
 	          cout << Plane_P0[1] << ", ";
 	          cout << Plane_P0[2] << "}" << endl;
             
-            /*--- find the points defining the airfoil section --*/
-	          boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal,
-	                                          iSection, config,
-                                            Xcoord_Airfoil[iSection],
-                                            Ycoord_Airfoil[iSection],
-                                            Zcoord_Airfoil[iSection],
-                                   point1_Airfoil[iMarker][iSection],
-                                   point2_Airfoil[iMarker][iSection],
-                                  weight1_Airfoil[iMarker][iSection],
-                                              true, CCW_orientation);
+//            /*--- find the points defining the airfoil section --*/
+//	          boundary->ComputeAirfoil_Section(Plane_P0, Plane_Normal,
+//	                                          iSection, config,
+//                                            Xcoord_Airfoil[iSection],
+//                                            Ycoord_Airfoil[iSection],
+//                                            Zcoord_Airfoil[iSection],
+//                                   point1_Airfoil[iMarker][iSection],
+//                                   point2_Airfoil[iMarker][iSection],
+//                                  weight1_Airfoil[iMarker][iSection],
+//                                              true, CCW_orientation);
             
             /*--- writing of the tracked-points file.this file 
                   records the node number of the edges being 

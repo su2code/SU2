@@ -31,8 +31,8 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 	Sens_Geo = NULL;
 	Sens_Press = NULL;
 	Sens_Temp = NULL;
-	p1_Und_Lapl = NULL;
-	p2_Und_Lapl = NULL;
+	iPoint_UndLapl = NULL;
+	jPoint_UndLapl = NULL;
   Jacobian_Axisymmetric = NULL;
 	CSensitivity = NULL;
 
@@ -67,8 +67,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 	Sens_Geo = NULL;
 	Sens_Press = NULL;
 	Sens_Temp = NULL;
-	p1_Und_Lapl = NULL;
-	p2_Und_Lapl = NULL;
+	iPoint_UndLapl = NULL;
+	jPoint_UndLapl = NULL;
   Jacobian_Axisymmetric = NULL;
 	CSensitivity = NULL;
   
@@ -112,8 +112,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
 	/*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) {
-		p1_Und_Lapl = new double [nPoint];
-		p2_Und_Lapl = new double [nPoint]; 
+		iPoint_UndLapl = new double [nPoint];
+		jPoint_UndLapl = new double [nPoint]; 
 	}
 
 	/*--- Define some auxiliary vectors related to the geometry ---*/
@@ -298,8 +298,8 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
 	if (Sens_Geo != NULL) delete [] Sens_Geo;
 	if (Sens_Press != NULL) delete [] Sens_Press;
 	if (Sens_Temp != NULL) delete [] Sens_Temp;
-	if (p1_Und_Lapl != NULL) delete [] p1_Und_Lapl;
-	if (p2_Und_Lapl != NULL) delete [] p2_Und_Lapl;
+	if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
+	if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   
   
 	if (Jacobian_Axisymmetric != NULL) {
@@ -1011,17 +1011,20 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
 
 void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-	double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
-	double x_origin, y_origin, z_origin, WDrag, Area;
+	double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, Factor, Cp, CpTarget,
+  C_t, C_q, x_origin, y_origin, z_origin, WDrag, Area, RefVel2, RefDensity, Gas_Constant, Mach2Vel,
+  Mach_Motion, *Velocity_Inf, invCD, CLCD2, invCQ, CTRCQ2;
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint;
-	double Alpha      = (config->GetAoA()*PI_NUMBER)/180.0;
-	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
-	double RefAreaCoeff    = config->GetRefAreaCoeff();
+  int rank = MASTER_NODE;
+
+	double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
+	double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
+	double RefAreaCoeff     = config->GetRefAreaCoeff();
 	double RefLengthMoment  = config->GetRefLengthMoment();
 	double *RefOriginMoment = config->GetRefOriginMoment(0);
-	double RefVel2, RefDensity;
-  int rank = MASTER_NODE;
+  bool grid_movement      = config->GetGrid_Movement();
+
 
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -1031,20 +1034,20 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 #endif
 #endif
   
-  bool grid_movement = config->GetGrid_Movement();
-  
 	ForceProj_Vector = new double[nDim];
   
 	/*--- For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values, 
    which is the standard convention. ---*/
+  
 	if (grid_movement) {
-    double Gas_Constant = config->GetGas_ConstantND();
-    double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    double Mach_Motion = config->GetMach_Motion();
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
 		RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  } else {
-		double *Velocity_Inf = config->GetVelocity_FreeStreamND();
+  }
+  else {
+		Velocity_Inf = config->GetVelocity_FreeStreamND();
 		RefVel2 = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -1052,48 +1055,25 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-	/*--- In parallel computations the Cd, and Cl must be recomputed using all the processors ---*/
-#ifdef NO_MPI
-	C_d = solver_container[FLOW_SOL]->GetTotal_CDrag();
+	/*--- Compute coefficients needed for objective function evaluation. ---*/
+  
+	Factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  C_d = solver_container[FLOW_SOL]->GetTotal_CDrag();
 	C_l = solver_container[FLOW_SOL]->GetTotal_CLift();
 	C_t = solver_container[FLOW_SOL]->GetTotal_CT();
 	C_q = solver_container[FLOW_SOL]->GetTotal_CQ();
-#else
-	double *sbuf_force = new double[4];
-	double *rbuf_force = new double[4];
-	sbuf_force[0] = solver_container[FLOW_SOL]->GetTotal_CDrag();
-	sbuf_force[1] = solver_container[FLOW_SOL]->GetTotal_CLift();
-	sbuf_force[2] = solver_container[FLOW_SOL]->GetTotal_CT();
-	sbuf_force[3] = solver_container[FLOW_SOL]->GetTotal_CQ();
-#ifdef WINDOWS
-	MPI_Reduce(sbuf_force, rbuf_force, 4, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-	MPI_Bcast(rbuf_force, 4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, 4, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
-	MPI::COMM_WORLD.Bcast(rbuf_force, 4, MPI::DOUBLE, MASTER_NODE);
-#endif
-	C_d = rbuf_force[0];
-	C_l = rbuf_force[1];
-	C_t = rbuf_force[2];
-	C_q = rbuf_force[3];
-	delete [] sbuf_force;
-	delete [] rbuf_force;
-#endif
-  
-	/*--- Compute coefficients needed for objective function evaluation. ---*/
-	C_d += config->GetCteViscDrag();
-	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-	double invCD  = 1.0 / C_d;
-	double CLCD2  = C_l / (C_d*C_d);
-	double invCQ  = 1.0/C_q;
-	double CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
+	invCD  = 1.0 / C_d; CLCD2  = C_l / (C_d*C_d);
+	invCQ  = 1.0/C_q; CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
   
 	x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
+  /*--- Evaluate the boundary condition coefficients. ---*/
+
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
 				x = geometry->node[iPoint]->GetCoord(0);
@@ -1103,94 +1083,107 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 				switch (config->GetKind_ObjFunc()) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha); ForceProj_Vector[1] = C_p*sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = C_p*sin(Beta); ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha); ForceProj_Vector[1] = Factor*sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = Factor*sin(Beta); ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = C_p*cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] = -Factor*sin(Alpha); ForceProj_Vector[1] = Factor*cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor*cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = Factor*cos(Beta); ForceProj_Vector[2] = -Factor*sin(Beta) * sin(Alpha); }
             break;
-          case PRESSURE_COEFFICIENT :
-            if (nDim == 2) {
-              Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
-              ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area;
-            }
-            if (nDim == 3) {
-              Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-              ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area; ForceProj_Vector[2] = -C_p*Normal[2]/Area;
-            }
+          case INVERSE_DESIGN_PRESSURE :
+            Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker,iVertex);
+            CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker,iVertex);
+            Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
+            if (nDim == 3) Area += Area;
+            ForceProj_Vector[0] = -2.0*Factor*(Cp-CpTarget)*Normal[0]/Area;
+            ForceProj_Vector[1] = -2.0*Factor*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] = -2.0*Factor*(Cp-CpTarget)*Normal[2]/Area;
+            break;
+          case INVERSE_DESIGN_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -Factor*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = Factor*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -Factor*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = -Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = Factor*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = Factor*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta); ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] = -Factor*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = Factor*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -Factor*CLCD2*sin(Beta); ForceProj_Vector[2] = Factor*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha)*WDrag; ForceProj_Vector[1] = Factor*sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = Factor*sin(Beta)*WDrag; ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha)*WDrag; ForceProj_Vector[1] = Factor*sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = Factor*sin(Beta)*WDrag; ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor; ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = Factor; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = Factor; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -Factor*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -Factor*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] = -C_p*invCQ;
-              ForceProj_Vector[1] = -C_p*CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  C_p*CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] = -Factor*invCQ;
+              ForceProj_Vector[1] = -Factor*CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] =  Factor*CTRCQ2*(y - y_origin);
             }
             break;
           case FREE_SURFACE :
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
-          case HEAT_LOAD:
+          case TOTAL_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
+          case MAXIMUM_HEATFLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -4828,6 +4821,12 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #endif
 #endif
   
+  /*--- Norm heat flux objective test ---*/
+  /*--- Norm heat flux objective test ---*/
+  pnorm = 10;
+  /*--- Norm heat flux objective test ---*/
+  /*--- Norm heat flux objective test ---*/
+  
 	/*--- Set the gamma value ---*/
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -4942,7 +4941,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if (config->GetKind_ObjFunc() == HEAT_LOAD)
+  if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX))
     PsiE_Inf = -1.0;
   else
     PsiE_Inf = 0.0;
@@ -6302,6 +6303,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
   Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
   Sigma_yz5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
+  double kGTdotn;
   
   double *Psi = new double[nVar];
 	double **Tau = new double* [nDim];
@@ -6314,33 +6316,38 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   for (iDim = 0; iDim < nDim; iDim++)
     GradPhi[iDim] = new double [nDim];
   double *GradPsiE = new double [nDim];
+  double *GradT;// = new double[nDim];
+  double *GradP;
+  double *GradDens;
+  double *dPoRho2 = new double[nDim];
   
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = (config->GetKind_ObjFunc() == HEAT_FLUX);
+  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
   
-	double Gas_Constant = config->GetGas_ConstantND();
+  double Prandtl_Lam  = config->GetPrandtl_Lam();
+  double Prandtl_Turb = config->GetPrandtl_Turb();
+  double Gas_Constant = config->GetGas_ConstantND();
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  
+  double Thermal_Conductivity;
+  double Xi;
+  double invrho3;
+  double Volume;
+  double mu2;
+  double gpsiAv2;
+  double gpsi5n;
+  double **GradV;
+
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
     
 		if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Retrieve adjoint solution at the wall boundary node ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				Psi[iVar] = node[iPoint]->GetSolution(iVar);
-      
-			/*--- Normal vector for this vertex (negate for outward convention) ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      
-      /*--- Get the force projection vector (based on the objective function) ---*/
-			d = node[iPoint]->GetForceProj_Vector();
       
       /*--- Initialize the convective & viscous residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -6351,6 +6358,24 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
             Jacobian_ii[iVar][jVar] = 0.0;
         }
       }
+      
+      /*--- Retrieve adjoint solution at the wall boundary node ---*/
+			for (iVar = 0; iVar < nVar; iVar++)
+				Psi[iVar] = node[iPoint]->GetSolution(iVar);
+      
+			/*--- Normal vector for this vertex (negate for outward convention) ---*/
+			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      Volume = geometry->node[iPoint]->GetVolume();
+			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      
+      /*--- Get the force projection vector (based on the objective function) ---*/
+			d = node[iPoint]->GetForceProj_Vector();
+
+      ////////////////  DEBUGGING //////////////////
+      for (iDim = 0; iDim < nDim; iDim++)
+        d[iDim] = 0.0;
+      ////////////////  DEBUGGING //////////////////
+      
       
       /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
       if ( grid_movement) {
@@ -6370,8 +6395,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       node[iPoint]->SetVel_ResTruncError_Zero();
 			for (iDim = 0; iDim < nDim; iDim++)
 				node[iPoint]->SetSolution_Old(iDim+1, phi[iDim]);
-      
-			/*--- Modify the velocity rows of the Jacobian ---*/
 			if (implicit) {
 				for (iVar = 1; iVar <= nDim; iVar++) {
 					total_index = iPoint*nVar+iVar;
@@ -6379,176 +6402,236 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 				}
 			}
       
-      /*--- Strong enforcement of the adjoint energy equation for temperature-based objectives ---*/
-      if (heat_flux_obj) {
-        // This is the derivative of our objective function j = kdndT for heat flux with a negative sign from the formulation of the adjoint boundary conditions.
-        q = -1.0;
-      } else {
+      /*--- Get transport coefficient information ---*/
+      Laminar_Viscosity    = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      Eddy_Viscosity       = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+      Thermal_Conductivity = Cp * ( Laminar_Viscosity/Prandtl_Lam
+                                   +Eddy_Viscosity/Prandtl_Turb);
+      
+      GradV = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+      
+      /*--- Calculate Dirichlet condition for energy equation ---*/
+      if (!heat_flux_obj) {
         q = 0.0;
+        
+        if (geometry->node[iPoint]->GetCoord(0) < 0.9) {
+          GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
+          kGTdotn = 0;
+          Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
+          Xi = 1.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
+          q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
+        }
+        
+      } else {
+        GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
+        kGTdotn = 0;
+        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
+        Xi = 1.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
+        //q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
+        q = -1.0;
       }
       
-      /*--- Strong enforcement of the energy equations ---*/
+      /*--- Strong BC enforcement of the energy equation ---*/
       LinSysRes.SetBlock_Zero(iPoint, nVar-1);
       node[iPoint]->SetEnergy_ResTruncError_Zero();
       node[iPoint]->SetSolution_Old(nDim+1, q);
-      
-      /*--- Modify the energy rows of the Jacobian ---*/
       if (implicit) {
         iVar = nDim+1;
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
       
-      /*--- Additional contributions to adjoint density and energy (weak imposition) ---*/
+      /*--- Additional contributions to adjoint density (weak imposition) ---*/
       if (compressible) {
         
-        /*--- Components of the effective and adjoint stress tensors ---*/
+        /*--- Acquire gradient information ---*/
         PsiVar_Grad = node[iPoint]->GetGradient();
-        div_phi = 0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          div_phi += PsiVar_Grad[iDim+1][iDim];
-          for (jDim = 0; jDim < nDim; jDim++)
-            Tau[iDim][jDim] = (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
-        }
-        for (iDim = 0; iDim < nDim; iDim++)
-          Tau[iDim][iDim] -= TWO3*div_phi;
+        GradP    = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[nVar-1];
+        GradDens = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[nVar];
         
-        /*--- force_stress = n_i \Tau_{ij} d_j ---*/
-        force_stress = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++)
-            force_stress += Normal[iDim]*Tau[iDim][jDim]*d[jDim];
-        
-        /*--- \partial \mu_dyn \partial T ---*/
-        mu_dyn = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-        Temp = solver_container[FLOW_SOL]->node[iPoint]->GetTemperature();
-        dVisc_T = 0.0;  // dVisc_T = mu_dyn*(Temp+3.0*mu2)/(2.0*Temp*(Temp+mu2));
-        
-        /*--- \Sigma_5 ---*/
-        Sigma_5 = (Gamma/Cp)*dVisc_T*force_stress;
-        
-        /*--- Imposition of residuals ---*/
+        /*--- Acqure flow information ---*/
         rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
         pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-        Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
+        invrho3 = (1.0/rho)*(1.0/rho)*(1.0/rho);
         
-        /*--- Flux contribution and Jacobian contributions for moving
-         walls. Note that these are only for the adjoint density and
-         adjoint energy equations (the adjoint vel. uses a strong BC). ---*/
-        if (grid_movement) {
-          
-          /*--- Get the appropriate grid velocity at this node ---*/
-          GridVel = geometry->node[iPoint]->GetGridVel();
-          
-          /*--- Get the enthalpy from the direct solution ---*/
-					Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-          
-          /*--- Compute projections, velocity squared divided by two, and
-           other inner products. Note that we are imposing v = u_wall from
-           the direct problem and that phi = d - \psi_5 * v ---*/
-          ProjVel = 0.0; sq_vel = 0.0; phi_u = 0.0; d_n = 0.0;
-          phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjVel += GridVel[iDim]*Normal[iDim];
-            sq_vel  += 0.5*GridVel[iDim]*GridVel[iDim];
-            phis1   += Normal[iDim]*phi[iDim];
-						phis2   += GridVel[iDim]*phi[iDim];
-            phi_u   += GridVel[iDim]*phi[iDim];
-            d_n     += d[iDim]*Normal[iDim];
-          }
-          phis1 += ProjVel * Psi[nVar-1];
-          
-					/*--- Convective flux at the wall node (adjoint density & energy only) ---*/
-          
-          /*--- Version 1 (full) ---*/
-					//Res_Conv_i[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel - ProjVel*Psi[0];
-					//Res_Conv_i[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One - ProjVel*Psi[nVar-1];
-          
-          /*--- Simplified version ---*/
-          Res_Conv_i[0] = -(Psi[0] + phi_u + Psi[nVar-1]*Enthalpy)*ProjVel + d_n*Gamma_Minus_One*sq_vel;
-          
-          /*--- TO DO: Implicit contributions for convective part ---*/
-          
-          
-          /*--- Viscous flux contributions at the wall node ---*/
-          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-          Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
-          Density = U[0];
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] = GridVel[iDim];
-          }
-          Energy = U[nDim+1] / Density;
-          SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-sq_vel));
-          Pressure = (SoundSpeed * SoundSpeed * Density) / Gamma;
-          ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
-          XiDens = Gamma * (Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB) / Density;
-          
-          /*--- Average of the derivatives of the adjoint variables ---*/
-          PsiVar_Grad = node[iPoint]->GetGradient();
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
-          }
-          
-          /*--- Impose dPhiE_dn = 0 (adiabatic walls with frozen viscosity). Note
-           that this is where a different adjoint boundary condition for temperature
-           could be imposed. ---*/
-          dPhiE_dn = 0.0;
-          
-          if (nDim ==2) {
-            
-            /*--- Compute the adjoint stress tensor ---*/
-            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
-            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
-            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
-            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1]);
-            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1]);
-            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
-            Sigma_5   = XiDens * dPhiE_dn;
-            eta_xx    = Sigma_xx + Sigma_xx5;
-            eta_yy    = Sigma_yy + Sigma_yy5;
-            eta_xy    = Sigma_xy + Sigma_xy5;
-            
-            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
-            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
-                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
-                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
-            Res_Visc_i[1] = 0.0;
-            Res_Visc_i[2] = 0.0;
-            
-          } else if (nDim == 3) {
-            
-            /*--- Compute the adjoint stress tensor ---*/
-            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
-            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
-            Sigma_zz  = ViscDens * (-TWO3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] + FOUR3 * GradPhi[2][2]);
-            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
-            Sigma_xz  = ViscDens * (GradPhi[2][0] + GradPhi[0][2]);
-            Sigma_yz  = ViscDens * (GradPhi[2][1] + GradPhi[1][2]);
-            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
-            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
-            Sigma_zz5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] + FOUR3 * Velocity[2] * GradPsiE[2]);
-            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
-            Sigma_xz5 = ViscDens * (Velocity[0] * GradPsiE[2] + Velocity[2] * GradPsiE[0]);
-            Sigma_yz5 = ViscDens * (Velocity[1] * GradPsiE[2] + Velocity[2] * GradPsiE[1]);
-            Sigma_5   = XiDens * dPhiE_dn;
-            eta_xx    = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
-            eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
-            
-            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
-            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
-                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
-                               + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
-                               + (Velocity[2] * Normal[1] + Velocity[1] * Normal[2]) * eta_yz
-                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
-            Res_Visc_i[1] = 0.0;
-            Res_Visc_i[2] = 0.0;
-            Res_Visc_i[3] = 0.0;
-          }
+        /*--- Calculate supporting quantities ---*/
+        mu2 = Thermal_Conductivity/Cp;
+        gpsiAv2 = 0.0;
+        gpsi5n = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          dPoRho2[iDim] = (GradP[iDim]*rho - 2.0*GradDens[iDim]*pressure)*invrho3;
+          gpsiAv2 += -mu2*Gamma/Gamma_Minus_One * PsiVar_Grad[nVar-1][iDim]*dPoRho2[iDim];
+          gpsi5n += PsiVar_Grad[nVar-1][iDim]*Normal[iDim];
         }
+        
+//        if (iPoint == 197) {
+//          cout << "rho: " << rho << endl;
+//          cout << "p: " << pressure << endl;
+//          cout << "gradP: " << GradP[0] << "\t" << GradP[1] << "\t" << GradP[2] << endl;
+//          cout << "gradP: " << GradV[nVar-1][0] << "\t" << GradV[nVar-1][1] << "\t" << GradV[nVar-1][2] << endl;
+//          cout << "gradDens: " << GradDens[0] << "\t" << GradDens[1] << "\t" << GradDens[2] << endl;
+//          cout << "gpsiAv2: " << gpsiAv2 << endl;
+//          cout << "gpsi5n: " << gpsi5n << endl;
+//          cin.get();
+//        }
+        
+        /*--- Apply first order term to boundary ---*/
+        Res_Conv_i[0] = gpsiAv2*Volume;
+        
+        /*--- Apply second order term to boundary ---*/
+        Res_Visc_i[0] = -mu2*Gamma/(rho*Gamma_Minus_One)*(pressure/rho)*gpsi5n;
+        
+//        /*--- Components of the effective and adjoint stress tensors ---*/
+//        PsiVar_Grad = node[iPoint]->GetGradient();
+//        div_phi = 0;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          div_phi += PsiVar_Grad[iDim+1][iDim];
+//          for (jDim = 0; jDim < nDim; jDim++)
+//            Tau[iDim][jDim] = (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
+//        }
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Tau[iDim][iDim] -= TWO3*div_phi;
+//        
+//        /*--- force_stress = n_i \Tau_{ij} d_j ---*/
+//        force_stress = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          for (jDim = 0; jDim < nDim; jDim++)
+//            force_stress += Normal[iDim]*Tau[iDim][jDim]*d[jDim];
+//        
+//        /*--- \partial \mu_dyn \partial T ---*/
+//        mu_dyn = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+//        Temp = solver_container[FLOW_SOL]->node[iPoint]->GetTemperature();
+//        dVisc_T = 0.0;  // dVisc_T = mu_dyn*(Temp+3.0*mu2)/(2.0*Temp*(Temp+mu2));
+//        
+//        /*--- \Sigma_5 Check Area computation for Res_Conv[0] ---*/
+//        Sigma_5 = (Gamma/Cp)*dVisc_T*force_stress;
+//        
+//        /*--- Imposition of residuals ---*/
+//        rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+//        pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+//        Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
+//        
+//        /*--- Flux contribution and Jacobian contributions for moving
+//         walls. Note that these are only for the adjoint density and
+//         adjoint energy equations (the adjoint vel. uses a strong BC). ---*/
+//        if (grid_movement) {
+//          
+//          /*--- Get the appropriate grid velocity at this node ---*/
+//          GridVel = geometry->node[iPoint]->GetGridVel();
+//          
+//          /*--- Get the enthalpy from the direct solution ---*/
+//					Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+//          
+//          /*--- Compute projections, velocity squared divided by two, and
+//           other inner products. Note that we are imposing v = u_wall from
+//           the direct problem and that phi = d - \psi_5 * v ---*/
+//          ProjVel = 0.0; sq_vel = 0.0; phi_u = 0.0; d_n = 0.0;
+//          phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            ProjVel += GridVel[iDim]*Normal[iDim];
+//            sq_vel  += 0.5*GridVel[iDim]*GridVel[iDim];
+//            phis1   += Normal[iDim]*phi[iDim];
+//						phis2   += GridVel[iDim]*phi[iDim];
+//            phi_u   += GridVel[iDim]*phi[iDim];
+//            d_n     += d[iDim]*Normal[iDim];
+//          }
+//          phis1 += ProjVel * Psi[nVar-1];
+//          
+//					/*--- Convective flux at the wall node (adjoint density & energy only) ---*/
+//          
+//          /*--- Version 1 (full) ---*/
+//					//Res_Conv_i[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel - ProjVel*Psi[0];
+//					//Res_Conv_i[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One - ProjVel*Psi[nVar-1];
+//          
+//          /*--- Simplified version ---*/
+//          Res_Conv_i[0] = -(Psi[0] + phi_u + Psi[nVar-1]*Enthalpy)*ProjVel + d_n*Gamma_Minus_One*sq_vel;
+//          
+//          /*--- TO DO: Implicit contributions for convective part ---*/
+//          
+//          
+//          /*--- Viscous flux contributions at the wall node ---*/
+//          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+//          Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+//          Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
+//          Density = U[0];
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            Velocity[iDim] = GridVel[iDim];
+//          }
+//          Energy = U[nDim+1] / Density;
+//          SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-sq_vel));
+//          Pressure = (SoundSpeed * SoundSpeed * Density) / Gamma;
+//          ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
+//          XiDens = Gamma * (Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB) / Density;
+//          
+//          /*--- Average of the derivatives of the adjoint variables ---*/
+//          PsiVar_Grad = node[iPoint]->GetGradient();
+//          
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
+//            for (jDim = 0; jDim < nDim; jDim++)
+//              GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
+//          }
+//          
+//          /*--- Impose dPhiE_dn = 0 (adiabatic walls with frozen viscosity). Note
+//           that this is where a different adjoint boundary condition for temperature
+//           could be imposed. ---*/
+//          dPhiE_dn = 0.0;
+//          
+//          if (nDim ==2) {
+//            
+//            /*--- Compute the adjoint stress tensor ---*/
+//            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
+//            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
+//            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
+//            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1]);
+//            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1]);
+//            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
+//            Sigma_5   = XiDens * dPhiE_dn;
+//            eta_xx    = Sigma_xx + Sigma_xx5;
+//            eta_yy    = Sigma_yy + Sigma_yy5;
+//            eta_xy    = Sigma_xy + Sigma_xy5;
+//            
+//            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+//            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
+//                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
+//                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
+//            Res_Visc_i[1] = 0.0;
+//            Res_Visc_i[2] = 0.0;
+//            
+//          } else if (nDim == 3) {
+//            
+//            /*--- Compute the adjoint stress tensor ---*/
+//            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
+//            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
+//            Sigma_zz  = ViscDens * (-TWO3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] + FOUR3 * GradPhi[2][2]);
+//            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
+//            Sigma_xz  = ViscDens * (GradPhi[2][0] + GradPhi[0][2]);
+//            Sigma_yz  = ViscDens * (GradPhi[2][1] + GradPhi[1][2]);
+//            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
+//            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
+//            Sigma_zz5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] + FOUR3 * Velocity[2] * GradPsiE[2]);
+//            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
+//            Sigma_xz5 = ViscDens * (Velocity[0] * GradPsiE[2] + Velocity[2] * GradPsiE[0]);
+//            Sigma_yz5 = ViscDens * (Velocity[1] * GradPsiE[2] + Velocity[2] * GradPsiE[1]);
+//            Sigma_5   = XiDens * dPhiE_dn;
+//            eta_xx    = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
+//            eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
+//            
+//            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+//            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
+//                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
+//                               + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
+//                               + (Velocity[2] * Normal[1] + Velocity[1] * Normal[2]) * eta_yz
+//                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
+//            Res_Visc_i[1] = 0.0;
+//            Res_Visc_i[2] = 0.0;
+//            Res_Visc_i[3] = 0.0;
+//          }
+//        }
       }
       
       if (incompressible) {
@@ -6562,7 +6645,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       }
       
       /*--- Update convective and viscous residuals ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);      
+      LinSysRes.AddBlock(iPoint, Res_Conv_i);
       LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
       if (implicit) {
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
@@ -6582,6 +6665,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   for (iDim = 0; iDim < nDim; iDim++)
     delete [] GradPhi[iDim];
   delete [] GradPhi;
-  
+  delete [] dPoRho2;
 }
 

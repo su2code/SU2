@@ -152,6 +152,8 @@ inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) 
 
 inline void CGeometry::SetControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
 
+inline void CGeometry::VisualizeControlVolume(CConfig *config, unsigned short action) { }
+
 inline void CGeometry::MatchNearField(CConfig *config) { }
 
 inline void CGeometry::MatchInterface(CConfig *config) { }
@@ -164,21 +166,16 @@ inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometr
 
 inline void CGeometry::SetTecPlot(char config_filename[200]) { }
 
+inline void CGeometry::SetTecPlot(char config_filename[200], bool new_file) { }
+
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) { }
 
-inline void CGeometry::SetBoundTecPlot(CConfig *config, char mesh_filename[200]) { }
+inline void CGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config) { }
 
-inline void CGeometry::ComputeSurf_Curvature(CConfig *config) { }
-
-inline void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config,
-                                       vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, vector<unsigned long> &point1_Airfoil, vector<unsigned long> &point2_Airfoil, vector<double> &weight1_Airfoil, bool original_surface, bool CCW_orientation) { }
-
-inline void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double MinXCoord, double MaxXCoord, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { }
-                                       
 inline double CGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
 inline double CGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }

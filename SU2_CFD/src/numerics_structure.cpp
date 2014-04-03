@@ -1724,6 +1724,7 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
       hs  = var->CalcHs(val_primvar, config, iSpecies);
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs;
       Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve;
+      
     }
     
     /*--- Heat transfer terms ---*/

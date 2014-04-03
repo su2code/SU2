@@ -58,6 +58,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
       if (mesh_file.fail()) {
         cout << "cstr=" << cstr << endl;
         cout << "There is no geometry file (GetnZone))!" << endl;
+
 #ifdef NO_MPI
         exit(1);
 #else
@@ -226,6 +227,12 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
     geometry[iZone][MESH_0]->SetControlVolume(config[iZone], ALLOCATE);
     geometry[iZone][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
+    
+    /*--- Visualize a control volume if requested ---*/
+    
+    if ((config[iZone]->GetVisualize_CV() >= 0) &&
+        (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))
+      geometry[iZone][MESH_0]->VisualizeControlVolume(config[iZone], UPDATE);
     
     /*--- Identify closest normal neighbor ---*/
     
@@ -726,7 +733,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
-            default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+            case CUSP : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentCUSP_Flow(nDim,nVar_Flow, config); break;
+            case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim,nVar_Flow, config); break;
+          default : cout << "Centered scheme not implemented." << endl; exit(1); break;
           }
           
           if (!config->GetLowFidelitySim()) {
@@ -1475,37 +1484,21 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case NONE :
         break;
       case AVG_GRAD :
-        if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_TNE2, config);
-        }
-        else {
-          /*--- Compressible flow ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_TNE2, config);
-            numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_TNE2, config);
-          }
+        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
         }
         break;
-      case AVG_GRAD_CORRECTED :
-        if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          numerics_container[MESH_0][ADJTNE2_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_TNE2, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_TNE2, config);
-        }
-        else {
-          /*--- Compressible flow ---*/
-          numerics_container[MESH_0][ADJTNE2_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_TNE2, config);
-          numerics_container[MESH_0][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_TNE2, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-            numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-          }
-          
-        }
-        break;
+        
+//      case AVG_GRAD_CORRECTED :
+//        numerics_container[MESH_0][ADJTNE2_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+//        numerics_container[MESH_0][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+//        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+//          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_Flow, config);
+//          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2nDim, nVar_Adj_Flow, config);
+//        }
+//        break;
+        
       default :
         cout << "Viscous scheme not implemented." << endl; exit(1);
         break;

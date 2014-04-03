@@ -38,14 +38,14 @@ CUpwRoe_AdjFlow::CUpwRoe_AdjFlow(unsigned short val_nDim, unsigned short val_nVa
 	Lambda = new double [nVar];
 	P_Tensor = new double* [nVar];
 	invP_Tensor = new double* [nVar];
-	Proj_flux_tensor_i = new double*[nVar];
-	Proj_flux_tensor_j = new double*[nVar];
+	ProjFlux_i = new double*[nVar];
+	ProjFlux_j = new double*[nVar];
 	Proj_ModJac_Tensor = new double*[nVar];
 	for (iVar = 0; iVar < nVar; iVar++) {
 		P_Tensor[iVar] = new double [nVar];
 		invP_Tensor[iVar] = new double [nVar];
-		Proj_flux_tensor_i[iVar] = new double[nVar];
-		Proj_flux_tensor_j[iVar] = new double[nVar];
+		ProjFlux_i[iVar] = new double[nVar];
+		ProjFlux_j[iVar] = new double[nVar];
 		Proj_ModJac_Tensor[iVar] = new double[nVar];
 	}
   
@@ -61,14 +61,14 @@ CUpwRoe_AdjFlow::~CUpwRoe_AdjFlow(void) {
 	for (iVar = 0; iVar < nVar; iVar++) {
 		delete [] P_Tensor[iVar];
 		delete [] invP_Tensor[iVar];
-		delete [] Proj_flux_tensor_i[iVar];
-		delete [] Proj_flux_tensor_j[iVar];
+		delete [] ProjFlux_i[iVar];
+		delete [] ProjFlux_j[iVar];
 		delete [] Proj_ModJac_Tensor[iVar];
 	}
 	delete [] P_Tensor;
 	delete [] invP_Tensor;
-	delete [] Proj_flux_tensor_i;
-	delete [] Proj_flux_tensor_j;
+	delete [] ProjFlux_i;
+	delete [] ProjFlux_j;
 	delete [] Proj_ModJac_Tensor;
   
 }
@@ -244,8 +244,8 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
     
 		/*--- Jacobians of the inviscid flux, scaled by
 		 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-		GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Proj_flux_tensor_i);
-		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Proj_flux_tensor_j);
+		GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, ProjFlux_i);
+		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, ProjFlux_j);
     
 		/*--- Compute P, inverse P, and store eigenvalues ---*/
 		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
@@ -272,10 +272,10 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 		 sign for the ji and jj Jacobians bc the normal direction is flipped. ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) {
-				val_Jacobian_ii[jVar][iVar] = Proj_flux_tensor_i[iVar][jVar] - Proj_ModJac_Tensor[iVar][jVar];
-				val_Jacobian_ij[jVar][iVar] = Proj_flux_tensor_i[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar];
-				val_Jacobian_ji[jVar][iVar] = -(Proj_flux_tensor_j[iVar][jVar] - Proj_ModJac_Tensor[iVar][jVar]);
-				val_Jacobian_jj[jVar][iVar] = -(Proj_flux_tensor_j[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar]);
+				val_Jacobian_ii[jVar][iVar] = ProjFlux_i[iVar][jVar] - Proj_ModJac_Tensor[iVar][jVar];
+				val_Jacobian_ij[jVar][iVar] = ProjFlux_i[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar];
+				val_Jacobian_ji[jVar][iVar] = -(ProjFlux_j[iVar][jVar] - Proj_ModJac_Tensor[iVar][jVar]);
+				val_Jacobian_jj[jVar][iVar] = -(ProjFlux_j[iVar][jVar] + Proj_ModJac_Tensor[iVar][jVar]);
 			}
 		}
     
@@ -454,6 +454,7 @@ CCentJST_AdjFlow::CCentJST_AdjFlow(unsigned short val_nDim, unsigned short val_n
 	Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
 	Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
 	implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  
 }
 
 CCentJST_AdjFlow::~CCentJST_AdjFlow(void) {

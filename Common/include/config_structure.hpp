@@ -63,6 +63,8 @@ private:
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+	InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -371,7 +373,7 @@ private:
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
 	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
-	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */ 
+	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
@@ -394,28 +396,28 @@ private:
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
-	string *Marker_Monitoring,			/*!< \brief Markers to monitor. */
-	*Marker_Designing,					/*!< \brief Markers to plot. */
-	*Marker_GeoEval,					/*!< \brief Markers to plot. */
-	*Marker_Plotting,					/*!< \brief Markers to plot. */
-  *Marker_Moving,						/*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-	*Marker_DV;						/*!< \brief Markers affected by the design variables. */
-	unsigned short  *Marker_All_Monitoring,				/*!< \brief Global index for monitoring using the grid information. */
-	*Marker_All_GeoEval,				/*!< \brief Global index for geometrical evaluation. */
-	*Marker_All_Plotting,				/*!< \brief Global index for plotting using the grid information. */
-	*Marker_All_DV,					/*!< \brief Global index for design variable markers using the grid information. */
-  *Marker_All_Moving,					/*!< \brief Global index for moving surfaces using the grid information. */
-	*Marker_All_Designing,					/*!< \brief Global index for moving using the grid information. */
-	*Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
-	*Marker_Config_Monitoring,			/*!< \brief Global index for monitoring using the config information. */
-	*Marker_Config_Designing,			/*!< \brief Global index for monitoring using the config information. */
-	*Marker_Config_GeoEval,			/*!< \brief Global index for monitoring using the config information. */
-	*Marker_Config_Plotting,			/*!< \brief Global index for plotting using the config information. */
-	*Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Moving,				/*!< \brief Global index for moving surfaces using the config information. */
-	*Marker_Config_DV,				/*!< \brief Global index for design variable markers using the config information. */
-	*Marker_Config_PerBound;			/*!< \brief Global index for periodic boundaries using the config information. */
-	string *PlaneTag;			/*!< \brief Global index for the plane adaptation (upper, lower). */
+  string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
+  *Marker_Designing,         /*!< \brief Markers to plot. */
+  *Marker_GeoEval,         /*!< \brief Markers to plot. */
+  *Marker_Plotting,          /*!< \brief Markers to plot. */
+  *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
+  *Marker_DV;            /*!< \brief Markers affected by the design variables. */
+  unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
+  *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
+  *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
+  *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
+  *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
+  *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
+  *Marker_Config_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
+  *Marker_Config_Designing,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_Config_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_Config_Plotting,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
+  *Marker_Config_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_Config_DV,       /*!< \brief Global index for design variable markers using the config information. */
+  *Marker_Config_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
@@ -427,10 +429,10 @@ private:
 	RefSharpEdges,				/*!< \brief Reference coefficient for detecting sharp edges. */
 	RefLengthMoment,			/*!< \brief Reference length for moment computation. */
   *RefOriginMoment,           /*!< \brief Origin for moment computation. */
-	*RefOriginMoment_X,			/*!< \brief X Origin for moment computation. */
-  *RefOriginMoment_Y,			/*!< \brief Y Origin for moment computation. */
-	*RefOriginMoment_Z,			/*!< \brief Z Origin for moment computation. */
-	*CFLRamp,			/*!< \brief Information about the CFL ramp. */
+  *RefOriginMoment_X,      /*!< \brief X Origin for moment computation. */
+  *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
+  *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
+  *CFLRamp,      /*!< \brief Information about the CFL ramp. */
   *CFL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
@@ -473,7 +475,7 @@ private:
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Wrt_Sectional_Forces,       /*!< \brief Write sectional forces for specified markers. */
+  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
 	double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
 	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
@@ -489,14 +491,14 @@ private:
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp;						/*!< \brief No of freestream temperatures specified */
 	bool Inlet_Outlet_Defined; /*!< \brief  that inlet and outlet conditions are defined for each species*/
-	double *Particle_Mass,					/*!< \brief Mass of all particles present in the plasma */
-	*Molar_Mass,								/*!< \brief Molar mass of species in the plasma [kg/kmol] */
-	Mixture_Molar_mass,				/*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
-	*Gas_Composition,					/*!< \brief Initial mass fractions of flow [dimensionless] */
-	*Enthalpy_Formation,			/*!< \brief Enthalpy of formation */
-	**Blottner,               /*!< \brief Blottner viscosity coefficients */
-	*Species_Ref_Temperature,	/*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
-	*Species_Ref_Viscosity;		/*!< \brief Reference viscosity  of all particles present in the plasma */
+  double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
+  *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
+  Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
+  *Gas_Composition,          /*!< \brief Initial mass fractions of flow [dimensionless] */
+  *Enthalpy_Formation,     /*!< \brief Enthalpy of formation */
+  **Blottner,               /*!< \brief Blottner viscosity coefficients */
+  *Species_Ref_Temperature,  /*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
+  *Species_Ref_Viscosity;    /*!< \brief Reference viscosity  of all particles present in the plasma */
   unsigned short *nElStates; /*!< \brief Number of electron states. */
   double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
   **degen; /*!< \brief Degeneracy of electron states. */
@@ -511,6 +513,7 @@ private:
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
 	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
+	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -522,7 +525,7 @@ private:
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-	Conversion_Factor,       /*!< \brief Conversion factor from grid units to meters. */
+	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
 	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization. */
 	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization. */
 	Density_Ref,      /*!< \brief Reference density for non-dimensionalization. */
@@ -535,13 +538,14 @@ private:
 	Pressure_FreeStreamND,     /*!< \brief Farfield pressure value (external flow). */
 	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
-	*Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
+  *Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
-	Viscosity_FreeStreamND;    /*!< \brief Farfield viscosity value (external flow). */
+	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
+	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
-	double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
-	***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-	bool Write_Converted_Mesh; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
+  double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
+  ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
@@ -551,30 +555,30 @@ private:
 	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
 	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
 	double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
-	double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
-	*Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
-	*Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-	*Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
-	*Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
-	*Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
-	*Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
-	*Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
-	*Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
-	*Pitching_Omega_X,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-	*Pitching_Omega_Y,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
-	*Pitching_Omega_Z,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
-	*Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
-	*Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
-	*Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
-	*Pitching_Phase_X,           /*!< \brief Pitching phase offset about the x-axis. */
-	*Pitching_Phase_Y,           /*!< \brief Pitching phase offset about the y-axis. */
-	*Pitching_Phase_Z,           /*!< \brief Pitching phase offset about the z-axis. */
-	*Plunging_Omega_X,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
-	*Plunging_Omega_Y,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
-	*Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
-	*Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
-	*Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-	*Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+  double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
+  *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
+  *Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
+  *Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
+  *Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
+  *Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
+  *Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
+  *Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
+  *Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
+  *Pitching_Omega_X,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
+  *Pitching_Omega_Y,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
+  *Pitching_Omega_Z,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
+  *Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
+  *Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
+  *Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
+  *Pitching_Phase_X,           /*!< \brief Pitching phase offset about the x-axis. */
+  *Pitching_Phase_Y,           /*!< \brief Pitching phase offset about the y-axis. */
+  *Pitching_Phase_Z,           /*!< \brief Pitching phase offset about the z-axis. */
+  *Plunging_Omega_X,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
+  *Plunging_Omega_Y,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
+  *Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
+  *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
+  *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
+  *Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
   unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
 	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
 	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
@@ -615,7 +619,7 @@ private:
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
-
+  long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
@@ -626,7 +630,7 @@ public:
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short verb_level);
+	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
@@ -637,6 +641,12 @@ public:
 	 * \brief Destructor of the class. 
 	 */
 	~CConfig(void);
+
+
+  /*!
+   * \brief Initializes pointers to null
+   */
+	void SetPointersNull(void);
 
 	/*!
 	 * \brief add a scalar option to the param map and set its default value
@@ -1327,6 +1337,12 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetViscosity_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetTke_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.
@@ -1368,7 +1384,7 @@ public:
 	 * \brief Get the conversion factor for converting the grid to meters.
 	 * \return Conversion factor for converting the grid to meters.
 	 */
-	double GetConversion_Factor(void);
+	double GetMesh_Scale_Change(void);
 
 	/*! 
 	 * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
@@ -1827,7 +1843,7 @@ public:
 	 * \brief Get information about writing sectional force files.
 	 * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
 	 */
-	bool GetWrt_Sectional_Forces(void);
+	bool GetPlot_Section_Forces(void);
 
   /*!
    * \brief Get information about writing average stagnation pressure
@@ -3273,6 +3289,18 @@ public:
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */		
 	bool GetEquivArea(void);
+  
+  /*!
+	 * \brief Information about computing and plotting the equivalent area distribution.
+	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
+	 */
+	bool GetInvDesign_Cp(void);
+  
+	/*!
+	 * \brief Information about computing and plotting the equivalent area distribution.
+	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
+	 */
+	bool GetInvDesign_HeatFlux(void);
 
 	/*! 
 	 * \brief Get name of the input grid.
@@ -4085,7 +4113,7 @@ public:
 	 * \brief Get information about whether a converted mesh should be written.
 	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
 	 */
-	bool GetWrite_Converted_Mesh(void);
+	bool GetMesh_Output(void);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.
@@ -4381,7 +4409,7 @@ public:
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
-	void SetPostprocessing(unsigned short val_software, unsigned short val_izone);	
+	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim);
 
 	/*! 
 	 * \brief Config file markers processing.
@@ -4510,6 +4538,11 @@ public:
 	 */
 	double GetGust_Begin_Loc(void);
 
+  /*!
+	 * \brief Get the node number of the CV to visualize.
+	 * \return Node number of the CV to visualize.
+	 */
+	long GetVisualize_CV(void);
 
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with

@@ -56,8 +56,8 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
 		P_Tensor[iVar] = new double [nVar];
 		invP_Tensor[iVar] = new double [nVar];
 	}
-  Proj_flux_tensor_i = new double [nVar];
-	Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+	ProjFlux_j = new double [nVar];
   
 //  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
@@ -77,8 +77,8 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
 	}
 	delete [] P_Tensor;
 	delete [] invP_Tensor;
-  delete [] Proj_flux_tensor_i;
-	delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+	delete [] ProjFlux_j;
 //  delete [] var;
 }
 
@@ -111,8 +111,8 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   CreateBasis(UnitNormal);
   
   /*--- Compute the inviscid projected fluxes ---*/
-  GetInviscidProjFlux(U_i, V_i, Normal, Proj_flux_tensor_i);
-  GetInviscidProjFlux(U_j, V_j, Normal, Proj_flux_tensor_j);
+  GetInviscidProjFlux(U_i, V_i, Normal, ProjFlux_i);
+  GetInviscidProjFlux(U_j, V_j, Normal, ProjFlux_j);
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
@@ -173,7 +173,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   
   /*--- Roe's Flux approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5 * (Proj_flux_tensor_i[iVar] + Proj_flux_tensor_j[iVar]);
+    val_residual[iVar] = 0.5 * (ProjFlux_i[iVar] + ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
 
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
@@ -1317,7 +1317,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
   MeanU    = new double[nVar];
   MeanV    = new double[nPrimVar];
   MeandPdU = new double[nVar];
-	Proj_flux_tensor = new double [nVar];
+	ProjFlux = new double [nVar];
   
 //  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
@@ -1327,7 +1327,7 @@ CCentLax_TNE2::~CCentLax_TNE2(void) {
   delete [] MeanU;
   delete [] MeanV;
   delete [] MeandPdU;
-	delete [] Proj_flux_tensor;
+	delete [] ProjFlux;
 }
 
 void CCentLax_TNE2::ComputeResidual(double *val_resconv,
@@ -1365,11 +1365,11 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
   var->CalcdPdU(MeanV, config, MeandPdU);
   
 	/*--- Get projected flux tensor ---*/
-  GetInviscidProjFlux(MeanU, MeanV, Normal, Proj_flux_tensor);
+  GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
   
 	/*--- Compute inviscid residual ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		val_resconv[iVar] = Proj_flux_tensor[iVar];
+		val_resconv[iVar] = ProjFlux[iVar];
 		val_resvisc[iVar] = 0.0;
 	}
 
