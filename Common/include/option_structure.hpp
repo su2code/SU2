@@ -103,7 +103,7 @@ const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processo
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_INDEX_VALUE = 100;	/*!< \brief Maximum value for a marker index. */
 const unsigned int MAX_NUMBER_MARKER = 200;	/*!< \brief Maximum number of domains. */
-const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxs for the FFD. */
+const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3; /*!< \brief Maximum number of zones. */
@@ -629,42 +629,41 @@ enum GEO_TYPE {
  * \brief types of objective functions
  */
 enum ENUM_OBJECTIVE {
-	DRAG_COEFFICIENT = 1, 	/*!< \brief Drag objective function definition. */
-	LIFT_COEFFICIENT = 2, 	/*!< \brief Lift objective function definition. */
-	SIDEFORCE_COEFFICIENT = 3,	/*!< \brief Side force objective function definition. */
-	EFFICIENCY = 4,		/*!< \brief Efficiency objective function definition. */
-	PRESSURE_COEFFICIENT = 5,	/*!< \brief Pressure objective function definition. */
-	MOMENT_X_COEFFICIENT = 6,	/*!< \brief Pitching moment objective function definition. */
-	MOMENT_Y_COEFFICIENT = 7,	/*!< \brief Rolling moment objective function definition. */
-	MOMENT_Z_COEFFICIENT = 8,	/*!< \brief Yawing objective function definition. */
-	EQUIVALENT_AREA = 9,		/*!< \brief Equivalent area objective function definition. */
-	NEARFIELD_PRESSURE = 10,	/*!< \brief NearField Pressure objective function definition. */
-	FORCE_X_COEFFICIENT = 12,	/*!< \brief X-direction force objective function definition. */
-	FORCE_Y_COEFFICIENT = 13,	/*!< \brief Y-direction force objective function definition. */
-	FORCE_Z_COEFFICIENT = 14,	/*!< \brief Z-direction force objective function definition. */
-	THRUST_COEFFICIENT = 15,		/*!< \brief Thrust objective function definition. */
-	TORQUE_COEFFICIENT = 16,		/*!< \brief Torque objective function definition. */
-	FIGURE_OF_MERIT = 17,		/*!< \brief Rotor Figure of Merit objective function definition. */
-	FREE_SURFACE = 18,				/*!< \brief Free Surface objective function definition. */
-	MAX_THICKNESS = 20,       /*!< \brief Maximum thickness. */
-	TOTAL_VOLUME = 21,       /*!< \brief Total volume. */
-  CLEARANCE = 22,       /*!< \brief Clearance. */
-  MIN_THICKNESS = 23,       /*!< \brief Minimum thickness. */
-  NORM_HEAT = 25,    /*!< \brief Norm heat flux. */
-  HEAT = 31,    /*!< \brief Norm heat flux. */
-  MAX_THICK_SEC1 = 26,       /*!< \brief Maximum thickness in section 1. */
-	MAX_THICK_SEC2 = 27,       /*!< \brief Maximum thickness in section 2. */
-	MAX_THICK_SEC3 = 28,       /*!< \brief Maximum thickness in section 3. */
-	MAX_THICK_SEC4 = 29,       /*!< \brief Maximum thickness in section 4. */
-	MAX_THICK_SEC5 = 30       /*!< \brief Maximum thickness in section 5. */
+	DRAG_COEFFICIENT = 1, 	      /*!< \brief Drag objective function definition. */
+	LIFT_COEFFICIENT = 2, 	      /*!< \brief Lift objective function definition. */
+	SIDEFORCE_COEFFICIENT = 3,	  /*!< \brief Side force objective function definition. */
+	EFFICIENCY = 4,		            /*!< \brief Efficiency objective function definition. */
+	INVERSE_DESIGN_PRESSURE = 5,	/*!< \brief Pressure objective function definition (inverse design). */
+  INVERSE_DESIGN_HEATFLUX = 6,  /*!< \brief Heat flux objective function definition (inverse design). */
+  TOTAL_HEATFLUX = 7,           /*!< \brief Total heat flux. */
+  MAXIMUM_HEATFLUX = 8,         /*!< \brief Maximum heat flux. */
+	MOMENT_X_COEFFICIENT = 9,	    /*!< \brief Pitching moment objective function definition. */
+	MOMENT_Y_COEFFICIENT = 10,    /*!< \brief Rolling moment objective function definition. */
+	MOMENT_Z_COEFFICIENT = 11,    /*!< \brief Yawing objective function definition. */
+	EQUIVALENT_AREA = 12,		      /*!< \brief Equivalent area objective function definition. */
+	NEARFIELD_PRESSURE = 13,	    /*!< \brief NearField Pressure objective function definition. */
+	FORCE_X_COEFFICIENT = 14,	    /*!< \brief X-direction force objective function definition. */
+	FORCE_Y_COEFFICIENT = 15,	    /*!< \brief Y-direction force objective function definition. */
+	FORCE_Z_COEFFICIENT = 16,	    /*!< \brief Z-direction force objective function definition. */
+	THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
+	TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
+	FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
+	FREE_SURFACE = 20,				    /*!< \brief Free Surface objective function definition. */
+	MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
+  MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
+  MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
+	MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
+	MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
+	MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
+	MAX_THICK_SEC5 = 27           /*!< \brief Maximum thickness in section 5. */
 };
-
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
 ("LIFT", LIFT_COEFFICIENT)
 ("SIDEFORCE", SIDEFORCE_COEFFICIENT)
 ("EFFICIENCY", EFFICIENCY)
-("PRESSURE", PRESSURE_COEFFICIENT)
+("INVERSE_DESIGN_PRESSURE", INVERSE_DESIGN_PRESSURE)
+("INVERSE_DESIGN_HEATFLUX", INVERSE_DESIGN_HEATFLUX)
 ("MOMENT_X", MOMENT_X_COEFFICIENT)
 ("MOMENT_Y", MOMENT_Y_COEFFICIENT)
 ("MOMENT_Z", MOMENT_Z_COEFFICIENT)
@@ -675,13 +674,11 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("FORCE_Z", FORCE_Z_COEFFICIENT)
 ("THRUST", THRUST_COEFFICIENT)
 ("TORQUE", TORQUE_COEFFICIENT)
-("NORM_HEAT", NORM_HEAT)
-("HEAT", HEAT)
+("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
+("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
 ("FREE_SURFACE", FREE_SURFACE)
-("TOTAL_VOLUME", TOTAL_VOLUME)
 ("MAX_THICKNESS", MAX_THICKNESS)
-("CLEARANCE", CLEARANCE)
 ("MIN_THICKNESS", MIN_THICKNESS)
 ("MAX_THICK_SEC1", MAX_THICK_SEC1)
 ("MAX_THICK_SEC2", MAX_THICK_SEC2)
@@ -695,9 +692,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 enum ENUM_CONTINUOUS_EQNS {
 	EULER_EQNS= 1, 	/*!< \brief Euler equations. */
 	NAVIER_STOKES_EQNS = 2 	/*!< \brief Navier Stokes equations. */
-
 };
-
 static const map<string, ENUM_CONTINUOUS_EQNS> ContinuousEqns_Map = CCreateMap<string, ENUM_CONTINUOUS_EQNS>
 ("EULER", EULER_EQNS)
 ("NAVIER_STOKES", NAVIER_STOKES_EQNS);
@@ -709,14 +704,11 @@ enum ENUM_DISCRETE_EQNS {
 	NONE_EQNS= 1, 	/*!< \brief No equations. */
 	SA_EQNS = 2, 	/*!< \brief Spallart-Almaras equations. */
 	SST_EQNS = 2 	/*!< \brief SST equations. */
-
 };
-
 static const map<string, ENUM_DISCRETE_EQNS> DiscreteEqns_Map = CCreateMap<string, ENUM_DISCRETE_EQNS>
 ("NONE", NONE_EQNS)
 ("SA", SA_EQNS)
 ("SST", SST_EQNS);
-
 
 /*!
  * \brief types of sensitivities to compute
@@ -805,16 +797,14 @@ enum ENUM_OUTPUT {
 	TECPLOT = 1,  		/*!< \brief Tecplot format for the solution output. */
 	EXCEL = 2,			/*!< \brief Excel format for the solution output. */
 	CSV = 3,			/*!< \brief Comma-separated values format for the solution output. */
-	STL = 4,				/*!< \brief STL CAD format for the solution output. */
-  TECPLOT_BINARY = 5,  		/*!< \brief Tecplot binary format for the solution output. */
-	CGNS_SOL = 6,  		/*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 7  		/*!< \brief Paraview format for the solution output. */
+  TECPLOT_BINARY = 4,  		/*!< \brief Tecplot binary format for the solution output. */
+	CGNS_SOL = 5,  		/*!< \brief CGNS format for the solution output. */
+  PARAVIEW = 6  		/*!< \brief Paraview format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
 ("EXCEL", EXCEL)
 ("CSV", CSV)
-("STL", STL)
 ("TECPLOT_BINARY", TECPLOT_BINARY)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);
@@ -848,9 +838,8 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
  * \brief types of design parameterizations
  */
 enum ENUM_PARAM {
-	NO_DEFORMATION = 0,		/*!< \brief No surface deformation. */
+	FFD_SETTING = 0,		/*!< \brief No surface deformation. */
 	HICKS_HENNE = 1,		/*!< \brief Hicks-Henne bump function for airfoil deformation. */
-	MACH_NUMBER = 5,		/*!< \brief Mach number as design variable. */
 	NACA_4DIGITS = 6,		/*!< \brief The four digits NACA airfoil family as design variables. */
 	DISPLACEMENT = 8,		/*!< \brief Surface movement as design variable. */
 	ROTATION = 9,			/*!< \brief Surface rotation as design variable. */
@@ -860,7 +849,6 @@ enum ENUM_PARAM {
 	FFD_ROTATION = 13,		/*!< \brief Free form deformation for 3D design (rotation around a line). */
 	FFD_CAMBER = 14,		/*!< \brief Free form deformation for 3D design (camber change). */
 	FFD_THICKNESS = 15,		/*!< \brief Free form deformation for 3D design (thickness change). */
-	FFD_VOLUME = 16,		/*!< \brief Free form deformation for 3D design (volume change). */
 	PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
 	OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
 	STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
@@ -868,13 +856,18 @@ enum ENUM_PARAM {
   COSINE_BUMP = 21,		/*!< \brief Gauss bump function for airfoil deformation. */
   FOURIER = 22,		/*!< \brief Fourier function for airfoil deformation. */
   SPHERICAL = 23,		/*!< \brief Spherical geometry parameterization with spline-based radial profile. */
-  AIRFOIL = 24		/*!< \brief Airfoil definition as design variables. */
+  AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
+  FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
+	FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
+	FFD_THICKNESS_2D = 27		/*!< \brief Free form deformation for 3D design (thickness change). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
-("NO_DEFORMATION", NO_DEFORMATION)
+("FFD_SETTING", FFD_SETTING)
+("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_CAMBER_2D", FFD_CAMBER_2D)
+("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
 ("SPHERICAL", SPHERICAL)
-("MACH_NUMBER", MACH_NUMBER)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("DISPLACEMENT", DISPLACEMENT)
 ("ROTATION", ROTATION)
@@ -884,7 +877,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
-("FFD_VOLUME", FFD_VOLUME)
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
 ("STRETCH", STRETCH)
@@ -2234,26 +2226,28 @@ public:
 		unsigned int i = 0;
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			switch ((*Design_Variable_)[iDV]) {
-			case NO_DEFORMATION: nParamDV = 0; break;
-			case HICKS_HENNE: nParamDV = 2; break;
-      case SPHERICAL: nParamDV = 3; break;
-      case COSINE_BUMP: nParamDV = 3; break;
-      case FOURIER: nParamDV = 3; break;
-      case DISPLACEMENT: nParamDV = 3; break;
-			case ROTATION: nParamDV = 6; break;
-			case NACA_4DIGITS: nParamDV = 3; break;
-			case PARABOLIC: nParamDV = 2; break;
-			case OBSTACLE: nParamDV = 2; break;
-      case AIRFOIL: nParamDV = 2; break;
-			case STRETCH: nParamDV = 2; break;
-			case FFD_CONTROL_POINT: nParamDV = 7; break;
-			case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-			case FFD_TWIST_ANGLE: nParamDV = 7; break;
-			case FFD_ROTATION: nParamDV = 7; break;
-			case FFD_CAMBER: nParamDV = 3; break;
-			case FFD_THICKNESS: nParamDV = 3; break;
-			case FFD_VOLUME: nParamDV = 3; break;
-      case SURFACE_FILE: nParamDV = 0; break;
+        case FFD_SETTING: nParamDV = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_CAMBER_2D: nParamDV = 2; break;
+        case FFD_THICKNESS_2D: nParamDV = 2; break;
+        case HICKS_HENNE: nParamDV = 2; break;
+        case SPHERICAL: nParamDV = 3; break;
+        case COSINE_BUMP: nParamDV = 3; break;
+        case FOURIER: nParamDV = 3; break;
+        case DISPLACEMENT: nParamDV = 3; break;
+        case ROTATION: nParamDV = 6; break;
+        case NACA_4DIGITS: nParamDV = 3; break;
+        case PARABOLIC: nParamDV = 2; break;
+        case OBSTACLE: nParamDV = 2; break;
+        case AIRFOIL: nParamDV = 2; break;
+        case STRETCH: nParamDV = 2; break;
+        case FFD_CONTROL_POINT: nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
+        case FFD_TWIST_ANGLE: nParamDV = 7; break;
+        case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_THICKNESS: nParamDV = 3; break;
+        case SURFACE_FILE: nParamDV = 0; break;
 			default : {
 				cerr << "Error in CDVParamOptionRef::SetValue(): "
 						<< "undefined design variable type found in configuration file." << endl; break;
@@ -2281,27 +2275,29 @@ public:
 	 * \brief write the value of the option to std out (mostly for debugging)
 	 */
 	void WriteValue() {
-		//cout << "CDVParamOptionRef::WriteValue(): not implemented yet" << endl;
+
 		for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
 			unsigned short nParamDV = 0;
 			switch ((*Design_Variable_)[iDV]) {
-			case NO_DEFORMATION: nParamDV = 0; break;
-			case HICKS_HENNE: nParamDV = 2; break;
-      case SPHERICAL: nParamDV = 3; break;
-      case COSINE_BUMP: nParamDV = 3; break;
-      case FOURIER: nParamDV = 3; break;
-      case DISPLACEMENT: nParamDV = 3; break;
-			case ROTATION: nParamDV = 6; break;
-			case NACA_4DIGITS: nParamDV = 3; break;
-			case PARABOLIC: nParamDV = 2; break;
-			case FFD_CONTROL_POINT: nParamDV = 7; break;
-			case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-			case FFD_TWIST_ANGLE: nParamDV = 7; break;
-			case FFD_ROTATION: nParamDV = 7; break;
-			case FFD_CAMBER: nParamDV = 3; break;
-			case FFD_THICKNESS: nParamDV = 3; break;
-			case FFD_VOLUME: nParamDV = 3; break;
-			default : {
+        case FFD_SETTING: nParamDV = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_CAMBER_2D: nParamDV = 2; break;
+        case FFD_THICKNESS_2D: nParamDV = 2; break;
+        case HICKS_HENNE: nParamDV = 2; break;
+        case SPHERICAL: nParamDV = 3; break;
+        case COSINE_BUMP: nParamDV = 3; break;
+        case FOURIER: nParamDV = 3; break;
+        case DISPLACEMENT: nParamDV = 3; break;
+        case ROTATION: nParamDV = 6; break;
+        case NACA_4DIGITS: nParamDV = 3; break;
+        case PARABOLIC: nParamDV = 2; break;
+        case FFD_CONTROL_POINT: nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
+        case FFD_TWIST_ANGLE: nParamDV = 7; break;
+        case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_THICKNESS: nParamDV = 3; break;
+        default : {
 				cerr << "Error in CDVParamOptionRef::SetValue(): "
 						<< "undefined design variable type found in configuration file." << endl; break;
 			}

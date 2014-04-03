@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
 #ifndef NO_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
@@ -155,8 +155,7 @@ int main(int argc, char *argv[]) {
      & boundary markers. MESH_0 is the index of the finest mesh. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone],
-                                                              iZone+1, nZone);
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
     
   }
   
@@ -356,6 +355,18 @@ int main(int argc, char *argv[]) {
       config_container[iZone]->UpdateCFL(ExtIter);
     }
     
+    /*--- Read the target pressure ---*/
+    
+    if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+      output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    
+    /*--- Read the target heat flux ---*/
+
+    if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+      output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                    geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
     switch (config_container[ZONE_0]->GetKind_Solver()) {
@@ -501,10 +512,10 @@ int main(int argc, char *argv[]) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           
-          /*--- Compute 1D output. ---*/
-          if (config->GetWrt_1D_Output())
-            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+//          /*--- Compute 1D output. ---*/
+//          if (config->GetWrt_1D_Output())
+//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
           
         }
     
@@ -523,35 +534,16 @@ int main(int argc, char *argv[]) {
     cout << endl <<"History file, closed." << endl;
   }
   
-  /*--- Solver class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      for (iSol = 0; iSol < MAX_SOLS; iSol++) {
-  //        if (solver_container[iZone][iMesh][iSol] != NULL) {
-  //          delete solver_container[iZone][iMesh][iSol];
-  //        }
-  //      }
-  //      delete solver_container[iZone][iMesh];
-  //    }
-  //    delete solver_container[iZone];
-  //  }
-  //  delete [] solver_container;
-  //  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
-  
-  /*--- Geometry class deallocation ---*/
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
-  //      delete geometry_container[iZone][iMesh];
-  //    }
-  //    delete geometry_container[iZone];
-  //  }
-  //  delete [] geometry_container;
-  //  cout <<"Geometry container, deallocated." << endl;
-  
-  /*--- Integration class deallocation ---*/
-  //  cout <<"Integration container, deallocated." << endl;
-  
-  
+//  /*--- Deallocate config container ---*/
+//  
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (config_container[iZone] != NULL) {
+//      delete config_container[iZone];
+//    }
+//  }
+//  if (config_container != NULL) delete[] config_container;
+
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
