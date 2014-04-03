@@ -387,14 +387,16 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
  * \brief types of centered spatial discretizations
  */
 enum ENUM_CENTERED {
-	NO_CENTERED = 0,               /*!< \brief No centered scheme is used. */
-	JST = 1,			/*!< \brief Jameson-Smith-Turkel centered numerical method. */
-	LAX = 2,			/*!< \brief Lax-Friedrich centered numerical method. */
-        JST_KE = 3                     /*!< \brief . */
+	NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
+	JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
+	LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
+  CUSP = 3,           /*!< \brief Convective upwind and split pressure CUSP. */
+  JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
 static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_CENTERED>
 ("NONE", NO_CENTERED)
 ("JST", JST)
+("CUSP", CUSP)
 ("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
