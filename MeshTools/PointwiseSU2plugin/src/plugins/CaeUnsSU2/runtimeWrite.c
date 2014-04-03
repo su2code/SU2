@@ -274,6 +274,11 @@ writeVertices(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
             while ( writeVertex(pRti, PwModEnumVertices(model, cnt++)) ) {
                 // sneaky while loop ...
                 // writeVertex() will break loop on user abort
+
+                // increment step
+                if (!caeuProgressIncr(pRti)) {
+                  break;
+                }
             }
 			
 	          // end steps
