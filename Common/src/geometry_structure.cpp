@@ -8178,6 +8178,7 @@ void CMultiGridGeometry::SetPsuP(CGeometry *fine_grid) {
   unsigned short iChildren, iNode;
   
   /*--- Set the point suronfding a point ---*/
+  
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
     for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
       iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
@@ -8190,6 +8191,7 @@ void CMultiGridGeometry::SetPsuP(CGeometry *fine_grid) {
   
   /*--- Set the number of neighbors variable, this is
    important for JST and multigrid in parallel ---*/
+  
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
     node[iCoarsePoint]->SetnNeighbor(node[iCoarsePoint]->GetnPoint());
   
