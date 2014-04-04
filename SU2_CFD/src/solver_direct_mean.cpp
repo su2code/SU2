@@ -1899,7 +1899,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND)       ||
                      (config->GetKind_Upwind_Flow() == AUSM_2ND)      ||
                      (config->GetKind_Upwind_Flow() == HLLC_2ND)      ||
-                     (config->GetKind_Upwind_Flow() == MSW_2ND)      ||
+                     (config->GetKind_Upwind_Flow() == MSW_2ND)       ||
+                     (config->GetKind_Upwind_Flow() == CUSP_2ND)      ||
                      (config->GetKind_Upwind_Flow() == TURKEL_2ND)  );
   bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
@@ -2249,8 +2250,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == MSW_2ND) || (config->GetKind_Upwind_Flow() == TURKEL_2ND))
+  bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) ||
+                           (config->GetKind_Upwind_Flow() == AUSM_2ND) ||
+                           (config->GetKind_Upwind_Flow() == HLLC_2ND) ||
+                           (config->GetKind_Upwind_Flow() == MSW_2ND) ||
+                           (config->GetKind_Upwind_Flow() == CUSP_2ND) ||
+                           (config->GetKind_Upwind_Flow() == TURKEL_2ND))
                           && ((iMesh == MESH_0) || low_fidelity));
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();

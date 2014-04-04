@@ -347,7 +347,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJ", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
+  AddEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
   AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
@@ -556,16 +556,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Convective numerical method */
   Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE_2ND;
-  AddConvectOption("CONV_NUM_METHOD_ADJ", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
+  AddConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJ", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
+  AddEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJ", Kind_SourNumScheme_AdjFlow, Source_Map, "NONE");
+  AddEnumOption("SOUR_NUM_METHOD_ADJFLOW", Kind_SourNumScheme_AdjFlow, Source_Map, "NONE");
   /* DESCRIPTION: Slope limiter */
   AddEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, "NONE");
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_ADJ", 3, Kappa_AdjFlow, default_vec_3d);
+  AddArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
   
   /* DESCRIPTION: Slope limiter */
   AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "NONE");
@@ -3150,9 +3150,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         << ", " << Kappa_2nd_Flow << "."<< endl;
         cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
       }
-      if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == CUSP)) {
-        cout << "CUSCP scheme for the flow inviscid terms."<< endl;
-      }
 			if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == LAX))
 				cout << "Lax-Friedrich scheme for the flow inviscid terms."<< endl;
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
@@ -3162,27 +3159,30 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				if (Kind_Upwind_Flow == HLLC_1ST)	cout << "1st order HLLC solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == SW_1ST)	cout << "1st order Steger-Warming solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == MSW_1ST)	cout << "1st order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == CUSP_1ST)	cout << "1st order CUSP solver for the flow inviscid terms."<< endl;
 			}
 			if ((Kind_ConvNumScheme_Flow == SPACE_UPWIND) &&
 					((Kind_Upwind_Flow == ROE_2ND) || (Kind_Upwind_Flow == AUSM_2ND) || (Kind_Upwind_Flow == HLLC_2ND)
-							|| (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == TURKEL_2ND))) {
-				if (Kind_Upwind_Flow == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
-				if (Kind_Upwind_Flow == MSW_2ND) cout << "2nd order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-				switch (Kind_SlopeLimit_Flow) {
-				case NONE: cout << "Without slope-limiting method." << endl; break;
-				case VENKATAKRISHNAN:
-					cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
-					cout << "The reference element size is: " << RefElemLength <<". "<< endl;
-					break;
-				case MINMOD:
-					cout << "Minmod slope-limiting method." << endl;
-					break;
-				}
-			}
+           || (Kind_Upwind_Flow == SW_2ND) || (Kind_Upwind_Flow == MSW_2ND) || (Kind_Upwind_Flow == CUSP_2ND)
+           || (Kind_Upwind_Flow == TURKEL_2ND))) {
+            if (Kind_Upwind_Flow == ROE_2ND) cout << "2nd order Roe solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_Flow == TURKEL_2ND) cout << "2nd order Roe-Turkel solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_Flow == AUSM_2ND) cout << "2nd order AUSM solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_Flow == HLLC_2ND) cout << "2nd order HLLC solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_Flow == SW_2ND) cout << "2nd order Steger-Warming solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_Flow == MSW_2ND) cout << "2nd order Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+            if (Kind_Upwind_Flow == CUSP_2ND) cout << "2nd order CUSP solver for the flow inviscid terms."<< endl;
+            switch (Kind_SlopeLimit_Flow) {
+              case NONE: cout << "Without slope-limiting method." << endl; break;
+              case VENKATAKRISHNAN:
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                break;
+              case MINMOD:
+                cout << "Minmod slope-limiting method." << endl;
+                break;
+            }
+          }
 		}
 
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
@@ -4836,13 +4836,15 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
                                     unsigned short val_kind_centered, unsigned short val_kind_upwind,
-                                    unsigned short val_kind_slopelimit) {
+                                    unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int) {
   
   Kind_ConvNumScheme = val_kind_convnumscheme;
   Kind_Centered = val_kind_centered;
   Kind_Upwind = val_kind_upwind;
   Kind_SlopeLimit = val_kind_slopelimit;
-  
+  Kind_SlopeLimit = val_kind_slopelimit;
+  Order_Spatial_Int = val_order_spatial_int;
+
 }
 
 void CConfig::UpdateCFL(unsigned long val_iter) {
@@ -4898,216 +4900,237 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
   switch (val_solver) {
     case EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
     case NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
     case RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                              Order_Spatial_Int_Turb);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Turb);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_TRANS_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                              Order_Spatial_Int_Turb);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Turb);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       break;
     case TNE2_EULER:
       if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
-                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                              Order_Spatial_Int_TNE2);
+        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       break;
     case TNE2_NAVIER_STOKES:
       if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
-                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_TNE2());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                              Order_Spatial_Int_TNE2);
+        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_TNE2);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       break;
     case ADJ_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
+                              Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
+                              Order_Spatial_Int_AdjFlow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_AdjFlow);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
     case ADJ_NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
         SetKind_SourNumScheme(NONE);
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
+                              Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
+                              Order_Spatial_Int_AdjFlow);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjFlow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_AdjFlow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
     case ADJ_RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_SourNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjFlow(), GetKind_Centered_AdjFlow(),
-                              GetKind_Upwind_AdjFlow(), GetKind_SlopeLimit_AdjFlow());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjFlow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjFlow());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjFlow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
+                              Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
+                              Order_Spatial_Int_AdjFlow);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjFlow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_AdjFlow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Turb(), GetKind_Centered_Turb(),
-                              GetKind_Upwind_Turb(), GetKind_SlopeLimit_Turb());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Turb());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Turb());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Turb());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                              Order_Spatial_Int_Turb);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Turb);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_ADJTURB_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTurb(), GetKind_Centered_AdjTurb(),
-                              GetKind_Upwind_AdjTurb(), GetKind_SlopeLimit_AdjTurb());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTurb());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTurb());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTurb());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
+                              Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
+                              Order_Spatial_Int_AdjTurb);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjTurb);
+        SetKind_SourNumScheme(Kind_SourNumScheme_AdjTurb);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
     case ADJ_TNE2_EULER:
       if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
-                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                              Order_Spatial_Int_TNE2);
+        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       if (val_system == RUNTIME_ADJTNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTNE2(), GetKind_Centered_AdjTNE2(),
-                              GetKind_Upwind_AdjTNE2(), GetKind_SlopeLimit_AdjTNE2());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTNE2());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2,
+                              Kind_Upwind_AdjTNE2, Kind_SlopeLimit_AdjTNE2,
+                              Order_Spatial_Int_AdjTNE2);
+        SetKind_SourNumScheme(Kind_SourNumScheme_AdjTNE2);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTNE2());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTNE2);
       }
       break;
     case ADJ_TNE2_NAVIER_STOKES:
       if (val_system == RUNTIME_TNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_TNE2(), GetKind_Centered_TNE2(),
-                              GetKind_Upwind_TNE2(), GetKind_SlopeLimit_TNE2());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_TNE2());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_TNE2());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_TNE2());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                              Order_Spatial_Int_TNE2);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_TNE2);
+        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       if (val_system == RUNTIME_ADJTNE2_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_AdjTNE2(), GetKind_Centered_AdjTNE2(),
-                              GetKind_Upwind_AdjTNE2(), GetKind_SlopeLimit_AdjTNE2());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_AdjTNE2());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_AdjTNE2());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_AdjTNE2());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2,
+                              Kind_Upwind_AdjTNE2, Kind_SlopeLimit_AdjTNE2,
+                              Order_Spatial_Int_AdjTNE2);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjTNE2);
+        SetKind_SourNumScheme(Kind_SourNumScheme_AdjTNE2);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTNE2);
       }
       break;
     case LIN_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
         SetKind_SourNumScheme(NONE); SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_LINFLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_LinFlow(), GetKind_Centered_LinFlow(),
-                              GetKind_Upwind_LinFlow(), NONE);
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow,
+                              Kind_Upwind_LinFlow, NONE, NONE);
         SetKind_ViscNumScheme(NONE); SetKind_SourNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_LinFlow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_LinFlow);
       }
       break;
     case POISSON_EQUATION:
       if (val_system == RUNTIME_POISSON_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Poisson());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Poisson());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Poisson());
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Poisson);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Poisson);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson);
       }
       break;
     case WAVE_EQUATION:
       if (val_system == RUNTIME_WAVE_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Wave());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Wave());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Wave());
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Wave);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Wave);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
       }
       break;
     case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Heat());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_Heat());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Heat());
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Heat);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_Heat);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
     case LINEAR_ELASTICITY:
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_FEA());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_FEA());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(Kind_SourNumScheme_FEA);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_FEA);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
       }
       break;
     case FLUID_STRUCTURE_EULER:
       if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(GetKind_ConvNumScheme_Flow(), GetKind_Centered_Flow(),
-                              GetKind_Upwind_Flow(), GetKind_SlopeLimit_Flow());
-        SetKind_SourNumScheme(GetKind_SourNumScheme_Flow());
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              Order_Spatial_Int_Flow);
+        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
         SetKind_ViscNumScheme(NONE);
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_Flow());
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(GetKind_SourNumScheme_FEA());
-        SetKind_ViscNumScheme(GetKind_ViscNumScheme_FEA());
-        SetKind_TimeIntScheme(GetKind_TimeIntScheme_FEA());
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_SourNumScheme(Kind_SourNumScheme_FEA);
+        SetKind_ViscNumScheme(Kind_ViscNumScheme_FEA);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
       }
       break;
   }
