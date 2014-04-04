@@ -323,7 +323,16 @@ private:
 	Kind_Upwind_LinFlow,			/*!< \brief Upwind scheme for the linearized flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
-	Kind_Upwind_Template;			/*!< \brief Upwind scheme for the template model. */
+	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
+  Order_Spatial_Int,		/*!< \brief Order of the spatial numerical integration.*/
+  Order_Spatial_Int_Flow,		/*!< \brief Order of the spatial numerical integration.*/
+	Order_Spatial_Int_Turb,		/*!< \brief Order of the spatial numerical integration.*/
+	Order_Spatial_Int_TNE2,		/*!< \brief Order of the spatial numerical integration.*/
+  Order_Spatial_Int_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
+	Order_Spatial_Int_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
+	Order_Spatial_Int_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
+  Order_Spatial_Int_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
+
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
   string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
@@ -1508,7 +1517,7 @@ public:
 	 * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
 	 */		
 	void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered, 
-			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit);
+			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
 
 	/*! 
 	 * \brief Set the parameters of the viscous numerical scheme.

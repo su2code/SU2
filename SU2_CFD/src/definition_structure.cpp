@@ -733,7 +733,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim,nVar_Flow, config); break;
             case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim,nVar_Flow, config); break;
-            case CUSP : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentCUSP_Flow(nDim,nVar_Flow, config); break;
             case JST_KE : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJST_KE_Flow(nDim,nVar_Flow, config); break;
           default : cout << "Centered scheme not implemented." << endl; exit(1); break;
           }
@@ -809,8 +808,15 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
               
             case MSW_1ST : case MSW_2ND :
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
-                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+              
+            case CUSP_1ST : case CUSP_2ND :
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
               }
               break;
               

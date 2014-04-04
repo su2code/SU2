@@ -1449,6 +1449,62 @@ public:
 };
 
 /*!
+ * \class CUpwCUSP_Flow
+ * \brief Class for centered scheme - CUSP.
+ * \ingroup ConvDiscr
+ * \author F. Palacios.
+ * \version 3.0.0 "eagle"
+ */
+class CUpwCUSP_Flow : public CNumerics {
+  
+private:
+	unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
+	double *Diff_U, *Diff_Flux, /*!< \brief Diference of conservative variables and undivided laplacians. */
+	*Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
+	*MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
+	Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
+	sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
+	MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
+	Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
+	Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
+	Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
+	*ProjFlux, *ProjFlux_i, *ProjFlux_j,  /*!< \brief Projected inviscid flux tensor. */
+	Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
+  LamdaNeg, LamdaPos, ModVelocity, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
+  ProjGridVel_i, ProjGridVel_j, ProjGridVel, **Jacobian;  /*!< \brief Projected grid velocity. */
+	bool implicit, /*!< \brief Implicit calculation. */
+	grid_movement, /*!< \brief Modification for grid movement. */
+	stretching; /*!< \brief Stretching factor. */
+  
+  
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimension of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwCUSP_Flow(void);
+  
+	/*!
+	 * \brief Compute the flow residual using a JST method.
+	 * \param[out] val_resconv - Pointer to the convective residual.
+	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+                       CConfig *config);
+};
+
+/*!
  * \class CUpwRoe_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
  * \ingroup ConvDiscr
@@ -2346,62 +2402,6 @@ public:
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
                          CConfig *config);
-};
-
-/*!
- * \class CCentCUSP_Flow
- * \brief Class for centered scheme - CUSP.
- * \ingroup ConvDiscr
- * \author F. Palacios.
- * \version 3.0.0 "eagle"
- */
-class CCentCUSP_Flow : public CNumerics {
-  
-private:
-	unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
-	double *Diff_U, *Diff_Flux, /*!< \brief Diference of conservative variables and undivided laplacians. */
-	*Velocity_i, *Velocity_j, /*!< \brief Velocity at node 0 and 1. */
-	*MeanVelocity, ProjVelocity, ProjVelocity_i, ProjVelocity_j,  /*!< \brief Mean and projected velocities. */
-	Density_i, Density_j, Energy_i, Energy_j,  /*!< \brief Mean Density and energies. */
-	sq_vel_i, sq_vel_j,   /*!< \brief Modulus of the velocity and the normal vector. */
-	MeanDensity, MeanPressure, MeanEnthalpy, MeanEnergy, /*!< \brief Mean values of primitive variables. */
-	Param_p, Param_Kappa_2, Param_Kappa_4, /*!< \brief Artificial dissipation parameters. */
-	Local_Lambda_i, Local_Lambda_j, MeanLambda, /*!< \brief Local eingenvalues. */
-	Phi_i, Phi_j, sc2, sc4, StretchingFactor, /*!< \brief Streching parameters. */
-	*ProjFlux, *ProjFlux_i, *ProjFlux_j,  /*!< \brief Projected inviscid flux tensor. */
-	Epsilon_2, Epsilon_4, cte_0, cte_1, /*!< \brief Artificial dissipation values. */
-  LamdaNeg, LamdaPos, ModVelocity, Beta, Nu_c, U_i[5], U_j[5], MeanSoundSpeed, Mach,
-  ProjGridVel_i, ProjGridVel_j, ProjGridVel, **Jacobian;  /*!< \brief Projected grid velocity. */
-	bool implicit, /*!< \brief Implicit calculation. */
-	grid_movement, /*!< \brief Modification for grid movement. */
-	stretching; /*!< \brief Stretching factor. */
-  
-  
-public:
-  
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimension of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CCentCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CCentCUSP_Flow(void);
-  
-	/*!
-	 * \brief Compute the flow residual using a JST method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
-                       CConfig *config);
 };
 
 /*!

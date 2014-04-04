@@ -390,13 +390,11 @@ enum ENUM_CENTERED {
 	NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
 	JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
 	LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
-  CUSP = 3,           /*!< \brief Convective upwind and split pressure CUSP. */
   JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
 static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_CENTERED>
 ("NONE", NO_CENTERED)
 ("JST", JST)
-("CUSP", CUSP)
 ("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
@@ -421,8 +419,9 @@ enum ENUM_UPWIND {
 	TURKEL_1ST = 14,			/*!< \brief First order Roe-Turkel's upwind numerical method. */
 	TURKEL_2ND = 15,			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
   AUSMPWPLUS_1ST = 16,  /*!< \brief First order AUSMPW+ numerical method. */
-  AUSMPWPLUS_2ND = 17   /*!< \brief Second order AUSMPW+ numerical method. */
-  
+  AUSMPWPLUS_2ND = 17,   /*!< \brief Second order AUSMPW+ numerical method. */
+  CUSP_1ST = 18,  /*!< \brief First order Convective upwind and split pressure numerical method. */
+  CUSP_2ND = 19   /*!< \brief Second order Convective upwind and split pressure numerical method. */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -440,6 +439,8 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("SW-2ND_ORDER", SW_2ND)
 ("MSW-1ST_ORDER", MSW_1ST)
 ("MSW-2ND_ORDER", MSW_2ND)
+("CUSP-1ST_ORDER", CUSP_1ST)
+("CUSP-2ND_ORDER", CUSP_2ND)
 ("SCALAR_UPWIND-1ST_ORDER", SCALAR_UPWIND_1ST)
 ("SCALAR_UPWIND-2ND_ORDER", SCALAR_UPWIND_2ND)
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
