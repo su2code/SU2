@@ -410,6 +410,8 @@ inline double* CConfig::GetRotationModes() { return RotationModes; }
 
 inline double* CConfig::GetRefTemperature() { return Ref_Temperature; }
 
+inline double* CConfig::GetWall_Catalycity() { return Wall_Catalycity; }
+
 inline double* CConfig::GetMolar_Mass() { return Molar_Mass; } 
 
 inline double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
