@@ -376,7 +376,7 @@ static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM
  * \brief type of wind direction
  */
 enum ENUM_GUST_DIR {
-    X_DIR = 0,        /*!< \brief _______. */
+  X_DIR = 0,        /*!< \brief _______. */
 	Y_DIR = 1, 		 /*!< \brief _______. */
 };
 static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_GUST_DIR>
@@ -387,10 +387,10 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
  * \brief types of centered spatial discretizations
  */
 enum ENUM_CENTERED {
-	NO_CENTERED = 0,               /*!< \brief No centered scheme is used. */
-	JST = 1,			/*!< \brief Jameson-Smith-Turkel centered numerical method. */
-	LAX = 2,			/*!< \brief Lax-Friedrich centered numerical method. */
-        JST_KE = 3                     /*!< \brief . */
+	NO_CENTERED = 0,    /*!< \brief No centered scheme is used. */
+	JST = 1,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
+	LAX = 2,            /*!< \brief Lax-Friedrich centered numerical method. */
+  JST_KE = 4          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
 };
 static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_CENTERED>
 ("NONE", NO_CENTERED)
@@ -402,57 +402,53 @@ static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_C
  * \brief types of upwind spatial discretizations
  */
 enum ENUM_UPWIND {
-	NO_UPWIND = 0,                /*!< \brief No upwind scheme is used. */
-	ROE_1ST = 1,			/*!< \brief First order Roe's upwind numerical method. */
-	ROE_2ND = 2,			/*!< \brief Second order Roe's upwind numerical method. */
-	SCALAR_UPWIND_1ST = 3,	/*!< \brief First order scalar upwind numerical method. */
-	SCALAR_UPWIND_2ND = 4,	/*!< \brief Second order scalar upwind numerical method. */
-	CONVECTIVE_TEMPLATE = 5,       /*!< \brief Template for new numerical method . */
-	AUSM_1ST = 6,			/*!< \brief First order AUSM numerical method. */
-	AUSM_2ND = 7,			/*!< \brief Second order AUSM numerical method. */
-	HLLC_1ST = 8,			/*!< \brief First order HLLC numerical method. */
-	HLLC_2ND = 9,			/*!< \brief Second order HLLC numerical method. */
-	SW_1ST = 10,			/*!< \brief First order Steger-Warming method. */
-	SW_2ND = 11,      /*!< \brief Second order Steger-Warming method. */
-  MSW_1ST = 12,     /*!< \brief First order Modified Steger-Warming method. */
-  MSW_2ND = 13,     /*!< \brief Second order Modified Steger-Warming method. */
-	TURKEL_1ST = 14,			/*!< \brief First order Roe-Turkel's upwind numerical method. */
-	TURKEL_2ND = 15,			/*!< \brief Second order Roe-Turkel's upwind numerical method. */
-  AUSMPWPLUS_1ST = 16,  /*!< \brief First order AUSMPW+ numerical method. */
-  AUSMPWPLUS_2ND = 17   /*!< \brief Second order AUSMPW+ numerical method. */
-  
+	NO_UPWIND = 0,              /*!< \brief No upwind scheme is used. */
+	ROE = 1,                    /*!< \brief Roe's upwind numerical method. */
+	SCALAR_UPWIND = 2,          /*!< \brief Scalar upwind numerical method. */
+	AUSM = 3,                   /*!< \brief AUSM numerical method. */
+	HLLC = 4,                   /*!< \brief HLLC numerical method. */
+	SW = 5,                     /*!< \brief Steger-Warming method. */
+  MSW = 6,                    /*!< \brief Modified Steger-Warming method. */
+	TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
+  AUSMPWPLUS = 8,             /*!< \brief AUSMPW+ numerical method. */
+  CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
+  CONVECTIVE_TEMPLATE = 10    /*!< \brief Template for new numerical method . */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
-("ROE-1ST_ORDER", ROE_1ST)
-("ROE-2ND_ORDER", ROE_2ND)
-("TURKEL_PREC-1ST_ORDER", TURKEL_1ST)
-("TURKEL_PREC-2ND_ORDER", TURKEL_2ND)
-("AUSM-1ST_ORDER", AUSM_1ST)
-("AUSM-2ND_ORDER", AUSM_2ND)
-("AUSMPW+-1ST_ORDER", AUSMPWPLUS_1ST)
-("AUSMPW+-2ND_ORDER", AUSMPWPLUS_2ND)
-("HLLC-1ST_ORDER", HLLC_1ST)
-("HLLC-2ND_ORDER", HLLC_2ND)
-("SW-1ST_ORDER", SW_1ST)
-("SW-2ND_ORDER", SW_2ND)
-("MSW-1ST_ORDER", MSW_1ST)
-("MSW-2ND_ORDER", MSW_2ND)
-("SCALAR_UPWIND-1ST_ORDER", SCALAR_UPWIND_1ST)
-("SCALAR_UPWIND-2ND_ORDER", SCALAR_UPWIND_2ND)
+("ROE", ROE)
+("TURKEL_PREC", TURKEL)
+("AUSM", AUSM)
+("AUSMPW+", AUSMPWPLUS)
+("HLLC", HLLC)
+("SW", SW)
+("MSW", MSW)
+("CUSP", CUSP)
+("SCALAR_UPWIND", SCALAR_UPWIND)
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
+
+/*!
+ * \brief Spatial numerical order integration
+ */
+enum ENUM_SPATIAL_ORDER {
+	FIRST_ORDER = 0,        /*!< \brief First order */
+	SECOND_ORDER = 1,        /*!< \brief Second order. */
+  SECOND_ORDER_LIMITER = 2 /*!< \brief Second order with limiter. */
+};
+static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<string, ENUM_SPATIAL_ORDER>
+("1ST_ORDER", FIRST_ORDER)
+("2ND_ORDER", SECOND_ORDER)
+("2ND_ORDER_LIMITER", SECOND_ORDER_LIMITER);
 
 /*!
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
-	NO_LIMITER = 0,       /*!< \brief No slope limiter */
-	VENKATAKRISHNAN = 1,	/*!< \brief Slope limiter using Venkatakrisnan method. */
-  MINMOD = 2,           /*!< \brief Slope limiter using minmod method. */
-  SHARP_EDGES = 3       /*!< \brief Slope limiter using sharp edges. */
+	VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
+  MINMOD = 1,           /*!< \brief Slope limiter using minmod method. */
+  SHARP_EDGES = 2       /*!< \brief Slope limiter using sharp edges. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
-("NONE", NO_LIMITER)
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("MINMOD", MINMOD)
 ("SHARP_EDGES", SHARP_EDGES);

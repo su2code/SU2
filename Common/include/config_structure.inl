@@ -476,6 +476,20 @@ inline unsigned short CConfig::GetKind_Centered(void) { return Kind_Centered; }
 
 inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
 
+inline unsigned short CConfig::GetSpatialOrder(void) { return SpatialOrder; }
+
+inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_Flow; }
+
+inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
+
+inline unsigned short CConfig::GetSpatialOrder_TNE2(void) { return SpatialOrder_TNE2; }
+
+inline unsigned short CConfig::GetSpatialOrder_AdjLevelSet(void) { return SpatialOrder_AdjLevelSet; }
+
+inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
+
+inline unsigned short CConfig::GetSpatialOrder_AdjTNE2(void) { return SpatialOrder_AdjTNE2; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_TNE2(void) { return Kind_TimeIntScheme_TNE2; }

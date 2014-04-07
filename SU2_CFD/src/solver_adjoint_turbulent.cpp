@@ -596,10 +596,10 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 //  double *Limiter_i = NULL, *Limiter_j = NULL, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
 //	unsigned short iDim, iVar;
   
-	bool high_order_diss = (config->GetKind_Upwind_AdjTurb() == SCALAR_UPWIND_2ND);
-	bool limiter = (config->GetKind_SlopeLimit() != NONE);
+	bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
+	bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
   
-	if (high_order_diss) {
+	if (second_order) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 		if (limiter) SetSolution_Limiter(geometry, config);
@@ -629,7 +629,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
     TurbVar_Grad_j = solver_container[TURB_SOL]->node[jPoint]->GetGradient();
     numerics->SetTurbVarGradient(TurbVar_Grad_i, TurbVar_Grad_j);
     
-//    if (high_order_diss) {
+//    if (second_order) {
 //      
 //      /*--- Conservative solution using gradient reconstruction ---*/
 //      for (iDim = 0; iDim < nDim; iDim++) {
