@@ -1624,8 +1624,9 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
-
 	int rank;
+  unsigned long iPoint, ErrorCounter = 0;
+
 #ifdef NO_MPI
 	rank = MASTER_NODE;
 #else
@@ -1636,16 +1637,12 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 #endif
 #endif
 	
-  unsigned long iPoint, ErrorCounter = 0;
-  bool adjoint    = config->GetAdjoint();
-	bool implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  bool center     = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
+  bool adjoint      = config->GetAdjoint();
+	bool implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                      (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
-	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
-                     (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
-                     (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
-                     (config->GetKind_Upwind_TNE2() == TURKEL_2ND));
-	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
+	bool second_order = ((config->GetSpatialOrder_TNE2() == SECOND_ORDER) || (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER));
+	bool limiter      = (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER);
   bool RightSol;
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -1662,7 +1659,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   Set_MPI_Primitive(geometry, config);
   
 	/*--- Upwind second order reconstruction ---*/
-	if ((upwind_2nd) && (iMesh == MESH_0)) {
+	if ((second_order) && (iMesh == MESH_0)) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
@@ -1849,11 +1846,11 @@ void CTNE2EulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
-  bool implicit, high_order_diss;
+  bool implicit, second_order;
 
   /*--- Set booleans based on config settings ---*/
 	implicit        = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	high_order_diss = ((config->GetKind_Centered_TNE2() == JST) && (iMesh == MESH_0));
+	second_order = ((config->GetKind_Centered_TNE2() == JST) && (iMesh == MESH_0));
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
@@ -1910,22 +1907,17 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar, jVar;
-  bool implicit, high_order_diss, limiter;
+  bool implicit, second_order, limiter;
   double *U_i, *U_j, *V_i, *V_j;
   double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
   double *Limiter_i, *Limiter_j;
   double *Primitive_i, *Primitive_j;
   
 	/*--- Set booleans based on config settings ---*/
-	implicit        = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  limiter         = (config->GetKind_SlopeLimit_TNE2() != NONE);
-	high_order_diss = (((config->GetKind_Upwind_TNE2() == ROE_2ND)  ||
-                      (config->GetKind_Upwind_TNE2() == AUSM_2ND) ||
-                      (config->GetKind_Upwind_TNE2() == HLLC_2ND) ||
-                      (config->GetKind_Upwind_TNE2() == MSW_2ND)  ||
-                      (config->GetKind_Upwind_TNE2() == TURKEL_2ND))
-                     && (iMesh == MESH_0));
-  
+	implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	second_order = (((config->GetSpatialOrder_TNE2() == SECOND_ORDER) || (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
+  limiter      = (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER);
+
   /*--- Allocate arrays ---*/
   Primitive_i = new double[nPrimVar];
   Primitive_j = new double[nPrimVar];
@@ -1958,7 +1950,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     
     
     /*--- High order reconstruction using MUSCL strategy ---*/
-    if (high_order_diss) {
+    if (second_order) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -3408,9 +3400,8 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
+			if (config->GetKind_Upwind() == TURKEL)
 				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-			}
       
 			/*--- Viscous contribution ---*/
 			if (viscous) {
@@ -3578,9 +3569,8 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
 			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
+			if (config->GetKind_Upwind() == TURKEL)
 				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-			}
       
 			/*--- Viscous contribution ---*/
 			if (viscous) {
@@ -4567,13 +4557,12 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
                                   unsigned short RunTime_EqSystem, bool Output) {
 	unsigned long iPoint;
   bool check;
-  bool adjoint    = config->GetAdjoint();
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool upwind_2nd = ((config->GetKind_Upwind_TNE2() == ROE_2ND) || (config->GetKind_Upwind_TNE2() == AUSM_2ND)
-                     || (config->GetKind_Upwind_TNE2() == HLLC_2ND) || (config->GetKind_Upwind_TNE2() == TURKEL_2ND));
-	bool limiter = (config->GetKind_SlopeLimit_TNE2() != NONE);
-  bool center     = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
-                     (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
+  bool adjoint      = config->GetAdjoint();
+	bool implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	bool second_order = ((config->GetSpatialOrder_TNE2() == SECOND_ORDER) || (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER));
+	bool limiter      = (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER);
+  bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
+                       (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
   
 	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -4587,7 +4576,7 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	}
   
 	/*--- Upwind second order reconstruction ---*/
-	if ((upwind_2nd) && (iMesh == MESH_0)) {
+	if ((second_order) && (iMesh == MESH_0)) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
