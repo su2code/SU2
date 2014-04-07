@@ -3184,8 +3184,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     Sens_Geo[iMarker] = 0.0;
     
     
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       
       /*--- Loop over all boundary nodes ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {

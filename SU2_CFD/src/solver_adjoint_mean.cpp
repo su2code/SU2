@@ -5410,8 +5410,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     Sens_Geo[iMarker] = 0.0;
     
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -5442,7 +5446,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             temp_sens = 0.0;
-            if (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) {
+            if((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX             ) ||
+               (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC   ) ||
+               (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)){
               
               /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
               
@@ -5453,7 +5459,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               for (iDim = 0; iDim < nDim; iDim++)
                 temp_sens += heat_flux_factor * tang_deriv_psi5[iDim] * tang_deriv_T[iDim];
               
-            } else if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) {
+            } else if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+                       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+                       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
               
               /*--- Isothermal Term: temp_sens = - k * \partial_n(\psi_5) * \partial_n(T) ---*/
               
