@@ -217,9 +217,9 @@ void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 											 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
-	bool high_order_diss = ((config->GetKind_Centered() == JST) && (iMesh == MESH_0));
+	bool second_order = ((config->GetKind_Centered() == JST) && (iMesh == MESH_0));
 	
-	if (high_order_diss) 
+	if (second_order) 
 		SetUndivided_Laplacian(geometry, config);
 	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -245,7 +245,7 @@ void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 						  solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
 		/*--- Undivided laplacian ---*/
-		if (high_order_diss) 
+		if (second_order) 
 			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
 		
 		/*--- Compute residual ---*/

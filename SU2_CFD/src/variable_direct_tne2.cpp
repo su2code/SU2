@@ -151,8 +151,8 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   
   /*--- If using limiters, allocate the arrays ---*/
   if ((config->GetKind_ConvNumScheme_TNE2() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_TNE2() != NONE)) {
-		Limiter           = new double [nVar];
+			(config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER)) {
+		Limiter      = new double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Limiter[iVar]      = 0.0;
 		}
@@ -332,7 +332,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
   
   /*--- If using limiters, allocate the arrays ---*/
   if ((config->GetKind_ConvNumScheme_TNE2() == SPACE_UPWIND) &&
-			(config->GetKind_SlopeLimit_TNE2() != NONE)) {
+			(config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER)) {
 		Limiter           = new double [nVar];
     Limiter_Primitive = new double [nPrimVarGrad];
 		Solution_Max      = new double [nPrimVarGrad];

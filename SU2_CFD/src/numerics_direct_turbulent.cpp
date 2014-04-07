@@ -1175,6 +1175,12 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     netInput[1] = SANondimInputs->OmegaBar;
     netInput[2] = SANondimInputs->SourceNondim;
     
+//    cout << "Net inputs ";
+//    for (int i = 0; i < 3; i++){
+//      cout << "\t" << netInput[i];
+//    }
+//    cout << endl;
+    
     // Predict using Nnet
     MLModel->Predict(netInput, netOutput);
     
@@ -1184,10 +1190,13 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     Residual[2] = SAResidual[2];
     Residual[3] = Residual[0] - Residual[1] + Residual[2];
 
+//    cout << "ML Production " << Residual[0] << endl;
+//    cout << "SA Production " << SAResidual[0] << endl;
+    
     for (int i=0; i < nResidual; i++){
       NondimResidual[i] = Residual[i];
     }
-    SANondimInputs->NondimensionalizeSource(nResidual, Residual);
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
   }else if (featureset.compare("nondim_destruction")==0){
     nInputMLVariables = 2;
@@ -1210,6 +1219,29 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = NondimResidual[i];
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("destruction")==0){
+      nInputMLVariables = 3;
+      nOutputMLVariables = 1;
+      netInput = new double[nInputMLVariables];
+      netOutput = new double[nOutputMLVariables];
+      
+      netInput[0] = SANondimInputs->Chi;
+      netInput[1] = SANondimInputs->OmegaBar;
+      netInput[2] = SANondimInputs->SourceNondim;
+      
+      // Predict using Nnet
+      MLModel->Predict(netInput, netOutput);
+      
+      // Gather the appropriate values
+      Residual[0] = SAResidual[0];
+      Residual[1] = netOutput[1];
+      Residual[2] = SAResidual[2];
+      Residual[3] = Residual[0] - Residual[1] + Residual[2];
+      
+      for (int i=0; i < nResidual; i++){
+        NondimResidual[i] = Residual[i];
+      }
+      SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
   }else if (featureset.compare("nondim_crossproduction")==0){
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
