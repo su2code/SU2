@@ -29,10 +29,12 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_ndim, unsigned sho
 : CVariable(val_ndim, val_nvar, config) {
 	
 	/*--- Allocate residual structures ---*/
+  
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
-	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
+  
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
 	
 }
 
@@ -43,12 +45,15 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short v
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Allocate residual structures ---*/
+  
 	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
-	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
+  
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
 	
 	/*--- Solution and old solution initialization ---*/
+  
 	Solution[0] = val_levelset;		Solution_Old[0] = val_levelset;
 	
 	if (dual_time) {

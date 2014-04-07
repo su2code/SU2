@@ -324,14 +324,14 @@ private:
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
-  Order_Spatial_Int,		/*!< \brief Order of the spatial numerical integration.*/
-  Order_Spatial_Int_Flow,		/*!< \brief Order of the spatial numerical integration.*/
-	Order_Spatial_Int_Turb,		/*!< \brief Order of the spatial numerical integration.*/
-	Order_Spatial_Int_TNE2,		/*!< \brief Order of the spatial numerical integration.*/
-  Order_Spatial_Int_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-	Order_Spatial_Int_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
-	Order_Spatial_Int_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
-  Order_Spatial_Int_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_TNE2,		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
@@ -2325,7 +2325,70 @@ public:
 	 * \return Kind of upwind scheme for the convective terms.
 	 */		
 	unsigned short GetKind_Upwind(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder(void);
 
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_Flow(void);
+
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_Turb(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_TNE2(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_AdjLevelSet(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_AdjFlow(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_AdjTNE2(void);
+  
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
 	 *        for the flow equations.
