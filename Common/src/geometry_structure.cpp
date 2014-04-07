@@ -1212,6 +1212,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
+        
+        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL &&
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX &&
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          node[Point_Surface]->SetSolidBoundary(true);
       }
   
   /*--- Loop over the points element to re-scale the mesh, and plot it ---*/
@@ -9140,6 +9145,11 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
             config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
+        
+        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL &&
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX &&
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          node[Point_Surface]->SetSolidBoundary(true);
       }
   
 }
