@@ -442,7 +442,7 @@ inline double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Err
 
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
-inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff; }
+inline double CConfig::GetCFLRedCoeff_AdjTurb(void) { return CFLRedCoeff_AdjTurb; }
 
 inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Linear_Iter; }
 
@@ -872,7 +872,7 @@ inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 
 inline double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
-inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
+inline double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

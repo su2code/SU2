@@ -314,11 +314,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
   AddArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
-  AddScalarOption("ADJ_CFL_REDUCTION", Adj_CFLRedCoeff, 0.8);
+  AddScalarOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-  AddScalarOption("TURB_CFL_REDUCTION", Turb_CFLRedCoeff, 1.0);
+  AddScalarOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
-  AddScalarOption("ADJTURB_CFL_REDUCTION", AdjTurb_CFLRedCoeff, 1.0);
+  AddScalarOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
   AddScalarOption("EXT_ITER", nExtIter, 999999);
   // these options share nRKStep as their size, which is not a good idea in general
@@ -1811,7 +1811,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMultiLevel+1;
   CFL = new double[nCFL];
   CFL[0] = CFLFineGrid;
-  if (Adjoint) CFL[0] = CFL[0] * Adj_CFLRedCoeff;
+  if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
   for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1]*MG_CFLRedCoeff;
   
@@ -4941,7 +4941,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
     change = false;
     for (iCFL = 0; iCFL <= nMultiLevel; iCFL++) {
       coeff = pow(MG_CFLRedCoeff, double(iCFL));
-      if (Adjoint) coeff = coeff * Adj_CFLRedCoeff;
+      if (Adjoint) coeff = coeff * CFLRedCoeff_AdjFlow;
       
       if (CFL[iCFL]*CFLRamp[0] < CFLRamp[2]*coeff) {
         CFL[iCFL] = CFL[iCFL]*CFLRamp[0];

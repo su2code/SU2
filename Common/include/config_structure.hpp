@@ -214,9 +214,9 @@ private:
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double
 	MG_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the MG coarse level. */
-	Turb_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
-	Adj_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
-	AdjTurb_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+	CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
+	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	unsigned short MaxChildren;		/*!< \brief Maximum number of children. */
@@ -2187,7 +2187,7 @@ public:
 	 * \brief Get CFL reduction factor for adjoint turbulence model.
 	 * \return CFL reduction factor.
 	 */
-	double GetAdjTurb_CFLRedCoeff(void);
+	double GetCFLRedCoeff_AdjTurb(void);
   
   /*!
 	 * \brief Get the number of linear smoothing iterations for mesh deformation.
@@ -4356,7 +4356,7 @@ public:
 	 * \brief Value of the CFL reduction in LevelSet problems.
 	 * \return Value of the CFL reduction in LevelSet problems.
 	 */
-	double GetTurb_CFLRedCoeff(void);
+	double GetCFLRedCoeff_Turb(void);
 
 	/*!
 	 * \brief Get the flow direction unit vector at an inlet boundary.
