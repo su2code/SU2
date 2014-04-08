@@ -593,6 +593,10 @@ enum BC_TYPE {
   ISOTHERMAL = 28,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 29,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 30,   	/*!< \brief Pressure boundary condition. */
+  HEAT_FLUX_NONCATALYTIC = 31, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
+  HEAT_FLUX_CATALYTIC= 32, /*!< \brief No-slip, constant heat flux, catalytic bc. */
+  ISOTHERMAL_NONCATALYTIC = 33, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
+  ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 

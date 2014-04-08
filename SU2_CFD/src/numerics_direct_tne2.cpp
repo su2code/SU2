@@ -282,7 +282,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
   
   /*--- Set parameters in the numerical method ---*/
-	epsilon = 1E-4;
+	epsilon = 0.0;
   alpha = 6.0;
   
   /*--- Calculate supporting geometry parameters ---*/
@@ -354,12 +354,18 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
   /*--- Flow eigenvalues at i (Lambda+) --- */
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
-    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
-  Lambda_i[nSpecies+nDim-1] = 0.5*(     ProjVelst_i + Vst_i[A_INDEX] +
-                                   fabs(ProjVelst_i + Vst_i[A_INDEX])  );
-  Lambda_i[nSpecies+nDim]   = 0.5*(     ProjVelst_i - Vst_i[A_INDEX] +
-                                   fabs(ProjVelst_i - Vst_i[A_INDEX])  );
-  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
+    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                      epsilon*epsilon));
+  Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
+                                   sqrt((ProjVelst_i + Vst_i[A_INDEX])*
+                                        (ProjVelst_i + Vst_i[A_INDEX])+
+                                        epsilon*epsilon)                );
+  Lambda_i[nSpecies+nDim]   = 0.5*(ProjVelst_i - Vst_i[A_INDEX] +
+                                   sqrt((ProjVelst_i - Vst_i[A_INDEX])*
+                                        (ProjVelst_i - Vst_i[A_INDEX]) +
+                                        epsilon*epsilon)                );
+  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                      epsilon*epsilon));
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix    (Ust_i, Vst_i, dPdU_i, UnitNormal, l, m, P_Tensor   );
@@ -380,12 +386,18 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
 	/*--- Flow eigenvalues at j (Lambda-) --- */
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
-    Lambda_j[iVar]          = 0.5*(ProjVelst_j - fabs(ProjVelst_j));
-  Lambda_j[nSpecies+nDim-1] = 0.5*(     ProjVelst_j + Vst_j[A_INDEX] -
-                                   fabs(ProjVelst_j + Vst_j[A_INDEX])  );
-  Lambda_j[nSpecies+nDim]   = 0.5*(     ProjVelst_j - Vst_j[A_INDEX] -
-                                   fabs(ProjVelst_j - Vst_j[A_INDEX])  );
-  Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_i - fabs(ProjVelst_i));
+    Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
+                                                      epsilon*epsilon));
+  Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -
+                                   sqrt((ProjVelst_j + Vst_j[A_INDEX])*
+                                        (ProjVelst_j + Vst_j[A_INDEX])+
+                                        epsilon*epsilon)                 );
+  Lambda_j[nSpecies+nDim]   = 0.5*(ProjVelst_j - Vst_j[A_INDEX] -
+                                   sqrt((ProjVelst_j - Vst_j[A_INDEX])*
+                                        (ProjVelst_j - Vst_j[A_INDEX])+
+                                        epsilon*epsilon)                 );
+  Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j+
+                                                      epsilon*epsilon));
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
@@ -1644,17 +1656,9 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
 		}
-    if (iVar < nSpecies) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                         (PrimVar_j[RHOS_INDEX+iVar]/PrimVar_j[RHO_INDEX]
-                                          -PrimVar_i[RHOS_INDEX+iVar]/PrimVar_i[RHO_INDEX]))*Edge_Vector[iDim] / dist_ij_2;
-      }
-    } else {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                         (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
-      }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+                                       (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
     }
 	}
   

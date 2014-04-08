@@ -138,6 +138,8 @@ inline double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
 inline double CConfig::GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff) { return Blottner[val_Species][val_Coeff]; }
 
+inline double CConfig::GetPnormHeat(void) { return pnorm_heat; }
+
 inline double CConfig::GetWallTemperature(void) { return Wall_Temperature; }
 
 inline double CConfig::GetFreeSurface_Zero(void) { return FreeSurface_Zero; }
@@ -407,6 +409,8 @@ inline double** CConfig::GetElDegeneracy() {return degen; }
 inline double* CConfig::GetRotationModes() { return RotationModes; }
 
 inline double* CConfig::GetRefTemperature() { return Ref_Temperature; }
+
+inline double* CConfig::GetWall_Catalycity() { return Wall_Catalycity; }
 
 inline double* CConfig::GetMolar_Mass() { return Molar_Mass; } 
 
