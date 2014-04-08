@@ -2083,6 +2083,7 @@ public:
 		} else {
 			cerr << "Error in CConvOptionRef::SetValue(): "
 					<< value[0] << " is an invalid space discretization" << endl;
+      cerr << "Please, check that the config file is compatible with SU2 3.0.1 \"eagle\"" << endl;
 			throw(-1);
 		}
 	}
