@@ -1212,6 +1212,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
+        
+        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL &&
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX &&
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          node[Point_Surface]->SetSolidBoundary(true);
       }
   
   /*--- Loop over the points element to re-scale the mesh, and plot it ---*/
@@ -3639,8 +3644,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
       nVertex_SolidWall += GetnVertex(iMarker);
   
   /*--- Allocate an array to hold boundary node coordinates ---*/
@@ -3654,8 +3663,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
+    if((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+       (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+       (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
       for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -3713,8 +3726,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
    local partition. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
       nLocalVertex_NS += GetnVertex(iMarker);
   
   /*--- Communicate to all processors the total number of no-slip boundary
@@ -3751,8 +3768,12 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
       for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -3819,8 +3840,14 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     Boundary = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if (((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-         (Boundary == ISOTHERMAL) || (Boundary == LOAD_BOUNDARY) ||
+    if (((Boundary == EULER_WALL)              ||
+         (Boundary == HEAT_FLUX)               ||
+         (Boundary == HEAT_FLUX_CATALYTIC)     ||
+         (Boundary == HEAT_FLUX_NONCATALYTIC)  ||
+         (Boundary == ISOTHERMAL)              ||
+         (Boundary == ISOTHERMAL_CATALYTIC)    ||
+         (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+         (Boundary == LOAD_BOUNDARY)           ||
          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
       for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -3845,9 +3872,15 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     Boundary = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if (((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-         (Boundary == ISOTHERMAL) || (Boundary == LOAD_BOUNDARY) ||
-         (Boundary == DISPLACEMENT_BOUNDARY) ) && (Monitoring == YES))
+    if (((Boundary == EULER_WALL)              ||
+         (Boundary == HEAT_FLUX)               ||
+         (Boundary == HEAT_FLUX_CATALYTIC)     ||
+         (Boundary == HEAT_FLUX_NONCATALYTIC)  ||
+         (Boundary == ISOTHERMAL)              ||
+         (Boundary == ISOTHERMAL_CATALYTIC)    ||
+         (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+         (Boundary == LOAD_BOUNDARY)           ||
+         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
       for(iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
@@ -7105,9 +7138,13 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL)                )
       nVertex_Wall += nVertex[iMarker];
   
   
@@ -7121,9 +7158,13 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Copy the boundary information to an array ---*/
   iVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL)                )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
@@ -8663,9 +8704,13 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL)                )
       nVertex_Wall += nVertex[iMarker];
   
   
@@ -8679,9 +8724,13 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   /*--- Copy the boundary information to an array ---*/
   iVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL))
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL)                )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         Xcoord[iVertex_Wall] = node[iPoint]->GetCoord(0);
@@ -9140,6 +9189,11 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
             config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
             config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
+        
+        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL &&
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX &&
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          node[Point_Surface]->SetSolidBoundary(true);
       }
   
 }

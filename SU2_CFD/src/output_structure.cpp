@@ -80,8 +80,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 10) && (int(val_iZone) < 100)) sprintf (buffer, "_000%d.csv", int(val_iZone));
-    if ((int(val_iZone) >= 100) && (int(val_iZone) < 1000)) sprintf (buffer, "_00%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 10)   && (int(val_iZone) < 100))   sprintf (buffer, "_000%d.csv", int(val_iZone));
+    if ((int(val_iZone) >= 100)  && (int(val_iZone) < 1000))  sprintf (buffer, "_00%d.csv", int(val_iZone));
     if ((int(val_iZone) >= 1000) && (int(val_iZone) < 10000)) sprintf (buffer, "_0%d.csv", int(val_iZone));
     if (int(val_iZone) >= 10000) sprintf (buffer, "_%d.csv", int(val_iZone));
     
@@ -1794,7 +1794,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (transition) ThirdIndex=TRANS_SOL;
       else ThirdIndex = NONE;
       break;
-    case TNE2_EULER :
+    case TNE2_EULER : case TNE2_NAVIER_STOKES:
       FirstIndex = TNE2_SOL; SecondIndex = NONE; ThirdIndex = NONE;
       break;
     case POISSON_EQUATION:
@@ -1974,9 +1974,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
   }
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-      (Kind_Solver == ADJ_RANS)  || (Kind_Solver == ADJ_TNE2_EULER)    ||
-      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER)         ||
+      (Kind_Solver == ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_RANS)            ) {
     
     Aux_Sens = new double [geometry->GetnPointDomain()];
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
@@ -1987,7 +1987,20 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex);
         }
       }
+  }
+  
+  if ((Kind_Solver == ADJ_TNE2_EULER)         ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)   ) {
     
+    Aux_Sens = new double [geometry->GetnPointDomain()];
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Aux_Sens[iPoint] = 0.0;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Sens[iPoint] = solver[ADJTNE2_SOL]->GetCSensitivity(iMarker,iVertex);
+        }
+      }
   }
   
   /*--- Loop over all points in the mesh, but only write data
@@ -2174,13 +2187,20 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           break;
           
         case ADJ_EULER:      case ADJ_NAVIER_STOKES:     case ADJ_RANS:
-        case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
           
           Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
           if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
           { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(); jVar++; }
           if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
           { Data[jVar][jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
+          break;
+          
+        case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+          Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
+          if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
+          { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetSensor(); jVar++; }
+          if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
+          { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
           break;
           
         case LINEAR_ELASTICITY:
@@ -2279,9 +2299,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     Aux_yPlus = new double[geometry->GetnPoint()];
   }
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_RANS)  || (Kind_Solver == ADJ_TNE2_EULER)    ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)                            ) {
     Aux_Sens = new double[geometry->GetnPoint()];
-    
   }
   
   /*--- Prepare the receive buffers in the master node only. ---*/
@@ -3164,7 +3185,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Communicate the surface sensitivity ---*/
   
-  if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS) || (Kind_Solver == ADJ_TNE2_EULER) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == ADJ_EULER)         ||
+      (Kind_Solver == ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == ADJ_RANS)          ||
+      (Kind_Solver == ADJ_TNE2_EULER)    ||
+      (Kind_Solver == ADJ_TNE2_NAVIER_STOKES)) {
     
     /*--- First, loop through the mesh in order to find and store the
      value of the surface sensitivity at any surface nodes. They
@@ -3787,7 +3812,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   bool isothermal = false;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
+    if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+      isothermal = true;
   
   /* Find the markers being monitored and create a header for them */
   /* Note that for now only the aeroelastic case will make use of this */
@@ -3895,8 +3923,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       
     case TNE2_EULER : case TNE2_NAVIER_STOKES:
       ConvHist_file[0] << begin << flow_coeff;
-      if (config->GetKind_Solver() == TNE2_NAVIER_STOKES)
+      if (config->GetKind_Solver() == TNE2_NAVIER_STOKES) {
         ConvHist_file[0] << heat_coeff;
+        if (inv_design) ConvHist_file[0] << Heat_inverse_design;
+      }
       for (iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
         ConvHist_file[0] << ",\"Residual[" << iSpecies << "]\"";
       ConvHist_file[0] << end;
@@ -3936,7 +3966,14 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 }
 
 
-void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration, bool DualTime_Iteration, double timeused, unsigned short val_iZone) {
+void COutput::SetConvergence_History(ofstream *ConvHist_file,
+                                     CGeometry ***geometry,
+                                     CSolver ****solver_container,
+                                     CConfig **config,
+                                     CIntegration ***integration,
+                                     bool DualTime_Iteration,
+                                     double timeused,
+                                     unsigned short val_iZone) {
   
 	int rank;
   
@@ -3984,7 +4021,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool isothermal = false;
     for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
-      if (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) isothermal = true;
+      if ((config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
+          (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC) ||
+          (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC))
+        isothermal = true;
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
     bool adjoint = config[val_iZone]->GetAdjoint();
@@ -4014,15 +4054,32 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
     double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Residual arrays ---*/
-    double *residual_flow = NULL, *residual_turbulent = NULL, *residual_transition = NULL, *residual_TNE2 = NULL, *residual_levelset = NULL;
-    double *residual_adjflow = NULL, *residual_adjturbulent = NULL, *residual_adjTNE2 = NULL, *residual_adjlevelset = NULL;
-    double *residual_wave = NULL; double *residual_fea = NULL; double *residual_heat = NULL;
+    double *residual_flow         = NULL,
+           *residual_turbulent    = NULL,
+           *residual_transition   = NULL,
+           *residual_TNE2         = NULL,
+           *residual_levelset     = NULL;
+    double *residual_adjflow      = NULL,
+           *residual_adjturbulent = NULL,
+           *residual_adjTNE2      = NULL,
+           *residual_adjlevelset  = NULL;
+    double *residual_wave         = NULL;
+    double *residual_fea          = NULL;
+    double *residual_heat         = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
-    double *aeroelastic_plunge = NULL, *aeroelastic_pitch = NULL, *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL;
+    double *aeroelastic_plunge = NULL,
+           *aeroelastic_pitch  = NULL,
+           *Surface_CLift      = NULL,
+           *Surface_CDrag      = NULL,
+           *Surface_CMx        = NULL,
+           *Surface_CMy        = NULL,
+           *Surface_CMz        = NULL;
     
     /*--- Initialize number of variables ---*/
-    unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0,     nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0;
+    unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0,
+    nVar_Trans = 0, nVar_TNE2 = 0, nVar_Wave = 0, nVar_Heat = 0, nVar_FEA = 0,
+    nVar_AdjFlow = 0, nVar_AdjTNE2 = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0;
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
@@ -4240,10 +4297,15 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
         Total_CFx         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFx();
         Total_CFy         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_CFz();
+        
         if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
           Total_Heat           = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_HeatFlux();
           Total_MaxHeat        = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_MaxHeatFlux();
+          if (inv_design) {
+            Total_HeatFluxDiff = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetTotal_HeatFluxDiff();
+          }
         }
+        
         /*--- Residuals ---*/
         
         for (iVar = 0; iVar < nVar_TNE2; iVar++)
@@ -4264,7 +4326,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Temp();
           
           /*--- Adjoint flow residuals ---*/
-          
           for (iVar = 0; iVar < nVar_AdjTNE2; iVar++) {
             residual_adjTNE2[iVar] = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_RMS(iVar);
           }
@@ -4459,20 +4520,28 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             break;
             
-          case TNE2_EULER :     case TNE2_NAVIER_STOKES:
-          case ADJ_TNE2_EULER:  case ADJ_TNE2_NAVIER_STOKES:
+          case TNE2_EULER :    case TNE2_NAVIER_STOKES:
+          case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
             
             /*--- Direct coefficients ---*/
-            if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
-              sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
-                       Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
-                       Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
-                       Total_CEff, Total_Heat, Total_MaxHeat);
+            if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) {
+              if (!(inv_design))
+                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                         Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+                         Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
+                         Total_CEff, Total_Heat, Total_MaxHeat);
+              else
+                sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+                         Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+                         Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
+                         Total_CEff, Total_Heat, Total_MaxHeat, Total_HeatFluxDiff);
+            }
             else
               sprintf (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                        Total_CEff);
+            
             /*--- Direct problem residual ---*/
             for (iVar = 0; iVar < nSpecies+nDim+2; iVar++) {
               sprintf (resid_aux, ", %12.10f", log10 (residual_TNE2[iVar]));
@@ -4581,7 +4650,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
             
             cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)";
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
-              cout << "   Max qdot" << endl;
+              cout << "   HeatLoad(Total)" << endl;
             else cout << endl;
             break;
             
@@ -5000,25 +5069,26 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file, CGeometry ***geome
       cout.unsetf(ios::fixed);
       
       delete [] residual_flow;
-      delete [] residual_levelset;
-      delete [] residual_TNE2;
       delete [] residual_turbulent;
       delete [] residual_transition;
+      delete [] residual_TNE2;
+      delete [] residual_levelset;
       delete [] residual_wave;
       delete [] residual_fea;
       delete [] residual_heat;
       
       delete [] residual_adjflow;
+      delete [] residual_adjturbulent;
       delete [] residual_adjTNE2;
       delete [] residual_adjlevelset;
-      delete [] residual_adjturbulent;
       
       delete [] Surface_CLift;
       delete [] Surface_CDrag;
       delete [] Surface_CMx;
       delete [] Surface_CMy;
       delete [] Surface_CMz;
-      
+      delete [] aeroelastic_pitch;
+      delete [] aeroelastic_plunge;
     }
   }
 }
@@ -5689,8 +5759,14 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     Boundary   = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+    if ((Boundary == EULER_WALL             ) ||
+        (Boundary == HEAT_FLUX              ) ||
+        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
+        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
+        (Boundary == ISOTHERMAL             ) ||
+        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
+        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+        (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         /*--- The Pressure file uses the global numbering ---*/
@@ -5776,8 +5852,14 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     Boundary   = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+    if ((Boundary == EULER_WALL             ) ||
+        (Boundary == HEAT_FLUX              ) ||
+        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
+        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
+        (Boundary == ISOTHERMAL             ) ||
+        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
+        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+        (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -5846,8 +5928,14 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     Boundary   = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+    if ((Boundary == EULER_WALL             ) ||
+        (Boundary == HEAT_FLUX              ) ||
+        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
+        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
+        (Boundary == ISOTHERMAL             ) ||
+        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
+        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+        (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         /*--- The Pressure file uses the global numbering ---*/
@@ -5931,8 +6019,14 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     Boundary   = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+    if ((Boundary == EULER_WALL             ) ||
+        (Boundary == HEAT_FLUX              ) ||
+        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
+        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
+        (Boundary == ISOTHERMAL             ) ||
+        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
+        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
+        (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();

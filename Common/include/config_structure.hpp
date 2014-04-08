@@ -135,7 +135,11 @@ private:
 	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
+  nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
+  nMarker_IsothermalCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatFluxNonCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatFluxCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
 	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
 	nMarker_NacelleInflow,					/*!< \brief Number of nacelle inflow flow markers. */
 	nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
@@ -163,7 +167,11 @@ private:
 	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
+  *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */
+  *Marker_IsothermalCatalytic,     /*!< \brief Isothermal wall markers. */
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatFluxNonCatalytic,       /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatFluxCatalytic,       /*!< \brief Constant heat flux wall markers. */
 	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
 	*Marker_NacelleExhaust,					/*!< \brief Nacelle Exhaust flow markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
@@ -186,7 +194,10 @@ private:
 	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
     double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
+  double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
 	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
+  double *Heat_FluxNonCatalytic;  /*!< \brief Specified wall heat fluxes. */
+  double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
 	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
@@ -550,7 +561,8 @@ private:
   *Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
-	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
+	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
+  pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
@@ -1207,6 +1219,12 @@ public:
 	 * \return Value of the Blottner coefficient
 	 */
 	double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+  
+  /*!
+	 * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
+	 * \return Value of the heat flux p-norm
+	 */
+	double GetPnormHeat(void);
 
 	/*!
 	 * \brief Get the value of wall temperature.
@@ -4385,6 +4403,13 @@ public:
 	 * \return The heat flux.
 	 */
 	double GetWall_HeatFlux(string val_index);
+  
+	/*!
+	 * \brief Get the wall heat flux on a constant heat flux boundary.
+	 * \return The heat flux.
+	 */
+	double *GetWall_Catalycity(void);
+  
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.

@@ -68,6 +68,10 @@ inline void CPoint::SetPhysicalBoundary(bool val_boundary) { PhysicalBoundary = 
 
 inline bool CPoint::GetPhysicalBoundary(void) { return PhysicalBoundary; }
 
+inline void CPoint::SetSolidBoundary(bool val_boundary) { SolidBoundary = val_boundary; }
+
+inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
+
 inline void CPoint::AddVolume (double val_Volume) { Volume[0] += val_Volume; }
 
 inline void CPoint::SetVolume (double val_Volume) { Volume[0] = val_Volume; }
