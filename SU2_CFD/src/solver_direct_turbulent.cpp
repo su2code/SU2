@@ -602,7 +602,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     Vol = geometry->node[iPoint]->GetVolume();
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    Delta = Vol / (config->GetTurb_CFLRedCoeff()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
     Jacobian.AddVal2Diag(iPoint,Delta);
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
