@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -511,7 +511,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flow functional for the Cauchy criteria */
   AddEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, "DRAG");
   /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_ADJ", Cauchy_Func_AdjFlow, Sens_Map, "SENS_GEOMETRY");
+  AddEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, "SENS_GEOMETRY");
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
   AddEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, "DELTA_DRAG");
   /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
@@ -684,9 +684,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Adjoint and Gradient */
   
   /* DESCRIPTION: Limit value for the adjoint variable */
-  AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
+  AddScalarOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /* DESCRIPTION: Adjoint problem boundary condition */
-  AddEnumOption("ADJ_OBJFUNC", Kind_ObjFunc, Objective_Map, "DRAG");
+  AddEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
   AddArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
@@ -2883,7 +2883,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
   
-  cout << "|                             Release 3.0.0 \"eagle\"                     |" << endl;
+  cout << "|                             Release 3.0.1 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
