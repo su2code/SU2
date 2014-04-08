@@ -248,8 +248,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new double[nDim];
-  Alpha    = config->GetAoA();
-  Beta     = config->GetAoS();
+  Alpha    = config->GetAoA()*PI_NUMBER/180.0;
+  Beta     = config->GetAoS()*PI_NUMBER/180.0;
   if (nDim == 2) {
     Mvec_Inf[0] = cos(Alpha)*Mach_Inf;
     Mvec_Inf[1] = sin(Alpha)*Mach_Inf;
