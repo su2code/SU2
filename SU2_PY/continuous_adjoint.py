@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -122,7 +122,7 @@ def continuous_design( filename           ,
     config.NUMBER_PART = partitions
     config.DECOMPOSED  = divide_grid
 
-    ADJ_NAME = config.ADJ_OBJFUNC
+    ADJ_NAME = config.OBJECTIVE_FUNCTION
     
     # State
     state = SU2.io.State()

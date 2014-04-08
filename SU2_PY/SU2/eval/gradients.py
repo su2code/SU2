@@ -1,7 +1,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -227,7 +227,7 @@ def adjoint( func_name, config, state=None ):
         with redirect_output(log_adjoint):        
             
             # setup config
-            config['ADJ_OBJFUNC'] = func_name
+            config['OBJECTIVE_FUNCTION'] = func_name
             
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)

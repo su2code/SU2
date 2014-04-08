@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -388,7 +388,7 @@ def get_constraintSign( sign ):
 #  Get Adjoint Filename Suffix
 # -------------------------------------------------------------------
 
-def get_adjointSuffix(adj_objfunc=None):
+def get_adjointSuffix(objective_function=None):
     """ gets the adjoint suffix given an objective function """
     
     # adjoint name map
@@ -414,12 +414,12 @@ def get_adjointSuffix(adj_objfunc=None):
                  "FREE_SURFACE"            : "fs"        }
     
     # if none or false, return map
-    if not adj_objfunc:
+    if not objective_function:
         return name_map
     
     # return desired objective function suffix
-    elif name_map.has_key(adj_objfunc):
-        return name_map[adj_objfunc]
+    elif name_map.has_key(objective_function):
+        return name_map[objective_function]
     
     # otherwise...
     else:
@@ -870,7 +870,7 @@ def restart2solution(config,state={}):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix
-        func_name = config.ADJ_OBJFUNC
+        func_name = config.OBJECTIVE_FUNCTION
         suffix    = get_adjointSuffix(func_name)
         restart   = add_suffix(restart,suffix)
         solution  = add_suffix(solution,suffix)
