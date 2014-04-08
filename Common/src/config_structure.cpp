@@ -100,6 +100,8 @@ void CConfig::SetPointersNull(void){
   Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
   Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
   Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_NacelleInflow=NULL;
+  Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
+  Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
   Marker_NacelleExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
   Marker_All_Tag=NULL;        Marker_Config_Tag=NULL;       Marker_All_Boundary=NULL;
@@ -115,7 +117,7 @@ void CConfig::SetPointersNull(void){
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
-  Periodic_Translate=NULL;
+  Periodic_Translate=NULL;    Wall_Catalycity=NULL;
   
   /*--- Miscellaneous/unsorted ---*/
   
@@ -261,9 +263,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
   AddMarkerOutlet("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
+  /* DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) */
+  AddMarkerOutlet("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
+  /* DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) */
+  AddMarkerOutlet("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
   AddMarkerOutlet("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  AddMarkerOutlet("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
+  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  AddMarkerOutlet("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /* DESCRIPTION: Nacelle inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) */
   AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
@@ -700,6 +714,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddScalarOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
   AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
+  /* DESCRIPTION: P-norm for heat-flux based objective functions. */
+	AddScalarOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
   
   /*--- Options related to input/output files and formats ---*/
   /* CONFIG_CATEGORY: Input/output files and formats */
@@ -1910,8 +1926,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         CharVibTemp        = new double[nSpecies];
         RotationModes      = new double[nSpecies];
         Enthalpy_Formation = new double[nSpecies];
+        Wall_Catalycity    = new double[nSpecies];
         Ref_Temperature    = new double[nSpecies];
         nElStates          = new unsigned short[nSpecies];
+        
         
         
         MassFrac_FreeStream = new double[nSpecies];
@@ -1952,6 +1970,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
+        Wall_Catalycity      = new double[nSpecies];
         Molar_Mass           = new double[nSpecies];
         CharVibTemp          = new double[nSpecies];
         RotationModes        = new double[nSpecies];
@@ -1990,6 +2009,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         MassFrac_FreeStream[1] = 0.01;
         
         /*--- Assign gas properties ---*/
+        
+        // Wall mass fractions for catalytic boundaries
+        Wall_Catalycity[0] = 0.7;
+        Wall_Catalycity[1] = 0.3;
         
         // Rotational modes of energy storage
         RotationModes[0] = 2.0;
@@ -2132,6 +2155,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         ionization  = false;
         
         /*--- Allocate vectors for gas properties ---*/
+        Wall_Catalycity      = new double[nSpecies];
         Molar_Mass           = new double[nSpecies];
         CharVibTemp          = new double[nSpecies];
         RotationModes        = new double[nSpecies];
@@ -2164,6 +2188,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           }
         }
         
+        // Wall mass fractions for catalytic boundaries
+        Wall_Catalycity[0] = 0.4;
+        Wall_Catalycity[1] = 0.4;
+        Wall_Catalycity[2] = 0.1;
+        Wall_Catalycity[3] = 0.05;
+        Wall_Catalycity[4] = 0.05;
+        
+        // Free stream mass fractions
         MassFrac_FreeStream = new double[nSpecies];
         MassFrac_FreeStream[0] = 0.78;
         MassFrac_FreeStream[1] = 0.19;
@@ -2542,10 +2574,14 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 #endif
   
   /*--- Boundary (marker) treatment ---*/
-  nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet
-  + nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux
-  + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load
-  + nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
+  nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
+  nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
+  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet +
+  nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
+  nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
+  nMarker_HeatFluxNonCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
+  nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load +
+  nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
   
   Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
   Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2559,11 +2595,15 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D   = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
   
-  unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom, iMarker_FarField,
-  iMarker_SymWall, iMarker_Pressure, iMarker_PerBound, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load,
-  iMarker_FlowLoad, iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving,
-  iMarker_Supersonic_Inlet,iMarker_Out_1D;
+  unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom,
+  iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
+  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+  iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_IsothermalCatalytic,
+  iMarker_IsothermalNonCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNoncatalytic,
+  iMarker_HeatFluxCatalytic, iMarker_NacelleInflow, iMarker_NacelleExhaust,
+  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
+  iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
+  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,iMarker_Out_1D;
   
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_Tag[iMarker_All] = "NONE";
@@ -2579,10 +2619,14 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_All_Out_1D[iMarker_All]   = 0;
   }
   
-  nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall + nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound
-  + nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Outlet + nMarker_Isothermal
-  + nMarker_HeatFlux + nMarker_NacelleInflow + nMarker_NacelleExhaust + nMarker_Supersonic_Inlet + nMarker_Displacement
-  + nMarker_Load + nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
+  nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
+  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
+  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet +
+  nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
+  nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
+  nMarker_HeatFluxCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
+  nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
+  nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
   
   Marker_Config_Tag        = new string[nMarker_Config];
   Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -2711,9 +2755,33 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     iMarker_Config++;
   }
   
+  for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
+    Marker_Config_Tag[iMarker_Config] = Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
+    Marker_Config_Boundary[iMarker_Config] = ISOTHERMAL_CATALYTIC;
+    iMarker_Config++;
+  }
+  
+  for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
+    Marker_Config_Tag[iMarker_Config] = Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
+    Marker_Config_Boundary[iMarker_Config] = ISOTHERMAL_NONCATALYTIC;
+    iMarker_Config++;
+  }
+  
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
     Marker_Config_Tag[iMarker_Config] = Marker_HeatFlux[iMarker_HeatFlux];
     Marker_Config_Boundary[iMarker_Config] = HEAT_FLUX;
+    iMarker_Config++;
+  }
+  
+  for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
+    Marker_Config_Tag[iMarker_Config] = Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
+    Marker_Config_Boundary[iMarker_Config] = HEAT_FLUX_CATALYTIC;
+    iMarker_Config++;
+  }
+  
+  for (iMarker_HeatFluxNoncatalytic = 0; iMarker_HeatFluxNoncatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNoncatalytic++) {
+    Marker_Config_Tag[iMarker_Config] = Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNoncatalytic];
+    Marker_Config_Boundary[iMarker_Config] = HEAT_FLUX_NONCATALYTIC;
     iMarker_Config++;
   }
   
@@ -2789,8 +2857,14 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
-  iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement, iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet;
+  iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Outlet,
+  iMarker_Isothermal, iMarker_IsothermalNonCatalytic, iMarker_IsothermalCatalytic,
+  iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
+  iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement,
+  iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
+  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
+  iMarker_Moving, iMarker_Supersonic_Inlet;
   
   cout << endl <<"-------------------------------------------------------------------------" << endl;
   cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -3230,7 +3304,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "First order integration." << endl;
         }
       }
-      
       if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
         if (Kind_Upwind_TNE2 == ROE) cout << "Roe solver for the inviscid terms of the two-temperature model."<< endl;
         if (Kind_Upwind_TNE2 == TURKEL) cout << "Roe-Turkel solver for the inviscid terms of the two-temperature model."<< endl;
@@ -3991,11 +4064,47 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
+  if (nMarker_IsothermalNonCatalytic != 0) {
+    cout << "Non-catalytic isothermal wall boundary marker(s): ";
+    for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
+      cout << Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
+      if (iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+  
+  if (nMarker_IsothermalCatalytic != 0) {
+    cout << "Catalytic isothermal wall boundary marker(s): ";
+    for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
+      cout << Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
+      if (iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+  
   if (nMarker_HeatFlux != 0) {
     cout << "Constant heat flux wall boundary marker(s): ";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       cout << Marker_HeatFlux[iMarker_HeatFlux];
       if (iMarker_HeatFlux < nMarker_HeatFlux-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+  
+  if (nMarker_HeatFluxNonCatalytic != 0) {
+    cout << "Non-catalytic constant heat flux wall boundary marker(s): ";
+    for (iMarker_HeatFluxNonCatalytic = 0; iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNonCatalytic++) {
+      cout << Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNonCatalytic];
+      if (iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+  
+  if (nMarker_HeatFluxCatalytic != 0) {
+    cout << "Catalytic constant heat flux wall boundary marker(s): ";
+    for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
+      cout << Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
+      if (iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic-1) cout << ", ";
       else cout <<"."<<endl;
     }
   }
@@ -4710,6 +4819,8 @@ CConfig::~CConfig(void)
   if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
+  if (Heat_FluxNonCatalytic!=NULL)    delete[] Heat_FluxNonCatalytic;
+  if (Heat_FluxCatalytic!=NULL)    delete[] Heat_FluxCatalytic;
   if (Displ_Value!=NULL)    delete[] Displ_Value;
   if (Load_Value!=NULL)    delete[] Load_Value;
   if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
@@ -4748,7 +4859,6 @@ CConfig::~CConfig(void)
   if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
   if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
-  if (Marker_HeatFlux!=NULL )           delete[] Marker_HeatFlux;
   if (Marker_NacelleInflow!=NULL )      delete[] Marker_NacelleInflow;
   if (Marker_NacelleExhaust!=NULL )     delete[] Marker_NacelleExhaust;
   if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
@@ -4756,6 +4866,11 @@ CConfig::~CConfig(void)
   if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
   if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
   if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
+  if (Marker_IsothermalNonCatalytic!=NULL ) delete[] Marker_IsothermalNonCatalytic;
+  if (Marker_IsothermalCatalytic!=NULL )    delete[] Marker_IsothermalCatalytic;
+  if (Marker_HeatFlux!=NULL )               delete[] Marker_HeatFlux;
+  if (Marker_HeatFluxNonCatalytic!=NULL )   delete[] Marker_HeatFluxNonCatalytic;
+  if (Marker_HeatFluxCatalytic!=NULL )      delete[] Marker_HeatFluxCatalytic;
   
 }
 
@@ -5365,15 +5480,57 @@ double CConfig::GetOutlet_Pressure(string val_marker) {
 
 double CConfig::GetIsothermal_Temperature(string val_marker) {
   unsigned short iMarker_Isothermal;
-  for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
-    if (Marker_Isothermal[iMarker_Isothermal] == val_marker) break;
+  
+  if ((nMarker_Isothermal*nMarker_IsothermalCatalytic             != 0) ||
+      (nMarker_Isothermal*nMarker_IsothermalNonCatalytic          != 0) ||
+      (nMarker_IsothermalCatalytic*nMarker_IsothermalNonCatalytic != 0)   ) {
+    cout << "Mixed catalytic boundaries not supported!!" << endl;
+    exit(1);
+  }
+  
+  if (nMarker_Isothermal > 0) {
+    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
+      if (Marker_Isothermal[iMarker_Isothermal] == val_marker) break;
+  }
+  
+  if (nMarker_IsothermalCatalytic > 0) {
+    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_IsothermalCatalytic; iMarker_Isothermal++)
+      if (Marker_IsothermalCatalytic[iMarker_Isothermal] == val_marker) break;
+  }
+  
+  if (nMarker_IsothermalNonCatalytic > 0) {
+    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_IsothermalNonCatalytic; iMarker_Isothermal++)
+      if (Marker_IsothermalNonCatalytic[iMarker_Isothermal] == val_marker) break;
+  }
+  
   return Isothermal_Temperature[iMarker_Isothermal];
 }
 
 double CConfig::GetWall_HeatFlux(string val_marker) {
   unsigned short iMarker_HeatFlux;
+  
+  if ((nMarker_HeatFlux*nMarker_HeatFluxCatalytic             != 0) ||
+      (nMarker_HeatFlux*nMarker_HeatFluxNonCatalytic          != 0) ||
+      (nMarker_HeatFluxCatalytic*nMarker_HeatFluxNonCatalytic != 0)) {
+    cout << "Mixed catalytic boundaries not supported!!" << endl;
+    exit(1);
+  }
+  
+  if (nMarker_HeatFlux > 0) {
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
     if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
+  }
+  
+  if (nMarker_HeatFluxCatalytic > 0) {
+    for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFluxCatalytic; iMarker_HeatFlux++)
+      if (Marker_HeatFluxCatalytic[iMarker_HeatFlux] == val_marker) break;
+  }
+  
+  if (nMarker_HeatFluxNonCatalytic > 0) {
+    for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFluxNonCatalytic; iMarker_HeatFlux++)
+      if (Marker_HeatFluxNonCatalytic[iMarker_HeatFlux] == val_marker) break;
+  }
+  
   return Heat_Flux[iMarker_HeatFlux];
 }
 

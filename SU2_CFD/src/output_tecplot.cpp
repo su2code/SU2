@@ -1860,6 +1860,18 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       *NVar += 1;
     }
     
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+      variables << "Mach Pressure Temperature Temperature_ve ";
+      *NVar += 4;
+    }
+    
+    if (Kind_Solver == TNE2_NAVIER_STOKES) {
+      for (iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        variables << "DiffusionCoeff_" << iVar << " ";
+      variables << "Laminar_Viscosity ThermConductivity ThermConductivity_ve";
+      *NVar += 4;
+    }
+    
     if (Kind_Solver == POISSON_EQUATION) {
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         variables << "poissonField_" << iDim+1 << " ";

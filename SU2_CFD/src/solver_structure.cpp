@@ -796,7 +796,13 @@ void CSolver::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		switch (Boundary) {
-      case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
+      case EULER_WALL:
+      case HEAT_FLUX:
+      case HEAT_FLUX_CATALYTIC:
+      case HEAT_FLUX_NONCATALYTIC:
+      case ISOTHERMAL:
+      case ISOTHERMAL_CATALYTIC:
+      case ISOTHERMAL_NONCATALYTIC:
         
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -920,7 +926,13 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		Boundary = config->GetMarker_All_Boundary(iMarker);
 		switch (Boundary) {
-      case EULER_WALL: case HEAT_FLUX: case ISOTHERMAL:
+      case EULER_WALL:
+      case HEAT_FLUX:
+      case HEAT_FLUX_CATALYTIC:
+      case HEAT_FLUX_NONCATALYTIC:
+      case ISOTHERMAL:
+      case ISOTHERMAL_CATALYTIC:
+      case ISOTHERMAL_NONCATALYTIC:
         
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {

@@ -134,7 +134,8 @@ private:
 	double *Volume;	/*!< \brief Volume or Area of the control volume in 3D and 2D. */
 	bool Domain,		/*!< \brief Indicates if a point must be computed or belong to another boundary */
 	Boundary,       /*!< \brief To see if a point belong to the boundary (including MPI). */
-  PhysicalBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  PhysicalBoundary,			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  SolidBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
 	long *vertex; /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
 	double *coord,	/*!< \brief vector with the coordinates of the node. */
 	*Coord_old,		/*!< \brief Old coordinates vector for geometry smoothing. */
@@ -394,11 +395,23 @@ public:
 	void SetPhysicalBoundary(bool val_boundary);
   
   /*!
+	 * \brief Set if a point belong to the boundary.
+	 * \param[in] val_boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
+	 */
+	void SetSolidBoundary(bool val_boundary);
+  
+  /*!
 	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */
 	bool GetPhysicalBoundary(void);
 	
+  /*!
+	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
+	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
+	 */
+	bool GetSolidBoundary(void);
+  
 	/*! 
 	 * \brief Set a color to the point that comes from the grid partitioning.
 	 * \note Each domain has a different color.

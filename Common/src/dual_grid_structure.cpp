@@ -57,6 +57,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	 be computed with other processor  ---*/
 	Boundary = false;
 	PhysicalBoundary = false;
+	SolidBoundary = false;
 	Domain = true;
 
   /*--- Set the global index in the parallel simulation ---*/
@@ -128,6 +129,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	 be computed with other processor  ---*/
 	Boundary = false;
   PhysicalBoundary = false;
+  SolidBoundary = false;
 	Domain = true;
 	
 	/*--- Set the color for mesh partitioning ---*/
@@ -204,6 +206,7 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	 be computed with other processor  ---*/
 	Boundary = false;
   PhysicalBoundary = false;
+  SolidBoundary = false;
 	Domain = true;
 	
 	/*--- Set the color for mesh partitioning ---*/
