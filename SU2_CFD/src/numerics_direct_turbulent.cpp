@@ -1165,6 +1165,50 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = NondimResidual[i];
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("nondim_production_log") == 0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = log10(SANondimInputs->Chi);
+    netInput[1] = log10(SANondimInputs->OmegaBar);
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather all the appropriate variables
+    NondimResidual[0] = netOutput[0];
+    NondimResidual[1] = SANondimResidual[1];
+    NondimResidual[2] = SANondimResidual[2];
+    NondimResidual[3] = NondimResidual[0] - NondimResidual[1] + NondimResidual[2];
+    
+    for (int i=0; i < nResidual; i++){
+      Residual[i] = NondimResidual[i];
+    }
+    SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("nondim_production_logchi") == 0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = log10(SANondimInputs->Chi);
+    netInput[1] = SANondimInputs->OmegaBar;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather all the appropriate variables
+    NondimResidual[0] = netOutput[0];
+    NondimResidual[1] = SANondimResidual[1];
+    NondimResidual[2] = SANondimResidual[2];
+    NondimResidual[3] = NondimResidual[0] - NondimResidual[1] + NondimResidual[2];
+    
+    for (int i=0; i < nResidual; i++){
+      Residual[i] = NondimResidual[i];
+    }
+    SANondimInputs->DimensionalizeSource(nResidual, Residual);
   }else if(featureset.compare("production")==0){
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
