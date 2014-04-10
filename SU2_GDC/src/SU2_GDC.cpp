@@ -2,7 +2,7 @@
  * \file SU2_GDC.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -31,11 +31,12 @@ int main(int argc, char *argv[]) {
 	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
-  char grid_file[200];
+  char grid_file[200], buffer_char[50], out_file[200];
 
  	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   
   /*--- MPI initialization ---*/
 
@@ -43,9 +44,11 @@ int main(int argc, char *argv[]) {
 #ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
 #else
 	MPI::Init(argc,argv);
 	rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
 #endif
 #endif
 	
@@ -58,10 +61,10 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Definition of the class for the definition of the problem ---*/
   
-	if (argc == 2) config = new CConfig(argv[1], SU2_GDC, ZONE_0, nZone, VERB_HIGH);
+	if (argc == 2) config = new CConfig(argv[1], SU2_GDC, ZONE_0, nZone, 0, VERB_HIGH);
 	else {
 		strcpy (grid_file, "default.cfg");
-		config = new CConfig(grid_file, SU2_GDC, ZONE_0, nZone, VERB_HIGH);
+		config = new CConfig(grid_file, SU2_GDC, ZONE_0, nZone, 0, VERB_HIGH);
 	}
 	
   /*--- Change the name of the input-output files for the parallel computation ---*/
@@ -105,17 +108,34 @@ int main(int argc, char *argv[]) {
   
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-	
+
+  
   /*--- Boundary geometry preprocessing ---*/
   
 	if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
 	boundary->SetVertex();
-	
+  
+  /*--- Compute elements surrounding points & points surrounding points ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
+  boundary->SetEsuP();
+	boundary->SetPsuP();
+  boundary->SetEdges();
+
 	/*--- Create the control volume structures ---*/
   
 	if (rank == MASTER_NODE) cout << "Set boundary control volume structure." << endl;
 	boundary->SetBoundControlVolume(config, ALLOCATE);
 	
+  /*--- Compute the surface curvature ---*/
+  
+  if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+  boundary->ComputeSurf_Curvature(config);
+  
+  if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface curvature." << endl;
+  if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
+  strcpy (out_file, "Surface_Curvature"); strcat(out_file, buffer_char); boundary->SetBoundTecPlot(out_file, true, config);
+  
 	/*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
@@ -233,35 +253,31 @@ int main(int argc, char *argv[]) {
 		}
 		
 		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-			
-			/*--- Bump deformation for 2D problems ---*/
-			if (boundary->GetnDim() == 2) {
-				
-        if (rank == MASTER_NODE)
-          cout << "Perform 2D deformation of the surface." << endl;
-        
-        switch ( config->GetDesign_Variable(iDV) ) {
-          case HICKS_HENNE : surface_mov->SetHicksHenne(boundary, config, iDV, true); break;
-          case DISPLACEMENT : surface_mov->SetDisplacement(boundary, config, iDV, true); break;
-          case ROTATION : surface_mov->SetRotation(boundary, config, iDV, true); break;
-          case NACA_4DIGITS : surface_mov->SetNACA_4Digits(boundary, config); break;
-          case PARABOLIC : surface_mov->SetParabolic(boundary, config); break;
-        }
-				
-			}
-			
-			/*--- Free Form deformation for 3D problems ---*/
-			else if (boundary->GetnDim() == 3) {
+			   
+      /*--- Free Form deformation based ---*/
+      
+      if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+          (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
+          (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
+          (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
+          (config->GetDesign_Variable(iDV) == FFD_DIHEDRAL_ANGLE) ||
+          (config->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
+          (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
+          (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
+          (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
         
         /*--- Read the FFD information in the first iteration ---*/
+        
         if (iDV == 0) {
           
           if (rank == MASTER_NODE) cout << "Read the FFD information from mesh file." << endl;
           
           /*--- Read the FFD information from the grid file ---*/
+          
           surface_mov->ReadFFDInfo(boundary, config, FFDBox, config->GetMesh_FileName(), true);
           
           /*--- If the FFDBox was not defined in the input file ---*/
+          
           if (!surface_mov->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
             cout << "The input grid doesn't have the entire FFD information!" << endl;
             cout << "Press any key to exit..." << endl;
@@ -279,24 +295,112 @@ int main(int argc, char *argv[]) {
         }
         
         /*--- Apply the control point change ---*/
+        
         for (iFFDBox = 0; iFFDBox < surface_mov->GetnFFDBox(); iFFDBox++) {
           
           switch ( config->GetDesign_Variable(iDV) ) {
+            case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_CAMBER_2D : surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_THICKNESS_2D : surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
             case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
             case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
             case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
             case FFD_ROTATION : surface_mov->SetFFDRotation(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
             case FFD_CAMBER : surface_mov->SetFFDCamber(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
             case FFD_THICKNESS : surface_mov->SetFFDThickness(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_VOLUME : surface_mov->SetFFDVolume(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
           }
           
           /*--- Recompute cartesian coordinates using the new control points position ---*/
+          
           surface_mov->SetCartesianCoord(boundary, config, FFDBox[iFFDBox], iFFDBox);
           
         }
         
- 			}
+      }
+      
+      /*--- Hicks Henne design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetHicksHenne(boundary, config, iDV, true);
+      }
+      
+      /*--- Displacement design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == DISPLACEMENT) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetDisplacement(boundary, config, iDV, true);
+      }
+      
+      /*--- Rotation design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == ROTATION) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetRotation(boundary, config, iDV, true);
+      }
+      
+      /*--- CosBump design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == COSINE_BUMP) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetCosBump(boundary, config, iDV, true);
+      }
+      
+      /*--- Fourier design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == FOURIER) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetFourier(boundary, config, iDV, true);
+      }
+      
+      /*--- NACA_4Digits design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == NACA_4DIGITS) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetNACA_4Digits(boundary, config);
+      }
+      
+      /*--- Parabolic design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == PARABOLIC) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_mov->SetParabolic(boundary, config);
+      }
+      
+      /*--- Spherical design variable ---*/
+      
+      else if (config->GetDesign_Variable(iDV) == SPHERICAL) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 3D deformation of the surface." << endl;
+        }
+        surface_mov->SetSpherical(boundary, config, iDV, true);
+      }
+      
+      /*--- Design variable not implement ---*/
+      
+      else { cout << "Design Variable not implement yet" << endl; }
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {

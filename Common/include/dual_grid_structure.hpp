@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CDualGrid{
 protected:
@@ -122,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CPoint : public CDualGrid {
 private:
@@ -134,7 +134,8 @@ private:
 	double *Volume;	/*!< \brief Volume or Area of the control volume in 3D and 2D. */
 	bool Domain,		/*!< \brief Indicates if a point must be computed or belong to another boundary */
 	Boundary,       /*!< \brief To see if a point belong to the boundary (including MPI). */
-  PhysicalBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  PhysicalBoundary,			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  SolidBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
 	long *vertex; /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
 	double *coord,	/*!< \brief vector with the coordinates of the node. */
 	*Coord_old,		/*!< \brief Old coordinates vector for geometry smoothing. */
@@ -153,6 +154,7 @@ private:
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
 	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
   double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
+  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GDC). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
 
@@ -220,6 +222,18 @@ public:
 	 */
 	double GetWall_Distance(void);
 	
+  /*!
+	 * \brief Set the value of the curvature at a surface node.
+	 * \param[in] val_distance - Value of the curvature.
+	 */
+	void SetCurvature(double val_curvature);
+	
+	/*!
+	 * \brief Get the value of the curvature at a surface node.
+	 * \return Value of the curvature.
+	 */
+	double GetCurvature(void);
+  
   /*!
 	 * \brief Get the value of the distance to a sharp edge
 	 * \return Value of the distance to the nearest wall.
@@ -381,11 +395,23 @@ public:
 	void SetPhysicalBoundary(bool val_boundary);
   
   /*!
+	 * \brief Set if a point belong to the boundary.
+	 * \param[in] val_boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
+	 */
+	void SetSolidBoundary(bool val_boundary);
+  
+  /*!
 	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */
 	bool GetPhysicalBoundary(void);
 	
+  /*!
+	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
+	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
+	 */
+	bool GetSolidBoundary(void);
+  
 	/*! 
 	 * \brief Set a color to the point that comes from the grid partitioning.
 	 * \note Each domain has a different color.
@@ -656,7 +682,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CEdge : public CDualGrid {
 private:
@@ -793,14 +819,14 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CVertex : public CDualGrid {
 private:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
 	double *Normal;			/*!< \brief Normal al elemento y coordenadas de su centro de gravedad. */
 	double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
-	double CarCoord[3];		/*!< \brief Vertex cartesians coordinates. */
+	double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	long PeriodicPoint[2];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
@@ -930,6 +956,13 @@ public:
 	 * \return Value of the cartesian coordinate of the vertex.
 	 */
 	double *GetCoord(void);
+  
+  /*!
+	 * \brief Get the value of the cartesian coordinate for the vertex.
+   * \param[in] val_dim - Variable of the dimension.
+	 * \return Value of the cartesian coordinate of the vertex.
+	 */
+  double GetCoord(unsigned short val_dim);
 	
 	/*! 
 	 * \brief Set the type of rotation associated to the vertex.

@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -60,7 +60,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CSolver {
 protected:
@@ -555,8 +555,42 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                                    unsigned short val_marker);
+	virtual void BC_Isothermal_Wall(CGeometry *geometry,
+                                  CSolver **solver_container,
+                                  CNumerics *conv_numerics,
+                                  CNumerics *visc_numerics,
+                                  CConfig *config,
+                                  unsigned short val_marker);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_IsothermalCatalytic_Wall(CGeometry *geometry,
+                                           CSolver **solver_container,
+                                           CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics,
+                                           CConfig *config,
+                                           unsigned short val_marker);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
+                                              CSolver **solver_container,
+                                              CNumerics *conv_numerics,
+                                              CNumerics *visc_numerics,
+                                              CConfig *config,
+                                              unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -566,7 +600,42 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	virtual void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics, CConfig *config,
+                                unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose a constant heat-flux condition at the wall.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
+                                         CSolver **solver_container,
+                                         CNumerics *conv_numerics,
+                                         CNumerics *visc_numerics,
+                                         CConfig *config,
+                                         unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose a constant heat-flux condition at the wall.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	virtual void BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
+                                            CSolver **solver_container,
+                                            CNumerics *conv_numerics,
+                                            CNumerics *visc_numerics,
+                                            CConfig *config,
+                                            unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -914,13 +983,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] val_Total_Heat - Value of the total heat load.
 	 */
-	virtual void SetTotal_Heat(double val_Total_Heat);
+	virtual void SetTotal_HeatFlux(double val_Total_Heat);
     
     /*!
 	 * \brief A virtual member.
-	 * \param[in] val_Total_NormHeat - Value of the total heat load.
+	 * \param[in] val_Total_MaxHeat - Value of the total heat load.
 	 */
-	virtual void SetTotal_NormHeat(double val_Total_NormHeat);
+	virtual void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
     
 	/*!
 	 * \brief A virtual member.
@@ -1116,13 +1185,13 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_Heat(void);
+	virtual double GetTotal_HeatFlux(void);
     
     /*!
 	 * \brief A virtual member.
 	 * \return Value of the heat load (integrated heat flux).
 	 */
-	virtual double GetTotal_NormHeat(void);
+	virtual double GetTotal_MaxHeatFlux(void);
     
     /*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -1147,7 +1216,19 @@ public:
 	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
 	 */
 	virtual double GetTotal_CEquivArea(void);
-    
+  
+	/*!
+	 * \brief A virtual member.
+	 * \return Value of the difference of the presure and the target pressure.
+	 */
+	virtual double GetTotal_CpDiff(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the difference of the heat and the target heat.
+	 */
+	virtual double GetTotal_HeatFluxDiff(void);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
@@ -1171,7 +1252,19 @@ public:
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
 	 */
 	virtual void SetTotal_CEquivArea(double val_cequivarea);
-    
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_pressure - Value of the difference between pressure and the target pressure.
+	 */
+	virtual void SetTotal_CpDiff(double val_pressure);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_pressure - Value of the difference between heat and the target heat.
+	 */
+	virtual void SetTotal_HeatFluxDiff(double val_heat);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
@@ -1312,6 +1405,22 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the pressure coefficient.
 	 */
+	virtual double GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	virtual void SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
 	virtual double *GetCharacPrimVar(unsigned short val_marker, unsigned short val_vertex);
     
 	/*!
@@ -1328,8 +1437,24 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	virtual double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex);
-    
+	virtual double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	virtual double GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	virtual void SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1645,7 +1770,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -1690,7 +1815,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -1724,8 +1849,10 @@ protected:
 	*CEquivArea_Inv,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
 	*CNearFieldOF_Inv,				/*!< \brief Near field pressure (inviscid contribution) for each boundary. */
 	**CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
-	**CHeatTransfer,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-	**YPlus,		/*!< \brief Yplus for each boundary and vertex. */
+	**CPressureTarget,		/*!< \brief Target Pressure coefficient for each boundary and vertex. */
+	**HeatFlux,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **HeatFluxTarget,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **YPlus,		/*!< \brief Yplus for each boundary and vertex. */
   ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
 	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
 	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
@@ -1776,10 +1903,12 @@ protected:
 	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
 	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
-  Total_NormHeat, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
 	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_CFreeSurface;			/*!< \brief Total Free Surface coefficient for all the boundaries. */
+  Total_CFreeSurface,			/*!< \brief Total Free Surface coefficient for all the boundaries. */
+  Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+	Total_HeatFluxDiff;			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
@@ -2352,6 +2481,18 @@ public:
 	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
 	 */
 	double GetTotal_CEquivArea(void);
+  
+  /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+	 */
+	double GetTotal_CpDiff(void);
+  
+  /*!
+	 * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
+	 * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
+	 */
+	double GetTotal_HeatFluxDiff(void);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional Near-Field pressure coefficient.
@@ -2364,6 +2505,18 @@ public:
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
 	 */
 	void SetTotal_CEquivArea(double val_cequivarea);
+  
+  /*!
+	 * \brief Set the value of the Equivalent Area coefficient.
+	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
+	 */
+	void SetTotal_CpDiff(double val_pressure);
+  
+  /*!
+	 * \brief Set the value of the Equivalent Area coefficient.
+	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
+	 */
+	void SetTotal_HeatFluxDiff(double val_heat);
     
 	/*!
 	 * \brief Set the value of the Near-Field pressure oefficient.
@@ -2447,13 +2600,13 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_Heat(void);
+	double GetTotal_HeatFlux(void);
     
     /*!
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_NormHeat(void);
+	double GetTotal_MaxHeatFlux(void);
     
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.
@@ -2465,13 +2618,13 @@ public:
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_Heat(double val_Total_Heat);
+	void SetTotal_HeatFlux(double val_Total_Heat);
     
     /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_NormHeat(double val_Total_NormHeat);
+	void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
     
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional rotor Figure of Merit.
@@ -2517,6 +2670,22 @@ public:
 	 */
 	double GetCPressure(unsigned short val_marker, unsigned short val_vertex);
   
+  /*!
+	 * \brief Provide the Target Pressure coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+	double GetCPressureTarget(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief Set the value of the target Pressure coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+  void SetCPressureTarget(unsigned short val_marker, unsigned short val_vertex, double val_pressure);
+
   /*!
 	 * \brief Value of the characteristic variables at the boundaries.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2624,7 +2793,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -2651,7 +2820,7 @@ private:
 	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-  *NormHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -2669,8 +2838,8 @@ private:
 	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
 	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
 	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-  AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_NormHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
@@ -2824,8 +2993,24 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex);
+	double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
 	
+  /*!
+	 * \brief Get the skin friction coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the heat transfer coefficient.
+	 */
+	double GetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief Set the value of the target Pressure coefficient.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of the pressure coefficient.
+	 */
+  void SetHeatFluxTarget(unsigned short val_marker, unsigned short val_vertex, double val_heat);
+  
 	/*!
 	 * \brief Get the y plus.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2840,7 +3025,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -2968,7 +3153,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -3152,7 +3337,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author B. Tracey.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 
 class CTurbMLSolver: public CTurbSolver {
@@ -3294,7 +3479,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -3470,7 +3655,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -3608,7 +3793,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -4033,7 +4218,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -4126,7 +4311,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -4269,7 +4454,7 @@ public:
  * \brief Main class for defining the linearized Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CLinEulerSolver : public CSolver {
 private:
@@ -4392,7 +4577,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios.
- *  \version 3.0.0 "eagle"
+ *  \version 3.0.1 "eagle"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -4529,7 +4714,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios.
- *  \version 3.0.0 "eagle"
+ *  \version 3.0.1 "eagle"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -4684,7 +4869,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios.
- *  \version 3.0.0 "eagle"
+ *  \version 3.0.1 "eagle"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -4802,7 +4987,7 @@ public:
 /*! \class CFEASolver
  *  \brief Main class for defining the FEA solver.
  *  \author F. Palacios.
- *  \version 3.0.0 "eagle"
+ *  \version 3.0.1 "eagle"
  *  \date May 3, 2010.
  */
 class CFEASolver : public CSolver {
@@ -4982,7 +5167,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -5161,7 +5346,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -5401,7 +5586,7 @@ protected:
   *ForceInviscid,		        /*!< \brief Inviscid forces at domain boundaries. */
 	*MomentInviscid,	        /*!< \brief Inviscid moments at domain boundaries. */
 	**CPressure,		          /*!< \brief Cp at each node on domain boundaries . */
-	**CHeatTransfer,		      /*!< \brief Cq at each node on domain boundaries . */
+	**HeatFlux,		      /*!< \brief Cq at each node on domain boundaries . */
 	**CharacPrimVar,		      /*!< \brief Value of the characteristic variables at the boundary . */
   AllBound_CDrag_Inv,	      /*!< \brief Sum of CDrag_Inv from all boundaries. */
 	AllBound_CLift_Inv,			  /*!< \brief Sum of CLift_Inv from all boundaries. */
@@ -5426,7 +5611,7 @@ protected:
 	Total_CFz,                /*!< \brief Total CFz. */
 	Total_CEff,               /*!< \brief Total CEff. */
   Total_Heat,                  /*!< \brief Total heat load. */
-  Total_NormHeat;               /*!< \brief Maximum heat flux on all boundaries. */
+  Total_MaxHeat;               /*!< \brief Maximum heat flux on all boundaries. */
 
 	double
   *PrimVar_i,	      /*!< \brief Vector for storing primitives at node i. */
@@ -5486,6 +5671,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -5652,6 +5844,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPrimVar_Limiter(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Compute slope limiter.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetSolution_Limiter(CGeometry *geometry, CConfig *config);
   
 	/*!
 	 * \brief Compute the preconditioner for convergence acceleration by Roe-Turkel method.
@@ -5854,25 +6053,25 @@ public:
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_Heat(void);
+	double GetTotal_HeatFlux(void);
   
   /*!
 	 * \brief Provide the total heat load.
 	 * \return Value of the heat load (viscous contribution).
 	 */
-	double GetTotal_NormHeat(void);
+	double GetTotal_MaxHeatFlux(void);
   
   /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_Heat(double val_Total_Heat);
+	void SetTotal_HeatFlux(double val_Total_Heat);
   
   /*!
 	 * \brief Store the total heat load.
 	 * \param[in] val_Total_Heat - Value of the heat load.
 	 */
-	void SetTotal_NormHeat(double val_Total_NormHeat);
+	void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
   
 	/*!
 	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -5965,7 +6164,7 @@ private:
 	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
-  *NormHeat_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
+  *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
@@ -5979,8 +6178,8 @@ private:
 	AllBound_CFx_Visc,			/*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
 	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_Heat_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
-  AllBound_NormHeat_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
+  AllBound_HeatFlux_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_MaxHeatFlux_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   
 public:
   
@@ -6053,6 +6252,36 @@ public:
                         CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
+	 * \brief Impose a constant heat-flux condition at the wall.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
+                                 CSolver **solver_container,
+                                 CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics,
+                                 CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose a constant heat-flux condition at the wall.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics,
+                                    CConfig *config, unsigned short val_marker);
+  
+  /*!
 	 * \brief Impose the Navier-Stokes boundary condition (strong).
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -6063,6 +6292,37 @@ public:
 	 */
 	void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the Navier-Stokes boundary condition (strong).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_IsothermalCatalytic_Wall(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics,
+                                   CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose the Navier-Stokes boundary condition (strong).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
+   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics,
+                                      CConfig *config,
+                                      unsigned short val_marker);
   
 	/*!
 	 * \brief Compute the viscous forces and all the addimensional coefficients.
@@ -6123,7 +6383,7 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the heat transfer coefficient.
 	 */
-	double GetHeatTransferCoeff(unsigned short val_marker, unsigned short val_vertex);
+	double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
 
 };
 

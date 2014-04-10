@@ -2,7 +2,7 @@
  * \file solution_linearized_mean.cpp
  * \brief Main subrotuines for solving linearized problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -217,9 +217,9 @@ void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 											 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
 	bool implicit = (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT);
-	bool high_order_diss = ((config->GetKind_Centered() == JST) && (iMesh == MESH_0));
+	bool second_order = ((config->GetKind_Centered() == JST) && (iMesh == MESH_0));
 	
-	if (high_order_diss) 
+	if (second_order) 
 		SetUndivided_Laplacian(geometry, config);
 	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -245,7 +245,7 @@ void CLinEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 						  solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
 		/*--- Undivided laplacian ---*/
-		if (high_order_diss) 
+		if (second_order) 
 			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(),node[jPoint]->GetUndivided_Laplacian());
 		
 		/*--- Compute residual ---*/

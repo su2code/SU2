@@ -8,6 +8,7 @@
 *.dirstamp
 *.log
 *.status
+autom4te.cache
 
 # Compiled Dynamic libraries
 *.so
@@ -24,8 +25,14 @@
 # Mac files
 *.DS_Store
 *.xcuserdatad
-*.xcuserstate
-UserInterfaceState.xcuserstate
 
 # Compiled Makefiles
 Makefile
+
+# Emacs temporary files
+*~
+
+# installed autotools
+contrib/autotools/bin
+contrib/autotools/include
+contrib/autotools/share

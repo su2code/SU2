@@ -1,7 +1,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -213,13 +213,21 @@ def adjoint( func_name, config, state=None ):
     # files: target equivarea adjoint weights
     if 'EQUIV_AREA' in special_cases:
         pull.append(files['WEIGHT_NF'])    
-    
-    # output redirection      
+
+    # files: target pressure coefficient
+    if 'INV_DESIGN_CP' in special_cases:
+      pull.append(files['TARGET_CP'])
+
+    # files: target heat flux coefficient
+    if 'INV_DESIGN_HEATFLUX' in special_cases:
+      pull.append(files['TARGET_HEATFLUX'])
+
+    # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
             
             # setup config
-            config['ADJ_OBJFUNC'] = func_name
+            config['OBJECTIVE_FUNCTION'] = func_name
             
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)
@@ -478,10 +486,19 @@ def findiff( config, state=None, step=1e-4 ):
         name = files['DIRECT']
         name = su2io.expand_time(name,config)
         link.extend(name)
+
     # files: target equivarea distribution
     if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
         pull.append(files['TARGET_EA'])
+
+    # files: target pressure distribution
+    if 'INV_DESIGN_CP' in special_cases and 'TARGET_CP' in files:
+      pull.append(files['TARGET_CP'])
     
+    # files: target heat flux distribution
+    if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
+      pull.append(files['TARGET_HEATFLUX'])
+
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):

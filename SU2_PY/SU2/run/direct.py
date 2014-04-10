@@ -1,7 +1,7 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -101,6 +101,10 @@ def direct ( config ):
     info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
     if 'EQUIV_AREA' in special_cases:
         info.FILES.WEIGHT_NF = 'WeightNF.dat'
+    if 'INV_DESIGN_CP' in special_cases:
+        info.FILES.TARGET_CP = 'TargetCp.dat'
+    if 'INV_DESIGN_HEATFLUX' in special_cases:
+        info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
     info.HISTORY.DIRECT = history
     
     return info
