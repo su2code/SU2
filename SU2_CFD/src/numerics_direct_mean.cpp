@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -43,7 +43,7 @@ CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor = new double [nVar];
+  ProjFlux = new double [nVar];
   
 }
 
@@ -53,7 +53,7 @@ CCentJST_Flow::~CCentJST_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor;
+  delete [] ProjFlux;
 }
 
 void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
@@ -95,12 +95,12 @@ void CCentJST_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
   /*--- Get projected flux tensor ---*/
   
-  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, Proj_flux_tensor);
+  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
   
   /*--- Residual of the inviscid flux ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_flux_tensor[iVar];
+    val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   
@@ -224,7 +224,7 @@ CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_n
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor = new double [nVar];
+  ProjFlux = new double [nVar];
 
 }
 
@@ -234,7 +234,7 @@ CCentJST_KE_Flow::~CCentJST_KE_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor;
+  delete [] ProjFlux;
 }
 
 void CCentJST_KE_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
@@ -276,12 +276,12 @@ void CCentJST_KE_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
 
   /*--- Get projected flux tensor ---*/
 
-  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, Proj_flux_tensor);
+  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
 
   /*--- Residual of the inviscid flux ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_flux_tensor[iVar];
+    val_residual[iVar] = ProjFlux[iVar];
 
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
 
@@ -400,7 +400,7 @@ CCentLax_Flow::CCentLax_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor = new double [nVar];
+  ProjFlux = new double [nVar];
   
 }
 
@@ -409,7 +409,7 @@ CCentLax_Flow::~CCentLax_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor;
+  delete [] ProjFlux;
   
 }
 
@@ -452,12 +452,12 @@ void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
   /*--- Get projected flux tensor ---*/
   
-  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, Proj_flux_tensor);
+  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
   
   /*--- Residual of the inviscid flux ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_flux_tensor[iVar];
+    val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
   
@@ -552,6 +552,195 @@ void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   
 }
 
+CUpwCUSP_Flow::CUpwCUSP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+  
+  grid_movement = config->GetGrid_Movement();
+  
+  /*--- Allocate some structures ---*/
+  Diff_U = new double [nVar];
+  Diff_Flux = new double [nVar];
+  Velocity_i = new double [nDim];
+  Velocity_j = new double [nDim];
+  MeanVelocity = new double [nDim];
+  ProjFlux = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
+  Jacobian = new double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian[iVar] = new double [nVar];
+  }
+}
+
+CUpwCUSP_Flow::~CUpwCUSP_Flow(void) {
+  delete [] Diff_U;
+  delete [] Diff_Flux;
+  delete [] Velocity_i;
+  delete [] Velocity_j;
+  delete [] MeanVelocity;
+  delete [] ProjFlux;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian[iVar];
+  }
+}
+
+void CUpwCUSP_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j,
+                                     CConfig *config) {
+  
+  /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
+  
+  Pressure_i = V_i[nDim+1];                       Pressure_j = V_j[nDim+1];
+  Density_i = V_i[nDim+2];                        Density_j = V_j[nDim+2];
+  Enthalpy_i = V_i[nDim+3];                       Enthalpy_j = V_j[nDim+3];
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;   Energy_j = Enthalpy_j - Pressure_j/Density_j;
+
+  sq_vel_i = 0.0; sq_vel_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i[iDim] = V_i[iDim+1];
+    Velocity_j[iDim] = V_j[iDim+1];
+    sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
+    sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
+  }
+  
+  SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i));
+  SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel_j));
+
+  /*-- Face area ---*/
+  
+  Area = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++)
+		Area += Normal[iDim]*Normal[iDim];
+	Area = sqrt(Area);
+  
+	/*-- Unit normal ---*/
+  
+	for (iDim = 0; iDim < nDim; iDim++)
+		UnitNormal[iDim] = Normal[iDim]/Area;
+  
+  /*--- Recompute conservative variables ---*/
+  
+  U_i[0] = Density_i; U_j[0] = Density_j;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
+  }
+  U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
+  
+  /*--- Compute mean values of the variables ---*/
+  
+  MeanDensity = 0.5*(Density_i+Density_j);
+  MeanPressure = 0.5*(Pressure_i+Pressure_j);
+  MeanEnthalpy = 0.5*(Enthalpy_i+Enthalpy_j);
+  ProjVelocity = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    MeanVelocity[iDim] =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
+    ProjVelocity +=  MeanVelocity[iDim]*UnitNormal[iDim];
+  }
+  MeanSoundSpeed = 0.5*(SoundSpeed_i+SoundSpeed_j);
+  MeanEnergy = 0.5*(Energy_i+Energy_j);
+  
+  /*--- Get projected flux tensor ---*/
+  
+  GetInviscidProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanEnthalpy, Normal, ProjFlux);
+  
+  /*--- Residual of the inviscid flux ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] = ProjFlux[iVar];
+  
+  /*--- Jacobians of the inviscid flux, scale = 0.5 because val_residual ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  
+  if (implicit) {
+    GetInviscidProjJac(MeanVelocity, &MeanEnergy, Normal, 0.5, val_Jacobian_i);
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+  }
+  
+  /*--- Computes differences conservative variables,
+   with a correction for the enthalpy ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    Diff_U[iVar] = U_i[iVar]-U_j[iVar];
+  Diff_U[nVar-1] = Density_i*Enthalpy_i-Density_j*Enthalpy_j;
+  
+  /*--- Computes differences projected fluxes,
+   with a correction for the enthalpy ---*/
+  
+  GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, UnitNormal, ProjFlux_i);
+  GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, UnitNormal, ProjFlux_j);
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    Diff_Flux[iVar] = ProjFlux_i[iVar]-ProjFlux_j[iVar];
+  
+  /*--- Compute dissipation parameters ---*/
+  
+  Mach = ProjVelocity / MeanSoundSpeed;
+  
+  LamdaNeg = ProjVelocity - MeanSoundSpeed;
+  LamdaPos = ProjVelocity + MeanSoundSpeed;
+  
+  if ((0.0 <= Mach) && (Mach < 1.0)) Beta = + max(0.0, (ProjVelocity + LamdaNeg)/(ProjVelocity - LamdaNeg));
+  if ((-1.0 <= Mach) && (Mach < 0.0)) Beta = - max(0.0, (ProjVelocity + LamdaPos)/(ProjVelocity - LamdaPos));
+  if (fabs(Mach) >= 1.0) Beta = Mach/fabs(Mach);
+  
+  if (Beta == 0.0) Nu_c = fabs(ProjVelocity);
+  if ((Beta > 0.0) && ((0.0 < Mach) && (Mach < 1.0))) Nu_c = - (1.0-Beta)*LamdaNeg;
+  if ((Beta < 0.0) && ((-1.0 < Mach) && (Mach < 0.0))) Nu_c = (1.0-Beta)*LamdaPos;
+  if (fabs(Mach) >= 1) Nu_c = 0.0;
+  
+  /*--- Compute viscous part of the residual ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] += (0.5*Nu_c*Diff_U[iVar] + 0.5*Beta*Diff_Flux[iVar])*Area;
+
+  /*--- Jacobian computation ---*/
+  
+  if (implicit) {
+    
+    cte_0 = 0.5*Nu_c*Area;
+    cte_1 = 0.5*Beta*Area;
+    
+    for (iVar = 0; iVar < (nVar-1); iVar++) {
+      val_Jacobian_i[iVar][iVar] += cte_0;
+      val_Jacobian_j[iVar][iVar] -= cte_0;
+    }
+    
+    /*--- Last row of Jacobian_i (solution difference contribution) ---*/
+    
+    val_Jacobian_i[nVar-1][0] += cte_0*Gamma_Minus_One*sq_vel_i;
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_Jacobian_i[nVar-1][iDim+1] -= cte_0*Gamma_Minus_One*Velocity_i[iDim];
+    val_Jacobian_i[nVar-1][nVar-1] += cte_0*Gamma;
+    
+    /*--- Last row of Jacobian_j (solution difference contribution) ---*/
+    
+    val_Jacobian_j[nVar-1][0] -= cte_0*Gamma_Minus_One*sq_vel_j;
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_Jacobian_j[nVar-1][iDim+1] += cte_0*Gamma_Minus_One*Velocity_j[iDim];
+    val_Jacobian_j[nVar-1][nVar-1] -= cte_0*Gamma;
+    
+    /*--- Flux difference contribution ---*/
+    
+    GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 1.0, Jacobian);
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_i[iVar][jVar] += cte_1*Jacobian[iVar][jVar];
+    
+    GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 1.0, Jacobian);
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_j[iVar][jVar] -= cte_1*Jacobian[iVar][jVar];
+    
+  }
+  
+}
+
 CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -565,8 +754,8 @@ CUpwAUSM_Flow::CUpwAUSM_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   RoeVelocity = new double [nDim];
   delta_vel  = new double [nDim];
   delta_wave = new double [nVar];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   P_Tensor = new double* [nVar];
@@ -585,8 +774,8 @@ CUpwAUSM_Flow::~CUpwAUSM_Flow(void) {
   delete [] RoeVelocity;
   delete [] delta_vel;
   delete [] delta_wave;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -734,8 +923,8 @@ CUpwHLLC_Flow::CUpwHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   RoeVelocity = new double [nDim];
   delta_vel  = new double [nDim];
   delta_wave = new double [nVar];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   P_Tensor = new double* [nVar];
@@ -754,8 +943,8 @@ CUpwHLLC_Flow::~CUpwHLLC_Flow(void) {
   delete [] RoeVelocity;
   delete [] delta_vel;
   delete [] delta_wave;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -951,8 +1140,8 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   RoeVelocity = new double [nDim];
   delta_vel  = new double [nDim];
   delta_wave = new double [nVar];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   P_Tensor = new double* [nVar];
@@ -971,8 +1160,8 @@ CUpwRoe_Flow::~CUpwRoe_Flow(void) {
   delete [] RoeVelocity;
   delete [] delta_vel;
   delete [] delta_wave;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1039,11 +1228,11 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
 	RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
 	RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
   
-	/*--- Compute Proj_flux_tensor_i ---*/
-	GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, Proj_flux_tensor_i);
+	/*--- Compute ProjFlux_i ---*/
+	GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
   
-	/*--- Compute Proj_flux_tensor_j ---*/
-	GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, Proj_flux_tensor_j);
+	/*--- Compute ProjFlux_j ---*/
+	GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
   
 	/*--- Compute P and Lambda (do it with the Normal) ---*/
 	GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
@@ -1116,7 +1305,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     
 		/*--- Roe's Flux approximation ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
-			val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+			val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_residual[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
 		}
@@ -1147,7 +1336,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
     
 		/*--- Roe's Flux approximation ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
-			val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+			val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
 			for (jVar = 0; jVar < nVar; jVar++) {
 				Proj_ModJac_Tensor_ij = 0.0;
 				/*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
@@ -1405,8 +1594,8 @@ CUpwTurkel_Flow::CUpwTurkel_Flow(unsigned short val_nDim, unsigned short val_nVa
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   RoeVelocity = new double [nDim];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   absPeJac = new double* [nVar];
@@ -1429,8 +1618,8 @@ CUpwTurkel_Flow::~CUpwTurkel_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] RoeVelocity;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1504,11 +1693,11 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
   RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
   RoePressure = RoeDensity/Gamma*RoeSoundSpeed*RoeSoundSpeed;
   
-  /*--- Compute Proj_flux_tensor_i ---*/
-  GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, Proj_flux_tensor_i);
+  /*--- Compute ProjFlux_i ---*/
+  GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
   
-  /*--- Compute Proj_flux_tensor_j ---*/
-  GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, Proj_flux_tensor_j);
+  /*--- Compute ProjFlux_j ---*/
+  GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
   
   ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1590,7 +1779,7 @@ void CUpwTurkel_Flow::ComputeResidual(double *val_residual, double **val_Jacobia
   
   /*--- Roe's Flux approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+    val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
       val_residual[iVar] -= 0.5*Art_Visc[iVar][jVar]*Diff_U[jVar];
       if (implicit) {
@@ -1628,8 +1817,8 @@ CUpwArtComp_Flow::CUpwArtComp_Flow(unsigned short val_nDim, unsigned short val_n
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   P_Tensor = new double* [nVar];
@@ -1648,8 +1837,8 @@ CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   
@@ -1698,11 +1887,11 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
   MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
   MeanSoundSpeed = sqrt(ProjVelocity*ProjVelocity + (MeanBetaInc2/MeanDensity) * Area * Area);
   
-  /*--- Compute Proj_flux_tensor_i ---*/
-  GetInviscidArtCompProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, Normal, Proj_flux_tensor_i);
+  /*--- Compute ProjFlux_i ---*/
+  GetInviscidArtCompProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, Normal, ProjFlux_i);
   
-  /*--- Compute Proj_flux_tensor_j ---*/
-  GetInviscidArtCompProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, Normal, Proj_flux_tensor_j);
+  /*--- Compute ProjFlux_j ---*/
+  GetInviscidArtCompProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, Normal, ProjFlux_j);
   
   /*--- Compute P and Lambda (matrix of eigenvalues) ---*/
   GetPArtCompMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, P_Tensor);
@@ -1740,7 +1929,7 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
   
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+    val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
       Proj_ModJac_Tensor_ij = 0.0;
       for (kVar = 0; kVar < nVar; kVar++)
@@ -1765,8 +1954,8 @@ CUpwArtComp_FreeSurf_Flow::CUpwArtComp_FreeSurf_Flow(unsigned short val_nDim, un
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   P_Tensor = new double* [nVar];
@@ -1785,8 +1974,8 @@ CUpwArtComp_FreeSurf_Flow::~CUpwArtComp_FreeSurf_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   
@@ -1851,13 +2040,13 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   MeanLevelSet  = 0.5*(LevelSet_i + LevelSet_j);
   MeanBetaInc2  = 0.5*(BetaInc2_i + BetaInc2_j);
   
-  /*--- Compute Proj_flux_tensor_i ---*/
+  /*--- Compute ProjFlux_i ---*/
   
-  GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &LevelSet_i, Normal, Proj_flux_tensor_i);
+  GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &LevelSet_i, Normal, ProjFlux_i);
   
-  /*--- Compute Proj_flux_tensor_j ---*/
+  /*--- Compute ProjFlux_j ---*/
   
-  GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &LevelSet_j, Normal, Proj_flux_tensor_j);
+  GetInviscidArtComp_FreeSurf_ProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &LevelSet_j, Normal, ProjFlux_j);
   
   /*--- Compute P and Lambda (matrix of eigenvalues) ---*/
   
@@ -1908,7 +2097,7 @@ void CUpwArtComp_FreeSurf_Flow::ComputeResidual(double *val_residual, double **v
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+    val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
       
       Proj_ModJac_Tensor_ij = 0.0;
@@ -1944,7 +2133,7 @@ CCentJSTArtComp_Flow::CCentJSTArtComp_Flow(unsigned short val_nDim, unsigned sho
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor = new double [nVar];
+  ProjFlux = new double [nVar];
   
 }
 
@@ -1955,7 +2144,7 @@ CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor;
+  delete [] ProjFlux;
   
 }
 
@@ -1993,10 +2182,10 @@ void CCentJSTArtComp_Flow::ComputeResidual(double *val_residual,
   
   /*--- Get projected flux tensor ---*/
   
-  GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, Proj_flux_tensor);
+  GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, ProjFlux);
   
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_flux_tensor[iVar];
+    val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux ---*/
   
@@ -2077,7 +2266,7 @@ CCentLaxArtComp_Flow::CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned sho
   Velocity_i = new double [nDim];
   Velocity_j = new double [nDim];
   MeanVelocity = new double [nDim];
-  Proj_flux_tensor = new double [nVar];
+  ProjFlux = new double [nVar];
   
 }
 
@@ -2087,7 +2276,7 @@ CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
   delete [] Velocity_i;
   delete [] Velocity_j;
   delete [] MeanVelocity;
-  delete [] Proj_flux_tensor;
+  delete [] ProjFlux;
   
 }
 
@@ -2125,12 +2314,12 @@ void CCentLaxArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
   
   /*--- Get projected flux tensor ---*/
   
-  GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, Proj_flux_tensor);
+  GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, Normal, ProjFlux);
   
   /*--- Compute inviscid residual ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
-    val_residual[iVar] = Proj_flux_tensor[iVar];
+    val_residual[iVar] = ProjFlux[iVar];
   
   /*--- Jacobians of the inviscid flux ---*/
   

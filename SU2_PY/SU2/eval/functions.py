@@ -1,7 +1,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -196,8 +196,18 @@ def aerodynamics( config, state=None ):
     if ( 'EQUIV_AREA' in special_cases and 
          'TARGET_EA' in files ) : 
         pull.append( files['TARGET_EA'] )
-    
-    # output redirection      
+
+    # files: target pressure distribution
+    if ( 'INV_DESIGN_CP' in special_cases and
+         'TARGET_CP' in files ) :
+        pull.append( files['TARGET_CP'] )
+
+    # files: target heat flux distribution
+    if ( 'INV_DESIGN_HEATFLUX' in special_cases and
+         'TARGET_HEATFLUX' in files ) :
+        pull.append( files['TARGET_HEATFLUX'] )
+
+    # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
             
@@ -210,12 +220,21 @@ def aerodynamics( config, state=None ):
             name = info.FILES['DIRECT']
             name = su2io.expand_time(name,config)
             push.extend(name)
+            
             # equivarea files to push
             if 'WEIGHT_NF' in info.FILES:
                 push.append(info.FILES['WEIGHT_NF'])
-            
+
+            # pressure files to push
+            if 'TARGET_CP' in info.FILES:
+                push.append(info.FILES['TARGET_CP'])
+
+            # heat flux files to push
+            if 'TARGET_HEATFLUX' in info.FILES:
+                push.append(info.FILES['TARGET_HEATFLUX'])
+
     #: with output redirection
-    
+
     # return output 
     funcs = su2util.ordered_bunch()
     for key in su2io.optnames_aero:
@@ -292,9 +311,18 @@ def stability( config, state=None, step=1e-2 ):
     # files: target equivarea distribution
     if ( 'EQUIV_AREA' in special_cases and 
          'TARGET_EA' in files ) : 
-        pull.append( files['TARGET_EA'] )    
-    
-    
+        pull.append( files['TARGET_EA'] )
+
+    # files: target pressure distribution
+    if ( 'INV_DESIGN_CP' in special_cases and
+         'TARGET_CP' in files ) :
+        pull.append( files['TARGET_CP'] )
+
+    # files: target heat flux distribution
+    if ( 'INV_DESIGN_HEATFLUX' in special_cases and
+         'TARGET_HEATFLUX' in files ) :
+        pull.append( files['TARGET_HEATFLUX'] )
+
     # pull needed files, start folder
     with redirect_folder( folder, pull, link ) as push:
         with redirect_output(log_direct):     

@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
 #ifndef NO_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
@@ -355,6 +355,18 @@ int main(int argc, char *argv[]) {
       config_container[iZone]->UpdateCFL(ExtIter);
     }
     
+    /*--- Read the target pressure ---*/
+    
+    if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+      output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    
+    /*--- Read the target heat flux ---*/
+
+    if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+      output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                    geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
     
     switch (config_container[ZONE_0]->GetKind_Solver()) {
@@ -500,10 +512,10 @@ int main(int argc, char *argv[]) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           
-          /*--- Compute 1D output. ---*/
-         // if (config->GetWrt_1D_Output())
-           // output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-             //                            geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+//          /*--- Compute 1D output. ---*/
+//          if (config->GetWrt_1D_Output())
+//            output->OneDimensionalOutput(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+//                                         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
           
         }
     
@@ -522,6 +534,7 @@ int main(int argc, char *argv[]) {
     cout << endl <<"History file closed." << endl;
   }
   
+//<<<<<<< HEAD
   /*--- Numerics class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
@@ -602,6 +615,17 @@ int main(int argc, char *argv[]) {
   /*--- Deallocate output container ---*/
   delete output;
   cout <<"Output container deallocated." << endl;
+//=======
+//  /*--- Deallocate config container ---*/
+//  
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (config_container[iZone] != NULL) {
+//      delete config_container[iZone];
+//    }
+//  }
+//  if (config_container != NULL) delete[] config_container;
+
+//>>>>>>> master
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

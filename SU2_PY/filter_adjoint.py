@@ -3,7 +3,7 @@
 ## \file filter_adjoint.py
 #  \brief Applies various filters to the adjoint surface sensitivities of an airfoil
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -88,7 +88,7 @@ def process_surface_adjoint( config_filename       ,
     surface_filename = config_data['SURFACE_ADJ_FILENAME'] + '.csv'
     print surface_filename
     mesh_filename    = config_data['MESH_FILENAME']
-    gradient         = config_data['ADJ_OBJFUNC']
+    gradient         = config_data['OBJECTIVE_FUNCTION']
     
     print('Config filename = %s' % config_filename)
     print('Surface filename = %s' % surface_filename)

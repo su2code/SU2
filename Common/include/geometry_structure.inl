@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -176,8 +176,6 @@ inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename
 
 inline void CGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config) { }
 
-inline void CGeometry::ComputeSurf_Curvature(CConfig *config) { }
-                                       
 inline double CGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
 inline double CGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }

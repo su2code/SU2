@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1011,17 +1011,20 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
 
 void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-	double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
-	double x_origin, y_origin, z_origin, WDrag, Area;
+	double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, Factor, Cp, CpTarget,
+  C_t, C_q, x_origin, y_origin, z_origin, WDrag, Area, RefVel2, RefDensity, Gas_Constant, Mach2Vel,
+  Mach_Motion, *Velocity_Inf, invCD, CLCD2, invCQ, CTRCQ2;
 	unsigned short iMarker, iDim;
 	unsigned long iVertex, iPoint;
-	double Alpha      = (config->GetAoA()*PI_NUMBER)/180.0;
-	double Beta       = (config->GetAoS()*PI_NUMBER)/180.0;
-	double RefAreaCoeff    = config->GetRefAreaCoeff();
+  int rank = MASTER_NODE;
+
+	double Alpha            = (config->GetAoA()*PI_NUMBER)/180.0;
+	double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
+	double RefAreaCoeff     = config->GetRefAreaCoeff();
 	double RefLengthMoment  = config->GetRefLengthMoment();
 	double *RefOriginMoment = config->GetRefOriginMoment(0);
-	double RefVel2, RefDensity;
-  int rank = MASTER_NODE;
+  bool grid_movement      = config->GetGrid_Movement();
+
 
 #ifndef NO_MPI
 #ifdef WINDOWS
@@ -1031,20 +1034,20 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 #endif
 #endif
   
-  bool grid_movement = config->GetGrid_Movement();
-  
 	ForceProj_Vector = new double[nDim];
   
 	/*--- For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values, 
    which is the standard convention. ---*/
+  
 	if (grid_movement) {
-    double Gas_Constant = config->GetGas_ConstantND();
-    double Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    double Mach_Motion = config->GetMach_Motion();
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
 		RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  } else {
-		double *Velocity_Inf = config->GetVelocity_FreeStreamND();
+  }
+  else {
+		Velocity_Inf = config->GetVelocity_FreeStreamND();
 		RefVel2 = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
 			RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
@@ -1052,48 +1055,25 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-	/*--- In parallel computations the Cd, and Cl must be recomputed using all the processors ---*/
-#ifdef NO_MPI
-	C_d = solver_container[FLOW_SOL]->GetTotal_CDrag();
+	/*--- Compute coefficients needed for objective function evaluation. ---*/
+  
+	Factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  C_d = solver_container[FLOW_SOL]->GetTotal_CDrag();
 	C_l = solver_container[FLOW_SOL]->GetTotal_CLift();
 	C_t = solver_container[FLOW_SOL]->GetTotal_CT();
 	C_q = solver_container[FLOW_SOL]->GetTotal_CQ();
-#else
-	double *sbuf_force = new double[4];
-	double *rbuf_force = new double[4];
-	sbuf_force[0] = solver_container[FLOW_SOL]->GetTotal_CDrag();
-	sbuf_force[1] = solver_container[FLOW_SOL]->GetTotal_CLift();
-	sbuf_force[2] = solver_container[FLOW_SOL]->GetTotal_CT();
-	sbuf_force[3] = solver_container[FLOW_SOL]->GetTotal_CQ();
-#ifdef WINDOWS
-	MPI_Reduce(sbuf_force, rbuf_force, 4, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-	MPI_Bcast(rbuf_force, 4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, 4, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
-	MPI::COMM_WORLD.Bcast(rbuf_force, 4, MPI::DOUBLE, MASTER_NODE);
-#endif
-	C_d = rbuf_force[0];
-	C_l = rbuf_force[1];
-	C_t = rbuf_force[2];
-	C_q = rbuf_force[3];
-	delete [] sbuf_force;
-	delete [] rbuf_force;
-#endif
-  
-	/*--- Compute coefficients needed for objective function evaluation. ---*/
-	C_d += config->GetCteViscDrag();
-	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-	double invCD  = 1.0 / C_d;
-	double CLCD2  = C_l / (C_d*C_d);
-	double invCQ  = 1.0/C_q;
-	double CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
+	invCD  = 1.0 / C_d; CLCD2  = C_l / (C_d*C_d);
+	invCQ  = 1.0/C_q; CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
   
 	x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
+  /*--- Evaluate the boundary condition coefficients. ---*/
+
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
 				x = geometry->node[iPoint]->GetCoord(0);
@@ -1103,94 +1083,107 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 				Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 				switch (config->GetKind_ObjFunc()) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha); ForceProj_Vector[1] = C_p*sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = C_p*sin(Beta); ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha); ForceProj_Vector[1] = Factor*sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta); ForceProj_Vector[1] = Factor*sin(Beta); ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = C_p*cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p*cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] = -Factor*sin(Alpha); ForceProj_Vector[1] = Factor*cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor*cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = C_p*cos(Beta); ForceProj_Vector[2] = -C_p*sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*sin(Beta) * cos(Alpha); ForceProj_Vector[1] = Factor*cos(Beta); ForceProj_Vector[2] = -Factor*sin(Beta) * sin(Alpha); }
             break;
-          case PRESSURE_COEFFICIENT :
-            if (nDim == 2) {
-              Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
-              ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area;
-            }
-            if (nDim == 3) {
-              Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-              ForceProj_Vector[0] = -C_p*Normal[0]/Area; ForceProj_Vector[1] = -C_p*Normal[1]/Area; ForceProj_Vector[2] = -C_p*Normal[2]/Area;
-            }
+          case INVERSE_DESIGN_PRESSURE :
+            Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker,iVertex);
+            CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker,iVertex);
+            Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
+            if (nDim == 3) Area += Area;
+            ForceProj_Vector[0] = -2.0*Factor*(Cp-CpTarget)*Normal[0]/Area;
+            ForceProj_Vector[1] = -2.0*Factor*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] = -2.0*Factor*(Cp-CpTarget)*Normal[2]/Area;
+            break;
+          case INVERSE_DESIGN_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = C_p*(y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -Factor*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = Factor*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(1); }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -C_p*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -Factor*(x - x_origin)/RefLengthMoment; }
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = -Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = Factor*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = Factor*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -C_p*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -C_p*CLCD2*sin(Beta); ForceProj_Vector[2] = C_p*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] = -Factor*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = Factor*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] = -Factor*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -Factor*CLCD2*sin(Beta); ForceProj_Vector[2] = Factor*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha)*WDrag; ForceProj_Vector[1] = Factor*sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = Factor*sin(Beta)*WDrag; ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
             WDrag = config->GetWeightCd();
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*cos(Alpha)*WDrag; ForceProj_Vector[1] = C_p*sin(Alpha)*WDrag; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = C_p*sin(Beta)*WDrag; ForceProj_Vector[2] = C_p*sin(Alpha)*cos(Beta)*WDrag; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*cos(Alpha)*WDrag; ForceProj_Vector[1] = Factor*sin(Alpha)*WDrag; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = Factor*sin(Beta)*WDrag; ForceProj_Vector[2] = Factor*sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor; ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = C_p; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = Factor; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = Factor; ForceProj_Vector[2] = 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = C_p; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = Factor; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = C_p*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -C_p*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] = Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -Factor*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] = Factor*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -Factor*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(1);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] = -C_p*invCQ;
-              ForceProj_Vector[1] = -C_p*CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  C_p*CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] = -Factor*invCQ;
+              ForceProj_Vector[1] = -Factor*CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] =  Factor*CTRCQ2*(y - y_origin);
             }
             break;
           case FREE_SURFACE :
             if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
-          case NORM_HEAT:
+          case TOTAL_HEATFLUX:
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
+          case MAXIMUM_HEATFLUX:
             if (nDim == 2) { ForceProj_Vector[0] = 0.0;
               ForceProj_Vector[1] = 0.0; }
             if (nDim == 3) { ForceProj_Vector[0] = 0.0;
@@ -1608,13 +1601,13 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool upwind_2nd     = (config->GetKind_Upwind_AdjFlow() == ROE_2ND);
+  bool second_order   = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER));
+  bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
-  bool limiter        = (config->GetKind_SlopeLimit() != NONE);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   GetNacelle_Properties(geometry, config, iMesh, Output);
@@ -1638,7 +1631,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	}
   
   /*--- Compute gradients for upwind second-order reconstruction ---*/
-  if ((upwind_2nd) && (iMesh == MESH_0)) {
+  if ((second_order) && (iMesh == MESH_0)) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
@@ -1679,7 +1672,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 	unsigned long iEdge, iPoint, jPoint;
 
 	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-	bool high_order_diss = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
+	bool second_order = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
@@ -1715,7 +1708,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 		numerics->SetLambda(solver_container[FLOW_SOL]->node[iPoint]->GetLambda(), 
 				solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
 
-		if (high_order_diss) {
+		if (second_order) {
 			numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
 			numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
 		}
@@ -1752,14 +1745,13 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
 
-	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-	bool high_order_diss = (((config->GetKind_Upwind_AdjFlow() == ROE_2ND) ||
-                           (config->GetKind_Upwind_AdjFlow() == SW_2ND)) && (iMesh == MESH_0));
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-	bool grid_movement  = config->GetGrid_Movement();
-	bool limiter = (config->GetKind_SlopeLimit() != NONE);
+	bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+	bool second_order     = (((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
+  bool limiter          = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
+  bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
+	bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
+	bool grid_movement    = config->GetGrid_Movement();
 
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
@@ -1797,7 +1789,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 		}
 
 		/*--- High order reconstruction using MUSCL strategy ---*/
-		if (high_order_diss) {
+		if (second_order) {
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
 				Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
@@ -4948,7 +4940,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if (config->GetKind_ObjFunc() == NORM_HEAT)
+  if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX))
     PsiE_Inf = -1.0;
   else
     PsiE_Inf = 0.0;
@@ -5064,13 +5058,13 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool upwind_2nd     = (config->GetKind_Upwind_AdjFlow() == ROE_2ND) || (config->GetKind_Upwind_AdjFlow() == SW_2ND);
+  bool second_order   = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER));
+  bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
-  bool limiter        = (config->GetKind_SlopeLimit() != NONE);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+	bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   GetNacelle_Properties(geometry, config, iMesh, Output);
@@ -5094,7 +5088,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 	}
   
   /*--- Compute gradients for upwind second-order reconstruction ---*/
-  if ((upwind_2nd) && (iMesh == MESH_0)) {
+  if ((second_order) && (iMesh == MESH_0)) {
 		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
@@ -5415,8 +5409,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     Sens_Geo[iMarker] = 0.0;
     
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)) {
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -5447,7 +5445,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             temp_sens = 0.0;
-            if (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX) {
+            if((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX             ) ||
+               (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC   ) ||
+               (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)){
               
               /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
               
@@ -5458,7 +5458,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               for (iDim = 0; iDim < nDim; iDim++)
                 temp_sens += heat_flux_factor * tang_deriv_psi5[iDim] * tang_deriv_T[iDim];
               
-            } else if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) {
+            } else if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+                       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+                       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
               
               /*--- Isothermal Term: temp_sens = - k * \partial_n(\psi_5) * \partial_n(T) ---*/
               
@@ -6330,7 +6332,9 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = (config->GetKind_ObjFunc() == NORM_HEAT);
+  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
+                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
+                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -6373,12 +6377,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Get the force projection vector (based on the objective function) ---*/
 			d = node[iPoint]->GetForceProj_Vector();
-
-      ////////////////  DEBUGGING //////////////////
-      for (iDim = 0; iDim < nDim; iDim++)
-        d[iDim] = 0.0;
-      ////////////////  DEBUGGING //////////////////
-      
       
       /*--- Adjustments to strong boundary condition for dynamic meshes ---*/
       if ( grid_movement) {
@@ -6416,21 +6414,11 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Calculate Dirichlet condition for energy equation ---*/
       if (!heat_flux_obj) {
         q = 0.0;
-        
-        if (geometry->node[iPoint]->GetCoord(0) < 0.9) {
-          GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
-          kGTdotn = 0;
-          Xi = solver_container[FLOW_SOL]->GetTotal_NormHeat();
-          Xi = 1.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
-          q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
-        }
-        
-      } else {
+      }
+      else {
         GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
         kGTdotn = 0;
-        Xi = solver_container[FLOW_SOL]->GetTotal_NormHeat();
+        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
         Xi = 1.0;
         for (iDim = 0; iDim < nDim; iDim++)
           kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];

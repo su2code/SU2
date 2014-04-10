@@ -23,7 +23,8 @@ bin_SCRIPTS = \
     filter_adjoint.py \
     compute_polar.py \
     mesh_adaptation.py
-		      
+
+
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA= \
     SU2/__init__.py \
@@ -69,3 +70,4 @@ nobase_dist_mypkg_DATA= \
     SU2/util/which.py \
     SU2/util/__init__.py
 
+EXTRA_DIST = $(bin_SCRIPTS)

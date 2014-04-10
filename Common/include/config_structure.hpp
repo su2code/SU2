@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -48,7 +48,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CConfig {
 private:
@@ -63,6 +63,8 @@ private:
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+	InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
 	OneShot,				/*!< \brief Flag to know if the code is solving a one shot problem. */
 	Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
 	Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -133,7 +135,11 @@ private:
 	nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
+  nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
+  nMarker_IsothermalCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatFluxNonCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
+  nMarker_HeatFluxCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
 	nMarker_NacelleExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
 	nMarker_NacelleInflow,					/*!< \brief Number of nacelle inflow flow markers. */
 	nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
@@ -161,7 +167,11 @@ private:
 	*Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
+  *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */
+  *Marker_IsothermalCatalytic,     /*!< \brief Isothermal wall markers. */
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatFluxNonCatalytic,       /*!< \brief Constant heat flux wall markers. */
+  *Marker_HeatFluxCatalytic,       /*!< \brief Constant heat flux wall markers. */
 	*Marker_NacelleInflow,					/*!< \brief Nacelle Inflow flow markers. */
 	*Marker_NacelleExhaust,					/*!< \brief Nacelle Exhaust flow markers. */
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
@@ -184,7 +194,10 @@ private:
 	double *FanFace_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
     double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
+  double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
 	double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
+  double *Heat_FluxNonCatalytic;  /*!< \brief Specified wall heat fluxes. */
+  double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
 	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
@@ -212,9 +225,9 @@ private:
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double
 	MG_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the MG coarse level. */
-	Turb_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
-	Adj_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
-	AdjTurb_CFLRedCoeff,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+	CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
+	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
+	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	unsigned short MaxChildren;		/*!< \brief Maximum number of children. */
@@ -321,7 +334,16 @@ private:
 	Kind_Upwind_LinFlow,			/*!< \brief Upwind scheme for the linearized flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
-	Kind_Upwind_Template;			/*!< \brief Upwind scheme for the template model. */
+	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
+  SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_TNE2,		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
+	SpatialOrder_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
+
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
   string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
@@ -523,7 +545,7 @@ private:
 	Prandtl_Lam,      /*!< \brief Laminar Prandtl number for the gas.  */
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
-	Conversion_Factor,       /*!< \brief Conversion factor from grid units to meters. */
+	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
 	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization. */
 	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization. */
 	Density_Ref,      /*!< \brief Reference density for non-dimensionalization. */
@@ -539,11 +561,12 @@ private:
   *Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
-	Tke_FreeStreamND;    /*!< \brief Farfield kinetic energy (external flow). */
+	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
+  pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-	bool Write_Converted_Mesh; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
+	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
@@ -628,7 +651,7 @@ public:
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short verb_level);
+	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
@@ -1196,6 +1219,12 @@ public:
 	 * \return Value of the Blottner coefficient
 	 */
 	double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+  
+  /*!
+	 * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
+	 * \return Value of the heat flux p-norm
+	 */
+	double GetPnormHeat(void);
 
 	/*!
 	 * \brief Get the value of wall temperature.
@@ -1382,7 +1411,7 @@ public:
 	 * \brief Get the conversion factor for converting the grid to meters.
 	 * \return Conversion factor for converting the grid to meters.
 	 */
-	double GetConversion_Factor(void);
+	double GetMesh_Scale_Change(void);
 
 	/*! 
 	 * \brief Get the start up iterations using the fine grid, this works only for multigrid problems.
@@ -1506,7 +1535,7 @@ public:
 	 * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
 	 */		
 	void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered, 
-			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit);
+			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
 
 	/*! 
 	 * \brief Set the parameters of the viscous numerical scheme.
@@ -2176,7 +2205,7 @@ public:
 	 * \brief Get CFL reduction factor for adjoint turbulence model.
 	 * \return CFL reduction factor.
 	 */
-	double GetAdjTurb_CFLRedCoeff(void);
+	double GetCFLRedCoeff_AdjTurb(void);
   
   /*!
 	 * \brief Get the number of linear smoothing iterations for mesh deformation.
@@ -2314,7 +2343,70 @@ public:
 	 * \return Kind of upwind scheme for the convective terms.
 	 */		
 	unsigned short GetKind_Upwind(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder(void);
 
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_Flow(void);
+
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_Turb(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_TNE2(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_AdjLevelSet(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_AdjFlow(void);
+  
+  /*!
+	 * \brief Get the order of the spatial integration.
+	 * \note This is the information that the code will use, the method will
+	 *       change in runtime depending of the specific equation (direct, adjoint,
+	 *       linearized) that is being solved.
+	 * \return Kind of upwind scheme for the convective terms.
+	 */
+	unsigned short GetSpatialOrder_AdjTNE2(void);
+  
 	/*! 
 	 * \brief Get the kind of integration scheme (explicit or implicit) 
 	 *        for the flow equations.
@@ -3287,6 +3379,18 @@ public:
 	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
 	 */		
 	bool GetEquivArea(void);
+  
+  /*!
+	 * \brief Information about computing and plotting the equivalent area distribution.
+	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
+	 */
+	bool GetInvDesign_Cp(void);
+  
+	/*!
+	 * \brief Information about computing and plotting the equivalent area distribution.
+	 * \return <code>TRUE</code> or <code>FALSE</code>  depending if we are computing the equivalent area.
+	 */
+	bool GetInvDesign_HeatFlux(void);
 
 	/*! 
 	 * \brief Get name of the input grid.
@@ -4099,7 +4203,7 @@ public:
 	 * \brief Get information about whether a converted mesh should be written.
 	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
 	 */
-	bool GetWrite_Converted_Mesh(void);
+	bool GetMesh_Output(void);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.
@@ -4270,7 +4374,7 @@ public:
 	 * \brief Value of the CFL reduction in LevelSet problems.
 	 * \return Value of the CFL reduction in LevelSet problems.
 	 */
-	double GetTurb_CFLRedCoeff(void);
+	double GetCFLRedCoeff_Turb(void);
 
 	/*!
 	 * \brief Get the flow direction unit vector at an inlet boundary.
@@ -4299,6 +4403,13 @@ public:
 	 * \return The heat flux.
 	 */
 	double GetWall_HeatFlux(string val_index);
+  
+	/*!
+	 * \brief Get the wall heat flux on a constant heat flux boundary.
+	 * \return The heat flux.
+	 */
+	double *GetWall_Catalycity(void);
+  
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
@@ -4395,7 +4506,7 @@ public:
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
-	void SetPostprocessing(unsigned short val_software, unsigned short val_izone);	
+	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim);
 
 	/*! 
 	 * \brief Config file markers processing.

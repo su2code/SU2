@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -67,6 +67,10 @@ inline void CPoint::SetBoundary(bool val_boundary) { Boundary = val_boundary; }
 inline void CPoint::SetPhysicalBoundary(bool val_boundary) { PhysicalBoundary = val_boundary; }
 
 inline bool CPoint::GetPhysicalBoundary(void) { return PhysicalBoundary; }
+
+inline void CPoint::SetSolidBoundary(bool val_boundary) { SolidBoundary = val_boundary; }
+
+inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
 
 inline void CPoint::AddVolume (double val_Volume) { Volume[0] += val_Volume; }
 
@@ -183,9 +187,13 @@ inline bool CPoint::GetDomain(void) { return Domain; }
 
 inline void CPoint::SetWall_Distance(double val_distance) { Wall_Distance = val_distance; }
 
+inline void CPoint::SetCurvature(double val_curvature) { Curvature = val_curvature; }
+
 inline void CPoint::SetSharpEdge_Distance(double val_distance) { SharpEdge_Distance = val_distance; }
 
 inline double CPoint::GetWall_Distance(void) { return Wall_Distance; }
+
+inline double CPoint::GetCurvature(void) { return Curvature; }
 
 inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 
@@ -243,7 +251,9 @@ inline double *CVertex::GetNormal(void) { return Normal; }
 
 inline double *CVertex::GetVarCoord(void) { return VarCoord; }
 
-inline double *CVertex::GetCoord(void) { return CarCoord; }
+inline double *CVertex::GetCoord(void) { return CartCoord; }
+
+inline double CVertex::GetCoord(unsigned short val_dim) { return CartCoord[val_dim]; }
 
 inline void CVertex::SetAuxVar(double val_auxvar) { Aux_Var = val_auxvar; }
 
@@ -273,7 +283,7 @@ inline void CVertex::AddVarCoord(double *val_varcoord) {
 
 inline void CVertex::SetCoord(double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		CarCoord[iDim] = val_coord[iDim];
+		CartCoord[iDim] = val_coord[iDim];
 }
 
 inline void CVertex::SetRotation_Type(short val_rotation_type) { Rotation_Type = val_rotation_type; }

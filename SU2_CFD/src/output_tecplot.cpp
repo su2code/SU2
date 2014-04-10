@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -183,7 +183,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Transfer\", \"Y_Plus\"";
+      Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
     }
     
     if (Kind_Solver == RANS) {
@@ -1449,8 +1449,8 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   FileType = SOLUTION;
   variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
   if (config->GetKind_SU2() == SU2_SOL) {
-    if (Wrt_Unsteady && GridMovement) nVar_Total = NVar-dims;
-    else nVar_Total = NVar;
+    if (Wrt_Unsteady && GridMovement) nVar_Total = NVar;
+    else nVar_Total = NVar+dims;
   }
   
   first_zone = true;
@@ -1593,17 +1593,29 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
     if (first_zone) {
       
       i = 0;
-      if (Wrt_Unsteady && GridMovement) {
-        for (iDim = 0; iDim < dims; iDim++) {
-          err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+      if (config->GetKind_SU2() == SU2_SOL) {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iDim = 0; iDim < dims; iDim++) {
+            err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        for (iVar = dims; iVar < nVar_Total; iVar++) {
+          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          if (err) cout << "Error writing data to Tecplot file" << endl;
+        }
+      } else {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iDim = 0; iDim < dims; iDim++) {
+            err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
-      for (iVar = 0; iVar < nVar_Total; iVar++) {
-        err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-        if (err) cout << "Error writing data to Tecplot file" << endl;
-      }
-      
       first_zone = false;
     }
     
@@ -1641,17 +1653,29 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
     if (first_zone) {
       
       i = 0;
-      if (Wrt_Unsteady && GridMovement) {
-        for (iDim = 0; iDim < dims; iDim++) {
-          err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+      if (config->GetKind_SU2() == SU2_SOL) {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iDim = 0; iDim < dims; iDim++) {
+            err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        for (iVar = dims; iVar < nVar_Total; iVar++) {
+          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          if (err) cout << "Error writing data to Tecplot file" << endl;
+        }
+      } else {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iDim = 0; iDim < dims; iDim++) {
+            err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
-      for (iVar = 0; iVar < nVar_Total; iVar++) {
-        err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-        if (err) cout << "Error writing data to Tecplot file" << endl;
-      }
-      
       first_zone = false;
     }
     
@@ -1687,19 +1711,31 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
     
     /*--- write node coordinates and data if not done already---*/
     if (first_zone) {
-      cout << "about to write quad" << endl;
+      
       i = 0;
-      if (Wrt_Unsteady && GridMovement) {
-        for (iDim = 0; iDim < dims; iDim++) {
-          err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+      if (config->GetKind_SU2() == SU2_SOL) {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iDim = 0; iDim < dims; iDim++) {
+            err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        for (iVar = dims; iVar < nVar_Total; iVar++) {
+          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          if (err) cout << "Error writing data to Tecplot file" << endl;
+        }
+      } else {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iDim = 0; iDim < dims; iDim++) {
+            err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
-      for (iVar = 0; iVar < nVar_Total; iVar++) {
-        err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-        if (err) cout << "Error writing data to Tecplot file" << endl;
-      }
-      
       first_zone = false;
     }
     
@@ -1744,7 +1780,8 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
   if (config->GetKind_SU2() == SU2_SOL) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
-     variables with the appropriate string tags stored in the config class. ---*/
+     variables with the appropriate string tags stored in the config class.
+     We simply read in and remove the quotation marks from the var names. ---*/
     
     /*--- Set the number of variables to be written. Subtract off an index for
      the PointID as well as each coordinate (x,y,z). ---*/
@@ -1756,7 +1793,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
         varname = config->fields[iField];
         varname.erase (varname.begin(), varname.begin()+1);
-        varname.erase (varname.end()-2, varname.end());
+        varname.erase (varname.end()-1, varname.end());
         variables << varname << " ";
       }
     } else {
@@ -1765,7 +1802,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
       for (unsigned short iField = 1+nDim; iField < config->fields.size(); iField++) {
         varname = config->fields[iField];
         varname.erase (varname.begin(), varname.begin()+1);
-        varname.erase (varname.end()-2, varname.end());
+        varname.erase (varname.end()-1, varname.end());
         variables << varname << " ";
       }
     }
@@ -1809,7 +1846,7 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Transfer Y_Plus ";
+      variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Flux Y_Plus ";
       *NVar += 5;
     }
     
@@ -1821,6 +1858,18 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Sharp_Edge_Dist ";
       *NVar += 1;
+    }
+    
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+      variables << "Mach Pressure Temperature Temperature_ve ";
+      *NVar += 4;
+    }
+    
+    if (Kind_Solver == TNE2_NAVIER_STOKES) {
+      for (iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        variables << "DiffusionCoeff_" << iVar << " ";
+      variables << "Laminar_Viscosity ThermConductivity ThermConductivity_ve";
+      *NVar += 4;
     }
     
     if (Kind_Solver == POISSON_EQUATION) {
