@@ -1163,8 +1163,14 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     for (int i=0; i < nResidual; i++){
       Residual[i] = NondimResidual[i];
+      //cout << "NondimResidual " << i <<" "<< NondimResidual[i] << endl;
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+    /*
+    for (int i=0; i < nResidual; i++){
+      cout << "DimResidual " << i << " " << Residual[i] << endl;
+    }
+     */
   }else if(featureset.compare("nondim_production_log") == 0){
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
@@ -1185,8 +1191,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     
     for (int i=0; i < nResidual; i++){
       Residual[i] = NondimResidual[i];
+//      cout << "NondimResidual " << i << NondimResidual[i] << endl;
     }
+    
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  /*
+    for (int i=0; i < nResidual; i++){
+      cout << "DimResidual " << i << Residual[i] << endl;
+    }
+   */
   }else if(featureset.compare("nondim_production_logchi") == 0){
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
