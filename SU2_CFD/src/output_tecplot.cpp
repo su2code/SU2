@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1858,6 +1858,18 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       variables << "Sharp_Edge_Dist ";
       *NVar += 1;
+    }
+    
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
+      variables << "Mach Pressure Temperature Temperature_ve ";
+      *NVar += 4;
+    }
+    
+    if (Kind_Solver == TNE2_NAVIER_STOKES) {
+      for (iVar = 0; iVar < config->GetnSpecies(); iVar++)
+        variables << "DiffusionCoeff_" << iVar << " ";
+      variables << "Laminar_Viscosity ThermConductivity ThermConductivity_ve";
+      *NVar += 4;
     }
     
     if (Kind_Solver == POISSON_EQUATION) {

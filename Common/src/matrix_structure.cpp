@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -788,9 +788,13 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) ||
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ) ||
         (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
@@ -807,9 +811,13 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
     /*--- Define the basic linelets, starting from each vertex ---*/
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)  ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-          (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) ||
+      if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+          (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ) ||
           (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)){
         iLinelet = 0;
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {

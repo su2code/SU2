@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -422,8 +422,10 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
 		solver_container[iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
     
 		/*--- Update global parameters ---*/
-		if (config_container[iZone]->GetKind_Solver() == TNE2_EULER) config_container[iZone]->SetGlobalParam(TNE2_EULER, RUNTIME_TNE2_SYS, ExtIter);
-		if (config_container[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES) config_container[iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter);
+		if (config_container[iZone]->GetKind_Solver() == TNE2_EULER)
+      config_container[iZone]->SetGlobalParam(TNE2_EULER, RUNTIME_TNE2_SYS, ExtIter);
+		if (config_container[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
+      config_container[iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter);
     
 		/*--- Solve the inviscid or viscous two-temperature flow equations (one iteration) ---*/
 		integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container,

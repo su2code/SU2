@@ -1,7 +1,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.0.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -54,7 +54,7 @@ def projection( config, step = 1e-3 ):
             
         Outputs:
             info - SU2 State with keys:
-                GRADIENTS.<config.ADJ_OBJFUNC>
+                GRADIENTS.<config.OBJECTIVE_FUNCTION>
                 
         Updates:
             config.DECOMPOSED
@@ -81,7 +81,7 @@ def projection( config, step = 1e-3 ):
     konfig.unpack_dvs(dv_new,dv_old)
 
     # filenames
-    objective      = konfig['ADJ_OBJFUNC']    
+    objective      = konfig['OBJECTIVE_FUNCTION']
     grad_filename  = konfig['GRAD_OBJFUNC_FILENAME']
     output_format  = konfig['OUTPUT_FORMAT']
     plot_extension = su2io.get_extension(output_format)
