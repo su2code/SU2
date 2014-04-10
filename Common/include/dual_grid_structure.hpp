@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CDualGrid{
 protected:
@@ -122,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CPoint : public CDualGrid {
 private:
@@ -134,7 +134,8 @@ private:
 	double *Volume;	/*!< \brief Volume or Area of the control volume in 3D and 2D. */
 	bool Domain,		/*!< \brief Indicates if a point must be computed or belong to another boundary */
 	Boundary,       /*!< \brief To see if a point belong to the boundary (including MPI). */
-  PhysicalBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  PhysicalBoundary,			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  SolidBoundary;			/*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
 	long *vertex; /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
 	double *coord,	/*!< \brief vector with the coordinates of the node. */
 	*Coord_old,		/*!< \brief Old coordinates vector for geometry smoothing. */
@@ -394,11 +395,23 @@ public:
 	void SetPhysicalBoundary(bool val_boundary);
   
   /*!
+	 * \brief Set if a point belong to the boundary.
+	 * \param[in] val_boundary - <code>TRUE</code> if the point belong to the physical boundary; otherwise <code>FALSE</code>.
+	 */
+	void SetSolidBoundary(bool val_boundary);
+  
+  /*!
 	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */
 	bool GetPhysicalBoundary(void);
 	
+  /*!
+	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
+	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
+	 */
+	bool GetSolidBoundary(void);
+  
 	/*! 
 	 * \brief Set a color to the point that comes from the grid partitioning.
 	 * \note Each domain has a different color.
@@ -669,7 +682,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CEdge : public CDualGrid {
 private:
@@ -806,7 +819,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  */
 class CVertex : public CDualGrid {
 private:

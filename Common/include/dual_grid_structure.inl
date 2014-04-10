@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -67,6 +67,10 @@ inline void CPoint::SetBoundary(bool val_boundary) { Boundary = val_boundary; }
 inline void CPoint::SetPhysicalBoundary(bool val_boundary) { PhysicalBoundary = val_boundary; }
 
 inline bool CPoint::GetPhysicalBoundary(void) { return PhysicalBoundary; }
+
+inline void CPoint::SetSolidBoundary(bool val_boundary) { SolidBoundary = val_boundary; }
+
+inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
 
 inline void CPoint::AddVolume (double val_Volume) { Volume[0] += val_Volume; }
 

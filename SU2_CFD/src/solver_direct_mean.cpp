@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -79,7 +79,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   double Gas_Constant = config->GetGas_ConstantND();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool roe_turkel = ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND));
+  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   
   int rank = MASTER_NODE;
@@ -1894,26 +1894,24 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
 #endif
   
-  bool adjoint = config->GetAdjoint();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool upwind_2nd = ((config->GetKind_Upwind_Flow() == ROE_2ND)       ||
-                     (config->GetKind_Upwind_Flow() == AUSM_2ND)      ||
-                     (config->GetKind_Upwind_Flow() == HLLC_2ND)      ||
-                     (config->GetKind_Upwind_Flow() == MSW_2ND)      ||
-                     (config->GetKind_Upwind_Flow() == TURKEL_2ND)  );
-  bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst = center && (config->GetKind_Centered_Flow() == JST);
-  bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool adjoint        = config->GetAdjoint();
+  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool low_fidelity   = (config->GetLowFidelitySim() && (iMesh == MESH_1));
+  bool second_order   = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER));
+  bool limiter        = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
+  bool center         = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center_jst     = center && (config->GetKind_Centered_Flow() == JST);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool engine         = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
+  
   if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
   
   /*--- Compute distance function to zero level set (Set LevelSet and Distance primitive variables)---*/
+  
   if (freesurface) SetFreeSurface_Distance(geometry, config);
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -1921,18 +1919,21 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+5, (P,vx,vy,vz,rho,beta,LevelSet,Dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+    
     if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(config); }
     if (incompressible) { RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config); }
     if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
     if (!RightSol) ErrorCounter++;
     
     /*--- Initialize the residual vector (except for output of the residuals) ---*/
+    
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
   /*--- Upwind second order reconstruction ---*/
-  if ((upwind_2nd) && ((iMesh == MESH_0) || low_fidelity)) {
+  
+  if ((second_order) && ((iMesh == MESH_0) || low_fidelity)) {
     
     /*--- Gradient computation ---*/
     
@@ -1940,11 +1941,13 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimVar_Gradient_LS(geometry, config);
     
     /*--- Limiter computation ---*/
+    
     if ((limiter) && (iMesh == MESH_0)) SetPrimVar_Limiter(geometry, config);
     
   }
   
   /*--- Artificial dissipation ---*/
+  
   if (center) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
@@ -1954,6 +1957,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   }
   
   /*--- Initialize the jacobian matrices ---*/
+  
   if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
@@ -2187,7 +2191,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
   unsigned long iEdge, iPoint, jPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool high_order_diss = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
+  bool second_order = ((config->GetKind_Centered_Flow() == JST) && (iMesh == MESH_0));
   bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool grid_movement = config->GetGrid_Movement();
   
@@ -2209,7 +2213,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Set undivided laplacian an pressure based sensor ---*/
     
-    if ((high_order_diss || low_fidelity)) {
+    if ((second_order || low_fidelity)) {
       numerics->SetUndivided_Laplacian(node[iPoint]->GetUndivided_Laplacian(), node[jPoint]->GetUndivided_Laplacian());
       numerics->SetSensor(node[iPoint]->GetSensor(), node[jPoint]->GetSensor());
     }
@@ -2247,15 +2251,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool low_fidelity = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool high_order_diss = (((config->GetKind_Upwind_Flow() == ROE_2ND) || (config->GetKind_Upwind_Flow() == AUSM_2ND)
-                           || (config->GetKind_Upwind_Flow() == HLLC_2ND) || (config->GetKind_Upwind_Flow() == MSW_2ND) || (config->GetKind_Upwind_Flow() == TURKEL_2ND))
-                          && ((iMesh == MESH_0) || low_fidelity));
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool grid_movement = config->GetGrid_Movement();
-  bool limiter = ((config->GetKind_SlopeLimit_Flow() != NONE) && !low_fidelity);
-  bool roe_turkel = ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND));
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
+  bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && ((iMesh == MESH_0) || low_fidelity));
+  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
+  bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
+  bool grid_movement    = config->GetGrid_Movement();
+  bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -2284,7 +2286,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- High order reconstruction using MUSCL strategy ---*/
     
-    if (high_order_diss && !freesurface) {
+    if (second_order && !freesurface) {
       
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -2344,7 +2346,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- High order reconstruction using MUSCL strategy ---*/
       
-      if (high_order_diss) {
+      if (second_order) {
         
         for (iDim = 0; iDim < nDim; iDim++) {
           Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -3391,7 +3393,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   double Delta, *local_Res_TruncError, Vol;
   
   bool adjoint = config->GetAdjoint();
-  bool roe_turkel = ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND));
+  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   
   /*--- Set maximum residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -4684,8 +4686,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == TURKEL_1ST) ||
-          (config->GetKind_Upwind() == TURKEL_2ND))
+      if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
       
       /*--- Viscous residual contribution ---*/
@@ -4994,9 +4995,8 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
+      if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-      }
       
       /*--- Viscous contribution ---*/
       if (viscous) {
@@ -5237,9 +5237,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      if ((config->GetKind_Upwind() == TURKEL_1ST) || (config->GetKind_Upwind() == TURKEL_2ND)) {
+      if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-      }
       
       /*--- Viscous contribution ---*/
       if (viscous) {
@@ -6774,7 +6773,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
-  if ((config->GetKind_Upwind_Flow() == TURKEL_1ST) || (config->GetKind_Upwind_Flow() == TURKEL_2ND)) {
+  if (config->GetKind_Upwind_Flow() == TURKEL) {
     LowMach_Precontioner = new double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new double[nVar];
@@ -7197,8 +7196,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow = (config->GetKind_SlopeLimit_Flow() != NONE);
-  bool limiter_turb = (config->GetKind_SlopeLimit_Turb() != NONE);
+  bool limiter_flow = (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER);
+  bool limiter_turb = (config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);

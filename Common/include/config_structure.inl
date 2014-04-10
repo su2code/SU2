@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.0.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -137,6 +137,8 @@ inline double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 inline double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
 inline double CConfig::GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff) { return Blottner[val_Species][val_Coeff]; }
+
+inline double CConfig::GetPnormHeat(void) { return pnorm_heat; }
 
 inline double CConfig::GetWallTemperature(void) { return Wall_Temperature; }
 
@@ -408,6 +410,8 @@ inline double* CConfig::GetRotationModes() { return RotationModes; }
 
 inline double* CConfig::GetRefTemperature() { return Ref_Temperature; }
 
+inline double* CConfig::GetWall_Catalycity() { return Wall_Catalycity; }
+
 inline double* CConfig::GetMolar_Mass() { return Molar_Mass; } 
 
 inline double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
@@ -442,7 +446,7 @@ inline double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Err
 
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
-inline double CConfig::GetAdjTurb_CFLRedCoeff(void) { return AdjTurb_CFLRedCoeff; }
+inline double CConfig::GetCFLRedCoeff_AdjTurb(void) { return CFLRedCoeff_AdjTurb; }
 
 inline unsigned long CConfig::GetGridDef_Linear_Iter(void) { return GridDef_Linear_Iter; }
 
@@ -471,6 +475,20 @@ inline unsigned short CConfig::GetKind_SourNumScheme(void) { return Kind_SourNum
 inline unsigned short CConfig::GetKind_Centered(void) { return Kind_Centered; }
 
 inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
+
+inline unsigned short CConfig::GetSpatialOrder(void) { return SpatialOrder; }
+
+inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_Flow; }
+
+inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
+
+inline unsigned short CConfig::GetSpatialOrder_TNE2(void) { return SpatialOrder_TNE2; }
+
+inline unsigned short CConfig::GetSpatialOrder_AdjLevelSet(void) { return SpatialOrder_AdjLevelSet; }
+
+inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
+
+inline unsigned short CConfig::GetSpatialOrder_AdjTNE2(void) { return SpatialOrder_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
@@ -858,7 +876,7 @@ inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 
 inline double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
-inline double CConfig::GetTurb_CFLRedCoeff(void) { return Turb_CFLRedCoeff; }
+inline double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 
