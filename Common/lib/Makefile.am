@@ -34,6 +34,7 @@ libSU2_a_SOURCES = \
 		../include/vector_structure.inl \
 	        ../include/matrix_structure.hpp \
 	        ../include/matrix_structure.inl \
+	    ../include/su2mpi.hpp \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
@@ -42,7 +43,8 @@ libSU2_a_SOURCES = \
 		../src/linear_solvers_structure.cpp \
 		../src/primal_grid_structure.cpp \
 	        ../src/vector_structure.cpp \
-		../src/matrix_structure.cpp
+		../src/matrix_structure.cpp \
+		../src/su2mpi.cpp 
 
 libSU2_a_CXXFLAGS =
 libSU2_a_LIBADD =
