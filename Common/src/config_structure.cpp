@@ -55,19 +55,31 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 }
 
 CConfig::CConfig(char case_filename[200]) {
+  /*--- Initialize pointers to Null---*/
+  SetPointersNull();
+  
+  /*--- Reading config options  ---*/
+  SetConfig_Options(1, 1);
+  
+  /*--- Parsing the config file  ---*/
+  SetParsing(case_filename);
+  
+  
+  
+  /*
   string text_line, text2find, option_name, keyword;
   ifstream case_file;
   vector<string> option_value;
   
-  /*--- Mesh information ---*/
+  //--- Mesh information ---
   AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
   AddScalarOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   
-  /*--- Information about type of simulation and time-spectral instances ---*/
+  //--- Information about type of simulation and time-spectral instances ---
   AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
   AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
   
-  /*--- Read the configuration file ---*/
+  //--- Read the configuration file ---
   case_file.open(case_filename, ios::in);
   
   if (case_file.fail()) {
@@ -75,7 +87,7 @@ CConfig::CConfig(char case_filename[200]) {
     exit(1);
   }
   
-  /*--- Parse the configuration file and set the options ---*/
+  //--- Parse the configuration file and set the options ---
   while (getline (case_file,text_line)) {
     if (TokenizeString(text_line, option_name, option_value)) {
       map<string, CAnyOptionRef*>::iterator it;
@@ -87,7 +99,7 @@ CConfig::CConfig(char case_filename[200]) {
   }
   
   case_file.close();
-  
+  */
 }
 
 void CConfig::SetPointersNull(void){
@@ -168,6 +180,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   iZone = val_iZone;
   
   
+  
   /* BEGIN_CONFIG_OPTIONS */
   
   /*--- Options related to problem definition and partitioning ---*/
@@ -186,9 +199,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specify turbulence model */
   AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
   /* DESCRIPTION: Location of the turb model itself */
-  AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+ addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  
+  
   /* DESCRIPTION: what kind of input/output feature map is there */
-  AddScalarOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
+  addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
+
   /* DESCRIPTION: Specify transition model */
   AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
   
@@ -293,7 +309,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flow load boundary marker(s) */
   AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
-  AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
+  addDoubleOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
   AddMarkerOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
@@ -305,9 +321,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Kind of grid adaptation */
   AddEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, "NONE");
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  AddScalarOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
+  addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
   /* DESCRIPTION: Scale factor for the dual volume */
-  AddScalarOption("DUALVOL_POWER", DualVol_Power, 0.5);
+  addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
   /* DESCRIPTION: Use analytical definition for surfaces */
   AddEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, "NONE");
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
@@ -323,35 +339,35 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Unsteady simulation  */
   AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
-  AddScalarOption("CFL_NUMBER", CFLFineGrid, 1.25);
+  addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
   AddArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
-  AddScalarOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
+  addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-  AddScalarOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+  addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
-  AddScalarOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
+  addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
-  AddScalarOption("EXT_ITER", nExtIter, 999999);
+  addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
   // these options share nRKStep as their size, which is not a good idea in general
   /* DESCRIPTION: Runge-Kutta alpha coefficients */
   AddListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  AddScalarOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
+  addDoubleOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
-  AddScalarOption("UNST_TIME", Total_UnstTime, 1.0);
+  addDoubleOption("UNST_TIME", Total_UnstTime, 1.0);
   /* DESCRIPTION: Unsteady Courant-Friedrichs-Lewy number of the finest grid */
-  AddScalarOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
+  addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
-  AddScalarOption("UNST_INT_ITER", Unst_nIntIter, 100);
+  addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
   /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
-  AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
+  addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
-  AddScalarOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
+  addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
-  AddScalarOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
   /* DESCRIPTION: Time discretization */
   AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "EULER_IMPLICIT");
   /* DESCRIPTION: Time discretization */
@@ -385,25 +401,25 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
   AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "LU_SGS");
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  AddScalarOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
+  addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
-  AddScalarOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
-  AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
+  addDoubleOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
   AddSpecialOption("ROE_TURKEL_PREC", Low_Mach_Precon, SetBoolOption, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  AddScalarOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
+  addDoubleOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  AddScalarOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
+  addDoubleOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
   /* DESCRIPTION: Linear solver for the turbulent adjoint systems */
   AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "FGMRES");
   /* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
   AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "LU_SGS");
   /* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
-  AddScalarOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
+  addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
-  AddScalarOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
+  addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
   
   /*--- Options related to dynamic meshes ---*/
   /* CONFIG_CATEGORY: Dynamic mesh definition */
@@ -415,7 +431,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
-  AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
+  addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
   AddListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
@@ -467,11 +483,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   AddListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
-  AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
+  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
   /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
-  AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
+  addDoubleOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
   /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
-  AddScalarOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
+  addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
   
   /*--- Options related to wind gust simulations ---*/
   /* CONFIG_CATEGORY: Wind Gust */
@@ -481,15 +497,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of gust */
   AddEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, "NONE");
   /* DESCRIPTION: Gust wavelenght (meters) */
-  AddScalarOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
+  addDoubleOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
   /* DESCRIPTION: Number of gust periods */
-  AddScalarOption("GUST_PERIODS", Gust_Periods, 1.0);
+  addDoubleOption("GUST_PERIODS", Gust_Periods, 1.0);
   /* DESCRIPTION: Gust amplitude (m/s) */
-  AddScalarOption("GUST_AMPL", Gust_Ampl, 0.0);
+  addDoubleOption("GUST_AMPL", Gust_Ampl, 0.0);
   /* DESCRIPTION: Time at which to begin the gust (sec) */
-  AddScalarOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
+  addDoubleOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
   /* DESCRIPTION: Location at which the gust begins (meters) */
-  AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
+  addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
   AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "Y_DIR");
   
@@ -499,15 +515,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Convergence criteria */
   AddEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, "RESIDUAL");
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
-  AddScalarOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
+  addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
-  AddScalarOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
   /* DESCRIPTION: Iteration number to begin convergence monitoring */
-  AddScalarOption("STARTCONV_ITER", StartConv_Iter, 5);
+  addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
   /* DESCRIPTION: Number of elements to apply the criteria */
-  AddScalarOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
+  addUnsignedShortOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
   /* DESCRIPTION: Epsilon to control the series convergence */
-  AddScalarOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
+  addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /* DESCRIPTION: Flow functional for the Cauchy criteria */
   AddEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, "DRAG");
   /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
@@ -515,7 +531,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
   AddEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, "DELTA_DRAG");
   /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
-  AddScalarOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
+  addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
   
   /*--- Options related to Multi-grid ---*/
   /* CONFIG_CATEGORY: Multi-grid */
@@ -523,11 +539,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Full multi-grid  */
   AddSpecialOption("FULLMG", FullMG, SetBoolOption, false);
   /* DESCRIPTION: Start up iterations using the fine grid only */
-  AddScalarOption("START_UP_ITER", nStartUpIter, 0);
+  addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
-  AddScalarOption("MGLEVEL", nMultiLevel, 3);
+  addUnsignedShortOption("MGLEVEL", nMultiLevel, 3);
   /* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
-  AddScalarOption("MGCYCLE", MGCycle, 0);
+  addUnsignedShortOption("MGCYCLE", MGCycle, 0);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
   AddListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
   /* DESCRIPTION: Multi-grid post-smoothing level */
@@ -535,15 +551,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Jacobi implicit smoothing of the correction */
   AddListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
   /* DESCRIPTION: Damping factor for the residual restriction */
-  AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
+  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
   /* DESCRIPTION: Damping factor for the correction prolongation */
-  AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
+  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
   /* DESCRIPTION: CFL reduction factor on the coarse levels */
-  AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
+  addDoubleOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
   /* DESCRIPTION: Maximum number of children in the agglomeration stage */
-  AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
+  addUnsignedShortOption("MAX_CHILDREN", MaxChildren, 500);
   /* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
-  AddScalarOption("MAX_DIMENSION", MaxDimension, 0.1);
+  addDoubleOption("MAX_DIMENSION", MaxDimension, 0.1);
   
   /*--- Options related to the spatial discretization ---*/
   /* CONFIG_CATEGORY: Spatial Discretization */
@@ -551,9 +567,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Numerical method for spatial gradients */
   AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "WEIGHTED_LEAST_SQUARES");
   /* DESCRIPTION: Coefficient for the limiter */
-  AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
-  AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
+  addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
   /* DESCRIPTION: Convective numerical method */
   Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE;
@@ -684,7 +700,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Adjoint and Gradient */
   
   /* DESCRIPTION: Limit value for the adjoint variable */
-  AddScalarOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
+  addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /* DESCRIPTION: Adjoint problem boundary condition */
   AddEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, "DRAG");
   /* DESCRIPTION: Definition of the airfoil section */
@@ -693,13 +709,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Identify the axis of the section */
   AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  AddScalarOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   AddSpecialOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, SetBoolOption, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
   AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
+//  addStringOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION")
+  
   /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
-  AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
+  addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
   /* DESCRIPTION: Sensitivity smoothing  */
   AddEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, "NONE");
   /* DESCRIPTION: Continuous governing equation set  */
@@ -709,13 +727,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Adjoint frozen viscosity */
   AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
   /* DESCRIPTION:  */
-  AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
+  addDoubleOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
+  addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
   AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
   /* DESCRIPTION: P-norm for heat-flux based objective functions. */
-	AddScalarOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
+	addDoubleOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
   
   /*--- Options related to input/output files and formats ---*/
   /* CONFIG_CATEGORY: Input/output files and formats */
@@ -727,67 +745,73 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
   AddSpecialOption("CGNS_TO_SU2", CGNS_To_SU2, SetBoolOption, false);
   /* DESCRIPTION:  Mesh input file */
-  AddScalarOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  
+  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  
   /* DESCRIPTION: Factor for scaling the mesh */
-  AddScalarOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
+  addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
   /* DESCRIPTION: Write a new mesh converted to meters */
   AddSpecialOption("MESH_OUTPUT", Mesh_Output, SetBoolOption, false);
   /* DESCRIPTION: Mesh output file */
-  AddScalarOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  
+  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  
   /* DESCRIPTION: Output file convergence history (w/o extension) */
-  AddScalarOption("CONV_FILENAME", Conv_FileName, string("history"));
+  addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /* DESCRIPTION: Restart flow input file */
-  AddScalarOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
+  addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /* DESCRIPTION: Restart linear flow input file */
-  AddScalarOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
+  addStringOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
   /* DESCRIPTION: Restart adjoint input file */
-  AddScalarOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
   /* DESCRIPTION: Output file restart flow */
-  AddScalarOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
+  addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
   /* DESCRIPTION: Output file linear flow */
-  AddScalarOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
+  addStringOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
   /* DESCRIPTION: Output file restart adjoint */
-  AddScalarOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
+  addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
   /* DESCRIPTION: Output file restart wave */
-  AddScalarOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
+  addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
   /* DESCRIPTION: Output file flow (w/o extension) variables */
-  AddScalarOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
+  addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
   /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
+  addStringOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
   /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
+  addStringOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
   /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
+  addStringOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
   /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
+  addStringOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
   /* DESCRIPTION: Output file wave (w/o extension) variables */
-  AddScalarOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
+  addStringOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
   /* DESCRIPTION: Output file wave (w/o extension) variables */
-  AddScalarOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
+  addStringOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
   /* DESCRIPTION: Output file adj. wave (w/o extension) variables */
-  AddScalarOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
+  addStringOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
   /* DESCRIPTION: Output file adjoint (w/o extension) variables */
-  AddScalarOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
+  addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
   /* DESCRIPTION: Output file linear (w/o extension) variables */
-  AddScalarOption("VOLUME_LIN_FILENAME", Lin_FileName, string("linearized"));
+  addStringOption("VOLUME_LIN_FILENAME", Lin_FileName, string("linearized"));
   /* DESCRIPTION: Output objective function gradient */
-  AddScalarOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
+  addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
   /* DESCRIPTION: Output objective function */
-  AddScalarOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
+  addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
   /* DESCRIPTION: Output file surface flow coefficient (w/o extension) */
-  AddScalarOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
+  addStringOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
   /* DESCRIPTION: Output file surface adjoint coefficient (w/o extension) */
-  AddScalarOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
+  addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
   /* DESCRIPTION: Output file surface linear coefficient (w/o extension) */
-  AddScalarOption("SURFACE_LIN_FILENAME", SurfLinCoeff_FileName, string("surface_linear"));
+  addStringOption("SURFACE_LIN_FILENAME", SurfLinCoeff_FileName, string("surface_linear"));
   /* DESCRIPTION: Writing solution file frequency */
-  AddScalarOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
+  addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
   /* DESCRIPTION: Writing solution file frequency */
-  AddScalarOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
+  addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
   /* DESCRIPTION: Writing convergence history frequency */
-  AddScalarOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
+  addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
   /* DESCRIPTION: Writing convergence history frequency for the dual time */
-  AddScalarOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
+  addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
   /* DESCRIPTION: Write a volume solution file */
   AddSpecialOption("WRT_VOL_SOL", Wrt_Vol_Sol, SetBoolOption, true);
   /* DESCRIPTION: Write a surface solution file */
@@ -816,48 +840,48 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Freestream Conditions */
   
   /* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
-  AddScalarOption("GAS_CONSTANT", Gas_Constant, 287.87);
+  addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.87);
   /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
-  AddScalarOption("GAMMA_VALUE", Gamma, 1.4);
+  addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
-  AddScalarOption("REYNOLDS_NUMBER", Reynolds, 0.0);
+  addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
   /* DESCRIPTION: Reynolds length (1 m by default) */
-  AddScalarOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
+  addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
-  AddScalarOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
-  AddScalarOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /* DESCRIPTION: Value of the Bulk Modulus  */
-  AddScalarOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
+  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
   /* DESCRIPTION: Artifical compressibility factor  */
-  AddScalarOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
+  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
-  AddScalarOption("MACH_NUMBER", Mach, 0.0);
+  addDoubleOption("MACH_NUMBER", Mach, 0.0);
   //	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
   /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
-  AddScalarOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
+  addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
   /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
-  AddScalarOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
+  addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-  AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
+  addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
   /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
-  AddScalarOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
   /* DESCRIPTION: Free-stream velocity (m/s) */
   AddArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
-  AddScalarOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
+  addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
+  addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
+  addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
-  AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
+  addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
   /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
-  AddScalarOption("AOA", AoA, 0.0);
+  addDoubleOption("AOA", AoA, 0.0);
   
   /*--- Options related to reference values for nondimensionalization ---*/
   /* CONFIG_CATEGORY: Reference Conditions */
@@ -871,23 +895,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Z Reference origin for moment computation */
   AddListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
-  AddScalarOption("REF_AREA", RefAreaCoeff, 1.0);
+  addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
   /* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
-  AddScalarOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
+  addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
   /* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
-  AddScalarOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
+  addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /* DESCRIPTION: Reference coefficient for detecting sharp edges */
-	AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
+  addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
 	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
-	AddScalarOption("REF_PRESSURE", Pressure_Ref, 1.0);
+  addDoubleOption("REF_PRESSURE", Pressure_Ref, 1.0);
 	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
-	AddScalarOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
+  addDoubleOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
 	/* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
-	AddScalarOption("REF_DENSITY", Density_Ref, 1.0);
+  addDoubleOption("REF_DENSITY", Density_Ref, 1.0);
 	/* DESCRIPTION: Reference velocity (incompressible only) */
-	AddScalarOption("REF_VELOCITY", Velocity_Ref, -1.0);
+  addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
 	/* DESCRIPTION: Reference viscosity (incompressible only) */
-	AddScalarOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
+  addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   
 	/*--- Options related to the reacting gas mixtures ---*/
 	/* CONFIG_CATEGORY: Reacting Flow */
@@ -901,21 +925,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* CONFIG_CATEGORY: Free surface simulation */
   
 	/* DESCRIPTION: Ratio of density for two phase problems */
-	AddScalarOption("RATIO_DENSITY", RatioDensity, 0.1);
+  addDoubleOption("RATIO_DENSITY", RatioDensity, 0.1);
 	/* DESCRIPTION: Ratio of viscosity for two phase problems */
-	AddScalarOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
+  addDoubleOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
 	/* DESCRIPTION: Location of the freesurface (y or z coordinate) */
-	AddScalarOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
+  addDoubleOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
 	/* DESCRIPTION: Free surface depth surface (x or y coordinate) */
-	AddScalarOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
+  addDoubleOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
 	/* DESCRIPTION: Thickness of the interface in a free surface problem */
-	AddScalarOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
+  addDoubleOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
 	/* DESCRIPTION: Free surface damping coefficient */
-	AddScalarOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
+  addDoubleOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
 	/* DESCRIPTION: Free surface damping length (times the baseline wave) */
-	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
+  addDoubleOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
-	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
+  addDoubleOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
   
 	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
@@ -958,48 +982,48 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
-  AddScalarOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
+  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  AddScalarOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
+  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
-  AddScalarOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
   AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
   
   /*--- option related to rotorcraft problems ---*/
   /* CONFIG_CATEGORY: Rotorcraft problem */
   
-  AddScalarOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
-  AddScalarOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
+  addDoubleOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
+  addDoubleOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
   
   
   /*--- Options related to the FEA solver ---*/
   /* CONFIG_CATEGORY: FEA solver */
   
   /* DESCRIPTION: Modulus of elasticity */
-  AddScalarOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
+  addDoubleOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
   /* DESCRIPTION: Poisson ratio */
-  AddScalarOption("POISSON_RATIO", PoissonRatio, 0.30);
+  addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
-  AddScalarOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
   
   /*--- options related to the wave solver ---*/
   /* CONFIG_CATEGORY: Wave solver */
   
   /* DESCRIPTION: Constant wave speed */
-  AddScalarOption("WAVE_SPEED", Wave_Speed, 331.79);
+  addDoubleOption("WAVE_SPEED", Wave_Speed, 331.79);
   
   /*--- options related to the heat solver ---*/
   /* CONFIG_CATEGORY: Heat solver */
   
   /* DESCRIPTION: Thermal diffusivity constant */
-  AddScalarOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
+  addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
   
   /*--- options related to visualizing control volumes ---*/
   /* CONFIG_CATEGORY: Visualize Control Volumes */
   
   /* DESCRIPTION: Node number for the CV to be visualized */
-  AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
+  addLongOption("VISUALIZE_CV", Visualize_CV, -1);
   
   /*--- options related to inverse design problem ---*/
   /* CONFIG_CATEGORY:Inverse design problem */
@@ -1036,9 +1060,111 @@ void CConfig::SetParsing(char case_filename[200]) {
     exit(1);
   }
   
+  string errorString;
+  int  err_count = 0;  // How many errors have we found in the config file
+  int max_err_count = 30; // Maximum number of errors to print before stopping
+
+  map<string,bool> included_options;
+  
   /*--- Parse the configuration file and set the options ---*/
   while (getline (case_file,text_line)) {
+    if (err_count >= max_err_count){
+      errorString.append("too many errors. Stopping parse");
+
+      SU2MPI::PrintAndFinalize(errorString);
+    }
     if (TokenizeString(text_line, option_name, option_value)) {
+      
+      if (param_to_kind.find(option_name) == param_to_kind.end()){
+        string newString;
+        newString.append(option_name);
+        newString.append(": invalid option name");
+        newString.append("\n");
+        errorString.append(newString);
+        err_count++;
+        continue;
+      }
+      
+      // Option exists, check if the option has already been in the config file
+      if (included_options.find(option_name) != included_options.end()){
+        string newString;
+        newString.append(option_name);
+        newString.append(": option appears twice");
+        newString.append("\n");
+        errorString.append(newString);
+        err_count++;
+        continue;
+      }
+      
+      // New found option. Add it to the map, and delete from all options
+      included_options.insert(pair<string,bool>(option_name, true));
+      all_options.erase(option_name);
+      
+      // Get the kind of option
+      OptionKind kind = param_to_kind[option_name];
+
+      
+      bool isErr = false;
+      // Add switch
+      switch (kind){
+        default:
+          cout << "bad option kind for " << option_name << endl;
+          throw(1);
+        case NoOption:
+          cout << "somehow no option is set for: " << option_name << endl;
+          throw(1);
+        case DoubleOption:
+        {
+          // Check that there is just a double in the option
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for DoubleOption");
+            errorString.append(newString);
+            isErr = true;
+            err_count++;
+            break;
+          }
+          // Parse the string and set it to the config location
+          double val = parseDoubleOption(option_value[0]);
+          double & doubleRef = double_fields[option_name];
+          doubleRef = val;
+          break;
+        }
+        case IntOption:
+        {
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for IntOption");
+            errorString.append(newString);
+            isErr = true;
+            err_count++;
+            break;
+          }
+          int val = parseIntOption(option_value[0]);
+          int & ref = int_fields[option_name];
+          ref = val;
+          break;
+        }
+        case StringOption:
+        {
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for StringOption");
+            errorString.append(newString);
+            isErr = true;
+            err_count++;
+            break;
+          }
+          string & strRef = string_fields[option_name];
+          strRef.assign(option_value[0]);
+          break;
+        }
+      }
+      
+      /*
       map<string, CAnyOptionRef*>::iterator it;
       it = param.find(option_name);
       if (it != param.end()) {
@@ -1047,12 +1173,60 @@ void CConfig::SetParsing(char case_filename[200]) {
         if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
           cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
       }
+       */
+       
+    }
+  }
+  
+  // See if there were any errors parsing the config file
+  if (errorString.size() != 0){
+    SU2MPI::PrintAndFinalize(errorString);
+  }
+  
+  // Set the default values for all of the options that weren't set
+  for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
+    OptionKind kind = param_to_kind[iter->first];
+    switch (kind) {
+      default:
+        cout << "bad kind" << endl;
+        throw(1);
+        break;
+      case NoOption:
+        cout << "Should not have no option" << endl;
+        throw(1);
+      case DoubleOption:
+      {
+          double & doubleRef = double_fields[iter->first];
+          doubleRef = double_defaults[iter->first];
+      }
+      case StringOption:
+      {
+        string & strRef = string_fields[iter->first];
+        string def = string_defaults[iter->first];
+        strRef.assign(def);
+      }
+      case IntOption:
+        int & ref = int_fields[iter->first];
+        int def = int_defaults[iter->first];
+        ref = def;
     }
   }
   
   case_file.close();
-  
 }
+
+double CConfig::parseDoubleOption(string value){
+  double val = 0;
+  val = stod(value); // Convert the string to a double
+  return val;
+}
+
+int CConfig::parseIntOption(string value){
+  int val = 0;
+  val = stoi(value); // Convert the string to a double
+  return val;
+}
+
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim) {
   
@@ -1836,7 +2010,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
-    cout << "You must define a solver type!!" << endl;
+    cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
     exit(1);
   }
   
