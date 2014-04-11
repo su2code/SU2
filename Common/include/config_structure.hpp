@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include "./su2mpi.hpp"
+
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
@@ -38,8 +40,11 @@
 #include <stdlib.h> 
 #include <cmath>
 #include <map>
+#include <assert.h>
 
 #include "./option_structure.hpp"
+
+
 
 using namespace std;
 
@@ -644,6 +649,99 @@ private:
   bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
+  
+  /*!<brief param_to_kind associates the config file name with the type of variable>*/
+  map<string, OptionKind> param_to_kind;
+  
+  /*!<brief list of all of the options. This is used to keep track of the 
+   options not set so the default values can be used>*/
+  map<string, bool> all_options;
+  
+  
+  // List of maps for referencing
+  map<string, double&> double_fields;  /*!<\brief option list associated with config parameters which are doubles*/
+  map<string, double> double_defaults;    /*!<\brief option list associated with config parameters which are doubles*/
+  map<string, string&> string_fields;   /*!<\brief option list associated with config parameters which are strings*/
+  map<string, string> string_defaults;  /*!<\brief double_defaults associates string parameters with their default values*/
+  map<string, int&> int_fields;
+  map<string, int> int_defaults;
+  map<string, unsigned long&> ulong_fields;
+  map<string, unsigned long> ulong_defaults;
+  map<string, unsigned short&> ushort_fields;
+  map<string, unsigned short> ushort_defaults;
+  map<string, long&> long_fields;
+  map<string, long> long_defaults;
+  
+  
+  /*!<\brief addDoubleOption adds a option represented by a double so that it will be parsed during
+   config parsing. name is the variable name in the config file (e.g. PHYSICAL_PROBLEM), option is a
+   pointer to the location in the Config struct, and default_value is the value the option will take 
+   if it is not present in the config file
+   */
+  void addDoubleOption(const string name, double & option_field, double default_value){
+    // Check if the key is already in the map. If this fails, it is coder error
+    // and not user error, so throw
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    
+    // Add the option to the list of all of the options
+    param_to_kind.insert(pair<string, OptionKind>(name, DoubleOption));
+    
+    // Add the option to the second list of all options. This map is temporary and will have
+    // keys deleted from it as options are read in from the config. This is to ensure no
+    // key is present more than once
+    all_options.insert(pair<string,bool>(name,true));
+
+    // Add the pointer location to reference while parsing.
+    double_fields.insert(pair<string,double &>(name, option_field));
+    
+    // Store the default value
+    double_defaults.insert(pair<string, double>(name, default_value));
+  }
+  
+  /*<\brief addStringOption: see addDoubleOption, but with type change */
+  void addStringOption(const string name, string & option_field, string default_value){
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    all_options.insert(pair<string,bool>(name,true));
+    param_to_kind.insert(pair<string, OptionKind>(name, StringOption));
+    string_fields.insert(pair<string,string &>(name, option_field));
+    string_defaults.insert(pair<string, string>(name, default_value));
+  }
+
+    /*<\brief addStringOption: see addIntegerOption, but with type change */
+  void addIntegerOption(const string name, int & option_field, int default_value){
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    all_options.insert(pair<string,bool>(name,true));
+    param_to_kind.insert(pair<string, OptionKind>(name, IntOption));
+    int_fields.insert(pair<string,int &>(name, option_field));
+    int_defaults.insert(pair<string, int>(name, default_value));
+  }
+  
+  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    all_options.insert(pair<string,bool>(name,true));
+    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
+    ulong_fields.insert(pair<string,unsigned long &>(name, option_field));
+    ulong_defaults.insert(pair<string, unsigned long>(name, default_value));
+  }
+  
+  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    all_options.insert(pair<string,bool>(name,true));
+    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
+    ushort_fields.insert(pair<string,unsigned short &>(name, option_field));
+    ushort_defaults.insert(pair<string, unsigned short>(name, default_value));
+  }
+  
+  void addLongOption(const string name, long & option_field, long default_value){
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    all_options.insert(pair<string,bool>(name,true));
+    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
+    long_fields.insert(pair<string,long &>(name, option_field));
+    long_defaults.insert(pair<string,long>(name, default_value));
+  }
+  
+  double parseDoubleOption(string);
+  int parseIntOption(string);
 
 public:
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
@@ -676,6 +774,7 @@ public:
 	 * \param[in] default_value - option is set to default_value
 	 * \tparam T - an arbitary type (int, double, enum, etc)
 	 */
+  /*
 	template <class T, class T_default>
 	void AddScalarOption(const string & name, T & option, const T_default & default_value) {
 		//cout << "Adding Scalar option " << name << endl;
@@ -683,6 +782,7 @@ public:
 		CAnyOptionRef* option_ref = new COptionRef<T>(option);
 		param.insert( pair<string, CAnyOptionRef*>(string(name), option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add an enum-based option to the param map and set its default value

@@ -36,6 +36,16 @@
 
 using namespace std;
 
+/*! \brief OptionKind represents the type of option it is*/
+enum OptionKind {
+  NoOption = 0,
+  DoubleOption = 1, /*! \brief represented by a double */
+  StringOption = 2, /*! \brief represented by a string */
+  IntOption = 3, /*! \brief represented by a string */
+  UnsignedLongOption = 4,
+  UnsignedShortOption = 5,
+};
+
 /*!
  * \class CCreateMap
  * \brief creates a map from a list by overloading operator()
