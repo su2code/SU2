@@ -100,6 +100,9 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name);
   
+  cout << "Past first constructor" << endl;
+  cout << config->GetKind_Solver() << endl;
+  
   /*--- Get the number of zones and dimensions from the numerical grid
    (required for variables allocation) ---*/
   
@@ -132,14 +135,17 @@ int main(int argc, char *argv[]) {
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
   
+  cout << "Before zone for loop" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     
+    cout << "In zone loop" << endl;
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
+    cout << "After config read" << endl;
 #ifndef NO_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
     config_container[iZone]->SetFileNameDomain(rank+1);
