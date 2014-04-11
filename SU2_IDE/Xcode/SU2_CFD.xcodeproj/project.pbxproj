@@ -75,6 +75,7 @@
 		05E6DC4317EB62A100FA1F7E /* variable_linearized_turbulent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DBFE17EB62A100FA1F7E /* variable_linearized_turbulent.cpp */; };
 		05E6DC4417EB62A100FA1F7E /* variable_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DBFF17EB62A100FA1F7E /* variable_structure.cpp */; };
 		05E6DC4517EB62A100FA1F7E /* variable_template.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC0017EB62A100FA1F7E /* variable_template.cpp */; };
+		C6B325C118F7B9DE00C0E798 /* su2mpi.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -193,6 +194,8 @@
 		05E6DBFE17EB62A100FA1F7E /* variable_linearized_turbulent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_linearized_turbulent.cpp; path = ../../SU2_CFD/src/variable_linearized_turbulent.cpp; sourceTree = "<group>"; };
 		05E6DBFF17EB62A100FA1F7E /* variable_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_structure.cpp; path = ../../SU2_CFD/src/variable_structure.cpp; sourceTree = "<group>"; };
 		05E6DC0017EB62A100FA1F7E /* variable_template.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_template.cpp; path = ../../SU2_CFD/src/variable_template.cpp; sourceTree = "<group>"; };
+		C6B325BF18F7832900C0E798 /* su2mpi.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = su2mpi.hpp; path = ../../Common/include/su2mpi.hpp; sourceTree = "<group>"; };
+		C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = su2mpi.cpp; path = ../../Common/src/su2mpi.cpp; sourceTree = "<group>"; };
 		E97B6C8117F941800008255B /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -320,8 +323,10 @@
 			isa = PBXGroup;
 			children = (
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
+				05E6DAC517EB608000FA1F7E /* config_structure.hpp */,
 				05E6DBB417EB627400FA1F7E /* definition_structure.hpp */,
 				05E6DBB517EB627400FA1F7E /* integration_structure.hpp */,
+				C6B325BF18F7832900C0E798 /* su2mpi.hpp */,
 				05E6DBB617EB627400FA1F7E /* iteration_structure.hpp */,
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
 				05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */,
@@ -329,7 +334,6 @@
 				05E6DBB817EB627400FA1F7E /* output_structure.hpp */,
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBB17EB627400FA1F7E /* variable_structure.hpp */,
-				05E6DAC517EB608000FA1F7E /* config_structure.hpp */,
 				05E6DAC617EB608000FA1F7E /* dual_grid_structure.hpp */,
 				05E6DAC717EB608000FA1F7E /* geometry_structure.hpp */,
 				05E6DAC817EB608000FA1F7E /* grid_adaptation_structure.hpp */,
@@ -385,6 +389,7 @@
 			children = (
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
+				C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
 				0530E57417FDF9CC00733CE8 /* LinearSolver */,
@@ -474,6 +479,7 @@
 				05E6DC0317EB62A100FA1F7E /* integration_structure.cpp in Sources */,
 				05E6DC0417EB62A100FA1F7E /* integration_time.cpp in Sources */,
 				0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */,
+				C6B325C118F7B9DE00C0E798 /* su2mpi.cpp in Sources */,
 				05E6DC0517EB62A100FA1F7E /* iteration_structure.cpp in Sources */,
 				05E6DC0717EB62A100FA1F7E /* numerics_adjoint_levelset.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
