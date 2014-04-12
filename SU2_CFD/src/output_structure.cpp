@@ -5491,7 +5491,6 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   Stag_Pressure, Mach,Temperature,Pressure,
   SumPressure = 0, SumArea = 0, SumMach = 0, SumTemperature = 0,
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0;
-  string Marker_Tag, Monitoring_Tag;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
