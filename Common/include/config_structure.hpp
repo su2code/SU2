@@ -794,16 +794,12 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  /*
-  template <class T>
-	void AddListOption(const string & name, unsigned short & size, T* & option,
-                     const bool & update = false) {
-		//cout << "Adding List option " << name << endl;
-		if (update && option != NULL) delete [] option;
-		CAnyOptionRef* option_ref = new CListOptionRef<T>(size, option);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-   */
+  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
   
   double parseDoubleOption(string);
   int parseIntOption(string);
@@ -989,8 +985,7 @@ public:
 	 * \param[in] centered - the centered spatial discretization type of name
 	 * \param[in] upwind - the upwind spatial discretization type of name
 	 */
-	void AddConvectOption(const string & name, unsigned short & space, unsigned short & centered,
-			unsigned short & upwind);
+//	void AddConvectOption(const string & name, unsigned short & space, unsigned short & centered, unsigned short & upwind);
 
 	/*!
 	 * \brief adds the math problem option to the param map
