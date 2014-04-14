@@ -1688,7 +1688,7 @@ else
     # The nsl library prevents programs from opening the X display
     # on Irix 5.2, according to T.E. Dickey.
     # The functions gethostbyname, getservbyname, and inet_addr are
-    # in -lbsd on LynxOS 3.0.1/i386, according to Lars Hecking.
+    # in -lbsd on LynxOS 3.1.0/i386, according to Lars Hecking.
     AC_CHECK_FUNC(gethostbyname)
     if test $ac_cv_func_gethostbyname = no; then
       AC_CHECK_LIB(nsl, gethostbyname, X_EXTRA_LIBS="$X_EXTRA_LIBS -lnsl")
