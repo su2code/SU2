@@ -211,13 +211,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Axisymmetric simulation */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
-  AddSpecialOption("GRAVITY_FORCE", GravityForce, SetBoolOption, false);
+  addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Perform a low fidelity simulation */
-  AddSpecialOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, SetBoolOption, false);
+  addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /* DESCRIPTION: Restart solution from native solution file */
-  AddSpecialOption("RESTART_SOL", Restart, SetBoolOption, false);
+  addBoolOption("RESTART_SOL", Restart, false);
   /* DESCRIPTION: Write a tecplot file for each partition */
-  AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
+  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   
   /*--- Options related to various boundary markers ---*/
   /* CONFIG_CATEGORY: Boundary Markers */
@@ -298,7 +298,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: ( nacelle inflow marker, fan face Mach, ... ) */
   AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
   /* DESCRIPTION: Engine subsonic intake region */
-  AddSpecialOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, SetBoolOption, false);
+  addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
@@ -327,11 +327,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Use analytical definition for surfaces */
   addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
-  AddSpecialOption("SMOOTH_GEOMETRY", SmoothNumGrid, SetBoolOption, false);
+  addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
   /* DESCRIPTION: Adapt the boundary elements */
-  AddSpecialOption("ADAPT_BOUNDARY", AdaptBoundary, SetBoolOption, true);
+  addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
   /* DESCRIPTION: Divide rectangles into triangles */
-  AddSpecialOption("DIVIDE_ELEMENTS", Divide_Element, SetBoolOption, false);
+  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
   
   /*--- Options related to time-marching ---*/
   /* CONFIG_CATEGORY: Time-marching */
@@ -407,7 +407,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
-  AddSpecialOption("ROE_TURKEL_PREC", Low_Mach_Precon, SetBoolOption, false);
+  addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -425,7 +425,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   
   /* DESCRIPTION: Mesh motion for unsteady simulations */
-  AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
+  addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
   /* DESCRIPTION: Type of mesh motion */
   addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
@@ -493,7 +493,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Wind Gust */
   
   /* DESCRIPTION: Apply a wind gust */
-  AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
+  addBoolOption("WIND_GUST", Wind_Gust, false);
   /* DESCRIPTION: Type of gust */
   addEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, NO_GUST);
   /* DESCRIPTION: Gust wavelenght (meters) */
@@ -537,7 +537,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Multi-grid */
   
   /* DESCRIPTION: Full multi-grid  */
-  AddSpecialOption("FULLMG", FullMG, SetBoolOption, false);
+  addBoolOption("FULLMG", FullMG, false);
   /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
@@ -711,7 +711,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
   addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
   /* DESCRIPTION: Output sectional forces for specified markers. */
-  AddSpecialOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, SetBoolOption, false);
+  addBoolOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
   addEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, FUNCTION);
   
@@ -724,13 +724,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Discrete governing equation set */
   addEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, NONE_EQNS);
   /* DESCRIPTION: Adjoint frozen viscosity */
-  AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
+  addBoolOption("FROZEN_VISC", Frozen_Visc, true);
   /* DESCRIPTION:  */
   addDoubleOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
   /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
-  AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
+  addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
   /* DESCRIPTION: P-norm for heat-flux based objective functions. */
 	addDoubleOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
   
@@ -742,14 +742,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Mesh input file format */
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
-  AddSpecialOption("CGNS_TO_SU2", CGNS_To_SU2, SetBoolOption, false);
+  addBoolOption("CGNS_TO_SU2", CGNS_To_SU2, false);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   
   /* DESCRIPTION: Factor for scaling the mesh */
   addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
   /* DESCRIPTION: Write a new mesh converted to meters */
-  AddSpecialOption("MESH_OUTPUT", Mesh_Output, SetBoolOption, false);
+  addBoolOption("MESH_OUTPUT", Mesh_Output, false);
   /* DESCRIPTION: Mesh output file */
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
   
@@ -808,25 +808,25 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Writing convergence history frequency for the dual time */
   addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
   /* DESCRIPTION: Write a volume solution file */
-  AddSpecialOption("WRT_VOL_SOL", Wrt_Vol_Sol, SetBoolOption, true);
+  addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
   /* DESCRIPTION: Write a surface solution file */
-  AddSpecialOption("WRT_SRF_SOL", Wrt_Srf_Sol, SetBoolOption, true);
+  addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
   /* DESCRIPTION: Write a surface CSV solution file */
-  AddSpecialOption("WRT_CSV_SOL", Wrt_Csv_Sol, SetBoolOption, true);
+  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
   /* DESCRIPTION: Write a restart solution file */
-  AddSpecialOption("WRT_RESTART", Wrt_Restart, SetBoolOption, true);
+  addBoolOption("WRT_RESTART", Wrt_Restart, true);
   /* DESCRIPTION: Output residual info to solution/restart file */
-  AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
+  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
-  AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
+  addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
-  AddSpecialOption("WRT_1D_OUTPUT", Wrt_1D_Output, SetBoolOption, false);
+  addBoolOption("WRT_1D_OUTPUT", Wrt_1D_Output, false);
   
   /*--- Options related to the equivalent area ---*/
   /* CONFIG_CATEGORY: Equivalent Area */
   
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
-  AddSpecialOption("EQUIV_AREA", EquivArea, SetBoolOption, false);
+  addBoolOption("EQUIV_AREA", EquivArea, false);
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
@@ -967,15 +967,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
 	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
-	AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
+  addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
 	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
-	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
+  addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
@@ -1024,10 +1024,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY:Inverse design problem */
 
   /* DESCRIPTION: Evaluate inverse design on the surface  */
-  AddSpecialOption("INV_DESIGN_CP", InvDesign_Cp, SetBoolOption, false);
+  addBoolOption("INV_DESIGN_CP", InvDesign_Cp, false);
   
   /* DESCRIPTION: Evaluate inverse design on the surface  */
-  AddSpecialOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, SetBoolOption, false);
+  addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
   
   /* END_CONFIG_OPTIONS */
   
@@ -4716,6 +4716,7 @@ void CConfig::AddMarkerFlowLoad(const string & name, unsigned short & nMarker_Fl
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
+/*
 void CConfig::SetBoolOption(bool* ref, const vector<string> & value) {
   if ( (value[0] != "YES") && (value[0] != "NO") ) {
     cerr << "Error in CConfig::SetBoolOption(): "
@@ -4729,6 +4730,7 @@ void CConfig::SetBoolOption(bool* ref, const vector<string> & value) {
     *ref = false;
   }
 }
+ */
 
 bool CConfig::TokenizeString(string & str, string & option_name,
                              vector<string> & option_value) {

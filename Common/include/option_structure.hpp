@@ -543,6 +543,42 @@ public:
   }
 };
 
+/*
+class COptionStringList : public COptionBase{
+  string * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionStringList(string option_field_name, unsigned short & list_size, string * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionStringList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    string * vals = new string[option_size];
+    for(int i  = 0; i < option_size; i++){
+      vals[i].assign(option_value[i]);
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+ */
+
 /*!
  * \class CCreateMap
  * \brief creates a map from a list by overloading operator()

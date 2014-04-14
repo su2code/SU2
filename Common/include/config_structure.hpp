@@ -962,6 +962,7 @@ public:
 	 * \param[in] default_value - option is set to default_value
 	 * \tparam T - an arbitrary type (int, double, bool, enum, etc)
 	 */
+  /*
 	template <class T>
 	void AddSpecialOption(const string & name, T & option,
 			void (*set_value)(T*, const vector<string>&),
@@ -971,6 +972,7 @@ public:
 		CAnyOptionRef* option_ref = new COptionRef<T>(option, set_value);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add a marker-type option to the param map
@@ -1110,7 +1112,7 @@ public:
 	 * \param[in] ref - a pointer to the boolean value being assigned
 	 * \param[in] value - value[0] is "YES" or "NO" and determines the value of ref
 	 */
-	static void SetBoolOption(bool* ref, const vector<string> & value);
+//	static void SetBoolOption(bool* ref, const vector<string> & value);
 
 	/*!
 	 * \brief breaks an input line from the config file into a set of tokens
