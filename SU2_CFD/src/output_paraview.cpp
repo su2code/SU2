@@ -330,21 +330,33 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
      variables with the appropriate string tags stored in the config class. ---*/
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       
-      Paraview_File << "\nSCALARS " << config->fields[iField] << " float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
+      double output_variable = true;
+      size_t found = config->fields[iField].find("\"x\"");
+      if (found!=string::npos) output_variable = false;
+      found = config->fields[iField].find("\"y\"");
+      if (found!=string::npos) output_variable = false;
+      found = config->fields[iField].find("\"z\"");
+      if (found!=string::npos) output_variable = false;
       
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (surf_sol) {
-          if (LocalIndex[iPoint+1] != 0) {
+      if (output_variable)  {
+        Paraview_File << "\nSCALARS " << config->fields[iField] << " float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+        
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (surf_sol) {
+            if (LocalIndex[iPoint+1] != 0) {
+              /*--- Loop over the vars/residuals and write the values to file ---*/
+              Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+            }
+          } else {
             /*--- Loop over the vars/residuals and write the values to file ---*/
             Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
           }
-        } else {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
         }
       }
+      
       VarCounter++;
+
       
     }
     
