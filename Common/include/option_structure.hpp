@@ -66,7 +66,6 @@ public:
       newString.append(option_name);
       newString.append(": multiple values for type ");
       newString.append(type_id);
-      newString.append("\n");
       return newString;
     }
     return "";
@@ -303,6 +302,38 @@ public:
   }
 };
 
+
+class COptionBool : public COptionBase{
+  bool & field; // Reference to the feildname
+  bool def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionBool(string option_field_name, bool & option_field, bool default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionBool(){};
+  string SetValue(vector<string> option_value){
+    // check if there is more than one value
+    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    if (option_value[0].compare("YES") == 0){
+      this->field = true;
+    }
+    if (option_value[0].compare("NO") == 0){
+      this->field = false;
+    }
+    return badValue(option_value, "bool", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
 template <class Tenum>
 class COptionEnumList : public COptionBase{
   
@@ -362,11 +393,15 @@ public:
     if (option_value.size() != this->size){
       string newstring;
       newstring.append(this->name);
-      newstring.append(": wrong number of arguments ");
+      newstring.append(": wrong number of arguments: ");
       stringstream ss;
       ss << this->size;
       newstring.append(ss.str());
-      newstring.append(" expected");
+      newstring.append(" expected, ");
+      stringstream ss2;
+      ss2 << option_value.size();
+      newstring.append(ss2.str());
+      newstring.append(" found");
       return newstring;
     }
     double * vals = new double[this->size];
@@ -388,6 +423,123 @@ public:
   }
 };
 
+class COptionDoubleList : public COptionBase{
+  double * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionDoubleList(string option_field_name, unsigned short & list_size, double * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionDoubleList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      // No options
+      this->size = 0;
+      return "";
+    }
+    
+    this->size = option_size;
+    
+    // Parse all of the options
+    double * vals = new double[option_size];
+    for(int i  = 0; i < option_size; i++){
+      istringstream is(option_value[i]);
+      double val;
+      if (!(is >> val)){
+        delete [] vals;
+        return badValue(option_value, "double list", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionUShortList : public COptionBase{
+  unsigned short * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionUShortList(string option_field_name, unsigned short & list_size, unsigned short * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionUShortList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      // No options
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    unsigned short * vals = new unsigned short[option_size];
+    for(int i  = 0; i < option_size; i++){
+      istringstream is(option_value[i]);
+      unsigned short val;
+      if (!(is >> val)){
+        delete [] vals;
+        return badValue(option_value, "unsigned short", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionStringList : public COptionBase{
+  string * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionStringList(string option_field_name, unsigned short & list_size, string * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionStringList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    string * vals = new string[option_size];
+    for(int i  = 0; i < option_size; i++){
+      vals[i].assign(option_value[i]);
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
 
 /*!
  * \class CCreateMap

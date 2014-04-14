@@ -223,35 +223,35 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Boundary Markers */
   
   /* DESCRIPTION: Marker(s) of the surface in the surface flow solution file */
-  AddMarkerOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
+  addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /* DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients */
-  AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+  addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
-  AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
+  addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
   /* DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
-  AddMarkerOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
+  addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
   /* DESCRIPTION: Euler wall boundary marker(s) */
-  AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
+  addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
   /* DESCRIPTION: Far-field boundary marker(s) */
-  AddMarkerOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
+  addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
   /* DESCRIPTION: Symmetry boundary condition */
-  AddMarkerOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
+  addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
   /* DESCRIPTION: Symmetry boundary condition */
-  AddMarkerOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
+  addStringListOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
   /* DESCRIPTION: Near-Field boundary condition */
-  AddMarkerOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
+  addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /* DESCRIPTION: Zone interface boundary marker(s) */
-  AddMarkerOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
+  addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /* DESCRIPTION: Dirichlet boundary marker(s) */
-  AddMarkerOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
+  addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
-  AddMarkerOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
+  addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
   /* DESCRIPTION: poisson dirichlet boundary marker(s) */
   AddMarkerDirichlet("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
   /* DESCRIPTION: poisson neumann boundary marker(s) */
-  AddMarkerOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
+  addStringListOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
   /* DESCRIPTION: Custom boundary marker(s) */
-  AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
+  addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
@@ -312,7 +312,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
-  AddMarkerOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
+  addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
   
   
   /*--- Options related to grid adaptation ---*/
@@ -353,7 +353,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
   // these options share nRKStep as their size, which is not a good idea in general
   /* DESCRIPTION: Runge-Kutta alpha coefficients */
-  AddListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
+  addDoubleListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
@@ -429,59 +429,59 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of mesh motion */
   addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
-  AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
   addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  AddListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
+  addDoubleListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  AddListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
+  addDoubleListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  AddListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
+  addDoubleListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
+  addDoubleListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
+  addDoubleListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
+  addDoubleListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
+  addDoubleListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
+  addDoubleListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
+  addDoubleListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
+  addDoubleListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
+  addDoubleListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
+  addDoubleListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
+  addDoubleListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
+  addDoubleListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
+  addDoubleListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
+  addDoubleListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
+  addDoubleListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
+  addDoubleListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
+  addDoubleListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
+  addDoubleListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
+  addDoubleListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
+  addDoubleListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
+  addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
-  AddListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
+  addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
   addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
   /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
@@ -545,11 +545,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
   addUnsignedShortOption("MGCYCLE", MGCycle, 0);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
-  AddListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
+  addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
   /* DESCRIPTION: Multi-grid post-smoothing level */
-  AddListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
+  addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
   /* DESCRIPTION: Jacobi implicit smoothing of the correction */
-  AddListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
+  addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
   /* DESCRIPTION: Damping factor for the residual restriction */
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
   /* DESCRIPTION: Damping factor for the correction prolongation */
@@ -884,11 +884,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
   
   /* DESCRIPTION: X Reference origin for moment computation */
-  AddListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
+  addDoubleListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
   /* DESCRIPTION: Y Reference origin for moment computation */
-  AddListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
+  addDoubleListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
   /* DESCRIPTION: Z Reference origin for moment computation */
-  AddListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
+  addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
   addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
   /* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
@@ -914,7 +914,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Specify chemical model for multi-species simulations */
 	addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, ARGON);
 	/* DESCRIPTION:  */
-	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
+	addDoubleListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
   
 	/*--- Options related to free surface simulation ---*/
 	/* CONFIG_CATEGORY: Free surface simulation */
@@ -943,9 +943,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Kind of deformation */
 	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
-	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
+  addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: New value of the shape deformation */
-	AddListOption("DV_VALUE", nDV, DV_Value);
+	addDoubleListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
@@ -1114,6 +1114,7 @@ void CConfig::SetParsing(char case_filename[200]) {
       string out = option_map[option_name]->SetValue(option_value);
       if (out.compare("") != 0){
         errorString.append(out);
+        errorString.append("\n");
         err_count++;
       }
     }
@@ -1147,6 +1148,16 @@ void CConfig::SetParsing(char case_filename[200]) {
   cout << "cflramp ";
   for (int i = 0; i < 3; i++){
     cout << this->CFLRamp[i] << " ";
+  }
+  cout << endl;
+  cout << "rk options";
+  for (int i= 0; i < this->nRKStep; i++){
+    cout << this-> RK_Alpha_Step[i] << " ";
+  }
+  cout << endl;
+  cout << "marker plotting";
+  for (int i = 0; i < this->nMarker_Plotting; i++){
+    cout << this->Marker_Plotting[i] << " ";
   }
   cout << endl;
   
@@ -4597,12 +4608,14 @@ void CConfig::GetChemistryEquilConstants(double **RxnConstantTable, unsigned sho
   }
 }
 
+/*
 void CConfig::AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker) {
   //cout << "Adding Marker option " << name << endl;
   num_marker = 0;
   CAnyOptionRef* option_ref = new CMarkerOptionRef(marker, num_marker);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
 void CConfig::AddConvectOption(const string & name, unsigned short & space, unsigned short & centered,
                                unsigned short & upwind) {
