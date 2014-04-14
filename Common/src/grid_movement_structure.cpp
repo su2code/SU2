@@ -2438,9 +2438,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
         if (rank == MASTER_NODE) {
           cout << "Writing a Tecplot file of the FFD boxes." << endl;
-          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
-          }
+          FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
         }
         
       }
@@ -2687,6 +2685,10 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   
   else if (config->GetDesign_Variable(0) == SPHERICAL)  { SetSpherical(geometry, config, 0, false); }
   
+  /*--- FFD setting ---*/
+  
+  else if (config->GetDesign_Variable(0) == FFD_SETTING)  { cout << "No surface deformation (setting FFD)." << endl; }
+
   /*--- Design variable not implement ---*/
 
   else { cout << "Design Variable not implement yet" << endl; }
@@ -2709,7 +2711,7 @@ void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
 void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
   
 	unsigned short iMarker, iDim;
-	unsigned long iVertex, iPoint, TotalVertex = 0, Counter = 0;
+	unsigned long iVertex, iPoint, TotalVertex = 0;
 	double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff;
 	int rank;
   unsigned short nDim = geometry->GetnDim();
@@ -2737,8 +2739,6 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 		if (config->GetMarker_All_DV(iMarker) == YES) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
-        Counter++;
-
         /*--- Get the cartesian coordinates ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2753,19 +2753,6 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 					/*--- Find the parametric coordinate ---*/
           
 					ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, 1E-10, 99999);
-          
-          if (Counter == 1) cout <<"0\% ";
-          else if (Counter == int(TotalVertex*0.1)) cout <<" 10\% ";
-          else if (Counter == int(TotalVertex*0.2)) cout <<" 20\% ";
-          else if (Counter == int(TotalVertex*0.3)) cout <<" 30\% ";
-          else if (Counter == int(TotalVertex*0.4)) cout <<" 40\% ";
-          else if (Counter == int(TotalVertex*0.5)) cout <<" 50\% ";
-          else if (Counter == int(TotalVertex*0.6)) cout <<" 60\% ";
-          else if (Counter == int(TotalVertex*0.7)) cout <<" 70\% ";
-          else if (Counter == int(TotalVertex*0.8)) cout <<" 80\% ";
-          else if (Counter == int(TotalVertex*0.9)) cout <<" 90\% ";
-          else if (Counter == TotalVertex) cout <<" 100\%."<< endl;
-          cout.flush();
           
 					/*--- If the parametric coordinates are in (0,1) the point belongs to the FFDBox ---*/
           
