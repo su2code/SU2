@@ -787,7 +787,6 @@ private:
   void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-//    param_to_kind.insert(pair<string, OptionKind>(name, EnumOption));
     COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
     return;
@@ -796,32 +795,39 @@ private:
   
   // input_size is the number of options read in from the config file
   template <class Tenum>
-	void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field,
-                         const map<string, Tenum> & enum_map) {
-		input_size = 0;
-		CAnyOptionRef* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
+	void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
+    input_size = 0;
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+		COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
     option_map.insert( pair<string, COptionBase*>(name, val) );
 	}
   
+  void addDoubleArrayOption(const string & name, const int size, double * & option_field, double * default_value){
+    
+    double * def = new double [size];
+    for (int i = 0; i < size; i++){
+      def[i] = default_value[i];
+    }
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDoubleArray(name, size, option_field, def);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
   
   /*
-  template <class T, class Tenum>
-	void AddEnumOption(const string & name, T & option, const map<string, Tenum> & Tmap,
-                     const string & default_value) {
-		//cout << "Adding Enum option " << name << endl;
-		typename map<string,Tenum>::const_iterator it;
-		it = Tmap.find(default_value);
-		if (it == Tmap.end()) {
-			cerr << "Error in CConfig::AddEnumOption(string, T&, const map<string, Tenum> &, const string): "
-      << "cannot find " << default_value << " in given map."
-      << endl;
-			throw(-1);
-		}
-		option = it->second;
-		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(option, Tmap);
+  template <class T>
+	void AddArrayOption(const string & name, const int & size, T* & option,
+                      const T* default_value, const bool & update = false) {
+		//cout << "Adding Array option " << name << endl;
+		if (update && option != NULL) delete [] option;
+		option = new T[size];
+		for (int i = 0; i < size; i++)
+			option[i] = default_value[i];
+		CAnyOptionRef* option_ref = new COptionRef<T>(option, size);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
-  */
+   */
   
   double parseDoubleOption(string);
   int parseIntOption(string);
@@ -931,6 +937,8 @@ public:
 	 * The option array is allocated in this function.  If memory for
 	 * the option array is already allocated, this memory is first released.
 	 */
+  
+  /*
 	template <class T>
 	void AddArrayOption(const string & name, const int & size, T* & option,
 			const T* default_value, const bool & update = false) {
@@ -942,6 +950,7 @@ public:
 		CAnyOptionRef* option_ref = new COptionRef<T>(option, size);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add a list option to the param map

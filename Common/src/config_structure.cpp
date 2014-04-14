@@ -199,7 +199,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specify turbulence model */
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /* DESCRIPTION: Location of the turb model itself */
- addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
   
   
   /* DESCRIPTION: what kind of input/output feature map is there */
@@ -342,7 +342,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
-  AddArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
+  addDoubleArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -427,7 +427,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Mesh motion for unsteady simulations */
   AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
   /* DESCRIPTION: Type of mesh motion */
-  AddEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
+  addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
   AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
@@ -584,7 +584,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
   Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE;
@@ -599,7 +599,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
   
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, FIRST_ORDER);
@@ -631,7 +631,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, NO_SOURCE);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
   
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
@@ -656,7 +656,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
@@ -670,7 +670,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
   
   /* DESCRIPTION: Viscous numerical method */
   addEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, GALERKIN);
@@ -705,7 +705,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
   /* DESCRIPTION: Definition of the airfoil section */
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
-  AddArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
   /* DESCRIPTION: Identify the axis of the section */
   addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
@@ -829,7 +829,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddSpecialOption("EQUIV_AREA", EquivArea, SetBoolOption, false);
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  AddArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
   
   /*--- Options related to freestream specification ---*/
   /* CONFIG_CATEGORY: Freestream Conditions */
@@ -862,7 +862,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
   /* DESCRIPTION: Free-stream velocity (m/s) */
-  AddArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
@@ -941,7 +941,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* CONFIG_CATEGORY: Grid deformation */
   
 	/* DESCRIPTION: Kind of deformation */
-	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
 	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: New value of the shape deformation */
@@ -971,7 +971,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
 	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
+	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
 	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
@@ -1144,6 +1144,11 @@ void CConfig::SetParsing(char case_filename[200]) {
   cout << "sol flow" << this->Solution_FlowFileName << endl;
   cout << "clf " << this->CFLFineGrid << endl;
   cout << "az " << this->FixAzimuthalLine << endl;
+  cout << "cflramp ";
+  for (int i = 0; i < 3; i++){
+    cout << this->CFLRamp[i] << " ";
+  }
+  cout << endl;
   
   case_file.close();
 }
