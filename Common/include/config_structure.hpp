@@ -694,25 +694,6 @@ private:
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionDouble(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
-    
-    
-    // Add the option to the list of all of the options
-    
-    
-    //param_to_kind.insert(pair<string, OptionKind>(name, DoubleOption));
-    
-    // Add the option to the second list of all options. This map is temporary and will have
-    // keys deleted from it as options are read in from the config. This is to ensure no
-    // key is present more than onc
-
-    
-    /*
-    // Add the pointer location to reference while parsing.
-    double_fields.insert(pair<string,double &>(name, option_field));
-    
-    // Store the default value
-    double_defaults.insert(pair<string, double>(name, default_value));
-     */
   }
   
   /*<\brief addStringOption: see addDoubleOption, but with type change */
@@ -721,14 +702,6 @@ private:
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionString(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
-    
-    /*
-    assert(param_to_kind.find(name) == param_to_kind.end());
-    all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, StringOption));
-    string_fields.insert(pair<string,string &>(name, option_field));
-    string_defaults.insert(pair<string, string>(name, default_value));
-     */
   }
 
     /*<\brief addStringOption: see addIntegerOption, but with type change */
@@ -744,13 +717,6 @@ private:
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionULong(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
-    /*
-    assert(param_to_kind.find(name) == param_to_kind.end());
-    all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
-    ulong_fields.insert(pair<string,unsigned long &>(name, option_field));
-    ulong_defaults.insert(pair<string, unsigned long>(name, default_value));
-     */
   }
   
   void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
@@ -758,13 +724,6 @@ private:
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionUShort(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
-    /*
-    assert(param_to_kind.find(name) == param_to_kind.end());
-    all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedShortOption));
-    ushort_fields.insert(pair<string,unsigned short &>(name, option_field));
-    ushort_defaults.insert(pair<string, unsigned short>(name, default_value));
-     */
   }
   
   void addLongOption(const string name, long & option_field, long default_value){
@@ -772,14 +731,13 @@ private:
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionLong(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
-    
-    /*
-    assert(param_to_kind.find(name) == param_to_kind.end());
+  }
+  
+  void addBoolOption(const string name, bool & option_field, bool default_value){
+    assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, LongOption));
-    long_fields.insert(pair<string,long &>(name, option_field));
-    long_defaults.insert(pair<string,long>(name, default_value));
-     */
+    COptionBase* val = new COptionBool(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
   // Using templates for enum options because there are a ton of them
@@ -803,7 +761,7 @@ private:
     option_map.insert( pair<string, COptionBase*>(name, val) );
 	}
   
-  void addDoubleArrayOption(const string & name, const int size, double * & option_field, double * default_value){
+  void addDoubleArrayOption(const string name, const int size, double * & option_field, double * default_value){
     
     double * def = new double [size];
     for (int i = 0; i < size; i++){
@@ -815,16 +773,34 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addDoubleListOption(const string name, unsigned short & size, double * & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDoubleList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionUShortList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionStringList(name, num_marker, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   /*
   template <class T>
-	void AddArrayOption(const string & name, const int & size, T* & option,
-                      const T* default_value, const bool & update = false) {
-		//cout << "Adding Array option " << name << endl;
+	void AddListOption(const string & name, unsigned short & size, T* & option,
+                     const bool & update = false) {
+		//cout << "Adding List option " << name << endl;
 		if (update && option != NULL) delete [] option;
-		option = new T[size];
-		for (int i = 0; i < size; i++)
-			option[i] = default_value[i];
-		CAnyOptionRef* option_ref = new COptionRef<T>(option, size);
+		CAnyOptionRef* option_ref = new CListOptionRef<T>(size, option);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
    */
@@ -913,6 +889,7 @@ public:
 	 * \tparam Tenum - an enumeration assocaited with T
 	 */
   
+  /*
 	template <class T, class Tenum>
 	void AddEnumListOption(const string & name, unsigned short & size, T* & option,
 			const map<string, Tenum> & Tmap,
@@ -923,6 +900,7 @@ public:
 		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(size, option, Tmap);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
   
 
 	/*!
@@ -964,6 +942,7 @@ public:
 	 * variable size.  Also, this routine does not allow the default
 	 * value to be set.
 	 */
+  /*
 	template <class T>
 	void AddListOption(const string & name, unsigned short & size, T* & option,
 			const bool & update = false) {
@@ -972,6 +951,8 @@ public:
 		CAnyOptionRef* option_ref = new CListOptionRef<T>(size, option);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
+   
 
 	/*!
 	 * \brief add a special option to the param map and set its default value
@@ -997,7 +978,7 @@ public:
 	 * \param[in,out] num_marker - number of boundary markers
 	 * \param[in,out] marker - an array of boundary marker names
 	 */
-	void AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker);
+//	void AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker);
 
 	/*!
 	 * \brief add a convection-discretization type option to the param map
