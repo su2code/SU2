@@ -1009,10 +1009,10 @@ public:
 	 * \param[in] Restart_Flow - is the flow restarted for adjoint and linearized problems?
 	 * \param[in] Restart_Flow_default - the default value for Restart_Flow
 	 */
-	void AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
-			bool & OneShot, const bool & OneShot_default,
-			bool & Linearized, const bool & Linearized_default,
-			bool & Restart_Flow, const bool & Restart_Flow_default);
+//	void AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
+//			bool & OneShot, const bool & OneShot_default,
+//			bool & Linearized, const bool & Linearized_default,
+//			bool & Restart_Flow, const bool & Restart_Flow_default);
 
 	/*!
 	 * \brief adds the design variable parameters option to the param map
