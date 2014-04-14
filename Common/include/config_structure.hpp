@@ -46,46 +46,6 @@
 
 using namespace std;
 
-template <class Tenum>
-class CEnumLookup : public COptionBase{
-  
-  map<string, Tenum> m;
-  unsigned short & field; // Reference to the feildname
-  Tenum def; // Default value
-  string name; // identifier for the option
-  
-public:
-//  CEnumLookup(){};
-  
-  CEnumLookup(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field){
-    this->m = m;
-//    field = option_field;
-    this->def = default_value;
-    this->name = option_field_name;
-  }
-  
-//  ~CEnumLookup(){};
-  string SetValue(string option_value){
-/*
-    // Check to see if the enum value is in the map
-    if (this->m.find(option_value) == m.end()){
-      string str;
-      str.append(this->name);
-      str.append(": invalid option value ");
-      str.append(option_value);
-      return str;
-    }
-    // If it is there, set the option value
-    Tenum val = this->m[option_value];
-    this->ref = val;
- */
-    return "";
-  }
-  void SetDefault(){
-   // this->ref = this->def;
-  }
-};
-
 
 /*!
  * \class CConfig
@@ -690,7 +650,7 @@ private:
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
   
   /*!<brief param_to_kind associates the config file name with the type of variable>*/
-  map<string, OptionKind> param_to_kind;
+  //map<string, OptionKind> param_to_kind;
   
   /*!<brief list of all of the options. This is used to keep track of the 
    options not set so the default values can be used>*/
@@ -700,14 +660,15 @@ private:
    This map is a catch-all for types who don't hava a very specific type. One case of this is the
    enum types, where rather than define a pain of maps for all possible enum types, we instead 
    implicitly deference the enum value in CEnumLookup.*/
-  map<string, COptionBase*> special_map;
+  map<string, COptionBase*> option_map;
   
   
+  /*
   // List of maps for referencing
-  map<string, double&> double_fields;  /*!<\brief option list associated with config parameters which are doubles*/
-  map<string, double> double_defaults;    /*!<\brief option list associated with config parameters which are doubles*/
-  map<string, string&> string_fields;   /*!<\brief option list associated with config parameters which are strings*/
-  map<string, string> string_defaults;  /*!<\brief double_defaults associates string parameters with their default values*/
+  map<string, double&> double_fields;  !<\brief option list associated with config parameters which are doubles
+  map<string, double> double_defaults;    !<\brief option list associated with config parameters which are doubles
+  map<string, string&> string_fields;   !<\brief option list associated with config parameters which are strings
+  map<string, string> string_defaults;  !<\brief double_defaults associates string parameters with their default values
   map<string, int&> int_fields;
   map<string, int> int_defaults;
   map<string, unsigned long&> ulong_fields;
@@ -716,6 +677,7 @@ private:
   map<string, unsigned short> ushort_defaults;
   map<string, long&> long_fields;
   map<string, long> long_defaults;
+   */
   
   
   /*!<\brief addDoubleOption adds a option represented by a double so that it will be parsed during
@@ -726,64 +688,121 @@ private:
   void addDoubleOption(const string name, double & option_field, double default_value){
     // Check if the key is already in the map. If this fails, it is coder error
     // and not user error, so throw
-    assert(param_to_kind.find(name) == param_to_kind.end());
+        // second copy for deletion
+    
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDouble(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    
     
     // Add the option to the list of all of the options
-    param_to_kind.insert(pair<string, OptionKind>(name, DoubleOption));
+    
+    
+    //param_to_kind.insert(pair<string, OptionKind>(name, DoubleOption));
     
     // Add the option to the second list of all options. This map is temporary and will have
     // keys deleted from it as options are read in from the config. This is to ensure no
-    // key is present more than once
-    all_options.insert(pair<string,bool>(name,true));
+    // key is present more than onc
 
+    
+    /*
     // Add the pointer location to reference while parsing.
     double_fields.insert(pair<string,double &>(name, option_field));
     
     // Store the default value
     double_defaults.insert(pair<string, double>(name, default_value));
+     */
   }
   
   /*<\brief addStringOption: see addDoubleOption, but with type change */
   void addStringOption(const string name, string & option_field, string default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionString(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    
+    /*
     assert(param_to_kind.find(name) == param_to_kind.end());
     all_options.insert(pair<string,bool>(name,true));
     param_to_kind.insert(pair<string, OptionKind>(name, StringOption));
     string_fields.insert(pair<string,string &>(name, option_field));
     string_defaults.insert(pair<string, string>(name, default_value));
+     */
   }
 
     /*<\brief addStringOption: see addIntegerOption, but with type change */
   void addIntegerOption(const string name, int & option_field, int default_value){
-    assert(param_to_kind.find(name) == param_to_kind.end());
+    assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, IntOption));
-    int_fields.insert(pair<string,int &>(name, option_field));
-    int_defaults.insert(pair<string, int>(name, default_value));
+    COptionBase* val = new COptionInt(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
   void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionULong(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    /*
     assert(param_to_kind.find(name) == param_to_kind.end());
     all_options.insert(pair<string,bool>(name,true));
     param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
     ulong_fields.insert(pair<string,unsigned long &>(name, option_field));
     ulong_defaults.insert(pair<string, unsigned long>(name, default_value));
+     */
   }
   
   void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionUShort(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    /*
     assert(param_to_kind.find(name) == param_to_kind.end());
     all_options.insert(pair<string,bool>(name,true));
     param_to_kind.insert(pair<string, OptionKind>(name, UnsignedShortOption));
     ushort_fields.insert(pair<string,unsigned short &>(name, option_field));
     ushort_defaults.insert(pair<string, unsigned short>(name, default_value));
+     */
   }
   
   void addLongOption(const string name, long & option_field, long default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionLong(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    
+    /*
     assert(param_to_kind.find(name) == param_to_kind.end());
     all_options.insert(pair<string,bool>(name,true));
     param_to_kind.insert(pair<string, OptionKind>(name, LongOption));
     long_fields.insert(pair<string,long &>(name, option_field));
     long_defaults.insert(pair<string,long>(name, default_value));
+     */
   }
+  
+  // Using templates for enum options because there are a ton of them
+  template <class Tenum>
+  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+//    param_to_kind.insert(pair<string, OptionKind>(name, EnumOption));
+    COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    return;
+  }
+  
+  
+  // input_size is the number of options read in from the config file
+  template <class Tenum>
+	void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field,
+                         const map<string, Tenum> & enum_map) {
+		input_size = 0;
+		CAnyOptionRef* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
+    option_map.insert( pair<string, COptionBase*>(name, val) );
+	}
+  
   
   /*
   template <class T, class Tenum>
@@ -808,20 +827,7 @@ private:
   int parseIntOption(string);
 
 public:
-  // Using templates for enum options because there are a ton of them
-  template <class Tenum>
-  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
-    assert(param_to_kind.find(name) == param_to_kind.end());
-    all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, EnumOption));
-        COptionBase* val = new CEnumLookup<Tenum>(name, enum_map, option_field, default_value);
-    //COptionBase * val = NULL;
-    //CEnumLookup<Tenum>* val = new CEnumLookup<Tenum>();
-    special_map.insert(pair<string, COptionBase *>(name, val));
-    return;
-  }
-  
-  
+
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
 	/*! 
@@ -871,6 +877,7 @@ public:
 	 * \tparam Tenum - an enumeration assocaited with T
 	 * \param[in] default_value - option is set to default_value
 	 */
+  /*
 	template <class T, class Tenum>
 	void AddEnumOption(const string & name, T & option, const map<string, Tenum> & Tmap,
 			const string & default_value) {
@@ -887,6 +894,7 @@ public:
 		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(option, Tmap);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add an enum-based array option to the param map
@@ -898,6 +906,7 @@ public:
 	 * \tparam T - the option type (usually unsigned short)
 	 * \tparam Tenum - an enumeration assocaited with T
 	 */
+  
 	template <class T, class Tenum>
 	void AddEnumListOption(const string & name, unsigned short & size, T* & option,
 			const map<string, Tenum> & Tmap,
@@ -908,6 +917,7 @@ public:
 		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(size, option, Tmap);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+  
 
 	/*!
 	 * \brief add an array option to the param map and set its default value
