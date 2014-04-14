@@ -801,6 +801,16 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
+                      bool & OneShot, const bool & OneShot_default,
+                      bool & Linearized, const bool & Linearized_default,
+                            bool & Restart_Flow, const bool & Restart_Flow_default){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, OneShot, OneShot_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   double parseDoubleOption(string);
   int parseIntOption(string);
 

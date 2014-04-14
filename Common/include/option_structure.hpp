@@ -1572,8 +1572,64 @@ public:
   }
 };
 
-
-
+class COptionMathProblem : public COptionBase{
+  string name; // identifier for the option
+  bool & adjoint;
+  bool & oneshot;
+  bool & linearized;
+  bool & restart;
+  bool adjoint_def;
+  bool oneshot_def;
+  bool linearized_def;
+  bool restart_def;
+  
+public:
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & oneshot_field, bool oneshot_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), oneshot(oneshot_field), linearized(linearized_field), restart(restart_field) {
+    this->name = option_field_name;
+    this->adjoint_def = adjoint_default;
+    this->oneshot_def = oneshot_default;
+    this->linearized_def = linearized_default;
+    this->restart_def = restart_default;
+  }
+  
+  ~COptionMathProblem(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    if (option_value[0] == "DIRECT") {
+      this->adjoint = false;
+      this->oneshot = false;
+      this->linearized = false;
+      this->restart = false;
+      return "";
+    }
+    if (option_value[0] == "ADJOINT") {
+      this->adjoint= true;
+      this->restart= true;
+      this->oneshot = false;
+      this->linearized = false;
+      return "";
+    }
+    if (option_value[0] == "LINEARIZED") {
+      this->linearized = true;
+      this->restart = true;
+      this->adjoint= false;
+      this->oneshot = false;
+      return "";
+    }
+    return badValue(option_value, "math problem", this->name);
+    
+  }
+  
+  void SetDefault(){
+    this->adjoint = this->adjoint_def;
+    this->oneshot = this->oneshot_def;
+    this->linearized = this->linearized_def;
+    this->restart = this->restart_def;
+  }
+};
 
 
 
