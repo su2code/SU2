@@ -190,7 +190,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
   
   /* DESCRIPTION: Write extra output */
-  AddSpecialOption("EXTRA_OUTPUT", ExtraOutput, SetBoolOption, false);
+  addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
   
   /* DESCRIPTION: Physical governing equations */
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
@@ -209,7 +209,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
   
   /* DESCRIPTION: Axisymmetric simulation */
-  AddSpecialOption("AXISYMMETRIC", Axisymmetric, SetBoolOption, false);
+  addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   AddSpecialOption("GRAVITY_FORCE", GravityForce, SetBoolOption, false);
   /* DESCRIPTION: Perform a low fidelity simulation */
@@ -1160,6 +1160,8 @@ void CConfig::SetParsing(char case_filename[200]) {
     cout << this->Marker_Plotting[i] << " ";
   }
   cout << endl;
+  cout << "Extra output " << this->ExtraOutput << endl;
+  cout << "Axi" << this->Axisymmetric << endl;
   
   case_file.close();
 }
