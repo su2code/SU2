@@ -339,8 +339,52 @@ public:
   }
   
   void SetDefault(){
+    // No default to set
     size = 0;
-   // this->field = this->def;
+  }
+};
+
+class COptionDoubleArray : public COptionBase{
+  double * & field; // Reference to the feildname
+  string name; // identifier for the option
+  const int size;
+  double * default_value;
+  
+public:
+  COptionDoubleArray(string option_field_name, const int list_size, double * & option_field, double * default_value) : field(option_field), size(list_size){
+    this->name = option_field_name;
+    this->default_value = default_value;
+  }
+  
+  ~COptionDoubleArray(){};
+  string SetValue(vector<string> option_value){
+    // Check that the size is correct
+    if (option_value.size() != this->size){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": wrong number of arguments ");
+      stringstream ss;
+      ss << this->size;
+      newstring.append(ss.str());
+      newstring.append(" expected");
+      return newstring;
+    }
+    double * vals = new double[this->size];
+    for(int i  = 0; i < this->size; i++){
+      istringstream is(option_value[i]);
+      double val;
+      if (!(is >> val)){
+        delete [] vals;
+        return badValue(option_value, "double array", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->field = this->default_value;
   }
 };
 
