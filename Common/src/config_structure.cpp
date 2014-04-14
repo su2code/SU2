@@ -195,7 +195,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Physical governing equations */
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /* DESCRIPTION: Mathematical problem */
-  AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /* DESCRIPTION: Location of the turb model itself */
@@ -4631,6 +4631,7 @@ void CConfig::AddConvectOption(const string & name, unsigned short & space, unsi
 }
  */
 
+/*
 void CConfig::AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
                              bool & OneShot, const bool & OneShot_default,
                              bool & Linearized, const bool & Linearized_default,
@@ -4644,6 +4645,7 @@ void CConfig::AddMathProblem(const string & name, bool & Adjoint, const bool & A
                                                   Restart_Flow);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
 void CConfig::AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV,
                                unsigned short* & Design_Variable) {
