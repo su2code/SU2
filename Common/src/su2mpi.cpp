@@ -1,5 +1,5 @@
 #include "../include/su2mpi.hpp"
-
+/*
 namespace SU2MPI {
   const int MASTER_NODE = 0;
   // Safetly exits with MPI
@@ -17,7 +17,8 @@ namespace SU2MPI {
 #endif
   }
   
-  /*!<\brief Prints to the head node and exits (using MPI if applicable) */
+  !<\brief Prints to the head node and exits (using MPI if applicable)
+
   void PrintAndFinalize(std::string str){
     int rank = Rank();
     if (rank == MASTER_NODE){
@@ -26,7 +27,8 @@ namespace SU2MPI {
     FinalizeAndExit1();
   }
   
-  /*!<\brief Returns the rank of the processor (always SU2MPI::MASTER_NODE if no MPI) */
+  !<\brief Returns the rank of the processor (always SU2MPI::MASTER_NODE if no MPI)
+
   int Rank(){
     int rank = MASTER_NODE;
 #ifndef NO_MPI
@@ -39,3 +41,4 @@ namespace SU2MPI {
     return rank;
   }
 }
+*/

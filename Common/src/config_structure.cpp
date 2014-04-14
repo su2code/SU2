@@ -187,7 +187,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Problem Definition */
   
   /* DESCRIPTION: Adjoint type */
-  AddEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, "COMPRESSIBLE");
+  addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
   
   /* DESCRIPTION: Write extra output */
   AddSpecialOption("EXTRA_OUTPUT", ExtraOutput, SetBoolOption, false);
@@ -747,15 +747,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   
-  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-  
   /* DESCRIPTION: Factor for scaling the mesh */
   addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
   /* DESCRIPTION: Write a new mesh converted to meters */
   AddSpecialOption("MESH_OUTPUT", Mesh_Output, SetBoolOption, false);
   /* DESCRIPTION: Mesh output file */
-  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
-  
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
   
   /* DESCRIPTION: Output file convergence history (w/o extension) */
@@ -1071,10 +1067,11 @@ void CConfig::SetParsing(char case_filename[200]) {
     if (err_count >= max_err_count){
       errorString.append("too many errors. Stopping parse");
 
-      SU2MPI::PrintAndFinalize(errorString);
+      //SU2MPI::PrintAndFinalize(errorString);
+      cout << errorString << endl;
+      throw(1);
     }
     if (TokenizeString(text_line, option_name, option_value)) {
-      
       if (param_to_kind.find(option_name) == param_to_kind.end()){
         string newString;
         newString.append(option_name);
@@ -1103,25 +1100,26 @@ void CConfig::SetParsing(char case_filename[200]) {
       // Get the kind of option
       OptionKind kind = param_to_kind[option_name];
 
-      
-      bool isErr = false;
       // Add switch
       switch (kind){
         default:
+        {
           cout << "bad option kind for " << option_name << endl;
           throw(1);
+        }
         case NoOption:
+        {
           cout << "somehow no option is set for: " << option_name << endl;
           throw(1);
+        }
         case DoubleOption:
         {
           // Check that there is just a double in the option
           if (option_value.size() != 1){
             string newString;
             newString.append(option_name);
-            newString.append(": multiple values for DoubleOption");
+            newString.append(": multiple values for DoubleOption\n");
             errorString.append(newString);
-            isErr = true;
             err_count++;
             break;
           }
@@ -1131,14 +1129,27 @@ void CConfig::SetParsing(char case_filename[200]) {
           doubleRef = val;
           break;
         }
+        case StringOption:
+        {
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for StringOption\n");
+            errorString.append(newString);
+            err_count++;
+            break;
+          }
+          string & strRef = string_fields[option_name];
+          strRef.assign(option_value[0]);
+          break;
+        }
         case IntOption:
         {
           if (option_value.size() != 1){
             string newString;
             newString.append(option_name);
-            newString.append(": multiple values for IntOption");
+            newString.append(": multiple values for IntOption\n");
             errorString.append(newString);
-            isErr = true;
             err_count++;
             break;
           }
@@ -1147,22 +1158,67 @@ void CConfig::SetParsing(char case_filename[200]) {
           ref = val;
           break;
         }
-        case StringOption:
+        case UnsignedLongOption:
         {
           if (option_value.size() != 1){
             string newString;
             newString.append(option_name);
-            newString.append(": multiple values for StringOption");
+            newString.append(": multiple values for UnsignedLongOption\n");
             errorString.append(newString);
-            isErr = true;
             err_count++;
             break;
           }
-          string & strRef = string_fields[option_name];
-          strRef.assign(option_value[0]);
+          unsigned long val = stoul(option_value[0]);
+          unsigned long & ref = ulong_fields[option_name];
+          ref = val;
+          break;
+        }
+        case UnsignedShortOption:
+        {
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for UnsignedShortOption\n");
+            errorString.append(newString);
+            err_count++;
+            break;
+          }
+          unsigned long valUL = stoul(option_value[0]);
+          unsigned short val = (unsigned short)(valUL);
+          unsigned short & ref = ushort_fields[option_name];
+          ref = val;
+          break;
+        }
+        case LongOption:
+        {
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for UnsignedLongOption\n");
+            errorString.append(newString);
+            err_count++;
+            break;
+          }
+          long val = stol(option_value[0]);
+          long & ref = long_fields[option_name];
+          ref = val;
+          break;
+        }
+        case EnumOption:
+        {
+          if (option_value.size() != 1){
+            string newString;
+            newString.append(option_name);
+            newString.append(": multiple values for single-valued option\n");
+            errorString.append(newString);
+            err_count++;
+            break;
+          }
+          special_map[option_name]->SetValue(option_value[0]);
           break;
         }
       }
+      cout << "Done setting defaults" << endl;
       
       /*
       map<string, CAnyOptionRef*>::iterator it;
@@ -1180,35 +1236,74 @@ void CConfig::SetParsing(char case_filename[200]) {
   
   // See if there were any errors parsing the config file
   if (errorString.size() != 0){
-    SU2MPI::PrintAndFinalize(errorString);
+//    SU2MPI::PrintAndFinalize(errorString);
+    cout << errorString << endl;
+    throw(1);
   }
+  
+  cout << "Getting default options" << endl;
   
   // Set the default values for all of the options that weren't set
   for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
     OptionKind kind = param_to_kind[iter->first];
     switch (kind) {
       default:
-        cout << "bad kind" << endl;
+      {
+        cout << "bad kind in default" << endl;
+        cout << kind << endl;
         throw(1);
-        break;
+      }
       case NoOption:
+      {
         cout << "Should not have no option" << endl;
         throw(1);
+      }
       case DoubleOption:
       {
           double & doubleRef = double_fields[iter->first];
           doubleRef = double_defaults[iter->first];
+        break;
       }
       case StringOption:
       {
         string & strRef = string_fields[iter->first];
         string def = string_defaults[iter->first];
         strRef.assign(def);
+        break;
       }
       case IntOption:
+      {
         int & ref = int_fields[iter->first];
         int def = int_defaults[iter->first];
         ref = def;
+        break;
+      }
+      case UnsignedLongOption:
+      {
+        unsigned long & ref = ulong_fields[iter->first];
+        unsigned long def = ulong_defaults[iter->first];
+        ref = def;
+        break;
+      }
+      case UnsignedShortOption:
+      {
+        unsigned short & ref = ushort_fields[iter->first];
+        unsigned short def = ushort_defaults[iter->first];
+        ref = def;
+        break;
+      }
+      case LongOption:
+      {
+        long & ref = long_fields[iter->first];
+        long def = long_defaults[iter->first];
+        ref = def;
+        break;
+      }
+      case EnumOption:
+      {
+        special_map[iter->first]->SetDefault();
+        break;
+      }
     }
   }
   
