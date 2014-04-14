@@ -1,5 +1,6 @@
 #pragma once
 
+/*
 #include <string>
 #include <iostream>
 
@@ -12,3 +13,4 @@ namespace SU2MPI{
   void PrintAndFinalize(std::string);
   int Rank();
 }
+*/

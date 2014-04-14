@@ -34,6 +34,8 @@
 #include <cstdlib>
 #include <algorithm>
 
+//#include "./su2mpi.hpp"
+
 using namespace std;
 
 /*! \brief OptionKind represents the type of option it is*/
@@ -44,7 +46,21 @@ enum OptionKind {
   IntOption = 3, /*! \brief represented by a string */
   UnsignedLongOption = 4,
   UnsignedShortOption = 5,
+  LongOption = 6,
+  EnumOption = 7,
 };
+
+class COptionBase{
+private:
+public:
+  COptionBase(){};
+  virtual  ~COptionBase() = 0;
+//  virtual string SetValue(string){SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
+  virtual string SetValue(string) = 0;
+  virtual void SetDefault() = 0;
+};
+
+inline COptionBase::~COptionBase(){}
 
 /*!
  * \class CCreateMap

@@ -23,8 +23,6 @@
 
 #pragma once
 
-#include "./su2mpi.hpp"
-
 #ifndef NO_MPI
 #include <mpi.h>
 #endif
@@ -42,13 +40,54 @@
 #include <map>
 #include <assert.h>
 
+//#include "./su2mpi.hpp"
 #include "./option_structure.hpp"
-
 
 
 using namespace std;
 
-/*! 
+template <class Tenum>
+class CEnumLookup : public COptionBase{
+  
+  map<string, Tenum> m;
+  unsigned short & field; // Reference to the feildname
+  Tenum def; // Default value
+  string name; // identifier for the option
+  
+public:
+//  CEnumLookup(){};
+  
+  CEnumLookup(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field){
+    this->m = m;
+//    field = option_field;
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+//  ~CEnumLookup(){};
+  string SetValue(string option_value){
+/*
+    // Check to see if the enum value is in the map
+    if (this->m.find(option_value) == m.end()){
+      string str;
+      str.append(this->name);
+      str.append(": invalid option value ");
+      str.append(option_value);
+      return str;
+    }
+    // If it is there, set the option value
+    Tenum val = this->m[option_value];
+    this->ref = val;
+ */
+    return "";
+  }
+  void SetDefault(){
+   // this->ref = this->def;
+  }
+};
+
+
+/*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
@@ -103,7 +142,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
-	unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
+  unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
@@ -657,6 +696,12 @@ private:
    options not set so the default values can be used>*/
   map<string, bool> all_options;
   
+  /*<brief associative array for types who need an implicit setting rather than an explicit one.
+   This map is a catch-all for types who don't hava a very specific type. One case of this is the
+   enum types, where rather than define a pain of maps for all possible enum types, we instead 
+   implicitly deference the enum value in CEnumLookup.*/
+  map<string, COptionBase*> special_map;
+  
   
   // List of maps for referencing
   map<string, double&> double_fields;  /*!<\brief option list associated with config parameters which are doubles*/
@@ -727,7 +772,7 @@ private:
   void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
     assert(param_to_kind.find(name) == param_to_kind.end());
     all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
+    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedShortOption));
     ushort_fields.insert(pair<string,unsigned short &>(name, option_field));
     ushort_defaults.insert(pair<string, unsigned short>(name, default_value));
   }
@@ -735,15 +780,48 @@ private:
   void addLongOption(const string name, long & option_field, long default_value){
     assert(param_to_kind.find(name) == param_to_kind.end());
     all_options.insert(pair<string,bool>(name,true));
-    param_to_kind.insert(pair<string, OptionKind>(name, UnsignedLongOption));
+    param_to_kind.insert(pair<string, OptionKind>(name, LongOption));
     long_fields.insert(pair<string,long &>(name, option_field));
     long_defaults.insert(pair<string,long>(name, default_value));
   }
+  
+  /*
+  template <class T, class Tenum>
+	void AddEnumOption(const string & name, T & option, const map<string, Tenum> & Tmap,
+                     const string & default_value) {
+		//cout << "Adding Enum option " << name << endl;
+		typename map<string,Tenum>::const_iterator it;
+		it = Tmap.find(default_value);
+		if (it == Tmap.end()) {
+			cerr << "Error in CConfig::AddEnumOption(string, T&, const map<string, Tenum> &, const string): "
+      << "cannot find " << default_value << " in given map."
+      << endl;
+			throw(-1);
+		}
+		option = it->second;
+		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(option, Tmap);
+		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
+	}
+  */
   
   double parseDoubleOption(string);
   int parseIntOption(string);
 
 public:
+  // Using templates for enum options because there are a ton of them
+  template <class Tenum>
+  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
+    assert(param_to_kind.find(name) == param_to_kind.end());
+    all_options.insert(pair<string,bool>(name,true));
+    param_to_kind.insert(pair<string, OptionKind>(name, EnumOption));
+        COptionBase* val = new CEnumLookup<Tenum>(name, enum_map, option_field, default_value);
+    //COptionBase * val = NULL;
+    //CEnumLookup<Tenum>* val = new CEnumLookup<Tenum>();
+    special_map.insert(pair<string, COptionBase *>(name, val));
+    return;
+  }
+  
+  
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
 	/*! 
