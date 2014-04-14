@@ -2962,8 +2962,9 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  double Pressure, *Normal = NULL, MomentDist[3], *Coord, *Origin, Area,
+  double Pressure, *Normal = NULL, MomentDist[3], *Coord, Area,
   factor, NFPressOF, RefVel2, RefDensity, RefPressure, Gas_Constant, Mach2Vel, Mach_Motion, UnitNormal[3], Force[3];
+  double *Origin = config->GetRefOriginMoment(0);
   string Marker_Tag, Monitoring_Tag;
   
   bool grid_movement      = config->GetGrid_Movement();
@@ -3029,8 +3030,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
     Boundary   = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
-    /*--- Obtain the origin for the moment computation ---*/
-    
+    /*--- Obtain the origin for the moment computation for a particular marker ---*/
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
@@ -7526,9 +7526,10 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   double Delta, Viscosity, **Grad_PrimVar, div_vel, *Normal, MomentDist[3], WallDist[3],
-  *Coord, *Coord_Normal, *Origin, Area, WallShearStress, TauNormal, factor, RefVel2,
+  *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefVel2,
   RefDensity, GradTemperature, Density, Vel[3], WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, *Velocity_Inf, UnitNormal[3], TauElem[3], TauTangent[3], Tau[3][3], Force[3], Cp, thermal_conductivity, MaxNorm = 8.0;
+  double *Origin = config->GetRefOriginMoment(0);
   string Marker_Tag, Monitoring_Tag;
   
   double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
@@ -7580,7 +7581,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Boundary = config->GetMarker_All_Boundary(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    /*--- Obtain the origin for the moment computation ---*/
+    
+    /*--- Obtain the origin for the moment computation for a particular marker ---*/
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
@@ -7591,7 +7593,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     }
     
     if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-      
+    
       /*--- Forces initialization at each Marker ---*/
       CDrag_Visc[iMarker] = 0.0;  CLift_Visc[iMarker] = 0.0; CSideForce_Visc[iMarker] = 0.0;  CEff_Visc[iMarker] = 0.0;
       CMx_Visc[iMarker] = 0.0;    CMy_Visc[iMarker] = 0.0;   CMz_Visc[iMarker] = 0.0;
