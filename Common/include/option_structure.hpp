@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -2083,7 +2083,7 @@ public:
 		} else {
 			cerr << "Error in CConvOptionRef::SetValue(): "
 					<< value[0] << " is an invalid space discretization" << endl;
-      cerr << "Please, check that the config file is compatible with SU2 3.0.1 \"eagle\"" << endl;
+      cerr << "Please, check that the config file is compatible with SU2 3.1.0 \"eagle\"" << endl;
 			throw(-1);
 		}
 	}

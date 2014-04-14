@@ -12,7 +12,7 @@
 #
 ##########################
 
-AC_INIT([SU^2], [3.0.1], [susquared-dev@lists.stanford.edu],
+AC_INIT([SU^2], [3.1.0], [susquared-dev@lists.stanford.edu],
         [SU^2], [http://su2.stanford.edu])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])

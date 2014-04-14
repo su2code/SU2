@@ -2,7 +2,7 @@
  * \file SU2_PBC.cpp
  * \brief Main file of Periodic Boundary Code (SU2_PBC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
