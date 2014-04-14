@@ -317,15 +317,17 @@ public:
   ~COptionBool(){};
   string SetValue(vector<string> option_value){
     // check if there is more than one value
-    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    string out = optionCheckMultipleValues(option_value, "bool", this->name);
     if (out.compare("") != 0){
       return out;
     }
     if (option_value[0].compare("YES") == 0){
       this->field = true;
+      return "";
     }
     if (option_value[0].compare("NO") == 0){
       this->field = false;
+      return "";
     }
     return badValue(option_value, "bool", this->name);
   }
