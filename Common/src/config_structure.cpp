@@ -193,11 +193,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddSpecialOption("EXTRA_OUTPUT", ExtraOutput, SetBoolOption, false);
   
   /* DESCRIPTION: Physical governing equations */
-  AddEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, "NONE");
+  addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /* DESCRIPTION: Mathematical problem */
   AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
-  AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
+  addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /* DESCRIPTION: Location of the turb model itself */
  addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
   
@@ -206,7 +206,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
 
   /* DESCRIPTION: Specify transition model */
-  AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
+  addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
   
   /* DESCRIPTION: Axisymmetric simulation */
   AddSpecialOption("AXISYMMETRIC", Axisymmetric, SetBoolOption, false);
@@ -259,7 +259,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
   /* DESCRIPTION: Inlet boundary type */
-  AddEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, "TOTAL_CONDITIONS");
+  addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
   /* DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
@@ -319,13 +319,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Grid adaptation */
   
   /* DESCRIPTION: Kind of grid adaptation */
-  AddEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, "NONE");
+  addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
   addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
   /* DESCRIPTION: Scale factor for the dual volume */
   addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
   /* DESCRIPTION: Use analytical definition for surfaces */
-  AddEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, "NONE");
+  addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
   AddSpecialOption("SMOOTH_GEOMETRY", SmoothNumGrid, SetBoolOption, false);
   /* DESCRIPTION: Adapt the boundary elements */
@@ -337,7 +337,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Time-marching */
   
   /* DESCRIPTION: Unsteady simulation  */
-  AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
+  addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
@@ -369,37 +369,37 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
   
   /*--- Options related to the linear solvers ---*/
   /* CONFIG_CATEGORY: Linear solver definition */
   
   /* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
-  AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "FGMRES");
+  addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-  AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "LU_SGS");
+  addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
@@ -413,9 +413,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
   /* DESCRIPTION: Linear solver for the turbulent adjoint systems */
-  AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "FGMRES");
+  addEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
-  AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "LU_SGS");
+  addEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
   addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
@@ -495,7 +495,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Apply a wind gust */
   AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
   /* DESCRIPTION: Type of gust */
-  AddEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, "NONE");
+  addEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, NO_GUST);
   /* DESCRIPTION: Gust wavelenght (meters) */
   addDoubleOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
   /* DESCRIPTION: Number of gust periods */
@@ -507,13 +507,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Location at which the gust begins (meters) */
   addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
-  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "Y_DIR");
+  addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
   
   /*--- Options related to convergence ---*/
   /* CONFIG_CATEGORY: Convergence*/
   
   /* DESCRIPTION: Convergence criteria */
-  AddEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, "RESIDUAL");
+  addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
@@ -525,11 +525,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Epsilon to control the series convergence */
   addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /* DESCRIPTION: Flow functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, "DRAG");
+  addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
   /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, "SENS_GEOMETRY");
+  addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, "DELTA_DRAG");
+  addEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, DELTA_DRAG_COEFFICIENT);
   /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
   addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
   
@@ -565,7 +565,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Spatial Discretization */
   
   /* DESCRIPTION: Numerical method for spatial gradients */
-  AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "WEIGHTED_LEAST_SQUARES");
+  addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
   /* DESCRIPTION: Coefficient for the limiter */
   addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
@@ -575,13 +575,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE;
   AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "AVG_GRAD_CORRECTED");
+  addEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, AVG_GRAD_CORRECTED);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
@@ -590,70 +590,70 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE;
   AddConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJFLOW", Kind_SourNumScheme_AdjFlow, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJFLOW", Kind_SourNumScheme_AdjFlow, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   AddArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
   
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, "1ST_ORDER");
+  addEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, FIRST_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "AVG_GRAD_CORRECTED");
+  addEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, AVG_GRAD_CORRECTED);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "PIECEWISE_CONSTANT");
+  addEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, PIECEWISE_CONSTANT);
   
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, "1ST_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJTURB", Kind_SourNumScheme_AdjTurb, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJTURB", Kind_SourNumScheme_AdjTurb, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, NO_SOURCE);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   AddArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
   
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
@@ -661,39 +661,39 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Convective numerical method */
   AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
+  addEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, GALERKIN);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
+  addEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, GALERKIN);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, "GALERKIN");
+  addEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, GALERKIN);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_HEAT", Kind_SourNumScheme_Heat, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_HEAT", Kind_SourNumScheme_Heat, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, NO_SOURCE);
   
   
   /*--- Options related to the adjoint and gradient ---*/
@@ -702,28 +702,27 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Limit value for the adjoint variable */
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /* DESCRIPTION: Adjoint problem boundary condition */
-  AddEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, "DRAG");
+  addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
   /* DESCRIPTION: Definition of the airfoil section */
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
   AddArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
   /* DESCRIPTION: Identify the axis of the section */
-  AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
+  addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
   addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   AddSpecialOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, SetBoolOption, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
-  AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
-//  addStringOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION")
+  addEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, FUNCTION);
   
   /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
   addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
   /* DESCRIPTION: Sensitivity smoothing  */
-  AddEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, "NONE");
+  addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
   /* DESCRIPTION: Continuous governing equation set  */
-  AddEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, "EULER");
+  addEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, EULER_EQNS);
   /* DESCRIPTION: Discrete governing equation set */
-  AddEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, "NONE");
+  addEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, NONE_EQNS);
   /* DESCRIPTION: Adjoint frozen viscosity */
   AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
   /* DESCRIPTION:  */
@@ -739,9 +738,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Input/output files and formats */
   
   /* DESCRIPTION: I/O */
-  AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "TECPLOT");
+  addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
   /* DESCRIPTION: Mesh input file format */
-  AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
+  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
   AddSpecialOption("CGNS_TO_SU2", CGNS_To_SU2, SetBoolOption, false);
   /* DESCRIPTION:  Mesh input file */
@@ -913,7 +912,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* CONFIG_CATEGORY: Reacting Flow */
   
 	/* DESCRIPTION: Specify chemical model for multi-species simulations */
-	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
+	addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, ARGON);
 	/* DESCRIPTION:  */
 	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
   
@@ -984,7 +983,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
   addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, INVERSE_VOLUME);
   
   /*--- option related to rotorcraft problems ---*/
   /* CONFIG_CATEGORY: Rotorcraft problem */
@@ -1035,6 +1034,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 }
 
 void CConfig::SetParsing(char case_filename[200]) {
+
+  cout << "In set parsing" << endl;
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
@@ -1062,6 +1063,17 @@ void CConfig::SetParsing(char case_filename[200]) {
 
   map<string,bool> included_options;
   
+  this->Kind_Solver = NAVIER_STOKES;
+  cout << "kind solver " << this->Kind_Solver << endl;
+ this->Kind_Regime = FREESURFACE;
+ cout << "kind regime " << this->Kind_Regime << endl;
+ this->Mesh_FileName = "oogety boogety";
+  this->Solution_FlowFileName = "blahaeosu";
+  this->CFLFineGrid = 0.9;
+  this->FixAzimuthalLine = 0.9;
+
+  
+  
   /*--- Parse the configuration file and set the options ---*/
   while (getline (case_file,text_line)) {
     if (err_count >= max_err_count){
@@ -1072,7 +1084,8 @@ void CConfig::SetParsing(char case_filename[200]) {
       throw(1);
     }
     if (TokenizeString(text_line, option_name, option_value)) {
-      if (param_to_kind.find(option_name) == param_to_kind.end()){
+      cout << "reading: " <<  option_name << endl;
+      if (option_map.find(option_name) == option_map.end()){
         string newString;
         newString.append(option_name);
         newString.append(": invalid option name");
@@ -1097,143 +1110,17 @@ void CConfig::SetParsing(char case_filename[200]) {
       included_options.insert(pair<string,bool>(option_name, true));
       all_options.erase(option_name);
       
-      // Get the kind of option
-      OptionKind kind = param_to_kind[option_name];
-
-      // Add switch
-      switch (kind){
-        default:
-        {
-          cout << "bad option kind for " << option_name << endl;
-          throw(1);
-        }
-        case NoOption:
-        {
-          cout << "somehow no option is set for: " << option_name << endl;
-          throw(1);
-        }
-        case DoubleOption:
-        {
-          // Check that there is just a double in the option
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for DoubleOption\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          // Parse the string and set it to the config location
-          double val = parseDoubleOption(option_value[0]);
-          double & doubleRef = double_fields[option_name];
-          doubleRef = val;
-          break;
-        }
-        case StringOption:
-        {
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for StringOption\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          string & strRef = string_fields[option_name];
-          strRef.assign(option_value[0]);
-          break;
-        }
-        case IntOption:
-        {
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for IntOption\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          int val = parseIntOption(option_value[0]);
-          int & ref = int_fields[option_name];
-          ref = val;
-          break;
-        }
-        case UnsignedLongOption:
-        {
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for UnsignedLongOption\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          unsigned long val = stoul(option_value[0]);
-          unsigned long & ref = ulong_fields[option_name];
-          ref = val;
-          break;
-        }
-        case UnsignedShortOption:
-        {
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for UnsignedShortOption\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          unsigned long valUL = stoul(option_value[0]);
-          unsigned short val = (unsigned short)(valUL);
-          unsigned short & ref = ushort_fields[option_name];
-          ref = val;
-          break;
-        }
-        case LongOption:
-        {
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for UnsignedLongOption\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          long val = stol(option_value[0]);
-          long & ref = long_fields[option_name];
-          ref = val;
-          break;
-        }
-        case EnumOption:
-        {
-          if (option_value.size() != 1){
-            string newString;
-            newString.append(option_name);
-            newString.append(": multiple values for single-valued option\n");
-            errorString.append(newString);
-            err_count++;
-            break;
-          }
-          special_map[option_name]->SetValue(option_value[0]);
-          break;
-        }
+      // Set the value and check error
+      string out = option_map[option_name]->SetValue(option_value);
+      if (out.compare("") != 0){
+        errorString.append(out);
+        err_count++;
       }
-      cout << "Done setting defaults" << endl;
-      
-      /*
-      map<string, CAnyOptionRef*>::iterator it;
-      it = param.find(option_name);
-      if (it != param.end()) {
-        param[option_name]->SetValue(option_value);
-      } else {
-        if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
-          cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
-      }
-       */
-       
     }
   }
   
+  cout << "Done setting config options in file" << endl;
+
   // See if there were any errors parsing the config file
   if (errorString.size() != 0){
 //    SU2MPI::PrintAndFinalize(errorString);
@@ -1245,83 +1132,243 @@ void CConfig::SetParsing(char case_filename[200]) {
   
   // Set the default values for all of the options that weren't set
   for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
-    OptionKind kind = param_to_kind[iter->first];
-    switch (kind) {
-      default:
-      {
-        cout << "bad kind in default" << endl;
-        cout << kind << endl;
-        throw(1);
-      }
-      case NoOption:
-      {
-        cout << "Should not have no option" << endl;
-        throw(1);
-      }
-      case DoubleOption:
-      {
-          double & doubleRef = double_fields[iter->first];
-          doubleRef = double_defaults[iter->first];
-        break;
-      }
-      case StringOption:
-      {
-        string & strRef = string_fields[iter->first];
-        string def = string_defaults[iter->first];
-        strRef.assign(def);
-        break;
-      }
-      case IntOption:
-      {
-        int & ref = int_fields[iter->first];
-        int def = int_defaults[iter->first];
-        ref = def;
-        break;
-      }
-      case UnsignedLongOption:
-      {
-        unsigned long & ref = ulong_fields[iter->first];
-        unsigned long def = ulong_defaults[iter->first];
-        ref = def;
-        break;
-      }
-      case UnsignedShortOption:
-      {
-        unsigned short & ref = ushort_fields[iter->first];
-        unsigned short def = ushort_defaults[iter->first];
-        ref = def;
-        break;
-      }
-      case LongOption:
-      {
-        long & ref = long_fields[iter->first];
-        long def = long_defaults[iter->first];
-        ref = def;
-        break;
-      }
-      case EnumOption:
-      {
-        special_map[iter->first]->SetDefault();
-        break;
-      }
-    }
+    option_map[iter->first]->SetDefault();
   }
+  
+  
+  cout << "kind regime " << this->Kind_Regime << endl;
+  cout << "Compress is " << COMPRESSIBLE << endl;
+  cout << "kind solver " << this->Kind_Solver << endl;
+  cout << "Euler is " << EULER << endl;
+  cout << "Mesh filename" << this->Mesh_FileName << endl;
+  cout << "sol flow" << this->Solution_FlowFileName << endl;
+  cout << "clf " << this->CFLFineGrid << endl;
+  cout << "az " << this->FixAzimuthalLine << endl;
   
   case_file.close();
 }
 
 double CConfig::parseDoubleOption(string value){
   double val = 0;
-  val = stod(value); // Convert the string to a double
+  istringstream is(value);
+  is >> val;
+//  val = stod(value); // Convert the string to a double
   return val;
 }
 
 int CConfig::parseIntOption(string value){
   int val = 0;
-  val = stoi(value); // Convert the string to a double
+  istringstream is(value);
+  is >> val;
+//  val = stoi(value); // Convert the string to a double
   return val;
 }
 
+
+
+/*
+ map<string, CAnyOptionRef*>::iterator it;
+ it = param.find(option_name);
+ if (it != param.end()) {
+ param[option_name]->SetValue(option_value);
+ } else {
+ if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
+ cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
+ }
+ */
+
+    /*
+     // Get the kind of option
+     OptionKind kind = param_to_kind[option_name];
+     
+     // Add switch
+     switch (kind){
+     default:
+     {
+     cout << "bad option kind for " << option_name << endl;
+     throw(1);
+     }
+     case NoOption:
+     {
+     cout << "somehow no option is set for: " << option_name << endl;
+     throw(1);
+     }
+     case DoubleOption:
+     {
+     // Check that there is just a double in the option
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for DoubleOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     // Parse the string and set it to the config location
+     double val = parseDoubleOption(option_value[0]);
+     //          double_fields[option_name] = val;
+     break;
+     }
+     case StringOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for StringOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     //        string & strRef = string_fields[option_name];
+     //      strRef.assign(option_value[0]);
+     break;
+     }
+     case IntOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for IntOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     int val = parseIntOption(option_value[0]);
+     //     int & ref = int_fields[option_name];
+     //     ref = val;
+     break;
+     }
+     case UnsignedLongOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for UnsignedLongOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     unsigned long val;
+     istringstream is(option_value[0]);
+     is >> val;
+     //          unsigned long & ref = ulong_fields[option_name];
+     //         ref = val;
+     break;
+     }
+     case UnsignedShortOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for UnsignedShortOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     unsigned short val;
+     istringstream is(option_value[0]);
+     is >> val;
+     //          unsigned short & ref = ushort_fields[option_name];
+     //          ref = val;
+     break;
+     }
+     case LongOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for UnsignedLongOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     long val;
+     istringstream is(option_value[0]);
+     is >> val;
+     //          long & ref = long_fields[option_name];
+     //         ref = val;
+     break;
+     }
+     case EnumOption:
+     {
+     
+     
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for single-valued option\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     special_map[option_name]->SetValue(option_value);
+     
+     break;
+     }
+     */
+    
+    
+    /*
+     OptionKind kind = param_to_kind[iter->first];
+     switch (kind) {
+     default:
+     {
+     cout << "bad kind in default" << endl;
+     cout << kind << endl;
+     throw(1);
+     }
+     case NoOption:
+     {
+     cout << "Should not have no option" << endl;
+     throw(1);
+     }
+     case DoubleOption:
+     {
+     //    double & doubleRef = double_fields[iter->first];
+     //    doubleRef = double_defaults[iter->first];
+     break;
+     }
+     case StringOption:
+     {
+     //   string & strRef = string_fields[iter->first];
+     //   string def = string_defaults[iter->first];
+     //   strRef.assign(def);
+     break;
+     }
+     case IntOption:
+     {
+     //   int & ref = int_fields[iter->first];
+     //   int def = int_defaults[iter->first];
+     //   ref = def;
+     break;
+     }
+     case UnsignedLongOption:
+     {
+     //   unsigned long & ref = ulong_fields[iter->first];
+     //   unsigned long def = ulong_defaults[iter->first];
+     //   ref = def;
+     break;
+     }
+     case UnsignedShortOption:
+     {
+     //  unsigned short & ref = ushort_fields[iter->first];
+     //  unsigned short def = ushort_defaults[iter->first];
+     //  ref = def;
+     break;
+     }
+     case LongOption:
+     {
+     //  long & ref = long_fields[iter->first];
+     //  long def = long_defaults[iter->first];
+     //  ref = def;
+     break;
+     }
+     case EnumOption:
+     {
+     
+     break;
+     }
+     */
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim) {
   

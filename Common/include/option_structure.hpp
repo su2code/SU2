@@ -38,17 +38,18 @@
 
 using namespace std;
 
-/*! \brief OptionKind represents the type of option it is*/
+/*
 enum OptionKind {
   NoOption = 0,
-  DoubleOption = 1, /*! \brief represented by a double */
-  StringOption = 2, /*! \brief represented by a string */
-  IntOption = 3, /*! \brief represented by a string */
+  DoubleOption = 1,
+  StringOption = 2,
+  IntOption = 3,
   UnsignedLongOption = 4,
   UnsignedShortOption = 5,
   LongOption = 6,
   EnumOption = 7,
 };
+ */
 
 class COptionBase{
 private:
@@ -56,11 +57,293 @@ public:
   COptionBase(){};
   virtual  ~COptionBase() = 0;
 //  virtual string SetValue(string){SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
-  virtual string SetValue(string) = 0;
+  virtual string SetValue(vector<string>) = 0;
   virtual void SetDefault() = 0;
+  
+  string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name){
+    if (option_value.size() != 1){
+      string newString;
+      newString.append(option_name);
+      newString.append(": multiple values for type ");
+      newString.append(type_id);
+      newString.append("\n");
+      return newString;
+    }
+    return "";
+  }
+  
+  string badValue(vector<string> & option_value, string type_id, string option_name){
+    string newString;
+    newString.append(option_name);
+    newString.append(": improper option value for type ");
+    newString.append(type_id);
+    return newString;
+  }
 };
 
 inline COptionBase::~COptionBase(){}
+
+
+template <class Tenum>
+class COptionEnum : public COptionBase{
+  
+  map<string, Tenum> m;
+  unsigned short & field; // Reference to the feildname
+  Tenum def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionEnum(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field){
+    this->m = m;
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionEnum(){};
+  string SetValue(vector<string> option_value){
+    // Check if there is more than one string
+    string out = optionCheckMultipleValues(option_value, "enum", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    
+    // Check to see if the enum value is in the map
+    if (this->m.find(option_value[0]) == m.end()){
+      string str;
+      str.append(this->name);
+      str.append(": invalid option value ");
+      str.append(option_value[0]);
+      return str;
+    }
+    // If it is there, set the option value
+    Tenum val = this->m[option_value[0]];
+    this->field = val;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionDouble : public COptionBase{
+  double & field; // Reference to the feildname
+  double def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionDouble(string option_field_name, double & option_field, double default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionDouble(){};
+  string SetValue(vector<string> option_value){
+    // check if there is more than one value
+    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "double", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionString : public COptionBase{
+  string & field; // Reference to the feildname
+  string def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionString(string option_field_name, string & option_field, string default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionString(){};
+  string SetValue(vector<string> option_value){
+    // check if there is more than one value
+    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    this->field.assign(option_value[0]);
+    return "";
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionInt : public COptionBase{
+  int & field; // Reference to the feildname
+  int def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionInt(string option_field_name, int & option_field, int default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionInt(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "int", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "int", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionULong : public COptionBase{
+  unsigned long & field; // Reference to the feildname
+  unsigned long def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionULong(string option_field_name, unsigned long & option_field, unsigned long default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionULong(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "unsigned long", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionUShort : public COptionBase{
+  unsigned short & field; // Reference to the feildname
+  unsigned short def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionUShort(string option_field_name, unsigned short & option_field, unsigned short default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionUShort(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "unsigned short", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionLong : public COptionBase{
+  long & field; // Reference to the feildname
+  long def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionLong(string option_field_name, long & option_field, long default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionLong(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "long", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "long", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+template <class Tenum>
+class COptionEnumList : public COptionBase{
+  
+  map<string, Tenum> m;
+  unsigned short * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionEnumList(string option_field_name, const map<string, Tenum> m, unsigned short * & option_field, unsigned short & list_size) : field(option_field) , size(list_size){
+    this->m = m;
+    this->name = option_field_name;
+  }
+  
+  ~COptionEnumList(){};
+  string SetValue(vector<string> option_value){
+    // size is the length of the option list
+    this->size = option_value.size();
+    unsigned short * enums = new unsigned short[size];
+    for(int i  = 0; i < this->size; i++){
+      // Check to see if the enum value is in the map
+      if (this->m.find(option_value[i]) == m.end()){
+        string str;
+        str.append(this->name);
+        str.append(": invalid option value ");
+        str.append(option_value[0]);
+        return str;
+      }
+      // If it is there, set the option value
+      enums[i] = this->m[option_value[0]];
+    }
+    this->field = enums;
+    return "";
+  }
+  
+  void SetDefault(){
+    size = 0;
+   // this->field = this->def;
+  }
+};
+
 
 /*!
  * \class CCreateMap
