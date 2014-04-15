@@ -553,13 +553,13 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 ("EULER_IMPLICIT", EULER_IMPLICIT);
 
 /*!
- * \brief types of schemes to compute the gradient
+ * \brief types of schemes to compute the flow gradient
  */
-enum ENUM_GRADIENT {
+enum ENUM_FLOW_GRADIENT {
 	GREEN_GAUSS = 1,		/*!< \brief Gradients computation using Green Gauss theorem. */
 	WEIGHTED_LEAST_SQUARES = 2	/*!< \brief Gradients computation using Weighted Least Squares. */
 };
-static const map<string, ENUM_GRADIENT> Gradient_Map = CCreateMap<string, ENUM_GRADIENT>
+static const map<string, ENUM_FLOW_GRADIENT> Gradient_Map = CCreateMap<string, ENUM_FLOW_GRADIENT>
 ("GREEN_GAUSS", GREEN_GAUSS)
 ("WEIGHTED_LEAST_SQUARES", WEIGHTED_LEAST_SQUARES);
 
