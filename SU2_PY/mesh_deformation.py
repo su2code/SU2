@@ -3,7 +3,7 @@
 ## \file mesh_deformation.py
 #  \brief Python script for doing the parallel deformation using SU2_MDC.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.1 "eagle"
+#  \version 3.1.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
