@@ -303,11 +303,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
   /* DESCRIPTION: Displacement boundary marker(s) */
-  AddMarkerDisplacement("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
+  addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
-  AddMarkerLoad("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
+  addStringDoubleListOption("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
   /* DESCRIPTION: Flow load boundary marker(s) */
-  AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
+  addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
   addDoubleOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
@@ -1164,6 +1164,7 @@ void CConfig::SetParsing(char case_filename[200]) {
   cout << "Axi" << this->Axisymmetric << endl;
   
   case_file.close();
+  cout << "Done parsing" << endl;
 }
 
 double CConfig::parseDoubleOption(string value){
@@ -4704,13 +4705,15 @@ void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outl
 }
   */
 
+/*
 void CConfig::AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
                                     string* & Marker_Displacement, double* & Displ) {
   nMarker_Displacement = 0;
   CAnyOptionRef* option_ref = new CMarkerDisplacementRef(nMarker_Displacement, Marker_Displacement, Displ);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+ */
+/*
 void CConfig::AddMarkerLoad(const string & name, unsigned short & nMarker_Load,
                             string* & Marker_Load, double* & Force) {
   nMarker_Load = 0;
@@ -4724,6 +4727,7 @@ void CConfig::AddMarkerFlowLoad(const string & name, unsigned short & nMarker_Fl
   CAnyOptionRef* option_ref = new CMarkerLoadRef(nMarker_FlowLoad, Marker_FlowLoad, FlowForce);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
 /*
 void CConfig::SetBoolOption(bool* ref, const vector<string> & value) {

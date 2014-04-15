@@ -1102,8 +1102,7 @@ public:
 	 * \param[in] Marker_Outlet - string names of displacement boundaries
 	 * \param[in] Displ_Value - Specified displacement for displacement boundaries
 	 */
-	void AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
-			string* & Marker_Displacement, double* & Displ_Value);
+//	void AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement, string* & Marker_Displacement, double* & Displ_Value);
 
 	/*!
 	 * \brief adds an load marker option to the param map
@@ -1112,8 +1111,7 @@ public:
 	 * \param[in] Marker_Load - string names of load boundaries
 	 * \param[in] Load_Value - Specified force for load boundaries
 	 */
-	void AddMarkerLoad(const string & name, unsigned short & nMarker_Load,
-			string* & Marker_Load, double* & Load_Value);
+	//void AddMarkerLoad(const string & name, unsigned short & nMarker_Load, string* & Marker_Load, double* & Load_Value);
 
 	/*!
 	 * \brief adds an load marker option to the param map
@@ -1122,8 +1120,7 @@ public:
 	 * \param[in] Marker_FlowLoad - string names of load boundaries
 	 * \param[in] FlowLoad_Value - Specified force for load boundaries
 	 */
-	void AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad,
-			string* & Marker_FlowLoad, double* & FlowLoad_Value);
+//	void AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad, string* & Marker_FlowLoad, double* & FlowLoad_Value);
 
 	/*!
 	 * \brief used to set Boolean values based on strings "YES" and "NO"
