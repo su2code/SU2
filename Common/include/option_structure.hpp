@@ -1828,6 +1828,8 @@ public:
   ~COptionInlet(){};
   string SetValue(vector<string> option_value){
     
+    cout << "In COptionInlet SetValue " << endl;
+    
     int totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE"))){
       this->size = 0;
@@ -1837,6 +1839,8 @@ public:
       this->flowdir = NULL;
       return "";
     }
+    
+        cout << "In COptionInlet SetValue  past none" << endl;
     
     if (totalVals % 6 != 0){
       string newstring;
@@ -1850,7 +1854,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals % 6;
+    int nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
@@ -1859,6 +1863,7 @@ public:
     for (int i = 0; i < nVals; i++){
       this->flowdir[i] = new double[3];
     }
+    
     stringstream ss;
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[6*i]);
@@ -1883,6 +1888,9 @@ public:
         return badValue(option_value, "inlet", this->name);
       }
     }
+    
+        cout << "In COptionInlet SetValue done successfully" << endl;
+    
     return "";
   }
   
@@ -1931,7 +1939,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals % 3;
+    int nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
@@ -2004,7 +2012,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals % mod_num;
+    int nVals = totalVals / mod_num;
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];

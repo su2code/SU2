@@ -183,8 +183,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* BEGIN_CONFIG_OPTIONS */
   
-  /*--- Options related to problem definition and partitioning ---*/
   /* CONFIG_CATEGORY: Problem Definition */
+  /*--- Options related to problem definition and partitioning ---*/
   
   /* DESCRIPTION: Adjoint type */
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
@@ -219,8 +219,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Write a tecplot file for each partition */
   addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   
-  /*--- Options related to various boundary markers ---*/
   /* CONFIG_CATEGORY: Boundary Markers */
+  /*--- Options related to various boundary markers ---*/
   
   /* DESCRIPTION: Marker(s) of the surface in the surface flow solution file */
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
@@ -315,8 +315,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
   
   
-  /*--- Options related to grid adaptation ---*/
   /* CONFIG_CATEGORY: Grid adaptation */
+  /*--- Options related to grid adaptation ---*/
   
   /* DESCRIPTION: Kind of grid adaptation */
   addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
@@ -333,8 +333,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Divide rectangles into triangles */
   addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
   
-  /*--- Options related to time-marching ---*/
   /* CONFIG_CATEGORY: Time-marching */
+  /*--- Options related to time-marching ---*/
   
   /* DESCRIPTION: Unsteady simulation  */
   addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
@@ -393,8 +393,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
   
-  /*--- Options related to the linear solvers ---*/
   /* CONFIG_CATEGORY: Linear solver definition */
+  /*--- Options related to the linear solvers ---*/
   
   /* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
   addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
@@ -421,8 +421,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
   
-  /*--- Options related to dynamic meshes ---*/
+  
   /* CONFIG_CATEGORY: Dynamic mesh definition */
+  /*--- Options related to dynamic meshes ---*/
   
   /* DESCRIPTION: Mesh motion for unsteady simulations */
   addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
@@ -489,8 +490,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
   addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
   
-  /*--- Options related to wind gust simulations ---*/
+
   /* CONFIG_CATEGORY: Wind Gust */
+  /*--- Options related to wind gust simulations ---*/
   
   /* DESCRIPTION: Apply a wind gust */
   addBoolOption("WIND_GUST", Wind_Gust, false);
@@ -509,8 +511,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
   
-  /*--- Options related to convergence ---*/
   /* CONFIG_CATEGORY: Convergence*/
+  /*--- Options related to convergence ---*/
   
   /* DESCRIPTION: Convergence criteria */
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
@@ -533,8 +535,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
   addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
   
-  /*--- Options related to Multi-grid ---*/
   /* CONFIG_CATEGORY: Multi-grid */
+  /*--- Options related to Multi-grid ---*/
   
   /* DESCRIPTION: Full multi-grid  */
   addBoolOption("FULLMG", FullMG, false);
@@ -561,8 +563,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
   addDoubleOption("MAX_DIMENSION", MaxDimension, 0.1);
   
-  /*--- Options related to the spatial discretization ---*/
   /* CONFIG_CATEGORY: Spatial Discretization */
+  /*--- Options related to the spatial discretization ---*/
   
   /* DESCRIPTION: Numerical method for spatial gradients */
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
@@ -572,7 +574,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
   /* DESCRIPTION: Convective numerical method */
-//  Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE;
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
   /* DESCRIPTION: Viscous numerical method */
   addEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, AVG_GRAD_CORRECTED);
@@ -587,7 +588,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
-//  Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE;
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /* DESCRIPTION: Viscous numerical method */
   addEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, NO_VISCOUS);
@@ -696,8 +696,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, NO_SOURCE);
   
   
-  /*--- Options related to the adjoint and gradient ---*/
   /* CONFIG_CATEGORY: Adjoint and Gradient */
+  /*--- Options related to the adjoint and gradient ---*/
   
   /* DESCRIPTION: Limit value for the adjoint variable */
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
@@ -734,8 +734,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: P-norm for heat-flux based objective functions. */
 	addDoubleOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
   
-  /*--- Options related to input/output files and formats ---*/
   /* CONFIG_CATEGORY: Input/output files and formats */
+  /*--- Options related to input/output files and formats ---*/
   
   /* DESCRIPTION: I/O */
   addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
@@ -822,8 +822,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
   addBoolOption("WRT_1D_OUTPUT", Wrt_1D_Output, false);
   
-  /*--- Options related to the equivalent area ---*/
   /* CONFIG_CATEGORY: Equivalent Area */
+  /*--- Options related to the equivalent area ---*/
   
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
   addBoolOption("EQUIV_AREA", EquivArea, false);
@@ -831,8 +831,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
   
-  /*--- Options related to freestream specification ---*/
   /* CONFIG_CATEGORY: Freestream Conditions */
+  /*--- Options related to freestream specification ---*/
   
   /* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.87);
@@ -878,8 +878,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
   addDoubleOption("AOA", AoA, 0.0);
   
-  /*--- Options related to reference values for nondimensionalization ---*/
   /* CONFIG_CATEGORY: Reference Conditions */
+  /*--- Options related to reference values for nondimensionalization ---*/
   
   Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
   
@@ -908,16 +908,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Reference viscosity (incompressible only) */
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   
-	/*--- Options related to the reacting gas mixtures ---*/
 	/* CONFIG_CATEGORY: Reacting Flow */
+  /*--- Options related to the reacting gas mixtures ---*/
   
 	/* DESCRIPTION: Specify chemical model for multi-species simulations */
 	addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, ARGON);
 	/* DESCRIPTION:  */
 	addDoubleListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
   
-	/*--- Options related to free surface simulation ---*/
 	/* CONFIG_CATEGORY: Free surface simulation */
+	/*--- Options related to free surface simulation ---*/
   
 	/* DESCRIPTION: Ratio of density for two phase problems */
   addDoubleOption("RATIO_DENSITY", RatioDensity, 0.1);
@@ -936,9 +936,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
   addDoubleOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
   
-	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
 	/* CONFIG_CATEGORY: Grid deformation */
+  /*--- Options related to the grid deformation ---*/
   
 	/* DESCRIPTION: Kind of deformation */
 	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
@@ -985,15 +985,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
   addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, INVERSE_VOLUME);
   
-  /*--- option related to rotorcraft problems ---*/
   /* CONFIG_CATEGORY: Rotorcraft problem */
+  /*--- option related to rotorcraft problems ---*/
   
   addDoubleOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
   addDoubleOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
   
   
-  /*--- Options related to the FEA solver ---*/
   /* CONFIG_CATEGORY: FEA solver */
+  /*--- Options related to the FEA solver ---*/
   
   /* DESCRIPTION: Modulus of elasticity */
   addDoubleOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
@@ -1002,14 +1002,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
   
-  /*--- options related to the wave solver ---*/
   /* CONFIG_CATEGORY: Wave solver */
+  /*--- options related to the wave solver ---*/
   
   /* DESCRIPTION: Constant wave speed */
   addDoubleOption("WAVE_SPEED", Wave_Speed, 331.79);
   
-  /*--- options related to the heat solver ---*/
   /* CONFIG_CATEGORY: Heat solver */
+  /*--- options related to the heat solver ---*/
   
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
@@ -1060,8 +1060,6 @@ void CConfig::SetParsing(char case_filename[200]) {
   int max_err_count = 30; // Maximum number of errors to print before stopping
 
   map<string,bool> included_options;
-
-  
   
   /*--- Parse the configuration file and set the options ---*/
   while (getline (case_file,text_line)) {
@@ -1094,6 +1092,8 @@ void CConfig::SetParsing(char case_filename[200]) {
         continue;
       }
       
+      cout << "parsing " << option_name << endl;
+      
       // New found option. Add it to the map, and delete from all options
       included_options.insert(pair<string,bool>(option_name, true));
       all_options.erase(option_name);
@@ -1119,6 +1119,10 @@ void CConfig::SetParsing(char case_filename[200]) {
   for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
     option_map[iter->first]->SetDefault();
   }
+  
+  cout << "Marker inlet " << endl;
+  cout << "n marker " << this->nMarker_Inlet << endl;
+  
   case_file.close();
 }
 /*
