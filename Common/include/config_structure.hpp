@@ -819,6 +819,14 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
+                        double* & double_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   double parseDoubleOption(string);
   int parseIntOption(string);
 

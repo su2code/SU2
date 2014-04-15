@@ -1759,6 +1759,61 @@ public:
 };
 
 
+// Class where the option is represented by (String, double, string, double, ...)
+class COptionStringDoubleList : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size; // how many strings are there (same as number of doubles)
+
+  string * & s_f; // Reference to the string fields
+  double* & d_f; // reference to the double fields
+  
+public:
+  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, double* & double_field) : size(list_size), s_f(string_field), d_f(double_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionStringDoubleList(){};
+  string SetValue(vector<string> option_value){
+    // There must be an even number of entries (same number of strings and doubles
+    int totalVals = option_value.size();
+    if ((totalVals % 2) != 0){
+      if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+        // It's okay to say its NONE
+        this->size = 0;
+        return "";
+      }
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have an even number of entries");
+      return newstring;
+    }
+    int nVals = totalVals / 2;
+    this->size = nVals;
+    this->s_f = new string[nVals];
+    this->d_f = new double[nVals];
+    
+    for (int i = 0; i < nVals; i++){
+      this->s_f[i].assign(option_value[2*i]); // 2 because have double and string
+      istringstream is(option_value[2*i + 1]);
+      double val;
+      if (!(is >> val)){
+        return badValue(option_value, "string double", this->name);
+      }
+      this->d_f[i] = val;
+    }
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+
+
+
+
+
+
 
 
 
