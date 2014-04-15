@@ -256,7 +256,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
-  AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
+  addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
   /* DESCRIPTION: Inlet boundary type */
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
@@ -267,11 +267,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
    a unit vector. */
-  AddMarkerInlet("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
+  addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
   /* DESCRIPTION: % Supersonic inlet boundary marker(s)
    Format: (inlet marker, temperature, static pressure, velocity_x,
    velocity_y, velocity_z, ... ), i.e. primitive variables specified. */
-  AddMarkerInlet("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
+  addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
   /* DESCRIPTION: Outlet boundary marker(s)
    Format: ( outlet marker, back pressure (static), ... ) */
@@ -301,7 +301,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addInletFixedOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -4656,7 +4656,7 @@ void CConfig::AddDVParamOption(const string & name, unsigned short & nDV, double
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
  */
-
+/*
 void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
                                 string* & Marker_PerBound, string* & Marker_PerDonor,
                                 double** & RotCenter, double** & RotAngles, double** & Translation) {
@@ -4667,7 +4667,9 @@ void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_Pe
                                                      RotAngles, Translation);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
+/*
 void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
                              string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
                              double** & FlowDir) {
@@ -4676,7 +4678,8 @@ void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet
                                                   Ttotal, Ptotal, FlowDir);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+ */
+/*
 void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
                              string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) {
   nMarker_Inlet = 0;
@@ -4684,6 +4687,7 @@ void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet
                                                    Ttotal, Ptotal);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
 /*
 void CConfig::AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec,

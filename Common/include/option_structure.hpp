@@ -1644,6 +1644,10 @@ public:
   
   ~COptionDVParam(){};
   string SetValue(vector<string> option_value){
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE"))){
+      this->nDV = 0;
+      return "";
+    }
     
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0){
@@ -1808,9 +1812,236 @@ public:
   }
 };
 
+class COptionInlet : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & ttotal;
+  double * & ptotal;
+  double ** & flowdir;
+  
+public:
+  COptionInlet(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal, double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal), flowdir(FlowDir){
+    this->name = option_field_name;
+  }
+  
+  ~COptionInlet(){};
+  string SetValue(vector<string> option_value){
+    
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE"))){
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      this->flowdir = NULL;
+      return "";
+    }
+    
+    if (totalVals % 6 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 6");
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      this->flowdir = NULL;
+      return newstring;
+    }
+    
+    int nVals = totalVals % 6;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->ttotal = new double[nVals];
+    this->ptotal = new double[nVals];
+    this->flowdir = new double*[nVals];
+    for (int i = 0; i < nVals; i++){
+      this->flowdir[i] = new double[3];
+    }
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[6*i]);
+      ss << option_value[6*i + 1] << " ";
+      ss >> this->ttotal[i];
+      ss << option_value[6*i + 2] << " ";
+      ss >> this->ptotal[i];
+      ss << option_value[6*i + 3] << " ";
+      ss >> this->flowdir[i][0];
+      ss << option_value[6*i + 4] << " ";
+      ss >> this->flowdir[i][1];
+      ss << option_value[6*i + 5] << " ";
+      ss >> this->flowdir[i][2];
+    }
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->ttotal = NULL;
+    this->ptotal = NULL;
+    this->flowdir = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
 
+//Inlet condition where the input direction is assumed
+class COptionInletFixed : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & ttotal;
+  double * & ptotal;
+  
+public:
+  COptionInletFixed(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal){
+    this->name = option_field_name;
+  }
+  
+  ~COptionInletFixed(){};
+  string SetValue(vector<string> option_value){
+    
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE"))){
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      return "";
+    }
+    
+    if (totalVals % 3 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      return newstring;
+    }
+    
+    int nVals = totalVals % 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->ttotal = new double[nVals];
+    this->ptotal = new double[nVals];
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[3*i]);
+      ss << option_value[3*i + 1] << " ";
+      ss >> this->ttotal[i];
+      ss << option_value[3*i + 2] << " ";
+      ss >> this->ptotal[i];
+    }
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->ttotal = NULL;
+    this->ptotal = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
 
+class COptionPeriodic : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_bound;
+  string * & marker_donor;
+  double ** & rot_center;
+  double ** & rot_angles;
+  double ** & translation;
+  
+public:
+  COptionPeriodic(const string option_field_name, unsigned short & nMarker_PerBound,
+                    string* & Marker_PerBound, string* & Marker_PerDonor,
+                    double** & RotCenter, double** & RotAngles, double** & Translation) : size(nMarker_PerBound), marker_bound(Marker_PerBound), marker_donor(Marker_PerDonor), rot_center(RotCenter), rot_angles(RotAngles), translation(Translation){
+    this->name = option_field_name;
+  }
+  
+  ~COptionPeriodic(){};
+  string SetValue(vector<string> option_value){
+    
+    const int mod_num = 11;
 
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE"))){
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      this->rot_center = NULL;
+      this->rot_angles = NULL;
+      this->translation = NULL;
+      return "";
+    }
+    
+    if (totalVals % mod_num != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      this->rot_center = NULL;
+      this->rot_angles = NULL;
+      this->translation = NULL;
+      return newstring;
+    }
+    
+    int nVals = totalVals % mod_num;
+    this->size = nVals;
+    this->marker_bound = new string[nVals];
+    this->marker_donor = new string[nVals];
+    this->rot_center = new double*[nVals];
+    this->rot_angles = new double*[nVals];
+    this->translation = new double*[nVals];
+    for (int i = 0; i < nVals; i++){
+      this->rot_center[i] = new double[3];
+      this->rot_angles[i] = new double[3];
+      this->translation[i] = new double[3];
+    }
+    
+    double deg2rad = PI_NUMBER/180.0;
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker_bound[i].assign(option_value[mod_num*i]);
+      this->marker_donor[i].assign(option_value[mod_num*i+1]);
+      ss << option_value[mod_num*i + 2] << " ";
+      ss >> this->rot_center[i][0];
+      ss << option_value[mod_num*i + 3] << " ";
+      ss >> this->rot_center[i][1];
+      ss << option_value[mod_num*i + 4] << " ";
+      ss >> this->rot_center[i][2];
+      ss << option_value[mod_num*i + 5] << " ";
+      ss >> this->rot_angles[i][0];
+      ss << option_value[mod_num*i + 6] << " ";
+      ss >> this->rot_angles[i][1];
+      ss << option_value[mod_num*i + 7] << " ";
+      ss >> this->rot_angles[i][2];
+      ss << option_value[mod_num*i + 8] << " ";
+      ss >> this->translation[i][0];
+      ss << option_value[mod_num*i + 9] << " ";
+      ss >> this->translation[i][1];
+      ss << option_value[mod_num*i + 10] << " ";
+      ss >> this->translation[i][2];
+      this->rot_angles[i][0] *= deg2rad;
+      this->rot_angles[i][1] *= deg2rad;
+      this->rot_angles[i][2] *= deg2rad;
+    }
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0;
+    this->marker_bound = NULL;
+    this->marker_donor = NULL;
+    this->rot_center = NULL;
+    this->rot_angles = NULL;
+    this->translation = NULL;
+  }
+};
 
 
 
