@@ -39,7 +39,7 @@
 using namespace std;
 
 /*
-enum OptionKind {
+aoseunhenum OptionKind {
   NoOption = 0,
   DoubleOption = 1,
   StringOption = 2,
