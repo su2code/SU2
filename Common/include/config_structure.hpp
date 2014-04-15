@@ -827,6 +827,32 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+                                 double* & Ttotal, double* & Ptotal, double** & FlowDir){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addInletFixedOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+                      double* & Ttotal, double* & Ptotal){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInletFixed(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
+                    string* & Marker_PerBound, string* & Marker_PerDonor,
+                         double** & RotCenter, double** & RotAngles, double** & Translation){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  
   double parseDoubleOption(string);
   int parseIntOption(string);
 
@@ -1049,9 +1075,9 @@ public:
 	 * \param[in] RotAngles - rotation angles for each periodic boundary
 	 * \param[in] Translation - translation vector for each periodic boundary.
 	 */
-	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
-			string* & Marker_PerBound, string* & Marker_PerDonor,
-			double** & RotCenter, double** & RotAngles, double** & Translation);
+//	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
+//			string* & Marker_PerBound, string* & Marker_PerDonor,
+//			double** & RotCenter, double** & RotAngles, double** & Translation);
 
 	/*!
 	 * \brief adds an inlet marker option to the param map
@@ -1062,9 +1088,9 @@ public:
 	 * \param[in] Ptotal - specified total pressures for inlet boundaries
 	 * \param[in] FlowDir - specified flow direction vector (unit vector) for inlet boundaries
 	 */
-	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
-			double** & FlowDir);
+//	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
+//			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
+//			double** & FlowDir);
 
 	/*!
 	 * \brief adds an inlet marker without flow direction option to the param map
@@ -1074,8 +1100,7 @@ public:
 	 * \param[in] Ttotal - specified total temperatures for inlet boundaries
 	 * \param[in] Ptotal - specified total pressures for inlet boundaries
 	 */
-	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
+	//void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
 
 	/*!
 	 * \brief adds an Dirichlet marker option to the param map
