@@ -811,6 +811,14 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV,
+                        unsigned short* & design_variable){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, design_variable);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   double parseDoubleOption(string);
   int parseIntOption(string);
 
@@ -1021,8 +1029,7 @@ public:
 	 * \param[in] ParamDV - the parameter values of each design variable
 	 * \param[in] Design_Variable - the type of each design variable
 	 */
-	void AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV,
-			unsigned short* & Design_Variable);
+//	void AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV, unsigned short* & Design_Variable);
 
 	/*!
 	 * \brief adds a periodic marker option to the param map
