@@ -246,8 +246,16 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 		CConfig **config_container, unsigned short nZone, unsigned short iZone);
 
 /*!
+ * \brief Computation of the Time-Spectral operator matrix.
+ * \author K. Naik
+ * \param[in] D - double pointer to the operator matrix.
+ * \param[in] nZone - Total number of zones (periodic instances).
+ */
+void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone);
+
+/*!
  * \brief Computation and storage of the time-spectral mesh velocities.
- * \author T. Economon, K. Naik
+ * \author K. Naik, T. Economon
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones (periodic instances).
