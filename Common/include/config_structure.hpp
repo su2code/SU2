@@ -853,8 +853,8 @@ private:
   }
   
   
-  double parseDoubleOption(string);
-  int parseIntOption(string);
+ // double parseDoubleOption(string);
+ // int parseIntOption(string);
 
 public:
 

@@ -1863,15 +1863,25 @@ public:
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[6*i]);
       ss << option_value[6*i + 1] << " ";
-      ss >> this->ttotal[i];
+      if(!(ss >> this->ttotal[i])){
+          return badValue(option_value, "inlet", this->name);
+      }
       ss << option_value[6*i + 2] << " ";
-      ss >> this->ptotal[i];
+      if(!(ss >> this->ptotal[i])){
+        return badValue(option_value, "inlet", this->name);
+      }
       ss << option_value[6*i + 3] << " ";
-      ss >> this->flowdir[i][0];
+      if (!(ss >> this->flowdir[i][0])){
+        return badValue(option_value, "inlet", this->name);
+      }
       ss << option_value[6*i + 4] << " ";
-      ss >> this->flowdir[i][1];
+      if (!(ss >> this->flowdir[i][1])){
+        return badValue(option_value, "inlet", this->name);
+      }
       ss << option_value[6*i + 5] << " ";
-      ss >> this->flowdir[i][2];
+      if (!(ss >> this->flowdir[i][2])){
+        return badValue(option_value, "inlet", this->name);
+      }
     }
     return "";
   }
@@ -1930,9 +1940,13 @@ public:
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[3*i]);
       ss << option_value[3*i + 1] << " ";
-      ss >> this->ttotal[i];
+      if (!(ss >> this->ttotal[i])){
+        return badValue(option_value, "inlet fixed", this->name);
+      }
       ss << option_value[3*i + 2] << " ";
-      ss >> this->ptotal[i];
+      if (!(ss >> this->ptotal[i])){
+        return badValue(option_value, "inlet fixed", this->name);
+      }
     }
     return "";
   }
@@ -2009,23 +2023,41 @@ public:
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       ss << option_value[mod_num*i + 2] << " ";
-      ss >> this->rot_center[i][0];
+      if (!(ss >> this->rot_center[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 3] << " ";
-      ss >> this->rot_center[i][1];
+      if (!(ss >> this->rot_center[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 4] << " ";
-      ss >> this->rot_center[i][2];
+      if (!(ss >> this->rot_center[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 5] << " ";
-      ss >> this->rot_angles[i][0];
+      if (!(ss >> this->rot_angles[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 6] << " ";
-      ss >> this->rot_angles[i][1];
+      if (!(ss >> this->rot_angles[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 7] << " ";
-      ss >> this->rot_angles[i][2];
+      if (!(ss >> this->rot_angles[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 8] << " ";
-      ss >> this->translation[i][0];
+      if (!(ss >> this->translation[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 9] << " ";
-      ss >> this->translation[i][1];
+      if (!(ss >> this->translation[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
       ss << option_value[mod_num*i + 10] << " ";
-      ss >> this->translation[i][2];
+      if (!(ss >> this->translation[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
       this->rot_angles[i][0] *= deg2rad;
       this->rot_angles[i][1] *= deg2rad;
       this->rot_angles[i][2] *= deg2rad;

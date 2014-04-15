@@ -1034,8 +1034,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 }
 
 void CConfig::SetParsing(char case_filename[200]) {
-
-  cout << "In set parsing" << endl;
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;
@@ -1062,15 +1060,6 @@ void CConfig::SetParsing(char case_filename[200]) {
   int max_err_count = 30; // Maximum number of errors to print before stopping
 
   map<string,bool> included_options;
-  
-  this->Kind_Solver = NAVIER_STOKES;
-  cout << "kind solver " << this->Kind_Solver << endl;
- this->Kind_Regime = FREESURFACE;
- cout << "kind regime " << this->Kind_Regime << endl;
- this->Mesh_FileName = "oogety boogety";
-  this->Solution_FlowFileName = "blahaeosu";
-  this->CFLFineGrid = 0.9;
-  this->FixAzimuthalLine = 0.9;
 
   
   
@@ -1084,7 +1073,6 @@ void CConfig::SetParsing(char case_filename[200]) {
       throw(1);
     }
     if (TokenizeString(text_line, option_name, option_value)) {
-      cout << "reading: " <<  option_name << endl;
       if (option_map.find(option_name) == option_map.end()){
         string newString;
         newString.append(option_name);
@@ -1119,54 +1107,21 @@ void CConfig::SetParsing(char case_filename[200]) {
       }
     }
   }
-  
-  cout << "Done setting config options in file" << endl;
 
   // See if there were any errors parsing the config file
   if (errorString.size() != 0){
 //    SU2MPI::PrintAndFinalize(errorString);
     cout << errorString << endl;
-    throw(1);
+    exit(1);
   }
-  
-  cout << "Getting default options" << endl;
   
   // Set the default values for all of the options that weren't set
   for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
     option_map[iter->first]->SetDefault();
   }
-  
-  
-  cout << "kind regime " << this->Kind_Regime << endl;
-  cout << "Compress is " << COMPRESSIBLE << endl;
-  cout << "kind solver " << this->Kind_Solver << endl;
-  cout << "Euler is " << EULER << endl;
-  cout << "Mesh filename" << this->Mesh_FileName << endl;
-  cout << "sol flow" << this->Solution_FlowFileName << endl;
-  cout << "clf " << this->CFLFineGrid << endl;
-  cout << "az " << this->FixAzimuthalLine << endl;
-  cout << "cflramp ";
-  for (int i = 0; i < 3; i++){
-    cout << this->CFLRamp[i] << " ";
-  }
-  cout << endl;
-  cout << "rk options";
-  for (int i= 0; i < this->nRKStep; i++){
-    cout << this-> RK_Alpha_Step[i] << " ";
-  }
-  cout << endl;
-  cout << "marker plotting";
-  for (int i = 0; i < this->nMarker_Plotting; i++){
-    cout << this->Marker_Plotting[i] << " ";
-  }
-  cout << endl;
-  cout << "Extra output " << this->ExtraOutput << endl;
-  cout << "Axi" << this->Axisymmetric << endl;
-  
   case_file.close();
-  cout << "Done parsing" << endl;
 }
-
+/*
 double CConfig::parseDoubleOption(string value){
   double val = 0;
   istringstream is(value);
@@ -1182,6 +1137,7 @@ int CConfig::parseIntOption(string value){
 //  val = stoi(value); // Convert the string to a double
   return val;
 }
+ */
 
 
 
