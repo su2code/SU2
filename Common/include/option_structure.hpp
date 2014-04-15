@@ -1631,6 +1631,135 @@ public:
   }
 };
 
+class COptionDVParam : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & nDV;
+  double ** & paramDV;
+  unsigned short* & design_variable;
+  
+public:
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionDVParam(){};
+  string SetValue(vector<string> option_value){
+    
+    // Cannot have ; at the beginning or the end
+    if (option_value[0].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have beginning semicolon");
+      return newstring;
+    }
+    if (option_value[option_value.size()-1].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have ending semicolon");
+      return newstring;
+    }
+    
+    
+    // use the ";" token to determine the number of design variables
+    // This works because semicolon is not one of the delimiters in tokenize string
+    this->nDV = 0;
+    //unsigned int num_semi = 0;
+    for (unsigned int i = 0; i < static_cast<unsigned int>(option_value.size()); i++) {
+      if (option_value[i].compare(";") == 0) {
+        this->nDV++;
+//        num_semi++;
+      }
+    }
+    
+    // One more design variable than semicolon
+    this->nDV++;
+    
+    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
+      return newstring;
+    }
+    /*
+#if 0
+    cout << "Found " << (*nDV_) << " DV parameters" << endl;
+    cout << "DV param value = ";
+    for (unsigned int i = 0; i < value.size(); i++)
+      cout << value[i] << ", ";
+    cout << endl;
+#endif
+     */
+    
+    
+    
+    this->paramDV = new double*[this->nDV];
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++){
+      this->paramDV[iDV] = new double[MAX_PARAMETERS];
+    }
+    
+    unsigned short nParamDV = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      switch (this->design_variable[iDV]) {
+        case FFD_SETTING: nParamDV = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_CAMBER_2D: nParamDV = 2; break;
+        case FFD_THICKNESS_2D: nParamDV = 2; break;
+        case HICKS_HENNE: nParamDV = 2; break;
+        case SPHERICAL: nParamDV = 3; break;
+        case COSINE_BUMP: nParamDV = 3; break;
+        case FOURIER: nParamDV = 3; break;
+        case DISPLACEMENT: nParamDV = 3; break;
+        case ROTATION: nParamDV = 6; break;
+        case NACA_4DIGITS: nParamDV = 3; break;
+        case PARABOLIC: nParamDV = 2; break;
+        case OBSTACLE: nParamDV = 2; break;
+        case AIRFOIL: nParamDV = 2; break;
+        case STRETCH: nParamDV = 2; break;
+        case FFD_CONTROL_POINT: nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
+        case FFD_TWIST_ANGLE: nParamDV = 7; break;
+        case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_THICKNESS: nParamDV = 3; break;
+        case SURFACE_FILE: nParamDV = 0; break;
+        default : {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": undefined design variable type found in configuration file.");
+          return newstring;
+        }
+      }
+      
+      // ?? Not sure what's going on. Didn't touch it.
+      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
+        ss << option_value[i] << " ";
+        ss >> this->paramDV[iDV][iParamDV];
+        i++;
+      }
+      if (iDV < (this->nDV-1)) {
+        if (option_value[i].compare(";") != 0) {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": a design variable in the configuration file has the wrong number of parameters");
+          return newstring;
+        }
+        i++;
+      }
+    }
+    
+  }
+  
+  void SetDefault(){
+    this->nDV = 0;
+    this->paramDV = NULL;
+    // Don't mess with the Design_Variable because it's an input, not modified
+  }
+};
+
+
+
 
 
 

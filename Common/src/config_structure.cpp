@@ -965,7 +965,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
-	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
+	addDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
@@ -4647,12 +4647,14 @@ void CConfig::AddMathProblem(const string & name, bool & Adjoint, const bool & A
 }
  */
 
+/*
 void CConfig::AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV,
                                unsigned short* & Design_Variable) {
   //cout << "Adding DV Param option " << name << endl;
   CAnyOptionRef* option_ref = new CDVParamOptionRef(nDV, ParamDV, Design_Variable);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
 void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
                                 string* & Marker_PerBound, string* & Marker_PerDonor,
