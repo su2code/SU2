@@ -1084,8 +1084,7 @@ public:
 	 * \param[in] Marker_Dirichlet_Elec - string names of Dirichlet boundaries
 	 * \param[in] Dirichlet_Value - specified value of the variable at the boundaries
 	 */
-	void AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec,
-			string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value);
+	//void AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec, string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value);
 
 	/*!
 	 * \brief adds an outlet marker option to the param map
@@ -1094,8 +1093,7 @@ public:
 	 * \param[in] Marker_Outlet - string names of outlet boundaries
 	 * \param[in] Pressure - Specified back pressures (static) for outlet boundaries
 	 */
-	void AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet,
-			string* & Marker_Outlet, double* & Pressure);
+	//void AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet, string* & Marker_Outlet, double* & Pressure);
 
 	/*!
 	 * \brief adds an displacement marker option to the param map

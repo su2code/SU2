@@ -247,7 +247,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Neumann boundary marker(s) */
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
   /* DESCRIPTION: poisson dirichlet boundary marker(s) */
-  AddMarkerDirichlet("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
+  addStringDoubleListOption("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
   /* DESCRIPTION: poisson neumann boundary marker(s) */
   addStringListOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
   /* DESCRIPTION: Custom boundary marker(s) */
@@ -275,28 +275,28 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
   /* DESCRIPTION: Outlet boundary marker(s)
    Format: ( outlet marker, back pressure (static), ... ) */
-  AddMarkerOutlet("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
+  addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
-  AddMarkerOutlet("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
+  addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
-  AddMarkerOutlet("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
+  addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
-  AddMarkerOutlet("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
+  addStringDoubleListOption("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
-  AddMarkerOutlet("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
-  AddMarkerOutlet("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
+  addStringDoubleListOption("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
-  AddMarkerOutlet("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
+  addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /* DESCRIPTION: Nacelle inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) */
-  AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
+  addStringDoubleListOption("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
   /* DESCRIPTION: Engine subsonic intake region */
   addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
@@ -4684,6 +4684,7 @@ void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
+/*
 void CConfig::AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec,
                                  string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value) {
   nMarker_Dirichlet_Elec = 0;
@@ -4692,7 +4693,8 @@ void CConfig::AddMarkerDirichlet(const string & name, unsigned short & nMarker_D
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
   
 }
-
+*/
+ /*
 void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet,
                               string* & Marker_Outlet, double* & Pressure) {
   nMarker_Outlet = 0;
@@ -4700,6 +4702,7 @@ void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outl
                                                    Pressure);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+  */
 
 void CConfig::AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
                                     string* & Marker_Displacement, double* & Displ) {
