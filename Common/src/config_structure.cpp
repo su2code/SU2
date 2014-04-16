@@ -1122,9 +1122,6 @@ void CConfig::SetParsing(char case_filename[200]) {
     option_map[iter->first]->SetDefault();
   }
   
-  cout << "Marker inlet " << endl;
-  cout << "n marker " << this->nMarker_Inlet << endl;
-  
   case_file.close();
 }
 /*
