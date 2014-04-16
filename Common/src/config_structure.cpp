@@ -1072,12 +1072,16 @@ void CConfig::SetParsing(char case_filename[200]) {
     }
     if (TokenizeString(text_line, option_name, option_value)) {
       if (option_map.find(option_name) == option_map.end()){
-        string newString;
-        newString.append(option_name);
-        newString.append(": invalid option name");
-        newString.append("\n");
-        errorString.append(newString);
-        err_count++;
+        // See if it's a python option
+        if (!GetPython_Option(option_name)){
+          string newString;
+          newString.append(option_name);
+          newString.append(": invalid option name");
+          newString.append("\n");
+          errorString.append(newString);
+          err_count++;
+        }
+        // Either way, no parsing to be done
         continue;
       }
       

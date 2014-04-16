@@ -2089,11 +2089,6 @@ public:
 
 
 
-
-
-
-
-
 /*!
  * \class CAnyOptionRef
  * \brief provides a means of referencing variables of any type
