@@ -989,7 +989,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Rotorcraft problem */
   /*--- option related to rotorcraft problems ---*/
   
+  /* --- DESCRIPTION MISSING --- */
   addDoubleOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
+  /* --- DESCRIPTION MISSING --- */
   addDoubleOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
   
   
