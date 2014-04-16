@@ -989,9 +989,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Rotorcraft problem */
   /*--- option related to rotorcraft problems ---*/
   
-  /* --- DESCRIPTION MISSING --- */
+  /* DESCRIPTION: MISSING --- */
   addDoubleOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
-  /* --- DESCRIPTION MISSING --- */
+  /* DESCRIPTION: MISSING --- */
   addDoubleOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
   
   
@@ -1017,14 +1017,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Thermal diffusivity constant */
   addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
   
-  /*--- options related to visualizing control volumes ---*/
   /* CONFIG_CATEGORY: Visualize Control Volumes */
+  /*--- options related to visualizing control volumes ---*/
   
   /* DESCRIPTION: Node number for the CV to be visualized */
   addLongOption("VISUALIZE_CV", Visualize_CV, -1);
   
+  /* CONFIG_CATEGORY: Inverse design problem */
   /*--- options related to inverse design problem ---*/
-  /* CONFIG_CATEGORY:Inverse design problem */
 
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   addBoolOption("INV_DESIGN_CP", InvDesign_Cp, false);
