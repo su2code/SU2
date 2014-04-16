@@ -682,7 +682,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*--- Options related to the adjoint and gradient ---*/
   /* CONFIG_CATEGORY: Adjoint and Gradient */
-  
+  /* DESCRIPTION: Surface curvature calculation method */
+  AddEnumOption("CURVATURE_METHOD", Kind_Surf_Curvature, Surf_Curvature_Map, "MAXIMUM_PRINCIPLE");
   /* DESCRIPTION: Limit value for the adjoint variable */
   AddScalarOption("ADJ_LIMIT", AdjointLimit, 1E6);
   /* DESCRIPTION: Adjoint problem boundary condition */

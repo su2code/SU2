@@ -2522,16 +2522,16 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 	node = new CVariable*[nPoint];
   
 	/*--- Define some auxiliary arrays related to the residual ---*/
-	Residual      = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
-	Residual_RMS  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-	Residual_Max  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-	Point_Max  = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-	Residual_i    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
-	Residual_j    = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
-	Res_Conv_i = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
-  Res_Visc_i   = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Res_Visc_i[iVar]    = 0.0;
-	Res_Conv_j = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Res_Conv_j[iVar]    = 0.0;
-  Res_Visc_j   = new double[nVar];  for (iVar = 0; iVar < nVar; iVar++) Res_Visc_j[iVar]    = 0.0;
+  Point_Max    = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+	Residual     = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+	Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+	Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+	Residual_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
+	Residual_j   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
+	Res_Conv_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
+  Res_Visc_i   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_i[iVar]    = 0.0;
+	Res_Conv_j   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_j[iVar]    = 0.0;
+  Res_Visc_j   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_j[iVar]    = 0.0;
   
 	/*--- Define some auxiliary arrays related to the solution ---*/
 	Solution   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
@@ -2629,10 +2629,10 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
   if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
       (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
       (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX)) {
-    PsiE_Inf = -1.0;
+    PsiE_Inf   = -1.0;
     PsiEve_Inf = -1.0;
   } else {
-    PsiE_Inf = 0.0;
+    PsiE_Inf   = 0.0;
     PsiEve_Inf = 0.0;
   }
   
@@ -3872,8 +3872,8 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   /*--- Get primitive vector locators ---*/
   RHOS_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhosIndex();
   RHO_INDEX  = solver_container[TNE2_SOL]->node[0]->GetRhoIndex();
-  T_INDEX = solver_container[TNE2_SOL]->node[0]->GetTIndex();
-  TVE_INDEX = solver_container[TNE2_SOL]->node[0]->GetTveIndex();
+  T_INDEX    = solver_container[TNE2_SOL]->node[0]->GetTIndex();
+  TVE_INDEX  = solver_container[TNE2_SOL]->node[0]->GetTveIndex();
   
   /*--- Loop over all boundary points ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

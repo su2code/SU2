@@ -101,6 +101,7 @@ private:
 	unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
+  unsigned short Kind_Surf_Curvature; /*!< \brief Surface curvature calculation technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
 	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
@@ -2128,6 +2129,12 @@ public:
 	 * \return Gas model that we are using.
 	 */		
 	unsigned short GetKind_GasModel(void);
+  
+  /*!
+	 * \brief Gas model that we are using.
+	 * \return Gas model that we are using.
+	 */
+	unsigned short GetKind_SurfCurvature(void);
 
 	/*! 
 	 * \brief Get the kind of method for computation of spatial gradients.

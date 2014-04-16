@@ -310,6 +310,8 @@ inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
+inline unsigned short CConfig::GetKind_SurfCurvature(void) { return Kind_Surf_Curvature; }
+
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 
 inline void CConfig::SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type) { Kind_GridMovement[val_iZone] = motion_Type; }

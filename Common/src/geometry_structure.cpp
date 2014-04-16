@@ -935,12 +935,24 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
             
             MaxPrinK = MeanK + sqrt(delta);
             MinPrinK = MeanK - sqrt(delta);
-            
+      
             /*--- Store the curvature value ---*/
-            K[iPoint] = MaxPrinK;
+            switch (config->GetKind_SurfCurvature()) {
+              case MAXIMUM_PRINICIPLE:
+                K[iPoint] = MaxPrinK;
+                break;
+              case MEAN_CURVATURE:
+                K[iPoint] = MeanK;
+                break;
+              case GAUSS_CURVATURE:
+                K[iPoint] = GaussK;
+                break;
+              default:
+                cout << "ERROR!!  No surface curvature method selected, exiting..." << endl;
+                exit(1);
+            }
             node[iPoint]->SetCurvature(K[iPoint]);
           }
-          
         }
       }
     }

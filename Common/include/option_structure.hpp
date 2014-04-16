@@ -326,6 +326,20 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
 ("ONESPECIES", ONESPECIES);
 
 /*!
+ * \brief types of spatial discretizations
+ */
+enum ENUM_SURFCURVATURE {
+	MAXIMUM_PRINICIPLE = 0,		/*!< \brief _____. */
+	MEAN_CURVATURE     = 1,		/*!< \brief _______. */
+  GAUSS_CURVATURE    = 2
+  
+};
+static const map<string, ENUM_SURFCURVATURE> Surf_Curvature_Map = CCreateMap<string, ENUM_SURFCURVATURE>
+("MAXIMUM_PRINCIPLE", MAXIMUM_PRINICIPLE)
+("MEAN", MEAN_CURVATURE)
+("GAUSS", GAUSS_CURVATURE);
+
+/*!
  * \brief types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {

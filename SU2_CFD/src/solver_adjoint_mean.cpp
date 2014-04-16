@@ -3755,14 +3755,14 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 	unsigned short iVar, iDim;
 	double *Normal, *U_domain, *U_infty, *Psi_domain, *Psi_infty;
 
-	bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+	bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-	bool grid_movement = config->GetGrid_Movement();
+	bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+	bool grid_movement  = config->GetGrid_Movement();
 
-	Normal = new double[nDim];
-	U_domain = new double[nVar]; U_infty = new double[nVar];
+	Normal     = new double[nDim];
+	U_domain   = new double[nVar]; U_infty   = new double[nVar];
 	Psi_domain = new double[nVar]; Psi_infty = new double[nVar];
 
 	/*--- Loop over all the vertices ---*/
@@ -3817,17 +3817,19 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 			}
 			if (incompressible || freesurface) {
 				conv_numerics->SetDensityInc(config->GetDensity_FreeStreamND(), config->GetDensity_FreeStreamND());
-				conv_numerics->SetBetaInc2(solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2(), 
-						solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2());
+				conv_numerics->SetBetaInc2(solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2(),
+                                   solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2());
 				conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
 			}
 
 			/*--- Grid Movement ---*/
 			if (grid_movement)
-				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
 
 			/*--- Compute the upwind flux ---*/
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii,
+                                     Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
       
 			/*--- Add and Subtract Residual ---*/
       LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -3839,7 +3841,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 	}
 
 	delete [] Normal;
-	delete [] U_domain; delete [] U_infty;
+	delete [] U_domain;   delete [] U_infty;
 	delete [] Psi_domain; delete [] Psi_infty;
 }
 
@@ -4820,12 +4822,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #endif
 #endif
   
-  /*--- Norm heat flux objective test ---*/
-  /*--- Norm heat flux objective test ---*/
-  pnorm = 10;
-  /*--- Norm heat flux objective test ---*/
-  /*--- Norm heat flux objective test ---*/
-  
 	/*--- Set the gamma value ---*/
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
@@ -4940,14 +4936,10 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	/*--- Initialize the adjoint variables to zero (infinity state) ---*/
 	PsiRho_Inf = 0.0;
-  if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-      (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
-      (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX))
-    PsiE_Inf = -1.0;
-  else
-    PsiE_Inf = 0.0;
-	Phi_Inf = new double [nDim];
-	Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
+  PsiE_Inf   = 0.0;
+	Phi_Inf    = new double [nDim];
+	Phi_Inf[0] = 0.0;
+  Phi_Inf[1] = 0.0;
 	if (nDim == 3) Phi_Inf[2] = 0.0;
 
 	if (!restart || geometry->GetFinestMGLevel() == false) {
@@ -5361,6 +5353,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   USens = new double[nVar];
   
+  double obj_sense;
   double *UnitNormal = new double[nDim];
 	double *normal_grad_vel = new double[nDim];
 	double *tang_deriv_psi5 = new double[nDim];
@@ -5389,6 +5382,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   double Gas_Constant = config->GetGas_ConstantND();
 	double cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   double Prandtl_Lam  = config->GetPrandtl_Lam();
+  
+  double pnorm, Xi, qp, qn, Hm;
   
   /*--- Compute gradient of adjoint variables on the surface ---*/
   
@@ -5638,9 +5633,47 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             sigma_partial += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);
           }
           
+          /*--- Additional sensitivities from the selection of the objective function. ---*/
+          obj_sense = 0.0;
+          switch (config->GetKind_ObjFunc()) {
+
+            case MAXIMUM_HEATFLUX:
+              
+              /*--- Calculate the tangential gradient of Psi5 ---*/
+              for (iDim = 0; iDim < nDim; iDim++)
+                tang_deriv_psi5[iDim] = PsiVar_Grad[nVar-1][iDim] -
+                                        normal_grad_psi5*UnitNormal[iDim];
+              
+              /*--- Calculate leading coefficient, Xi ---*/
+              pnorm = config->GetPnormHeat();
+              Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
+              qp = pow(Xi, pnorm);
+              Xi = 1.0/pnorm * Xi / qp;
+              
+              /*--- Term 1: \nabla_S Psi5 \cdot (-k\nabla T) ---*/
+              for (iDim = 0; iDim < nDim; iDim++)
+                obj_sense += tang_deriv_psi5[iDim]*(-heat_flux_factor*PrimVar_Grad[0][iDim]);
+              
+              /*--- Term 2: Xi * (p-1)(-k\nabla T \cdot n)^p * 2Hm ---*/
+              qn = pow(-heat_flux_factor*normal_grad_T, pnorm);
+              Hm = geometry->node[iPoint]->GetCurvature();
+              obj_sense += Xi*(pnorm-1.0)*qn*2*Hm;
+              break;
+            
+            case TOTAL_HEATFLUX:
+              cout << "Total Heatflux objective not yet implemented!  Exiting..." << endl;
+              exit(1);
+              break;
+            
+            case INVERSE_DESIGN_HEATFLUX:
+              cout << "Inverse heatflux design objective not yet implemented!  Exiting..." << endl;
+              exit(1);
+              break;
+          }
+          
           /*--- Compute sensitivity for each surface point ---*/
           
-          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens)*Area;
+          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens + obj_sense)*Area;
           
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
@@ -5846,7 +5879,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
             /*--- AoA sensitivity ---*/
             /* Coefficients with an explicit AoA dependence - NOTE: Still need to implement right dependency for EFFICIENCY */
-            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT || config->GetKind_ObjFunc() == LIFT_COEFFICIENT || config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT || config->GetKind_ObjFunc() == EQUIVALENT_AREA || config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT      ||
+                config->GetKind_ObjFunc() == LIFT_COEFFICIENT      ||
+                config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
+                config->GetKind_ObjFunc() == EQUIVALENT_AREA       ||
+                config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
             	if (nDim == 2) {
             		D[0][0] = 0.0; D[0][1] = -1.0;
             		D[1][0] = 1.0; D[1][1] = 0.0;
@@ -6318,6 +6355,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 		Tau[iDim] = new double [nDim];
   double *Velocity = new double[nDim];
   double *Normal = new double[nDim];
+  double *UnitNormal = new double[nDim];
   
   double **GradPhi = new double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -6332,9 +6370,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
   
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -6342,8 +6377,11 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   double Thermal_Conductivity;
   double Xi;
+  double qp;
   double invrho3;
+  double Area;
   double Volume;
+  double pnorm;
   double mu2;
   double gpsiAv2;
   double gpsi5n;
@@ -6373,7 +6411,14 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       Volume = geometry->node[iPoint]->GetVolume();
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      Area = 0.0;
+      for (iDim =0; iDim < nDim; iDim++) {
+        Normal[iDim] = -Normal[iDim];
+        Area += Normal[iDim]*Normal[iDim];
+      }
+      Area = sqrt(Area);
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Get the force projection vector (based on the objective function) ---*/
 			d = node[iPoint]->GetForceProj_Vector();
@@ -6411,19 +6456,55 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       
       GradV = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
       
-      /*--- Calculate Dirichlet condition for energy equation ---*/
-      if (!heat_flux_obj) {
-        q = 0.0;
-      }
-      else {
-        GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
-        kGTdotn = 0;
-        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
-        Xi = 1.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
-        //q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
-        q = -1.0;
+      
+      /*--- The adjoint-energy Dirichlet boundary condition depends on the 
+       specified objective function ---*/
+      switch (config->GetKind_ObjFunc()) {
+          
+        case MAXIMUM_HEATFLUX:
+          
+          /*--- Note: Maximum heatflux is really a p-norm of the heat flux 
+           integrated over the design surface.  This p-norm is user-specified.  
+           We do this because we require a differentiable obj. function --*/
+          
+          
+          /*--- Calculate the wall heat flux: k \nabla T . n ---*/
+          GradT   = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
+          kGTdotn = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            kGTdotn += Thermal_Conductivity*GradT[iDim]*UnitNormal[iDim];
+          
+          /*--- There is a coefficient that depends on the pnorm of the heat 
+           flux calculated from the direct problem ---*/
+          pnorm = config->GetPnormHeat();
+          Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
+          qp = pow(Xi, pnorm);
+          Xi = 1.0/pnorm * Xi / qp;
+          
+          /*--- Make the energy assignment ---*/
+          q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
+          
+//          cout << pnorm << endl;
+//          cout << Xi << endl;
+//          cout << q << endl;
+//          cin.get();
+//          q = -1.0;
+          break;
+          
+        case TOTAL_HEATFLUX:
+          cout << "ERROR!! TOTAL_HEATFLUX Objective function not supported, exiting..." << endl;
+          exit(1);
+          break;
+          
+        case INVERSE_DESIGN_HEATFLUX:
+          cout << "ERROR!! INVERSE_DESIGN_HEATFLUX Objective function not supported, exiting..." << endl;
+          exit(1);
+          break;
+          
+        default:
+          q = 0.0;
+          break;
+          
       }
       
       /*--- Strong BC enforcement of the energy equation ---*/
@@ -6652,6 +6733,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   delete [] Psi;
   delete [] Velocity;
   delete [] Normal;
+  delete [] UnitNormal;
   delete [] GradPsiE;
   for (iDim = 0; iDim < nDim; iDim++)
     delete [] GradPhi[iDim];
