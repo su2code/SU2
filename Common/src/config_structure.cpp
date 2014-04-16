@@ -1092,8 +1092,6 @@ void CConfig::SetParsing(char case_filename[200]) {
         continue;
       }
       
-      cout << "parsing " << option_name << endl;
-      
       // New found option. Add it to the map, and delete from all options
       included_options.insert(pair<string,bool>(option_name, true));
       all_options.erase(option_name);
