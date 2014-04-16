@@ -629,9 +629,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
   addEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, NO_SOURCE);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.02;
+  default_vec_2d[0] = 0.15; default_vec_2d[1] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_2d);
   
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
