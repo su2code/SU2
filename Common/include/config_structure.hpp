@@ -851,6 +851,14 @@ private:
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  /*
+  void addPythonOption(const string & name){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPython(name);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+   */
   
   
  // double parseDoubleOption(string);
