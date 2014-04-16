@@ -100,9 +100,6 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name);
   
-  cout << "Past first constructor" << endl;
-  cout << config->GetKind_Solver() << endl;
-  
   /*--- Get the number of zones and dimensions from the numerical grid
    (required for variables allocation) ---*/
   
