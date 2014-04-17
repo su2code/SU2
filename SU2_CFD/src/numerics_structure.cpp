@@ -120,7 +120,6 @@ CNumerics::~CNumerics(void) {
 	delete [] U_n;
 	delete [] U_nM1;
 	delete [] U_nP1;
-
 	// visc
 	delete [] Proj_Flux_Tensor;
 
@@ -128,7 +127,6 @@ CNumerics::~CNumerics(void) {
 		delete [] Flux_Tensor[iVar];
 	}
 	delete [] Flux_Tensor;
-
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
 		delete [] tau[iDim];
 		delete [] delta[iDim];
@@ -148,6 +146,7 @@ CNumerics::~CNumerics(void) {
       delete dFdYj[iSpecies];
     delete [] dFdYj;
   }
+
   if (sumdFdYih != NULL) delete [] sumdFdYih;
   if (sumdFdYjh != NULL) delete [] sumdFdYjh;
   if (sumdFdYieve != NULL) delete [] sumdFdYieve;

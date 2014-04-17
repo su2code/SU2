@@ -534,18 +534,17 @@ int main(int argc, char *argv[]) {
     cout << endl <<"History file closed." << endl;
   }
   
-//<<<<<<< HEAD
   /*--- Numerics class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
       for (iSol = 0; iSol < MAX_SOLS; iSol++) {
         for (unsigned short iTerm = 0; iTerm < MAX_TERMS; iTerm++){
-        if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
-          delete numerics_container[iZone][iMesh][iSol][iTerm];
-        }
+          if (numerics_container[iZone][iMesh][iSol][iTerm] != NULL) {
+            delete numerics_container[iZone][iMesh][iSol][iTerm];
+          }
         }
         if (numerics_container[iZone][iMesh][iSol] != NULL)
-        delete numerics_container[iZone][iMesh][iSol];
+        delete [] numerics_container[iZone][iMesh][iSol];
       }
       if (numerics_container[iZone][iMesh]!= NULL)
       delete numerics_container[iZone][iMesh];
@@ -557,7 +556,6 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
   
   /*--- Solver class deallocation ---*/
-  //delete solver_container;//[0][0];
 
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
@@ -615,17 +613,6 @@ int main(int argc, char *argv[]) {
   /*--- Deallocate output container ---*/
   delete output;
   cout <<"Output container deallocated." << endl;
-//=======
-//  /*--- Deallocate config container ---*/
-//  
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    if (config_container[iZone] != NULL) {
-//      delete config_container[iZone];
-//    }
-//  }
-//  if (config_container != NULL) delete[] config_container;
-
-//>>>>>>> master
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

@@ -32,6 +32,8 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
 #endif
+
+  ParamDV=NULL;
   
   /*--- Initialize pointers to Null---*/
   SetPointersNull();
@@ -52,6 +54,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
     SetOutput(val_software, val_iZone);
   
+
 }
 
 CConfig::CConfig(char case_filename[200]) {
@@ -205,6 +208,7 @@ CConfig::~CConfig(void)
   if (Marker_Config_PerBound!=NULL) delete[] Marker_Config_PerBound;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
   if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
+
   /*String markers*/
   if (Marker_Euler!=NULL )              delete[] Marker_Euler;
   if (Marker_FarField!=NULL )           delete[] Marker_FarField;
@@ -230,6 +234,7 @@ CConfig::~CConfig(void)
   if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
   if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
   if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
+
   /*other*/
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
@@ -305,7 +310,6 @@ void CConfig::SetPointersNull(void){
 
   
   /*--- Miscellaneous/unsorted ---*/
-  
   Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
   Velocity_FreeStreamND=NULL; MassFrac_FreeStream=NULL;
   Velocity_FreeStream=NULL;
@@ -355,6 +359,8 @@ void CConfig::SetPointersNull(void){
   CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
   Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
   Diss=NULL;
+
+
 
 }
 
