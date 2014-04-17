@@ -324,6 +324,7 @@
 			children = (
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
 				05E6DAC517EB608000FA1F7E /* config_structure.hpp */,
+				05E6DACC17EB608000FA1F7E /* option_structure.hpp */,
 				05E6DBB417EB627400FA1F7E /* definition_structure.hpp */,
 				05E6DBB517EB627400FA1F7E /* integration_structure.hpp */,
 				C6B325BF18F7832900C0E798 /* su2mpi.hpp */,
@@ -340,7 +341,6 @@
 				05E6DAC917EB608000FA1F7E /* grid_movement_structure.hpp */,
 				05E6DACA17EB608000FA1F7E /* linear_solvers_structure.hpp */,
 				05E6DACB17EB608000FA1F7E /* matrix_structure.hpp */,
-				05E6DACC17EB608000FA1F7E /* option_structure.hpp */,
 				05E6DACD17EB608000FA1F7E /* primal_grid_structure.hpp */,
 				05E6DACE17EB608000FA1F7E /* vector_structure.hpp */,
 			);
