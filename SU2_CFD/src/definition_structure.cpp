@@ -676,8 +676,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
     numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
-    for (iSol = 0; iSol < MAX_SOLS; iSol++)
+    for (iSol = 0; iSol < MAX_SOLS; iSol++){
       numerics_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
+      for(int iTerm=0; iTerm < MAX_TERMS; iTerm++)
+        numerics_container[iMGlevel][iSol][iTerm]=NULL;
+    }
   }
   
   /*--- Solver definition for the template problem ---*/

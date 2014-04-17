@@ -561,17 +561,6 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] CharacPrimVar;
   }
-  /*
-<<<<<<< HEAD
-  if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
-      delete node[iPoint];
-    delete [] node;
-  }
-
-  if (CHeatTransfer != NULL) {
-=======
-*/
   if (CPressureTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete CPressureTarget[iMarker];
@@ -588,7 +577,6 @@ CEulerSolver::~CEulerSolver(void) {
   //  }
   
   if (HeatFlux != NULL) {
-//>>>>>>> master
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete HeatFlux[iMarker];
     }
