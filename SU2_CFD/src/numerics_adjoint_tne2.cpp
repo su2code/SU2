@@ -1386,6 +1386,9 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   }
   
   /*--- Contribution to viscous residual from Av4 ---*/
+  cout << "In ComputeSourceViscous: NEED TO UPDATE TO CALCULATE GRAD RHOCVVE!" << endl;
+  exit(1);
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       Cvves = var->CalcCvve(V_i[TVE_INDEX], config, iSpecies);

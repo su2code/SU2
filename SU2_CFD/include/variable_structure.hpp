@@ -1024,6 +1024,18 @@ public:
   virtual bool Cons2PrimVar(CConfig *config, double *U, double *V,
                             double *dPdU, double *dTdU,
                             double *dTvedU);
+  
+  /*!
+	 * \brief Set Gradient of the primitive variables from
+	 */
+  virtual bool GradCons2GradPrimVar(CConfig *config, double *U, double *V,
+                                    double **GradU, double **GradV);
+  
+  /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	virtual void SetPrimVar_Gradient(CConfig *config);
+  
   /*!
 	 * \brief A virtual member.
 	 */
@@ -3208,10 +3220,21 @@ public:
 	bool SetPrimVar_Compressible(CConfig *config);
   
   /*!
+	 * \brief Set all the primitive variables for compressible flows.
+	 */
+	void SetPrimVar_Gradient(CConfig *config);
+  
+  /*!
 	 * \brief Set all the conserved variables.
 	 */
 	bool Cons2PrimVar(CConfig *config, double *U, double *V, double *dPdU,
                     double *dTdU, double *dTvedU);
+  
+  /*!
+	 * \brief Set Gradient of the primitive variables from
+	 */
+  bool GradCons2GradPrimVar(CConfig *config, double *U, double *V,
+                            double **GradU, double **GradV);
   
   /*!
 	 * \brief Set all the conserved variables.

@@ -294,6 +294,12 @@ inline bool CVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
                                     double *val_dPdU, double *val_dTdU,
                                     double *val_dTvedU) { return false; }
 
+inline bool CVariable::GradCons2GradPrimVar(CConfig *config, double *U,
+                                            double *V, double **GradU,
+                                            double **GradV) { return false; }
+
+inline void CVariable::SetPrimVar_Gradient(CConfig *config) { }
+
 inline void CVariable::Prim2ConsVar(CConfig *config, double *V, double *U) { return; }
 
 inline double *CVariable::GetPrimVar(void) { return NULL; }

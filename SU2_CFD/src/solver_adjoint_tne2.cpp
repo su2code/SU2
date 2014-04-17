@@ -3126,7 +3126,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   unsigned short T_INDEX, TVE_INDEX, VEL_INDEX;
   double rho, H;
   double div_vel, dnT, dnTve;
-  double mu, ktr, kve;
+  double mu, ktr, kve, pnorm, qp, qn, Hm;
   double *U, *dnvel;
   double **GradV, **sigma;
   
@@ -3140,20 +3140,20 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     
   
   // Adjoint problem declarations
-  double vartheta, dnPsiE, dnPsiEve, div_phi, GPsiEdotVel;
+  double vartheta, div_phi, Xi, obj_sense;
+  double dnPsiE, dnPsiEve;
   double B1, B21, B22, B23, B24, B31, B32, B33, B34;
-  double *Psi, *d;
-  double **GradPsi, **SigmaPhi, **SigmaPsiE;
+  double *Psi, *d, *Gtg_PsiE;
+  double **GradPsi, **SigmaPhi;
   
   Psi     = NULL;
   d       = NULL;
   GradPsi = NULL;
   
+  Gtg_PsiE = new double[nDim];
   SigmaPhi = new double *[nDim];
-  SigmaPsiE = new double *[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
     SigmaPhi[iDim] = new double[nDim];
-    SigmaPsiE[iDim] = new double[nDim];
   }
   
   /*--- Compute gradient of adjoint variables on the surface ---*/
@@ -3273,25 +3273,6 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             SigmaPhi[iDim][iDim] -= 2.0/3.0 * div_phi;
           }
           
-          // SigmaPsi5
-          GPsiEdotVel = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            GPsiEdotVel += GradPsi[nSpecies+nDim][iDim] *
-                           U[nSpecies+iDim]/rho;
-            for (jDim = 0; jDim < nDim; jDim++)
-              SigmaPsiE[iDim][jDim] = 0.0;
-          }
-          for (iDim = 0; iDim < nDim; iDim++) {
-            for (jDim = 0; jDim < nDim; jDim++) {
-              SigmaPsiE[iDim][jDim] += GradPsi[nSpecies+nDim][iDim] *
-                                       U[nSpecies+jDim]/rho +
-                                       GradPsi[nSpecies+nDim][jDim] *
-                                       U[nSpecies+iDim]/rho;
-            }
-            SigmaPsiE[iDim][iDim] -= 2.0/3.0*GPsiEdotVel;
-          }
-          
-          
           /*--- B1: Convective sensitivity ---*/
           // Note: The deltaP term is always canceled using adjoint B.C.'s
           // and is not included in the surface sensitivities.
@@ -3326,20 +3307,80 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
           B32 = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             for (jDim = 0; jDim < nDim; jDim++) {
-              B32 -= mu*(SigmaPhi[iDim][jDim] +
-                         SigmaPsiE[iDim][jDim] ) * dnvel[jDim]*UnitNormal[iDim];
+              B32 -= mu*(SigmaPhi[iDim][jDim]) * dnvel[jDim]*UnitNormal[iDim];
             }
           }
           
           /*--- B33: 2nd-viscous sensitivity, tr heat flux ---*/
           B33 = 0.0;
-          if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)           ||
+              (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC) ||
+              (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC))
             B33 = -ktr * dnPsiE * dnT;
           
           /*--- B34: 2nd-viscous sensitivity, ve heat flux ---*/
           B34 = 0.0;
-          if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)           ||
+              (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC) ||
+              (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC))
             B34 = -kve * (dnPsiE+dnPsiEve) * dnTve;
+          
+          /*--- Calculate sensitivity terms related to the objective function ---*/
+          obj_sense = 0.0;
+          switch (config->GetKind_ObjFunc()) {
+            case MAXIMUM_HEATFLUX:
+              
+              /*--- Calculate the tangential derivative of PsiE ---*/
+              for (iDim = 0; iDim < nDim; iDim++)
+                Gtg_PsiE[iDim] = GradPsi[nSpecies+nDim][iDim] - dnPsiE*UnitNormal[iDim];
+
+              /*--- Calculate leading coefficient, Xi ---*/
+              pnorm = config->GetPnormHeat();
+              Xi = solver_container[TNE2_SOL]->GetTotal_MaxHeatFlux();
+              qp = pow(Xi, pnorm);
+              Xi = 1.0/pnorm * Xi / qp;
+              
+              /*--- Term 1: \nabla_S PsiE \cdot (-k\nabla T) ---*/
+              for (iDim = 0; iDim < nDim; iDim++)
+                obj_sense += Gtg_PsiE[iDim]*(-ktr*GradV[T_INDEX][iDim]
+                                             -kve*GradV[TVE_INDEX][iDim]);
+              
+              /*--- Term 2: Xi * (p-1)(-k\nabla T \cdot n)^p * 2Hm ---*/
+              qn = pow(-ktr*dnT-kve*dnTve, pnorm);
+              Hm = geometry->node[iPoint]->GetCurvature();
+              obj_sense += Xi*(pnorm-1.0)*qn*2*Hm;
+              break;
+              
+            case TOTAL_HEATFLUX:
+              cout << "Total Heatflux objective not yet implemented!  Exiting..." << endl;
+              exit(1);
+              break;
+              
+            case INVERSE_DESIGN_HEATFLUX:
+              cout << "Inverse heatflux design objective not yet implemented!  Exiting..." << endl;
+              break;
+          }
+          
+          cout << "B1: " << B1 << endl;
+          cout << "B21: " << B21 << endl;
+          cout << "B22: " << B22 << endl;
+          cout << "B23: " << B23 << endl;
+          cout << "B24: " << B24 << endl;
+          cout << "B31: " << B31 << endl;
+          cout << "B32: " << B32 << endl;
+          cout << "B33: " << B33 << endl;
+          cout << "B34: " << B34 << endl;
+          double tmp = 0.0;
+          for (iDim = 0; iDim< nDim; iDim++)
+            tmp += dnvel[iDim]*UnitNormal[iDim];
+          cout << "tmp: " << tmp << endl;
+          cout << "Div vel: " << div_vel << endl;
+          cout << "GradVel: " << endl;
+          cout << GradV[VEL_INDEX][0] << "\t" << GradV[VEL_INDEX][1] << "\t" << GradV[VEL_INDEX][2] << endl;
+          cout << GradV[VEL_INDEX+1][0] << "\t" << GradV[VEL_INDEX+1][1] << "\t" << GradV[VEL_INDEX+1][2] << endl;
+          cout << GradV[VEL_INDEX+2][0] << "\t" << GradV[VEL_INDEX+2][1] << "\t" << GradV[VEL_INDEX+2][2] << endl;
+          cout << "Coord: " << geometry->node[iPoint]->GetCoord(0) << "\t" << geometry->node[iPoint]->GetCoord(1) << "\t" << geometry->node[iPoint]->GetCoord(2) << endl;
+          cin.get();
           
           /*--- Gather all sensitivities for dJ/dS ---*/
           CSensitivity[iMarker][iVertex] = (B1 - (B21+B22+B23+B24) +
@@ -3636,10 +3677,9 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   // Adjoint solution arrays
   for (iDim = 0; iDim < nDim; iDim++) {
     delete [] SigmaPhi[iDim];
-    delete [] SigmaPsiE[iDim];
   }
   delete [] SigmaPhi;
-  delete [] SigmaPsiE;
+  delete [] Gtg_PsiE;
   
 }
 
@@ -3839,6 +3879,31 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 }
 
 
+void CAdjTNE2NSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
+                                                    CSolver **solver_container,
+                                                    CNumerics *conv_numerics,
+                                                    CNumerics *visc_numerics,
+                                                    CConfig *config,
+                                                    unsigned short val_marker) {
+  
+  /*--- Use already-implemented Heat Flux BC as a baseline ---*/
+  BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics,
+                   config, val_marker);
+}
+
+void CAdjTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
+                                                 CSolver **solver_container,
+                                                 CNumerics *conv_numerics,
+                                                 CNumerics *visc_numerics,
+                                                 CConfig *config,
+                                                 unsigned short val_marker) {
+  
+  /*--- Use already-implemented Heat Flux BC as a baseline ---*/
+  BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics,
+                   config, val_marker);
+}
+
+
 void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                           CSolver **solver_container,
                                           CNumerics *conv_numerics,
@@ -3978,5 +4043,29 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   delete [] Normal;
 }
 
+void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
+                                                      CSolver **solver_container,
+                                                      CNumerics *conv_numerics,
+                                                      CNumerics *visc_numerics,
+                                                      CConfig *config,
+                                                      unsigned short val_marker) {
+  
+  /*--- Use already implemented Isothermal BC as a baseline ---*/
+  BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics,
+                     config, val_marker);
+  
+}
 
+void CAdjTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
+                                                   CSolver **solver_container,
+                                                   CNumerics *conv_numerics,
+                                                   CNumerics *visc_numerics,
+                                                   CConfig *config,
+                                                   unsigned short val_marker) {
+  
+  /*--- Use already implemented Isothermal BC as a baseline ---*/
+  BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics,
+                     config, val_marker);
+  
+}
 

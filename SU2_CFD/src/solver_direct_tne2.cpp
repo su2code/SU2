@@ -1804,17 +1804,17 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetSolution_Gradient_GG(geometry, config);
-        SetPrimVar_Gradient_GG(geometry, config);
+//        SetPrimVar_Gradient_GG(geometry, config);
         break;
       case WEIGHTED_LEAST_SQUARES:
         SetSolution_Gradient_LS(geometry, config);
-        SetPrimVar_Gradient_LS(geometry, config);
+//        SetPrimVar_Gradient_LS(geometry, config);
         break;
     }
     
 		/*--- Limiter computation ---*/
 		if ((limiter) && (iMesh == MESH_0)) {
-      SetPrimVar_Limiter(geometry, config);
+//      SetPrimVar_Limiter(geometry, config);
       SetSolution_Limiter(geometry, config);
     }
 	}
@@ -3260,6 +3260,33 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry,
   
 	delete [] PrimVar_i;
 	delete [] PrimVar_j;
+}
+
+
+void CTNE2EulerSolver::SetPrimVar_Gradient(CConfig *config) {
+  unsigned long iPoint;
+  unsigned short iVar;
+  double *U, *V;
+  double **GradU, **GradV;
+  
+  /*--- Allocate ---*/
+  GradV = new double*[nPrimVarGrad];
+  for (iVar =0; iVar < nPrimVarGrad; iVar++)
+    GradV[iVar] = new double[nDim];
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    U = node[iPoint]->GetSolution();
+    V = node[iPoint]->GetPrimVar();
+    GradU = node[iPoint]->GetGradient();
+    
+    node[iPoint]->GradCons2GradPrimVar(config, U, V, GradU, GradV);
+  }
+  
+  
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    delete [] GradV[iVar];
+  delete [] GradV;
 }
 
 
@@ -5313,14 +5340,29 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	/*--- Compute gradient of the primitive variables ---*/
   switch (config->GetKind_Gradient_Method()) {
     case GREEN_GAUSS:
-      SetPrimVar_Gradient_GG(geometry, config);
+//      SetPrimVar_Gradient_GG(geometry, config);
       SetSolution_Gradient_GG(geometry, config);
       break;
     case WEIGHTED_LEAST_SQUARES:
-      SetPrimVar_Gradient_LS(geometry, config);
+//      SetPrimVar_Gradient_LS(geometry, config);
       SetSolution_Gradient_LS(geometry, config);
       break;
   }
+  
+  SetPrimVar_Gradient(config);
+  
+//  cout.precision(5);
+//  
+//  unsigned short iVar;
+//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//    cout << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << endl;
+//  cin.get();
+//  
+//  SetPrimVar_Gradient_LS(geometry, config);
+////  unsigned short iVar;
+//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//    cout << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << endl;
+//  cin.get();
   
   if ((second_order) && (iMesh == MESH_0) && limiter) {
 //    SetPrimVar_Limiter(geometry, config);
@@ -6490,14 +6532,27 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       }
       
       /*--- Error checking ---*/
+      bool err_chk;
+      err_chk = false;
       for (iVar = 0; iVar < nVar; iVar++)
         if (Res_Visc[iVar] != Res_Visc[iVar])
-          cout << "NaN in isothermal term" << endl;
+          err_chk = true;
+      if (err_chk)
+        cout << "NaN in isothermal term!" << endl;
+      err_chk = false;
       if (implicit) {
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-              cout << "NaN in isothermal jacobian" << endl;
+              err_chk = true;
+        if (err_chk) {
+          cout << "NaN in isothermal jacobian" << endl;
+          cout << "ktr: " << ktr << endl;
+          cout << "kve: " << kve << endl;
+          cout << "theta: " << theta << endl;
+          cout << "dij: " << dij << endl;
+          cout << "RhoCvve: " << rhoCvve << endl;
+        }
       }
     }
   }

@@ -858,6 +858,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetPrimVar_Gradient(CConfig *config);
     
     /*!
 	 * \brief A virtual member.
@@ -5836,6 +5843,13 @@ public:
 	 */
 	void SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
   
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetPrimVar_Gradient(CConfig *config);
+  
 	/*!
 	 * \brief Compute the limiter of the primitive variables.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -6722,7 +6736,63 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
+	void BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics, CConfig *config,
+                                    unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
+                                 CSolver **solver_container,
+                                 CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics, CConfig *config,
+                                 unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
 	void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
+                                      CSolver **solver_container,
+                                      CNumerics *conv_numerics,
+                                      CNumerics *visc_numerics, CConfig *config,
+                                      unsigned short val_marker);
+  
+  /*!
+	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_IsothermalCatalytic_Wall(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics, CConfig *config,
+                                   unsigned short val_marker);
   
 	/*!
 	 * \brief Restart residual and compute gradients.

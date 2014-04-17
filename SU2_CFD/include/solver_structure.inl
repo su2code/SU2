@@ -77,6 +77,8 @@ inline void CSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config
 
 inline void CSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::SetPrimVar_Gradient(CConfig *config) { }
+
 inline void CSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
