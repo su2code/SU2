@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   
 	unsigned short iDV, nZone = 1, iFFDBox, iPlane, nPlane, iVar;
 	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
-  **Plane_P0, **Plane_Normal;
+  **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char grid_file[200], buffer_char[50], out_file[200];
 
@@ -165,6 +165,11 @@ int main(int argc, char *argv[]) {
                                      Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config);
   }
   
+  /*--- Compute the internal volume of a 3D body. ---*/
+  
+  if (rank == MASTER_NODE)  cout << "Computing the internal volume." << endl;
+  if (boundary->GetnDim() == 3) Volume = boundary->Compute_Volume(config, true);
+  
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
 
@@ -201,6 +206,12 @@ int main(int argc, char *argv[]) {
       
     }
     
+    /*--- The value for Volume to the area of the first section
+     in case this is a 2D calculation ---*/
+    
+    if (boundary->GetnDim() == 2) Volume = ObjectiveFunc[6];
+    cout << "\nInternal volume: " << Volume << "." << endl;
+    
     /*--- Write the objective function in a external file ---*/
 		cstr = new char [config->GetObjFunc_Value_FileName().size()+1];
 		strcpy (cstr, config->GetObjFunc_Value_FileName().c_str());
@@ -208,7 +219,7 @@ int main(int argc, char *argv[]) {
     ObjFunc_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
     
     if (boundary->GetnDim() == 2) {
-      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
+      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\",\"VOLUME\"" << endl;
     }
     else if (boundary->GetnDim() == 3) {
       ObjFunc_file << "VARIABLES = ";
@@ -220,16 +231,16 @@ int main(int argc, char *argv[]) {
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
-      for (iPlane = 0; iPlane < nPlane-1; iPlane++) ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
-      ObjFunc_file << "\"CHORD_SEC"<< (nPlane) << "\"" << endl;
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
+      ObjFunc_file << "\"VOLUME\"" << endl;
     }
     
     ObjFunc_file << "ZONE T= \"Geometrical variables (value)\"" << endl;
     
-    for (iPlane = 0; iPlane < nPlane*9-1; iPlane++)
+    for (iPlane = 0; iPlane < nPlane*9; iPlane++)
       ObjFunc_file << ObjectiveFunc[iPlane] <<", ";
-    ObjFunc_file << ObjectiveFunc[nPlane*9-1] << endl;
-    
+    ObjFunc_file << Volume << endl;
+
     ObjFunc_file.close();
     
 	}
@@ -408,6 +419,11 @@ int main(int argc, char *argv[]) {
                                          Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config);
       }
       
+      /*--- Compute the gradient for the volume. In 2D this is just
+       the gradient of the area. ---*/
+      
+      if (boundary->GetnDim() == 3) Volume_New = boundary->Compute_Volume(config, false);
+      
 			/*--- Compute gradient ---*/
 			if (rank == MASTER_NODE) {
         
@@ -476,12 +492,19 @@ int main(int argc, char *argv[]) {
           }
           
         }
+        
+        /*--- Compute the gradient for the volume. In 2D this is just
+         the gradient of the area. ---*/
+        
+        if (boundary->GetnDim() == 2) Volume_New = ObjectiveFunc_New[6];
+        Volume_Grad = (Volume_New - Volume)/ delta_eps;
+        cout << "\nInternal volume gradient: " << Volume_Grad << "." << endl;
  				
         if (iDV == 0) {
           Gradient_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
 
           if (boundary->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\"" << endl;
+            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\",\"VOLUME\"" << endl;
           }
           else if (boundary->GetnDim() == 3) {
             Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
@@ -493,8 +516,8 @@ int main(int argc, char *argv[]) {
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"3/4_THICKNESS_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
-            for (iPlane = 0; iPlane < nPlane-1; iPlane++) Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
-            Gradient_file << "\"CHORD_SEC"<< (nPlane) << "\"" << endl;
+            for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
+            Gradient_file << "\"VOLUME\"" << endl;
           }
           
           Gradient_file << "ZONE T= \"Geometrical variables (gradient)\"" << endl;
@@ -502,9 +525,9 @@ int main(int argc, char *argv[]) {
         }
         
         Gradient_file << (iDV) <<", ";
-        for (iPlane = 0; iPlane < nPlane*9-1; iPlane++)
+        for (iPlane = 0; iPlane < nPlane*9; iPlane++)
           Gradient_file << Gradient[iPlane] <<", ";
-        Gradient_file << Gradient[nPlane*9-1] << endl;
+        Gradient_file << Volume_Grad << endl;
         
 				if (iDV != (config->GetnDV()-1)) cout <<"-------------------------------------------------------------------------" << endl;
 				
