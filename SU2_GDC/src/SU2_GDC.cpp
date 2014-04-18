@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Compute the internal volume of a 3D body. ---*/
   
-  cout << "Computing the internal volume." << endl;
+  if (rank == MASTER_NODE)  cout << "Computing the internal volume." << endl;
   if (boundary->GetnDim() == 3) Volume = boundary->Compute_Volume(config, true);
   
   if (rank == MASTER_NODE)
