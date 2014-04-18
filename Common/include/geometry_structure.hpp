@@ -625,7 +625,15 @@ public:
 	 */
 	virtual double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
-	/*! 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the 3D body.
+	 */
+  virtual double Compute_Volume(CConfig *config, bool original_surface);
+  
+	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -1472,6 +1480,14 @@ public:
 	 */
   double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 
+  /*!
+	 * \brief Find the internal volume of the 3D body.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the 3D body.
+	 */
+  double Compute_Volume(CConfig *config, bool original_surface);
+  
   /*!
 	 * \brief Set the output file for boundaries in Tecplot with surface curvature.
 	 * \param[in] config - Definition of the particular problem.
