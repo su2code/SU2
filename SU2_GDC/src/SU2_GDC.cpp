@@ -165,6 +165,11 @@ int main(int argc, char *argv[]) {
                                      Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config);
   }
   
+  /*--- Compute the internal volume of a 3D body. ---*/
+  
+  cout << "Computing the internal volume." << endl;
+  if (boundary->GetnDim() == 3) Volume = boundary->Compute_Volume(config, true);
+  
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
 
@@ -201,18 +206,11 @@ int main(int argc, char *argv[]) {
       
     }
     
-    /*--- Compute the internal volume of a 3D body. ---*/
-    
-    cout << "\nComputing the internal volume." << endl;
-    
-    /*--- Initialize the value for Volume to the area of the first section
+    /*--- The value for Volume to the area of the first section
      in case this is a 2D calculation ---*/
     
-    Volume = ObjectiveFunc[6];
-    if (boundary->GetnDim() == 3) {
-      Volume = boundary->Compute_Volume(config, true);
-    }
-    cout << "Volume: " << Volume << "." << endl;
+    if (boundary->GetnDim() == 2) Volume = ObjectiveFunc[6];
+    cout << "\nInternal volume: " << Volume << "." << endl;
     
     /*--- Write the objective function in a external file ---*/
 		cstr = new char [config->GetObjFunc_Value_FileName().size()+1];
@@ -421,6 +419,11 @@ int main(int argc, char *argv[]) {
                                          Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config);
       }
       
+      /*--- Compute the gradient for the volume. In 2D this is just
+       the gradient of the area. ---*/
+      
+      if (boundary->GetnDim() == 3) Volume_New = boundary->Compute_Volume(config, false);
+      
 			/*--- Compute gradient ---*/
 			if (rank == MASTER_NODE) {
         
@@ -493,10 +496,9 @@ int main(int argc, char *argv[]) {
         /*--- Compute the gradient for the volume. In 2D this is just
          the gradient of the area. ---*/
         
-        Volume_New = ObjectiveFunc_New[6];
-        if (boundary->GetnDim() == 3) Volume_New = boundary->Compute_Volume(config, false);
+        if (boundary->GetnDim() == 2) Volume_New = ObjectiveFunc_New[6];
         Volume_Grad = (Volume_New - Volume)/ delta_eps;
-        cout << "\nVolume gradient: " << Volume_Grad << "." << endl;
+        cout << "\nInternal volume gradient: " << Volume_Grad << "." << endl;
  				
         if (iDV == 0) {
           Gradient_file << "TITLE = \"SU2_GDC Simulation\"" << endl;
