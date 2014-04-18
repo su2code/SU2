@@ -694,6 +694,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
   AddScalarOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
+  AddScalarOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   AddSpecialOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, SetBoolOption, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */

@@ -664,6 +664,8 @@ inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
+inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
+
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
 inline void CConfig::SetKind_ViscNumScheme(unsigned short val_kind_viscnumscheme) { Kind_ViscNumScheme = val_kind_viscnumscheme; }

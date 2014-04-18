@@ -357,7 +357,8 @@ private:
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	double *Section_Location;                  /*!< \brief Airfoil section limit. */
-  unsigned short nSections;               /*!< \brief Number of sections. */
+  unsigned short nSections,      /*!< \brief Number of section cuts to make when calculating internal volume. */
+  nVolSections;               /*!< \brief Number of sections. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
@@ -3132,6 +3133,12 @@ public:
 	 * \return Number of sections
 	 */
 	unsigned short GetnSections(void);
+  
+  /*!
+	 * \brief Get the number of sections for computing internal volume.
+	 * \return Number of sections for computing internal volume.
+	 */
+	unsigned short GetnVolSections(void);
   
 	/*! 
 	 * \brief Provides information about the the nodes that are going to be moved on a deformation 
