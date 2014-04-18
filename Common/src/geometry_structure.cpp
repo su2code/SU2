@@ -9933,8 +9933,23 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
 
 double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface) {
   
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+  /*--- MPI initialization ---*/
+  
+#ifndef NO_MPI
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+  size = MPI::COMM_WORLD.Get_size();
+#endif
+#endif
+  
   unsigned short iPlane, nPlane;
-	double Volume, MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, **Plane_P0, **Plane_Normal, *Area;
+	double Volume = 0.0, MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, **Plane_P0, **Plane_Normal, *Area;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   
   /*--- Make a large number of section cuts for approximating volume ---*/
@@ -9979,6 +9994,8 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
   
   /*--- Compute the area at each section ---*/
   
+  if (rank == MASTER_NODE) {
+    
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     Area[iPlane] = 0.0;
     if (Xcoord_Airfoil[iPlane].size() != 0) {
@@ -9998,6 +10015,7 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
     }
   }
   
+  }
   
   /*--- Free memory for the section cuts ---*/
   
