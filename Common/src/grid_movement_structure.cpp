@@ -5200,23 +5200,14 @@ void CSurfaceMovement::SetObstacle(CGeometry *boundary, CConfig *config) {
 }
 
 void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
-  unsigned long iVertex, Point;
-  unsigned short iMarker;
-  double VarCoord[3], *Coord, NewYCoord, NewXCoord, *Coord_i, *Coord_ip1;
-  double yp1, ypn;
-  unsigned short iVar;
-  unsigned long n_Airfoil = 0;
-  double Airfoil_Coord[2];
+  unsigned long iVertex, Point, n_Airfoil = 0;
+  unsigned short iMarker, nUpper, nLower, iUpper, iLower, iVar;
+  double VarCoord[3], *Coord, NewYCoord, NewXCoord, *Coord_i, *Coord_ip1, yp1, ypn,
+  Airfoil_Coord[2], factor, coeff = 10000, Upper, Lower, Arch = 0.0, TotalArch = 0.0,
+  x_i, x_ip1, y_i, y_ip1, AirfoilScale;
   vector<double> Svalue, Xcoord, Ycoord, Xcoord2, Ycoord2, Xcoord_Aux, Ycoord_Aux;
   bool AddBegin = true, AddEnd = true;
-  double x_i, x_ip1, y_i, y_ip1;
-  char AirfoilFile[256];
-  char AirfoilFormat[15];
-  char MeshOrientation[15];
-  char AirfoilClose[15];
-  double AirfoilScale;
-  double TrailingEdge = 0.95;
-  unsigned short nUpper, nLower, iUpper, iLower;
+  char AirfoilFile[256], AirfoilFormat[15], MeshOrientation[15], AirfoilClose[15];
   ifstream airfoil_file;
   string text_line;
   
@@ -5268,10 +5259,16 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
       
       point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
       
+      /*--- Close the arifoil ---*/
+      
+      if (strcmp (AirfoilClose,"Yes") == 0)
+        factor = -atan(coeff*(Airfoil_Coord[0]-1.0))*2.0/PI_NUMBER;
+      else factor = 1.0;
+      
       /*--- Store the coordinates in vectors ---*/
       
       Xcoord.push_back(Airfoil_Coord[0]);
-      Ycoord.push_back(Airfoil_Coord[1]*AirfoilScale);
+      Ycoord.push_back(Airfoil_Coord[1]*factor*AirfoilScale);
     }
     
   }
@@ -5281,7 +5278,6 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
 
     getline(airfoil_file, text_line);
     istringstream point_line(text_line);
-    double Upper, Lower;
     point_line >> Upper >> Lower;
     
     nUpper = int(Upper);
@@ -5300,12 +5296,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
       point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
       Xcoord[nUpper-iUpper-1] = Airfoil_Coord[0];
       
-      double factor;
-      if (strcmp (AirfoilClose,"Yes") == 0) {
-        double x = (Airfoil_Coord[0] - TrailingEdge) / (1.0-TrailingEdge);
-        factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
-        if (x < TrailingEdge) factor = 1.0;
-      }
+      if (strcmp (AirfoilClose,"Yes") == 0)
+        factor = -atan(coeff*(Airfoil_Coord[0]-1.0))*2.0/PI_NUMBER;
       else factor = 1.0;
       
       Ycoord[nUpper-iUpper-1] = Airfoil_Coord[1]*AirfoilScale*factor;
@@ -5318,12 +5310,8 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
       istringstream point_line(text_line);
       point_line >> Airfoil_Coord[0] >> Airfoil_Coord[1];
       
-      double factor;
-      if (strcmp (AirfoilClose,"Yes") == 0) {
-        double x = (Airfoil_Coord[0] - TrailingEdge) / (1.0-TrailingEdge);
-        factor = (1.0-x)+sin(PI_NUMBER*(1.0-x))/PI_NUMBER;
-        if (x < TrailingEdge) factor = 1.0;
-      }
+      if (strcmp (AirfoilClose,"Yes") == 0)
+        factor = -atan(coeff*(Airfoil_Coord[0]-1.0))*2.0/PI_NUMBER;
       else factor = 1.0;
       
       Xcoord[nUpper+iLower-1] = Airfoil_Coord[0];
@@ -5356,8 +5344,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   /*--- Compute the total arch length ---*/
   
-  double Arch = 0.0;
-  Svalue.push_back(Arch);
+  Arch = 0.0; Svalue.push_back(Arch);
 
   for (iVar = 0; iVar < Xcoord.size()-1; iVar++) {
     x_i = Xcoord[iVar];  x_ip1 = Xcoord[iVar+1];
@@ -5395,7 +5382,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   
   NewXCoord = 0.0; NewYCoord = 0.0;
   
-  double TotalArch = 0.0;
+  TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {

@@ -26,7 +26,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-  unsigned short nZone = 1, ZONE_0;
+  unsigned short nZone = 1;
   char buffer_char[50], out_file[200], in_file[200], mesh_file[200];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
