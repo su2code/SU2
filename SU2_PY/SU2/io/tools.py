@@ -289,7 +289,8 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "CHORD_SEC2"         ,
                  "CHORD_SEC3"         ,
                  "CHORD_SEC4"         ,
-                 "CHORD_SEC5"          ]
+                 "CHORD_SEC5"         ,
+                 "VOLUME"              ]
 #: optnames_geo
 
 # -------------------------------------------------------------------
