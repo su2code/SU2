@@ -313,7 +313,7 @@ enum ENUM_MATH_PROBLEM {
   LINEARIZED_PROBLEM = 3 /*< \brief Linearized numerical method */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
-("NONE", NO_MATH_PROBLEM)
+//("NONE", NO_MATH_PROBLEM)
 ("DIRECT", DIRECT_PROBLEM)
 ("ADJOINT", ADJOINT_PROBLEM)
 ("LINEARIZED", LINEARIZED_PROBLEM);
