@@ -884,7 +884,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
       dgust_dt = 0;
       
       // Begin applying the gust
-      if (Physical_t > tbegin) {
+      if (Physical_t >= tbegin) {
         
         x = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
         y = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
@@ -915,37 +915,44 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
             break;
 
           case ONE_M_COSINE:
-                     // Check if we are in the region where the gust is active
-                     if (x_gust > 0 && x_gust < n) {
-                       gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+             // Check if we are in the region where the gust is active
+             if (x_gust > 0 && x_gust < n) {
+               gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
-                       // Gust derivatives
-                       dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-                       dgust_dy = 0;
-                       dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
-                     }
-                     break;
+               // Gust derivatives
+               dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               dgust_dy = 0;
+               dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+             }
+             break;
 
-                   case VORTEX:
+          case EOG:
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
+              gust[GustDir] = -0.37*gust_amp*sin(3*PI_NUMBER*x_gust)*(1-cos(2*PI_NUMBER*x_gust));
+            }
+            break;
+            
+          case VORTEX:
 
-                     /*--- Use vortex distribution ---*/
-                     // Algebraic vortex equation.
-                     for (unsigned int i=0; i<nVortex; i++) {
-                       double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
-                       double r = sqrt(r2);
-                       double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
-                       gust[0] = gust[0] + v_theta*(y-y0[i])/r;
-                       gust[1] = gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
-                     }
-                     break;
+             /*--- Use vortex distribution ---*/
+             // Algebraic vortex equation.
+             for (unsigned int i=0; i<nVortex; i++) {
+               double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
+               double r = sqrt(r2);
+               double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
+               gust[0] = gust[0] + v_theta*(y-y0[i])/r;
+               gust[1] = gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
+             }
+             break;
 
-                   case NONE: default:
+           case NONE: default:
 
-                     /*--- There is no wind gust specified. ---*/
-                     if (rank == MASTER_NODE) {
-                       cout << "No wind gust specified." << endl;
-                     }
-                     break;
+             /*--- There is no wind gust specified. ---*/
+             if (rank == MASTER_NODE) {
+               cout << "No wind gust specified." << endl;
+             }
+             break;
 
         }
       }
