@@ -5065,6 +5065,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
       }
     }
     
+    cout.precision(4);
 #ifdef NO_MPI
     if (change) {
       cout <<"\n New value of the CFL number: ";

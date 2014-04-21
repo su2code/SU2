@@ -5636,11 +5636,18 @@ public:
 class CAvgGrad_AdjTNE2 : public CNumerics {
 private:
   double *vel, *vel_i, *vel_j;
-	double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint  energy between nodes i and j. */
+  double *hs_i, *hs_j, *eve_i, *eve_j;
+  double *GPsirsdotn; /*!< \brief Grad(PsiRhos) dot n. */
+  double **Mean_GradPsirs; /*!< \brief Mean gradient in the adjoint species density between nodes i and j. */
+	double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint energy between nodes i and j. */
   double *Mean_GradPsiEve; /*!< \brief Mean gradient in the adjoint vibrational energy between nodes i and j. */
 	double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
   double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
 	double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
+  double **dJddrs; /*!< \brief Diffusion velocity derivatives w.r.t. grad(rhos). */
+  double **dYdrs; /*!< \brief Derivative of mass fraction w.r.t. species density. */
+  double *DdYk;
+  
   double **SigmaPhi;
   double **SigmaPsiE;
   bool implicit;			/*!< \brief Implicit calculus. */
@@ -5680,10 +5687,11 @@ class CSource_AdjTNE2 : public CNumerics {
 private:
   bool   implicit;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
-  double *rhos, *vel;
+  double *rhos, *vel, *Y, *hs, *eves, *Cvtrs, *Cvves;
   double *GInvRho, **GVeloRho, **tau, **eta, **pi, **zeta;
-  double *GPhiGInvRho, *GPsiEZetaTau;
-  double **Av2, **Av3, **Av4;
+  double *GPhiGInvRho, *GPsiEZetaTau, *GPsirsGr, *DGPsirsGrs, *GPsiEJ, *GPsiEveJ;
+  double **dJdr, *dYdr;
+  double **Av1, **Av2, **Av3, **Av4;
 public:
   
 	/*!

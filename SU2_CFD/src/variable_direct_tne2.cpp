@@ -1497,10 +1497,14 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, double *U,
                                               double *V, double **GradU,
                                               double **GradV) {
   
-  unsigned short iSpecies, iDim, jDim, iVar, nHeavy;
-  double rho, rhoCvtr, rhoCvve, T, eve, ef, eref, Ru;
+  unsigned short iSpecies, iEl, iDim, jDim, iVar, nHeavy, *nElStates;
+  double rho, rhoCvtr, rhoCvve, T, Tve, eve, ef, eref, Ru;
+  double Cvvs, Cves, dCvvs, dCves;
+  double thoTve, exptv;
+  double An1, Bd1, Bn1, Bn2, Bn3, Bn4, A, B;
   double *rhou, *Grhou2;
-  double *xi, *Ms, *Tref, *hf;
+  double *xi, *Ms, *Tref, *hf, *thetav;
+  double **thetae, **g;
   
   /*--- Conserved & primitive vector layout ---*/
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
@@ -1519,14 +1523,19 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, double *U,
   rhoCvtr = V[RHOCVTR_INDEX];
   rhoCvve = V[RHOCVVE_INDEX];
   T       = V[T_INDEX];
+  Tve     = V[TVE_INDEX];
   xi      = config->GetRotationModes();
   Ms      = config->GetMolar_Mass();
   Tref    = config->GetRefTemperature();
   hf      = config->GetEnthalpy_Formation();
   Ru      = UNIVERSAL_GAS_CONSTANT;
+  thetav  = config->GetCharVibTemp();
+  g       = config->GetElDegeneracy();
+  thetae  = config->GetCharElTemp();
+  nElStates = config->GetnElStates();
   
   for (iDim = 0; iDim < nDim; iDim++)
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       GradV[iVar][iDim] = 0.0;
   
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1585,6 +1594,47 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, double *U,
     /*--- Enthalpy ---*/
     GradV[H_INDEX][iDim] = rho*(GradU[nSpecies+nDim][iDim] + GradV[P_INDEX][iDim]) -
                            (U[nSpecies+nDim]+V[P_INDEX])*GradV[RHO_INDEX][iDim] / (rho*rho);
+    
+    /*--- Specific Heat (V-E) ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      // Vibrational energy specific heat
+      Cvvs = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
+             exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
+                                        (exp(thetav[iSpecies]/Tve)-1));
+      dCvvs = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
+               2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/(Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs;
+      
+      
+      // Electronic energy specific heat
+      An1 = 0.0;
+      Bn1 = 0.0;
+      Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
+      Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
+                            (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+      Bn4 = 0.0;
+      Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        thoTve = thetae[iSpecies][iEl]/Tve;
+        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+        
+        An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
+        Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
+        Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
+        Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
+        Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
+        Bd1 += g[iSpecies][iEl]*exptv;
+      }
+      A = An1/Bd1;
+      B = Bn1*Bn2/Bd1;
+      Cves = Ru/Ms[iSpecies]*(A-B);
+  
+      dCves = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
+                               Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
+      
+      GradV[RHOCVVE_INDEX][iDim] += V[RHOS_INDEX+iSpecies]*(dCvvs+dCves)*GradV[TVE_INDEX][iDim] +
+                                    GradV[RHOS_INDEX+iSpecies][iDim]*(Cvvs+Cves);
+
+    }
   }
   
   delete [] Grhou2;
@@ -1779,10 +1829,6 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
-  
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    DiffusionCoeff[iSpecies] = 0.0;
-  
 }
 
 

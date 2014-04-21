@@ -5354,12 +5354,14 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 //  cout.precision(5);
 //  
 //  unsigned short iVar;
+//  cout << "Analytical: " << endl;
 //  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 //    cout << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << endl;
 //  cin.get();
-//  
+//
 //  SetPrimVar_Gradient_LS(geometry, config);
-////  unsigned short iVar;
+//////  unsigned short iVar;
+//  cout << "LS: " << endl;
 //  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 //    cout << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << endl;
 //  cin.get();
