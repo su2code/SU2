@@ -1614,6 +1614,9 @@ public:
     if (out.compare("") != 0){
       return out;
     }
+    if (!(Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end())){
+      return badValue(option_value, "math problem", this->name);
+    }
     if (option_value[0] == "DIRECT") {
       this->adjoint = false;
       this->oneshot = false;
@@ -1635,8 +1638,7 @@ public:
       this->oneshot = false;
       return "";
     }
-    return badValue(option_value, "math problem", this->name);
-    
+    return "option in math problem map not considered in constructor";
   }
   
   void SetDefault(){
