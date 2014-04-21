@@ -1828,8 +1828,6 @@ public:
   ~COptionInlet(){};
   string SetValue(vector<string> option_value){
     
-    cout << "In COptionInlet SetValue " << endl;
-    
     int totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE"))){
       this->size = 0;
@@ -1839,8 +1837,6 @@ public:
       this->flowdir = NULL;
       return "";
     }
-    
-        cout << "In COptionInlet SetValue  past none" << endl;
     
     if (totalVals % 6 != 0){
       string newstring;
@@ -1888,8 +1884,6 @@ public:
         return badValue(option_value, "inlet", this->name);
       }
     }
-    
-        cout << "In COptionInlet SetValue done successfully" << endl;
     
     return "";
   }
