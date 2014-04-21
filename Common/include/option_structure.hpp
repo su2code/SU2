@@ -1349,6 +1349,10 @@ public:
   
   ~COptionEnumList(){};
   string SetValue(vector<string> option_value){
+    if (option_value.size() == 1 && option_value[0].compare("NONE")==0){
+      this->size = 0;
+      return "";
+    }
     // size is the length of the option list
     this->size = option_value.size();
     unsigned short * enums = new unsigned short[size];
