@@ -304,6 +304,22 @@ const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boun
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 /*!
+ * \brief types of mathematical problem to solve
+ */
+enum ENUM_MATH_PROBLEM {
+	NO_MATH_PROBLEM = 0, /*!< \brief No convective scheme is used. */
+  DIRECT_PROBLEM = 1,		/*!< \brief Space centered convective numerical method. */
+  ADJOINT_PROBLEM = 2,		/*!< \brief Upwind convective numerical method. */
+  LINEARIZED_PROBLEM = 3 /*< \brief Linearized numerical method */
+};
+static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
+("NONE", NO_MATH_PROBLEM)
+("DIRECT", DIRECT_PROBLEM)
+("ADJOINT", ADJOINT_PROBLEM)
+("LINEARIZED", LINEARIZED_PROBLEM);
+
+
+/*!
  * \brief types of spatial discretizations
  */
 enum ENUM_SPACE {
