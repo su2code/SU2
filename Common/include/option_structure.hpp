@@ -307,7 +307,7 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
-	NO_MATH_PROBLEM = 0, /*!< \brief No convective scheme is used. */
+	//NO_MATH_PROBLEM = 0, /*!< \brief No convective scheme is used. */
   DIRECT_PROBLEM = 1,		/*!< \brief Space centered convective numerical method. */
   ADJOINT_PROBLEM = 2,		/*!< \brief Upwind convective numerical method. */
   LINEARIZED_PROBLEM = 3 /*< \brief Linearized numerical method */
