@@ -307,13 +307,11 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
-	//NO_MATH_PROBLEM = 0, /*!< \brief No convective scheme is used. */
-  DIRECT_PROBLEM = 1,		/*!< \brief Space centered convective numerical method. */
-  ADJOINT_PROBLEM = 2,		/*!< \brief Upwind convective numerical method. */
-  LINEARIZED_PROBLEM = 3 /*< \brief Linearized numerical method */
+  DIRECT_PROBLEM = 0,		/*!< \brief Direct problem */
+  ADJOINT_PROBLEM = 1,		/*!< \brief Adjoint problem */
+  LINEARIZED_PROBLEM = 2 /*< \brief Linearized numerical method */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
-//("NONE", NO_MATH_PROBLEM)
 ("DIRECT", DIRECT_PROBLEM)
 ("ADJOINT", ADJOINT_PROBLEM)
 ("LINEARIZED", LINEARIZED_PROBLEM);
@@ -1614,7 +1612,7 @@ public:
     if (out.compare("") != 0){
       return out;
     }
-    if (!(Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end())){
+    if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()){
       return badValue(option_value, "math problem", this->name);
     }
     if (option_value[0] == "DIRECT") {
@@ -1662,7 +1660,7 @@ public:
   
   ~COptionDVParam(){};
   string SetValue(vector<string> option_value){
-    if ((option_value.size() == 1) && (option_value[0].compare("NONE"))){
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)){
       this->nDV = 0;
       return "";
     }
@@ -1847,7 +1845,7 @@ public:
   string SetValue(vector<string> option_value){
     
     int totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE"))){
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker = NULL;
       this->ttotal = NULL;
@@ -1932,7 +1930,7 @@ public:
   string SetValue(vector<string> option_value){
     
     int totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE"))){
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker = NULL;
       this->ttotal = NULL;
@@ -2001,7 +1999,7 @@ public:
     const int mod_num = 11;
 
     int totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE"))){
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker_bound = NULL;
       this->marker_donor = NULL;
