@@ -313,6 +313,7 @@ void CNeurNet::Predict(double * input, double * output){
   delete [] tmpOutput;
   return;
 }
+
 #ifndef NO_JSONCPP
 CPredictor* parse_predictor(Json::Value json){
   string type = json["Type"].asString();
