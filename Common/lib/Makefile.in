@@ -307,9 +307,13 @@ libSU2_a_SOURCES = \
 # endif
 
 # if BUILD_MUTATIONPP
+# endif
+
+# if BUILD_JSONCPP
 libSU2_a_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@MUTATIONPP_CXX@ $(am__empty)
-libSU2_a_LIBADD = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@
+	@MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
+libSU2_a_LIBADD = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
+	@JSONCPP_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:
