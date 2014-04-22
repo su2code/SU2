@@ -414,6 +414,7 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
 ("X_DIR", X_DIR)
 ("Y_DIR", Y_DIR);
 
+// If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of centered spatial discretizations
  */
@@ -429,6 +430,8 @@ static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_C
 ("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
+
+// If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of upwind spatial discretizations
  */
