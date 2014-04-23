@@ -350,8 +350,9 @@ private:
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
-  string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
-  string ML_Turb_Model_FeatureSet;
+  string ML_Turb_Model_FeatureSet; /* <\brief What are the input and ouput features > */
+  
+  
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
