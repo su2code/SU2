@@ -198,15 +198,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-  
-  /* DESCRIPTION: Location of the turb model itself */
-  addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
-  
-  /* DESCRIPTION: what kind of input/output feature map is there */
-  addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
-  
-  /* DESCRIPTION: Extra values for ML Turb model */
-  addStringListOption("ML_TURB_MODEL_EXTRA",nML_Turb_Model_Extra, ML_Turb_Model_Extra);
 
   /* DESCRIPTION: Specify transition model */
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
@@ -1034,6 +1025,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
+
+  
+  /* CONFIG_CATEGORY: Unsupported options */
+  /*--- Options that are experimental and not intended for general use ---*/
+  
+  /* DESCRIPTION: Location of the turb model itself */
+  addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  
+  /* DESCRIPTION: what kind of input/output feature map is there */
+  addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
+  
+  /* DESCRIPTION: Extra values for ML Turb model */
+  addStringListOption("ML_TURB_MODEL_EXTRA",nML_Turb_Model_Extra, ML_Turb_Model_Extra);
   
   /* END_CONFIG_OPTIONS */
   
