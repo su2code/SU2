@@ -350,9 +350,9 @@ private:
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
-  string ML_Turb_Model_FeatureSet; /* <\brief What are the input and ouput features > */
-  
-  
+  string ML_Turb_Model_FeatureSet; /*! <\brief What are the input and ouput features > */
+  string *ML_Turb_Model_Extra; /*! <\brief Store for extra variables coming from ML turb model */
+  unsigned short nML_Turb_Model_Extra; /*!<\brief number of strings there */
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
@@ -2488,11 +2488,6 @@ public:
 	 * \brief Get the file containing the ML model
 	 */
 	string GetML_Turb_Model_File(void);
-  /*!
-	 * \brief File containing a check for the proper creation of the turb model
-	 * \return Temporary ml->SU2 file name.
-	 */
-	string GetML_Turb_Model_Check_File(void);
 
   /*!
 	 * \brief File containing a check for the proper creation of the turb model
@@ -2500,6 +2495,17 @@ public:
 	 */
   string GetML_Turb_Model_FeatureSet(void);
   
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  string* GetML_Turb_Model_Extra(void);
+  
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  unsigned short GetNumML_Turb_Model_Extra(void);
   
 	/*! 
 	 * \brief Get the kind of the transition model.
