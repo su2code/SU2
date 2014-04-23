@@ -300,6 +300,22 @@ inline double CSolver::GetOneD_T(void){return 0;}
 
 inline void CSolver::SetOneD_T(double AverageTemperature){ }
 
+inline double CSolver::GetOneD_fluxavgP(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgP(double PressureRef){ }
+
+inline double CSolver::GetOneD_fluxavgRho(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgRho(double DensityRef){ }
+
+inline double CSolver::GetOneD_fluxavgU(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgU(double VelocityRef){ }
+
+inline double CSolver::GetOneD_fluxavgH(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgH(double EnthalpyRef){ }
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
@@ -598,6 +614,23 @@ inline void CEulerSolver::SetOneD_M(double AverageMach) { OneD_M=AverageMach; }
 inline double CEulerSolver::GetOneD_T(void){return OneD_T;}
 
 inline void CEulerSolver::SetOneD_T(double AverageTemperature) { OneD_T=AverageTemperature; }
+
+inline double CEulerSolver::GetOneD_fluxavgP(void){return OneD_PressureRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgP(double PressureRef){OneD_PressureRef=PressureRef; }
+
+inline double CEulerSolver::GetOneD_fluxavgRho(void){return OneD_DensityRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgRho(double DensityRef){OneD_DensityRef=DensityRef; }
+
+inline double CEulerSolver::GetOneD_fluxavgU(void){return OneD_VelocityRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgU(double VelocityRef){OneD_VelocityRef=VelocityRef; }
+
+inline double CEulerSolver::GetOneD_fluxavgH(void){return OneD_EnthalpyRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgH(double EnthalpyRef){OneD_EnthalpyRef = EnthalpyRef; }
+
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

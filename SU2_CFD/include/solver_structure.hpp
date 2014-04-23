@@ -1650,6 +1650,47 @@ public:
   virtual void SetOneD_T(double AverageTemperature);
 
   /*!
+     * \brief A virtual member.
+   * \ Get the flux averaged pressure at a marker.(same as area averaged pressure)
+     */
+  virtual double GetOneD_fluxavgP(void);
+  /*!
+     * \brief A virtual member.
+   * \ Set the flux averaged pressure at a marker. (same as area averaged pressure)
+     */
+  virtual void SetOneD_fluxavgP(double PressureRef);
+  /*!
+     * \brief A virtual member.
+   * \ Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+     */
+  virtual double GetOneD_fluxavgRho(void);
+  /*!
+     * \brief A virtual member.
+   * \ Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+     */
+  virtual void SetOneD_fluxavgRho(double DensityRef);
+  /*!
+     * \brief A virtual member.
+   * \ Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+     */
+  virtual double GetOneD_fluxavgU(void);
+  /*!
+     * \brief A virtual member.
+   * \ Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+     */
+  virtual void SetOneD_fluxavgU(double VelocityRef);
+  /*!
+     * \brief A virtual member.
+   * \ Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+     */
+  virtual double GetOneD_fluxavgH(void);
+  /*!
+     * \brief A virtual member.
+   * \ Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+     */
+  virtual void SetOneD_fluxavgH(double EnthalpyRef);
+
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1889,6 +1930,10 @@ protected:
   OneD_Pt, /*!< \brief average total pressure evaluated at an exit */
   OneD_M, /*!< \brief area average Mach evaluated at an exit */
   OneD_T, /*!< \brief area average Temperature evaluated at an exit */
+  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
+  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
+  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
+  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -2733,10 +2778,42 @@ public:
   double GetOneD_T(void);
 
   /*!
-     * \brief Set the averaged Temperature number at a marker.
+     * \brief Set the averaged Temperature at a marker.
      */
   void SetOneD_T(double AverageTemperature);
 
+  /*!
+     * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
+     */
+  double GetOneD_fluxavgP(void);
+  /*!
+     * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
+     */
+  void SetOneD_fluxavgP(double PressureRef);
+  /*!
+     * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+     */
+  double GetOneD_fluxavgRho(void);
+  /*!
+     * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+     */
+  void SetOneD_fluxavgRho(double DensityRef);
+  /*!
+     * \brief Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+     */
+  double GetOneD_fluxavgU(void);
+  /*!
+     * \brief Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+     */
+  void SetOneD_fluxavgU(double VelocityRef);
+  /*!
+     * \brief Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+     */
+  double GetOneD_fluxavgH(void);
+  /*!
+     * \brief Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+     */
+  void SetOneD_fluxavgH(double EnthalpyRef);
 
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
