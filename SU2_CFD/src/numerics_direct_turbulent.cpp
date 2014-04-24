@@ -1362,6 +1362,26 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   
   
+  // Now that we have found the ML Residual and the SA residual, see if there are
+  // any special hacks that we should use
+  
+  unsigned short nStrings = config->GetNumML_Turb_Model_Extra();
+  string *extraString = config->GetML_Turb_Model_Extra();
+  
+  if (nStrings > 0){
+    if (extraString[0].compare("FlatplateBlOnlyCutoff") == 0){
+        // Only use ML in the boundary layer and have a sharp cutoff
+      if ((Coord_i[0] < 0) || (Coord_i[1]) > 0.06 ){
+        // Not in the BL, so just use the SA residual
+        for (int i = 0; i < nResidual; i++){
+          Residual[i] = SAResidual[i];
+          NondimResidual[i] = SANondimResidual[i];
+        }
+      }
+    }
+  }
+  
+  
 //  cout << "SA nondim cross production " << SANondimResidual[2] << endl;
 //    cout << "Nondim cross production " << NondimResidual[2] << endl;
 //    cout << "SA cross production " << SAResidual[2] << endl;
