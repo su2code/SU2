@@ -2172,6 +2172,10 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 
 void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
   
+  /*--- Original CGNS reader implementation by Thomas D. Economon,
+   Francisco Palacios. Improvements for mixed-element meshes generated
+   by ICEM added by Martin Spel (3D) & Shlomy Shitrit (2D), April 2014. ---*/
+  
 #ifndef NO_CGNS
   
   /*--- Local variables and initialization ---*/
@@ -2406,7 +2410,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       nElems[j-1]      = new int[nsections];
       dataSize[j-1]    = new int[nsections];
       isInternal[j-1]  = new bool[nsections];
-      //          nMarkers    = 0;
       
       sectionNames[j-1] = new char*[nsections];
       for (int ii = 0; ii < nsections; ii++) {
@@ -2524,7 +2527,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           }
         } else {
           /*--- In 3-D check for tri or quad elements, VTK types 5 or 9. ---*/
-          // MIXED elements support added R.Tech
           switch (elemTypeVTK[j-1][s-1]) {
             case 5:
             case 9:
@@ -2533,9 +2535,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               boundaryElems += nElems[j-1][s-1];
               break;
             case -1:
-              // MIXED, treated later
-              
-              
+              /*--- MIXED element support (treated later). ---*/
               break;
             default:
               isInternal[j-1][s-1] = true;
@@ -2546,7 +2546,8 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         
         
         if (elemTypeVTK[j-1][s-1] == -1) {
-          // In case of mixed data type, allocate place for 8 nodes maximum (hex), plus element type
+          /*--- In case of mixed data type, allocate place for 8 nodes maximum 
+           (hex), plus element type. ---*/
           elemIndex[j-1][s-1] = 9;
         }
         
@@ -2591,27 +2592,24 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
          storage until writing the SU2 file. ---*/
         
         if (elemTypeVTK[j-1][s-1] == -1) {
-          // MIXED elements support added R.Tech
-          // in the zone, we assume we don't mix volumetric and surface elements
-          // so if at least one surface element is found (TRIA, QUAD), all elements are assumed to
-          // be surface elements
+          
+          /*--- In the zone, we assume we don't mix volumetric and surface
+           elements, so if at least one surface element is found (TRIA, QUAD), 
+           all elements are assumed to be surface elements. Mixed-element
+           support initially added here by Martin Spel. ---*/
+          
           bool isBoundary = false;
           int counter = 0;
           
           for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
             ElementType_t elmt_type = ElementType_t (connElemTemp[counter]);
             cg_npe( elmt_type, &npe);
-            //if (elmt_type == 5 || elmt_type == 9) {
-            //	isBoundary = true;
-            //}
-            // The following three lines where add by Shlomy -
-            // instead of the three previous lines.
-            
+
+            /*--- Mixed element support for 2D added here by Shlomy Shitrit ---*/
             if (elmt_type == 5 || elmt_type == 9){
               if (cell_dim == 2) { isBoundary = false; }
               if (cell_dim == 3) { isBoundary = true;  }
             }
-            
             
             counter++;
             connElems[j-1][s-1][0][ii] = elmt_type;
@@ -2624,14 +2622,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             isInternal[j-1][s-1] = false;
             nMarkers++;
             boundaryElems += nElems[j-1][s-1];
-            /* The following three lines were commented out by Shlomy Shitrit.
-             Now it works perfect both for 2D and 3D problems.
-             In 2D - The interior elements are counted in line 1070.  */
-          }// else {
-           // 	isInternal[j-1][s-1] = true;
-           // 	interiorElems += nElems[j-1][s-1];
-           //}
-          else if ( cell_dim == 3 ) {
+          } else if ( cell_dim == 3 ) {
             isInternal[j-1][s-1] = true;
             interiorElems += nElems[j-1][s-1];
           }
@@ -2684,7 +2675,8 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           if ( isInternal[k][s] ) {
             for ( int i = 0; i < nElems[k][s]; i++ ) {
               if (elemTypeVTK[k][s] == -1 ) {
-                // MIXED element support added R.Tech
+                
+                /*--- Mixed-element support. ---*/
                 ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
                 cg_npe( elmt_type, &npe);
                 switch (elmt_type) {
@@ -2715,7 +2707,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                   case PYRA_5:
                     fprintf( SU2File, "%2i\t", 14);
                     break;
-                  default: // error
+                  default:
                     fprintf( SU2File, "%2i\t", -1);
                     break;
                 }
@@ -2769,7 +2761,9 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             counter++;
             
             if (elemTypeVTK[k][s] == -1 ) {
-              //MIXED element support added R.Tech
+              
+              /*--- Mixed-element support. ---*/
+              
               for ( int i = 0; i < nElems[k][s]; i++ ) {
                 ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
                 cg_npe( elmt_type, &npe);
@@ -2860,7 +2854,8 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
            elements. ---*/
           
           if (elemTypeVTK[k][s] == -1 ) {
-            //MIXED element support added R.Tech
+            
+            /*--- Mixed-element support. ---*/
             ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
             cg_npe( elmt_type, &npe);
             switch (elmt_type) {
@@ -2891,7 +2886,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               case PYRA_5:
                 VTK_Type = 14;
                 break;
-              default: // error
+              default:
                 VTK_Type = -1;
                 break;
             }
@@ -3023,7 +3018,8 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
              elements. ---*/
             
             if (elemTypeVTK[k][s] == -1 ) {
-              //MIXED element support added R.Tech
+              
+              /*--- Mixed-element support. ---*/
               ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
               cg_npe( elmt_type, &npe);
               switch (elmt_type) {
