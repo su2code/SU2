@@ -2172,6 +2172,10 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 
 void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone){
   
+  /*--- Original CGNS reader implementation by Thomas D. Economon,
+   Francisco Palacios. Improvements for mixed-element meshes generated
+   by ICEM added by Martin Spel (3D) & Shlomy Shitrit (2D), April 2014. ---*/
+  
 #ifndef NO_CGNS
   
   /*--- Local variables and initialization ---*/
@@ -2480,13 +2484,28 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             currentElem      = "Pyramid";
             elemTypeVTK[j-1][s-1] = 14;
             break;
+          case HEXA_20:
+            printf( "\n\n   !!! Error !!!\n" );
+            printf( " HEXA-20 element type not supported\n");
+            printf(" Section %d, npe=%d\n", s, npe);
+            printf(" startE %d, endE %d\n", startE, endE);
+            printf( " Now exiting...\n\n");
+            exit(0);
+            break;
+          case MIXED:
+            currentElem      = "Mixed";
+            elemTypeVTK[j-1][s-1] = -1;
+            break;
           default:
             printf( "\n\n   !!! Error !!!\n" );
-            printf( " Unrecognized element type.\n");
+            printf( " Unrecognized element type: (type %d, npe=%d)\n", elemType, npe);
+            printf(" Section %d\n", s);
+            printf(" startE %d, endE %d\n", startE, endE);
             printf( " Now exiting...\n\n");
             exit(0);
             break;
         }
+        
         
         /*--- Check if the elements in this section are part
          of the internal domain or are part of the boundary
@@ -2508,14 +2527,28 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           }
         } else {
           /*--- In 3-D check for tri or quad elements, VTK types 5 or 9. ---*/
-          if (elemTypeVTK[j-1][s-1] == 5 || elemTypeVTK[j-1][s-1] == 9) {
-            isInternal[j-1][s-1] = false;
-            nMarkers++;
-            boundaryElems += nElems[j-1][s-1];
-          } else {
-            isInternal[j-1][s-1] = true;
-            interiorElems += nElems[j-1][s-1];
+          switch (elemTypeVTK[j-1][s-1]) {
+            case 5:
+            case 9:
+              isInternal[j-1][s-1] = false;
+              nMarkers++;
+              boundaryElems += nElems[j-1][s-1];
+              break;
+            case -1:
+              /*--- MIXED element support (treated later). ---*/
+              break;
+            default:
+              isInternal[j-1][s-1] = true;
+              interiorElems += nElems[j-1][s-1];
+              break;
           }
+        }
+        
+        
+        if (elemTypeVTK[j-1][s-1] == -1) {
+          /*--- In case of mixed data type, allocate place for 8 nodes maximum 
+           (hex), plus element type. ---*/
+          elemIndex[j-1][s-1] = 9;
         }
         
         /*--- Keep track of the sections with the largest
@@ -2558,11 +2591,50 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         /*--- Copy these values into the larger array for
          storage until writing the SU2 file. ---*/
         
-        int counter = 0;
-        for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
-          for ( int jj = 0; jj < elemIndex[j-1][s-1]; jj++ ) {
-            connElems[j-1][s-1][jj][ii] = connElemTemp[counter] + prevVerts;
+        if (elemTypeVTK[j-1][s-1] == -1) {
+          
+          /*--- In the zone, we assume we don't mix volumetric and surface
+           elements, so if at least one surface element is found (TRIA, QUAD), 
+           all elements are assumed to be surface elements. Mixed-element
+           support initially added here by Martin Spel. ---*/
+          
+          bool isBoundary = false;
+          int counter = 0;
+          
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
+            ElementType_t elmt_type = ElementType_t (connElemTemp[counter]);
+            cg_npe( elmt_type, &npe);
+
+            /*--- Mixed element support for 2D added here by Shlomy Shitrit ---*/
+            if (elmt_type == 5 || elmt_type == 9){
+              if (cell_dim == 2) { isBoundary = false; }
+              if (cell_dim == 3) { isBoundary = true;  }
+            }
+            
             counter++;
+            connElems[j-1][s-1][0][ii] = elmt_type;
+            for ( int jj = 0; jj < npe; jj++ ) {
+              connElems[j-1][s-1][jj+1][ii] = connElemTemp[counter] + prevVerts;
+              counter++;
+            }
+          }
+          if (isBoundary) {
+            isInternal[j-1][s-1] = false;
+            nMarkers++;
+            boundaryElems += nElems[j-1][s-1];
+          } else if ( cell_dim == 3 ) {
+            isInternal[j-1][s-1] = true;
+            interiorElems += nElems[j-1][s-1];
+          }
+          
+          
+        } else {
+          int counter = 0;
+          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
+            for ( int jj = 0; jj < elemIndex[j-1][s-1]; jj++ ) {
+              connElems[j-1][s-1][jj][ii] = connElemTemp[counter] + prevVerts;
+              counter++;
+            }
           }
         }
         delete[] connElemTemp;
@@ -2602,16 +2674,63 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         for ( int s = 0; s < nsections; s++ ) {
           if ( isInternal[k][s] ) {
             for ( int i = 0; i < nElems[k][s]; i++ ) {
-              fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
-              for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-                fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1);
+              if (elemTypeVTK[k][s] == -1 ) {
+                
+                /*--- Mixed-element support. ---*/
+                ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+                cg_npe( elmt_type, &npe);
+                switch (elmt_type) {
+                  case NODE:
+                    fprintf( SU2File, "%2i\t", 1);
+                    break;
+                  case BAR_2:
+                    fprintf( SU2File, "%2i\t", 3);
+                    break;
+                  case BAR_3:
+                    fprintf( SU2File, "%2i\t", 3);
+                    break;
+                  case TRI_3:
+                    fprintf( SU2File, "%2i\t", 5);
+                    break;
+                  case QUAD_4:
+                    fprintf( SU2File, "%2i\t", 9);
+                    break;
+                  case TETRA_4:
+                    fprintf( SU2File, "%2i\t", 10);
+                    break;
+                  case HEXA_8:
+                    fprintf( SU2File, "%2i\t", 12);
+                    break;
+                  case PENTA_6:
+                    fprintf( SU2File, "%2i\t", 13);
+                    break;
+                  case PYRA_5:
+                    fprintf( SU2File, "%2i\t", 14);
+                    break;
+                  default:
+                    fprintf( SU2File, "%2i\t", -1);
+                    break;
+                }
+                for ( int j = 1; j < npe+1; j++ ) {
+                  fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1);
+                }
+                fprintf( SU2File, "%d\n", counter);
+                counter++;
+              } else {
+                fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
+                for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+                  fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1);
+                }
+                fprintf( SU2File, "%d\n", counter);
+                counter++;
               }
-              fprintf( SU2File, "%d\n", counter);
-              counter++;
             }
           }
         }
       }
+      
+      /*--- Now write the node coordinates. First write
+       the total number of vertices. ---*/
       
       fprintf( SU2File, "NPOIN= %i\n", totalVerts);
       counter = 0;
@@ -2637,32 +2756,74 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       for ( int k = 0; k < nzones; k ++ ) {
         for ( int s = 0; s < nsections; s++ ) {
           if ( !isInternal[k][s] ) {
+            fprintf( SU2File, "MARKER_TAG= %s\n", sectionNames[k][s] );
+            fprintf( SU2File, "MARKER_ELEMS= %i\n", nElems[k][s] );
             counter++;
             
-            Marker_Tag = sectionNames[k][s];
-            
-            /*--- Remove whitespaces from the marker names ---*/
-            Marker_Tag.erase(remove(Marker_Tag.begin(),Marker_Tag.end(),' '),Marker_Tag.end());
-            
-            fprintf( SU2File, "MARKER_TAG= %s\n", Marker_Tag.c_str() );
-            fprintf( SU2File, "MARKER_ELEMS= %i\n", nElems[k][s] );
-            for ( int i = 0; i < nElems[k][s]; i++ ) {
-              fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
-              for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-                fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1 );
+            if (elemTypeVTK[k][s] == -1 ) {
+              
+              /*--- Mixed-element support. ---*/
+              
+              for ( int i = 0; i < nElems[k][s]; i++ ) {
+                ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+                cg_npe( elmt_type, &npe);
+                switch (elmt_type) {
+                  case NODE:
+                    fprintf( SU2File, "%2i\t", 1);
+                    break;
+                  case BAR_2:
+                    fprintf( SU2File, "%2i\t", 3);
+                    break;
+                  case BAR_3:
+                    fprintf( SU2File, "%2i\t", 3);
+                    break;
+                  case TRI_3:
+                    fprintf( SU2File, "%2i\t", 5);
+                    break;
+                  case QUAD_4:
+                    fprintf( SU2File, "%2i\t", 9);
+                    break;
+                  case TETRA_4:
+                    fprintf( SU2File, "%2i\t", 10);
+                    break;
+                  case HEXA_8:
+                    fprintf( SU2File, "%2i\t", 12);
+                    break;
+                  case PENTA_6:
+                    fprintf( SU2File, "%2i\t", 13);
+                    break;
+                  case PYRA_5:
+                    fprintf( SU2File, "%2i\t", 14);
+                    break;
+                  default: // error
+                    fprintf( SU2File, "%2i\t", -1);
+                    break;
+                }
+                for ( int j = 1; j < npe+1; j++ ) {
+                  fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1);
+                }
+                fprintf( SU2File, "\n");
               }
-              fprintf( SU2File, "\n");
+            } else {
+              counter++;
+              for ( int i = 0; i < nElems[k][s]; i++ ) {
+                fprintf( SU2File, "%2i\t", elemTypeVTK[k][s]);
+                for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+                  fprintf( SU2File, "%8i\t", connElems[k][s][j][i] - 1 );
+                }
+                fprintf( SU2File, "\n");
+              }
             }
           }
         }
       }
-      
     }
     
     /*--- Close the SU2 mesh file. ---*/
     
     fclose( SU2File );
     cout << "Successfully wrote the SU2 mesh file." << endl;
+    
     
   }
   
@@ -2689,12 +2850,59 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       if ( isInternal[k][s] ) {
         for ( int i = 0; i < nElems[k][s]; i++ ) {
           
-          /*--- Get the VTK type for this element. ---*/
-          VTK_Type = elemTypeVTK[k][s];
+          /*--- Get the VTK type for this element. Check for mixed
+           elements. ---*/
           
-          /*--- Transfer the nodes for this element. ---*/
-          for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-            vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+          if (elemTypeVTK[k][s] == -1 ) {
+            
+            /*--- Mixed-element support. ---*/
+            ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+            cg_npe( elmt_type, &npe);
+            switch (elmt_type) {
+              case NODE:
+                VTK_Type = 1;
+                break;
+              case BAR_2:
+                VTK_Type = 3;
+                break;
+              case BAR_3:
+                VTK_Type = 3;
+                break;
+              case TRI_3:
+                VTK_Type = 5;
+                break;
+              case QUAD_4:
+                VTK_Type = 9;
+                break;
+              case TETRA_4:
+                VTK_Type = 10;
+                break;
+              case HEXA_8:
+                VTK_Type = 12;
+                break;
+              case PENTA_6:
+                VTK_Type = 13;
+                break;
+              case PYRA_5:
+                VTK_Type = 14;
+                break;
+              default:
+                VTK_Type = -1;
+                break;
+            }
+            
+            /*--- Transfer the nodes for this element. ---*/
+            for ( int j = 1; j < npe+1; j++ ) {
+              vnodes_cgns[j-1] = connElems[k][s][j][i] - 1;
+            }
+            
+          } else {
+            VTK_Type = elemTypeVTK[k][s];
+            
+            /*--- Transfer the nodes for this element. ---*/
+            for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+              vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+            }
           }
           
           /* Instantiate this element. */
@@ -2806,13 +3014,61 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           
           for ( int i = 0; i < nElems[k][s]; i++ ) {
             
-            /* Get the VTK type for this element. */
-            VTK_Type = elemTypeVTK[k][s];
+            /*--- Get the VTK type for this element. Check for mixed
+             elements. ---*/
             
-            /* Transfer the nodes for this element. */
-            for ( int j = 0; j < elemIndex[k][s]; j++ ) {
-              vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+            if (elemTypeVTK[k][s] == -1 ) {
+              
+              /*--- Mixed-element support. ---*/
+              ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
+              cg_npe( elmt_type, &npe);
+              switch (elmt_type) {
+                case NODE:
+                  VTK_Type = 1;
+                  break;
+                case BAR_2:
+                  VTK_Type = 3;
+                  break;
+                case BAR_3:
+                  VTK_Type = 3;
+                  break;
+                case TRI_3:
+                  VTK_Type = 5;
+                  break;
+                case QUAD_4:
+                  VTK_Type = 9;
+                  break;
+                case TETRA_4:
+                  VTK_Type = 10;
+                  break;
+                case HEXA_8:
+                  VTK_Type = 12;
+                  break;
+                case PENTA_6:
+                  VTK_Type = 13;
+                  break;
+                case PYRA_5:
+                  VTK_Type = 14;
+                  break;
+                default: // error
+                  VTK_Type = -1;
+                  break;
+              }
+              /*--- Transfer the nodes for this element. ---*/
+              for ( int j = 1; j < npe+1; j++ ) {
+                vnodes_cgns[j-1] = connElems[k][s][j][i] - 1;
+              }
+              
+            }else {
+              VTK_Type = elemTypeVTK[k][s];
+              
+              /* Transfer the nodes for this element. */
+              for ( int j = 0; j < elemIndex[k][s]; j++ ) {
+                vnodes_cgns[j] = connElems[k][s][j][i] - 1;
+              }
             }
+            
+            
             switch(VTK_Type) {
               case LINE:
                 
@@ -9949,7 +10205,8 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
 #endif
   
   unsigned short iPlane, nPlane;
-	double Volume = 0.0, MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, **Plane_P0, **Plane_Normal, *Area;
+	double Volume = 0.0, MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane,
+  **Plane_P0, **Plane_Normal, *Area;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   
   /*--- Make a large number of section cuts for approximating volume ---*/
@@ -10000,14 +10257,14 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
     Area[iPlane] = 0.0;
     if (Xcoord_Airfoil[iPlane].size() != 0) {
       Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane],
-                                    iPlane, config, Xcoord_Airfoil[iPlane],
-                                    Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
-                                    original_surface);
+                                  iPlane, config, Xcoord_Airfoil[iPlane],
+                                  Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                                  original_surface);
     }
   }
   
   /*--- Compute the volume using a composite Simpson's rule ---*/
-
+  
   Volume = 0.0;
   for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
     if (Xcoord_Airfoil[iPlane].size() != 0) {
