@@ -386,6 +386,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  double Young_modulus, Poisson_ratio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
@@ -2231,7 +2232,18 @@ public:
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
 	double GetDeform_Tol_Factor(void);
+
+  /*!
+   * \brief Get Young's modulus for deformation (constant stiffness deformation)
+   */
+  double GetYoung_modulus(void);
   
+  /*!
+   * \brief Get Poisson's ratio for deformation (constant stiffness deformation)
+   * \
+   */
+  double GetPoisson_ratio(void);
+
   /*!
 	 * \brief Get the type of stiffness to impose for FEA mesh deformation.
 	 * \return type of stiffness to impose for FEA mesh deformation.

@@ -456,6 +456,10 @@ inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
 
+inline double CConfig::GetYoung_modulus(void) { return Young_modulus; }
+
+inline double CConfig::GetPoisson_ratio(void) { return Poisson_ratio; }
+
 inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
 
 inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }

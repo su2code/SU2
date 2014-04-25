@@ -967,6 +967,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddScalarOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
   AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
+  AddScalarOption("YOUNGS_MODULUS", Young_modulus, 2E11);
+  AddScalarOption("POISSONS_RATIO", Poisson_ratio, 0.3);
   
   /*--- option related to rotorcraft problems ---*/
   /* CONFIG_CATEGORY: Rotorcraft problem */
