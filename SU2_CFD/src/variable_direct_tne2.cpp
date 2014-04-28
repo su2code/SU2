@@ -850,7 +850,8 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
                             + rho_el*Ru/Ms[nSpecies-1]*1.0/rhoCvve;
 }
 
-double CTNE2EulerVariable::CalcEve(double *V, CConfig *config, unsigned short val_Species) {
+double CTNE2EulerVariable::CalcEve(CConfig *config, double val_Tve,
+                                   unsigned short val_Species) {
 
   unsigned short iEl, *nElStates;
   double *Ms, *thetav, **thetae, **g, *hf, *Tref, Ru;
@@ -862,7 +863,7 @@ double CTNE2EulerVariable::CalcEve(double *V, CConfig *config, unsigned short va
   
   /*--- Rename for convenience ---*/
   Ru  = UNIVERSAL_GAS_CONSTANT;
-  Tve = V[TVE_INDEX];
+  Tve = val_Tve;
   
   /*--- Electron species energy ---*/
   if ((ionization) && (val_Species == nSpecies-1)) {
@@ -909,8 +910,8 @@ double CTNE2EulerVariable::CalcEve(double *V, CConfig *config, unsigned short va
 }
 
 
-double CTNE2EulerVariable::CalcHs(double *V, CConfig *config,
-                                  unsigned short val_Species) {
+double CTNE2EulerVariable::CalcHs(CConfig *config, double val_T,
+                                  double val_eves, unsigned short val_Species) {
 
   double Ru, *xi, *Ms, *hf, *Tref, T, eve, ef, hs;
   
@@ -922,20 +923,20 @@ double CTNE2EulerVariable::CalcHs(double *V, CConfig *config,
   
   /*--- Rename for convenience ---*/
   Ru = UNIVERSAL_GAS_CONSTANT;
-  T = V[T_INDEX];
+  T = val_T;
   
   /*--- Calculate vibrational-electronic energy per unit mass ---*/
-  eve = CalcEve(V, config, val_Species);
+  eve = val_eves;
   
   /*--- Calculate formation energy ---*/
   ef = hf[val_Species] - Ru/Ms[val_Species]*Tref[val_Species];
   
-//  hs = Ru/Ms[val_Species]*T
-//     + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]
-//     + hf[val_Species] + eve;
+  hs = Ru/Ms[val_Species]*T
+     + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]*T
+     + hf[val_Species] + eve;
   
-  hs = (3.0/2.0+xi[val_Species]/2.0) * Ru/Ms[val_Species] * (T-Tref[val_Species])
-   + eve + ef;
+//  hs = (3.0/2.0+xi[val_Species]/2.0) * Ru/Ms[val_Species] * (T-Tref[val_Species])
+//   + eve + ef;
   
   return hs;
 }
@@ -983,7 +984,7 @@ double CTNE2EulerVariable::CalcCvve(double val_Tve, CConfig *config, unsigned sh
     /*--- Electronic energy ---*/
     if (nElStates[val_Species] != 0) {
       num = 0.0; num2 = 0.0;
-      denom = g[val_Species][0] * exp(thetae[val_Species][0]/Tve);
+      denom = g[val_Species][0] * exp(-thetae[val_Species][0]/Tve);
       num3  = g[val_Species][0] * (thetae[val_Species][0]/(Tve*Tve))*exp(-thetae[val_Species][0]/Tve);
       for (iEl = 1; iEl < nElStates[val_Species]; iEl++) {
         thoTve = thetae[val_Species][iEl]/Tve;
@@ -1061,7 +1062,7 @@ void CTNE2EulerVariable::CalcdTvedU(double *V, CConfig *config,
   
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eve = CalcEve(V, config, iSpecies);
+    eve = CalcEve(config, V[TVE_INDEX], iSpecies);
     val_dTvedU[iSpecies] = -eve/rhoCvve;
   }
   /*--- Momentum derivatives ---*/
@@ -1183,14 +1184,13 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   /*--- Species & mixture density ---*/
   V[RHO_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    V[RHOS_INDEX+iSpecies] = U[iSpecies];
-    V[RHO_INDEX]          += U[iSpecies];
     if (V[RHOS_INDEX+iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-14;
       U[iSpecies] = 1E-14;
       converr = true;
-//      cout << "density < 0" << endl;
-    }
+    } else
+      V[RHOS_INDEX+iSpecies] = U[iSpecies];
+    V[RHO_INDEX] += U[iSpecies];
   }
   
   /*--- Mixture velocity ---*/
@@ -1253,7 +1253,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   V[TVE_INDEX] = Tvemin;
   rhoEve_t = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhoEve_t += U[iSpecies]*CalcEve(V, config, iSpecies);
+    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
   if (rhoEve < rhoEve_t) {
     nonphys = true;
     converr = true;
@@ -1264,7 +1264,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   V[TVE_INDEX] = Tvemax;
   rhoEve_t = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhoEve_t += U[iSpecies]*CalcEve(V, config, iSpecies);
+    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
   if (rhoEve > rhoEve_t) {
     nonphys = true;
     converr = true;
@@ -1286,8 +1286,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
       rhoCvve      = 0.0;
       V[TVE_INDEX] = Tve;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        rhoEve_t += U[iSpecies] * CalcEve(V, config, iSpecies);
-        rhoCvve  += U[iSpecies] * CalcCvve(Tve, config, iSpecies);
+        rhoEve_t += U[iSpecies] * CalcEve(config, V[TVE_INDEX],  iSpecies);
+        rhoCvve  += U[iSpecies] * CalcCvve(V[TVE_INDEX], config, iSpecies);
       }
       
       // Find the root
@@ -1324,7 +1324,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
         V[TVE_INDEX] = Tve;
         rhoEve_t = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          rhoEve_t += U[iSpecies] * CalcEve(V, config, iSpecies);
+          rhoEve_t += U[iSpecies] * CalcEve(config, V[TVE_INDEX], iSpecies);
         
         if (fabs(rhoEve_t - rhoEve) < tol) {
           V[TVE_INDEX] = Tve;
@@ -1581,7 +1581,7 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, double *U,
     /*--- Vibrational-electronic temperature ---*/
     GradV[TVE_INDEX][iDim] = GradU[nSpecies+nDim+1][iDim]/rhoCvve;
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      eve = CalcEve(V, config, iSpecies);
+      eve = CalcEve(config, V[TVE_INDEX], iSpecies);
       GradV[TVE_INDEX][iDim] -= GradU[iSpecies][iDim]*eve;
     }
     
@@ -1829,6 +1829,8 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    DiffusionCoeff[iSpecies] = 0.0;
 }
 
 

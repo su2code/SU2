@@ -5428,7 +5428,8 @@ class CUpwRoe_AdjTNE2 : public CNumerics {
 private:
   bool implicit;
   unsigned short nVar, nPrimVar, nPrimVarGrad, nSpecies;
-  double *MeanU, *MeanV, *MeandPdU;
+  double *MeanU, *MeanV;
+  double *MeandPdU, *MeandTdU, *MeandTvedU;
   double *DiffPsi;
   double *UnitNormal;
   double *Lambda;
@@ -5677,6 +5678,57 @@ public:
 };
 
 /*!
+ * \class CAvgGrad_AdjTNE2
+ * \brief Class for computing the adjoint viscous terms.
+ * \ingroup ViscDiscr
+ * \author F. Palacios.
+ * \version 3.0.0 "eagle"
+ */
+class CAvgGradCorrected_AdjTNE2 : public CNumerics {
+private:
+  double *vel, *vel_i, *vel_j;
+  double *hs_i, *hs_j, *eve_i, *eve_j;
+  double *GPsirsdotn; /*!< \brief Grad(PsiRhos) dot n. */
+  double **Mean_GradPsirs; /*!< \brief Mean gradient in the adjoint species density between nodes i and j. */
+	double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint energy between nodes i and j. */
+  double *Mean_GradPsiEve; /*!< \brief Mean gradient in the adjoint vibrational energy between nodes i and j. */
+	double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
+  double **Mean_GPsi;  /*!< \brief Mean gradient of the adjoint variables. */
+  double *Proj_Mean_GPsi; /*!< \brief Projected mean gradient of the adjoint variables. */
+	double *Edge_Vector;	/*!< \brief Vector going from node i to node j. */
+  double **dJddrs; /*!< \brief Diffusion velocity derivatives w.r.t. grad(rhos). */
+  double **dYdrs; /*!< \brief Derivative of mass fraction w.r.t. species density. */
+  double *DdYk;
+  
+  double **SigmaPhi;
+  double **SigmaPsiE;
+  bool implicit;			/*!< \brief Implicit calculus. */
+public:
+  
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CAvgGradCorrected_AdjTNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CAvgGradCorrected_AdjTNE2(void);
+  
+	/*!
+	 * \brief Residual computation.
+	 * \param[out] val_residual_i - Pointer to the total residual at point i.
+	 * \param[out] val_residual_j - Pointer to the total residual at point j.
+	 */
+	void ComputeResidual(double *val_residual_i, double *val_residual_j,
+                       double **val_Jacobian_ii, double **val_Jacobian_ij,
+                       double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config);
+};
+
+/*!
  * \class CSource_AdjTNE2
  * \brief Class for adjoint two-temperature model source terms.
  * \ingroup SourceDiscr
@@ -5689,9 +5741,10 @@ private:
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
   double *rhos, *vel, *Y, *hs, *eves, *Cvtrs, *Cvves;
   double *GInvRho, **GVeloRho, **tau, **eta, **pi, **zeta;
-  double *GPhiGInvRho, *GPsiEZetaTau, *GPsirsGr, *DGPsirsGrs, *GPsiEJ, *GPsiEveJ;
-  double **dJdr, *dYdr;
-  double **Av1, **Av2, **Av3, **Av4;
+  double *GPhiGInvRho, *GPsiEZetaTau;// *GPsirsGr, *DGPsirsGrs, *GPsiEJ, *GPsiEveJ;
+  double ***dIdr, ***dJdr, **GY, **SdIdr, **Js, *SIk;
+  
+//  double ***dIdr;
 public:
   
 	/*!

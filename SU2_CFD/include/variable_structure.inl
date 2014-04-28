@@ -330,9 +330,11 @@ inline double *CVariable::GetdTdU() { return NULL; }
 
 inline double *CVariable::GetdTvedU() { return NULL; }
 
-inline double CVariable::CalcEve(double *V, CConfig *config, unsigned short val_Species) { return 0; }
+inline double CVariable::CalcEve(CConfig *config, double val_Tve,
+                                 unsigned short val_Species) { return 0; }
 
-inline double CVariable::CalcHs(double *V, CConfig *config, unsigned short val_Species) { return 0; }
+inline double CVariable::CalcHs(CConfig *config, double val_T, double val_eves,
+                                unsigned short val_Species) { return 0; }
 
 inline double CVariable::CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species) { return 0; }
 

@@ -1737,8 +1737,8 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
     
     /*--- Diffusion terms ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      eve = var->CalcEve(val_primvar, config, iSpecies);
-      hs  = var->CalcHs(val_primvar, config, iSpecies);
+      eve = var->CalcEve(config, Tve, iSpecies);
+      hs  = var->CalcHs(config, T, eve, iSpecies);
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs;
       Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve;
     }
@@ -2040,8 +2040,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
     sumdFdYieve[iSpecies] = 0.0;
     sumdFdYjeve[iSpecies] = 0.0;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      eve = var->CalcEve(val_Mean_PrimVar, config, jSpecies);
-      hs  = var->CalcHs(val_Mean_PrimVar, config, jSpecies);
+      eve = var->CalcEve(config, Tve, jSpecies);
+      hs  = var->CalcHs(config, T, eve, jSpecies);
       sumdFdYih[iSpecies]   += dFdYi[jSpecies][iSpecies]*hs;
       sumdFdYjh[iSpecies]   += dFdYj[jSpecies][iSpecies]*hs;
       sumdFdYieve[iSpecies] += dFdYi[jSpecies][iSpecies]*eve;

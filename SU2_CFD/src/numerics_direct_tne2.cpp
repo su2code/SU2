@@ -1771,6 +1771,9 @@ void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
     N += V_i[iSpecies]/Ms[iSpecies]*AVOGAD_CONSTANT;
   }
   
+  /*--- Convert number density from 1/m^3 to 1/cm^3 ---*/
+  N = N/(1E-6);
+  
   /*--- Determine table index based on mixture N ---*/
   tbl_offset = 14;
   pwr        = floor(log10(N));
@@ -1854,7 +1857,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   rhoCvve = V_i[RHOCVVE_INDEX];
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eves[iSpecies] = var->CalcEve(V_i, config, iSpecies);
+    eves[iSpecies] = var->CalcEve(config, Tve, iSpecies);
   }
   
   /*--- Acquire parameters from the configuration file ---*/

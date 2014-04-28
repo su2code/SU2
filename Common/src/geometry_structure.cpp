@@ -1214,7 +1214,8 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   /*--- Loop over the surface element to set the boundaries ---*/
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++)
       for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
         Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
@@ -1225,11 +1226,17 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
             config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL &&
-            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ||
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ||
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ||
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ||
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ||
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ||
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)
           node[Point_Surface]->SetSolidBoundary(true);
+        
       }
+  }
   
   /*--- Loop over the points element to re-scale the mesh, and plot it ---*/
   
@@ -9202,9 +9209,13 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
             config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
-        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL &&
-            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX &&
-            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+        if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ||
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ||
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ||
+            config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ||
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ||
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ||
+            config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)
           node[Point_Surface]->SetSolidBoundary(true);
       }
   

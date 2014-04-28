@@ -6380,6 +6380,18 @@ public:
 	 */
 	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+ 
+  /*!
+	 * \brief Compute the viscous residuals.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	 */
+  void Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
+                       CNumerics *second_solver, CConfig *config, unsigned short iMesh);
   
 	/*!
 	 * \brief Get the skin friction coefficient.

@@ -1152,12 +1152,14 @@ public:
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
-  virtual double CalcEve(double *V, CConfig *config, unsigned short val_Species);
+  virtual double CalcEve(CConfig *config, double val_Tve,
+                         unsigned short val_Species);
   
   /*!
    * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
    */
-  virtual double CalcHs(double *V, CConfig *config, unsigned short val_Species);
+  virtual double CalcHs(CConfig *config, double val_T, double val_eves,
+                        unsigned short val_Species);
   
   /*!
    * \brief Calculates enthalpy per mass, \f$Cv_s\f$, for input species (not including KE)
@@ -3160,12 +3162,13 @@ public:
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
-  double CalcEve(double *V, CConfig *config, unsigned short val_Species);
+  double CalcEve(CConfig *config, double val_Tve, unsigned short val_Species);
   
   /*!
    * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
    */
-  double CalcHs(double *V, CConfig *config, unsigned short val_Species);
+  double CalcHs(CConfig *config, double val_T, double val_eves,
+                unsigned short val_Species);
   
   /*!
    * \brief Calculates enthalpy per mass, \f$C^{vib-el}_{v_s}\f$, for input species (not including KE)
