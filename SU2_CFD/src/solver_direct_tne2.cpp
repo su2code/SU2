@@ -5582,7 +5582,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
   
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (!geometry->node[iPoint]->GetSolidBoundary()) {
+//    if (!geometry->node[iPoint]->GetSolidBoundary()) {
       
       /*--- Set conserved & primitive variables  ---*/
       numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
@@ -5655,7 +5655,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
           OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
         }
       }
-    }
+//    }
   }
   
   /*--- Loop over boundaries ---*/
@@ -6685,7 +6685,7 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 	unsigned long iVertex, iPoint;
 	double pcontrol;
   double rho, Ys, eves, hs;
-	double *Normal, UnitNormal[3], Area;
+	double *Normal, Area;
   double *Ds, *V, *dYdn, SdYdn;
   double **GradV;
   
@@ -6717,8 +6717,6 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 			for (iDim = 0; iDim < nDim; iDim++)
 				Area += Normal[iDim]*Normal[iDim];
 			Area = sqrt (Area);
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
       
 			/*--- Initialize the convective & viscous residuals to zero ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
@@ -6738,7 +6736,7 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
         dYdn[iSpecies] = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
-                                       Ys*GradV[RHO_INDEX][iDim])*UnitNormal[iDim];
+                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
       }
       
       /*--- Calculate supplementary quantities ---*/
@@ -6750,7 +6748,7 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
         Ys   = V[RHOS_INDEX+iSpecies]/rho;
         eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
         hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
-        Res_Visc[iSpecies] = (rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn)*Area;
+        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
         Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
         Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
       }

@@ -547,7 +547,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
       /*--- Electronic energy ---*/
       if (nElStates[iSpecies] != 0) {
         num = 0.0; num2 = 0.0;
-        denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+        denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
         num3  = g[iSpecies][0] * (thetae[iSpecies][0]/(Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
         for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
           thoTve = thetae[iSpecies][iEl]/Tve;
@@ -824,7 +824,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       evibs = Ru/Ms[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
       num = 0.0;
-      denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
+      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
       for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
         num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
         denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
@@ -898,7 +898,7 @@ double CTNE2EulerVariable::CalcEve(CConfig *config, double val_Tve,
     
     /*--- Calculate electronic energy ---*/
     num = 0.0;
-    denom = g[val_Species][0] * exp(thetae[val_Species][0]/Tve);
+    denom = g[val_Species][0] * exp(-thetae[val_Species][0]/Tve);
     for (iEl = 1; iEl < nElStates[val_Species]; iEl++) {
       num   += g[val_Species][iEl] * thetae[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);
       denom += g[val_Species][iEl] * exp(-thetae[val_Species][iEl]/Tve);

@@ -1771,8 +1771,8 @@ void CSource_TNE2::GetKeqConstants(double *A, unsigned short val_Reaction,
     N += V_i[iSpecies]/Ms[iSpecies]*AVOGAD_CONSTANT;
   }
   
-  /*--- Convert number density from 1/m^3 to 1/cm^3 ---*/
-  N = N/(1E-6);
+  /*--- Convert number density from 1/m^3 to 1/cm^3 for table look-up ---*/
+  N = N*(1E-6);
   
   /*--- Determine table index based on mixture N ---*/
   tbl_offset = 14;

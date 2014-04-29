@@ -1697,16 +1697,16 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
       un += vel_i[iDim]*UnitNormal[iDim];
     
     /*--- Jacobian from k = 1 viscous flux ---*/
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-//        // species density
-//        val_Jacobian_ij[iSpecies][jSpecies] += -theta/dij*dJddrs[jSpecies][iSpecies]*Area;
-//        // total energy
-//        val_Jacobian_ij[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*hs_i[jSpecies]*Area;
-//        // vib.-el. energy
-//        val_Jacobian_ij[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*eve_i[jSpecies]*Area;
-//      }
-//    }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        // species density
+        val_Jacobian_ij[iSpecies][jSpecies] += -theta/dij*dJddrs[jSpecies][iSpecies]*Area;
+        // total energy
+        val_Jacobian_ij[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*hs_i[jSpecies]*Area;
+        // vib.-el. energy
+        val_Jacobian_ij[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*eve_i[jSpecies]*Area;
+      }
+    }
     
     /*--- Jacobian from k = 2 viscous flux ---*/
     // x-momentum
@@ -1834,16 +1834,16 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
       un += vel_j[iDim]*UnitNormal[iDim];
     
     /*--- Jacobian from k = 1 viscous flux ---*/
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-//        // species density
-//        val_Jacobian_jj[iSpecies][jSpecies] += -theta/dij*dJddrs[jSpecies][iSpecies]*Area;
-//        // total energy
-//        val_Jacobian_jj[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*hs_j[jSpecies]*Area;
-//        // vib.-el. energy
-//        val_Jacobian_jj[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*eve_j[jSpecies]*Area;
-//      }
-//    }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        // species density
+        val_Jacobian_jj[iSpecies][jSpecies] += -theta/dij*dJddrs[jSpecies][iSpecies]*Area;
+        // total energy
+        val_Jacobian_jj[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*hs_j[jSpecies]*Area;
+        // vib.-el. energy
+        val_Jacobian_jj[iSpecies][nSpecies+nDim] += -theta/dij*dJddrs[jSpecies][iSpecies]*eve_j[jSpecies]*Area;
+      }
+    }
     
     
     /*--- Jacobian from k = 2 viscous flux ---*/

@@ -2101,8 +2101,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // Note: Data lists coefficients in (cm^3/mol-s) units, need to convert
         //       to (m^3/kmol-s) to be consistent with the rest of the code
         // Pre-exponential factor
-        ArrheniusCoefficient[0]  = 7.0E21*1E-3;
-        ArrheniusCoefficient[1]  = 3.0E22*1E-3;
+        ArrheniusCoefficient[0]  = 7.0E21;
+        ArrheniusCoefficient[1]  = 3.0E22;
         // Rate-controlling temperature exponent
         ArrheniusEta[0]  = -1.60;
         ArrheniusEta[1]  = -1.60;
@@ -2397,23 +2397,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
         /*--- Set Arrhenius coefficients for reactions ---*/
         // Pre-exponential factor
-        ArrheniusCoefficient[0]  = 7.0E21*1E-3;
-        ArrheniusCoefficient[1]  = 7.0E21*1E-3;
-        ArrheniusCoefficient[2]  = 7.0E21*1E-3;
-        ArrheniusCoefficient[3]  = 3.0E22*1E-3;
-        ArrheniusCoefficient[4]  = 3.0E22*1E-3;
-        ArrheniusCoefficient[5]  = 2.0E21*1E-3;
-        ArrheniusCoefficient[6]  = 2.0E21*1E-3;
-        ArrheniusCoefficient[7]  = 2.0E21*1E-3;
-        ArrheniusCoefficient[8]  = 1.0E22*1E-3;
-        ArrheniusCoefficient[9]  = 1.0E22*1E-3;
-        ArrheniusCoefficient[10] = 5.0E15*1E-3;
-        ArrheniusCoefficient[11] = 5.0E15*1E-3;
-        ArrheniusCoefficient[12] = 5.0E15*1E-3;
-        ArrheniusCoefficient[13] = 1.1E17*1E-3;
-        ArrheniusCoefficient[14] = 1.1E17*1E-3;
-        ArrheniusCoefficient[15] = 6.4E17*1E-3;
-        ArrheniusCoefficient[16] = 8.4E12*1E-3;
+        ArrheniusCoefficient[0]  = 7.0E21;
+        ArrheniusCoefficient[1]  = 7.0E21;
+        ArrheniusCoefficient[2]  = 7.0E21;
+        ArrheniusCoefficient[3]  = 3.0E22;
+        ArrheniusCoefficient[4]  = 3.0E22;
+        ArrheniusCoefficient[5]  = 2.0E21;
+        ArrheniusCoefficient[6]  = 2.0E21;
+        ArrheniusCoefficient[7]  = 2.0E21;
+        ArrheniusCoefficient[8]  = 1.0E22;
+        ArrheniusCoefficient[9]  = 1.0E22;
+        ArrheniusCoefficient[10] = 5.0E15;
+        ArrheniusCoefficient[11] = 5.0E15;
+        ArrheniusCoefficient[12] = 5.0E15;
+        ArrheniusCoefficient[13] = 1.1E17;
+        ArrheniusCoefficient[14] = 1.1E17;
+        ArrheniusCoefficient[15] = 6.4E17;
+        ArrheniusCoefficient[16] = 8.4E12;
         
         // Rate-controlling temperature exponent
         ArrheniusEta[0]  = -1.60;

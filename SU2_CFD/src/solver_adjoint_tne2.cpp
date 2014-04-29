@@ -3056,7 +3056,7 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
     second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
     /*--- Calculate direct-problem source terms ---*/
-    if (!geometry->node[iPoint]->GetSolidBoundary()) {
+//    if (!geometry->node[iPoint]->GetSolidBoundary()) {
       
       /*--- Compute chemistry source terms ---*/
       numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
@@ -3100,7 +3100,7 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       
-    }
+//    }
     
 		/*--- Compute viscous source term residual ---*/
 		second_numerics->ComputeSourceViscous(Residual_i, config);
