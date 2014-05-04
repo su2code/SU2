@@ -1221,12 +1221,12 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      val_Jacobian_ij[iVar][nSpecies+nDim] += ktr_i*dTdU_i[iVar]*theta*Area;
+      val_Jacobian_ij[iVar][nSpecies+nDim] += ktr_i*dTdU_i[iVar]*(theta/dij)*Area;
     
     /*--- Jacobian from k = 4 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_Jacobian_ij[iVar][nSpecies+nDim]   += kve_i*dTvedU_i[iVar]*theta*Area;
-      val_Jacobian_ij[iVar][nSpecies+nDim+1] += kve_i*dTvedU_i[iVar]*theta*Area;
+      val_Jacobian_ij[iVar][nSpecies+nDim]   += kve_i*dTvedU_i[iVar]*(theta/dij)*Area;
+      val_Jacobian_ij[iVar][nSpecies+nDim+1] += kve_i*dTvedU_i[iVar]*(theta/dij)*Area;
     }
     
 
@@ -1359,12 +1359,12 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      val_Jacobian_jj[iVar][nSpecies+nDim] += ktr_j*dTdU_j[iVar]*theta*Area;
+      val_Jacobian_jj[iVar][nSpecies+nDim] += ktr_j*dTdU_j[iVar]*(theta/dij)*Area;
     
     /*--- Jacobian from k = 4 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_Jacobian_jj[iVar][nSpecies+nDim]   += kve_j*dTvedU_j[iVar]*theta*Area;
-      val_Jacobian_jj[iVar][nSpecies+nDim+1] += kve_j*dTvedU_j[iVar]*theta*Area;
+      val_Jacobian_jj[iVar][nSpecies+nDim]   += kve_j*dTvedU_j[iVar]*(theta/dij)*Area;
+      val_Jacobian_jj[iVar][nSpecies+nDim+1] += kve_j*dTvedU_j[iVar]*(theta/dij)*Area;
     }
     
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1730,12 +1730,12 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      val_Jacobian_ij[iVar][nSpecies+nDim] += ktr_i*dTdU_i[iVar]*theta*Area;
+      val_Jacobian_ij[iVar][nSpecies+nDim] += ktr_i*(theta/dij)*dTdU_i[iVar]*Area;
     
     /*--- Jacobian from k = 4 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_Jacobian_ij[iVar][nSpecies+nDim]   += kve_i*dTvedU_i[iVar]*theta*Area;
-      val_Jacobian_ij[iVar][nSpecies+nDim+1] += kve_i*dTvedU_i[iVar]*theta*Area;
+      val_Jacobian_ij[iVar][nSpecies+nDim]   += kve_i*(theta/dij)*dTvedU_i[iVar]*Area;
+      val_Jacobian_ij[iVar][nSpecies+nDim+1] += kve_i*(theta/dij)*dTvedU_i[iVar]*Area;
     }
     
     
@@ -1868,12 +1868,12 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      val_Jacobian_jj[iVar][nSpecies+nDim] += ktr_j*dTdU_j[iVar]*theta*Area;
+      val_Jacobian_jj[iVar][nSpecies+nDim] += ktr_j*dTdU_j[iVar]*(theta/dij)*Area;
     
     /*--- Jacobian from k = 4 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_Jacobian_jj[iVar][nSpecies+nDim]   += kve_j*dTvedU_j[iVar]*theta*Area;
-      val_Jacobian_jj[iVar][nSpecies+nDim+1] += kve_j*dTvedU_j[iVar]*theta*Area;
+      val_Jacobian_jj[iVar][nSpecies+nDim]   += kve_j*dTvedU_j[iVar]*(theta/dij)*Area;
+      val_Jacobian_jj[iVar][nSpecies+nDim+1] += kve_j*dTvedU_j[iVar]*(theta/dij)*Area;
     }
     
     for (iVar = 0; iVar < nVar; iVar++)

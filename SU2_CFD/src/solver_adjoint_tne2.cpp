@@ -4072,8 +4072,9 @@ void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, Point_Normal;
   double rho, Ys, *hs, *eves, *dTdU, *dTvedU;
-  double Area;
-  double *Normal, *UnitNormal;
+  double ktr, kve;
+  double Area, dij, theta;
+  double *Normal, *UnitNormal, *Coord_i, *Coord_j;
   double dnPsiE, dnPsiEve, *dnPsirs;
   double *V, **GV, *Ds, *DdYk, **dYdrs, **dJddrs;
   double **GPsi;
@@ -4125,13 +4126,22 @@ void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       /*--- Normal vector for this vertex ---*/
       // Note: Convention is outward facing normal
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Coord_j = geometry->node[Point_Normal]->GetCoord();
       Area = 0.0;
+      dij  = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
         Normal[iDim] = -Normal[iDim];
         Area += Normal[iDim]*Normal[iDim];
+        dij  += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
       }
-      Area = sqrt(Area);
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+      Area  = sqrt(Area);
+      dij   = sqrt(dij);
+      theta = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        UnitNormal[iDim] = Normal[iDim]/Area;
+        theta += UnitNormal[iDim]*UnitNormal[iDim];
+      }
       
       /*--- Retrieve flow & adjoint quantities ---*/
       V      = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
@@ -4146,6 +4156,8 @@ void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
         eves[iSpecies] = solver_container[TNE2_SOL]->node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
         hs[iSpecies]   = solver_container[TNE2_SOL]->node[iPoint]->CalcHs(config, V[T_INDEX], eves[iSpecies], iSpecies);
       }
+      ktr = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
+      kve = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
         
       
       /*--- Calculate normal derivatives of adjoint variables ---*/
@@ -4161,12 +4173,22 @@ void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       }
       
       /*--- Propagate non-zero fluxes through the boundary ---*/
-      // k = 3
+      // k = 3 & 4
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Res_Visc_i[iSpecies] += dnPsiE*dTdU[iSpecies];
-        Res_Visc_i[iSpecies] += (dnPsiE+dnPsiEve)*dTvedU[iSpecies];
+        Res_Visc_i[iSpecies] += ktr*dnPsiE*dTdU[iSpecies];
+        Res_Visc_i[iSpecies] += kve*(dnPsiE+dnPsiEve)*dTvedU[iSpecies];
       }
       LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
+      
+      if (implicit) {
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          Jacobian_ii[iSpecies][nSpecies+nDim]   += -ktr*(theta/dij)*dTdU[iSpecies]*Area;
+          Jacobian_ii[iSpecies][nSpecies+nDim]   += -kve*(theta/dij)*dTvedU[iSpecies]*Area;
+          Jacobian_ii[iSpecies][nSpecies+nDim+1] += -kve*(theta/dij)*dTvedU[iSpecies]*Area;
+        }
+      }
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
       
 //      /*--- Calculate auxiliary quantities ---*/
 //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

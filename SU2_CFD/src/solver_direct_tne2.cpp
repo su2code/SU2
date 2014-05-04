@@ -5390,7 +5390,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
     
-		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+//		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
     /*--- Store minimum and maximum dt's within the grid for printing ---*/
@@ -6601,42 +6601,42 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       Res_Visc[nSpecies+nDim+1] = kve*dTvedn*Area;
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
-      if (implicit) {
-        /*--- Initialize the Jacobian ---*/
-        for (iVar = 0; iVar < nVar; iVar ++)
-					for (jVar = 0; jVar < nVar; jVar ++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        
-        /*--- Calculate geometrical parameters ---*/
-        theta = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          theta += UnitNormal[iDim]*UnitNormal[iDim];
-        }
-
-        /*--- Enforce the no-slip boundary condition in a strong way ---*/
-        for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-        // total energy
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies] +
-                                               kve*theta/dij*dTvedU[iSpecies]) * Area;
-        }
-        Jacobian_i[nSpecies+3][nSpecies]   = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+1] = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+2] = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+3] = -ktr*theta/(dij*rhoCvtr) * Area;
-        Jacobian_i[nSpecies+3][nSpecies+4] = -(-ktr*theta/(dij*rhoCvtr) +
-                                               kve*theta/(dij*rhoCvve)) * Area;
-        // vib-el. energy
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+4][iSpecies] = -kve*theta/dij * dTvedU[iSpecies] * Area;
-        }
-        Jacobian_i[nSpecies+4][nSpecies+4] = -kve*theta/(dij*rhoCvve) * Area;
-      
-        Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
-      }
+//      if (implicit) {
+//        /*--- Initialize the Jacobian ---*/
+//        for (iVar = 0; iVar < nVar; iVar ++)
+//					for (jVar = 0; jVar < nVar; jVar ++)
+//            Jacobian_i[iVar][jVar] = 0.0;
+//        
+//        /*--- Calculate geometrical parameters ---*/
+//        theta = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          theta += UnitNormal[iDim]*UnitNormal[iDim];
+//        }
+//
+//        /*--- Enforce the no-slip boundary condition in a strong way ---*/
+//        for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+//          total_index = iPoint*nVar+iVar;
+//          Jacobian.DeleteValsRowi(total_index);
+//        }
+//        // total energy
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies] +
+//                                               kve*theta/dij*dTvedU[iSpecies]) * Area;
+//        }
+//        Jacobian_i[nSpecies+3][nSpecies]   = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+1] = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+2] = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+3] = -ktr*theta/(dij*rhoCvtr) * Area;
+//        Jacobian_i[nSpecies+3][nSpecies+4] = -(-ktr*theta/(dij*rhoCvtr) +
+//                                               kve*theta/(dij*rhoCvve)) * Area;
+//        // vib-el. energy
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//          Jacobian_i[nSpecies+4][iSpecies] = -kve*theta/dij * dTvedU[iSpecies] * Area;
+//        }
+//        Jacobian_i[nSpecies+4][nSpecies+4] = -kve*theta/(dij*rhoCvve) * Area;
+//      
+//        Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
+//      }
       
       /*--- Error checking ---*/
       bool err_chk;
