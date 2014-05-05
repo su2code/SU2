@@ -3933,7 +3933,6 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       break;
       
     case ADJ_EULER      : case ADJ_NAVIER_STOKES      : case ADJ_RANS:
-    case ADJ_TNE2_EULER : case ADJ_TNE2_NAVIER_STOKES :
       ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_turb)) ConvHist_file[0] << adj_turb_resid;
       ConvHist_file[0] << end;
@@ -3941,7 +3940,12 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
         ConvHist_file[0] << begin << adj_coeff << adj_flow_resid << adj_levelset_resid << end;
       }
       break;
-      
+    case ADJ_TNE2_EULER : case ADJ_TNE2_NAVIER_STOKES :
+      ConvHist_file[0] << begin << adj_coeff;
+      for (iSpecies = 0; iSpecies < config->GetnSpecies()+5; iSpecies++)
+        ConvHist_file[0] << ",\"Residual_Psi[" << iSpecies << "]\"";
+      ConvHist_file[0] << end;
+      break;
     case WAVE_EQUATION:
       ConvHist_file[0] << begin << wave_coeff;
       ConvHist_file[0] << wave_resid << end;
