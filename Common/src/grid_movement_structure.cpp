@@ -185,10 +185,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (LinSysRes.norm()<tol)
               break;
             tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
-           // std::cout <<" Completed a restart iteration"<<std::endl;
-
       }
-      std::cout <<" Completed a restart iteration"<<std::endl;
     }
     else
       IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
