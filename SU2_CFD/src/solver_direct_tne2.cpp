@@ -6193,93 +6193,93 @@ void CTNE2NSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   BC_HeatFlux_Wall(geometry, solution_container, conv_numerics,
                    sour_numerics, config, val_marker);
   
-	/*--- Local variables ---*/
-  bool implicit;
-	unsigned short iDim, iSpecies, iVar;
-  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
-	unsigned long iVertex, iPoint;
-	double pcontrol;
-  double rho, Ys, eves, hs;
-	double *Normal, Area;
-  double *Ds, *V, *dYdn, SdYdn;
-  double **GradV, **GradY;
-  
-  /*--- Assign booleans ---*/
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  
-  /*--- Set "Proportional control" coefficient ---*/
-  pcontrol = 0.6;
-  
-  /*--- Get the locations of the primitive variables ---*/
-  RHOS_INDEX = node[0]->GetRhosIndex();
-  RHO_INDEX  = node[0]->GetRhoIndex();
-  T_INDEX    = node[0]->GetTIndex();
-  TVE_INDEX  = node[0]->GetTveIndex();
-  
-  /*--- Allocate arrays ---*/
-  dYdn = new double[nSpecies];
-  GradY = new double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    GradY[iSpecies] = new double[nDim];
-  
-	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			/*--- Compute dual-grid area and boundary normal ---*/
-			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			Area = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt (Area);
-      
-			/*--- Initialize the convective & viscous residuals to zero ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				Res_Visc[iVar] = 0.0;
-      
-      /*--- Get temperature gradient information ---*/
-      V = node[iPoint]->GetPrimVar();
-      GradV  = node[iPoint]->GetGradient_Primitive();
-      
-      /*--- Rename for convenience ---*/
-      rho = V[RHO_INDEX];
-      Ds  = node[iPoint]->GetDiffusionCoeff();
-      
-      /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Ys = V[RHOS_INDEX+iSpecies]/rho;
-        dYdn[iSpecies] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
-                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
-      }
-      
-      /*--- Calculate supplementary quantities ---*/
-      SdYdn = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
-      
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Ys   = V[RHOS_INDEX+iSpecies]/rho;
-        eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
-        hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
-        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
-        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
-        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
-      }
-      
-			/*--- Viscous contribution to the residual at the wall ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-		}
-	}
-  
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    delete [] GradY[iSpecies];
-  delete [] GradY;
-  delete [] dYdn;
+//	/*--- Local variables ---*/
+//  bool implicit;
+//	unsigned short iDim, iSpecies, iVar;
+//  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
+//	unsigned long iVertex, iPoint;
+//	double pcontrol;
+//  double rho, Ys, eves, hs;
+//	double *Normal, Area;
+//  double *Ds, *V, *dYdn, SdYdn;
+//  double **GradV, **GradY;
+//  
+//  /*--- Assign booleans ---*/
+//	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+//  
+//  /*--- Set "Proportional control" coefficient ---*/
+//  pcontrol = 0.6;
+//  
+//  /*--- Get the locations of the primitive variables ---*/
+//  RHOS_INDEX = node[0]->GetRhosIndex();
+//  RHO_INDEX  = node[0]->GetRhoIndex();
+//  T_INDEX    = node[0]->GetTIndex();
+//  TVE_INDEX  = node[0]->GetTveIndex();
+//  
+//  /*--- Allocate arrays ---*/
+//  dYdn = new double[nSpecies];
+//  GradY = new double*[nSpecies];
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    GradY[iSpecies] = new double[nDim];
+//  
+//	/*--- Loop over all of the vertices on this boundary marker ---*/
+//	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      
+//			/*--- Compute dual-grid area and boundary normal ---*/
+//			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//			Area = 0.0;
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				Area += Normal[iDim]*Normal[iDim];
+//			Area = sqrt (Area);
+//      
+//			/*--- Initialize the convective & viscous residuals to zero ---*/
+//			for (iVar = 0; iVar < nVar; iVar++)
+//				Res_Visc[iVar] = 0.0;
+//      
+//      /*--- Get temperature gradient information ---*/
+//      V = node[iPoint]->GetPrimVar();
+//      GradV  = node[iPoint]->GetGradient_Primitive();
+//      
+//      /*--- Rename for convenience ---*/
+//      rho = V[RHO_INDEX];
+//      Ds  = node[iPoint]->GetDiffusionCoeff();
+//      
+//      /*--- Calculate normal derivative of mass fraction ---*/
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        Ys = V[RHOS_INDEX+iSpecies]/rho;
+//        dYdn[iSpecies] = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
+//                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
+//      }
+//      
+//      /*--- Calculate supplementary quantities ---*/
+//      SdYdn = 0.0;
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
+//      
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        Ys   = V[RHOS_INDEX+iSpecies]/rho;
+//        eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
+//        hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
+//        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
+//        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
+//        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
+//      }
+//      
+//			/*--- Viscous contribution to the residual at the wall ---*/
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//		}
+//	}
+//  
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    delete [] GradY[iSpecies];
+//  delete [] GradY;
+//  delete [] dYdn;
 }
 
 void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -6678,87 +6678,87 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
   BC_Isothermal_Wall(geometry, solution_container, conv_numerics,
                      sour_numerics, config, val_marker);
   
-	/*--- Local variables ---*/
-  bool implicit;
-	unsigned short iDim, iSpecies, iVar;
-  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
-	unsigned long iVertex, iPoint;
-	double pcontrol;
-  double rho, Ys, eves, hs;
-	double *Normal, Area;
-  double *Ds, *V, *dYdn, SdYdn;
-  double **GradV;
-  
-  /*--- Assign booleans ---*/
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  
-  /*--- Set "Proportional control" coefficient ---*/
-  pcontrol = 1.0;
-  
-  /*--- Get the locations of the primitive variables ---*/
-  RHOS_INDEX = node[0]->GetRhosIndex();
-  RHO_INDEX  = node[0]->GetRhoIndex();
-  T_INDEX    = node[0]->GetTIndex();
-  TVE_INDEX  = node[0]->GetTveIndex();
-  
-  /*--- Allocate arrays ---*/
-  dYdn = new double[nSpecies];
-  
-	/*--- Loop over all of the vertices on this boundary marker ---*/
-	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-			/*--- Compute dual-grid area and boundary normal ---*/
-			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-			Area = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				Area += Normal[iDim]*Normal[iDim];
-			Area = sqrt (Area);
-      
-			/*--- Initialize the convective & viscous residuals to zero ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				Res_Visc[iVar] = 0.0;
-      
-      /*--- Get temperature gradient information ---*/
-      V     = node[iPoint]->GetPrimVar();
-      GradV = node[iPoint]->GetGradient_Primitive();
-      
-      /*--- Rename for convenience ---*/
-      rho = V[RHO_INDEX];
-      Ds  = node[iPoint]->GetDiffusionCoeff();
-      
-      /*--- Calculate normal derivative of mass fraction ---*/
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Ys = V[RHOS_INDEX+iSpecies]/rho;
-        dYdn[iSpecies] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
-                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
-      }
-      
-      /*--- Calculate supplementary quantities ---*/
-      SdYdn = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
-      
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        Ys   = V[RHOS_INDEX+iSpecies]/rho;
-        eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
-        hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
-        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
-        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
-        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
-      }
-      
-			/*--- Viscous contribution to the residual at the wall ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
-		}
-	}
-
-  delete [] dYdn;
+//	/*--- Local variables ---*/
+//  bool implicit;
+//	unsigned short iDim, iSpecies, iVar;
+//  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
+//	unsigned long iVertex, iPoint;
+//	double pcontrol;
+//  double rho, Ys, eves, hs;
+//	double *Normal, Area;
+//  double *Ds, *V, *dYdn, SdYdn;
+//  double **GradV;
+//  
+//  /*--- Assign booleans ---*/
+//	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+//  
+//  /*--- Set "Proportional control" coefficient ---*/
+//  pcontrol = 1.0;
+//  
+//  /*--- Get the locations of the primitive variables ---*/
+//  RHOS_INDEX = node[0]->GetRhosIndex();
+//  RHO_INDEX  = node[0]->GetRhoIndex();
+//  T_INDEX    = node[0]->GetTIndex();
+//  TVE_INDEX  = node[0]->GetTveIndex();
+//  
+//  /*--- Allocate arrays ---*/
+//  dYdn = new double[nSpecies];
+//  
+//	/*--- Loop over all of the vertices on this boundary marker ---*/
+//	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//    
+//		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      
+//			/*--- Compute dual-grid area and boundary normal ---*/
+//			Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//			Area = 0.0;
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				Area += Normal[iDim]*Normal[iDim];
+//			Area = sqrt (Area);
+//      
+//			/*--- Initialize the convective & viscous residuals to zero ---*/
+//			for (iVar = 0; iVar < nVar; iVar++)
+//				Res_Visc[iVar] = 0.0;
+//      
+//      /*--- Get temperature gradient information ---*/
+//      V     = node[iPoint]->GetPrimVar();
+//      GradV = node[iPoint]->GetGradient_Primitive();
+//      
+//      /*--- Rename for convenience ---*/
+//      rho = V[RHO_INDEX];
+//      Ds  = node[iPoint]->GetDiffusionCoeff();
+//      
+//      /*--- Calculate normal derivative of mass fraction ---*/
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        Ys = V[RHOS_INDEX+iSpecies]/rho;
+//        dYdn[iSpecies] = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          dYdn[iSpecies] += 1.0/rho * (GradV[RHOS_INDEX+iSpecies][iDim] -
+//                                       Ys*GradV[RHO_INDEX][iDim])*Normal[iDim];
+//      }
+//      
+//      /*--- Calculate supplementary quantities ---*/
+//      SdYdn = 0.0;
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//        SdYdn += rho*Ds[iSpecies]*dYdn[iSpecies];
+//      
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        Ys   = V[RHOS_INDEX+iSpecies]/rho;
+//        eves = node[iPoint]->CalcEve(config, V[TVE_INDEX], iSpecies);
+//        hs   = node[iPoint]->CalcHs(config, V[T_INDEX], eves, iSpecies);
+//        Res_Visc[iSpecies] = rho*Ds[iSpecies]*dYdn[iSpecies] - Ys*SdYdn;
+//        Res_Visc[nSpecies+nDim]   += Res_Visc[iSpecies]*hs;
+//        Res_Visc[nSpecies+nDim+1] += Res_Visc[iSpecies]*eves;
+//      }
+//      
+//			/*--- Viscous contribution to the residual at the wall ---*/
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//		}
+//	}
+//
+//  delete [] dYdn;
 }
 
 void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
