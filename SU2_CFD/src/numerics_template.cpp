@@ -2,7 +2,7 @@
  * \file numerics_template.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -37,8 +37,8 @@ CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned sho
   RoeVelocity = new double [nDim];
   delta_vel  = new double [nDim];
   delta_wave = new double [nVar];
-  Proj_flux_tensor_i = new double [nVar];
-  Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
   Lambda = new double [nVar];
   Epsilon = new double [nVar];
   P_Tensor = new double* [nVar];
@@ -58,8 +58,8 @@ CConvective_Template::~CConvective_Template(void) {
   delete [] RoeVelocity;
   delete [] delta_vel;
   delete [] delta_wave;
-  delete [] Proj_flux_tensor_i;
-  delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
   delete [] Lambda;
   delete [] Epsilon;
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -116,11 +116,11 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
   RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
   
-  /*--- Compute Proj_flux_tensor_i ---*/
-  GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, Proj_flux_tensor_i);
+  /*--- Compute ProjFlux_i ---*/
+  GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
   
-  /*--- Compute Proj_flux_tensor_j ---*/
-  GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, Proj_flux_tensor_j);
+  /*--- Compute ProjFlux_j ---*/
+  GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
   
   /*--- Compute P and Lambda (do it with the Normal) ---*/
   GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
@@ -177,7 +177,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
     
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+      val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
       for (jVar = 0; jVar < nVar; jVar++)
         val_residual[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
     }
@@ -197,7 +197,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
     
     /*--- Roe's Flux approximation ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] = 0.5*(Proj_flux_tensor_i[iVar]+Proj_flux_tensor_j[iVar]);
+      val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
       for (jVar = 0; jVar < nVar; jVar++) {
         Proj_ModJac_Tensor_ij = 0.0;
         /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/

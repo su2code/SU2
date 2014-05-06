@@ -1,7 +1,7 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.1.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -90,10 +90,10 @@ def adjoint( config ):
     # update super config
     config.update({ 'DECOMPOSED'   : konfig['DECOMPOSED']   ,
                     'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,
-                    'ADJ_OBJFUNC'  : konfig['ADJ_OBJFUNC']   })
+                    'OBJECTIVE_FUNCTION'  : konfig['OBJECTIVE_FUNCTION']   })
     
     # files out
-    objective    = konfig['ADJ_OBJFUNC']
+    objective    = konfig['OBJECTIVE_FUNCTION']
     adj_title    = 'ADJOINT_' + objective
     suffix       = su2io.get_adjointSuffix(objective)
     restart_name = konfig['RESTART_FLOW_FILENAME']

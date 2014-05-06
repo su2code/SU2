@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -246,8 +246,16 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 		CConfig **config_container, unsigned short nZone, unsigned short iZone);
 
 /*!
+ * \brief Computation of the Time-Spectral operator matrix.
+ * \author K. Naik
+ * \param[in] D - double pointer to the operator matrix.
+ * \param[in] nZone - Total number of zones (periodic instances).
+ */
+void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone);
+
+/*!
  * \brief Computation and storage of the time-spectral mesh velocities.
- * \author T. Economon, K. Naik
+ * \author K. Naik, T. Economon
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.
  * \param[in] nZone - Total number of zones (periodic instances).

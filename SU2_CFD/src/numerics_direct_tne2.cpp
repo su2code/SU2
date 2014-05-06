@@ -2,7 +2,7 @@
  * \file numerics_direct_tne2.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -56,8 +56,8 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
 		P_Tensor[iVar] = new double [nVar];
 		invP_Tensor[iVar] = new double [nVar];
 	}
-  Proj_flux_tensor_i = new double [nVar];
-	Proj_flux_tensor_j = new double [nVar];
+  ProjFlux_i = new double [nVar];
+	ProjFlux_j = new double [nVar];
   
 //  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
@@ -77,8 +77,8 @@ CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
 	}
 	delete [] P_Tensor;
 	delete [] invP_Tensor;
-  delete [] Proj_flux_tensor_i;
-	delete [] Proj_flux_tensor_j;
+  delete [] ProjFlux_i;
+	delete [] ProjFlux_j;
 //  delete [] var;
 }
 
@@ -111,8 +111,8 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   CreateBasis(UnitNormal);
   
   /*--- Compute the inviscid projected fluxes ---*/
-  GetInviscidProjFlux(U_i, V_i, Normal, Proj_flux_tensor_i);
-  GetInviscidProjFlux(U_j, V_j, Normal, Proj_flux_tensor_j);
+  GetInviscidProjFlux(U_i, V_i, Normal, ProjFlux_i);
+  GetInviscidProjFlux(U_j, V_j, Normal, ProjFlux_j);
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(RoeU, RoeV, RoedPdU, UnitNormal, l, m, P_Tensor);
@@ -173,7 +173,7 @@ void CUpwRoe_TNE2::ComputeResidual(double *val_residual,
   
   /*--- Roe's Flux approximation ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = 0.5 * (Proj_flux_tensor_i[iVar] + Proj_flux_tensor_j[iVar]);
+    val_residual[iVar] = 0.5 * (ProjFlux_i[iVar] + ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
 
       /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
@@ -282,7 +282,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
   
   /*--- Set parameters in the numerical method ---*/
-	epsilon = 1E-4;
+	epsilon = 0.0;
   alpha = 6.0;
   
   /*--- Calculate supporting geometry parameters ---*/
@@ -354,12 +354,18 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
   /*--- Flow eigenvalues at i (Lambda+) --- */
   for (iSpecies = 0; iSpecies < nSpecies+nDim-1; iSpecies++)
-    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
-  Lambda_i[nSpecies+nDim-1] = 0.5*(     ProjVelst_i + Vst_i[A_INDEX] +
-                                   fabs(ProjVelst_i + Vst_i[A_INDEX])  );
-  Lambda_i[nSpecies+nDim]   = 0.5*(     ProjVelst_i - Vst_i[A_INDEX] +
-                                   fabs(ProjVelst_i - Vst_i[A_INDEX])  );
-  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + fabs(ProjVelst_i));
+    Lambda_i[iSpecies]      = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                      epsilon*epsilon));
+  Lambda_i[nSpecies+nDim-1] = 0.5*(ProjVelst_i + Vst_i[A_INDEX] +
+                                   sqrt((ProjVelst_i + Vst_i[A_INDEX])*
+                                        (ProjVelst_i + Vst_i[A_INDEX])+
+                                        epsilon*epsilon)                );
+  Lambda_i[nSpecies+nDim]   = 0.5*(ProjVelst_i - Vst_i[A_INDEX] +
+                                   sqrt((ProjVelst_i - Vst_i[A_INDEX])*
+                                        (ProjVelst_i - Vst_i[A_INDEX]) +
+                                        epsilon*epsilon)                );
+  Lambda_i[nSpecies+nDim+1] = 0.5*(ProjVelst_i + sqrt(ProjVelst_i*ProjVelst_i +
+                                                      epsilon*epsilon));
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix    (Ust_i, Vst_i, dPdU_i, UnitNormal, l, m, P_Tensor   );
@@ -380,12 +386,18 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
 	/*--- Flow eigenvalues at j (Lambda-) --- */
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
-    Lambda_j[iVar]          = 0.5*(ProjVelst_j - fabs(ProjVelst_j));
-  Lambda_j[nSpecies+nDim-1] = 0.5*(     ProjVelst_j + Vst_j[A_INDEX] -
-                                   fabs(ProjVelst_j + Vst_j[A_INDEX])  );
-  Lambda_j[nSpecies+nDim]   = 0.5*(     ProjVelst_j - Vst_j[A_INDEX] -
-                                   fabs(ProjVelst_j - Vst_j[A_INDEX])  );
-  Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_i - fabs(ProjVelst_i));
+    Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
+                                                      epsilon*epsilon));
+  Lambda_j[nSpecies+nDim-1] = 0.5*(ProjVelst_j + Vst_j[A_INDEX] -
+                                   sqrt((ProjVelst_j + Vst_j[A_INDEX])*
+                                        (ProjVelst_j + Vst_j[A_INDEX])+
+                                        epsilon*epsilon)                 );
+  Lambda_j[nSpecies+nDim]   = 0.5*(ProjVelst_j - Vst_j[A_INDEX] -
+                                   sqrt((ProjVelst_j - Vst_j[A_INDEX])*
+                                        (ProjVelst_j - Vst_j[A_INDEX])+
+                                        epsilon*epsilon)                 );
+  Lambda_j[nSpecies+nDim+1] = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j+
+                                                      epsilon*epsilon));
   
   /*--- Compute projected P, invP, and Lambda ---*/
   GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
@@ -1317,7 +1329,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
   MeanU    = new double[nVar];
   MeanV    = new double[nPrimVar];
   MeandPdU = new double[nVar];
-	Proj_flux_tensor = new double [nVar];
+	ProjFlux = new double [nVar];
   
 //  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
 }
@@ -1327,7 +1339,7 @@ CCentLax_TNE2::~CCentLax_TNE2(void) {
   delete [] MeanU;
   delete [] MeanV;
   delete [] MeandPdU;
-	delete [] Proj_flux_tensor;
+	delete [] ProjFlux;
 }
 
 void CCentLax_TNE2::ComputeResidual(double *val_resconv,
@@ -1365,11 +1377,11 @@ void CCentLax_TNE2::ComputeResidual(double *val_resconv,
   var->CalcdPdU(MeanV, config, MeandPdU);
   
 	/*--- Get projected flux tensor ---*/
-  GetInviscidProjFlux(MeanU, MeanV, Normal, Proj_flux_tensor);
+  GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
   
 	/*--- Compute inviscid residual ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
-		val_resconv[iVar] = Proj_flux_tensor[iVar];
+		val_resconv[iVar] = ProjFlux[iVar];
 		val_resvisc[iVar] = 0.0;
 	}
 
@@ -1644,17 +1656,9 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
 		}
-    if (iVar < nSpecies) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                         (PrimVar_j[RHOS_INDEX+iVar]/PrimVar_j[RHO_INDEX]
-                                          -PrimVar_i[RHOS_INDEX+iVar]/PrimVar_i[RHO_INDEX]))*Edge_Vector[iDim] / dist_ij_2;
-      }
-    } else {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                         (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
-      }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+                                       (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
     }
 	}
   

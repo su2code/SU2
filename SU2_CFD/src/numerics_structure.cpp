@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1653,9 +1653,15 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   
   bool ionization;
 	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
-	double *Ds, mu, ktr, kve, div_vel;
+	double *Ds, *V, **GY, **GV, mu, ktr, kve, div_vel;
   double Ru;
   double Ys, rho, T, Tve, eve, hs;
+  
+  /*--- Allocate ---*/
+  GY = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    GY[iSpecies] = new double[nDim];
+  }
   
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1678,17 +1684,28 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   T   = val_primvar[T_INDEX];
   Tve = val_primvar[TVE_INDEX];
   Ru  = UNIVERSAL_GAS_CONSTANT;
+  V   = val_primvar;
+  GV  = val_gradprimvar;
   
   /*--- Calculate the velocity divergence ---*/
 	div_vel = 0.0;
 	for (iDim = 0 ; iDim < nDim; iDim++)
 		div_vel += val_gradprimvar[VEL_INDEX+iDim][iDim];
   
+  /*--- Calculate mass fraction gradients ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Ys = V[RHOS_INDEX+iSpecies]/rho;
+      GY[iSpecies][iDim] = 1.0/rho * (GV[RHOS_INDEX+iSpecies][iDim] -
+                                      Ys*GV[RHO_INDEX][iDim]          );
+    }
+  }
+  
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Vector[iDim] += rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim];
+      Vector[iDim] += rho*Ds[iSpecies]*GY[iSpecies][iDim];
     }
   }
   
@@ -1703,8 +1720,8 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
 	for (iDim = 0; iDim < nDim; iDim++) {
     /*--- Species diffusion velocity ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Ys = val_primvar[RHOS_INDEX+iSpecies]/rho;
-      Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*val_gradprimvar[RHOS_INDEX+iSpecies][iDim]
+      Ys = V[RHOS_INDEX+iSpecies]/rho;
+      Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GY[iSpecies][iDim]
                                   - Ys*Vector[iDim];
     }
     if (ionization) {
@@ -1724,7 +1741,6 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
       hs  = var->CalcHs(val_primvar, config, iSpecies);
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs;
       Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve;
-      
     }
     
     /*--- Heat transfer terms ---*/
@@ -1738,6 +1754,11 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
     }
   }
+  
+  /*--- Deallocate ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    delete [] GY[iSpecies];
+  delete [] GY;
 }
 
 
