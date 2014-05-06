@@ -177,9 +177,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
       unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
       double tol = NumError;
       IterLinSol=0;
-      while (IterLinSol < config->GetLinear_Solver_Iter()){
-            if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-              iterations = config->GetLinear_Solver_Iter()-IterLinSol;
+      while (IterLinSol < Smoothing_Iter){
+            if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > Smoothing_Iter)
+              iterations = Smoothing_Iter-IterLinSol;
             IterLinSol += system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
                                iterations, Screen_Output); // increment total iterations
             if (LinSysRes.norm()<tol)
