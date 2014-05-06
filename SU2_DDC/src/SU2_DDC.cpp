@@ -2,7 +2,7 @@
  * \file SU2_DDC.cpp
  * \brief Main file of Domain Decomposition Code (SU2_DDC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
 	CFreeFormDefBox** FFDBox = NULL;
   
 	/*--- Definition of the config problem ---*/
-	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
-	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, VERB_HIGH); }
+	if (argc == 2) { config = new CConfig(argv[1], SU2_DDC, ZONE_0, nZone, 0, VERB_HIGH); }
+	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_DDC, ZONE_0, nZone, 0, VERB_HIGH); }
   
   if (rank == MASTER_NODE) {
     
@@ -152,34 +152,31 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE)
       cout << "Mesh writing done (" << MeshFile <<")." << endl;
     
-    /*--- Write the FFD information (3D problems)---*/
-    if (domain->GetnDim() == 3) {
-      
+    /*--- Write the FFD information ---*/
+    
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 #else
-  MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Barrier();
 #endif
 #endif
-      
-      if (rank == MASTER_NODE)
-        cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
-      
+    
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
+    
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
 #else
-  MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Barrier();
 #endif
 #endif
-      
-      FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
-      surface_mov = new CSurfaceMovement();
-      surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
-      surface_mov->WriteFFDInfo(domain, config, FFDBox, cstr_su2);
-      
-    }
+    
+    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    surface_mov = new CSurfaceMovement();
+    surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
+    surface_mov->WriteFFDInfo(domain, config, FFDBox, cstr_su2);
     
 #ifndef NO_MPI
     /*--- Finalize MPI parallelization ---*/

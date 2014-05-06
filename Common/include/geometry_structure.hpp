@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -59,7 +59,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  */
 class CGeometry {
 protected:
@@ -576,10 +576,10 @@ public:
 	virtual void SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config);
 
 	/*!
-	 * \brief A virtual member.
+	 * \brief Find and store all vertices on a sharp corner in the geometry.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeSurf_Curvature(CConfig *config);
+  void ComputeSurf_Curvature(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -625,7 +625,15 @@ public:
 	 */
 	virtual double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
   
-	/*! 
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the 3D body.
+	 */
+  virtual double Compute_Volume(CConfig *config, bool original_surface);
+  
+	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -816,7 +824,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1226,7 +1234,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1390,7 +1398,7 @@ public:
  * \brief Class for only defining the boundary of the geometry, this class is only 
  *        used in case we are not interested in the volumetric grid.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  */
 class CBoundaryGeometry : public CGeometry {
   
@@ -1414,7 +1422,17 @@ public:
 	 * \brief Set boundary vertex.
 	 */
 	void SetVertex(void);
-
+  
+	/*!
+	 * \brief Store boundary elements that surround a point.
+	 */
+	void SetEsuP(void);
+  
+  /*!
+	 * \brief Store boundary points which surround a point.
+	 */
+	void SetPsuP(void);
+  
 	/*! 
 	 * \brief Compute the boundary geometrical structure.
 	 * \param[in] config - Definition of the particular problem.
@@ -1462,13 +1480,30 @@ public:
 	 */
   double Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface);
 
+  /*!
+	 * \brief Find the internal volume of the 3D body.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
+   * \returns The total volume of the 3D body.
+	 */
+  double Compute_Volume(CConfig *config, bool original_surface);
+  
+  /*!
+	 * \brief Set the output file for boundaries in Tecplot with surface curvature.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] mesh_filename - Name of the file where the Tecplot
+	 *            information is going to be stored.
+   * \param[in] new_file - Create a new file.
+	 */
+	void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
+  
 };
 
 /*! 
  * \class CDomainGeometry
  * \brief Class for defining an especial kind of grid used in the partioning stage.
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  */
 class CDomainGeometry : public CGeometry {
 	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
@@ -1541,7 +1576,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1587,7 +1622,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

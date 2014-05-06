@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -289,6 +289,12 @@ inline double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 inline void CVariable::SetPrimVar(unsigned short val_var, double val_prim) { }
 
 inline void CVariable::SetPrimVar(double *val_prim) { }
+
+inline bool CVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
+                                    double *val_dPdU, double *val_dTdU,
+                                    double *val_dTvedU) { return false; }
+
+inline void CVariable::Prim2ConsVar(CConfig *config, double *V, double *U) { return; }
 
 inline double *CVariable::GetPrimVar(void) { return NULL; }
 
@@ -754,6 +760,14 @@ inline double CTNE2EulerVariable::GetGradient_Primitive(unsigned short val_var, 
 inline void CTNE2EulerVariable::SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { Gradient_Primitive[val_var][val_dim] = val_value; }
 
 inline double **CTNE2EulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
+
+inline double *CTNE2EulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
+
+inline double CTNE2EulerVariable::GetLimiter_Primitive(unsigned short val_var) { return Limiter_Primitive[val_var]; }
+
+inline void CTNE2EulerVariable::SetLimiter_Primitive(unsigned short val_var, double val_value) { Limiter_Primitive[val_var] = val_value; }
+
+inline void CTNE2EulerVariable::SetLimiter(unsigned short val_var, double val_value) { Limiter[val_var] = val_value; }
 
 inline double CTNE2EulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
