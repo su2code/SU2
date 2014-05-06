@@ -3466,6 +3466,22 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   else if (config->GetKind_Linear_Solver() == FGMRES)
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                config->GetLinear_Solver_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == RFGMRES){
+    unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
+    double tol = config->GetLinear_Solver_Error();
+    IterLinSol=0;
+    while (IterLinSol < config->GetLinear_Solver_Iter()){
+          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+            iterations = config->GetLinear_Solver_Iter()-IterLinSol;
+          IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
+                             iterations, false); // increment total iterations
+          if (LinSysRes.norm()<tol)
+            break;
+          tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
+         // std::cout <<" Completed a restart iteration"<<std::endl;
+
+    }
+  }
   
   /*--- The the number of iterations of the linear solver ---*/
   SetIterLinSolver(IterLinSol);
