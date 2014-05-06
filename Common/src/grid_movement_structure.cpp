@@ -173,9 +173,29 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
+    if (config->GetKind_Linear_Solver() == RFGMRES){
+      unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
+      double tol = NumError;
+      IterLinSol=0;
+      while (IterLinSol < config->GetLinear_Solver_Iter()){
+            if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+              iterations = config->GetLinear_Solver_Iter()-IterLinSol;
+            IterLinSol += system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
+                               iterations, Screen_Output); // increment total iterations
+            if (LinSysRes.norm()<tol)
+              break;
+            tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
+           // std::cout <<" Completed a restart iteration"<<std::endl;
 
-    IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
+      }
+      std::cout <<" Completed a restart iteration"<<std::endl;
+    }
+    else
+      IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
+
+
     
+
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
     delete system;
