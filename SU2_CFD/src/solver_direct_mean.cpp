@@ -3466,6 +3466,22 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   else if (config->GetKind_Linear_Solver() == FGMRES)
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                config->GetLinear_Solver_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == RFGMRES){
+    unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
+    double tol = config->GetLinear_Solver_Error();
+    IterLinSol=0;
+    while (IterLinSol < config->GetLinear_Solver_Iter()){
+          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+            iterations = config->GetLinear_Solver_Iter()-IterLinSol;
+          IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
+                             iterations, false); // increment total iterations
+          if (LinSysRes.norm()<tol)
+            break;
+          tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
+         // std::cout <<" Completed a restart iteration"<<std::endl;
+
+    }
+  }
   
   /*--- The the number of iterations of the linear solver ---*/
   SetIterLinSolver(IterLinSol);
@@ -5811,10 +5827,14 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
   }
   
 #else
-  
-  int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
+  int rank, jProcessor;
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+
   bool compute;
-  
   double *Buffer_Send_V = new double [nPrimVar];
   double *Buffer_Receive_V = new double [nPrimVar];
   
@@ -5846,8 +5866,11 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           
           for (iVar = 0; iVar < nPrimVar; iVar++)
             Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
-          
+#ifdef WINDOWS
+		  MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+#else
           MPI::COMM_WORLD.Bsend(Buffer_Send_V, nPrimVar, MPI::DOUBLE, jProcessor, iPoint);
+#endif
           
         }
         
@@ -5875,7 +5898,11 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         /*--- We only receive the information that belong to other boundary ---*/
         
         if (jProcessor != rank) {
+#ifdef WINDOWS
+		  MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+#else
           MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
+#endif
         }
         else {
           for (iVar = 0; iVar < nPrimVar; iVar++)

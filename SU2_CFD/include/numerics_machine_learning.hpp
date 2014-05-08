@@ -6,6 +6,7 @@
 #include <iomanip> 
 #include <fstream>
 #include <cmath>
+#include <math.h>
 #include <sstream>
 
 #ifndef NO_JSONCPP
@@ -13,6 +14,9 @@
 #endif
 
 #include "../include/numerics_machine_learning_turbulent.hpp"
+#ifdef WINDOWS
+#define isinf(x) (!_finite(x))
+#endif
 
 using namespace std;
 

@@ -3345,10 +3345,14 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
 	}
   
 #else
-  
-	int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  bool compute;
-  
+	int rank, jProcessor;
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+
+	bool compute; 
 	double *Buffer_Send_Psi = new double[nVar];
 	double *Buffer_Receive_Psi = new double[nVar];
   
@@ -3379,8 +3383,11 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
           
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-          
+#ifdef WINDOWS
+		  MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+#else          
           MPI::COMM_WORLD.Bsend(Buffer_Send_Psi, nVar, MPI::DOUBLE, jProcessor, iPoint);
+#endif
           
         }
         
@@ -3409,7 +3416,11 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
         /*--- We only receive the information that belong to other boundary ---*/
         
         if (jProcessor != rank)
+#ifdef WINDOWS
+		  MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+#else
           MPI::COMM_WORLD.Recv(Buffer_Receive_Psi, nVar, MPI::DOUBLE, jProcessor, jPoint);
+#endif
         else {
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
@@ -3582,10 +3593,14 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 	delete[] Normal;
   
 #else
-  
-	int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  bool compute;
-  
+	int rank, jProcessor;
+#ifdef WINDOWS
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+	rank = MPI::COMM_WORLD.Get_rank();
+#endif
+
+	bool compute;  
 	double *Buffer_Send_Psi = new double[nVar];
 	double *Buffer_Receive_Psi = new double[nVar];
   
@@ -3615,8 +3630,11 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-          
+#ifdef WINDOWS
+		  MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+#else          
           MPI::COMM_WORLD.Bsend(Buffer_Send_Psi, nVar, MPI::DOUBLE, jProcessor, iPoint);
+#endif
           
         }
         
@@ -3645,7 +3663,11 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         /*--- We only receive the information that belong to other boundary ---*/
         
         if (jProcessor != rank)
+#ifdef WINDOWS
+		  MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+#else
           MPI::COMM_WORLD.Recv(Buffer_Receive_Psi, nVar, MPI::DOUBLE, jProcessor, jPoint);
+#endif
         else {
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);

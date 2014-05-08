@@ -434,6 +434,8 @@ inline double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Error
 
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
+inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return Linear_Solver_Restart_Frequency; }
+
 inline double CConfig::GetLinear_Solver_Relax(void) { return Linear_Solver_Relax; }
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind_AdjTurb_Linear_Solver; }
