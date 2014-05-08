@@ -203,6 +203,12 @@ CNeurNet::CNeurNet(Json::Value json){
         
         double val = parameterLayer[j][k].asDouble();
         this->parameters[i][j][k] = val;
+        /*
+        long *ptrFloatAsInt =(long *)( &val);
+        cout.precision(16);
+        cout << hex;
+        cout << "params: i = " << i << "\tj = " << j << "\tk = " << k << "\tparam = " << *ptrFloatAsInt << endl;
+         */
       }
       
       // get the neurons
@@ -257,6 +263,14 @@ void CNeurNet::Predict(double * input, double * output){
   
   int nLayers = this->nLayers;
   
+  /*
+  cout << "Input is:" << endl;
+  for (int i=0; i < this->InputDim(); i++){
+    cout << input[i] << endl;
+  }
+  cout << "Done input" << endl;
+   */
+  
   if (nLayers == 1){
     this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], output);
     return;
@@ -264,6 +278,19 @@ void CNeurNet::Predict(double * input, double * output){
   
   // First layer uses the real input as the input
   this->processLayer(input, this->inputDim, this->neurons[0], this->parameters[0], this->nNeuronsInLayer[0], this->nParameters[0], tmpOutput);
+  
+  /*
+  cout << "First layer tmp output" << endl;
+  for (int i = 0; i < this->nNeuronsInLayer[0]; i++){
+    cout << tmpOutput[i] << endl;
+    double tmp = tmpOutput[i];
+    long *ptrFloatAsInt =(long *)( &tmp);
+    cout << hex;
+    cout << *ptrFloatAsInt << endl;
+    cout << dec;
+  }
+  cout << "done tmp output" << endl;
+   */
   
   // Middle layers use the previous output as input
   for (int i= 1; i < nLayers -1; i++){
@@ -286,6 +313,7 @@ void CNeurNet::Predict(double * input, double * output){
   delete [] tmpOutput;
   return;
 }
+
 #ifndef NO_JSONCPP
 CPredictor* parse_predictor(Json::Value json){
   string type = json["Type"].asString();
@@ -392,18 +420,22 @@ CScalePredictor::CScalePredictor(string filename){
       if (max < 1.0){
         max = 1.0;
       }
-      if (abs(output[j] - predOutput[j])/(max) > 1e-14){
+      if (abs(output[j] - predOutput[j])/(max) > 1e-12){
         mismatch = 1;
       }
-    }
-    cout.precision(16);
-    if (mismatch){
-      cout << "Prediction mismatch" <<endl;
-      for (int j = 0; j < nOutputs; j++){
-        cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << endl;
+      cout.precision(16);
+      if (mismatch){
+        cout << "Prediction mismatch" <<endl;
+        for (int j = 0; j < nOutputs; j++){
+          cout << "j = " <<  " true: " << output[j] << " pred: " << predOutput[j] << " rel error: " << abs(output[j] - predOutput[j])/(max) <<  endl;
+        }
+        throw string("mismatch");
       }
-      exit(1);
     }
+//    if (mismatch){
+//      throw(-1);
+//    }
+
     delete [] predOutput;
     delete [] input;
     delete [] output;

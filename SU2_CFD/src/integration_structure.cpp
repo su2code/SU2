@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -148,9 +148,21 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
+      case ISOTHERMAL_NONCATALYTIC:
+        solver_container[MainSolver]->BC_IsothermalNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case ISOTHERMAL_CATALYTIC:
+        solver_container[MainSolver]->BC_IsothermalCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
+      case HEAT_FLUX_NONCATALYTIC:
+        solver_container[MainSolver]->BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX_CATALYTIC:
+        solver_container[MainSolver]->BC_HeatFluxCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
 			case DIRICHLET:
 				solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
 				break;

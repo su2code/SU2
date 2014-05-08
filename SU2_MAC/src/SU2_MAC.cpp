@@ -2,7 +2,7 @@
  * \file SU2_MAC.cpp
  * \brief Main file of Mesh Adaptation Code (SU2_MAC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Definition of the config problem ---*/
 	CConfig *config;
-	if (argc == 2) config = new CConfig(argv[1], SU2_MAC, ZONE_0, nZone, VERB_HIGH);
-	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_MAC, ZONE_0, nZone, VERB_HIGH); }
+	if (argc == 2) config = new CConfig(argv[1], SU2_MAC, ZONE_0, nZone, 0, VERB_HIGH);
+	else { strcpy (file_name, "default.cfg"); config = new CConfig(file_name, SU2_MAC, ZONE_0, nZone, 0, VERB_HIGH); }
 	
 	/*--- Definition of the Class for the geometry ---*/
 	CGeometry *geometry; geometry = new CGeometry;
@@ -176,9 +176,9 @@ int main(int argc, char *argv[]) {
 		grid_adaptation->WriteAdaptSensor(geometry, file_name);
 		
     strcpy (file_name, "adapted_grid.plt");
-    geo_adapt->SetTecPlot(file_name);
+    geo_adapt->SetTecPlot(file_name, true);
     strcpy (file_name, "adapted_surface.plt");
-    geo_adapt->SetBoundTecPlot(config,file_name);
+    geo_adapt->SetBoundTecPlot(file_name, true, config);
 		
 		/*--- Write the new adapted grid, including the modified boundaries surfaces ---*/
 		geo_adapt->SetMeshFile(config, config->GetMesh_Out_FileName());

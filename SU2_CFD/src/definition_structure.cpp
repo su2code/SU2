@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -778,38 +778,45 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE_1ST : case ROE_2ND :
+            case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
               }
               break;
               
-            case AUSM_1ST : case AUSM_2ND :
+            case AUSM:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
               }
               break;
               
-            case TURKEL_1ST : case TURKEL_2ND :
+            case TURKEL:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);
               }
               break;
               
-            case HLLC_1ST : case HLLC_2ND :
+            case HLLC:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
               }
               break;
               
-            case MSW_1ST : case MSW_2ND :
+            case MSW:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
-                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+              
+            case CUSP:
+              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
               }
               break;
               
@@ -821,7 +828,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE_1ST : case ROE_2ND :
+            case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
@@ -834,7 +841,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE_1ST : case ROE_2ND :
+            case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_FreeSurf_Flow(nDim, nVar_Flow, config);
@@ -975,42 +982,42 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         /*--- Compressible two-temperature flow ---*/
         switch (config->GetKind_Upwind_TNE2()) {
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-          case ROE_1ST : case ROE_2ND :
+          case ROE:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
               numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
             
-          case MSW_1ST : case MSW_2ND :
+          case MSW:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
               numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
             }
             break;
             
-          case AUSM_1ST : case AUSM_2ND :
+          case AUSM:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
               numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
             }
             break;
             
-          case AUSMPWPLUS_1ST : case AUSMPWPLUS_2ND :
+          case AUSMPWPLUS:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwAUSMPWplus_TNE2(nDim, nVar_TNE2, config);
               numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwAUSMPWplus_TNE2(nDim, nVar_TNE2, config);
             }
             break;
             
-          case TURKEL_1ST : case TURKEL_2ND :
+          case TURKEL:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               //                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_Turkel_TNE2(nDim, nVar_TNE2, config);
               //                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_TNE2(nDim, nVar_TNE2, config);
             }
             break;
             
-          case HLLC_1ST : case HLLC_2ND :
+          case HLLC:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               //                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwHLLC_TNE2(nDim, nVar_TNE2, config);
               //                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwHLLC_TNE2(nDim, nVar_TNE2, config);
@@ -1313,7 +1320,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_AdjFlow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE_1ST : case ROE_2ND :
+            case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
@@ -1326,7 +1333,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Upwind_AdjFlow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE_1ST : case ROE_2ND :
+            case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
@@ -1339,7 +1346,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Upwind_AdjFlow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE_1ST : case ROE_2ND :
+            case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
                 numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
@@ -1457,13 +1464,13 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case SPACE_UPWIND :
         switch (config->GetKind_Upwind_AdjTNE2()) {
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-          case ROE_1ST : case ROE_2ND :
+          case ROE:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
               numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
             }
             break;
-          case SW_1ST : case SW_2ND :
+          case SW:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
               numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
               numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);

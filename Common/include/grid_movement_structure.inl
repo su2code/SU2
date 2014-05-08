@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -77,10 +77,10 @@ inline double *CFreeFormDefBox::Get_CartesianCoord(unsigned long val_iSurfacePoi
 																																										return cart_coord_; }
 
 inline double *CFreeFormDefBox::Get_ParametricCoord(unsigned long val_iSurfacePoints) { 
-																																										param_coord_[0] = ParametricCoord[0][val_iSurfacePoints];
-																																										param_coord_[1] = ParametricCoord[1][val_iSurfacePoints];
-																																										param_coord_[2] = ParametricCoord[2][val_iSurfacePoints];
-																																										return param_coord_; }
+																																										ParamCoord_[0] = ParametricCoord[0][val_iSurfacePoints];
+																																										ParamCoord_[1] = ParametricCoord[1][val_iSurfacePoints];
+																																										ParamCoord_[2] = ParametricCoord[2][val_iSurfacePoints];
+																																										return ParamCoord_; }
 																																										
 inline unsigned long CFreeFormDefBox::GetnSurfacePoint(void) { return PointIndex.size(); }
 
@@ -159,6 +159,10 @@ inline string CFreeFormDefBox::GetTag() { return Tag; }
 inline void CFreeFormDefBox::SetLevel(unsigned short val_level) { Level = val_level; }
 
 inline unsigned short CFreeFormDefBox::GetLevel() { return Level; }
+
+inline double CFreeFormDefBox::Determinant_3x3(double A00, double A01, double A02, double A10, double A11, double A12, double A20, double A21, double A22) {
+	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+}
 
 inline double CVolumetricMovement::Determinant_3x3(double A00, double A01, double A02, double A10, double A11, double A12, double A20, double A21, double A22) {
 	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);

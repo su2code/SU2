@@ -33,8 +33,13 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
 #ifndef NO_MPI
   /*--- MPI initialization, and buffer setting ---*/
+#ifdef WINDOWS
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
   MPI::Init(argc,argv);
   rank = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
 
   /*--- Declare pointers to class objects ---*/
@@ -45,7 +50,7 @@ int main(int argc, char *argv[]) {
         based on the name of the config file given ---*/
   strcpy(grid_filename, argv[1]);
   config = new CConfig(grid_filename, SU2_GDC, ZONE_0, nZone, 
-                         VERB_HIGH);
+                         0, VERB_HIGH);
 
   /*--- Instantiate an object of the boundary-geometry class ---*/
   boundary = new CBoundaryGeometry(config, 
