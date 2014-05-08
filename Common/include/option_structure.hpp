@@ -896,7 +896,8 @@ enum ENUM_LINEAR_SOLVER {
 	QUASI_NEWTON = 3,		/*!< \brief Quasi Newton method for point inversion algorithm (Free-Form). */
 	CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
 	FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
-	BCGSTAB = 6	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+	BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+	RFGMRES = 7
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -904,7 +905,8 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("QUASI_NEWTON", QUASI_NEWTON)
 ("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
 ("BCGSTAB", BCGSTAB)
-("FGMRES", FGMRES);
+("FGMRES", FGMRES)
+("RFGMRES", RFGMRES);
 
 /*!
  * \brief types of sensitivity smoothing

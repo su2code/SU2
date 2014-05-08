@@ -354,7 +354,8 @@ private:
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
-	unsigned long Linear_Solver_Iter;		/*!< \brief Min error of the linear solver for the implicit formulation. */
+	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
+	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -2168,6 +2169,12 @@ public:
 	 * \return Max number of iterations of the linear solver for the implicit formulation.
 	 */
 	unsigned long GetLinear_Solver_Iter(void);
+
+  /*!
+   * \brief Get restart frequency of the linear solver for the implicit formulation.
+   * \return Restart frequency of the linear solver for the implicit formulation.
+   */
+  unsigned long GetLinear_Solver_Restart_Frequency(void);
 
 	/*!
 	 * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
