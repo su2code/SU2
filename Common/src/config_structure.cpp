@@ -1014,6 +1014,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   AddSpecialOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, SetBoolOption, false);
   
+  /*--- options related to the FFD problem ---*/
+  /* CONFIG_CATEGORY:FFD point inversion */
+  
+  /* DESCRIPTION: Number of total iterations in the FFD point inversion */
+  AddScalarOption("FFD_ITERATIONS", nFFD_Iter, 1000);
+  
+  /* DESCRIPTION: Free surface damping coefficient */
+	AddScalarOption("FFD_TOLERANCE", FFD_Tol, 1E-8);
+  
   /* END_CONFIG_OPTIONS */
   
 }
