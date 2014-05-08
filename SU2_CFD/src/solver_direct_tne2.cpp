@@ -3778,6 +3778,8 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetConservative(node[iPoint]->GetSolution(),
                                        node_infty->GetSolution() );
+        visc_numerics->SetConsVarGradient(node[iPoint]->GetGradient(),
+                                          node_infty->GetGradient() );
         visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
                                     node_infty->GetPrimVar() );
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
@@ -5500,6 +5502,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Primitive variables, and gradient ---*/
     numerics->SetConservative(node[iPoint]->GetSolution(),
                               node[jPoint]->GetSolution() );
+    numerics->SetConsVarGradient(node[iPoint]->GetGradient(),
+                                 node[jPoint]->GetGradient() );
     numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
                            node[jPoint]->GetPrimVar() );
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
@@ -6155,14 +6159,14 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
         dTvedn += GradV[TVE_INDEX][iDim]*Normal[iDim];
       }
       ktr = node[iPoint]->GetThermalConductivity();
-      kve = node[iPoint]->GetThermalConductivity_ve();
-			Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
-                                   Wall_HeatFlux*Area;
-      Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
-                                   Wall_HeatFlux*Area;
-      
-			/*--- Apply viscous residual to the linear system ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//      kve = node[iPoint]->GetThermalConductivity_ve();
+//			Res_Visc[nSpecies+nDim]   += pcontrol*(ktr*dTdn+kve*dTvedn) +
+//                                   Wall_HeatFlux*Area;
+//      Res_Visc[nSpecies+nDim+1] += pcontrol*(kve*dTvedn) +
+//                                   Wall_HeatFlux*Area;
+//      
+//			/*--- Apply viscous residual to the linear system ---*/
+//      LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
       /*--- Apply the no-slip condition in a strong way ---*/
       for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
@@ -6571,12 +6575,12 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       kve     = node[iPoint]->GetThermalConductivity_ve();
       node[iPoint]->CalcdTdU(V, config, dTdU);
       node[iPoint]->CalcdTvedU(V, config, dTvedU);
-      rhoCvtr = V[RHOCVTR_INDEX];
-      rhoCvve = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-        rhoCvve += V[RHOS_INDEX+iSpecies] * node[iPoint]->CalcCvve(Twall,
-                                                                   config,
-                                                                   iSpecies);
+//      rhoCvtr = V[RHOCVTR_INDEX];
+//      rhoCvve = 0.0;
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//        rhoCvve += V[RHOS_INDEX+iSpecies] * node[iPoint]->CalcCvve(Twall,
+//                                                                   config,
+//                                                                   iSpecies);
       
       /*--- Calculate projected gradient of temperature normal to the surface ---*/
       ////////////////
@@ -6602,6 +6606,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
       
       if (implicit) {
+        
         /*--- Initialize the Jacobian ---*/
         for (iVar = 0; iVar < nVar; iVar ++)
 					for (jVar = 0; jVar < nVar; jVar ++)
@@ -6612,30 +6617,56 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         for (iDim = 0; iDim < nDim; iDim++) {
           theta += UnitNormal[iDim]*UnitNormal[iDim];
         }
-
-        /*--- Enforce the no-slip boundary condition in a strong way ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Jacobian_i[nSpecies+3][iVar] = -(ktr*theta/dij*dTdU[iVar] +
+                                           kve*theta/dij*dTvedU[iVar])*Area;
+          Jacobian_i[nSpecies+4][iVar] = -(kve*theta/dij*dTvedU[iVar])*Area;
+        }
+        
+        /*--- Apply the changes to the linear system ---*/
+        Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
+        
+        /*--- Ensure no-slip boundary condition enforced in a strong way ---*/
         for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
           total_index = iPoint*nVar+iVar;
           Jacobian.DeleteValsRowi(total_index);
         }
-        // total energy
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies] +
-                                               kve*theta/dij*dTvedU[iSpecies]) * Area;
-        }
-        Jacobian_i[nSpecies+3][nSpecies]   = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+1] = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+2] = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+3] = -ktr*theta/(dij*rhoCvtr) * Area;
-        Jacobian_i[nSpecies+3][nSpecies+4] = -(-ktr*theta/(dij*rhoCvtr) +
-                                               kve*theta/(dij*rhoCvve)) * Area;
-        // vib-el. energy
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          Jacobian_i[nSpecies+4][iSpecies] = -kve*theta/dij * dTvedU[iSpecies] * Area;
-        }
-        Jacobian_i[nSpecies+4][nSpecies+4] = -kve*theta/(dij*rhoCvve) * Area;
-      
-        Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
+
+//        /*--- Initialize the Jacobian ---*/
+//        for (iVar = 0; iVar < nVar; iVar ++)
+//					for (jVar = 0; jVar < nVar; jVar ++)
+//            Jacobian_i[iVar][jVar] = 0.0;
+//        
+//        /*--- Calculate geometrical parameters ---*/
+//        theta = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          theta += UnitNormal[iDim]*UnitNormal[iDim];
+//        }
+//
+//        /*--- Enforce the no-slip boundary condition in a strong way ---*/
+//        for (iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
+//          total_index = iPoint*nVar+iVar;
+//          Jacobian.DeleteValsRowi(total_index);
+//        }
+//        // total energy
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//          Jacobian_i[nSpecies+3][iSpecies] = -(ktr*theta/dij*dTdU[iSpecies] +
+//                                               kve*theta/dij*dTvedU[iSpecies]) * Area;
+//        }
+//        Jacobian_i[nSpecies+3][nSpecies]   = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+1] = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+2] = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+3] = -ktr*theta/(dij*rhoCvtr) * Area;
+//        Jacobian_i[nSpecies+3][nSpecies+4] = -(-ktr*theta/(dij*rhoCvtr) +
+//                                               kve*theta/(dij*rhoCvve)) * Area;
+//        // vib-el. energy
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//          Jacobian_i[nSpecies+4][iSpecies] = -kve*theta/dij * dTvedU[iSpecies] * Area;
+//        }
+//        Jacobian_i[nSpecies+4][nSpecies+4] = -kve*theta/(dij*rhoCvve) * Area;
+//      
+//        Jacobian.SubtractBlock(iPoint,iPoint, Jacobian_i);
       }
       
       /*--- Error checking ---*/
@@ -6654,11 +6685,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
               err_chk = true;
         if (err_chk) {
           cout << "NaN in isothermal jacobian" << endl;
-          cout << "ktr: " << ktr << endl;
-          cout << "kve: " << kve << endl;
-          cout << "theta: " << theta << endl;
-          cout << "dij: " << dij << endl;
-          cout << "RhoCvve: " << rhoCvve << endl;
         }
       }
     }

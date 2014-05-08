@@ -1461,6 +1461,8 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Rename for convenience ---*/
+  nDim         = val_nDim;
+  nVar         = val_nVar;
   nPrimVar     = val_nPrimVar;
   nPrimVarGrad = val_nPrimVarGrad;
   
@@ -1468,6 +1470,14 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
 	PrimVar_i    = new double [nPrimVar];
 	PrimVar_j    = new double [nPrimVar];
 	Mean_PrimVar = new double [nPrimVar];
+  
+  Mean_U      = new double[nVar];
+  Mean_dPdU   = new double[nVar];
+  Mean_dTdU   = new double[nVar];
+  Mean_dTvedU = new double[nVar];
+  Mean_GU     = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Mean_GU[iVar] = new double[nDim];
   
   Mean_Diffusion_Coeff = new double[nSpecies];
   
@@ -1484,6 +1494,14 @@ CAvgGrad_TNE2::~CAvgGrad_TNE2(void) {
 	delete [] Mean_PrimVar;
   delete [] Mean_Diffusion_Coeff;
   
+  delete [] Mean_U;
+  delete [] Mean_dPdU;
+  delete [] Mean_dTdU;
+  delete [] Mean_dTvedU;
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] Mean_GU[iVar];
+  delete [] Mean_GU;
+  
 	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 		delete [] Mean_GradPrimVar[iVar];
 	delete [] Mean_GradPrimVar;
@@ -1494,7 +1512,7 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
                                     double **val_Jacobian_j,
                                     CConfig *config) {
   
-  unsigned short iSpecies;
+  unsigned short iSpecies, iVar, iDim;
   
 	/*--- Normalized normal vector ---*/
 	Area = 0;
@@ -1504,12 +1522,6 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
   
 	for (iDim = 0; iDim < nDim; iDim++)
 		UnitNormal[iDim] = Normal[iDim]/Area;
-  
-	for (iVar = 0; iVar < nPrimVar; iVar++) {
-		PrimVar_i[iVar] = V_i[iVar];
-		PrimVar_j[iVar] = V_j[iVar];
-		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
-	}
   
 	/*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1523,12 +1535,26 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
                                       Thermal_Conductivity_ve_j);
   
 	/*--- Mean gradient approximation ---*/
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+  for (iVar = 0; iVar < nPrimVar; iVar++) {
+		PrimVar_i[iVar] = V_i[iVar];
+		PrimVar_j[iVar] = V_j[iVar];
+		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+	}
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
 		}
 	}
+  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    Mean_U[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      Mean_GU[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] +
+//                                 ConsVar_Grad_j[iVar][iDim]);
+//  }
+//  var->Cons2PrimVar(config, Mean_U, Mean_PrimVar, Mean_dPdU, Mean_dTdU, Mean_dTvedU);
+//  var->GradCons2GradPrimVar(config, Mean_U, Mean_PrimVar, Mean_GU, Mean_GradPrimVar);
   
 	/*--- Get projected flux tensor ---*/
 	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar,
@@ -1549,13 +1575,78 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
 			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 		dist_ij = sqrt(dist_ij);
     
-    GetViscousProjJacs(Mean_PrimVar, Mean_Diffusion_Coeff,
+    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Diffusion_Coeff,
                        Mean_Laminar_Viscosity,
                        Mean_Thermal_Conductivity,
                        Mean_Thermal_Conductivity_ve,
                        dist_ij, UnitNormal, Area,
                        Proj_Flux_Tensor, val_Jacobian_i,
                        val_Jacobian_j, config);
+    
+//    //////////////////// DEBUG ////////////////////
+//    unsigned short iVar, jVar;
+//    double *Fv_old, *Fv_new, d;
+//    Fv_new = new double[nVar];
+//    Fv_old = new double[nVar];
+//    
+//    cout << endl << "Jacobian_j: " << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << val_Jacobian_j[jVar][iVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//    
+//    cout << endl << "FD: " << endl;
+//    // finite difference gradient
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      // set displacement value
+//      d = 0.01*U_j[iVar];
+//      if (d == 0)
+//        d = 1E-4;
+//      
+//      // calculate viscous flux
+//      GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Diffusion_Coeff,
+//                         Mean_Laminar_Viscosity, Mean_Thermal_Conductivity,
+//                         Mean_Thermal_Conductivity_ve, config);
+//      
+//      // copy solution
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        Fv_old[jVar] = Proj_Flux_Tensor[jVar];
+//      
+//      // perturb solution
+//      U_j[iVar] += d;
+//      var->Cons2PrimVar(config, U_j, V_j, dPdU_j, dTdU_j, dTvedU_j);
+//      for (jVar = 0; jVar < nPrimVar; jVar++)
+//        Mean_PrimVar[jVar] = 0.5*(V_i[jVar]+V_j[jVar]);
+//      
+//      // calculate viscous flux
+//      GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Diffusion_Coeff,
+//                         Mean_Laminar_Viscosity, Mean_Thermal_Conductivity,
+//                         Mean_Thermal_Conductivity_ve, config);
+//      
+//      // copy solution
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        Fv_new[jVar] = Proj_Flux_Tensor[jVar];
+//      
+//      // return solution to original value
+//      U_j[iVar] -= d;
+//      var->Cons2PrimVar(config, U_j, V_j, dPdU_j, dTdU_j, dTvedU_j);
+//      for (jVar = 0; jVar < nPrimVar; jVar++)
+//        Mean_PrimVar[jVar] = 0.5*(V_i[jVar]+V_j[jVar]);
+//      
+//      // display FD gradient
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        cout << (Fv_new[jVar]-Fv_old[jVar])/d << "\t";
+//      cout << endl;
+//    }
+//    
+//    cin.get();
+//    
+//    //////////////////// DEBUG ////////////////////
+
+    
+    
 	}
 }
 
@@ -1571,6 +1662,8 @@ CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   
   /*--- Rename for convenience ---*/
+  nDim         = val_nDim;
+  nVar         = val_nVar;
   nPrimVar     = val_nPrimVar;
   nPrimVarGrad = val_nPrimVarGrad;
   
@@ -1681,13 +1774,10 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
 		dist_ij = sqrt(dist_ij);
     
-    GetViscousProjJacs(Mean_PrimVar, Mean_Diffusion_Coeff,
-                       Mean_Laminar_Viscosity,
-                       Mean_Thermal_Conductivity,
-                       Mean_Thermal_Conductivity_ve,
-                       dist_ij, UnitNormal, Area,
-                       Proj_Flux_Tensor, val_Jacobian_i,
-                       val_Jacobian_j, config);
+    GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Diffusion_Coeff,
+                       Mean_Laminar_Viscosity, Mean_Thermal_Conductivity,
+                       Mean_Thermal_Conductivity_ve, dist_ij, UnitNormal, Area,
+                       Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j, config);
     
 	}
 }

@@ -1184,9 +1184,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   /*--- Species & mixture density ---*/
   V[RHO_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    if (V[RHOS_INDEX+iSpecies] < 0.0) {
-      V[RHOS_INDEX+iSpecies] = 1E-14;
-      U[iSpecies] = 1E-14;
+    if (U[iSpecies] < 0.0) {
+      V[RHOS_INDEX+iSpecies] = 1E-15;
+      U[iSpecies] = 1E-15;
       converr = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];

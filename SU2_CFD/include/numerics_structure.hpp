@@ -189,6 +189,12 @@ public:
   double *dPdU_i, *dPdU_j;
   double *dTdU_i, *dTdU_j;
   double *dTvedU_i, *dTvedU_j;
+  // NEW
+  double *hs, *eve, *Cvtr, *Cvve;
+  double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
+  double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
+  
+  // OLD
   double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
@@ -961,6 +967,7 @@ public:
 	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
 	 */
 	void GetViscousProjJacs(double *val_Mean_PrimVar,
+                          double **val_Mean_GradPrimVar,
                           double *val_diffusion_coeff,
                           double val_laminar_viscosity,
                           double val_thermal_conductivity,
@@ -5248,6 +5255,11 @@ class CAvgGrad_TNE2 : public CNumerics {
 private:
 	unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;		/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
+  *Mean_U,
+  **Mean_GU,
+  *Mean_dTdU,
+  *Mean_dTvedU,
+  *Mean_dPdU,
 	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
 	*Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
