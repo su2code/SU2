@@ -3,7 +3,7 @@
 ## \file 3DChannel.py
 #  \brief Python script for box meshing
 #  \author F. Palacios
-#  \version 3.0.0 "eagle"
+#  \version 3.1.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -132,12 +132,16 @@ for jNode in range(mNode-2, -1, -1):
     for kNode in range(lNode-1):
         Mesh_File.write( "%s \t %s \t %s \t %s \t %s\n" % (KindBound, (jNode + 1)*nNode + kNode*nNode*mNode, jNode*nNode + kNode*nNode*mNode, jNode*nNode+ (kNode+1)*nNode*mNode, (jNode + 1)*nNode+ (kNode+1)*nNode*mNode ) )
 
-Mesh_File.write( "NCHUNK=1\n")
-Mesh_File.write( "CHUNK_TAG=0\n")
-Mesh_File.write( "CHUNK_DEGREE_I=6\n")
-Mesh_File.write( "CHUNK_DEGREE_J=6\n")
-Mesh_File.write( "CHUNK_DEGREE_K=1\n")
-Mesh_File.write( "CHUNK_CORNER_POINTS=8\n")
+Mesh_File.write( "FFD_NBOX=1\n")
+Mesh_File.write( "FFD_NLEVEL=1\n")
+Mesh_File.write( "FFD_TAG=0\n")
+Mesh_File.write( "FFD_LEVEL=0\n")
+Mesh_File.write( "FFD_DEGREE_I=6\n")
+Mesh_File.write( "FFD_DEGREE_J=6\n")
+Mesh_File.write( "FFD_DEGREE_K=1\n")
+Mesh_File.write( "FFD_PARENTS=0\n")
+Mesh_File.write( "FFD_CHILDREN=0\n")
+Mesh_File.write( "FFD_CORNER_POINTS=8\n")
 Mesh_File.write( "4.0	0	-0.1\n")
 Mesh_File.write( "6.0	0	-0.1\n")
 Mesh_File.write( "6.0	2.0	-0.1\n")
@@ -146,8 +150,8 @@ Mesh_File.write( "4.0	0	0.1\n")
 Mesh_File.write( "6.0	0	0.1\n")
 Mesh_File.write( "6.0	2.0	0.1\n")
 Mesh_File.write( "4.0	2.0	0.1\n")
-Mesh_File.write( "CHUNK_CONTROL_POINTS=0\n")
-Mesh_File.write( "CHUNK_SURFACE_POINTS=0\n")
+Mesh_File.write( "FFD_CONTROL_POINTS=0\n")
+Mesh_File.write( "FFD_SURFACE_POINTS=0\n")
 
 
     

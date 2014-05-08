@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/ARA-D"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/LM1021"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "CreateGrid.cfg"
+            argument = "LM-1021.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

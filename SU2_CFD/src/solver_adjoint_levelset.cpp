@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -558,8 +558,8 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
 void CAdjLevelSetSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 	unsigned long iPoint;
 	
-	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
-	bool high_order_diss = (config->GetKind_Upwind_AdjLevelSet() == SCALAR_UPWIND_2ND);
+	bool implicit      = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
+	bool second_order  = ((config->GetSpatialOrder_AdjLevelSet() == SECOND_ORDER) || (config->GetSpatialOrder_AdjLevelSet() == SECOND_ORDER_LIMITER));
 
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
 		LinSysRes.SetBlock_Zero(iPoint);
@@ -568,7 +568,7 @@ void CAdjLevelSetSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
 	if (implicit)
 		Jacobian.SetValZero();
 	
-  if (high_order_diss) {
+  if (second_order) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
   }
@@ -580,8 +580,8 @@ void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned short iDim, iVar;
 	
-	bool implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
-	bool high_order_diss = (config->GetKind_Upwind_AdjLevelSet() == SCALAR_UPWIND_2ND);
+	bool implicit      = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
+	bool second_order  = ((config->GetSpatialOrder_AdjLevelSet() == SECOND_ORDER) || (config->GetSpatialOrder_AdjLevelSet() == SECOND_ORDER_LIMITER));
 		
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
@@ -604,7 +604,7 @@ void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 		DensityInc_j = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
 		numerics->SetDensityInc(DensityInc_i, DensityInc_j);
 				
-		if (high_order_diss) {
+		if (second_order) {
 
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));

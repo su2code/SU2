@@ -2,7 +2,7 @@
  * \file variable_adjoint_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -25,6 +25,7 @@
 CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
+  
 	dmuT_dUTvar = NULL;
 	dRTstar_dUTvar = NULL;
 	dFT_dUTvar = NULL;
@@ -35,12 +36,14 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
 CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
   
   /*--- Array initialization ---*/
+  
 	dmuT_dUTvar = NULL;
 	dRTstar_dUTvar = NULL;
 	dFT_dUTvar = NULL;
 	EddyViscSens = NULL;
   
 	/*--- Initialization of variables ---*/
+  
 	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 		Solution[iVar] = val_psinu_inf;
 		Solution_Old[iVar] = val_psinu_inf;
@@ -48,7 +51,7 @@ CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim
   
 	Residual_Old = new double [nVar];
   
-	if (config->GetKind_SlopeLimit() != NONE) Limiter = new double [nVar];
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
   
 }
 

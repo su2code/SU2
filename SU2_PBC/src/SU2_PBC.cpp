@@ -2,7 +2,7 @@
  * \file SU2_PBC.cpp
  * \brief Main file of Periodic Boundary Code (SU2_PBC).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.0 "eagle"
+ * \version 3.1.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -39,11 +39,11 @@ int main(int argc, char *argv[]) {
   
 	/*--- Definition of the class for the definition of the problem ---*/
 	CConfig *config;
-	if (argc == 2) config = new CConfig(argv[1], SU2_PBC, ZONE_0, nZone, VERB_HIGH);
+	if (argc == 2) config = new CConfig(argv[1], SU2_PBC, ZONE_0, nZone, 0, VERB_HIGH);
 	else {
 		char grid_file[200];
 		strcpy (grid_file, "default.cfg");
-		config = new CConfig(grid_file, SU2_PBC, ZONE_0, nZone, VERB_HIGH);
+		config = new CConfig(grid_file, SU2_PBC, ZONE_0, nZone, 0, VERB_HIGH);
 	}
 
 	/*--- Definition of the class for the geometry ---*/

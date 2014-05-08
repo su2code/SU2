@@ -1,7 +1,7 @@
 ## \file state.py
 #  \brief python package for state 
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.0 "eagle"
+#  \version 3.1.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -214,7 +214,9 @@ class State(ordered_bunch):
         direct_name   = config.SOLUTION_FLOW_FILENAME
         adjoint_name  = config.SOLUTION_ADJ_FILENAME
         targetea_name = 'TargetEA.dat'
-        
+        targetcp_name = 'TargetCp.dat'
+        targetheatflux_name = 'TargetHeatFlux.dat'
+
         adj_map = get_adjointSuffix()
         
         restart = config.RESTART_SOL == 'YES'
@@ -246,6 +248,14 @@ class State(ordered_bunch):
         # equivalent area
         if 'EQUIV_AREA' in special_cases:
             register_file('TARGET_EA',targetea_name)
+        
+        # pressure inverse design
+        if 'INV_DESIGN_CP' in special_cases:
+          register_file('TARGET_CP',targetcp_name)
+            
+        # heat flux inverse design
+        if 'INV_DESIGN_HEATFLUX' in special_cases:
+          register_file('TARGET_HEATFLUX',targetheatflux_name)
         
         return
     
