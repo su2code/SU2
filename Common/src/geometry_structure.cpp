@@ -4714,6 +4714,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       }
     
 #else
+    
 #ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
 #else
