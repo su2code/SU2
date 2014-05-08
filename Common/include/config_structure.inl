@@ -1010,4 +1010,8 @@ inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time; }
 
 inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc; }
 
+inline unsigned short CConfig::GetnFFD_Iter(void) {return nFFD_Iter; }
+
+inline double CConfig::GetFFD_Tol(void) {return FFD_Tol; }
+
 inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }

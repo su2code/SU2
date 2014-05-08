@@ -60,6 +60,8 @@ private:
   double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
+  unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
+  double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -4669,6 +4671,16 @@ public:
 	 */
 	double GetGust_Begin_Loc(void);
 
+  /*!
+	 * \brief Value of the time at which to begin the gust.
+	 */
+	unsigned short GetnFFD_Iter(void);
+  
+  /*!
+	 * \brief Value of the location ath which the gust begins.
+	 */
+	double GetFFD_Tol(void);
+  
   /*!
 	 * \brief Get the node number of the CV to visualize.
 	 * \return Node number of the CV to visualize.
