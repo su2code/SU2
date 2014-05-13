@@ -397,6 +397,10 @@ private:
 	double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
+  bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
+  double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
+  bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
@@ -1358,6 +1362,13 @@ public:
 	 */
 	double* GetVelocity_FreeStreamND(void);
 
+  /*!
+	 * \brief Set a value in the vector of the non-dimensionalized freestream velocity.
+	 * \param[in] val_dim - Index of the dimension
+	 * \param[in] val_velocity - Value of the freestream velocity
+   */
+  void SetVelocity_FreeStreamND(unsigned short val_dim, double val_velocity);
+  
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
 	 * \return Non-dimensionalized freestream energy.
@@ -1590,6 +1601,12 @@ public:
 	 */		
 	double GetAoA(void);
 
+	/*!
+	 * \brief Set the angle of attack.
+	 * \param[in] val_AoA - Value of the angle of attack.
+	 */
+	void SetAoA(double val_AoA);
+  
 	/*! 
 	 * \brief Get the angle of sideslip of the body. It relates to the rotation of the aircraft centerline from 
 	 *        the relative wind.
@@ -4678,7 +4695,37 @@ public:
 	 * \return Node number of the CV to visualize.
 	 */
 	long GetVisualize_CV(void);
+  
+  /*!
+	 * \brief Get information about whether to use fixed CL mode.
+	 * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+	 */
+	bool GetFixed_CL_Mode(void);
 
+  /*!
+	 * \brief Get the value specified for the target CL.
+	 * \return Value of the target CL.
+	 */
+	double GetTarget_CL(void);
+  
+  /*!
+	 * \brief Get the value of the damping coefficient for fixed CL mode.
+	 * \return Damping coefficient for fixed CL mode.
+	 */
+	double GetDamp_Fixed_CL(void);
+  
+  /*!
+	 * \brief Set the value of the boolean for updating AoA in fixed lift mode.
+   * \param[in] val_update - the bool for whether to update the AoA.
+	 */
+	void SetUpdate_AoA(bool val_update);
+  
+  /*!
+	 * \brief Get information about whether to update the AoA for fixed lift mode.
+	 * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
+	 */
+	bool GetUpdate_AoA(void);
+  
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
 	          x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating

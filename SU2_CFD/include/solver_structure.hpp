@@ -1775,7 +1775,18 @@ public:
   * \param[in] solution - Container vector with all the solutions.
   */
 	virtual void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-    
+  
+  /*!
+   * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+	 */
+  virtual void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                               CConfig *config, unsigned short iMesh, bool Output);
+  
   /*!
   * \brief Prepares and solves the aeroelastic equations.
   * \param[in] surface_movement - Surface movement classes of the problem.
@@ -1974,6 +1985,14 @@ protected:
   double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
 	*Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
 	*Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  
+  double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
+	Cauchy_Func;			/*!< \brief Current value of the convergence indicator at one iteration. */
+	unsigned short Cauchy_Counter;	/*!< \brief Number of elements of the Cauchy serial. */
+	double *Cauchy_Serie;			/*!< \brief Complete Cauchy serial. */
+	double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
+	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
+  double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   
 public:
     
@@ -2387,7 +2406,18 @@ public:
 	 * \param[in] solution - Container vector with all the solutions.
 	 */
 	void GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-    
+  
+  /*!
+	 * \brief Update the AoA and freestream velocity at the farfield.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+	 */
+  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                     CConfig *config, unsigned short iMesh, bool Output);
+  
 	/*!
 	 * \brief Update the solution using the explicit Euler scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
