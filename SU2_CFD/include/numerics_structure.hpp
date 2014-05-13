@@ -5377,10 +5377,14 @@ private:
   bool   implicit, ionization;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
   int    *alphak, *betak;
-  double *X; // Mole fraction
+  double *X, **dXdr; // Mole fraction
+  double ***dTausrdU, **dTauMWdU, **dTaupsdU, **dTausdU;
   double **RxnConstantTable;
+  double *estar, *evib;
+  double **tau_sr, *tauP, *tauMW, *taus;
   double *dkf, *dkb, *dRfok, *dRbok, *A;
-  double *eves, *Cvvs, *Cves;
+  double *eves, *Cvves;
+  double *Cvvs, *Cvvsst;
 //  CVariable *var;
 
 public:

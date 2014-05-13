@@ -283,7 +283,7 @@ void CUpwMSW_TNE2::ComputeResidual(double *val_residual,
   
   /*--- Set parameters in the numerical method ---*/
 	epsilon = 0.0;
-  alpha = 6.0;
+  alpha = 5.0;
   
   /*--- Calculate supporting geometry parameters ---*/
 	Area = 0;
@@ -1791,6 +1791,7 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                                                         val_nVar,
                                                         config) {
 
+  unsigned short iVar, iSpecies, jSpecies;
   /*--- Assign booleans from CConfig ---*/
   implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
@@ -1801,39 +1802,104 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   nPrimVarGrad = val_nPrimVarGrad;
   nDim         = val_nDim;
   nSpecies     = config->GetnSpecies();
-  
-  X = new double[nSpecies];
-  RxnConstantTable = new double*[6];
-	for (unsigned short iVar = 0; iVar < 6; iVar++)
-		RxnConstantTable[iVar] = new double[5];
 
   /*--- Allocate arrays ---*/
+
+  RxnConstantTable = new double*[6];
+	for (iVar = 0; iVar < 6; iVar++)
+		RxnConstantTable[iVar] = new double[5];
+  
+  dTausrdU = new double**[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    dTausrdU[iSpecies] = new double*[nSpecies];
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+      dTausrdU[iSpecies][jSpecies] = new double[nVar];
+  }
+  
+  dTauMWdU = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    dTauMWdU[iSpecies] = new double[nVar];
+  
+  dTaupsdU = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    dTaupsdU[iSpecies] = new double[nVar];
+  
+  dTausdU = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    dTausdU[iSpecies] = new double[nVar];
+  
+  tau_sr = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    tau_sr[iSpecies] = new double[nSpecies];
+
   alphak = new int[nSpecies];
   betak  = new int[nSpecies];
   A      = new double[5];
+  X      = new double[nSpecies];
   eves   = new double[nSpecies];
+  estar  = new double[nSpecies];
+  evib   = new double[nSpecies];
+  Cvves  = new double[nSpecies];
   Cvvs   = new double[nSpecies];
-  Cves   = new double[nSpecies];
+  Cvvsst = new double[nSpecies];
+  tauP   = new double[nSpecies];
+  tauMW  = new double[nSpecies];
+  taus   = new double[nSpecies];
   dkf    = new double[nVar];
   dkb    = new double[nVar];
   dRfok  = new double[nVar];
   dRbok  = new double[nVar];
+  
+  dXdr = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    dXdr[iSpecies] = new double[nSpecies];
   
 //  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   
 }
 
 CSource_TNE2::~CSource_TNE2(void) {
-  delete [] X;
-  for (unsigned short iVar = 0; iVar < 6; iVar++)
+  unsigned short iVar, iSpecies, jSpecies;
+  
+  /*--- Deallocate arrays ---*/
+  
+  for (iVar = 0; iVar < 6; iVar++)
     delete [] RxnConstantTable[iVar];
   delete [] RxnConstantTable;
   
-  /*--- Deallocate arrays ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    delete [] dXdr[iSpecies];
+  delete [] dXdr;
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+      delete [] dTausrdU[iSpecies][jSpecies];
+    delete [] dTausrdU[iSpecies];
+  }
+  delete [] dTausrdU;
+  
+  for (iSpecies = 0;iSpecies < nSpecies; iSpecies++) {
+    delete [] dTaupsdU[iSpecies];
+    delete [] dTausdU[iSpecies];
+    delete [] dTauMWdU[iSpecies];
+    delete [] tau_sr[iSpecies];
+  }
+  delete [] dTaupsdU;
+  delete [] dTauMWdU;
+  delete [] dTausdU;
+  delete [] tau_sr;
+  
   delete [] A;
+  delete [] X;
   delete [] eves;
+  delete [] estar;
+  delete [] evib;
+  delete [] Cvves;
   delete [] Cvvs;
-  delete [] Cves;
+  delete [] Cvvsst;
+  delete [] tauP;
+  delete [] tauMW;
+  delete [] taus;
   delete [] alphak;
   delete [] betak;
   delete [] dkf;
@@ -1897,7 +1963,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   unsigned short *nElStates, nHeavy, nEl, nEve;
   int ***RxnMap;
   double T_min, epsilon;
-  double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb;
+  double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
   double rho, u, v, w, rhoCvtr, rhoCvve, P;
   double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
   double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
@@ -1947,7 +2013,8 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   rhoCvve = V_i[RHOCVVE_INDEX];
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eves[iSpecies] = var->CalcEve(config, Tve, iSpecies);
+    eves[iSpecies]  = var->CalcEve(config, Tve, iSpecies);
+    Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
   }
   
   /*--- Acquire parameters from the configuration file ---*/
@@ -1991,8 +2058,9 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
               + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
     
     /*--- Calculate rate coefficients ---*/
-    kf = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
-		kb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb) / Keq;
+    kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
+		kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
+    kb  = kfb / Keq;
     
     /*--- Determine production & destruction of each species ---*/
     fwdRxn = 1.0;
@@ -2053,13 +2121,25 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
                              + bf*Trxnf/Tve*dTvedU_i[iVar] );
       }
       // Bkw
-      coeff = kb * (eta/Thb+theta/(Thb*Thb)
-                    + (-A[0]*Thb/1E4 + A[2] + A[3]*1E4/Thb
-                       + 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb;
+      coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
       for (iVar = 0; iVar < nVar; iVar++) {
-        dkb[iVar] = coeff * (  ab*Trxnb/T*dTdU_i[iVar]
-                             + bb*Trxnb/Tve*dTvedU_i[iVar]);
+        dkb[iVar] = coeff*(  ab*Trxnb/T*dTdU_i[iVar]
+                           + bb*Trxnb/Tve*dTvedU_i[iVar])
+        - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
+               - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb * (  ab*Trxnb/T*dTdU_i[iVar]
+                                                            + bb*Trxnb/Tve*dTvedU_i[iVar]);
       }
+              
+      
+      ////////// OLD ////////////
+//      coeff = kb * (eta/Thb+theta/(Thb*Thb)
+//                    + (-A[0]*Thb/1E4 + A[2] + A[3]*1E4/Thb
+//                       + 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb;
+//      for (iVar = 0; iVar < nVar; iVar++) {
+//        dkb[iVar] = coeff * (  ab*Trxnb/T*dTdU_i[iVar]
+//                             + bb*Trxnb/Tve*dTvedU_i[iVar]);
+//      }
+      ////////// OLD ////////////
       
       /*--- Rxn rate derivatives ---*/
       for (ii = 0; ii < 3; ii++) {
@@ -2110,8 +2190,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
 
           for (jVar = 0; jVar < nVar; jVar++) {
             val_Jacobian_i[nEve][jVar] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                        * (Cvvs[iSpecies]+Cves[iSpecies])
-                                        * dTvedU_i[jVar] * Volume;
+                                        * Cvves[iSpecies] * dTvedU_i[jVar] * Volume;
           }
         }
         
@@ -2131,8 +2210,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
 
           for (jVar = 0; jVar < nVar; jVar++) {
             val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-            * (Cvvs[iSpecies]+Cves[iSpecies])
-            * dTvedU_i[jVar] * Volume;
+                                        * Cvves[iSpecies] * dTvedU_i[jVar] * Volume;
           }
         } // != nSpecies
       } // ii
@@ -2151,14 +2229,14 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
-  unsigned short iSpecies, jSpecies, iVar, jVar;
+  unsigned short iSpecies, jSpecies, kSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
-  double rhos, evib, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
-  double Qtv, estar, tau, tauMW, tauP;
-  double tau_sr, mu, A_sr, B_sr, num, denom;
+  double rhos, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
+  double Qtv, taunum, taudenom;
+  double mu, A_sr, B_sr, num, denom;
+  double Cs;
   double thoTve, exptv;
   double thoT, expt, Cvvs, Cvvst;
-  double sigma, ws;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
   
   /*--- Initialize residual and Jacobian arrays ---*/
@@ -2169,6 +2247,17 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_i[iVar][jVar] = 0.0;
+  }
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      dXdr[iSpecies][jSpecies] = 0.0;
+    }
+    for (iVar = 0; iVar < nVar; iVar++) {
+      dTauMWdU[iSpecies][iVar] = 0.0;
+      dTaupsdU[iSpecies][iVar] = 0.0;
+      dTausdU[iSpecies][iVar]  = 0.0;
+    }
   }
 
   /*--- Determine the number of heavy particle species ---*/
@@ -2187,14 +2276,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   rhoCvve = V_i[RHOCVVE_INDEX];
   nEv     = nSpecies+nDim+1;
   
-  /*--- Clip temperatures to prevent NaNs ---*/
-  if (T < 50.0) {
-    T = 50;
-  }
-  if (Tve < 50.0) {
-    Tve = 50;
-  }
-  
   /*--- Read from CConfig ---*/
   Ms        = config->GetMolar_Mass();
   thetav    = config->GetCharVibTemp();
@@ -2212,11 +2293,17 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
     N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
   }
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+      dXdr[iSpecies][jSpecies] += -1/conc*(X[iSpecies]/Ms[jSpecies]);
+    dXdr[iSpecies][iSpecies] += 1/(conc*Ms[iSpecies]);
+  }
 
   /*--- Loop over species to calculate source term --*/
-  Qtv = 0.0;
+  Qtv      = 0.0;
+  taunum   = 0.0;
+  taudenom = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (thetav[iSpecies] != 0.0) {
       /*--- Rename ---*/
@@ -2231,38 +2318,104 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       denom = 0.0;
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
         mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-        A_sr   = 1.16 * 1E-3 * sqrt(fabs(mu)) * pow(thetav[iSpecies], 4.0/3.0);
+        A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
         B_sr   = 0.015 * pow(mu, 0.25);
-        tau_sr = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
+        tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
         num   += X[iSpecies];
-        denom += X[iSpecies] / tau_sr;
+        denom += X[iSpecies] / tau_sr[iSpecies][jSpecies];
+        for (iVar = 0; iVar < nVar; iVar++)
+          dTausrdU[iSpecies][jSpecies][iVar] = (-1/P*dPdU_i[iVar]
+                                                -1.0/3.0*A_sr*pow(T,-4.0/3.0)*
+                                                dTdU_i[iVar])*tau_sr[iSpecies][jSpecies];
       }
-      tauMW = num / denom;
+      tauMW[iSpecies] = num / denom;
+      
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          dTauMWdU[iSpecies][iVar] += tauMW[iSpecies]/denom * X[jSpecies]/(tau_sr[iSpecies][jSpecies]*
+                                                                           tau_sr[iSpecies][jSpecies])*
+                                      dTausrdU[iSpecies][jSpecies][iVar];
+        for (kSpecies = 0; kSpecies < nSpecies; kSpecies++) {
+          dTauMWdU[iSpecies][jSpecies] +=
+              1/denom*dXdr[kSpecies][jSpecies] -
+              tauMW[iSpecies]/denom*(1/tau_sr[iSpecies][kSpecies]*dXdr[kSpecies][jSpecies]);
+        }
+      }
       
       /*--- Park limiting cross section ---*/
-      sigma = 1E-20 * (5E4/T)*(5E4/T);
-      ws    = sqrt(fabs(8.0*Ru*T / (PI_NUMBER*Ms[iSpecies])));
-      tauP  = 1.0 / (sigma * ws * N);
+      Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
+      tauP[iSpecies] = T*sqrt(T)/(Cs*N);
+      for (iVar = 0; iVar < nVar; iVar++)
+        dTaupsdU[iSpecies][iVar] = 3.0/(2.0*T)*tauP[iSpecies]*dTdU_i[iVar];
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+        dTaupsdU[iSpecies][jSpecies] += -AVOGAD_CONSTANT*T*sqrt(T)/(Ms[jSpecies]*Cs*N*N);
       
       /*--- Species relaxation time ---*/
-      tau = tauMW + tauP;
+      taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
+      
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        dTausdU[iSpecies][iVar] =
+            tauMW[iSpecies]*dTaupsdU[iSpecies][iVar] +
+            dTauMWdU[iSpecies][iVar]*tauP[iSpecies];
+
+//      taunum   += rhos/Ms[iSpecies];
+//      taudenom += rhos/(Ms[iSpecies]*taus);
+//      
+//    }
+//  }
+//  tau = taunum/taudenom;
+//  val_residual[nEv] = rhoCvve/tau * (T-Tve) * Volume;
+//  
+//  if (implicit) {
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
+//      val_Jacobian_i[nEv][iSpecies] = Cvves[iSpecies]/tau * (T-Tve)*Volume;
+//    }
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      val_Jacobian_i[nEv][iVar] += rhoCvve/tau*(dTdU_i[iVar]-dTvedU_i[iVar])*Volume;
+//  }
+  
       
       /*--- Vibrational energy terms ---*/
-      estar = Ru/Ms[iSpecies] * thetav[iSpecies] / (expt - 1.0);
-      evib  = Ru/Ms[iSpecies] * thetav[iSpecies] / (exptv - 1.0);
+      estar[iSpecies] = Ru/Ms[iSpecies]*thetav[iSpecies] / (expt-1.0);
+      evib[iSpecies]  = Ru/Ms[iSpecies]*thetav[iSpecies] / (exptv-1.0);
       
       /*--- Add species contribution to residual ---*/
-      val_residual[nEv] += rhos * (estar - evib) / tau * Volume;
-      
-      if (implicit) {
-        /*--- Calculate species specific heats ---*/
-        Cvvst = Ru/Ms[iSpecies] * thoT*thoT * expt / ((expt-1.0)*(expt-1.0));
-        Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+      val_residual[nEv] += rhos * (estar[iSpecies] - evib[iSpecies]) / taus[iSpecies] * Volume;
+    }
+  }
+  
+  if (implicit) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      if (thetav[iSpecies] != 0) {
         
-        val_Jacobian_i[nEv][iSpecies] += (estar - evib)/tau * Volume;
-        for (jVar = 0; jVar < nVar; jVar++)
-          val_Jacobian_i[nEv][jVar] += U_i[iSpecies]/tau * (Cvvst*dTdU_i[jVar] -
-                                                            Cvvs*dTvedU_i[jVar]  ) * Volume;
+        /*--- Rename ---*/
+        rhos = V_i[RHOS_INDEX+iSpecies];
+        thoT   = thetav[iSpecies]/T;
+        expt   = exp(thetav[iSpecies]/T);
+        thoTve = thetav[iSpecies]/Tve;
+        exptv = exp(thetav[iSpecies]/Tve);
+
+        /*--- Calculate species specific heats ---*/
+        Cvvst = Ru/Ms[iSpecies] * thoT*thoT * expt
+              / ((expt-1.0)*(expt-1.0));
+        Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv
+              / ((exptv-1.0)*(exptv-1.0));
+        
+        val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies] -
+                                          evib[iSpecies]   )
+                                       /taus[iSpecies] * Volume;
+        
+        for (jVar = 0; jVar < nVar; jVar++) {
+          val_Jacobian_i[nEv][jVar] +=
+              U_i[iSpecies]/taus[iSpecies] * (Cvvst*dTdU_i[jVar] -
+                                              Cvvs*dTvedU_i[jVar]  ) * Volume;
+          
+          val_Jacobian_i[nEv][jVar] +=
+              -U_i[iSpecies]/(taus[iSpecies]*taus[iSpecies])*
+              (estar[iSpecies]-evib[iSpecies])*dTausdU[iSpecies][iVar] * Volume;
+        }
       }
     }
   }

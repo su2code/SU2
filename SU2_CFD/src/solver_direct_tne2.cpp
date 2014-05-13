@@ -2650,6 +2650,51 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
   
 }
 
+void CTNE2EulerSolver::ExplicitRK_Iteration(CGeometry *geometry,
+                                            CSolver **solver_container,
+                                            CConfig *config,
+                                            unsigned short iRKStep) {
+  
+  double *Residual, *Res_TruncError, Vol, Delta, Res;
+  unsigned short iVar;
+  unsigned long iPoint;
+  
+  double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
+  bool adjoint = config->GetAdjoint();
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
+  /*--- Update the solution ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Vol = geometry->node[iPoint]->GetVolume();
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
+    
+    Res_TruncError = node[iPoint]->GetResTruncError();
+    Residual = LinSysRes.GetBlock(iPoint);
+    
+    if (!adjoint) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res = Residual[iVar] + Res_TruncError[iVar];
+        node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
+        AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      }
+    }
+    
+  }
+  
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+  
+  /*--- Compute the root mean square residual ---*/
+  SetResidual_RMS(geometry, config);
+  
+  
+}
+
 void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
                                                CSolver **solution_container,
                                                CConfig *config) {
@@ -5392,7 +5437,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
     
-//		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
     /*--- Store minimum and maximum dt's within the grid for printing ---*/
@@ -5586,80 +5631,143 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
   
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-//    if (!geometry->node[iPoint]->GetSolidBoundary()) {
-      
-      /*--- Set conserved & primitive variables  ---*/
-      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-      numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
-      
-      /*--- Pass supplementary information to CNumerics ---*/
-      numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
-      numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
-      numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
-      
-      /*--- Set volume of the dual grid cell ---*/
-      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-      
-      /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-      if (config->GetExtraOutput()) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
+    
+    /*--- Set conserved & primitive variables  ---*/
+    numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+    numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
+    
+    /*--- Pass supplementary information to CNumerics ---*/
+    numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
+    numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
+    numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
+    
+    /*--- Set volume of the dual grid cell ---*/
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
+      }
+    }
+    
+    /*--- Compute the non-equilibrium chemistry ---*/
+    numerics->ComputeChemistry(Residual, Jacobian_i, config);
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    if (implicit)
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+  
+    
+    /*--- Error checking ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Residual[iVar] != Residual[iVar])
+        cout << "NaN in Chemistry Residual" << endl;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+            cout << "NaN in Chemistry Jacobian i" << endl;
         }
       }
-      
-      /*--- Compute the non-equilibrium chemistry ---*/
-      numerics->ComputeChemistry(Residual, Jacobian_i, config);
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Error checking ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (Residual[iVar] != Residual[iVar])
-          cout << "NaN in Chemistry Residual" << endl;
-      if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-              cout << "NaN in Chemistry Jacobian i" << endl;
-          }
-        }
+    }
+    
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
       }
-      
-      /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-      if (config->GetExtraOutput()) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
-        }
-      }
-      
-      /*--- Compute vibrational energy relaxation ---*/
-      // NOTE: Jacobians don't account for relaxation time derivatives
-      numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
-      LinSysRes.SubtractBlock(iPoint, Residual);
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-      
-      /*--- Error checking ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        if (Residual[iVar] != Residual[iVar])
-          cout << "NaN in vibrational Residual" << endl;
-      if (implicit) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-              cout << "NaN in vibrational Jacobian i" << endl;
-          }
-        }
-      }
-      
-      /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
-      if (config->GetExtraOutput()) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
-        }
-      }
+    }
+    
+    /*--- Compute vibrational energy relaxation ---*/
+    // NOTE: Jacobians don't account for relaxation time derivatives
+    numerics->ComputeVibRelaxation(Residual, Jacobian_i, config);
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    if (implicit)
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+    
+//    /////////// DEBUG /////////////
+//    unsigned short iVar, jVar;
+//    double *S_new, *S_old, d;
+//    double *U_i, *V_i;
+//    bool RightSol;
+//    S_new = new double[nVar];
+//    S_old = new double[nVar];
+//    V_i = new double[nPrimVar];
+//
+//    cout << "Analytic" << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[jVar][iVar] << "\t";
+//      }
+//      cout << endl;
 //    }
+//
+//    cout << endl << "FD: " << endl;
+//    // finite difference gradient
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//
+//      /*--- Compute baseline solution ---*/
+//      numerics->ComputeVibRelaxation(S_old, Jacobian_i, config);
+//
+//      // set displacement value
+//      U_i = node[iPoint]->GetSolution();
+//      d = 0.00001*U_i[iVar];
+//      if (d == 0)
+//        d = 1E-12;
+//      U_i[iVar] += d;
+//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
+//      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+//
+//      /*-- pass to numerics ---*/
+//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar() , node[iPoint]->GetPrimVar() );
+//      numerics->SetdPdU        (node[iPoint]->GetdPdU()    , node[iPoint]->GetdPdU()    );
+//      numerics->SetdTdU        (node[iPoint]->GetdTdU()    , node[iPoint]->GetdTdU()    );
+//      numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  , node[iPoint]->GetdTvedU()  );
+//
+//      // Compute updated value
+//      numerics->ComputeVibRelaxation(S_new, Jacobian_i, config);
+//
+//      // return solution to original value
+//      U_i[iVar] -= d;
+//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
+//      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+//
+//      /*-- pass to numerics ---*/
+//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
+//      numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
+//      numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
+//      numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
+//
+//      // display FD gradient
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        cout << (S_new[jVar]-S_old[jVar])/d << "\t";
+//      cout << endl;
+//    }
+//    
+//    cin.get();
+//  //////////////////// DEBUG ////////////////////
+    
+    /*--- Error checking ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      if (Residual[iVar] != Residual[iVar])
+        cout << "NaN in vibrational Residual" << endl;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
+            cout << "NaN in vibrational Jacobian i" << endl;
+        }
+      }
+    }
+    
+    /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
+    if (config->GetExtraOutput()) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] += Residual[iVar];
+      }
+    }
   }
   
   /*--- Loop over boundaries ---*/
@@ -6537,6 +6645,12 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       }
       dij = sqrt(dij);
       
+      /*--- Calculate geometrical parameters ---*/
+      theta = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        theta += UnitNormal[iDim]*UnitNormal[iDim];
+      }
+      
       /*--- Initialize viscous residual (and Jacobian if implicit) to zero ---*/
 			for (iVar = 0; iVar < nVar; iVar ++)
 				Res_Visc[iVar] = 0.0;
@@ -6585,19 +6699,19 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       /*--- Calculate projected gradient of temperature normal to the surface ---*/
       ////////////////
       // METHOD 1
-//      Ti = V[T_INDEX];
-//      Tvei = V[TVE_INDEX];
-//      Tj = node[jPoint]->GetTemperature();
-//      Tvej = node[jPoint]->GetTemperature_ve();
-//      dTdn = -(Tj - Ti)/dij;
-//      dTvedn = -(Tvej - Tvei)/dij;
+      Ti     = V[T_INDEX];
+      Tvei   = V[TVE_INDEX];
+      Tj     = node[jPoint]->GetTemperature();
+      Tvej   = node[jPoint]->GetTemperature_ve();
+      dTdn   = -(Tj   - Ti  )*theta/dij;
+      dTvedn = -(Tvej - Tvei)*theta/dij;
 
       // METHOD 2
-      dTdn = 0.0; dTvedn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dTdn   += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
-        dTvedn += PrimVarGrad[TVE_INDEX][iDim]*UnitNormal[iDim];
-      }
+//      dTdn = 0.0; dTvedn = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        dTdn   += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
+//        dTvedn += PrimVarGrad[TVE_INDEX][iDim]*UnitNormal[iDim];
+//      }
       ////////////////
       
       /*--- Apply to the linear system ---*/
@@ -6611,12 +6725,6 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         for (iVar = 0; iVar < nVar; iVar ++)
 					for (jVar = 0; jVar < nVar; jVar ++)
             Jacobian_i[iVar][jVar] = 0.0;
-        
-        /*--- Calculate geometrical parameters ---*/
-        theta = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          theta += UnitNormal[iDim]*UnitNormal[iDim];
-        }
         
         for (iVar = 0; iVar < nVar; iVar++) {
           Jacobian_i[nSpecies+3][iVar] = -(ktr*theta/dij*dTdU[iVar] +

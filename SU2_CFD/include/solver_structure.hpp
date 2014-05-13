@@ -5952,6 +5952,16 @@ public:
 	 */
   void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+  /*!
+	 * \brief Update the solution using an explicit Euler scheme.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Runge-Kutta step.
+	 */
+  void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
+                            CConfig *config, unsigned short iRKStep);
+
 	/*!
 	 * \brief Update the solution using an implicit Euler scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.

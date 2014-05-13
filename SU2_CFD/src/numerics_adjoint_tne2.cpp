@@ -2178,7 +2178,7 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
       dJdr[iSpecies][iSpecies][iDim] += -1/rho*SIk[iDim];
   }
   
-//  //////////////////// DEBUG ////////////////////
+  //////////////////// DEBUG ////////////////////
 //  double UnitNormal[3], tmp, tmp2;
 //  double *Fv_old, *Fv_new, d;
 //  UnitNormal[0] = 1.0;
@@ -2273,8 +2273,8 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
 //  }
 //  
 //  cin.get();
-//  
-//  //////////////////// DEBUG ////////////////////
+  
+  //////////////////// DEBUG ////////////////////
   
 
   /*--- Contribution to viscous residual from Av1 ---*/
