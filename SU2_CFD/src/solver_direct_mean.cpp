@@ -64,6 +64,14 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+  Cauchy_Value = 0;
+	Cauchy_Func = 0;
+	Old_Func = 0;
+	New_Func = 0;
+	Cauchy_Counter = 0;
+  Cauchy_Serie = NULL;
+  
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -115,6 +123,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
+  Cauchy_Serie = NULL;
   
   /*--- Set the gamma value ---*/
   
@@ -338,6 +347,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     FanFace_Area[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
   }
+  
+  /*--- Initialize the cauchy critera array for fixed CL mode ---*/
+  
+  if (config->GetFixed_CL_Mode())
+    Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
   
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -574,6 +588,9 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
+  
+  if (Cauchy_Serie != NULL)
+    delete [] Cauchy_Serie;
   
 }
 
@@ -1905,10 +1922,15 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool engine         = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
+  bool fixed_cl       = config->GetFixed_CL_Mode();
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
   if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
+  
+  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  
+  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Compute distance function to zero level set (Set LevelSet and Distance primitive variables)---*/
   
@@ -3471,15 +3493,15 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     double tol = config->GetLinear_Solver_Error();
     IterLinSol=0;
     while (IterLinSol < config->GetLinear_Solver_Iter()){
-          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-            iterations = config->GetLinear_Solver_Iter()-IterLinSol;
-          IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
-                             iterations, false); // increment total iterations
-          if (LinSysRes.norm()<tol)
-            break;
-          tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
-         // std::cout <<" Completed a restart iteration"<<std::endl;
-
+      if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+        iterations = config->GetLinear_Solver_Iter()-IterLinSol;
+      IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
+                                  iterations, false); // increment total iterations
+      if (LinSysRes.norm()<tol)
+        break;
+      tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
+      // std::cout <<" Completed a restart iteration"<<std::endl;
+      
     }
   }
   
@@ -4347,6 +4369,162 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   
   delete [] Exhaust_MassFlow_Total;
   delete [] Exhaust_Area_Total;
+  
+}
+
+void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                   CConfig *config, unsigned short iMesh, bool Output) {
+
+  unsigned short iDim, iCounter;
+  bool Update_AoA = false;
+  double Target_CL, AoA_inc, AoA, Eps_Factor = 1e2;
+  double DampingFactor = config->GetDamp_Fixed_CL();
+  double Beta = config->GetAoS();
+  double Vel_Infty[3], Vel_Infty_Mag;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+  
+  /*--- Only the fine mesh level should check the convergence criteria ---*/
+  
+  if (iMesh == MESH_0) {
+    
+    /*--- Initialize the update flag to false in config ---*/
+    
+    config->SetUpdate_AoA(false);
+    
+    /*--- Initialize the local cauchy criteria on the first iteration ---*/
+    
+    if (config->GetExtIter() == 0) {
+      Cauchy_Value = 0.0;
+      Cauchy_Counter = 0;
+      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Serie[iCounter] = 0.0;
+      AoA_old = config->GetAoA();
+    }
+    
+    /*--- Check on the level of convergence in the lift coefficient. ---*/
+    
+    Old_Func = New_Func;
+    New_Func = Total_CLift;
+    Cauchy_Func = fabs(New_Func - Old_Func);
+    Cauchy_Serie[Cauchy_Counter] = Cauchy_Func;
+    Cauchy_Counter++;
+    if (Cauchy_Counter == config->GetCauchy_Elems()) Cauchy_Counter = 0;
+    
+    Cauchy_Value = 1;
+    if (config->GetExtIter() >= config->GetCauchy_Elems()) {
+      Cauchy_Value = 0;
+      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Value += Cauchy_Serie[iCounter];
+    }
+    
+    /*--- Check whether we are within two digits of the requested convergence
+     epsilon for the cauchy criteria. ---*/
+    
+    if (Cauchy_Value >= config->GetCauchy_Eps()*Eps_Factor) Update_AoA = false;
+    else Update_AoA = true;
+    
+    /*--- Do not apply any convergence criteria if the number
+     of iterations is less than a particular value ---*/
+    if (config->GetExtIter() < config->GetStartConv_Iter()) {
+      Update_AoA = false;
+      
+    }
+    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
+    
+    config->SetUpdate_AoA(Update_AoA);
+    
+  } else
+    Update_AoA = config->GetUpdate_AoA();
+  
+  /*--- If we are within two digits of convergence in the CL coefficient,
+   compute an updated value for the AoA at the farfield. We are iterating
+   on the AoA in order to match the specified fixed lift coefficient. ---*/
+  
+  if (Update_AoA) {
+    
+    /*--- Retrieve the specified target CL value. ---*/
+    
+    Target_CL = config->GetTarget_CL();
+    
+    /*--- Retrieve the old AoA. ---*/
+    
+    AoA_old = config->GetAoA();
+    
+    /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
+    
+    AoA_inc = (1.0/(2.0*PI_NUMBER))*(Target_CL - Total_CLift);
+    
+    /*--- Compute a new value for AoA on the fine mesh only ---*/
+    
+    if (iMesh == MESH_0)
+      AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
+    else
+      AoA = config->GetAoA();
+    
+    /*--- Update the freestream velocity vector at the farfield ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      Vel_Infty[iDim] = GetVelocity_Inf(iDim);
+    
+    /*--- Compute the magnitude of the free stream velocity ---*/
+    
+    Vel_Infty_Mag = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Vel_Infty_Mag += Vel_Infty[iDim]*Vel_Infty[iDim];
+    Vel_Infty_Mag = sqrt(Vel_Infty_Mag);
+    
+    /*--- Compute the new freestream velocity with the updated AoA ---*/
+    
+    if (nDim == 2) {
+      Vel_Infty[0] = cos(AoA)*Vel_Infty_Mag;
+      Vel_Infty[1] = sin(AoA)*Vel_Infty_Mag;
+    }
+    if (nDim == 3) {
+      Vel_Infty[0] = cos(AoA)*cos(Beta)*Vel_Infty_Mag;
+      Vel_Infty[1] = sin(Beta)*Vel_Infty_Mag;
+      Vel_Infty[2] = sin(AoA)*cos(Beta)*Vel_Infty_Mag;
+    }
+    
+    /*--- Store the new freestream velocity vector for the next iteration ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_Inf[iDim] = Vel_Infty[iDim];
+    }
+    
+    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+    if (iMesh == MESH_0) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        config->SetVelocity_FreeStreamND(iDim, Vel_Infty[iDim]);
+      config->SetAoA(AoA);
+    }
+    
+    /*--- Reset the local cauchy criteria ---*/
+    Cauchy_Value = 0.0;
+    Cauchy_Counter = 0;
+    for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+      Cauchy_Serie[iCounter] = 0.0;
+  }
+  
+  /*--- Output some information to the console with the headers ---*/
+  
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+    cout.precision(7);
+    cout.setf(ios::fixed,ios::floatfield);
+    cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+    cout << " Target CL: " << config->GetTarget_CL();
+    cout << ", Current CL: " << Total_CLift;
+    cout << ", Current AoA: " << config->GetAoA()*180.0/PI_NUMBER << " deg" << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
+  }
   
 }
 
@@ -5833,7 +6011,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
-
+  
   bool compute;
   double *Buffer_Send_V = new double [nPrimVar];
   double *Buffer_Receive_V = new double [nPrimVar];
@@ -5867,7 +6045,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           for (iVar = 0; iVar < nPrimVar; iVar++)
             Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
 #ifdef WINDOWS
-		  MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+          MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
 #else
           MPI::COMM_WORLD.Bsend(Buffer_Send_V, nPrimVar, MPI::DOUBLE, jProcessor, iPoint);
 #endif
@@ -5899,7 +6077,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         
         if (jProcessor != rank) {
 #ifdef WINDOWS
-		  MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
 #else
           MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
 #endif
@@ -7620,7 +7798,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     }
     
     if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
-    
+      
       /*--- Forces initialization at each Marker ---*/
       CDrag_Visc[iMarker] = 0.0;  CLift_Visc[iMarker] = 0.0; CSideForce_Visc[iMarker] = 0.0;  CEff_Visc[iMarker] = 0.0;
       CMx_Visc[iMarker] = 0.0;    CMy_Visc[iMarker] = 0.0;   CMz_Visc[iMarker] = 0.0;
@@ -7799,11 +7977,11 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   }
   
   /*--- Update some global coeffients ---*/
-   
+  
   AllBound_CEff_Visc = AllBound_CLift_Visc / (AllBound_CDrag_Visc + EPS);
   AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
   AllBound_MaxHeatFlux_Visc = pow(AllBound_MaxHeatFlux_Visc, 1.0/MaxNorm);
-
+  
   
 #ifndef NO_MPI
   

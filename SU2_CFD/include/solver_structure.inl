@@ -387,7 +387,10 @@ inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_containe
 									CConfig *config, unsigned short val_marker) { }
             
 inline void CSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
-                         
+
+inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                     CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 							        unsigned short iMesh, unsigned long Iteration) { }	
 							        

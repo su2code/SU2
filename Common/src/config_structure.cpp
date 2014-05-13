@@ -862,6 +862,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
   /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
   AddScalarOption("AOA", AoA, 0.0);
+  /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
+  AddSpecialOption("FIXED_CL_MODE", Fixed_CL_Mode, SetBoolOption, false);
+  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
+  AddScalarOption("TARGET_CL", Target_CL, 0.0);
+  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  AddScalarOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.1);
   
   /*--- Options related to reference values for nondimensionalization ---*/
   /* CONFIG_CATEGORY: Reference Conditions */
@@ -2568,6 +2574,26 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
     }
   }
+  
+  /*--- Check for constant lift mode  ---*/
+  if (Fixed_CL_Mode) {
+    
+    /*--- Set the initial AoA to zero. This will be updated after an
+     interval of iterations of the flow solver. ---*/
+    AoA = 0.0;
+    
+    /*--- We will force the use of the cauchy convergence criteria for
+     constant lift mode. ---*/
+    
+    ConvCriteria = CAUCHY;
+    Cauchy_Func_Flow = LIFT_COEFFICIENT;
+    
+    /*--- Initialize the update flag for the AoA with each iteration to false ---*/
+    
+    Update_AoA = false;
+    
+  }
+  
   
   delete [] tmp_smooth;
   
