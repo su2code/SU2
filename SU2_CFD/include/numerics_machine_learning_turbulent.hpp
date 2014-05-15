@@ -28,6 +28,13 @@
 
 using namespace std;
 
+class SpalartAllmarasOtherOutputs{
+public:
+  SpalartAllmarasOtherOutputs();
+  ~SpalartAllmarasOtherOutputs();
+  double fw;
+};
+
 class SpalartAllmarasConstants{
 public:
   SpalartAllmarasConstants();
@@ -71,7 +78,7 @@ public:
 
 /* \brief computes spalart allmaras source term. See
   numerics_machine_learning_direct_turbulent.cpp */
-void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian);
+void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian, SpalartAllmarasOtherOutputs* otherOutput);
 
 /* \brief Computes the vorticity from the velocity gradient
  tensor */
