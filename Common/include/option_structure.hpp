@@ -599,9 +599,8 @@ enum BC_TYPE {
   HEAT_FLUX_CATALYTIC= 32, /*!< \brief No-slip, constant heat flux, catalytic bc. */
   ISOTHERMAL_NONCATALYTIC = 33, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
   ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
-  ACTUATOR_DISK = 35,	/*!< \brief Actuator disk boundary definition. */
-  ACTDISK_INLET = 36,	/*!< \brief Actuator disk inlet boundary definition. */
-  ACTDISK_OUTLET = 37,	/*!< \brief Actuator disk outlet boundary definition. */
+  ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
+  ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 
