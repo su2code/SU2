@@ -1126,7 +1126,7 @@ public:
 };
 
 class COptionDouble : public COptionBase{
-  double & field; // Reference to the feildname
+  double & field; // Reference to the fieldname
   double def; // Default value
   string name; // identifier for the option
   
@@ -1157,7 +1157,7 @@ public:
 };
 
 class COptionString : public COptionBase{
-  string & field; // Reference to the feildname
+  string & field; // Reference to the fieldname
   string def; // Default value
   string name; // identifier for the option
   
