@@ -257,7 +257,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
-  AddMarkerActuatorDisk("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
                         Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
                         ActDisk_CT, ActDisk_Omega);
@@ -4724,7 +4724,7 @@ void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_Pe
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
  */
-
+/*
 void CConfig::AddMarkerActuatorDisk(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
                                     string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
                                     double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
@@ -4739,7 +4739,7 @@ void CConfig::AddMarkerActuatorDisk(const string & name, unsigned short & nMarke
   
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+*/
 /*
 >>>>>>> config_rewrite
 void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
