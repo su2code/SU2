@@ -2106,8 +2106,104 @@ public:
   }
 };
 
+class COptionActuatorDisk : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & inlet_size;
+  unsigned short & outlet_size;
+  string * & marker_inlet;
+  string * & marker_outlet;
+  double ** & origin;
+  double * & root_radius;
+  double * & tip_radius;
+  double * & ct;
+  double * & omega;
+  
+public:
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_CT, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), ct(ActDisk_CT), omega(ActDisk_Omega) {
+    this->name = name;
+  }
 
-
+  ~COptionActuatorDisk(){};
+  string SetValue(vector<string> option_value){
+    const int mod_num = 9;
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->SetDefault();
+      return "";
+    }
+    
+    if (totalVals % mod_num != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 9");
+      this->SetDefault();
+      return newstring;
+    }
+    
+    int nVals = totalVals / mod_num;
+    this->inlet_size = nVals;
+    this->outlet_size = nVals;
+    this->marker_inlet = new string[this->inlet_size];
+    this->marker_outlet = new string[this->outlet_size];
+    this->root_radius = new double[this->inlet_size];
+    this->tip_radius = new double[this->inlet_size];
+    this->ct = new double[this->outlet_size];
+    this->omega = new double[this->inlet_size];
+    
+    this->origin = new double*[this->inlet_size];
+    for (int i = 0; i < this->inlet_size; i++){
+      this->origin[i] = new double[3];
+    }
+    
+    string tname = "actuator disk";
+		stringstream ss;
+		unsigned short i = 0;
+		for (int i = 0; i < this->inlet_size; i++){
+      this->marker_inlet[i].assign(option_value[mod_num*i]);
+      this->marker_outlet[i].assign(option_value[mod_num*i+1]);
+      ss << option_value[mod_num*i + 2] << " ";
+      if (!(ss >> this->origin[i][0])){
+        return badValue(option_value, tname, this->name);
+      }
+      ss << option_value[mod_num*i + 3] << " ";
+      if (!(ss >> this->origin[i][1])){
+        return badValue(option_value, tname, this->name);
+      }
+      ss << option_value[mod_num*i + 4] << " ";
+      if (!(ss >> this->origin[i][2])){
+        return badValue(option_value, tname, this->name);
+      }
+      ss << option_value[mod_num*i + 5] << " ";
+      if (!(ss >> this->root_radius[i])){
+        return badValue(option_value, tname, this->name);
+      }
+      ss << option_value[mod_num*i + 6] << " ";
+      if (!(ss >> this->tip_radius[i])){
+        return badValue(option_value, tname, this->name);
+      }
+      ss << option_value[mod_num*i + 7] << " ";
+      if (!(ss >> this->ct[i])){
+        return badValue(option_value, tname, this->name);
+      }
+      ss << option_value[mod_num*i + 8] << " ";
+      if (!(ss >> this->omega[i])){
+        return badValue(option_value, tname, this->name);
+      }
+		}
+    return "";
+  }
+  void SetDefault(){
+    this->inlet_size = 0;
+    this->outlet_size = 0;
+    this->marker_inlet = NULL;
+    this->marker_outlet = NULL;
+    this->origin = NULL;
+    this->root_radius = NULL;
+    this->tip_radius = NULL;
+    this->ct = NULL;
+    this->omega = NULL;
+  }
+};
 
 
 
