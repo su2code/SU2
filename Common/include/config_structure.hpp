@@ -38,12 +38,16 @@
 #include <stdlib.h> 
 #include <cmath>
 #include <map>
+#include <assert.h>
 
+//#include "./su2mpi.hpp"
 #include "./option_structure.hpp"
+
 
 using namespace std;
 
-/*! 
+
+/*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
@@ -100,7 +104,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
-	unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
+  unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
@@ -356,8 +360,9 @@ private:
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
-  string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
-  string ML_Turb_Model_FeatureSet;
+  string ML_Turb_Model_FeatureSet; /*! <\brief What are the input and ouput features > */
+  string *ML_Turb_Model_Extra; /*! <\brief Store for extra variables coming from ML turb model */
+  unsigned short nML_Turb_Model_Extra; /*!<\brief number of strings there */
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
@@ -661,8 +666,224 @@ private:
   bool ExtraOutput;
 
 	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
+  
+  /*!<brief param_to_kind associates the config file name with the type of variable>*/
+  //map<string, OptionKind> param_to_kind;
+  
+  /*!<brief list of all of the options. This is used to keep track of the 
+   options not set so the default values can be used>*/
+  map<string, bool> all_options;
+  
+  /*<brief associative array for types who need an implicit setting rather than an explicit one.
+   This map is a catch-all for types who don't hava a very specific type. One case of this is the
+   enum types, where rather than define a pain of maps for all possible enum types, we instead 
+   implicitly deference the enum value in CEnumLookup.*/
+  map<string, COptionBase*> option_map;
+  
+  
+  /*
+  // List of maps for referencing
+  map<string, double&> double_fields;  !<\brief option list associated with config parameters which are doubles
+  map<string, double> double_defaults;    !<\brief option list associated with config parameters which are doubles
+  map<string, string&> string_fields;   !<\brief option list associated with config parameters which are strings
+  map<string, string> string_defaults;  !<\brief double_defaults associates string parameters with their default values
+  map<string, int&> int_fields;
+  map<string, int> int_defaults;
+  map<string, unsigned long&> ulong_fields;
+  map<string, unsigned long> ulong_defaults;
+  map<string, unsigned short&> ushort_fields;
+  map<string, unsigned short> ushort_defaults;
+  map<string, long&> long_fields;
+  map<string, long> long_defaults;
+   */
+  
+  
+  /*!<\brief addDoubleOption adds a option represented by a double so that it will be parsed during
+   config parsing. name is the variable name in the config file (e.g. PHYSICAL_PROBLEM), option is a
+   pointer to the location in the Config struct, and default_value is the value the option will take 
+   if it is not present in the config file
+   */
+  void addDoubleOption(const string name, double & option_field, double default_value){
+    // Check if the key is already in the map. If this fails, it is coder error
+    // and not user error, so throw
+        // second copy for deletion
+    
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDouble(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  /*<\brief addStringOption: see addDoubleOption, but with type change */
+  void addStringOption(const string name, string & option_field, string default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionString(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+    /*<\brief addStringOption: see addIntegerOption, but with type change */
+  void addIntegerOption(const string name, int & option_field, int default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInt(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionULong(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionUShort(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addLongOption(const string name, long & option_field, long default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionLong(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addBoolOption(const string name, bool & option_field, bool default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionBool(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  // Using templates for enum options because there are a ton of them
+  template <class Tenum>
+  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    return;
+  }
+  
+  
+  // input_size is the number of options read in from the config file
+  template <class Tenum>
+	void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
+    input_size = 0;
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+		COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
+    option_map.insert( pair<string, COptionBase*>(name, val) );
+	}
+  
+  void addDoubleArrayOption(const string name, const int size, double * & option_field, double * default_value){
+    
+    double * def = new double [size];
+    for (int i = 0; i < size; i++){
+      def[i] = default_value[i];
+    }
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDoubleArray(name, size, option_field, def);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addDoubleListOption(const string name, unsigned short & size, double * & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDoubleList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionUShortList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionStringList(name, num_marker, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
+                      bool & OneShot, const bool & OneShot_default,
+                      bool & Linearized, const bool & Linearized_default,
+                            bool & Restart_Flow, const bool & Restart_Flow_default){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, OneShot, OneShot_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV,
+                        unsigned short* & design_variable){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, design_variable);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
+                        double* & double_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+                                 double* & Ttotal, double* & Ptotal, double** & FlowDir){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addInletFixedOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+                      double* & Ttotal, double* & Ptotal){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInletFixed(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
+                    string* & Marker_PerBound, string* & Marker_PerDonor,
+                         double** & RotCenter, double** & RotAngles, double** & Translation){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  /*
+  void addPythonOption(const string & name){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPython(name);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+   */
+  
+  
+ // double parseDoubleOption(string);
+ // int parseIntOption(string);
 
 public:
+
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
 	/*! 
@@ -693,6 +914,7 @@ public:
 	 * \param[in] default_value - option is set to default_value
 	 * \tparam T - an arbitary type (int, double, enum, etc)
 	 */
+  /*
 	template <class T, class T_default>
 	void AddScalarOption(const string & name, T & option, const T_default & default_value) {
 		//cout << "Adding Scalar option " << name << endl;
@@ -700,6 +922,7 @@ public:
 		CAnyOptionRef* option_ref = new COptionRef<T>(option);
 		param.insert( pair<string, CAnyOptionRef*>(string(name), option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add an enum-based option to the param map and set its default value
@@ -710,6 +933,7 @@ public:
 	 * \tparam Tenum - an enumeration assocaited with T
 	 * \param[in] default_value - option is set to default_value
 	 */
+  /*
 	template <class T, class Tenum>
 	void AddEnumOption(const string & name, T & option, const map<string, Tenum> & Tmap,
 			const string & default_value) {
@@ -726,6 +950,7 @@ public:
 		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(option, Tmap);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add an enum-based array option to the param map
@@ -737,6 +962,8 @@ public:
 	 * \tparam T - the option type (usually unsigned short)
 	 * \tparam Tenum - an enumeration assocaited with T
 	 */
+  
+  /*
 	template <class T, class Tenum>
 	void AddEnumListOption(const string & name, unsigned short & size, T* & option,
 			const map<string, Tenum> & Tmap,
@@ -747,6 +974,8 @@ public:
 		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(size, option, Tmap);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
+  
 
 	/*!
 	 * \brief add an array option to the param map and set its default value
@@ -760,6 +989,8 @@ public:
 	 * The option array is allocated in this function.  If memory for
 	 * the option array is already allocated, this memory is first released.
 	 */
+  
+  /*
 	template <class T>
 	void AddArrayOption(const string & name, const int & size, T* & option,
 			const T* default_value, const bool & update = false) {
@@ -771,6 +1002,7 @@ public:
 		CAnyOptionRef* option_ref = new COptionRef<T>(option, size);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add a list option to the param map
@@ -784,6 +1016,7 @@ public:
 	 * variable size.  Also, this routine does not allow the default
 	 * value to be set.
 	 */
+  /*
 	template <class T>
 	void AddListOption(const string & name, unsigned short & size, T* & option,
 			const bool & update = false) {
@@ -792,6 +1025,8 @@ public:
 		CAnyOptionRef* option_ref = new CListOptionRef<T>(size, option);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
+   
 
 	/*!
 	 * \brief add a special option to the param map and set its default value
@@ -801,6 +1036,7 @@ public:
 	 * \param[in] default_value - option is set to default_value
 	 * \tparam T - an arbitrary type (int, double, bool, enum, etc)
 	 */
+  /*
 	template <class T>
 	void AddSpecialOption(const string & name, T & option,
 			void (*set_value)(T*, const vector<string>&),
@@ -810,6 +1046,7 @@ public:
 		CAnyOptionRef* option_ref = new COptionRef<T>(option, set_value);
 		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 	}
+   */
 
 	/*!
 	 * \brief add a marker-type option to the param map
@@ -817,7 +1054,7 @@ public:
 	 * \param[in,out] num_marker - number of boundary markers
 	 * \param[in,out] marker - an array of boundary marker names
 	 */
-	void AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker);
+//	void AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker);
 
 	/*!
 	 * \brief add a convection-discretization type option to the param map
@@ -826,8 +1063,7 @@ public:
 	 * \param[in] centered - the centered spatial discretization type of name
 	 * \param[in] upwind - the upwind spatial discretization type of name
 	 */
-	void AddConvectOption(const string & name, unsigned short & space, unsigned short & centered,
-			unsigned short & upwind);
+//	void AddConvectOption(const string & name, unsigned short & space, unsigned short & centered, unsigned short & upwind);
 
 	/*!
 	 * \brief adds the math problem option to the param map
@@ -841,10 +1077,10 @@ public:
 	 * \param[in] Restart_Flow - is the flow restarted for adjoint and linearized problems?
 	 * \param[in] Restart_Flow_default - the default value for Restart_Flow
 	 */
-	void AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
-			bool & OneShot, const bool & OneShot_default,
-			bool & Linearized, const bool & Linearized_default,
-			bool & Restart_Flow, const bool & Restart_Flow_default);
+//	void AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
+//			bool & OneShot, const bool & OneShot_default,
+//			bool & Linearized, const bool & Linearized_default,
+//			bool & Restart_Flow, const bool & Restart_Flow_default);
 
 	/*!
 	 * \brief adds the design variable parameters option to the param map
@@ -853,8 +1089,7 @@ public:
 	 * \param[in] ParamDV - the parameter values of each design variable
 	 * \param[in] Design_Variable - the type of each design variable
 	 */
-	void AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV,
-			unsigned short* & Design_Variable);
+//	void AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV, unsigned short* & Design_Variable);
 
 	/*!
 	 * \brief adds a periodic marker option to the param map
@@ -866,9 +1101,9 @@ public:
 	 * \param[in] RotAngles - rotation angles for each periodic boundary
 	 * \param[in] Translation - translation vector for each periodic boundary.
 	 */
-	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
-			string* & Marker_PerBound, string* & Marker_PerDonor,
-			double** & RotCenter, double** & RotAngles, double** & Translation);
+//	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
+//			string* & Marker_PerBound, string* & Marker_PerDonor,
+//			double** & RotCenter, double** & RotAngles, double** & Translation);
   
   /*!
 	 * \brief adds a periodic marker option to the param map
@@ -897,9 +1132,9 @@ public:
 	 * \param[in] Ptotal - specified total pressures for inlet boundaries
 	 * \param[in] FlowDir - specified flow direction vector (unit vector) for inlet boundaries
 	 */
-	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
-			double** & FlowDir);
+//	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
+//			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
+//			double** & FlowDir);
 
 	/*!
 	 * \brief adds an inlet marker without flow direction option to the param map
@@ -909,8 +1144,7 @@ public:
 	 * \param[in] Ttotal - specified total temperatures for inlet boundaries
 	 * \param[in] Ptotal - specified total pressures for inlet boundaries
 	 */
-	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
+	//void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
 
 	/*!
 	 * \brief adds an Dirichlet marker option to the param map
@@ -919,8 +1153,7 @@ public:
 	 * \param[in] Marker_Dirichlet_Elec - string names of Dirichlet boundaries
 	 * \param[in] Dirichlet_Value - specified value of the variable at the boundaries
 	 */
-	void AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec,
-			string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value);
+	//void AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec, string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value);
 
 	/*!
 	 * \brief adds an outlet marker option to the param map
@@ -929,8 +1162,7 @@ public:
 	 * \param[in] Marker_Outlet - string names of outlet boundaries
 	 * \param[in] Pressure - Specified back pressures (static) for outlet boundaries
 	 */
-	void AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet,
-			string* & Marker_Outlet, double* & Pressure);
+	//void AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet, string* & Marker_Outlet, double* & Pressure);
 
 	/*!
 	 * \brief adds an displacement marker option to the param map
@@ -939,8 +1171,7 @@ public:
 	 * \param[in] Marker_Outlet - string names of displacement boundaries
 	 * \param[in] Displ_Value - Specified displacement for displacement boundaries
 	 */
-	void AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
-			string* & Marker_Displacement, double* & Displ_Value);
+//	void AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement, string* & Marker_Displacement, double* & Displ_Value);
 
 	/*!
 	 * \brief adds an load marker option to the param map
@@ -949,8 +1180,7 @@ public:
 	 * \param[in] Marker_Load - string names of load boundaries
 	 * \param[in] Load_Value - Specified force for load boundaries
 	 */
-	void AddMarkerLoad(const string & name, unsigned short & nMarker_Load,
-			string* & Marker_Load, double* & Load_Value);
+	//void AddMarkerLoad(const string & name, unsigned short & nMarker_Load, string* & Marker_Load, double* & Load_Value);
 
 	/*!
 	 * \brief adds an load marker option to the param map
@@ -959,15 +1189,14 @@ public:
 	 * \param[in] Marker_FlowLoad - string names of load boundaries
 	 * \param[in] FlowLoad_Value - Specified force for load boundaries
 	 */
-	void AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad,
-			string* & Marker_FlowLoad, double* & FlowLoad_Value);
+//	void AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad, string* & Marker_FlowLoad, double* & FlowLoad_Value);
 
 	/*!
 	 * \brief used to set Boolean values based on strings "YES" and "NO"
 	 * \param[in] ref - a pointer to the boolean value being assigned
 	 * \param[in] value - value[0] is "YES" or "NO" and determines the value of ref
 	 */
-	static void SetBoolOption(bool* ref, const vector<string> & value);
+//	static void SetBoolOption(bool* ref, const vector<string> & value);
 
 	/*!
 	 * \brief breaks an input line from the config file into a set of tokens
@@ -2336,11 +2565,6 @@ public:
 	 * \brief Get the file containing the ML model
 	 */
 	string GetML_Turb_Model_File(void);
-  /*!
-	 * \brief File containing a check for the proper creation of the turb model
-	 * \return Temporary ml->SU2 file name.
-	 */
-	string GetML_Turb_Model_Check_File(void);
 
   /*!
 	 * \brief File containing a check for the proper creation of the turb model
@@ -2348,6 +2572,17 @@ public:
 	 */
   string GetML_Turb_Model_FeatureSet(void);
   
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  string* GetML_Turb_Model_Extra(void);
+  
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  unsigned short GetNumML_Turb_Model_Extra(void);
   
 	/*! 
 	 * \brief Get the kind of the transition model.
