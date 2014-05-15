@@ -352,8 +352,8 @@ inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                               CConfig *config, unsigned short val_marker) { }
+inline void CSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                               CConfig *config) { }
 										
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 								    CConfig *config, unsigned short val_marker) { }

@@ -51,6 +51,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Compute inviscid residuals ---*/
+  
 	switch (config->GetKind_ConvNumScheme()) {
 		case SPACE_CENTERED:
 			solver_container[MainSolver]->Centered_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
@@ -62,6 +63,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   
 	/*--- Compute viscous residuals ---*/
+  
 	switch (config->GetKind_ViscNumScheme()) {
     case AVG_GRAD: case AVG_GRAD_CORRECTED:
       solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
@@ -72,6 +74,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 	}
   
 	/*--- Compute source term residuals ---*/
+  
 	switch (config->GetKind_SourNumScheme()) {
     case PIECEWISE_CONSTANT:
       solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
@@ -79,8 +82,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 	}
   
 	/*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
+  
 	if (dual_time)
 		solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
+  
+  /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
+  solver_container[MainSolver]->BC_ActDisk_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
   
 	/*--- Weak boundary conditions ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -114,9 +122,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 				break;
 			case NEARFIELD_BOUNDARY:
 				solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-				break;
-      case ACTUATOR_DISK:
-				solver_container[MainSolver]->BC_Actuator_Disk_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
 			case ELECTRODE_BOUNDARY:
 				solver_container[MainSolver]->BC_Electrode(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
