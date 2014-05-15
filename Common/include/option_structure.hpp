@@ -599,6 +599,9 @@ enum BC_TYPE {
   HEAT_FLUX_CATALYTIC= 32, /*!< \brief No-slip, constant heat flux, catalytic bc. */
   ISOTHERMAL_NONCATALYTIC = 33, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
   ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
+  ACTUATOR_DISK = 35,	/*!< \brief Actuator disk boundary definition. */
+  ACTDISK_INLET = 36,	/*!< \brief Actuator disk inlet boundary definition. */
+  ACTDISK_OUTLET = 37,	/*!< \brief Actuator disk outlet boundary definition. */
 	SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -1500,6 +1503,145 @@ public:
 		cout << "CMarkerPeriodicRef::WriteValue(): not implemented yet" << endl;
 	}
 
+};
+
+/*!
+ * \class CMarkerPeriodicRef
+ * \brief Specialized option for periodic boundary markers
+ * \author J. Hicken
+ */
+class CMarkerActuatorDiskRef : public CAnyOptionRef {
+private:
+	unsigned short* nMarker_ActDisk_Inlet_; /*!< \brief Number of periodic boundary markers. */
+	unsigned short* nMarker_ActDisk_Outlet_; /*!< \brief Number of periodic boundary markers. */
+
+	string** Marker_ActDisk_Inlet_; /*!< \brief Name of the inlet surface for the actuator disk. */
+	string** Marker_ActDisk_Outlet_; /*!< \brief Name of the outlet surface for the actuator disk. */
+	double*** ActDisk_Origin_; /*!< \brief Origin of the actuator disk. */
+	double** ActDisk_RootRadius_; /*!< \brief Root radius of the actuator disk. */
+  double** ActDisk_TipRadius_; /*!< \brief Tip radius of the actuator disk. */
+	double** ActDisk_CT_; /*!< \brief _____________________________. */
+	double** ActDisk_Omega_; /*!< \brief _____________________________. */
+
+public:
+  
+	/*!
+	 * \brief constructor for periodic marker option
+	 * \param[in] nMarker_ActDisk_Inlet - ________________________
+	 * \param[in] nMarker_ActDisk_Outlet - ________________________
+	 * \param[in] Marker_ActDisk_Inlet - ________________________
+	 * \param[in] Marker_ActDisk_Outlet - ________________________
+	 * \param[in] ActDisk_Origin - ________________________
+	 * \param[in] ActDisk_RootRadius -________________________
+   * \param[in] ActDisk_TipRadius - ________________________
+	 * \param[in] ActDisk_CT - ________________________
+   * \param[in] ActDisk_Omega - ________________________
+	 */
+	CMarkerActuatorDiskRef(unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
+                         string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                         double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                         double* & ActDisk_CT, double* & ActDisk_Omega) {
+		nMarker_ActDisk_Inlet_ = &nMarker_ActDisk_Inlet;
+    nMarker_ActDisk_Outlet_ = &nMarker_ActDisk_Outlet;
+
+		Marker_ActDisk_Inlet_ = &Marker_ActDisk_Inlet;
+    *Marker_ActDisk_Inlet_ = NULL;
+
+    Marker_ActDisk_Outlet_ = &Marker_ActDisk_Outlet;
+    *Marker_ActDisk_Outlet_ = NULL;
+
+		ActDisk_Origin_ = &ActDisk_Origin;
+		*ActDisk_Origin_ = NULL;
+    
+		ActDisk_RootRadius_ = &ActDisk_RootRadius;
+		*ActDisk_RootRadius_ = NULL;
+    
+    ActDisk_TipRadius_ = &ActDisk_TipRadius;
+		*ActDisk_TipRadius_ = NULL;
+    
+    ActDisk_CT_ = &ActDisk_CT;
+		*ActDisk_CT_ = NULL;
+    
+    ActDisk_Omega_ = &ActDisk_Omega;
+		*ActDisk_Omega_ = NULL;
+	}
+  
+	/*!
+	 * \brief sets the value of the periodic boundary parameters given the vector of strings
+	 * \param[in] value - a set of strings used to define the option
+	 */
+	void SetValue(const vector<string> & value) {
+		if ( (*Marker_ActDisk_Inlet_ != NULL) || (*Marker_ActDisk_Outlet_ != NULL) ||
+				(*ActDisk_Origin_ != NULL) ||
+        (*ActDisk_RootRadius_ != NULL) || (*ActDisk_TipRadius_ != NULL) ||
+				(*ActDisk_CT_ != NULL) || (*ActDisk_Omega_ != NULL) ) {
+			cerr << "Error in CMarkerPeriodicRef::SetValue(): "
+      << "one or more periodic-marker option arrays have already been allocated."
+      << endl;
+			throw(-1);
+		}
+		if (static_cast<int>(value.size()) % 9 != 0) {
+			if (value[0].compare("NONE") == 0) {
+				*nMarker_ActDisk_Inlet_ = 0;
+				return;
+			}
+      if (value[0].compare("NONE") == 0) {
+				*nMarker_ActDisk_Outlet_ = 0;
+				return;
+			}
+			cerr << "Error in CMarkerActuatorDiskRef::SetValue(): "
+      << "incorrect number of MARKER_ACTDISK parameters in the configuration file."
+      << endl;
+			throw(-1);
+		}
+    
+		*nMarker_ActDisk_Inlet_ = static_cast<unsigned short>(value.size())/9;
+    *nMarker_ActDisk_Outlet_ = static_cast<unsigned short>(value.size())/9;
+
+		(*Marker_ActDisk_Inlet_)  = new string[*nMarker_ActDisk_Inlet_];
+		(*Marker_ActDisk_Outlet_) = new string[*nMarker_ActDisk_Outlet_];
+    
+    (*ActDisk_Origin_)  = new double*[*nMarker_ActDisk_Inlet_];
+		for (unsigned short iMarker_ActDisk = 0; iMarker_ActDisk < *nMarker_ActDisk_Inlet_; iMarker_ActDisk++) {
+			(*ActDisk_Origin_)[iMarker_ActDisk] = new double[3];
+		}
+    
+    (*ActDisk_RootRadius_)  = new double[*nMarker_ActDisk_Inlet_];
+    (*ActDisk_TipRadius_)   = new double[*nMarker_ActDisk_Inlet_];
+    (*ActDisk_CT_)      = new double[*nMarker_ActDisk_Inlet_];
+    (*ActDisk_Omega_)   = new double[*nMarker_ActDisk_Inlet_];
+    
+		stringstream ss;
+		unsigned short i = 0;
+		for (unsigned short iMarker_ActDisk = 0; iMarker_ActDisk < *nMarker_ActDisk_Inlet_; iMarker_ActDisk++) {
+			ss << value[i++] << " ";
+			ss >> (*Marker_ActDisk_Inlet_)[iMarker_ActDisk];
+			ss << value[i++] << " ";
+			ss >> (*Marker_ActDisk_Outlet_)[iMarker_ActDisk];
+      ss << value[i++] << " ";
+			ss >> (*ActDisk_Origin_)[iMarker_ActDisk][0];
+			ss << value[i++] << " ";
+			ss >> (*ActDisk_Origin_)[iMarker_ActDisk][1];
+			ss << value[i++] << " ";
+			ss >> (*ActDisk_Origin_)[iMarker_ActDisk][2];
+			ss << value[i++] << " ";
+			ss >> (*ActDisk_RootRadius_)[iMarker_ActDisk];
+			ss << value[i++] << " ";
+			ss >> (*ActDisk_TipRadius_)[iMarker_ActDisk];
+			ss << value[i++] << " ";
+			ss >> (*ActDisk_CT_)[iMarker_ActDisk];
+			ss << value[i++] << " ";
+			ss >> (*ActDisk_Omega_)[iMarker_ActDisk];
+		}
+	}
+  
+	/*!
+	 * \brief write the value of the option to std out (mostly for debugging)
+	 */
+	void WriteValue() {
+		cout << "CMarkerActuatorDiskRef::WriteValue(): not implemented yet" << endl;
+	}
+  
 };
 
 /*!

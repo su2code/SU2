@@ -129,6 +129,7 @@ private:
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
+  nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet_Elec,				/*!< \brief Number of interface boundary markers. */
@@ -162,6 +163,8 @@ private:
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+  *Marker_ActDisk_Inlet,
+  *Marker_ActDisk_Outlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
@@ -203,7 +206,12 @@ private:
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
 	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
-	double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
+  double **ActDisk_Origin;
+  double *ActDisk_RootRadius;
+  double *ActDisk_TipRadius;
+  double *ActDisk_CT;
+  double *ActDisk_Omega;
+  double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
 	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
 	double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
 	unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
@@ -861,6 +869,24 @@ public:
 	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
 			string* & Marker_PerBound, string* & Marker_PerDonor,
 			double** & RotCenter, double** & RotAngles, double** & Translation);
+  
+  /*!
+	 * \brief adds a periodic marker option to the param map
+	 * \param[in] name - name of the periodic marker option in the config file
+	 * \param[in] nMarker_ActDisk_Inlet - _______________________
+	 * \param[in] nMarker_ActDisk_Outlet - _______________________
+	 * \param[in] Marker_ActDisk_Inlet - _______________________
+	 * \param[in] Marker_ActDisk_Outlet - _______________________
+	 * \param[in] ActDisk_Origin - _______________________
+	 * \param[in] ActDisk_RootRadius - _______________________
+   * \param[in] ActDisk_TipRadius - _______________________
+	 * \param[in] ActDisk_CT - _______________________
+   * \param[in] ActDisk_Omega - _______________________
+	 */
+  void AddMarkerActuatorDisk(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
+                        string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                        double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                             double* & ActDisk_CT, double* & ActDisk_Omega);
 
 	/*!
 	 * \brief adds an inlet marker option to the param map
@@ -1722,7 +1748,19 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
-
+  
+  /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_ActDisk_Inlet(void);
+  
+  /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_ActDisk_Outlet(void);
+  
   /*!
    * \brief Get the total number of 1D output markers.
    * \return Total number of monitoring markers.
@@ -4223,6 +4261,37 @@ public:
 	 * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Periodic_Donor(string val_marker);
+  
+  /*!
+	 * \brief Get the origin of the actuator disk.
+	 */
+  double* GetActDisk_Origin(string val_marker);
+  
+  /*!
+	 * \brief Get the root radius of the actuator disk.
+	 */
+  double GetActDisk_RootRadius(string val_marker);
+  
+  /*!
+	 * \brief Get the tip radius of th actuator disk.
+	 */
+  double GetActDisk_TipRadius(string val_marker);
+  
+  /*!
+	 * \brief Get the thurst corffient of the actuator disk.
+	 */
+  double GetActDisk_CT(string val_marker);
+  
+  /*!
+	 * \brief Get the rev / min of the actuator disk.
+	 */
+  double GetActDisk_Omega(string val_marker);
+  
+  /*!
+	 * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
+	 * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_ActDisk_Outlet(string val_marker);
   
   /*!
 	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
