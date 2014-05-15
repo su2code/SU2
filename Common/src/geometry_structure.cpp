@@ -4704,8 +4704,9 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       unsigned long *Buffer_Send_nVertex = new unsigned long [1];
       unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
       
-      if (rank == MASTER_NODE) cout << "Set Actuator Disk boundary conditions." <<endl;
-      
+      if ((iBC == 0) && (rank == MASTER_NODE)) cout << "Set Actuator Disk inlet boundary conditions." <<endl;
+      if ((iBC == 1) && (rank == MASTER_NODE)) cout << "Set Actuator Disk outlet boundary conditions." <<endl;
+
       /*--- Compute the number of vertex that have an actuator disk outlet boundary condition
        without including the ghost nodes ---*/
       
@@ -8823,40 +8824,30 @@ void CMultiGridGeometry::MatchNearField(CConfig *config) {
 
 void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
   
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint, iProcessor;
+  
 #ifdef NO_MPI
-  
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == ACTUATOR_DISK)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
-      }
-  
+  iProcessor = MASTER_NODE;
 #else
-  
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
-  int rank;
-  
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD,&iProcessor);
 #else
-  rank = MPI::COMM_WORLD.Get_rank();
+  iProcessor = MPI::COMM_WORLD.Get_rank();
+#endif
 #endif
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == ACTUATOR_DISK)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
+        (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, rank);
+          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iProcessor);
         }
       }
-  
-#endif
+    }
+  }
   
 }
 
