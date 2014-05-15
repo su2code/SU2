@@ -869,6 +869,17 @@ private:
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  
+  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
+                                      string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                                      double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                                      double* & ActDisk_CT, double* & ActDisk_Omega) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_CT, ActDisk_Omega);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   /*
   void addPythonOption(const string & name){
     assert(option_map.find(name) == option_map.end());
@@ -1118,10 +1129,12 @@ public:
 	 * \param[in] ActDisk_CT - _______________________
    * \param[in] ActDisk_Omega - _______________________
 	 */
+  /*
   void AddMarkerActuatorDisk(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
                         string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
                         double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
                              double* & ActDisk_CT, double* & ActDisk_Omega);
+   */
 
 	/*!
 	 * \brief adds an inlet marker option to the param map
