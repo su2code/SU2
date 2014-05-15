@@ -555,7 +555,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	virtual void BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+	virtual void BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
   
 	/*!
 	 * \brief A virtual member.
@@ -2312,8 +2312,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
-	void BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short val_marker);
+	void BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                 CConfig *config);
   
 	/*!
 	 * \brief Impose the dirichlet boundary condition using the residual.

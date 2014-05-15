@@ -5963,357 +5963,225 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
   
 }
 
-void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                       CConfig *config) {
   
   unsigned long iVertex, iPoint, jPoint, Pin, Pout;
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, iMarker;
+  int iProcessor, jProcessor;
+  double *Coord, radius, R, V_tip, DeltaP_avg, DeltaP_tip;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   double *Normal = new double[nDim];
-  double *PrimVar_i = new double[nPrimVar];
-  double *PrimVar_j = new double[nPrimVar];
   double *PrimVar_out = new double[nPrimVar];
   double *PrimVar_in = new double[nPrimVar];
   double *MeanPrimVar = new double[nPrimVar];
   double *PrimVar_out_ghost = new double[nPrimVar];
   double *PrimVar_in_ghost = new double[nPrimVar];
   double *ActDisk_Jump = new double[nPrimVar];
-  
-#ifdef NO_MPI
-  
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Find the associate pair to the original node ---*/
-      
-      jPoint = geometry->vertex[val_marker][iVertex]->GetDonorPoint();
-      
-      if (iPoint != jPoint) {
-        
-        /*--- Store the solution for both points ---*/
-        
-        for (iVar = 0; iVar < nPrimVar; iVar++) {
-          PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
-          PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
-        }
-        
-        /*--- Identify the inner and the outer point (based on the normal direction) ---*/
-        
-				if (Normal[0] < 0.0) { Pin = iPoint; Pout = jPoint; }
-				else { Pout = iPoint; Pin = jPoint; }
-        
-				for (iVar = 0; iVar < nPrimVar; iVar++) {
-					PrimVar_out[iVar] = node[Pout]->GetPrimVar(iVar);
-					PrimVar_in[iVar] = node[Pin]->GetPrimVar(iVar);
-					MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
-				}
-        
-        /*--- Set the jump in the actuator disk ---*/
-
-        for (iVar = 0; iVar < nPrimVar; iVar++) {
-          ActDisk_Jump[iVar] = 0.0;
-        }
-        
-        /*--- Definition of the rotor parameters ---*/
-
-        double R = 19.6;
-        double R_tip = 19.6;
-        double R_root = 3.0;
-        double C_T = 0.3;    // Rotor thrust coefficient
-        double Omega = 60;   // Revolution per minute
-        double origin[3] = {1.104127, 97.43505, 140.9530};  // Center of the rotor
-
-        /*--- Compute the distance to the center of the rotor ---*/
-
-        double *Coord = geometry->node[iPoint]->GetCoord();
-        double radius = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          radius += (Coord[iDim]-origin[iDim])*(Coord[iDim]-origin[iDim]);
-        radius = sqrt(radius);
-        
-        /*--- Compute the pressure increment and the jump ---*/
-        
-        double V_tip = R_tip*Omega*(PI_NUMBER/30.0);
-        double DeltaP_avg = R*R*V_tip*V_tip*C_T/(R*R-R_root*R_root);
-        double DeltaP_tip = 3.0*DeltaP_avg*R*(R*R-R_root*R_root)/(2.0*(R*R*R-R_root*R_root*R_root));
-        ActDisk_Jump[nDim+1] = -DeltaP_tip*radius/R;
-        
-        /*--- Inner point ---*/
-        
-				if (iPoint == Pin) {
-					for (iVar = 0; iVar < nPrimVar; iVar++)
-						PrimVar_in_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_in[iVar] - ActDisk_Jump[iVar];
-					numerics->SetPrimitive(PrimVar_in, PrimVar_in_ghost);
-				}
-        
-				/*--- Outer point ---*/
-        
-				if (iPoint == Pout) {
-					for (iVar = 0; iVar < nPrimVar; iVar++)
-						PrimVar_out_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_out[iVar] + ActDisk_Jump[iVar];
-					numerics->SetPrimitive(PrimVar_out, PrimVar_out_ghost);
-				}
-        
-        /*--- Set the normal vector ---*/
-        
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        numerics->SetNormal(Normal);
-        
-        /*--- Compute the convective residual using an upwind scheme ---*/
-        
-        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        /*--- Add Residuals and Jacobians ---*/
-        
-        LinSysRes.AddBlock(iPoint, Residual);
-        if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
-      
-    }
-    
-  }
-  
-#else
-  int rank, jProcessor;
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
-  
-  bool compute;
   double *Buffer_Send_V = new double [nPrimVar];
   double *Buffer_Receive_V = new double [nPrimVar];
   
-  /*--- Do the send process, by the moment we are sending each
-   node individually, this must be changed ---*/
-  
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Find the associate pair to the original node ---*/
-      
-      jPoint = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[0];
-      jProcessor = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[1];
-      
-      if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-      else compute = true;
-      
-      /*--- We only send the information that belong to other boundary, -1 processor
-       means that the boundary condition is not applied ---*/
-      
-      if (compute) {
-        
-        if (jProcessor != rank) {
-          
-          /*--- Copy the primitive variable ---*/
-          
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
-#ifdef WINDOWS
-          MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+#ifdef NO_MPI
+  iProcessor = MASTER_NODE;
 #else
-          MPI::COMM_WORLD.Bsend(Buffer_Send_V, nPrimVar, MPI::DOUBLE, jProcessor, iPoint);
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&iProcessor);
+#else
+  iProcessor = MPI::COMM_WORLD.Get_rank();
 #endif
+#endif
+  
+  /*--- Identify the points that should be sended in a MPI implementation.
+   Do the send process, by the moment we are sending each node individually, this must be changed---*/
+  
+#ifndef NO_MPI
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
+        (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
+      
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          
+          /*--- We only send the information that belong to other boundary, using jPoint as the ID for the message  ---*/
+          
+          if (jProcessor != iProcessor) {
+            
+            /*--- Copy the primitive variables ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
+            
+#ifdef WINDOWS
+            MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+#else
+            MPI::COMM_WORLD.Bsend(Buffer_Send_V, nPrimVar, MPI::DOUBLE, jProcessor, iPoint);
+#endif
+            
+          }
+          
+        }
+      }
+    }
+  }
+  
+#endif
+  
+  /*--- Evaluate the fluxes, the donor solution has been sended using MPI ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    unsigned short boundary = config->GetMarker_All_Boundary(iMarker);
+    double *origin = config->GetActDisk_Origin(config->GetMarker_All_Tag(iMarker));     // Center of the rotor
+    double R_root = config->GetActDisk_RootRadius(config->GetMarker_All_Tag(iMarker));
+    double R_tip = config->GetActDisk_TipRadius(config->GetMarker_All_Tag(iMarker));
+    double C_T = config->GetActDisk_CT(config->GetMarker_All_Tag(iMarker));             // Rotor thrust coefficient
+    double Omega = config->GetActDisk_Omega(config->GetMarker_All_Tag(iMarker));        // Revolution per minute
+    
+    if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
+        (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
+      
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Find the associate pair to the original node ---*/
+          
+          jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+          jProcessor = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          
+          /*--- Receive the information, using jPoint as the ID for the message ---*/
+          
+          if (jProcessor != iProcessor) {
+#ifndef NO_MPI
+#ifdef WINDOWS
+            MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+#else
+            MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
+#endif
+#endif
+          }
+          else {
+            
+            /*--- The point is in the same processor... no MPI required ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              Buffer_Receive_V[iVar] = node[jPoint]->GetPrimVar(iVar);
+            
+          }
+          
+          /*--- Identify the inner and the outer point (based on the normal direction) ---*/
+          
+          if (boundary == ACTDISK_INLET) {
+            
+            Pin = iPoint; Pout = jPoint;
+          
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_out[iVar] = Buffer_Receive_V[iVar];
+              PrimVar_in[iVar] = node[Pin]->GetPrimVar(iVar);
+              MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
+            }
+          
+          }
+          if (boundary == ACTDISK_OUTLET) {
+            
+            Pout = iPoint; Pin = jPoint;
+          
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_out[iVar] = node[Pout]->GetPrimVar(iVar);
+              PrimVar_in[iVar] = Buffer_Receive_V[iVar];
+              MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
+            }
+          
+          }
+          
+          /*--- Set the jump in the actuator disk ---*/
+          
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            ActDisk_Jump[iVar] = 0.0;
+          }
+          
+          /*--- Compute the distance to the center of the rotor ---*/
+          
+          Coord = geometry->node[iPoint]->GetCoord();
+          radius = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            radius += (Coord[iDim]-origin[iDim])*(Coord[iDim]-origin[iDim]);
+          radius = sqrt(radius);
+          
+          /*--- Compute the pressure increment and the jump ---*/
+          
+          R = R_tip;
+          V_tip = R_tip*Omega*(PI_NUMBER/30.0);
+          DeltaP_avg = R*R*V_tip*V_tip*C_T/(R*R-R_root*R_root);
+          DeltaP_tip = 3.0*DeltaP_avg*R*(R*R-R_root*R_root)/(2.0*(R*R*R-R_root*R_root*R_root));
+          ActDisk_Jump[nDim+1] = -DeltaP_tip*radius/R;
+          
+          /*--- Inner point ---*/
+          
+          if (iPoint == Pin) {
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              PrimVar_in_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_in[iVar] - ActDisk_Jump[iVar];
+            numerics->SetPrimitive(PrimVar_in, PrimVar_in_ghost);
+          }
+          
+          /*--- Outer point ---*/
+          
+          if (iPoint == Pout) {
+            for (iVar = 0; iVar < nPrimVar; iVar++)
+              PrimVar_out_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_out[iVar] + ActDisk_Jump[iVar];
+            numerics->SetPrimitive(PrimVar_out, PrimVar_out_ghost);
+          }
+          
+          /*--- Set the normal vector ---*/
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+          numerics->SetNormal(Normal);
+          
+          /*--- Compute the convective residual using an upwind scheme ---*/
+          
+          numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          
+          /*--- Add Residuals and Jacobians ---*/
+          
+          LinSysRes.AddBlock(iPoint, Residual);
+          if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
           
         }
         
       }
       
     }
-  }
-  
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Find the associate pair to the original node ---*/
-      
-      jPoint = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[0];
-      jProcessor = geometry->vertex[val_marker][iVertex]->GetPeriodicPointDomain()[1];
-      
-      if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-      else compute = true;
-      
-      if (compute) {
-        
-        /*--- We only receive the information that belong to other boundary ---*/
-        
-        if (jProcessor != rank) {
-#ifdef WINDOWS
-          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
-#else
-          MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
-#endif
-        }
-        else {
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Buffer_Receive_V[iVar] = node[jPoint]->GetPrimVar(iVar);
-        }
-        
-        /*--- Store the solution for both points ---*/
-        
-        for (iVar = 0; iVar < nPrimVar; iVar++) {
-          PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
-          PrimVar_j[iVar] = Buffer_Receive_V[iVar];
-        }
-        
-        /*--- Set Conservative Variables ---*/
-        
-        numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-        
-        /*--- Set Normal ---*/
-        
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        numerics->SetNormal(Normal);
-        
-        /*--- Compute the convective residual using an upwind scheme ---*/
-        
-        numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-        
-        /*--- Add Residuals and Jacobians ---*/
-        
-        LinSysRes.AddBlock(iPoint, Residual);
-        if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        
-      }
-      
-    }
   }
-  
-  delete[] Buffer_Send_V;
-  delete[] Buffer_Receive_V;
-  
-#endif
   
   /*--- Free locally allocated memory ---*/
   
   delete [] Normal;
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
+  delete [] PrimVar_out;
+  delete [] PrimVar_in;
+  delete [] MeanPrimVar;
+  delete [] PrimVar_out_ghost;
+  delete [] PrimVar_in_ghost;
+  delete [] ActDisk_Jump;
+  delete[] Buffer_Send_V;
+  delete[] Buffer_Receive_V;
   
 }
-
-//void CEulerSolver::BC_Actuator_Disk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-//                                             CConfig *config, unsigned short val_marker) {
-//  
-//  /*--- Calculate the actuator disk BC --- */
-//  
-//  
-//  /* Here are some useful structures from the Euler wall to help get you started... */
-//  
-//  unsigned short iDim, iVar, jVar, jDim;
-//  unsigned long iPoint, iVertex;
-//  double Pressure, *Normal = NULL, *GridVel = NULL, *U_disk = NULL, Area, UnitNormal[3],
-//  ProjGridVel = 0.0, a2, phi;
-//  
-//  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-//  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-//  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-//  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-//  
-//  double *radius = new double[3];
-//  /*--- Loop over all the vertices on this boundary marker ---*/
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//    
-//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//    if (geometry->node[iPoint]->GetDomain()) {
-//      
-//      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-//      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-//        
-//      
-//      Area = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-//      Area = sqrt (Area);
-//      
-//      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-//     
-//      /*--- Get the solution at the current disk node ---*/
-//      U_disk = node[iPoint]->GetSolution();
-//      
-//      /*--- Set the residual using the pressure ---*/
-//      if (compressible)                   Pressure = node[iPoint]->GetPressure();
-//      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
-//        double delta_P =1805;
-//        double delta_P_swirl = 53.9;
-//        double force = Area*delta_P;
-//        double force_swirl = Area*delta_P_swirl;
-//        double volume = geometry->node[iPoint]->GetVolume();
-//        //double origin[3]={0.14,0,0};
-//        double origin_test[3]={0.0,0,0};
-//        double direction[3]={-1.0,0,0};
-//        double *coo = geometry->node[iPoint]->GetCoord();
-//        double *radius = new double[3];
-//        for (iDim = 0; iDim < 3; iDim++){
-//            radius[iDim]=coo[iDim]-origin_test[iDim];
-//        }
-//        double tangent[3];
-//        tangent[0] = (radius[1]*direction[2] - radius[2]*direction[1]);
-//        tangent[1] = (radius[2]*direction[0] - radius[0]*direction[2]);
-//        tangent[2] = (radius[0]*direction[1] - radius[1]*direction[0]);
-//      Residual[0] = 0.0;
-//        double energy = 0;
-//        for (iDim = 0; iDim < nDim; iDim++){
-//          Residual[iDim+1] = force*direction[iDim]+force_swirl*tangent[iDim];
-//            energy+=Residual[iDim+1]*node[iPoint]->GetVelocity(iDim);
-//            //cout<<Residual[iDim+1]<<"  "<<iDim<<"  "<<iPoint<<endl;
-//        }
-//      
-//        Residual[nDim+1]=energy;
-//     
-//      
-//      /*--- Add value to the residual ---*/
-//      LinSysRes.AddBlock(iPoint, Residual);
-//      
-////      /*--- Form Jacobians for implicit computations ---*/
-////      if (implicit) {
-////        
-////        /*--- Initialize jacobian ---*/
-////        for (iVar = 0; iVar < nVar; iVar++) {
-////          for (jVar = 0; jVar < nVar; jVar++)
-////            Jacobian_i[iVar][jVar] = 0.0;
-////        }
-////        
-////        if (compressible)  {
-////          a2 = Gamma-1.0;
-////          phi = 0.5*a2*node[iPoint]->GetVelocity2();
-////          for (iVar = 0; iVar < nVar; iVar++) {
-////            Jacobian_i[0][iVar] = 0.0;
-////            Jacobian_i[nDim+1][iVar] = 0.0;
-////          }
-////          for (iDim = 0; iDim < nDim; iDim++) {
-////            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
-////            for (jDim = 0; jDim < nDim; jDim++)
-////              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
-////            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
-////          }
-////          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-////        }
-////        if (incompressible || freesurface)  {
-////          for (iDim = 0; iDim < nDim; iDim++)
-////            Jacobian_i[iDim+1][0] = -Normal[iDim];
-////          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-////        }
-////        
-////      }
-//    }
-//  }
-//    delete [] radius;
-//}
 
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) { }
