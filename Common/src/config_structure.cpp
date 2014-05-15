@@ -236,12 +236,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   AddMarkerOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
   /* DESCRIPTION: Custom boundary marker(s) */
   AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
+  
+  
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+  
+  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
+   Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
+   rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
+   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
+  AddMarkerActuatorDisk("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+                        Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
+                        ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
+                        ActDisk_CT, ActDisk_Omega);
+  
   /* DESCRIPTION: Inlet boundary type */
   AddEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, "TOTAL_CONDITIONS");
   /* DESCRIPTION: Inlet boundary marker(s) with the following formats,
@@ -2623,7 +2635,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
   nMarker_HeatFluxNonCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
   nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
+  nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
   
   Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
   Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2645,7 +2658,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_HeatFluxCatalytic, iMarker_NacelleInflow, iMarker_NacelleExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,iMarker_Out_1D;
+  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,
+  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
   
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_Tag[iMarker_All] = "NONE";
@@ -2668,7 +2682,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
   nMarker_HeatFluxCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
   nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
+  nMarker_FlowLoad + nMarker_Custom +
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
   Marker_Config_Tag        = new string[nMarker_Config];
   Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -2725,6 +2740,18 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_Config_PerBound[iMarker_Config] = iMarker_PerBound + 1;
     iMarker_Config++;
   }
+  
+  for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+		Marker_Config_Boundary[iMarker_Config] = ACTDISK_INLET;
+		iMarker_Config++;
+	}
+  
+  for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+		Marker_Config_Boundary[iMarker_Config] = ACTDISK_OUTLET;
+		iMarker_Config++;
+	}
   
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_Config_Tag[iMarker_Config] = Marker_NearFieldBound[iMarker_NearFieldBound];
@@ -2898,6 +2925,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
+
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Outlet,
@@ -2906,7 +2934,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
-  iMarker_Moving, iMarker_Supersonic_Inlet;
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
+  iMarker_ActDisk_Outlet;
   
   cout << endl <<"-------------------------------------------------------------------------" << endl;
   cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -4187,6 +4216,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
+  if (nMarker_ActDisk_Inlet != 0) {
+		cout << "Actuator disk (inlet) boundary marker(s): ";
+		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
+			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
+  if (nMarker_ActDisk_Outlet != 0) {
+		cout << "Actuator disk (outlet) boundary marker(s): ";
+		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
+			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
 }
 
 
@@ -4364,6 +4411,21 @@ void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_Pe
   CAnyOptionRef* option_ref = new CMarkerPeriodicRef(nMarker_PerBound, Marker_PerBound,
                                                      Marker_PerDonor, RotCenter,
                                                      RotAngles, Translation);
+  param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
+}
+
+void CConfig::AddMarkerActuatorDisk(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
+                                    string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                                    double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                                    double* & ActDisk_CT, double* & ActDisk_Omega) {
+  //cout << "Adding Marker Actuator disk option " << name << endl;
+  nMarker_ActDisk_Inlet = 0;
+  nMarker_ActDisk_Outlet = 0;
+  CAnyOptionRef* option_ref = new CMarkerActuatorDiskRef(nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+                                                         Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
+                                                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
+                                                         ActDisk_CT, ActDisk_Omega);
+  
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
 
@@ -5413,6 +5475,62 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   /*--- Find and return global marker index for donor boundary. ---*/
   for (kMarker_All = 0; kMarker_All < nMarker_Config; kMarker_All++)
     if (Marker_PerBound[jMarker_PerBound] == Marker_All_Tag[kMarker_All]) break;
+  
+  return kMarker_All;
+}
+
+double* CConfig::GetActDisk_Origin(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Origin[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_RootRadius(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_RootRadius[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_TipRadius(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_TipRadius[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_CT(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_CT[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_Omega(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Omega[iMarker_ActDisk];
+}
+
+unsigned short CConfig::GetMarker_ActDisk_Outlet(string val_marker) {
+  unsigned short iMarker_ActDisk, kMarker_All;
+  
+  /*--- Find the marker for this actuator disk inlet. ---*/
+  
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if (Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) break;
+  
+  /*--- Find and return global marker index for the actuator disk outlet. ---*/
+  
+  for (kMarker_All = 0; kMarker_All < nMarker_Config; kMarker_All++)
+    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_Tag[kMarker_All]) break;
   
   return kMarker_All;
 }

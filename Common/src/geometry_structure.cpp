@@ -4667,6 +4667,219 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
   
 }
 
+void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
+  double epsilon = 1e-1;
+  unsigned short iMarker, iDim;
+  unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+  double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
+  int iProcessor, pProcessor = 0;
+  unsigned long nLocalVertex_ActDisk = 0, nGlobalVertex_ActDisk = 0, MaxLocalVertex_ActDisk = 0;
+  int rank, nProcessor;
+  unsigned short Beneficiary, Donor, iBC;
+  
+  unsigned short nMarker_ActDisk_Inlet = config->GetnMarker_ActDisk_Inlet();
+  
+  if (nMarker_ActDisk_Inlet != 0) {
+    
+    for (iBC = 0; iBC < 2; iBC++) {
+      
+      if (iBC == 0) { Beneficiary = ACTDISK_INLET; Donor = ACTDISK_OUTLET; }
+      if (iBC == 1) { Beneficiary = ACTDISK_OUTLET; Donor = ACTDISK_INLET; }
+      
+#ifdef NO_MPI
+      rank = MASTER_NODE;
+      nProcessor = SINGLE_NODE;
+#else
+#ifdef WINDOWS
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#else
+      MPI::COMM_WORLD.Barrier();
+      rank = MPI::COMM_WORLD.Get_rank();
+      nProcessor = MPI::COMM_WORLD.Get_size();
+#endif
+#endif
+      
+      unsigned long *Buffer_Send_nVertex = new unsigned long [1];
+      unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+      
+      if (rank == MASTER_NODE) cout << "Set Actuator Disk boundary conditions." <<endl;
+      
+      /*--- Compute the number of vertex that have an actuator disk outlet boundary condition
+       without including the ghost nodes ---*/
+      
+      nLocalVertex_ActDisk = 0;
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_Boundary(iMarker) == Donor) {
+          for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            if (node[iPoint]->GetDomain()) nLocalVertex_ActDisk ++;
+          }
+        }
+      }
+      
+      Buffer_Send_nVertex[0] = nLocalVertex_ActDisk;
+      
+      /*--- Send actuator disk vertex information --*/
+      
+#ifdef NO_MPI
+      nGlobalVertex_ActDisk = nLocalVertex_ActDisk;
+      MaxLocalVertex_ActDisk = nLocalVertex_ActDisk;
+      Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
+#else
+#ifdef WINDOWS
+      MPI_Allreduce(&nLocalVertex_ActDisk, &nGlobalVertex_ActDisk, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+      MPI_Allreduce(&nLocalVertex_ActDisk, &MaxLocalVertex_ActDisk, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+      MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+      MPI::COMM_WORLD.Allreduce(&nLocalVertex_ActDisk, &nGlobalVertex_ActDisk, 1, MPI::UNSIGNED_LONG, MPI::SUM);
+      MPI::COMM_WORLD.Allreduce(&nLocalVertex_ActDisk, &MaxLocalVertex_ActDisk, 1, MPI::UNSIGNED_LONG, MPI::MAX);
+      MPI::COMM_WORLD.Allgather(Buffer_Send_nVertex, 1, MPI::UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI::UNSIGNED_LONG);
+#endif
+#endif
+      
+      /*--- Array dimensionalization --*/
+      
+      double *Buffer_Send_Coord = new double [MaxLocalVertex_ActDisk*nDim];
+      unsigned long *Buffer_Send_Point  = new unsigned long [MaxLocalVertex_ActDisk];
+      
+      double *Buffer_Receive_Coord = new double [nProcessor*MaxLocalVertex_ActDisk*nDim];
+      unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_ActDisk];
+      
+      unsigned long nBuffer_Coord = MaxLocalVertex_ActDisk*nDim;
+      unsigned long nBuffer_Point = MaxLocalVertex_ActDisk;
+      
+      for (iVertex = 0; iVertex < MaxLocalVertex_ActDisk; iVertex++) {
+        Buffer_Send_Point[iVertex] = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+      }
+      
+      /*--- Copy coordinates and point to the auxiliar vector --*/
+      
+      nLocalVertex_ActDisk = 0;
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_Boundary(iMarker) == Donor) {
+          for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            if (node[iPoint]->GetDomain()) {
+              Buffer_Send_Point[nLocalVertex_ActDisk] = iPoint;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[nLocalVertex_ActDisk*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+              nLocalVertex_ActDisk++;
+            }
+          }
+        }
+      }
+      
+#ifdef NO_MPI
+      for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
+        Buffer_Receive_Coord[iBuffer_Coord] = Buffer_Send_Coord[iBuffer_Coord];
+      for (unsigned long iBuffer_Point = 0; iBuffer_Point < nBuffer_Point; iBuffer_Point++)
+        Buffer_Receive_Point[iBuffer_Point] = Buffer_Send_Point[iBuffer_Point];
+#else
+#ifdef WINDOWS
+      MPI_Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
+      MPI_Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+      MPI::COMM_WORLD.Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI::DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI::DOUBLE);
+      MPI::COMM_WORLD.Allgather(Buffer_Send_Point, nBuffer_Point, MPI::UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI::UNSIGNED_LONG);
+#endif
+#endif
+      
+      /*--- Compute the closest point to an actuator disk inlet point ---*/
+      
+      maxdist_local = 0.0; maxdist_global = 0.0;
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_Boundary(iMarker) == Beneficiary) {
+          
+          for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            if (node[iPoint]->GetDomain()) {
+              
+              /*--- Coordinates of the boundary point ---*/
+              
+              Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
+              
+              /*--- Loop over all the boundaries to find the pair ---*/
+              
+              for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+                for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
+                  jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_ActDisk+jVertex];
+                  
+                  /*--- Compute the distance ---*/
+                  
+                  dist = 0.0;
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_ActDisk+jVertex)*nDim+iDim];
+                    dist += pow(Coord_j[iDim]-Coord_i[iDim], 2.0);
+                  }
+                  dist = sqrt(dist);
+                  
+                  if (dist < mindist) {
+                    mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
+                    if (dist == 0.0) break;
+                  }
+                  
+                }
+              }
+              
+              /*--- Store the value of the pair ---*/
+              
+              maxdist_local = max(maxdist_local, mindist);
+              vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+              
+              if (mindist > epsilon) {
+                cout.precision(10);
+                cout << endl;
+                cout << "   Bad match for point " << iPoint << ".\tNearest";
+                cout << " donor distance: " << scientific << mindist << ".";
+                vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+                maxdist_local = min(maxdist_local, 0.0);
+              }
+              
+            }
+          }
+          
+        }
+      }
+      
+#ifdef NO_MPI
+      maxdist_global = maxdist_local;
+#else
+#ifdef WINDOWS
+      MPI_Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      MPI::COMM_WORLD.Reduce(&maxdist_local, &maxdist_global, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
+#endif
+#endif
+      
+      if (rank == MASTER_NODE) cout <<"The max distance between points is: " << maxdist_global <<"."<< endl;
+      
+      delete[] Buffer_Send_Coord;
+      delete[] Buffer_Send_Point;
+      
+      delete[] Buffer_Receive_Coord;
+      delete[] Buffer_Receive_Point;
+      
+      delete[] Buffer_Send_nVertex;
+      delete[] Buffer_Receive_nVertex;
+      
+#ifndef NO_MPI
+#ifdef WINDOWS
+      MPI_Barrier(MPI_COMM_WORLD);
+#else
+      MPI::COMM_WORLD.Barrier();
+#endif
+#endif
+      
+    }
+  }
+  
+}
+
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
   double epsilon = 1.5e-1;
   
@@ -4741,7 +4954,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
     
     if (rank == MASTER_NODE) cout << "Set Interface boundary conditions (if any)." <<endl;
     
-    /*--- Compute the number of vertex that have nearfield boundary condition
+    /*--- Compute the number of vertex that have interfase boundary condition
      without including the ghost nodes ---*/
     nLocalVertex_Interface = 0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -8597,6 +8810,45 @@ void CMultiGridGeometry::MatchNearField(CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        if (node[iPoint]->GetDomain()) {
+          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, rank);
+        }
+      }
+  
+#endif
+  
+}
+
+void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
+  
+#ifdef NO_MPI
+  
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Boundary(iMarker) == ACTUATOR_DISK)
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+        vertex[iMarker][iVertex]->SetDonorPoint(iPoint);
+      }
+  
+#else
+  
+  unsigned short iMarker;
+  unsigned long iVertex, iPoint;
+  int rank;
+  
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Boundary(iMarker) == ACTUATOR_DISK)
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         if (node[iPoint]->GetDomain()) {

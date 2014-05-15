@@ -782,6 +782,10 @@ inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; 
 
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 
+inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
+
+inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
+
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
 inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
