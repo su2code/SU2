@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-    /*--- Definition of the configuration option class for all zones. In this
+      /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     

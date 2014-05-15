@@ -92,7 +92,8 @@ am_libSU2_a_OBJECTS = ../src/libSU2_a-config_structure.$(OBJEXT) \
 	../src/libSU2_a-linear_solvers_structure.$(OBJEXT) \
 	../src/libSU2_a-primal_grid_structure.$(OBJEXT) \
 	../src/libSU2_a-vector_structure.$(OBJEXT) \
-	../src/libSU2_a-matrix_structure.$(OBJEXT)
+	../src/libSU2_a-matrix_structure.$(OBJEXT) \
+	../src/libSU2_a-su2mpi.$(OBJEXT)
 libSU2_a_OBJECTS = $(am_libSU2_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -290,6 +291,7 @@ libSU2_a_SOURCES = \
 		../include/vector_structure.inl \
 	        ../include/matrix_structure.hpp \
 	        ../include/matrix_structure.inl \
+	    ../include/su2mpi.hpp \
 		../src/config_structure.cpp \
 		../src/dual_grid_structure.cpp \
 		../src/geometry_structure.cpp \
@@ -298,7 +300,8 @@ libSU2_a_SOURCES = \
 		../src/linear_solvers_structure.cpp \
 		../src/primal_grid_structure.cpp \
 	        ../src/vector_structure.cpp \
-		../src/matrix_structure.cpp
+		../src/matrix_structure.cpp \
+		../src/su2mpi.cpp 
 
 
 # always link to built dependencies from ./externals
@@ -375,6 +378,8 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-matrix_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_a-su2mpi.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2.a
 	$(AM_V_AR)$(libSU2_a_AR) libSU2.a $(libSU2_a_OBJECTS) $(libSU2_a_LIBADD)
@@ -395,6 +400,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-linear_solvers_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-su2mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-vector_structure.Po@am__quote@
 
 .cpp.o:
@@ -538,6 +544,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/matrix_structure.cpp' object='../src/libSU2_a-matrix_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-matrix_structure.obj `if test -f '../src/matrix_structure.cpp'; then $(CYGPATH_W) '../src/matrix_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/matrix_structure.cpp'; fi`
+
+../src/libSU2_a-su2mpi.o: ../src/su2mpi.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-su2mpi.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo -c -o ../src/libSU2_a-su2mpi.o `test -f '../src/su2mpi.cpp' || echo '$(srcdir)/'`../src/su2mpi.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo ../src/$(DEPDIR)/libSU2_a-su2mpi.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2mpi.cpp' object='../src/libSU2_a-su2mpi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-su2mpi.o `test -f '../src/su2mpi.cpp' || echo '$(srcdir)/'`../src/su2mpi.cpp
+
+../src/libSU2_a-su2mpi.obj: ../src/su2mpi.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-su2mpi.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo -c -o ../src/libSU2_a-su2mpi.obj `if test -f '../src/su2mpi.cpp'; then $(CYGPATH_W) '../src/su2mpi.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2mpi.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-su2mpi.Tpo ../src/$(DEPDIR)/libSU2_a-su2mpi.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2mpi.cpp' object='../src/libSU2_a-su2mpi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-su2mpi.obj `if test -f '../src/su2mpi.cpp'; then $(CYGPATH_W) '../src/su2mpi.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2mpi.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

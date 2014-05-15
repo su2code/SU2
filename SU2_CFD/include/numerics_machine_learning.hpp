@@ -121,7 +121,7 @@ public:
   // Need to add predict method
 };
 
-class CNeurNet : public CPredictor{
+class CNeurNet : public CPredictor {
 private:
   int maxNeurons; // Number of neurons in the largest layer
   int nLayers;

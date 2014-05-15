@@ -34,7 +34,24 @@
 #include <cstdlib>
 #include <algorithm>
 
+//#include "./su2mpi.hpp"
+
 using namespace std;
+
+/*
+aoseunhenum OptionKind {
+  NoOption = 0,
+  DoubleOption = 1,
+  StringOption = 2,
+  IntOption = 3,
+  UnsignedLongOption = 4,
+  UnsignedShortOption = 5,
+  LongOption = 6,
+  EnumOption = 7,
+};
+ */
+
+
 
 /*!
  * \class CCreateMap
@@ -287,6 +304,20 @@ const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boun
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 /*!
+ * \brief types of mathematical problem to solve
+ */
+enum ENUM_MATH_PROBLEM {
+  DIRECT_PROBLEM = 0,		/*!< \brief Direct problem */
+  ADJOINT_PROBLEM = 1,		/*!< \brief Adjoint problem */
+  LINEARIZED_PROBLEM = 2 /*< \brief Linearized numerical method */
+};
+static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
+("DIRECT", DIRECT_PROBLEM)
+("ADJOINT", ADJOINT_PROBLEM)
+("LINEARIZED", LINEARIZED_PROBLEM);
+
+
+/*!
  * \brief types of spatial discretizations
  */
 enum ENUM_SPACE {
@@ -385,6 +416,7 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
 ("X_DIR", X_DIR)
 ("Y_DIR", Y_DIR);
 
+// If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of centered spatial discretizations
  */
@@ -400,6 +432,8 @@ static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_C
 ("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
+
+// If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of upwind spatial discretizations
  */
@@ -538,13 +572,13 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 ("EULER_IMPLICIT", EULER_IMPLICIT);
 
 /*!
- * \brief types of schemes to compute the gradient
+ * \brief types of schemes to compute the flow gradient
  */
-enum ENUM_GRADIENT {
+enum ENUM_FLOW_GRADIENT {
 	GREEN_GAUSS = 1,		/*!< \brief Gradients computation using Green Gauss theorem. */
 	WEIGHTED_LEAST_SQUARES = 2	/*!< \brief Gradients computation using Weighted Least Squares. */
 };
-static const map<string, ENUM_GRADIENT> Gradient_Map = CCreateMap<string, ENUM_GRADIENT>
+static const map<string, ENUM_FLOW_GRADIENT> Gradient_Map = CCreateMap<string, ENUM_FLOW_GRADIENT>
 ("GREEN_GAUSS", GREEN_GAUSS)
 ("WEIGHTED_LEAST_SQUARES", WEIGHTED_LEAST_SQUARES);
 
@@ -1011,6 +1045,1072 @@ static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMa
 ("WALL_DISTANCE", WALL_DISTANCE);
 
 /* END_CONFIG_ENUMS */
+
+
+
+
+
+
+
+
+
+
+
+
+class COptionBase{
+private:
+public:
+  COptionBase(){};
+  virtual  ~COptionBase() = 0;
+  //  virtual string SetValue(string){SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
+  virtual string SetValue(vector<string>) = 0;
+  virtual void SetDefault() = 0;
+  
+  string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name){
+    if (option_value.size() != 1){
+      string newString;
+      newString.append(option_name);
+      newString.append(": multiple values for type ");
+      newString.append(type_id);
+      return newString;
+    }
+    return "";
+  }
+  
+  string badValue(vector<string> & option_value, string type_id, string option_name){
+    string newString;
+    newString.append(option_name);
+    newString.append(": improper option value for type ");
+    newString.append(type_id);
+    return newString;
+  }
+};
+
+inline COptionBase::~COptionBase(){}
+
+
+template <class Tenum>
+class COptionEnum : public COptionBase{
+  
+  map<string, Tenum> m;
+  unsigned short & field; // Reference to the feildname
+  Tenum def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionEnum(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field){
+    this->m = m;
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionEnum(){};
+  string SetValue(vector<string> option_value){
+    // Check if there is more than one string
+    string out = optionCheckMultipleValues(option_value, "enum", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    
+    // Check to see if the enum value is in the map
+    if (this->m.find(option_value[0]) == m.end()){
+      string str;
+      str.append(this->name);
+      str.append(": invalid option value ");
+      str.append(option_value[0]);
+      return str;
+    }
+    // If it is there, set the option value
+    Tenum val = this->m[option_value[0]];
+    this->field = val;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionDouble : public COptionBase{
+  double & field; // Reference to the fieldname
+  double def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionDouble(string option_field_name, double & option_field, double default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionDouble(){};
+  string SetValue(vector<string> option_value){
+    // check if there is more than one value
+    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "double", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionString : public COptionBase{
+  string & field; // Reference to the fieldname
+  string def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionString(string option_field_name, string & option_field, string default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionString(){};
+  string SetValue(vector<string> option_value){
+    // check if there is more than one value
+    string out = optionCheckMultipleValues(option_value, "double", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    this->field.assign(option_value[0]);
+    return "";
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionInt : public COptionBase{
+  int & field; // Reference to the feildname
+  int def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionInt(string option_field_name, int & option_field, int default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionInt(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "int", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "int", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionULong : public COptionBase{
+  unsigned long & field; // Reference to the feildname
+  unsigned long def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionULong(string option_field_name, unsigned long & option_field, unsigned long default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionULong(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "unsigned long", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionUShort : public COptionBase{
+  unsigned short & field; // Reference to the feildname
+  unsigned short def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionUShort(string option_field_name, unsigned short & option_field, unsigned short default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionUShort(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "unsigned short", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+class COptionLong : public COptionBase{
+  long & field; // Reference to the feildname
+  long def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionLong(string option_field_name, long & option_field, long default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionLong(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "long", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    istringstream is(option_value[0]);
+    double val;
+    if (is >> val){
+      this->field = val;
+      return "";
+    }
+    return badValue(option_value, "long", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+
+class COptionBool : public COptionBase{
+  bool & field; // Reference to the feildname
+  bool def; // Default value
+  string name; // identifier for the option
+  
+public:
+  COptionBool(string option_field_name, bool & option_field, bool default_value) : field(option_field){
+    this->def = default_value;
+    this->name = option_field_name;
+  }
+  
+  ~COptionBool(){};
+  string SetValue(vector<string> option_value){
+    // check if there is more than one value
+    string out = optionCheckMultipleValues(option_value, "bool", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    if (option_value[0].compare("YES") == 0){
+      this->field = true;
+      return "";
+    }
+    if (option_value[0].compare("NO") == 0){
+      this->field = false;
+      return "";
+    }
+    return badValue(option_value, "bool", this->name);
+  }
+  void SetDefault(){
+    this->field = this->def;
+  }
+};
+
+template <class Tenum>
+class COptionEnumList : public COptionBase{
+  
+  map<string, Tenum> m;
+  unsigned short * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionEnumList(string option_field_name, const map<string, Tenum> m, unsigned short * & option_field, unsigned short & list_size) : field(option_field) , size(list_size){
+    this->m = m;
+    this->name = option_field_name;
+  }
+  
+  ~COptionEnumList(){};
+  string SetValue(vector<string> option_value){
+    if (option_value.size() == 1 && option_value[0].compare("NONE")==0){
+      this->size = 0;
+      return "";
+    }
+    // size is the length of the option list
+    this->size = option_value.size();
+    unsigned short * enums = new unsigned short[size];
+    for(int i  = 0; i < this->size; i++){
+      // Check to see if the enum value is in the map
+      if (this->m.find(option_value[i]) == m.end()){
+        string str;
+        str.append(this->name);
+        str.append(": invalid option value ");
+        str.append(option_value[0]);
+        return str;
+      }
+      // If it is there, set the option value
+      enums[i] = this->m[option_value[0]];
+    }
+    this->field = enums;
+    return "";
+  }
+  
+  void SetDefault(){
+    // No default to set
+    size = 0;
+  }
+};
+
+class COptionDoubleArray : public COptionBase{
+  double * & field; // Reference to the feildname
+  string name; // identifier for the option
+  const int size;
+  double * default_value;
+  
+public:
+  COptionDoubleArray(string option_field_name, const int list_size, double * & option_field, double * default_value) : field(option_field), size(list_size){
+    this->name = option_field_name;
+    this->default_value = default_value;
+  }
+  
+  ~COptionDoubleArray(){};
+  string SetValue(vector<string> option_value){
+    // Check that the size is correct
+    if (option_value.size() != this->size){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": wrong number of arguments: ");
+      stringstream ss;
+      ss << this->size;
+      newstring.append(ss.str());
+      newstring.append(" expected, ");
+      stringstream ss2;
+      ss2 << option_value.size();
+      newstring.append(ss2.str());
+      newstring.append(" found");
+      return newstring;
+    }
+    double * vals = new double[this->size];
+    for(int i  = 0; i < this->size; i++){
+      istringstream is(option_value[i]);
+      double val;
+      if (!(is >> val)){
+        delete [] vals;
+        return badValue(option_value, "double array", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->field = this->default_value;
+  }
+};
+
+class COptionDoubleList : public COptionBase{
+  double * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionDoubleList(string option_field_name, unsigned short & list_size, double * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionDoubleList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      // No options
+      this->size = 0;
+      return "";
+    }
+    
+    this->size = option_size;
+    
+    // Parse all of the options
+    double * vals = new double[option_size];
+    for(int i  = 0; i < option_size; i++){
+      istringstream is(option_value[i]);
+      double val;
+      if (!(is >> val)){
+        delete [] vals;
+        return badValue(option_value, "double list", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionUShortList : public COptionBase{
+  unsigned short * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionUShortList(string option_field_name, unsigned short & list_size, unsigned short * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionUShortList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      // No options
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    unsigned short * vals = new unsigned short[option_size];
+    for(int i  = 0; i < option_size; i++){
+      istringstream is(option_value[i]);
+      unsigned short val;
+      if (!(is >> val)){
+        delete [] vals;
+        return badValue(option_value, "unsigned short", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionStringList : public COptionBase{
+  string * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionStringList(string option_field_name, unsigned short & list_size, string * & option_field) : field(option_field), size(list_size){
+    this->name = option_field_name;
+  }
+  
+  ~COptionStringList(){};
+  string SetValue(vector<string> option_value){
+    // The size is the length of option_value
+    int option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE")==0){
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    string * vals = new string[option_size];
+    for(int i  = 0; i < option_size; i++){
+      vals[i].assign(option_value[i]);
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionConvect : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & space;
+  unsigned short & centered;
+  unsigned short & upwind;
+  
+public:
+  COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) : space(space_field), centered(centered_field), upwind(upwind_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionConvect(){};
+  string SetValue(vector<string> option_value){
+    
+    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    
+    if (Centered_Map.count(option_value[0])) {
+      this->space = Space_Map.find("SPACE_CENTERED")->second;
+      this->centered = Centered_Map.find(option_value[0])->second;
+      this->upwind = NO_UPWIND;
+      return "";
+    }
+    if (Upwind_Map.count(option_value[0])) {
+      this->space = Space_Map.find("SPACE_UPWIND")->second;
+      this->upwind = Upwind_Map.find(option_value[0])->second;
+      this->centered = NO_CENTERED;
+      return "";
+    }
+    // Make them defined in case something weird happens
+    this->centered = NO_CENTERED;
+    this->upwind = NO_UPWIND;
+    this->space = SPACE_CENTERED;
+    return badValue(option_value, "convect", this->name);
+    
+  }
+  
+  void SetDefault(){
+    this->centered = NO_CENTERED;
+    this->upwind = NO_UPWIND;
+    this->space = SPACE_CENTERED;
+  }
+};
+
+class COptionMathProblem : public COptionBase{
+  string name; // identifier for the option
+  bool & adjoint;
+  bool & oneshot;
+  bool & linearized;
+  bool & restart;
+  bool adjoint_def;
+  bool oneshot_def;
+  bool linearized_def;
+  bool restart_def;
+  
+public:
+  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & oneshot_field, bool oneshot_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), oneshot(oneshot_field), linearized(linearized_field), restart(restart_field) {
+    this->name = option_field_name;
+    this->adjoint_def = adjoint_default;
+    this->oneshot_def = oneshot_default;
+    this->linearized_def = linearized_default;
+    this->restart_def = restart_default;
+  }
+  
+  ~COptionMathProblem(){};
+  string SetValue(vector<string> option_value){
+    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    if (out.compare("") != 0){
+      return out;
+    }
+    if (Math_Problem_Map.find(option_value[0]) == Math_Problem_Map.end()){
+      return badValue(option_value, "math problem", this->name);
+    }
+    if (option_value[0] == "DIRECT") {
+      this->adjoint = false;
+      this->oneshot = false;
+      this->linearized = false;
+      this->restart = false;
+      return "";
+    }
+    if (option_value[0] == "ADJOINT") {
+      this->adjoint= true;
+      this->restart= true;
+      this->oneshot = false;
+      this->linearized = false;
+      return "";
+    }
+    if (option_value[0] == "LINEARIZED") {
+      this->linearized = true;
+      this->restart = true;
+      this->adjoint= false;
+      this->oneshot = false;
+      return "";
+    }
+    return "option in math problem map not considered in constructor";
+  }
+  
+  void SetDefault(){
+    this->adjoint = this->adjoint_def;
+    this->oneshot = this->oneshot_def;
+    this->linearized = this->linearized_def;
+    this->restart = this->restart_def;
+  }
+};
+
+class COptionDVParam : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & nDV;
+  double ** & paramDV;
+  unsigned short* & design_variable;
+  
+public:
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionDVParam(){};
+  string SetValue(vector<string> option_value){
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)){
+      this->nDV = 0;
+      return "";
+    }
+    
+    // Cannot have ; at the beginning or the end
+    if (option_value[0].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have beginning semicolon");
+      return newstring;
+    }
+    if (option_value[option_value.size()-1].compare(";") == 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": may not have ending semicolon");
+      return newstring;
+    }
+    
+    
+    // use the ";" token to determine the number of design variables
+    // This works because semicolon is not one of the delimiters in tokenize string
+    this->nDV = 0;
+    //unsigned int num_semi = 0;
+    for (unsigned int i = 0; i < static_cast<unsigned int>(option_value.size()); i++) {
+      if (option_value[i].compare(";") == 0) {
+        this->nDV++;
+//        num_semi++;
+      }
+    }
+    
+    // One more design variable than semicolon
+    this->nDV++;
+    
+    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
+      return newstring;
+    }
+    /*
+#if 0
+    cout << "Found " << (*nDV_) << " DV parameters" << endl;
+    cout << "DV param value = ";
+    for (unsigned int i = 0; i < value.size(); i++)
+      cout << value[i] << ", ";
+    cout << endl;
+#endif
+     */
+    
+    
+    
+    this->paramDV = new double*[this->nDV];
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++){
+      this->paramDV[iDV] = new double[MAX_PARAMETERS];
+    }
+    
+    unsigned short nParamDV = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      switch (this->design_variable[iDV]) {
+        case FFD_SETTING: nParamDV = 0; break;
+        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_CAMBER_2D: nParamDV = 2; break;
+        case FFD_THICKNESS_2D: nParamDV = 2; break;
+        case HICKS_HENNE: nParamDV = 2; break;
+        case SPHERICAL: nParamDV = 3; break;
+        case COSINE_BUMP: nParamDV = 3; break;
+        case FOURIER: nParamDV = 3; break;
+        case DISPLACEMENT: nParamDV = 3; break;
+        case ROTATION: nParamDV = 6; break;
+        case NACA_4DIGITS: nParamDV = 3; break;
+        case PARABOLIC: nParamDV = 2; break;
+        case OBSTACLE: nParamDV = 2; break;
+        case AIRFOIL: nParamDV = 2; break;
+        case STRETCH: nParamDV = 2; break;
+        case FFD_CONTROL_POINT: nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
+        case FFD_TWIST_ANGLE: nParamDV = 7; break;
+        case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_THICKNESS: nParamDV = 3; break;
+        case SURFACE_FILE: nParamDV = 0; break;
+        default : {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": undefined design variable type found in configuration file.");
+          return newstring;
+        }
+      }
+      
+      // ?? Not sure what's going on. Didn't touch it.
+      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
+        ss << option_value[i] << " ";
+        ss >> this->paramDV[iDV][iParamDV];
+        i++;
+      }
+      if (iDV < (this->nDV-1)) {
+        if (option_value[i].compare(";") != 0) {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": a design variable in the configuration file has the wrong number of parameters");
+          return newstring;
+        }
+        i++;
+      }
+    }
+    
+  }
+  
+  void SetDefault(){
+    this->nDV = 0;
+    this->paramDV = NULL;
+    // Don't mess with the Design_Variable because it's an input, not modified
+  }
+};
+
+
+// Class where the option is represented by (String, double, string, double, ...)
+class COptionStringDoubleList : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size; // how many strings are there (same as number of doubles)
+
+  string * & s_f; // Reference to the string fields
+  double* & d_f; // reference to the double fields
+  
+public:
+  COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, double* & double_field) : size(list_size), s_f(string_field), d_f(double_field){
+    this->name = option_field_name;
+  }
+  
+  ~COptionStringDoubleList(){};
+  string SetValue(vector<string> option_value){
+    // There must be an even number of entries (same number of strings and doubles
+    int totalVals = option_value.size();
+    if ((totalVals % 2) != 0){
+      if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+        // It's okay to say its NONE
+        this->size = 0;
+        return "";
+      }
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have an even number of entries");
+      return newstring;
+    }
+    int nVals = totalVals / 2;
+    this->size = nVals;
+    this->s_f = new string[nVals];
+    this->d_f = new double[nVals];
+    
+    for (int i = 0; i < nVals; i++){
+      this->s_f[i].assign(option_value[2*i]); // 2 because have double and string
+      istringstream is(option_value[2*i + 1]);
+      double val;
+      if (!(is >> val)){
+        return badValue(option_value, "string double", this->name);
+      }
+      this->d_f[i] = val;
+    }
+  }
+  
+  void SetDefault(){
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionInlet : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & ttotal;
+  double * & ptotal;
+  double ** & flowdir;
+  
+public:
+  COptionInlet(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal, double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal), flowdir(FlowDir){
+    this->name = option_field_name;
+  }
+  
+  ~COptionInlet(){};
+  string SetValue(vector<string> option_value){
+    
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      this->flowdir = NULL;
+      return "";
+    }
+    
+    if (totalVals % 6 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 6");
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      this->flowdir = NULL;
+      return newstring;
+    }
+    
+    int nVals = totalVals / 6;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->ttotal = new double[nVals];
+    this->ptotal = new double[nVals];
+    this->flowdir = new double*[nVals];
+    for (int i = 0; i < nVals; i++){
+      this->flowdir[i] = new double[3];
+    }
+    
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[6*i]);
+      ss << option_value[6*i + 1] << " ";
+      if(!(ss >> this->ttotal[i])){
+          return badValue(option_value, "inlet", this->name);
+      }
+      ss << option_value[6*i + 2] << " ";
+      if(!(ss >> this->ptotal[i])){
+        return badValue(option_value, "inlet", this->name);
+      }
+      ss << option_value[6*i + 3] << " ";
+      if (!(ss >> this->flowdir[i][0])){
+        return badValue(option_value, "inlet", this->name);
+      }
+      ss << option_value[6*i + 4] << " ";
+      if (!(ss >> this->flowdir[i][1])){
+        return badValue(option_value, "inlet", this->name);
+      }
+      ss << option_value[6*i + 5] << " ";
+      if (!(ss >> this->flowdir[i][2])){
+        return badValue(option_value, "inlet", this->name);
+      }
+    }
+    
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->ttotal = NULL;
+    this->ptotal = NULL;
+    this->flowdir = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
+
+//Inlet condition where the input direction is assumed
+class COptionInletFixed : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & ttotal;
+  double * & ptotal;
+  
+public:
+  COptionInletFixed(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal){
+    this->name = option_field_name;
+  }
+  
+  ~COptionInletFixed(){};
+  string SetValue(vector<string> option_value){
+    
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      return "";
+    }
+    
+    if (totalVals % 3 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = NULL;
+      this->ttotal = NULL;
+      this->ptotal = NULL;
+      return newstring;
+    }
+    
+    int nVals = totalVals / 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->ttotal = new double[nVals];
+    this->ptotal = new double[nVals];
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[3*i]);
+      ss << option_value[3*i + 1] << " ";
+      if (!(ss >> this->ttotal[i])){
+        return badValue(option_value, "inlet fixed", this->name);
+      }
+      ss << option_value[3*i + 2] << " ";
+      if (!(ss >> this->ptotal[i])){
+        return badValue(option_value, "inlet fixed", this->name);
+      }
+    }
+    return "";
+  }
+  
+  void SetDefault(){
+    this->marker = NULL;
+    this->ttotal = NULL;
+    this->ptotal = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionPeriodic : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_bound;
+  string * & marker_donor;
+  double ** & rot_center;
+  double ** & rot_angles;
+  double ** & translation;
+  
+public:
+  COptionPeriodic(const string option_field_name, unsigned short & nMarker_PerBound,
+                    string* & Marker_PerBound, string* & Marker_PerDonor,
+                    double** & RotCenter, double** & RotAngles, double** & Translation) : size(nMarker_PerBound), marker_bound(Marker_PerBound), marker_donor(Marker_PerDonor), rot_center(RotCenter), rot_angles(RotAngles), translation(Translation){
+    this->name = option_field_name;
+  }
+  
+  ~COptionPeriodic(){};
+  string SetValue(vector<string> option_value){
+    
+    const int mod_num = 11;
+
+    int totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      this->rot_center = NULL;
+      this->rot_angles = NULL;
+      this->translation = NULL;
+      return "";
+    }
+    
+    if (totalVals % mod_num != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      this->rot_center = NULL;
+      this->rot_angles = NULL;
+      this->translation = NULL;
+      return newstring;
+    }
+    
+    int nVals = totalVals / mod_num;
+    this->size = nVals;
+    this->marker_bound = new string[nVals];
+    this->marker_donor = new string[nVals];
+    this->rot_center = new double*[nVals];
+    this->rot_angles = new double*[nVals];
+    this->translation = new double*[nVals];
+    for (int i = 0; i < nVals; i++){
+      this->rot_center[i] = new double[3];
+      this->rot_angles[i] = new double[3];
+      this->translation[i] = new double[3];
+    }
+    
+    double deg2rad = PI_NUMBER/180.0;
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker_bound[i].assign(option_value[mod_num*i]);
+      this->marker_donor[i].assign(option_value[mod_num*i+1]);
+      ss << option_value[mod_num*i + 2] << " ";
+      if (!(ss >> this->rot_center[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 3] << " ";
+      if (!(ss >> this->rot_center[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 4] << " ";
+      if (!(ss >> this->rot_center[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 5] << " ";
+      if (!(ss >> this->rot_angles[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 6] << " ";
+      if (!(ss >> this->rot_angles[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 7] << " ";
+      if (!(ss >> this->rot_angles[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 8] << " ";
+      if (!(ss >> this->translation[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 9] << " ";
+      if (!(ss >> this->translation[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*i + 10] << " ";
+      if (!(ss >> this->translation[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      this->rot_angles[i][0] *= deg2rad;
+      this->rot_angles[i][1] *= deg2rad;
+      this->rot_angles[i][2] *= deg2rad;
+    }
+    return "";
+  }
+  
+  void SetDefault(){
+    this->size = 0;
+    this->marker_bound = NULL;
+    this->marker_donor = NULL;
+    this->rot_center = NULL;
+    this->rot_angles = NULL;
+    this->translation = NULL;
+  }
+};
+
+
+
+
+
+
 
 /*!
  * \class CAnyOptionRef
