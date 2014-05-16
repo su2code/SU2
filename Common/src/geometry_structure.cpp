@@ -6783,7 +6783,6 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetColor(npart[iPoint]);
   
-  
   delete[] epart;
   delete[] npart;
   delete[] elmnts;
@@ -10700,6 +10699,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   nDomain = size;
   
   bool *ElemIn, *MarkerIn, **VertexIn;
+  long **Global_to_Local_Point;
   Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
   
   /*--- Auxiliar vector defined in the master node (based on the original geometry) ---*/
@@ -10713,9 +10713,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     nDim = geometry->GetnDim();
     nPeriodic = config->GetnPeriodicIndex();
     
-    Global_to_Local_Point =  new long[geometry->GetnPoint()];
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-      Global_to_Local_Point[iPoint] = -1;
+    Global_to_Local_Point = new long* [size];
+    for (iDomain = 0; iDomain < size; iDomain++) {
+      Global_to_Local_Point[iDomain] =  new long[geometry->GetnPoint()];
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+        Global_to_Local_Point[iDomain][iPoint] = -1;
+    }
   }
   
   for (iDomain = 0; iDomain < size; iDomain++) {
@@ -10726,7 +10729,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Loop over the original grid to perform the dimensionalizaton of the domain variables ---*/
       nElemTotal = 0; nPointTotal = 0; nPointGhost = 0; nPointDomainTotal = 0; nPointPeriodic = 0;
       nElemTriangle = 0; nElemRectangle = 0; nElemTetrahedron = 0; nElemHexahedron = 0; nElemWedge = 0; nElemPyramid = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+      
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iDomain][iPoint] = -1;
       
       for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
         
@@ -10744,8 +10748,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         if (ElemIn[iElem]) {
           for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
             iPoint = geometry->elem[iElem]->GetNode(iNode);
-            if (Global_to_Local_Point[iPoint] == -1) {
-              Global_to_Local_Point[iPoint] = 1;
+            if (Global_to_Local_Point[iDomain][iPoint] == -1) {
+              Global_to_Local_Point[iDomain][iPoint] = 1;
               
               nPointTotal++;
               
@@ -11000,7 +11004,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Set the value of the interior geometry ---*/
       iElemTotal = 0; iPointTotal = 0; iPointDomain = 0; iPointPeriodic = nPointDomainTotal; iPointGhost = nPointDomainTotal + nPointPeriodic;
       iElemTriangle = 0; iElemRectangle = 0; iElemTetrahedron = 0; iElemHexahedron = 0; iElemWedge = 0; iElemPyramid = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iPoint] = -1;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iDomain][iPoint] = -1;
       
       for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
         
@@ -11008,7 +11012,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
           
           for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
             iPoint = geometry->elem[iElem]->GetNode(iNode);
-            if (Global_to_Local_Point[iPoint] == -1) {
+            if (Global_to_Local_Point[iDomain][iPoint] == -1) {
               
               if ( geometry->node[iPoint]->GetColor() == iDomain ) {
                 if ( iPoint > geometry->GetnPointDomain() - 1) iPointTotal = iPointPeriodic;
@@ -11016,7 +11020,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               }
               else iPointTotal = iPointGhost;
               
-              Global_to_Local_Point[iPoint] = iPointTotal;
+              Global_to_Local_Point[iDomain][iPoint] = iPointTotal;
               
               /*--- Copy the information to be sended ---*/
               Buffer_Send_Color[iPointTotal] = geometry->node[iPoint]->GetColor();
@@ -11031,7 +11035,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               }
               else iPointGhost++;
             }
-            vnodes_local[iNode] = Global_to_Local_Point[iPoint];
+            vnodes_local[iNode] = Global_to_Local_Point[iDomain][iPoint];
           }
           
           /*--- Create the elements ---*/
@@ -11073,7 +11077,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         }
       }
       
-      
       /*--- Set the value of the boundary geometry ---*/
       iMarkerDomain = 0;
       iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
@@ -11092,7 +11095,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 
                 /*--- Read the points in the local domain ---*/
                 for (iNode = 0; iNode < geometry->bound[iMarker][iVertex]->GetnNodes(); iNode++) {
-                  vnodes_local[iNode] = Global_to_Local_Point[geometry->bound[iMarker][iVertex]->GetNode(iNode)];
+                  vnodes_local[iNode] = Global_to_Local_Point[iDomain][geometry->bound[iMarker][iVertex]->GetNode(iNode)];
                 }
                 
                 /*--- Create the data structure for the boundaries ---*/
@@ -11355,244 +11358,249 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   MPI::COMM_WORLD.Barrier();
 #endif
   
-  //  /*--- Set the periodic boundary conditions ---*/
-  //  unsigned long ReceptorColor, DonorColor, Transformation;
-  //  unsigned short jMarker;
-  //
-  //  unsigned long *nSendDomain_Periodic = new unsigned long [nDomain];
-  //  unsigned long *iSendDomain_Periodic = new unsigned long [nDomain];
-  //  unsigned long *nReceivedDomain_Periodic = new unsigned long [nDomain];
-  //  unsigned long *iReceivedDomain_Periodic = new unsigned long [nDomain];
-  //  unsigned long nTotalSendDomain_Periodic, iTotalSendDomain_Periodic;
-  //  unsigned long nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic;
-  //
-  //  unsigned long *SendDomain_Periodic;
-  //  unsigned long *SendDomain_PeriodicTrans;
-  //  unsigned long *ReceivedDomain_Periodic;
-  //  unsigned long *ReceivedDomain_PeriodicTrans;
-  //
-  //  unsigned long *Buffer_Send_SendDomain_Periodic;
-  //  unsigned long *Buffer_Send_SendDomain_PeriodicTrans;
-  //  unsigned long *Buffer_Send_ReceivedDomain_Periodic;
-  //  unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans;
-  //
-  //  unsigned long *Buffer_Receive_SendDomain_Periodic;
-  //  unsigned long *Buffer_Receive_SendDomain_PeriodicTrans;
-  //  unsigned long *Buffer_Receive_ReceivedDomain_Periodic;
-  //  unsigned long *Buffer_Receive_ReceivedDomain_PeriodicTrans;
-  //
-  //  /*--- Periodic boundary conditions ---*/
-  //  for (iDomain = 0; iDomain < size; iDomain++) {
-  //
-  //    if (rank == MASTER_NODE) {
-  //
-  //      /*--- Inizialization ---*/
-  //      for (jDomain = 0; jDomain < size; jDomain++) {
-  //        nSendDomain_Periodic[jDomain] = 0;      iSendDomain_Periodic[jDomain] = 0;
-  //        nReceivedDomain_Periodic[jDomain] = 0;  iReceivedDomain_Periodic[jDomain] = 0;
-  //      }
-  //      nTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic = 0;
-  //      nTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic = 0;
-  //
-  //      /*--- Dimensionalization of the periodic auxiliar vectors ---*/
-  //      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-  //        if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
-  //          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
-  //            iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
-  //            if (iDomain == geometry->node[iPoint]->GetColor()) {
-  //
-  //              if (Marker_All_SendRecv[iMarker] > 0) {
-  //
-  //                /*--- Identify the color of the receptor ---*/
-  //                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
-  //                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-  //                    (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
-  //                      jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-  //                      ReceptorColor = geometry->node[jPoint]->GetColor();
-  //                    }
-  //                }
-  //
-  //                nSendDomain_Periodic[ReceptorColor]++;
-  //                nTotalSendDomain_Periodic++;
-  //
-  //              }
-  //              if (Marker_All_SendRecv[iMarker] < 0) {
-  //
-  //                /*--- Identify the color of the donor ---*/
-  //                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
-  //                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-  //                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
-  //                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-  //                    DonorColor = geometry->node[jPoint]->GetColor();
-  //                  }
-  //                }
-  //
-  //                nReceivedDomain_Periodic[DonorColor]++;
-  //                nTotalReceivedDomain_Periodic++;
-  //
-  //              }
-  //            }
-  //          }
-  //        }
-  //      }
-  //
-  //      /*--- Allocate the send buffer vector ---*/
-  //      Buffer_Send_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
-  //      Buffer_Send_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
-  //      Buffer_Send_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
-  //      Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
-  //
-  //      /*--- Send the size of buffers ---*/
-  //      MPI::COMM_WORLD.Bsend(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, iDomain, 0);
-  //      MPI::COMM_WORLD.Bsend(&nTotalReceivedDomain_Periodic,   1, MPI::UNSIGNED_LONG, iDomain, 1);
-  //      MPI::COMM_WORLD.Bsend(nSendDomain_Periodic,             size, MPI::UNSIGNED_LONG, iDomain, 2);
-  //      MPI::COMM_WORLD.Bsend(nReceivedDomain_Periodic,         size, MPI::UNSIGNED_LONG, iDomain, 3);
-  //
-  //    }
-  //
-  //    MPI::COMM_WORLD.Barrier();
-  //
-  //    if (rank == iDomain) {
-  //
-  //      /*--- Receive the size of buffers---*/
-  //      MPI::COMM_WORLD.Recv(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
-  //      MPI::COMM_WORLD.Recv(&nTotalReceivedDomain_Periodic,   1, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
-  //      MPI::COMM_WORLD.Recv(nSendDomain_Periodic,             size, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
-  //      MPI::COMM_WORLD.Recv(nReceivedDomain_Periodic,         size, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
-  //
-  //      /*--- Allocate the send buffer vector ---*/
-  //      Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
-  //      Buffer_Receive_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
-  //      Buffer_Receive_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
-  //      Buffer_Receive_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
-  //
-  //    }
-  //
-  //    MPI::COMM_WORLD.Barrier();
-  //
-  //    /*--- Copy SendDomain_Periodic, SendDomain_PeriodicTrans, ReceivedDomain_Periodic,
-  //     and ReceivedDomain_PeriodicTrans ---*/
-  //    if (rank == MASTER_NODE) {
-  //
-  //      /*--- Evaluate the number of already existing periodic boundary conditions ---*/
-  //      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-  //
-  //        if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
-  //
-  //          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
-  //            iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
-  //            Transformation = geometry->bound[iMarker][iVertex]->GetRotation_Type();
-  //
-  //            if (iDomain == geometry->node[iPoint]->GetColor()) {
-  //
-  //              /*--- If the information is going to be sended, find the
-  //               domain of the receptor ---*/
-  //              if (Marker_All_SendRecv[iMarker] > 0) {
-  //
-  //                /*--- Identify the color of the receptor ---*/
-  //                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
-  //                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-  //                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
-  //                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-  //                    ReceptorColor = geometry->node[jPoint]->GetColor();
-  //                  }
-  //                }
-  //
-  //                /*--- For each color of the receptor we will han an extra marker (+) ---*/
-  //                Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = 0;//Global_to_Local_Point[iPoint];
-  //                Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
-  //                iTotalSendDomain_Periodic++;
-  //
-  //              }
-  //
-  //
-  //              /*--- If the information is goint to be received,
-  //               find the domain if the donor ---*/
-  //              if (Marker_All_SendRecv[iMarker] < 0) {
-  //
-  //                /*--- Identify the color of the donor ---*/
-  //                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
-  //                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-  //                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker] )) {
-  //                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-  //                    DonorColor = geometry->node[jPoint]->GetColor();
-  //                  }
-  //                }
-  //
-  //                /*--- For each color of the donor we will han an extra marker (-) ---*/
-  //                Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = 0;//Global_to_Local_Point[iPoint];
-  //                Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
-  //                iTotalReceivedDomain_Periodic++;
-  //
-  //              }
-  //            }
-  //          }
-  //        }
-  //      }
-  //
-  //
-  //      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 0);
-  //      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 1);
-  //      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
-  //      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
-  //
-  //      delete[] Buffer_Send_SendDomain_Periodic;
-  //      delete[] Buffer_Send_SendDomain_PeriodicTrans;
-  //      delete[] Buffer_Send_ReceivedDomain_Periodic;
-  //      delete[] Buffer_Send_ReceivedDomain_PeriodicTrans;
-  //
-  //    }
-  //
-  //    MPI::COMM_WORLD.Barrier();
-  //
-  //    if (rank == iDomain) {
-  //
-  //      /*--- Receive the size of buffers---*/
-  //      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
-  //      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_PeriodicTrans,     nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
-  //      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_Periodic,      nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
-  //      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
-  //
-  //
-  //      /*--- Add the new periodic markers to the domain ---*/
-  //      for (jDomain = 0; jDomain < size; jDomain++) {
-  //
-  //        iTotalSendDomain_Periodic = 0;
-  //        if (nSendDomain_Periodic[jDomain] != 0) {
-  //          nVertexDomain[nMarker] = 0;
-  //          for (iVertex = 0; iVertex < nSendDomain_Periodic[jDomain]; iVertex++) {
-  //            bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
-  //            bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
-  //            nVertexDomain[nMarker]++;
-  //            iTotalSendDomain_Periodic++;
-  //          }
-  //          Marker_All_SendRecv[nMarker] = jDomain+1;
-  //          nMarker++;
-  //        }
-  //
-  //        iTotalReceivedDomain_Periodic = 0;
-  //        if (nReceivedDomain_Periodic[jDomain] != 0) {
-  //          nVertexDomain[nMarker] = 0;
-  //          for (iVertex = 0; iVertex < nReceivedDomain_Periodic[jDomain]; iVertex++) {
-  //            bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
-  //            bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
-  //            nVertexDomain[nMarker]++;
-  //            iTotalReceivedDomain_Periodic++;
-  //          }
-  //          Marker_All_SendRecv[nMarker] = -(jDomain+1);
-  //          nMarker++;
-  //        }
-  //
-  //      }
-  //
-  //      delete[] Buffer_Receive_SendDomain_Periodic;
-  //      delete[] Buffer_Receive_SendDomain_PeriodicTrans;
-  //      delete[] Buffer_Receive_ReceivedDomain_Periodic;
-  //      delete[] Buffer_Receive_ReceivedDomain_PeriodicTrans;
-  //
-  //    }
-  //
-  //  }
+  /*--- Set the periodic boundary conditions ---*/
+  unsigned long ReceptorColor, DonorColor, Transformation;
+  unsigned short jMarker;
+
+  unsigned long *nSendDomain_Periodic = new unsigned long [nDomain];
+  unsigned long *iSendDomain_Periodic = new unsigned long [nDomain];
+  unsigned long *nReceivedDomain_Periodic = new unsigned long [nDomain];
+  unsigned long *iReceivedDomain_Periodic = new unsigned long [nDomain];
+  unsigned long nTotalSendDomain_Periodic, iTotalSendDomain_Periodic;
+  unsigned long nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic;
+
+  unsigned long *SendDomain_Periodic;
+  unsigned long *SendDomain_PeriodicTrans;
+  unsigned long *ReceivedDomain_Periodic;
+  unsigned long *ReceivedDomain_PeriodicTrans;
+
+  unsigned long *Buffer_Send_SendDomain_Periodic;
+  unsigned long *Buffer_Send_SendDomain_PeriodicTrans;
+  unsigned long *Buffer_Send_ReceivedDomain_Periodic;
+  unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans;
+
+  unsigned long *Buffer_Receive_SendDomain_Periodic;
+  unsigned long *Buffer_Receive_SendDomain_PeriodicTrans;
+  unsigned long *Buffer_Receive_ReceivedDomain_Periodic;
+  unsigned long *Buffer_Receive_ReceivedDomain_PeriodicTrans;
+
+  /*--- Periodic boundary conditions ---*/
+  for (iDomain = 0; iDomain < size; iDomain++) {
+
+    if (rank == MASTER_NODE) {
+      
+      /*--- Inizialization ---*/
+      for (jDomain = 0; jDomain < size; jDomain++) {
+        nSendDomain_Periodic[jDomain] = 0;      iSendDomain_Periodic[jDomain] = 0;
+        nReceivedDomain_Periodic[jDomain] = 0;  iReceivedDomain_Periodic[jDomain] = 0;
+      }
+      nTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic = 0;
+      nTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic = 0;
+
+      /*--- Dimensionalization of the periodic auxiliar vectors ---*/
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+        if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+            iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
+            if (iDomain == geometry->node[iPoint]->GetColor()) {
+
+              if (Marker_All_SendRecv[iMarker] > 0) {
+
+                /*--- Identify the color of the receptor ---*/
+                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+                    (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+                      jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+                      ReceptorColor = geometry->node[jPoint]->GetColor();
+                    }
+                }
+
+                nSendDomain_Periodic[ReceptorColor]++;
+                nTotalSendDomain_Periodic++;
+
+              }
+              if (Marker_All_SendRecv[iMarker] < 0) {
+
+                /*--- Identify the color of the donor ---*/
+                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+                    DonorColor = geometry->node[jPoint]->GetColor();
+                  }
+                }
+
+                nReceivedDomain_Periodic[DonorColor]++;
+                nTotalReceivedDomain_Periodic++;
+
+              }
+            }
+          }
+        }
+      }
+
+      /*--- Allocate the send buffer vector ---*/
+      Buffer_Send_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Send_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Send_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
+      Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
+
+      /*--- Send the size of buffers ---*/
+      MPI::COMM_WORLD.Bsend(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, iDomain, 0);
+      MPI::COMM_WORLD.Bsend(&nTotalReceivedDomain_Periodic,   1, MPI::UNSIGNED_LONG, iDomain, 1);
+      MPI::COMM_WORLD.Bsend(nSendDomain_Periodic,             size, MPI::UNSIGNED_LONG, iDomain, 2);
+      MPI::COMM_WORLD.Bsend(nReceivedDomain_Periodic,         size, MPI::UNSIGNED_LONG, iDomain, 3);
+
+    }
+
+    MPI::COMM_WORLD.Barrier();
+
+    if (rank == iDomain) {
+
+      /*--- Receive the size of buffers---*/
+      MPI::COMM_WORLD.Recv(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
+      MPI::COMM_WORLD.Recv(&nTotalReceivedDomain_Periodic,   1, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
+      MPI::COMM_WORLD.Recv(nSendDomain_Periodic,             size, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
+      MPI::COMM_WORLD.Recv(nReceivedDomain_Periodic,         size, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
+
+      /*--- Allocate the send buffer vector ---*/
+      Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Receive_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Receive_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
+      Buffer_Receive_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
+
+    }
+
+    MPI::COMM_WORLD.Barrier();
+
+    /*--- Copy SendDomain_Periodic, SendDomain_PeriodicTrans, ReceivedDomain_Periodic,
+     and ReceivedDomain_PeriodicTrans ---*/
+    if (rank == MASTER_NODE) {
+      
+      /*--- Evaluate the number of already existing periodic boundary conditions ---*/
+      for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+
+        if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+
+          for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+            iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
+            Transformation = geometry->bound[iMarker][iVertex]->GetRotation_Type();
+
+            if (iDomain == geometry->node[iPoint]->GetColor()) {
+
+              /*--- If the information is going to be sended, find the
+               domain of the receptor ---*/
+              if (Marker_All_SendRecv[iMarker] > 0) {
+
+                /*--- Identify the color of the receptor ---*/
+                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+                    ReceptorColor = geometry->node[jPoint]->GetColor();
+                  }
+                }
+
+                /*--- For each color of the receptor we will han an extra marker (+) ---*/
+                Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
+                Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
+                iTotalSendDomain_Periodic++;
+
+              }
+
+
+              /*--- If the information is goint to be received,
+               find the domain if the donor ---*/
+              if (Marker_All_SendRecv[iMarker] < 0) {
+
+                /*--- Identify the color of the donor ---*/
+                for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
+                  if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
+                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker] )) {
+                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+                    DonorColor = geometry->node[jPoint]->GetColor();
+                  }
+                }
+
+                /*--- For each color of the donor we will han an extra marker (-) ---*/
+                Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
+                Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
+                iTotalReceivedDomain_Periodic++;
+
+              }
+            }
+          }
+        }
+      }
+
+
+      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 0);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 1);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
+
+      delete[] Buffer_Send_SendDomain_Periodic;
+      delete[] Buffer_Send_SendDomain_PeriodicTrans;
+      delete[] Buffer_Send_ReceivedDomain_Periodic;
+      delete[] Buffer_Send_ReceivedDomain_PeriodicTrans;
+
+    }
+
+    MPI::COMM_WORLD.Barrier();
+
+    if (rank == iDomain) {
+
+      /*--- Receive the size of buffers---*/
+      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_PeriodicTrans,     nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_Periodic,      nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
+      
+      /*--- Add the new periodic markers to the domain ---*/
+      for (jDomain = 0; jDomain < size; jDomain++) {
+
+        iTotalSendDomain_Periodic = 0;
+        if (nSendDomain_Periodic[jDomain] != 0) {
+          nVertexDomain[nMarker] = 0;
+          bound[nMarker] = new CPrimalGrid* [nSendDomain_Periodic[jDomain]];
+          for (iVertex = 0; iVertex < nSendDomain_Periodic[jDomain]; iVertex++) {
+            bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
+            bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
+            nVertexDomain[nMarker]++;
+            iTotalSendDomain_Periodic++;
+          }
+          
+          Marker_All_SendRecv[nMarker] = jDomain+1;
+          nElem_Bound[nMarker] = nVertexDomain[nMarker];
+          nMarker++;
+        }
+
+        iTotalReceivedDomain_Periodic = 0;
+        if (nReceivedDomain_Periodic[jDomain] != 0) {
+          nVertexDomain[nMarker] = 0;
+          bound[nMarker] = new CPrimalGrid* [nReceivedDomain_Periodic[jDomain]];
+          for (iVertex = 0; iVertex < nReceivedDomain_Periodic[jDomain]; iVertex++) {
+            bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
+            bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
+            nVertexDomain[nMarker]++;
+            iTotalReceivedDomain_Periodic++;
+          }
+          
+          Marker_All_SendRecv[nMarker] = -(jDomain+1);
+          nElem_Bound[nMarker] = nVertexDomain[nMarker];
+          nMarker++;
+        }
+
+      }
+
+      delete[] Buffer_Receive_SendDomain_Periodic;
+      delete[] Buffer_Receive_SendDomain_PeriodicTrans;
+      delete[] Buffer_Receive_ReceivedDomain_Periodic;
+      delete[] Buffer_Receive_ReceivedDomain_PeriodicTrans;
+
+    }
+
+  }
   
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
@@ -11603,7 +11611,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 #endif
   
   if (rank == MASTER_NODE) {
-    delete[] Global_to_Local_Point;
+    for (iDomain = 0; iDomain < size; iDomain++)
+      delete[] Global_to_Local_Point[iDomain];
     delete[] ElemIn;
     delete[] MarkerIn;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
@@ -11612,6 +11621,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   }
   
 #endif
+  
 }
 
 CDomainGeometry::~CDomainGeometry(void) {
