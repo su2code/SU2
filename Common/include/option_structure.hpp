@@ -2035,7 +2035,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / mod_num;
+    int nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];
@@ -2050,7 +2050,7 @@ public:
     
     double deg2rad = PI_NUMBER/180.0;
     stringstream ss;
-    for (int i = 0; i < nVals; i++){
+    for (int i = 0; i < (nVals/2); i++){
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       ss << option_value[mod_num*i + 2] << " ";
@@ -2093,6 +2093,57 @@ public:
       this->rot_angles[i][1] *= deg2rad;
       this->rot_angles[i][2] *= deg2rad;
     }
+    
+    for (int i = (nVals/2); i < nVals; i++){
+      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
+      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
+      ss << option_value[mod_num*(i-nVals/2) + 2] << " ";
+      if (!(ss >> this->rot_center[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 3] << " ";
+      if (!(ss >> this->rot_center[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 4] << " ";
+      if (!(ss >> this->rot_center[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 5] << " ";
+      if (!(ss >> this->rot_angles[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 6] << " ";
+      if (!(ss >> this->rot_angles[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 7] << " ";
+      if (!(ss >> this->rot_angles[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 8] << " ";
+      if (!(ss >> this->translation[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 9] << " ";
+      if (!(ss >> this->translation[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 10] << " ";
+      if (!(ss >> this->translation[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      this->rot_center[i][0] *= -1.0;
+      this->rot_center[i][1] *= -1.0;
+      this->rot_center[i][2] *= -1.0;
+      this->rot_angles[i][0] *= -deg2rad;
+      this->rot_angles[i][1] *= -deg2rad;
+      this->rot_angles[i][2] *= -deg2rad;
+      this->translation[i][0] *= -1.0;
+      this->translation[i][1] *= -1.0;
+      this->translation[i][2] *= -1.0;
+    }
+    
     return "";
   }
   

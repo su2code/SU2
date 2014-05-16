@@ -33,6 +33,7 @@
 
 /* Begin PBXFileReference section */
 		0514CF8D16DEF6D400ADB9D2 /* CFD_PBC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CFD_PBC; sourceTree = BUILT_PRODUCTS_DIR; };
+		055A50EA1925A77000EC88B0 /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 		05E6DA9617EB600500FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
 		05E6DA9717EB600500FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
 		05E6DA9817EB600500FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
@@ -121,6 +122,7 @@
 		08FB7794FE84155DC02AAC07 /* CFD_PBC */ = {
 			isa = PBXGroup;
 			children = (
+				055A50EA1925A77000EC88B0 /* config_template.cfg */,
 				05EADA9713E4C05C0093BD56 /* InLine */,
 				05EADA9613E4C0550093BD56 /* Include */,
 				08FB7795FE84155DC02AAC07 /* Source */,
@@ -226,6 +228,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INSTALL_PATH = /usr/local/bin;
 				PRODUCT_NAME = CFD_PBC;
+				SDKROOT = macosx10.8;
 			};
 			name = Debug;
 		};
@@ -237,6 +240,7 @@
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
 				PRODUCT_NAME = CFD_PBC;
+				SDKROOT = macosx10.8;
 			};
 			name = Release;
 		};
