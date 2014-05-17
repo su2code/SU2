@@ -1544,14 +1544,6 @@ public:
 	 */
 	~CDomainGeometry(void);
   
-  /*!
-	 * \brief Constructor of the class.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_domain - Number of domains for parallelization purposes.
-	 */
-	void SetDomainSerial(CGeometry *geometry, CConfig *config, unsigned short val_domain);
-  
 	/*! 
 	 * \brief Set the send receive boundaries of the grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
