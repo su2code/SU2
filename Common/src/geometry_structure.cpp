@@ -11613,9 +11613,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
       
       /*--- Add the new periodic markers to the domain ---*/
+      
+      iTotalSendDomain_Periodic = 0;
+      iTotalReceivedDomain_Periodic = 0;
+
       for (jDomain = 0; jDomain < size; jDomain++) {
 
-        iTotalSendDomain_Periodic = 0;
         if (nSendDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
           bound[nMarker] = new CPrimalGrid* [nSendDomain_Periodic[jDomain]];
@@ -11631,7 +11634,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
           nMarker++;
         }
 
-        iTotalReceivedDomain_Periodic = 0;
         if (nReceivedDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
           bound[nMarker] = new CPrimalGrid* [nReceivedDomain_Periodic[jDomain]];
