@@ -1960,6 +1960,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   if (implicit) Jacobian.SetValZero();
   
+  
+  /*--- Apply the wall functions boundary condition ---*/
+  if (config->GetWall_Functions() && config->GetExtIter() > 0)
+    Compute_Wall_Functions_Mean(geometry, solver_container, config);
+  
   /*--- Error message ---*/
 #ifndef NO_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
@@ -8146,10 +8151,6 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  /*--- Apply the wall functions boundary condition ---*/
-  if (config->GetWall_Functions() && config->GetExtIter() > 0)
-    Compute_Wall_Functions(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-  
 }
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -8455,12 +8456,11 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
-void CNSSolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CNSSolver::Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   /*--- Local variables ---*/
   
-  unsigned short iDim, jDim, iVar, jVar;
+  unsigned short iDim, jDim, iVar, jVar, iMarker;
   unsigned long iVertex, iPoint, jPoint, Point_Normal, counter;
   
   double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
@@ -8496,6 +8496,15 @@ void CNSSolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_con
   double kappa = 0.4;
   double B = 5.5;
   
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
+        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+      
   /*--- Identify the boundary by string name ---*/
   
   string Marker_Tag = config->GetMarker_All_Tag(val_marker);
