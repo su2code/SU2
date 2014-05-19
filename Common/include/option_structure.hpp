@@ -2133,9 +2133,11 @@ public:
       if (!(ss >> this->translation[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      this->rot_center[i][0] *= -1.0;
-      this->rot_center[i][1] *= -1.0;
-      this->rot_center[i][2] *= -1.0;
+      /*--- Mirror the rotational angles and translation vector (rotational 
+       center does not need to move) ---*/
+      this->rot_center[i][0] *= 1.0;
+      this->rot_center[i][1] *= 1.0;
+      this->rot_center[i][2] *= 1.0;
       this->rot_angles[i][0] *= -deg2rad;
       this->rot_angles[i][1] *= -deg2rad;
       this->rot_angles[i][2] *= -deg2rad;
