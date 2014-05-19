@@ -1230,7 +1230,11 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
     if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
       RecvFrom = abs(SendRecv)-1;
-      if (SendRecv < 0 && RecvFrom < rank) {
+      
+      /*--- Checking for less than or equal to the rank, because there may
+       be some periodic halo nodes that send info to the same rank. ---*/
+      
+      if (SendRecv < 0 && RecvFrom <= rank) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Local_Halo[iPoint] = true;
