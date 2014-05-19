@@ -11426,20 +11426,19 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long nTotalSendDomain_Periodic, iTotalSendDomain_Periodic;
   unsigned long nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic;
 
-  unsigned long *SendDomain_Periodic;
-  unsigned long *SendDomain_PeriodicTrans;
-  unsigned long *ReceivedDomain_Periodic;
-  unsigned long *ReceivedDomain_PeriodicTrans;
-
   unsigned long *Buffer_Send_SendDomain_Periodic;
   unsigned long *Buffer_Send_SendDomain_PeriodicTrans;
+  unsigned long *Buffer_Send_SendDomain_PeriodicReceptor;
   unsigned long *Buffer_Send_ReceivedDomain_Periodic;
   unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans;
+  unsigned long *Buffer_Send_ReceivedDomain_PeriodicDonor;
 
   unsigned long *Buffer_Receive_SendDomain_Periodic;
   unsigned long *Buffer_Receive_SendDomain_PeriodicTrans;
+  unsigned long *Buffer_Receive_SendDomain_PeriodicReceptor;
   unsigned long *Buffer_Receive_ReceivedDomain_Periodic;
   unsigned long *Buffer_Receive_ReceivedDomain_PeriodicTrans;
+  unsigned long *Buffer_Receive_ReceivedDomain_PeriodicDonor;
 
   for (iDomain = 0; iDomain < size; iDomain++) {
 
@@ -11450,8 +11449,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         nSendDomain_Periodic[jDomain] = 0;      iSendDomain_Periodic[jDomain] = 0;
         nReceivedDomain_Periodic[jDomain] = 0;  iReceivedDomain_Periodic[jDomain] = 0;
       }
-      nTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic = 0;
-      nTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic = 0;
+      nTotalSendDomain_Periodic = 0;
+      nTotalReceivedDomain_Periodic = 0;
 
       /*--- Dimensionalization of the periodic auxiliar vectors ---*/
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -11496,10 +11495,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       }
 
       /*--- Allocate the send buffer vector ---*/
-      Buffer_Send_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
-      Buffer_Send_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
-      Buffer_Send_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
-      Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
+      Buffer_Send_SendDomain_Periodic               = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Send_SendDomain_PeriodicTrans          = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Send_SendDomain_PeriodicReceptor       = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Send_ReceivedDomain_Periodic           = new unsigned long [nTotalReceivedDomain_Periodic];
+      Buffer_Send_ReceivedDomain_PeriodicTrans      = new unsigned long [nTotalReceivedDomain_Periodic];
+      Buffer_Send_ReceivedDomain_PeriodicDonor      = new unsigned long [nTotalReceivedDomain_Periodic];
 
       /*--- Send the size of buffers ---*/
       MPI::COMM_WORLD.Bsend(&nTotalSendDomain_Periodic,       1, MPI::UNSIGNED_LONG, iDomain, 0);
@@ -11522,8 +11523,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Allocate the send buffer vector ---*/
       Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Receive_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
+      Buffer_Receive_SendDomain_PeriodicReceptor   = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Receive_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
       Buffer_Receive_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
+      Buffer_Receive_ReceivedDomain_PeriodicDonor  = new unsigned long [nTotalReceivedDomain_Periodic];
 
     }
 
@@ -11532,6 +11535,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Copy SendDomain_Periodic, SendDomain_PeriodicTrans, ReceivedDomain_Periodic,
      and ReceivedDomain_PeriodicTrans ---*/
     if (rank == MASTER_NODE) {
+      
+      iTotalSendDomain_Periodic = 0;
+      iTotalReceivedDomain_Periodic = 0;
       
       /*--- Evaluate the number of already existing periodic boundary conditions ---*/
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -11560,7 +11566,15 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 /*--- For each color of the receptor we will han an extra marker (+) ---*/
                 Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
+                Buffer_Send_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] = ReceptorColor;
+
+//                if ((rank == 0) && (iDomain == 1)) {
+//                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" ReceptorColor "<< ReceptorColor << endl;
+//                }
+                
                 iTotalSendDomain_Periodic++;
+                
+
 
               }
 
@@ -11581,6 +11595,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 /*--- For each color of the donor we will han an extra marker (-) ---*/
                 Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
+                Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
                 iTotalReceivedDomain_Periodic++;
 
               }
@@ -11592,13 +11607,17 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 
       MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 0);
       MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 1);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicReceptor,   nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 4);
+      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicDonor,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 5);
 
       delete[] Buffer_Send_SendDomain_Periodic;
       delete[] Buffer_Send_SendDomain_PeriodicTrans;
+      delete[] Buffer_Send_SendDomain_PeriodicReceptor;
       delete[] Buffer_Send_ReceivedDomain_Periodic;
       delete[] Buffer_Send_ReceivedDomain_PeriodicTrans;
+      delete[] Buffer_Send_ReceivedDomain_PeriodicDonor;
 
     }
 
@@ -11609,9 +11628,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       /*--- Receive the size of buffers---*/
       MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 0);
       MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_PeriodicTrans,     nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 1);
-      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_Periodic,      nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
-      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
-      
+      MPI::COMM_WORLD.Recv(Buffer_Receive_SendDomain_PeriodicReceptor,  nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 2);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_Periodic,      nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 3);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 4);
+      MPI::COMM_WORLD.Recv(Buffer_Receive_ReceivedDomain_PeriodicDonor, nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, MASTER_NODE, 5);
+
       /*--- Add the new periodic markers to the domain ---*/
       
       iTotalSendDomain_Periodic = 0;
@@ -11622,12 +11643,25 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         if (nSendDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
           bound[nMarker] = new CPrimalGrid* [nSendDomain_Periodic[jDomain]];
+          
+          for (iTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic < nTotalSendDomain_Periodic; iTotalSendDomain_Periodic++) {
+            if (Buffer_Receive_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] == jDomain) break;
+          }
+          
           for (iVertex = 0; iVertex < nSendDomain_Periodic[jDomain]; iVertex++) {
             bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
             bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
+
+            
+//            if ((rank == 1) && (jDomain == 2)) {
+//              cout <<"Send... after MPI "<< Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic] << " " << Buffer_Receive_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] << endl;
+//            }
+            
             nVertexDomain[nMarker]++;
             iTotalSendDomain_Periodic++;
+            
           }
+          
           
           Marker_All_SendRecv[nMarker] = jDomain+1;
           nElem_Bound[nMarker] = nVertexDomain[nMarker];
@@ -11637,6 +11671,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         if (nReceivedDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
           bound[nMarker] = new CPrimalGrid* [nReceivedDomain_Periodic[jDomain]];
+          
+          for (iTotalReceivedDomain_Periodic = 0; iTotalReceivedDomain_Periodic < nTotalReceivedDomain_Periodic; iTotalReceivedDomain_Periodic++) {
+            if (Buffer_Receive_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] == jDomain) break;
+          }
+          
           for (iVertex = 0; iVertex < nReceivedDomain_Periodic[jDomain]; iVertex++) {
             bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
             bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
@@ -11653,8 +11692,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 
       delete[] Buffer_Receive_SendDomain_Periodic;
       delete[] Buffer_Receive_SendDomain_PeriodicTrans;
+      delete[] Buffer_Receive_SendDomain_PeriodicReceptor;
       delete[] Buffer_Receive_ReceivedDomain_Periodic;
       delete[] Buffer_Receive_ReceivedDomain_PeriodicTrans;
+      delete[] Buffer_Receive_ReceivedDomain_PeriodicDonor;
 
     }
 
