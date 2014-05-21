@@ -156,6 +156,8 @@ inline void CGeometry::VisualizeControlVolume(CConfig *config, unsigned short ac
 
 inline void CGeometry::MatchNearField(CConfig *config) { }
 
+inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
+
 inline void CGeometry::MatchInterface(CConfig *config) { }
 
 inline void CGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, unsigned short val_iZone, unsigned short val_nZone) { }

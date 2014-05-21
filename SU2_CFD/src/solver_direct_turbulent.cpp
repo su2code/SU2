@@ -2376,7 +2376,7 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
 
       }
       
-//      cout << nu_til << "   " << counter << endl;
+      //cout << "Turb: " << nu_til << "   " << counter << endl;
 
 //      /*--- Set the value of nu_tilde at the first point off the wall as
 //       a Dirichlet boundary condition. ---*/
@@ -2844,6 +2844,9 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Set distance to the surface ---*/
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    
+    /*--- Set coordinates ---*/
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),geometry->node[iPoint]->GetCoord());
     
     /*--- Compute the source term ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);

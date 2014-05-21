@@ -55,19 +55,31 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
 }
 
 CConfig::CConfig(char case_filename[200]) {
+  /*--- Initialize pointers to Null---*/
+  SetPointersNull();
+  
+  /*--- Reading config options  ---*/
+  SetConfig_Options(1, 1);
+  
+  /*--- Parsing the config file  ---*/
+  SetParsing(case_filename);
+  
+  
+  
+  /*
   string text_line, text2find, option_name, keyword;
   ifstream case_file;
   vector<string> option_value;
   
-  /*--- Mesh information ---*/
+  //--- Mesh information ---
   AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
   AddScalarOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   
-  /*--- Information about type of simulation and time-spectral instances ---*/
+  //--- Information about type of simulation and time-spectral instances ---
   AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
   AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
   
-  /*--- Read the configuration file ---*/
+  //--- Read the configuration file ---
   case_file.open(case_filename, ios::in);
   
   if (case_file.fail()) {
@@ -75,7 +87,7 @@ CConfig::CConfig(char case_filename[200]) {
     exit(1);
   }
   
-  /*--- Parse the configuration file and set the options ---*/
+  //--- Parse the configuration file and set the options ---
   while (getline (case_file,text_line)) {
     if (TokenizeString(text_line, option_name, option_value)) {
       map<string, CAnyOptionRef*>::iterator it;
@@ -87,7 +99,7 @@ CConfig::CConfig(char case_filename[200]) {
   }
   
   case_file.close();
-  
+  */
 }
 
 void CConfig::SetPointersNull(void){
@@ -168,84 +180,91 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   iZone = val_iZone;
   
   
+  
   /* BEGIN_CONFIG_OPTIONS */
   
-  /*--- Options related to problem definition and partitioning ---*/
   /* CONFIG_CATEGORY: Problem Definition */
+  /*--- Options related to problem definition and partitioning ---*/
   
   /* DESCRIPTION: Adjoint type */
-  AddEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, "COMPRESSIBLE");
+  addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
   
   /* DESCRIPTION: Write extra output */
-  AddSpecialOption("EXTRA_OUTPUT", ExtraOutput, SetBoolOption, false);
+  addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
   
   /* DESCRIPTION: Physical governing equations */
-  AddEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, "NONE");
+  addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /* DESCRIPTION: Mathematical problem */
-  AddMathProblem("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
   /* DESCRIPTION: Specify turbulence model */
-  AddEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, "NONE");
+  addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /* DESCRIPTION: Use wall functions with the turbulence model */
-  AddSpecialOption("WALL_FUNCTIONS", Wall_Functions, SetBoolOption, false);
-  /* DESCRIPTION: Location of the turb model itself */
-  AddScalarOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
-  /* DESCRIPTION: what kind of input/output feature map is there */
-  AddScalarOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
+  addBoolOption("WALL_FUNCTIONS", Wall_Functions, false);
   /* DESCRIPTION: Specify transition model */
-  AddEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, "NONE");
+  addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
   
   /* DESCRIPTION: Axisymmetric simulation */
-  AddSpecialOption("AXISYMMETRIC", Axisymmetric, SetBoolOption, false);
+  addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
-  AddSpecialOption("GRAVITY_FORCE", GravityForce, SetBoolOption, false);
+  addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Perform a low fidelity simulation */
-  AddSpecialOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, SetBoolOption, false);
+  addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /* DESCRIPTION: Restart solution from native solution file */
-  AddSpecialOption("RESTART_SOL", Restart, SetBoolOption, false);
+  addBoolOption("RESTART_SOL", Restart, false);
   /* DESCRIPTION: Write a tecplot file for each partition */
-  AddSpecialOption("VISUALIZE_PART", Visualize_Partition, SetBoolOption, false);
+  addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   
-  /*--- Options related to various boundary markers ---*/
   /* CONFIG_CATEGORY: Boundary Markers */
+  /*--- Options related to various boundary markers ---*/
   
   /* DESCRIPTION: Marker(s) of the surface in the surface flow solution file */
-  AddMarkerOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
+  addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /* DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients */
-  AddMarkerOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+  addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
-  AddMarkerOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
+  addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
   /* DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
-  AddMarkerOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
+  addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
   /* DESCRIPTION: Euler wall boundary marker(s) */
-  AddMarkerOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
+  addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
   /* DESCRIPTION: Far-field boundary marker(s) */
-  AddMarkerOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
+  addStringListOption("MARKER_FAR", nMarker_FarField, Marker_FarField);
   /* DESCRIPTION: Symmetry boundary condition */
-  AddMarkerOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
+  addStringListOption("MARKER_SYM", nMarker_SymWall, Marker_SymWall);
   /* DESCRIPTION: Symmetry boundary condition */
-  AddMarkerOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
+  addStringListOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
   /* DESCRIPTION: Near-Field boundary condition */
-  AddMarkerOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
+  addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
   /* DESCRIPTION: Zone interface boundary marker(s) */
-  AddMarkerOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
+  addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /* DESCRIPTION: Dirichlet boundary marker(s) */
-  AddMarkerOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
+  addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
-  AddMarkerOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
+  addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
   /* DESCRIPTION: poisson dirichlet boundary marker(s) */
-  AddMarkerDirichlet("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
+  addStringDoubleListOption("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
   /* DESCRIPTION: poisson neumann boundary marker(s) */
-  AddMarkerOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
+  addStringListOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
   /* DESCRIPTION: Custom boundary marker(s) */
-  AddMarkerOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
+  addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
-  AddMarkerPeriodic("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
+  addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
+  
+  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
+   Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
+   rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
+   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
+  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+                        Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
+                        ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
+                        ActDisk_CT, ActDisk_Omega);
+  
   /* DESCRIPTION: Inlet boundary type */
-  AddEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, "TOTAL_CONDITIONS");
+  addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
   /* DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
@@ -253,684 +272,696 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
    a unit vector. */
-  AddMarkerInlet("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
+  addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
   /* DESCRIPTION: % Supersonic inlet boundary marker(s)
    Format: (inlet marker, temperature, static pressure, velocity_x,
    velocity_y, velocity_z, ... ), i.e. primitive variables specified. */
-  AddMarkerInlet("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
+  addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
   /* DESCRIPTION: Outlet boundary marker(s)
    Format: ( outlet marker, back pressure (static), ... ) */
-  AddMarkerOutlet("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
+  addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
-  AddMarkerOutlet("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
+  addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
-  AddMarkerOutlet("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
+  addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */
-  AddMarkerOutlet("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
+  addStringDoubleListOption("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
-  AddMarkerOutlet("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
-  AddMarkerOutlet("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
+  addStringDoubleListOption("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
-  AddMarkerOutlet("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
+  addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /* DESCRIPTION: Nacelle inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) */
-  AddMarkerOutlet("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
+  addStringDoubleListOption("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
   /* DESCRIPTION: Engine subsonic intake region */
-  AddSpecialOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, SetBoolOption, false);
+  addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  AddMarkerInlet("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addInletFixedOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
   /* DESCRIPTION: Displacement boundary marker(s) */
-  AddMarkerDisplacement("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
+  addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
-  AddMarkerLoad("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
+  addStringDoubleListOption("MARKER_NORMAL_LOAD", nMarker_Load, Marker_Load, Load_Value);
   /* DESCRIPTION: Flow load boundary marker(s) */
-  AddMarkerFlowLoad("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
+  addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
-  AddScalarOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
+  addDoubleOption("DAMP_NACELLE_INFLOW", Damp_Nacelle_Inflow, 0.1);
   /* DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
    Format: ( outlet marker) */
-  AddMarkerOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
+  addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
   
   
-  /*--- Options related to grid adaptation ---*/
   /* CONFIG_CATEGORY: Grid adaptation */
+  /*--- Options related to grid adaptation ---*/
   
   /* DESCRIPTION: Kind of grid adaptation */
-  AddEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, "NONE");
+  addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  AddScalarOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
+  addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
   /* DESCRIPTION: Scale factor for the dual volume */
-  AddScalarOption("DUALVOL_POWER", DualVol_Power, 0.5);
+  addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
   /* DESCRIPTION: Use analytical definition for surfaces */
-  AddEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, "NONE");
+  addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
   /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
-  AddSpecialOption("SMOOTH_GEOMETRY", SmoothNumGrid, SetBoolOption, false);
+  addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
   /* DESCRIPTION: Adapt the boundary elements */
-  AddSpecialOption("ADAPT_BOUNDARY", AdaptBoundary, SetBoolOption, true);
+  addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
   /* DESCRIPTION: Divide rectangles into triangles */
-  AddSpecialOption("DIVIDE_ELEMENTS", Divide_Element, SetBoolOption, false);
+  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
   
-  /*--- Options related to time-marching ---*/
   /* CONFIG_CATEGORY: Time-marching */
+  /*--- Options related to time-marching ---*/
   
   /* DESCRIPTION: Unsteady simulation  */
-  AddEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, "NO");
+  addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
-  AddScalarOption("CFL_NUMBER", CFLFineGrid, 1.25);
-  /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
+  addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
-  AddArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
+  /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
+  addDoubleArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
-  AddScalarOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
+  addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
-  AddScalarOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+  addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
-  AddScalarOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
+  addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
-  AddScalarOption("EXT_ITER", nExtIter, 999999);
+  addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
   // these options share nRKStep as their size, which is not a good idea in general
   /* DESCRIPTION: Runge-Kutta alpha coefficients */
-  AddListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
+  addDoubleListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  AddScalarOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
+  addDoubleOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
-  AddScalarOption("UNST_TIME", Total_UnstTime, 1.0);
+  addDoubleOption("UNST_TIME", Total_UnstTime, 1.0);
   /* DESCRIPTION: Unsteady Courant-Friedrichs-Lewy number of the finest grid */
-  AddScalarOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
+  addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
-  AddScalarOption("UNST_INT_ITER", Unst_nIntIter, 100);
+  addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
   /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
-  AddScalarOption("TIME_INSTANCES", nTimeInstances, 1);
+  addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
-  AddScalarOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
+  addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
-  AddScalarOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  AddEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, "EULER_IMPLICIT");
+  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
   
-  /*--- Options related to the linear solvers ---*/
   /* CONFIG_CATEGORY: Linear solver definition */
+  /*--- Options related to the linear solvers ---*/
   
   /* DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems */
-  AddEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, "FGMRES");
+  addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-  AddEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, "LU_SGS");
+  addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
-  AddScalarOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
+  addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
-  AddScalarOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
+  addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Relaxation of the linear solver for the implicit formulation */
-  AddScalarOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
+  addDoubleOption("LINEAR_SOLVER_RELAX", Linear_Solver_Relax, 1.0);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
-  AddSpecialOption("ROE_TURKEL_PREC", Low_Mach_Precon, SetBoolOption, false);
+  addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  AddScalarOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
+  addDoubleOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
-  AddScalarOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
+  addDoubleOption("MAX_ROE_TURKEL_PREC", Max_Beta_RoeTurkel, 0.2);
   /* DESCRIPTION: Linear solver for the turbulent adjoint systems */
-  AddEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, "FGMRES");
+  addEnumOption("ADJTURB_LIN_SOLVER", Kind_AdjTurb_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the turbulent adjoint Krylov linear solvers */
-  AddEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, "LU_SGS");
+  addEnumOption("ADJTURB_LIN_PREC", Kind_AdjTurb_Linear_Prec, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Minimum error threshold for the turbulent adjoint linear solver for the implicit formulation */
-  AddScalarOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
+  addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
-  AddScalarOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
+  addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
   
-  /*--- Options related to dynamic meshes ---*/
+  
   /* CONFIG_CATEGORY: Dynamic mesh definition */
+  /*--- Options related to dynamic meshes ---*/
   
   /* DESCRIPTION: Mesh motion for unsteady simulations */
-  AddSpecialOption("GRID_MOVEMENT", Grid_Movement, SetBoolOption, false);
+  addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
   /* DESCRIPTION: Type of mesh motion */
-  AddEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
+  addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
-  AddMarkerOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
   /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
-  AddScalarOption("MACH_MOTION", Mach_Motion, 0.0);
+  addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  AddListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
+  addDoubleListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  AddListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
+  addDoubleListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
   /* DESCRIPTION: Coordinates of the rigid motion origin */
-  AddListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
+  addDoubleListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
+  addDoubleListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
+  addDoubleListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
   /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
+  addDoubleListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
+  addDoubleListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
+  addDoubleListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
   /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
+  addDoubleListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
+  addDoubleListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
+  addDoubleListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
   /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
+  addDoubleListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
+  addDoubleListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
+  addDoubleListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
   /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
+  addDoubleListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
+  addDoubleListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
+  addDoubleListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
   /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  AddListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
+  addDoubleListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
+  addDoubleListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
+  addDoubleListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
   /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
+  addDoubleListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
+  addDoubleListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
+  addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  AddListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
-  AddListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
+  addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
-  AddScalarOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
+  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
   /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
-  AddScalarOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
+  addDoubleOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
   /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
-  AddScalarOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
+  addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
   
-  /*--- Options related to wind gust simulations ---*/
+
   /* CONFIG_CATEGORY: Wind Gust */
+  /*--- Options related to wind gust simulations ---*/
   
   /* DESCRIPTION: Apply a wind gust */
-  AddSpecialOption("WIND_GUST", Wind_Gust, SetBoolOption, false);
+  addBoolOption("WIND_GUST", Wind_Gust, false);
   /* DESCRIPTION: Type of gust */
-  AddEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, "NONE");
+  addEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, NO_GUST);
   /* DESCRIPTION: Gust wavelenght (meters) */
-  AddScalarOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
+  addDoubleOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
   /* DESCRIPTION: Number of gust periods */
-  AddScalarOption("GUST_PERIODS", Gust_Periods, 1.0);
+  addDoubleOption("GUST_PERIODS", Gust_Periods, 1.0);
   /* DESCRIPTION: Gust amplitude (m/s) */
-  AddScalarOption("GUST_AMPL", Gust_Ampl, 0.0);
+  addDoubleOption("GUST_AMPL", Gust_Ampl, 0.0);
   /* DESCRIPTION: Time at which to begin the gust (sec) */
-  AddScalarOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
+  addDoubleOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
   /* DESCRIPTION: Location at which the gust begins (meters) */
-  AddScalarOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
+  addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
-  AddEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, "Y_DIR");
+  addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
   
-  /*--- Options related to convergence ---*/
   /* CONFIG_CATEGORY: Convergence*/
+  /*--- Options related to convergence ---*/
   
   /* DESCRIPTION: Convergence criteria */
-  AddEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, "RESIDUAL");
+  addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
-  AddScalarOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
+  addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
-  AddScalarOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
   /* DESCRIPTION: Iteration number to begin convergence monitoring */
-  AddScalarOption("STARTCONV_ITER", StartConv_Iter, 5);
+  addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
   /* DESCRIPTION: Number of elements to apply the criteria */
-  AddScalarOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
+  addUnsignedShortOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
   /* DESCRIPTION: Epsilon to control the series convergence */
-  AddScalarOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
+  addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /* DESCRIPTION: Flow functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, "DRAG");
+  addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
   /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, "SENS_GEOMETRY");
+  addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
   /* DESCRIPTION: Linearized functional for the Cauchy criteria */
-  AddEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, "DELTA_DRAG");
+  addEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, DELTA_DRAG_COEFFICIENT);
   /* DESCRIPTION: Epsilon for a full multigrid method evaluation */
-  AddScalarOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
+  addDoubleOption("FULLMG_CAUCHY_EPS", Cauchy_Eps_FullMG, 1E-4);
   
-  /*--- Options related to Multi-grid ---*/
   /* CONFIG_CATEGORY: Multi-grid */
+  /*--- Options related to Multi-grid ---*/
   
   /* DESCRIPTION: Full multi-grid  */
-  AddSpecialOption("FULLMG", FullMG, SetBoolOption, false);
+  addBoolOption("FULLMG", FullMG, false);
   /* DESCRIPTION: Start up iterations using the fine grid only */
-  AddScalarOption("START_UP_ITER", nStartUpIter, 0);
+  addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
   /* DESCRIPTION: Multi-grid Levels */
-  AddScalarOption("MGLEVEL", nMultiLevel, 3);
+  addUnsignedShortOption("MGLEVEL", nMultiLevel, 3);
   /* DESCRIPTION: Multi-grid Cycle (0 = V cycle, 1 = W Cycle) */
-  AddScalarOption("MGCYCLE", MGCycle, 0);
+  addUnsignedShortOption("MGCYCLE", MGCycle, 0);
   /* DESCRIPTION: Multi-grid pre-smoothing level */
-  AddListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
+  addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
   /* DESCRIPTION: Multi-grid post-smoothing level */
-  AddListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
+  addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
   /* DESCRIPTION: Jacobi implicit smoothing of the correction */
-  AddListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
+  addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
   /* DESCRIPTION: Damping factor for the residual restriction */
-  AddScalarOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
+  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
   /* DESCRIPTION: Damping factor for the correction prolongation */
-  AddScalarOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
+  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
   /* DESCRIPTION: CFL reduction factor on the coarse levels */
-  AddScalarOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
+  addDoubleOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
   /* DESCRIPTION: Maximum number of children in the agglomeration stage */
-  AddScalarOption("MAX_CHILDREN", MaxChildren, 500);
+  addUnsignedShortOption("MAX_CHILDREN", MaxChildren, 500);
   /* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
-  AddScalarOption("MAX_DIMENSION", MaxDimension, 0.1);
+  addDoubleOption("MAX_DIMENSION", MaxDimension, 0.1);
   
-  /*--- Options related to the spatial discretization ---*/
   /* CONFIG_CATEGORY: Spatial Discretization */
+  /*--- Options related to the spatial discretization ---*/
   
   /* DESCRIPTION: Numerical method for spatial gradients */
-  AddEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, "WEIGHTED_LEAST_SQUARES");
+  addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
   /* DESCRIPTION: Coefficient for the limiter */
-  AddScalarOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
-  AddScalarOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
+  addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
   
   /* DESCRIPTION: Convective numerical method */
-  Kind_ConvNumScheme_Flow = SPACE_CENTERED; Kind_Centered_Flow = JST; Kind_Upwind_Flow = ROE;
-  AddConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
+  addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, "AVG_GRAD_CORRECTED");
+  addEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, AVG_GRAD_CORRECTED);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
-  Kind_ConvNumScheme_AdjFlow = SPACE_CENTERED; Kind_Centered_AdjFlow = JST; Kind_Upwind_AdjFlow = ROE;
-  AddConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
+  addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJFLOW", Kind_SourNumScheme_AdjFlow, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJFLOW", Kind_SourNumScheme_AdjFlow, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
   
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, "1ST_ORDER");
+  addEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, FIRST_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
-  AddConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
+  addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, "AVG_GRAD_CORRECTED");
+  addEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, AVG_GRAD_CORRECTED);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, "PIECEWISE_CONSTANT");
+  addEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, PIECEWISE_CONSTANT);
   
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, "1ST_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
-  AddConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
+  addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJTURB", Kind_SourNumScheme_AdjTurb, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJTURB", Kind_SourNumScheme_AdjTurb, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Convective numerical method */
-  AddConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
+  addConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, "NONE");
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.02;
+  addEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, NO_SOURCE);
+  default_vec_2d[0] = 0.15; default_vec_2d[1] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_2d);
   
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
-  AddConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
+  addConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Convective numerical method */
-  AddConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
+  addConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_TNE2", 3, Kappa_TNE2, default_vec_3d);
   
   /* DESCRIPTION: Convective numerical method */
-  AddConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
+  addConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
-  AddEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, "2ND_ORDER");
+  addEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
-  AddEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, "VENKATAKRISHNAN");
+  addEnumOption("SLOPE_LIMITER_ADJTNE2", Kind_SlopeLimit_AdjTNE2, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  AddArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, "GALERKIN");
+  addEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, GALERKIN);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, "NONE");
+  addEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, "GALERKIN");
+  addEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, GALERKIN);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Viscous numerical method */
-  AddEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, "GALERKIN");
+  addEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, GALERKIN);
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_HEAT", Kind_SourNumScheme_Heat, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_HEAT", Kind_SourNumScheme_Heat, Source_Map, NO_SOURCE);
   
   /* DESCRIPTION: Source term numerical method */
-  AddEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, "NONE");
+  addEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, NO_SOURCE);
   
   
-  /*--- Options related to the adjoint and gradient ---*/
   /* CONFIG_CATEGORY: Adjoint and Gradient */
+  /*--- Options related to the adjoint and gradient ---*/
   
   /* DESCRIPTION: Limit value for the adjoint variable */
-  AddScalarOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
+  addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /* DESCRIPTION: Adjoint problem boundary condition */
-  AddEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, "DRAG");
-  /* DESCRIPTION: Definition of the airfoil section */
+  addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
-  AddArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  /* DESCRIPTION: Definition of the airfoil section */
+  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
   /* DESCRIPTION: Identify the axis of the section */
-  AddEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, "Y_AXIS");
+  addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  AddScalarOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
-  AddScalarOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
+  addUnsignedShortOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
   /* DESCRIPTION: Output sectional forces for specified markers. */
-  AddSpecialOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, SetBoolOption, false);
+  addBoolOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
-  AddEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, "FUNCTION");
-  /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
-  AddScalarOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
-  /* DESCRIPTION: Sensitivity smoothing  */
-  AddEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, "NONE");
-  /* DESCRIPTION: Continuous governing equation set  */
-  AddEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, "EULER");
-  /* DESCRIPTION: Discrete governing equation set */
-  AddEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, "NONE");
-  /* DESCRIPTION: Adjoint frozen viscosity */
-  AddSpecialOption("FROZEN_VISC", Frozen_Visc, SetBoolOption, true);
-  /* DESCRIPTION:  */
-  AddScalarOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
-  /* DESCRIPTION:  */
-  AddScalarOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
-  /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
-  AddSpecialOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, SetBoolOption, false);
-  /* DESCRIPTION: P-norm for heat-flux based objective functions. */
-	AddScalarOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
+  addEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, FUNCTION);
   
-  /*--- Options related to input/output files and formats ---*/
+  /* DESCRIPTION: Drag weight in sonic boom Objective Function (from 0.0 to 1.0) */
+  addDoubleOption("DRAG_IN_SONICBOOM", WeightCd, 0.0);
+  /* DESCRIPTION: Sensitivity smoothing  */
+  addEnumOption("SENS_SMOOTHING", Kind_SensSmooth, Sens_Smoothing_Map, NO_SMOOTH);
+  /* DESCRIPTION: Continuous governing equation set  */
+  addEnumOption("CONTINUOUS_EQNS", Continuous_Eqns, ContinuousEqns_Map, EULER_EQNS);
+  /* DESCRIPTION: Discrete governing equation set */
+  addEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, NONE_EQNS);
+  /* DESCRIPTION: Adjoint frozen viscosity */
+  addBoolOption("FROZEN_VISC", Frozen_Visc, true);
+  /* DESCRIPTION:  */
+  addDoubleOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
+  /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
+  addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
+  /* DESCRIPTION: P-norm for heat-flux based objective functions. */
+	addDoubleOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
+  
   /* CONFIG_CATEGORY: Input/output files and formats */
+  /*--- Options related to input/output files and formats ---*/
   
   /* DESCRIPTION: I/O */
-  AddEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, "TECPLOT");
+  addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
   /* DESCRIPTION: Mesh input file format */
-  AddEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, "SU2");
+  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION: Convert a CGNS mesh to SU2 format */
-  AddSpecialOption("CGNS_TO_SU2", CGNS_To_SU2, SetBoolOption, false);
+  addBoolOption("CGNS_TO_SU2", CGNS_To_SU2, false);
   /* DESCRIPTION:  Mesh input file */
-  AddScalarOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-  /* DESCRIPTION: Factor for scaling the mesh */
-  AddScalarOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
-  /* DESCRIPTION: Write a new mesh converted to meters */
-  AddSpecialOption("MESH_OUTPUT", Mesh_Output, SetBoolOption, false);
-  /* DESCRIPTION: Mesh output file */
-  AddScalarOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
-  /* DESCRIPTION: Output file convergence history (w/o extension) */
-  AddScalarOption("CONV_FILENAME", Conv_FileName, string("history"));
-  /* DESCRIPTION: Restart flow input file */
-  AddScalarOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
-  /* DESCRIPTION: Restart linear flow input file */
-  AddScalarOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
-  /* DESCRIPTION: Restart adjoint input file */
-  AddScalarOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
-  /* DESCRIPTION: Output file restart flow */
-  AddScalarOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
-  /* DESCRIPTION: Output file linear flow */
-  AddScalarOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
-  /* DESCRIPTION: Output file restart adjoint */
-  AddScalarOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
-  /* DESCRIPTION: Output file restart wave */
-  AddScalarOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
-  /* DESCRIPTION: Output file flow (w/o extension) variables */
-  AddScalarOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
-  /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
-  /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
-  /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
-  /* DESCRIPTION: Output file structure (w/o extension) variables */
-  AddScalarOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
-  /* DESCRIPTION: Output file wave (w/o extension) variables */
-  AddScalarOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
-  /* DESCRIPTION: Output file wave (w/o extension) variables */
-  AddScalarOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
-  /* DESCRIPTION: Output file adj. wave (w/o extension) variables */
-  AddScalarOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
-  /* DESCRIPTION: Output file adjoint (w/o extension) variables */
-  AddScalarOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
-  /* DESCRIPTION: Output file linear (w/o extension) variables */
-  AddScalarOption("VOLUME_LIN_FILENAME", Lin_FileName, string("linearized"));
-  /* DESCRIPTION: Output objective function gradient */
-  AddScalarOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
-  /* DESCRIPTION: Output objective function */
-  AddScalarOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
-  /* DESCRIPTION: Output file surface flow coefficient (w/o extension) */
-  AddScalarOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
-  /* DESCRIPTION: Output file surface adjoint coefficient (w/o extension) */
-  AddScalarOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
-  /* DESCRIPTION: Output file surface linear coefficient (w/o extension) */
-  AddScalarOption("SURFACE_LIN_FILENAME", SurfLinCoeff_FileName, string("surface_linear"));
-  /* DESCRIPTION: Writing solution file frequency */
-  AddScalarOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
-  /* DESCRIPTION: Writing solution file frequency */
-  AddScalarOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
-  /* DESCRIPTION: Writing convergence history frequency */
-  AddScalarOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
-  /* DESCRIPTION: Writing convergence history frequency for the dual time */
-  AddScalarOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
-  /* DESCRIPTION: Write a volume solution file */
-  AddSpecialOption("WRT_VOL_SOL", Wrt_Vol_Sol, SetBoolOption, true);
-  /* DESCRIPTION: Write a surface solution file */
-  AddSpecialOption("WRT_SRF_SOL", Wrt_Srf_Sol, SetBoolOption, true);
-  /* DESCRIPTION: Write a surface CSV solution file */
-  AddSpecialOption("WRT_CSV_SOL", Wrt_Csv_Sol, SetBoolOption, true);
-  /* DESCRIPTION: Write a restart solution file */
-  AddSpecialOption("WRT_RESTART", Wrt_Restart, SetBoolOption, true);
-  /* DESCRIPTION: Output residual info to solution/restart file */
-  AddSpecialOption("WRT_RESIDUALS", Wrt_Residuals, SetBoolOption, false);
-  /* DESCRIPTION: Output the rind layers in the solution files */
-  AddSpecialOption("WRT_HALO", Wrt_Halo, SetBoolOption, false);
-  /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
-  AddSpecialOption("WRT_1D_OUTPUT", Wrt_1D_Output, SetBoolOption, false);
+  addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   
-  /*--- Options related to the equivalent area ---*/
+  /* DESCRIPTION: Factor for scaling the mesh */
+  addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
+  /* DESCRIPTION: Write a new mesh converted to meters */
+  addBoolOption("MESH_OUTPUT", Mesh_Output, false);
+  /* DESCRIPTION: Mesh output file */
+  addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  
+  /* DESCRIPTION: Output file convergence history (w/o extension) */
+  addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
+  /* DESCRIPTION: Restart flow input file */
+  addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
+  /* DESCRIPTION: Restart linear flow input file */
+  addStringOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
+  /* DESCRIPTION: Restart adjoint input file */
+  addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  /* DESCRIPTION: Output file restart flow */
+  addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
+  /* DESCRIPTION: Output file linear flow */
+  addStringOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
+  /* DESCRIPTION: Output file restart adjoint */
+  addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
+  /* DESCRIPTION: Output file restart wave */
+  addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
+  /* DESCRIPTION: Output file flow (w/o extension) variables */
+  addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
+  /* DESCRIPTION: Output file structure (w/o extension) variables */
+  addStringOption("VOLUME_STRUCTURE_FILENAME", Structure_FileName, string("structure"));
+  /* DESCRIPTION: Output file structure (w/o extension) variables */
+  addStringOption("SURFACE_STRUCTURE_FILENAME", SurfStructure_FileName, string("surface_structure"));
+  /* DESCRIPTION: Output file structure (w/o extension) variables */
+  addStringOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
+  /* DESCRIPTION: Output file structure (w/o extension) variables */
+  addStringOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
+  /* DESCRIPTION: Output file wave (w/o extension) variables */
+  addStringOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
+  /* DESCRIPTION: Output file wave (w/o extension) variables */
+  addStringOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
+  /* DESCRIPTION: Output file adj. wave (w/o extension) variables */
+  addStringOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
+  /* DESCRIPTION: Output file adjoint (w/o extension) variables */
+  addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
+  /* DESCRIPTION: Output file linear (w/o extension) variables */
+  addStringOption("VOLUME_LIN_FILENAME", Lin_FileName, string("linearized"));
+  /* DESCRIPTION: Output objective function gradient */
+  addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
+  /* DESCRIPTION: Output objective function */
+  addStringOption("VALUE_OBJFUNC_FILENAME", ObjFunc_Value_FileName, string("of_func.dat"));
+  /* DESCRIPTION: Output file surface flow coefficient (w/o extension) */
+  addStringOption("SURFACE_FLOW_FILENAME", SurfFlowCoeff_FileName, string("surface_flow"));
+  /* DESCRIPTION: Output file surface adjoint coefficient (w/o extension) */
+  addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
+  /* DESCRIPTION: Output file surface linear coefficient (w/o extension) */
+  addStringOption("SURFACE_LIN_FILENAME", SurfLinCoeff_FileName, string("surface_linear"));
+  /* DESCRIPTION: Writing solution file frequency */
+  addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
+  /* DESCRIPTION: Writing solution file frequency */
+  addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
+  /* DESCRIPTION: Writing convergence history frequency */
+  addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
+  /* DESCRIPTION: Writing convergence history frequency for the dual time */
+  addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);
+  /* DESCRIPTION: Write a volume solution file */
+  addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);
+  /* DESCRIPTION: Write a surface solution file */
+  addBoolOption("WRT_SRF_SOL", Wrt_Srf_Sol, true);
+  /* DESCRIPTION: Write a surface CSV solution file */
+  addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
+  /* DESCRIPTION: Write a restart solution file */
+  addBoolOption("WRT_RESTART", Wrt_Restart, true);
+  /* DESCRIPTION: Output residual info to solution/restart file */
+  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  /* DESCRIPTION: Output the rind layers in the solution files */
+  addBoolOption("WRT_HALO", Wrt_Halo, false);
+  /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
+  addBoolOption("WRT_1D_OUTPUT", Wrt_1D_Output, false);
+  
   /* CONFIG_CATEGORY: Equivalent Area */
+  /*--- Options related to the equivalent area ---*/
   
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
-  AddSpecialOption("EQUIV_AREA", EquivArea, SetBoolOption, false);
+  addBoolOption("EQUIV_AREA", EquivArea, false);
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  AddArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
   
-  /*--- Options related to freestream specification ---*/
   /* CONFIG_CATEGORY: Freestream Conditions */
+  /*--- Options related to freestream specification ---*/
   
   /* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
-  AddScalarOption("GAS_CONSTANT", Gas_Constant, 287.87);
+  addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.87);
   /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
-  AddScalarOption("GAMMA_VALUE", Gamma, 1.4);
+  addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
-  AddScalarOption("REYNOLDS_NUMBER", Reynolds, 0.0);
+  addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
   /* DESCRIPTION: Reynolds length (1 m by default) */
-  AddScalarOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
+  addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
   /* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
-  AddScalarOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
   /* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
-  AddScalarOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /* DESCRIPTION: Value of the Bulk Modulus  */
-  AddScalarOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
+  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
   /* DESCRIPTION: Artifical compressibility factor  */
-  AddScalarOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
+  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
-  AddScalarOption("MACH_NUMBER", Mach, 0.0);
+  addDoubleOption("MACH_NUMBER", Mach, 0.0);
   //	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
   /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
-  AddScalarOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
+  addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
   /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
-  AddScalarOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
+  addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-  AddScalarOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
+  addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
   /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
-  AddScalarOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
+  default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
   /* DESCRIPTION: Free-stream velocity (m/s) */
-  AddArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
-  AddScalarOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
+  addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
+  addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
+  addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
-  AddScalarOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
-  AddScalarOption("SIDESLIP_ANGLE", AoS, 0.0);
+  addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
   /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
-  AddScalarOption("AOA", AoA, 0.0);
+  addDoubleOption("AOA", AoA, 0.0);
+  /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
+  addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
+  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
+  addDoubleOption("TARGET_CL", Target_CL, 0.0);
+  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.1);
   
-  /*--- Options related to reference values for nondimensionalization ---*/
   /* CONFIG_CATEGORY: Reference Conditions */
+  /*--- Options related to reference values for nondimensionalization ---*/
   
   Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
   
   /* DESCRIPTION: X Reference origin for moment computation */
-  AddListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
+  addDoubleListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
   /* DESCRIPTION: Y Reference origin for moment computation */
-  AddListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
+  addDoubleListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
   /* DESCRIPTION: Z Reference origin for moment computation */
-  AddListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
+  addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
-  AddScalarOption("REF_AREA", RefAreaCoeff, 1.0);
+  addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
   /* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
-  AddScalarOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
+  addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
   /* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
-  AddScalarOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
+  addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
   /* DESCRIPTION: Reference coefficient for detecting sharp edges */
-	AddScalarOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
+  addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
 	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
-	AddScalarOption("REF_PRESSURE", Pressure_Ref, 1.0);
+  addDoubleOption("REF_PRESSURE", Pressure_Ref, 1.0);
 	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
-	AddScalarOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
+  addDoubleOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
 	/* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
-	AddScalarOption("REF_DENSITY", Density_Ref, 1.0);
+  addDoubleOption("REF_DENSITY", Density_Ref, 1.0);
 	/* DESCRIPTION: Reference velocity (incompressible only) */
-	AddScalarOption("REF_VELOCITY", Velocity_Ref, -1.0);
+  addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
 	/* DESCRIPTION: Reference viscosity (incompressible only) */
-	AddScalarOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
+  addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   
-	/*--- Options related to the reacting gas mixtures ---*/
 	/* CONFIG_CATEGORY: Reacting Flow */
+  /*--- Options related to the reacting gas mixtures ---*/
   
 	/* DESCRIPTION: Specify chemical model for multi-species simulations */
-	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
+	addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, ARGON);
 	/* DESCRIPTION:  */
-	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
+	addDoubleListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
   
-	/*--- Options related to free surface simulation ---*/
 	/* CONFIG_CATEGORY: Free surface simulation */
+	/*--- Options related to free surface simulation ---*/
   
 	/* DESCRIPTION: Ratio of density for two phase problems */
-	AddScalarOption("RATIO_DENSITY", RatioDensity, 0.1);
+  addDoubleOption("RATIO_DENSITY", RatioDensity, 0.1);
 	/* DESCRIPTION: Ratio of viscosity for two phase problems */
-	AddScalarOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
+  addDoubleOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
 	/* DESCRIPTION: Location of the freesurface (y or z coordinate) */
-	AddScalarOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
+  addDoubleOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
 	/* DESCRIPTION: Free surface depth surface (x or y coordinate) */
-	AddScalarOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
+  addDoubleOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
 	/* DESCRIPTION: Thickness of the interface in a free surface problem */
-	AddScalarOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
+  addDoubleOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
 	/* DESCRIPTION: Free surface damping coefficient */
-	AddScalarOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
+  addDoubleOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
 	/* DESCRIPTION: Free surface damping length (times the baseline wave) */
-	AddScalarOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
+  addDoubleOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
 	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
-	AddScalarOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
+  addDoubleOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
   
-	/*--- Options related to the grid deformation ---*/
 	// these options share nDV as their size in the option references; not a good idea
 	/* CONFIG_CATEGORY: Grid deformation */
+  /*--- Options related to the grid deformation ---*/
   
 	/* DESCRIPTION: Kind of deformation */
-	AddEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
-	AddMarkerOption("DV_MARKER", nMarker_DV, Marker_DV);
+  addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
 	/* DESCRIPTION: New value of the shape deformation */
-	AddListOption("DV_VALUE", nDV, DV_Value);
+	addDoubleListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
@@ -950,71 +981,96 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
-	AddDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
+	addDVParamOption("DV_PARAM", nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
-	AddSpecialOption("HOLD_GRID_FIXED", Hold_GridFixed, SetBoolOption, false);
+  addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
 	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-	AddArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
+	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
 	/* DESCRIPTION: Visualize the deformation */
-	AddSpecialOption("VISUALIZE_DEFORMATION", Visualize_Deformation, SetBoolOption, false);
+  addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  AddSpecialOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, SetBoolOption, true);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
-  AddScalarOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
+  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  AddScalarOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
+  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
-  AddScalarOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  AddEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, "INVERSE_VOLUME");
-  AddScalarOption("YOUNGS_MODULUS", Young_modulus, 2E11);
-  AddScalarOption("POISSONS_RATIO", Poisson_ratio, 0.3);
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, INVERSE_VOLUME);
+  /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
+  addDoubleOption("YOUNGS_MODULUS", Young_modulus, 2E11);
+  addDoubleOption("POISSONS_RATIO", Poisson_ratio, 0.3);
   
-  /*--- option related to rotorcraft problems ---*/
   /* CONFIG_CATEGORY: Rotorcraft problem */
+  /*--- option related to rotorcraft problems ---*/
   
-  AddScalarOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
-  AddScalarOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
+  /* DESCRIPTION: MISSING --- */
+  addDoubleOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
+  /* DESCRIPTION: MISSING --- */
+  addDoubleOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
   
   
-  /*--- Options related to the FEA solver ---*/
   /* CONFIG_CATEGORY: FEA solver */
+  /*--- Options related to the FEA solver ---*/
   
   /* DESCRIPTION: Modulus of elasticity */
-  AddScalarOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
+  addDoubleOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
   /* DESCRIPTION: Poisson ratio */
-  AddScalarOption("POISSON_RATIO", PoissonRatio, 0.30);
+  addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
-  AddScalarOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
   
-  /*--- options related to the wave solver ---*/
   /* CONFIG_CATEGORY: Wave solver */
+  /*--- options related to the wave solver ---*/
   
   /* DESCRIPTION: Constant wave speed */
-  AddScalarOption("WAVE_SPEED", Wave_Speed, 331.79);
+  addDoubleOption("WAVE_SPEED", Wave_Speed, 331.79);
   
-  /*--- options related to the heat solver ---*/
   /* CONFIG_CATEGORY: Heat solver */
+  /*--- options related to the heat solver ---*/
   
   /* DESCRIPTION: Thermal diffusivity constant */
-  AddScalarOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
+  addDoubleOption("THERMAL_DIFFUSIVITY", Thermal_Diffusivity, 1.172E-5);
   
-  /*--- options related to visualizing control volumes ---*/
   /* CONFIG_CATEGORY: Visualize Control Volumes */
+  /*--- options related to visualizing control volumes ---*/
   
   /* DESCRIPTION: Node number for the CV to be visualized */
-  AddScalarOption("VISUALIZE_CV", Visualize_CV, -1);
+  addLongOption("VISUALIZE_CV", Visualize_CV, -1);
   
+  /* CONFIG_CATEGORY: Inverse design problem */
   /*--- options related to inverse design problem ---*/
-  /* CONFIG_CATEGORY:Inverse design problem */
 
   /* DESCRIPTION: Evaluate inverse design on the surface  */
-  AddSpecialOption("INV_DESIGN_CP", InvDesign_Cp, SetBoolOption, false);
+  addBoolOption("INV_DESIGN_CP", InvDesign_Cp, false);
   
   /* DESCRIPTION: Evaluate inverse design on the surface  */
-  AddSpecialOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, SetBoolOption, false);
+  addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
+
+  
+  /* CONFIG_CATEGORY: Unsupported options */
+  /*--- Options that are experimental and not intended for general use ---*/
+  
+  /* DESCRIPTION: Location of the turb model itself */
+  addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
+  
+  /* DESCRIPTION: what kind of input/output feature map is there */
+  addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
+  
+  /* DESCRIPTION: Extra values for ML Turb model */
+  addStringListOption("ML_TURB_MODEL_EXTRA",nML_Turb_Model_Extra, ML_Turb_Model_Extra);
+  
+  /*--- options related to the FFD problem ---*/
+  /* CONFIG_CATEGORY:FFD point inversion */
+  
+  /* DESCRIPTION: Number of total iterations in the FFD point inversion */
+  addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 1000);
+  
+  /* DESCRIPTION: Free surface damping coefficient */
+	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-8);
   
   /* END_CONFIG_OPTIONS */
   
@@ -1042,23 +1098,298 @@ void CConfig::SetParsing(char case_filename[200]) {
     exit(1);
   }
   
+  string errorString;
+  int  err_count = 0;  // How many errors have we found in the config file
+  int max_err_count = 30; // Maximum number of errors to print before stopping
+
+  map<string,bool> included_options;
+  
   /*--- Parse the configuration file and set the options ---*/
   while (getline (case_file,text_line)) {
+    if (err_count >= max_err_count){
+      errorString.append("too many errors. Stopping parse");
+
+      //SU2MPI::PrintAndFinalize(errorString);
+      cout << errorString << endl;
+      throw(1);
+    }
     if (TokenizeString(text_line, option_name, option_value)) {
-      map<string, CAnyOptionRef*>::iterator it;
-      it = param.find(option_name);
-      if (it != param.end()) {
-        param[option_name]->SetValue(option_value);
-      } else {
-        if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
-          cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
+      if (option_map.find(option_name) == option_map.end()){
+        // See if it's a python option
+        if (!GetPython_Option(option_name)){
+          string newString;
+          newString.append(option_name);
+          newString.append(": invalid option name");
+          newString.append("\n");
+          errorString.append(newString);
+          err_count++;
+        }
+        // Either way, no parsing to be done
+        continue;
+      }
+      
+      // Option exists, check if the option has already been in the config file
+      if (included_options.find(option_name) != included_options.end()){
+        string newString;
+        newString.append(option_name);
+        newString.append(": option appears twice");
+        newString.append("\n");
+        errorString.append(newString);
+        err_count++;
+        continue;
+      }
+      
+      // New found option. Add it to the map, and delete from all options
+      included_options.insert(pair<string,bool>(option_name, true));
+      all_options.erase(option_name);
+      
+      // Set the value and check error
+      string out = option_map[option_name]->SetValue(option_value);
+      if (out.compare("") != 0){
+        errorString.append(out);
+        errorString.append("\n");
+        err_count++;
       }
     }
   }
+
+  // See if there were any errors parsing the config file
+  if (errorString.size() != 0){
+//    SU2MPI::PrintAndFinalize(errorString);
+    cout << errorString << endl;
+    exit(1);
+  }
+  
+  // Set the default values for all of the options that weren't set
+  for(map<string, bool>::iterator iter = all_options.begin(); iter != all_options.end(); ++iter){
+    option_map[iter->first]->SetDefault();
+  }
   
   case_file.close();
-  
 }
+/*
+double CConfig::parseDoubleOption(string value){
+  double val = 0;
+  istringstream is(value);
+  is >> val;
+//  val = stod(value); // Convert the string to a double
+  return val;
+}
+
+int CConfig::parseIntOption(string value){
+  int val = 0;
+  istringstream is(value);
+  is >> val;
+//  val = stoi(value); // Convert the string to a double
+  return val;
+}
+ */
+
+
+
+/*
+ map<string, CAnyOptionRef*>::iterator it;
+ it = param.find(option_name);
+ if (it != param.end()) {
+ param[option_name]->SetValue(option_value);
+ } else {
+ if ( !GetPython_Option(option_name) && (rank == MASTER_NODE) )
+ cout << "WARNING: unrecognized option in the config. file: " << option_name << "." << endl;
+ }
+ */
+
+    /*
+     // Get the kind of option
+     OptionKind kind = param_to_kind[option_name];
+     
+     // Add switch
+     switch (kind){
+     default:
+     {
+     cout << "bad option kind for " << option_name << endl;
+     throw(1);
+     }
+     case NoOption:
+     {
+     cout << "somehow no option is set for: " << option_name << endl;
+     throw(1);
+     }
+     case DoubleOption:
+     {
+     // Check that there is just a double in the option
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for DoubleOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     // Parse the string and set it to the config location
+     double val = parseDoubleOption(option_value[0]);
+     //          double_fields[option_name] = val;
+     break;
+     }
+     case StringOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for StringOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     //        string & strRef = string_fields[option_name];
+     //      strRef.assign(option_value[0]);
+     break;
+     }
+     case IntOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for IntOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     int val = parseIntOption(option_value[0]);
+     //     int & ref = int_fields[option_name];
+     //     ref = val;
+     break;
+     }
+     case UnsignedLongOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for UnsignedLongOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     unsigned long val;
+     istringstream is(option_value[0]);
+     is >> val;
+     //          unsigned long & ref = ulong_fields[option_name];
+     //         ref = val;
+     break;
+     }
+     case UnsignedShortOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for UnsignedShortOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     unsigned short val;
+     istringstream is(option_value[0]);
+     is >> val;
+     //          unsigned short & ref = ushort_fields[option_name];
+     //          ref = val;
+     break;
+     }
+     case LongOption:
+     {
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for UnsignedLongOption\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     long val;
+     istringstream is(option_value[0]);
+     is >> val;
+     //          long & ref = long_fields[option_name];
+     //         ref = val;
+     break;
+     }
+     case EnumOption:
+     {
+     
+     
+     if (option_value.size() != 1){
+     string newString;
+     newString.append(option_name);
+     newString.append(": multiple values for single-valued option\n");
+     errorString.append(newString);
+     err_count++;
+     break;
+     }
+     special_map[option_name]->SetValue(option_value);
+     
+     break;
+     }
+     */
+    
+    
+    /*
+     OptionKind kind = param_to_kind[iter->first];
+     switch (kind) {
+     default:
+     {
+     cout << "bad kind in default" << endl;
+     cout << kind << endl;
+     throw(1);
+     }
+     case NoOption:
+     {
+     cout << "Should not have no option" << endl;
+     throw(1);
+     }
+     case DoubleOption:
+     {
+     //    double & doubleRef = double_fields[iter->first];
+     //    doubleRef = double_defaults[iter->first];
+     break;
+     }
+     case StringOption:
+     {
+     //   string & strRef = string_fields[iter->first];
+     //   string def = string_defaults[iter->first];
+     //   strRef.assign(def);
+     break;
+     }
+     case IntOption:
+     {
+     //   int & ref = int_fields[iter->first];
+     //   int def = int_defaults[iter->first];
+     //   ref = def;
+     break;
+     }
+     case UnsignedLongOption:
+     {
+     //   unsigned long & ref = ulong_fields[iter->first];
+     //   unsigned long def = ulong_defaults[iter->first];
+     //   ref = def;
+     break;
+     }
+     case UnsignedShortOption:
+     {
+     //  unsigned short & ref = ushort_fields[iter->first];
+     //  unsigned short def = ushort_defaults[iter->first];
+     //  ref = def;
+     break;
+     }
+     case LongOption:
+     {
+     //  long & ref = long_fields[iter->first];
+     //  long def = long_defaults[iter->first];
+     //  ref = def;
+     break;
+     }
+     case EnumOption:
+     {
+     
+     break;
+     }
+     */
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim) {
   
@@ -1842,7 +2173,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
-    cout << "You must define a solver type!!" << endl;
+    cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
     exit(1);
   }
   
@@ -2559,6 +2890,26 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- Check for constant lift mode  ---*/
+  if (Fixed_CL_Mode) {
+    
+    /*--- Set the initial AoA to zero. This will be updated after an
+     interval of iterations of the flow solver. ---*/
+    AoA = 0.0;
+    
+    /*--- We will force the use of the cauchy convergence criteria for
+     constant lift mode. ---*/
+    
+    ConvCriteria = CAUCHY;
+    Cauchy_Func_Flow = LIFT_COEFFICIENT;
+    
+    /*--- Initialize the update flag for the AoA with each iteration to false ---*/
+    
+    Update_AoA = false;
+    
+  }
+  
+  
   delete [] tmp_smooth;
   
 }
@@ -2587,7 +2938,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
   nMarker_HeatFluxNonCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
   nMarker_Dirichlet_Elec + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom + 2*nDomain+nMarker_Out_1D;
+  nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
   
   Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
   Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
@@ -2609,7 +2961,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_HeatFluxCatalytic, iMarker_NacelleInflow, iMarker_NacelleExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
-  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,iMarker_Out_1D;
+  iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet,
+  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
   
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_Tag[iMarker_All] = "NONE";
@@ -2632,7 +2985,8 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
   nMarker_HeatFluxCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
   nMarker_Supersonic_Inlet + nMarker_Displacement + nMarker_Load +
-  nMarker_FlowLoad + nMarker_Custom + nMarker_Out_1D;
+  nMarker_FlowLoad + nMarker_Custom +
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
   Marker_Config_Tag        = new string[nMarker_Config];
   Marker_Config_Boundary   = new unsigned short[nMarker_Config];
@@ -2689,6 +3043,18 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
     Marker_Config_PerBound[iMarker_Config] = iMarker_PerBound + 1;
     iMarker_Config++;
   }
+  
+  for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+		Marker_Config_Boundary[iMarker_Config] = ACTDISK_INLET;
+		iMarker_Config++;
+	}
+  
+  for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
+		Marker_Config_Tag[iMarker_Config] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+		Marker_Config_Boundary[iMarker_Config] = ACTDISK_OUTLET;
+		iMarker_Config++;
+	}
   
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_Config_Tag[iMarker_Config] = Marker_NearFieldBound[iMarker_NearFieldBound];
@@ -2862,6 +3228,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 }
 
 void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
+
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Outlet,
@@ -2870,7 +3237,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_NacelleInflow, iMarker_NacelleExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
-  iMarker_Moving, iMarker_Supersonic_Inlet;
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_ActDisk_Inlet,
+  iMarker_ActDisk_Outlet;
   
   cout << endl <<"-------------------------------------------------------------------------" << endl;
   cout <<"|    _____   _    _   ___                                               |" << endl;
@@ -3573,7 +3941,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
               cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
               break;
-            case FGMRES:
+            case FGMRES or RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
@@ -3598,7 +3966,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
               cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
               break;
-            case FGMRES:
+            case FGMRES or RFGMRES:
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
@@ -4151,6 +4519,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
+  if (nMarker_ActDisk_Inlet != 0) {
+		cout << "Actuator disk (inlet) boundary marker(s): ";
+		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
+			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
+  if (nMarker_ActDisk_Outlet != 0) {
+		cout << "Actuator disk (outlet) boundary marker(s): ";
+		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
+			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
+			else cout <<"."<<endl;
+		}
+	}
+  
 }
 
 
@@ -4282,13 +4668,16 @@ void CConfig::GetChemistryEquilConstants(double **RxnConstantTable, unsigned sho
   }
 }
 
+/*
 void CConfig::AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker) {
   //cout << "Adding Marker option " << name << endl;
   num_marker = 0;
   CAnyOptionRef* option_ref = new CMarkerOptionRef(marker, num_marker);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
+/*
 void CConfig::AddConvectOption(const string & name, unsigned short & space, unsigned short & centered,
                                unsigned short & upwind) {
   //cout << "Adding Convect option " << name << endl;
@@ -4298,7 +4687,9 @@ void CConfig::AddConvectOption(const string & name, unsigned short & space, unsi
   CAnyOptionRef* option_ref = new CConvOptionRef(space, centered, upwind);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
+/*
 void CConfig::AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
                              bool & OneShot, const bool & OneShot_default,
                              bool & Linearized, const bool & Linearized_default,
@@ -4312,14 +4703,17 @@ void CConfig::AddMathProblem(const string & name, bool & Adjoint, const bool & A
                                                   Restart_Flow);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
+/*
 void CConfig::AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV,
                                unsigned short* & Design_Variable) {
   //cout << "Adding DV Param option " << name << endl;
   CAnyOptionRef* option_ref = new CDVParamOptionRef(nDV, ParamDV, Design_Variable);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+ */
+/*
 void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
                                 string* & Marker_PerBound, string* & Marker_PerDonor,
                                 double** & RotCenter, double** & RotAngles, double** & Translation) {
@@ -4330,7 +4724,25 @@ void CConfig::AddMarkerPeriodic(const string & name, unsigned short & nMarker_Pe
                                                      RotAngles, Translation);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+ */
+/*
+void CConfig::AddMarkerActuatorDisk(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
+                                    string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                                    double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                                    double* & ActDisk_CT, double* & ActDisk_Omega) {
+  //cout << "Adding Marker Actuator disk option " << name << endl;
+  nMarker_ActDisk_Inlet = 0;
+  nMarker_ActDisk_Outlet = 0;
+  CAnyOptionRef* option_ref = new CMarkerActuatorDiskRef(nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+                                                         Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
+                                                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
+                                                         ActDisk_CT, ActDisk_Omega);
+  
+  param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
+}
+*/
+/*
+>>>>>>> config_rewrite
 void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
                              string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
                              double** & FlowDir) {
@@ -4339,7 +4751,8 @@ void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet
                                                   Ttotal, Ptotal, FlowDir);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+ */
+/*
 void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
                              string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) {
   nMarker_Inlet = 0;
@@ -4347,7 +4760,9 @@ void CConfig::AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet
                                                    Ttotal, Ptotal);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
+/*
 void CConfig::AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec,
                                  string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value) {
   nMarker_Dirichlet_Elec = 0;
@@ -4356,7 +4771,8 @@ void CConfig::AddMarkerDirichlet(const string & name, unsigned short & nMarker_D
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
   
 }
-
+*/
+ /*
 void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet,
                               string* & Marker_Outlet, double* & Pressure) {
   nMarker_Outlet = 0;
@@ -4364,14 +4780,17 @@ void CConfig::AddMarkerOutlet(const string & name, unsigned short & nMarker_Outl
                                                    Pressure);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+  */
 
+/*
 void CConfig::AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
                                     string* & Marker_Displacement, double* & Displ) {
   nMarker_Displacement = 0;
   CAnyOptionRef* option_ref = new CMarkerDisplacementRef(nMarker_Displacement, Marker_Displacement, Displ);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
-
+ */
+/*
 void CConfig::AddMarkerLoad(const string & name, unsigned short & nMarker_Load,
                             string* & Marker_Load, double* & Force) {
   nMarker_Load = 0;
@@ -4385,7 +4804,9 @@ void CConfig::AddMarkerFlowLoad(const string & name, unsigned short & nMarker_Fl
   CAnyOptionRef* option_ref = new CMarkerLoadRef(nMarker_FlowLoad, Marker_FlowLoad, FlowForce);
   param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
 }
+ */
 
+/*
 void CConfig::SetBoolOption(bool* ref, const vector<string> & value) {
   if ( (value[0] != "YES") && (value[0] != "NO") ) {
     cerr << "Error in CConfig::SetBoolOption(): "
@@ -4399,6 +4820,7 @@ void CConfig::SetBoolOption(bool* ref, const vector<string> & value) {
     *ref = false;
   }
 }
+ */
 
 bool CConfig::TokenizeString(string & str, string & option_name,
                              vector<string> & option_value) {
@@ -5377,6 +5799,62 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   /*--- Find and return global marker index for donor boundary. ---*/
   for (kMarker_All = 0; kMarker_All < nMarker_Config; kMarker_All++)
     if (Marker_PerBound[jMarker_PerBound] == Marker_All_Tag[kMarker_All]) break;
+  
+  return kMarker_All;
+}
+
+double* CConfig::GetActDisk_Origin(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Origin[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_RootRadius(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_RootRadius[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_TipRadius(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_TipRadius[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_CT(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_CT[iMarker_ActDisk];
+}
+
+double CConfig::GetActDisk_Omega(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Omega[iMarker_ActDisk];
+}
+
+unsigned short CConfig::GetMarker_ActDisk_Outlet(string val_marker) {
+  unsigned short iMarker_ActDisk, kMarker_All;
+  
+  /*--- Find the marker for this actuator disk inlet. ---*/
+  
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
+    if (Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) break;
+  
+  /*--- Find and return global marker index for the actuator disk outlet. ---*/
+  
+  for (kMarker_All = 0; kMarker_All < nMarker_Config; kMarker_All++)
+    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_Tag[kMarker_All]) break;
   
   return kMarker_All;
 }

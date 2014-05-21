@@ -351,6 +351,9 @@ inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver
                   
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                               CConfig *config) { }
 										
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 								    CConfig *config, unsigned short val_marker) { }
@@ -391,7 +394,10 @@ inline void CSolver::Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver **
 inline void CSolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
-                         
+
+inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                     CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 							        unsigned short iMesh, unsigned long Iteration) { }	
 							        

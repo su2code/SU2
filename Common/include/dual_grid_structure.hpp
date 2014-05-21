@@ -993,7 +993,13 @@ public:
 	 * \brief Get the value of the periodic point of a vertex.
 	 * \return Value of the periodic point of a vertex.
 	 */
-	long GetDonorPoint(void);	
+	long GetDonorPoint(void);
+  
+  /*!
+	 * \brief Get the value of the periodic point of a vertex.
+	 * \return Value of the periodic point of a vertex.
+	 */
+	long GetDonorProcessor(void);
   
 	/*! 
 	 * \brief Get the value of the periodic point of a vertex, and its somain
