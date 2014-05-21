@@ -11567,6 +11567,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
                 Buffer_Send_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] = ReceptorColor;
+                
+                if ((rank == 0) && (iDomain == 1) && (ReceptorColor == 1)) {
+                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" DonorColor "<< ReceptorColor << endl;
+                }
+                
                 iTotalSendDomain_Periodic++;
 
               }
@@ -11590,9 +11595,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
                 Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
                 
-//                if ((rank == 0) && (iDomain == 1)) {
-//                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
-//                }
+                if ((rank == 0) && (iDomain == 1) && (DonorColor == 1)) {
+                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
+                }
                 
                 iTotalReceivedDomain_Periodic++;
 
@@ -11649,6 +11654,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
               bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
               
+              if ((rank == 1) && (jDomain == 1)) {
+                cout <<"Send... after MPI "<< Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic] << " " << jDomain << endl;
+                
+              }
+              
               nVertexDomain[nMarker]++;
               iVertex++;
           
@@ -11671,10 +11681,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
               bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
               
-//              if ((rank == 1) && (jDomain == 2)) {
-//                cout <<"Receive... after MPI "<< Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] << " " << jDomain << endl;
-//                
-//              }
+              if ((rank == 1) && (jDomain == 1)) {
+                cout <<"Receive... after MPI "<< Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] << " " << jDomain << endl;
+                
+              }
               
               nVertexDomain[nMarker]++;
               iVertex++;
