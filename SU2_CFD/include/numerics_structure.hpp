@@ -4017,6 +4017,7 @@ private:
   
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
+  SpalartAllmarasOtherOutputs* SAOtherOutputs;
   int nResidual;
   int nJacobian;
   

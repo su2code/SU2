@@ -303,6 +303,8 @@ inline long CVertex::GetDonorElem(void) { return Donor_Elem; }
 
 inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
 
+inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
+
 inline void CVertex::SetBasisFunction(unsigned short val_node, double val_basis) { Basis_Function[val_node] = val_basis; }
 
 inline double CVertex::GetBasisFunction(unsigned short val_node) { return Basis_Function[val_node]; }

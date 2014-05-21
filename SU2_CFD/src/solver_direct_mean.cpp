@@ -64,6 +64,14 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+  Cauchy_Value = 0;
+	Cauchy_Func = 0;
+	Old_Func = 0;
+	New_Func = 0;
+	Cauchy_Counter = 0;
+  Cauchy_Serie = NULL;
+  
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -115,6 +123,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
+  Cauchy_Serie = NULL;
   
   /*--- Set the gamma value ---*/
   
@@ -338,6 +347,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     FanFace_Area[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
   }
+  
+  /*--- Initialize the cauchy critera array for fixed CL mode ---*/
+  
+  if (config->GetFixed_CL_Mode())
+    Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
   
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -574,6 +588,9 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
+  
+  if (Cauchy_Serie != NULL)
+    delete [] Cauchy_Serie;
   
 }
 
@@ -1905,10 +1922,15 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool engine         = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
+  bool fixed_cl       = config->GetFixed_CL_Mode();
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
   if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
+  
+  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  
+  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Compute distance function to zero level set (Set LevelSet and Distance primitive variables)---*/
   
@@ -1959,11 +1981,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Initialize the jacobian matrices ---*/
   
   if (implicit) Jacobian.SetValZero();
-  
-  
-  /*--- Apply the wall functions boundary condition ---*/
-  if (config->GetWall_Functions() && config->GetExtIter() > 0)
-    Compute_Wall_Functions_Mean(geometry, solver_container, config);
   
   /*--- Error message ---*/
 #ifndef NO_MPI
@@ -3471,6 +3488,22 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   else if (config->GetKind_Linear_Solver() == FGMRES)
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                config->GetLinear_Solver_Iter(), false);
+  else if (config->GetKind_Linear_Solver() == RFGMRES){
+    unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
+    double tol = config->GetLinear_Solver_Error();
+    IterLinSol=0;
+    while (IterLinSol < config->GetLinear_Solver_Iter()){
+      if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+        iterations = config->GetLinear_Solver_Iter()-IterLinSol;
+      IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
+                                  iterations, false); // increment total iterations
+      if (LinSysRes.norm()<tol)
+        break;
+      tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
+      // std::cout <<" Completed a restart iteration"<<std::endl;
+      
+    }
+  }
   
   /*--- The the number of iterations of the linear solver ---*/
   SetIterLinSolver(IterLinSol);
@@ -4336,6 +4369,162 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   
   delete [] Exhaust_MassFlow_Total;
   delete [] Exhaust_Area_Total;
+  
+}
+
+void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                   CConfig *config, unsigned short iMesh, bool Output) {
+
+  unsigned short iDim, iCounter;
+  bool Update_AoA = false;
+  double Target_CL, AoA_inc, AoA, Eps_Factor = 1e2;
+  double DampingFactor = config->GetDamp_Fixed_CL();
+  double Beta = config->GetAoS();
+  double Vel_Infty[3], Vel_Infty_Mag;
+  
+  int rank = MASTER_NODE;
+#ifndef NO_MPI
+#ifdef WINDOWS
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#else
+  rank = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+  
+  /*--- Only the fine mesh level should check the convergence criteria ---*/
+  
+  if (iMesh == MESH_0) {
+    
+    /*--- Initialize the update flag to false in config ---*/
+    
+    config->SetUpdate_AoA(false);
+    
+    /*--- Initialize the local cauchy criteria on the first iteration ---*/
+    
+    if (config->GetExtIter() == 0) {
+      Cauchy_Value = 0.0;
+      Cauchy_Counter = 0;
+      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Serie[iCounter] = 0.0;
+      AoA_old = config->GetAoA();
+    }
+    
+    /*--- Check on the level of convergence in the lift coefficient. ---*/
+    
+    Old_Func = New_Func;
+    New_Func = Total_CLift;
+    Cauchy_Func = fabs(New_Func - Old_Func);
+    Cauchy_Serie[Cauchy_Counter] = Cauchy_Func;
+    Cauchy_Counter++;
+    if (Cauchy_Counter == config->GetCauchy_Elems()) Cauchy_Counter = 0;
+    
+    Cauchy_Value = 1;
+    if (config->GetExtIter() >= config->GetCauchy_Elems()) {
+      Cauchy_Value = 0;
+      for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+        Cauchy_Value += Cauchy_Serie[iCounter];
+    }
+    
+    /*--- Check whether we are within two digits of the requested convergence
+     epsilon for the cauchy criteria. ---*/
+    
+    if (Cauchy_Value >= config->GetCauchy_Eps()*Eps_Factor) Update_AoA = false;
+    else Update_AoA = true;
+    
+    /*--- Do not apply any convergence criteria if the number
+     of iterations is less than a particular value ---*/
+    if (config->GetExtIter() < config->GetStartConv_Iter()) {
+      Update_AoA = false;
+      
+    }
+    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
+    
+    config->SetUpdate_AoA(Update_AoA);
+    
+  } else
+    Update_AoA = config->GetUpdate_AoA();
+  
+  /*--- If we are within two digits of convergence in the CL coefficient,
+   compute an updated value for the AoA at the farfield. We are iterating
+   on the AoA in order to match the specified fixed lift coefficient. ---*/
+  
+  if (Update_AoA) {
+    
+    /*--- Retrieve the specified target CL value. ---*/
+    
+    Target_CL = config->GetTarget_CL();
+    
+    /*--- Retrieve the old AoA. ---*/
+    
+    AoA_old = config->GetAoA();
+    
+    /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
+    
+    AoA_inc = (1.0/(2.0*PI_NUMBER))*(Target_CL - Total_CLift);
+    
+    /*--- Compute a new value for AoA on the fine mesh only ---*/
+    
+    if (iMesh == MESH_0)
+      AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
+    else
+      AoA = config->GetAoA();
+    
+    /*--- Update the freestream velocity vector at the farfield ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      Vel_Infty[iDim] = GetVelocity_Inf(iDim);
+    
+    /*--- Compute the magnitude of the free stream velocity ---*/
+    
+    Vel_Infty_Mag = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Vel_Infty_Mag += Vel_Infty[iDim]*Vel_Infty[iDim];
+    Vel_Infty_Mag = sqrt(Vel_Infty_Mag);
+    
+    /*--- Compute the new freestream velocity with the updated AoA ---*/
+    
+    if (nDim == 2) {
+      Vel_Infty[0] = cos(AoA)*Vel_Infty_Mag;
+      Vel_Infty[1] = sin(AoA)*Vel_Infty_Mag;
+    }
+    if (nDim == 3) {
+      Vel_Infty[0] = cos(AoA)*cos(Beta)*Vel_Infty_Mag;
+      Vel_Infty[1] = sin(Beta)*Vel_Infty_Mag;
+      Vel_Infty[2] = sin(AoA)*cos(Beta)*Vel_Infty_Mag;
+    }
+    
+    /*--- Store the new freestream velocity vector for the next iteration ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_Inf[iDim] = Vel_Infty[iDim];
+    }
+    
+    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+    if (iMesh == MESH_0) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        config->SetVelocity_FreeStreamND(iDim, Vel_Infty[iDim]);
+      config->SetAoA(AoA);
+    }
+    
+    /*--- Reset the local cauchy criteria ---*/
+    Cauchy_Value = 0.0;
+    Cauchy_Counter = 0;
+    for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
+      Cauchy_Serie[iCounter] = 0.0;
+  }
+  
+  /*--- Output some information to the console with the headers ---*/
+  
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*20)) == 0));
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+    cout.precision(7);
+    cout.setf(ios::fixed,ios::floatfield);
+    cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+    cout << " Target CL: " << config->GetTarget_CL();
+    cout << ", Current CL: " << Total_CLift;
+    cout << ", Current AoA: " << config->GetAoA()*180.0/PI_NUMBER << " deg" << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
+  }
   
 }
 
@@ -5952,6 +6141,230 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
   
 }
 
+void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                       CConfig *config) {
+  
+  unsigned long iVertex, iPoint, jPoint, Pin, Pout;
+  unsigned short iDim, iVar, iMarker;
+  int iProcessor, jProcessor;
+  double *Coord, radius, R, V_tip, DeltaP_avg, DeltaP_tip;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  unsigned short nMarker_ActDisk_Inlet = config->GetnMarker_ActDisk_Inlet();
+  
+  if (nMarker_ActDisk_Inlet != 0) {
+    
+    double *Normal = new double[nDim];
+    double *PrimVar_out = new double[nPrimVar];
+    double *PrimVar_in = new double[nPrimVar];
+    double *MeanPrimVar = new double[nPrimVar];
+    double *PrimVar_out_ghost = new double[nPrimVar];
+    double *PrimVar_in_ghost = new double[nPrimVar];
+    double *ActDisk_Jump = new double[nPrimVar];
+    double *Buffer_Send_V = new double [nPrimVar];
+    double *Buffer_Receive_V = new double [nPrimVar];
+    
+#ifdef NO_MPI
+    iProcessor = MASTER_NODE;
+#else
+#ifdef WINDOWS
+    MPI_Comm_rank(MPI_COMM_WORLD,&iProcessor);
+#else
+    iProcessor = MPI::COMM_WORLD.Get_rank();
+#endif
+#endif
+    
+    /*--- Identify the points that should be sended in a MPI implementation.
+     Do the send process, by the moment we are sending each node individually, this must be changed---*/
+    
+#ifndef NO_MPI
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
+        
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            /*--- Find the associate pair to the original node ---*/
+            
+            jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+            jProcessor = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+            
+            /*--- We only send the information that belong to other boundary, using jPoint as the ID for the message  ---*/
+            
+            if (jProcessor != iProcessor) {
+              
+              /*--- Copy the primitive variables ---*/
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
+              
+#ifdef WINDOWS
+              MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+#else
+              MPI::COMM_WORLD.Bsend(Buffer_Send_V, nPrimVar, MPI::DOUBLE, jProcessor, iPoint);
+#endif
+              
+            }
+            
+          }
+        }
+      }
+    }
+    
+#endif
+    
+    /*--- Evaluate the fluxes, the donor solution has been sended using MPI ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
+        
+        unsigned short boundary = config->GetMarker_All_Boundary(iMarker);
+        double *origin = config->GetActDisk_Origin(config->GetMarker_All_Tag(iMarker));     // Center of the rotor
+        double R_root = config->GetActDisk_RootRadius(config->GetMarker_All_Tag(iMarker));
+        double R_tip = config->GetActDisk_TipRadius(config->GetMarker_All_Tag(iMarker));
+        double C_T = config->GetActDisk_CT(config->GetMarker_All_Tag(iMarker));             // Rotor thrust coefficient
+        double Omega = config->GetActDisk_Omega(config->GetMarker_All_Tag(iMarker));        // Revolution per minute
+        
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            /*--- Find the associate pair to the original node ---*/
+            
+            jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+            jProcessor = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+            
+            /*--- Receive the information, using jPoint as the ID for the message ---*/
+            
+            if (jProcessor != iProcessor) {
+#ifndef NO_MPI
+#ifdef WINDOWS
+              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+#else
+              MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
+#endif
+#endif
+            }
+            else {
+              
+              /*--- The point is in the same processor... no MPI required ---*/
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                Buffer_Receive_V[iVar] = node[jPoint]->GetPrimVar(iVar);
+              
+            }
+            
+            /*--- Identify the inner and the outer point (based on the normal direction) ---*/
+            
+            if (boundary == ACTDISK_INLET) {
+              
+              Pin = iPoint; Pout = jPoint;
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++) {
+                PrimVar_out[iVar] = Buffer_Receive_V[iVar];
+                PrimVar_in[iVar] = node[Pin]->GetPrimVar(iVar);
+                MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
+              }
+              
+            }
+            if (boundary == ACTDISK_OUTLET) {
+              
+              Pout = iPoint; Pin = jPoint;
+              
+              for (iVar = 0; iVar < nPrimVar; iVar++) {
+                PrimVar_out[iVar] = node[Pout]->GetPrimVar(iVar);
+                PrimVar_in[iVar] = Buffer_Receive_V[iVar];
+                MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
+              }
+              
+            }
+            
+            /*--- Set the jump in the actuator disk ---*/
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              ActDisk_Jump[iVar] = 0.0;
+            }
+            
+            /*--- Compute the distance to the center of the rotor ---*/
+            
+            Coord = geometry->node[iPoint]->GetCoord();
+            radius = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              radius += (Coord[iDim]-origin[iDim])*(Coord[iDim]-origin[iDim]);
+            radius = sqrt(radius);
+            
+            /*--- Compute the pressure increment and the jump ---*/
+            
+            R = R_tip;
+            V_tip = R_tip*Omega*(PI_NUMBER/30.0);
+            DeltaP_avg = R*R*V_tip*V_tip*C_T/(R*R-R_root*R_root);
+            DeltaP_tip = 3.0*DeltaP_avg*R*(R*R-R_root*R_root)/(2.0*(R*R*R-R_root*R_root*R_root));
+            ActDisk_Jump[nDim+1] = -DeltaP_tip*radius/R;
+            
+            /*--- Inner point ---*/
+            
+            if (iPoint == Pin) {
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                PrimVar_in_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_in[iVar] - ActDisk_Jump[iVar];
+              numerics->SetPrimitive(PrimVar_in, PrimVar_in_ghost);
+            }
+            
+            /*--- Outer point ---*/
+            
+            if (iPoint == Pout) {
+              for (iVar = 0; iVar < nPrimVar; iVar++)
+                PrimVar_out_ghost[iVar] = 2.0*MeanPrimVar[iVar] - PrimVar_out[iVar] + ActDisk_Jump[iVar];
+              numerics->SetPrimitive(PrimVar_out, PrimVar_out_ghost);
+            }
+            
+            /*--- Set the normal vector ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+            numerics->SetNormal(Normal);
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+            
+            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+            
+            /*--- Add Residuals and Jacobians ---*/
+            
+            LinSysRes.AddBlock(iPoint, Residual);
+            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    /*--- Free locally allocated memory ---*/
+    
+    delete [] Normal;
+    delete [] PrimVar_out;
+    delete [] PrimVar_in;
+    delete [] MeanPrimVar;
+    delete [] PrimVar_out_ghost;
+    delete [] PrimVar_in_ghost;
+    delete [] ActDisk_Jump;
+    delete[] Buffer_Send_V;
+    delete[] Buffer_Receive_V;
+  }
+  
+}
+
 void CEulerSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container,
                                 CConfig *config, unsigned short val_marker) { }
 
@@ -7221,9 +7634,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool tkeNeeded = (turb_model == SST);
   double eddy_visc = 0.0, turb_ke = 0.0;
   bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
-  
+  bool fixed_cl = config->GetFixed_CL_Mode();
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
+  
+  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  if (fixed_cl) SetFarfield_AoA(geometry, solver_container, config, iMesh, Output);
   
   /*--- Compute distance function to zero level set ---*/
   if (freesurface) SetFreeSurface_Distance(geometry, config);
@@ -7267,6 +7684,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Initialize the jacobian matrices ---*/
   if (implicit) Jacobian.SetValZero();
+  
+  /*--- Apply the wall functions boundary condition ---*/
+  if (config->GetWall_Functions() && config->GetExtIter() > 0)
+    Compute_Wall_Functions_Mean(geometry, solver_container, config);
   
   /*--- Error message ---*/
 #ifndef NO_MPI
@@ -8496,186 +8917,190 @@ void CNSSolver::Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver **solve
   double kappa = 0.4;
   double B = 5.5;
   
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX)               ||
         (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC)     ||
         (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
         (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)              ||
         (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   ) {
       
-  /*--- Identify the boundary by string name ---*/
-  
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
-  
-  /*--- Get the specified wall heat flux from config ---*/
-  
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  
-  /*--- Loop over all of the vertices on this boundary marker ---*/
-  
-  for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-    
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    
-    if (geometry->node[iPoint]->GetDomain()) {
+      /*--- Identify the boundary by string name ---*/
       
-      /*--- Get coordinates of the current vertex and nearest normal point ---*/
+      string Marker_Tag = config->GetMarker_All_Tag(iMarker);
       
-      Coord = geometry->node[iPoint]->GetCoord();
-      Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+      /*--- Get the specified wall heat flux from config ---*/
       
-      /*--- Compute dual-grid area and boundary normal ---*/
+      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
       
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      /*--- Loop over all of the vertices on this boundary marker ---*/
       
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-      
-      /*--- Get the velocity, pressure, and temperature at the nearest
-       (normal) interior point. ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        Vel[iDim] = node[Point_Normal]->GetVelocity(iDim);
-      P_Normal = node[Point_Normal]->GetPressure();
-      T_Normal = node[Point_Normal]->GetTemperature();
-      
-      /*--- Compute the wall-parallel velocity at first point off the wall ---*/
-      
-      VelNormal = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        VelNormal += Vel[iDim] * UnitNormal[iDim];
-      for (iDim = 0; iDim < nDim; iDim++)
-        VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
-      
-      VelTangMod = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        VelTangMod += VelTang[iDim]*VelTang[iDim];
-      VelTangMod = sqrt(VelTangMod);
-      
-      /*--- Compute normal distance of the interior point from the wall ---*/
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
-      
-      WallDistMod = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        WallDistMod += WallDist[iDim]*WallDist[iDim];
-      WallDistMod = sqrt(WallDistMod);
-      
-      /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
-      
-      T_Wall = T_Normal/(1.0 + (0.5*Gamma_Minus_One*Recovery)
-                         *(VelTangMod*VelTangMod)/(VelInfMod*VelInfMod));
-      
-      /*--- Extrapolate the pressure from the interior & compute the
-       wall density using the equation of state ---*/
-      
-      P_Wall = P_Normal;
-      Density_Wall = P_Wall/(Gas_Constant*T_Wall);
-      
-      /*--- Compute the shear stress at the wall in the regular fashion
-       by using the stress tensor on the surface ---*/
-      
-      Lam_Visc_Wall = node[iPoint]->GetLaminarViscosity();
-      grad_primvar  = node[iPoint]->GetGradient_Primitive();
-      
-      div_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        div_vel += grad_primvar[iDim+1][iDim];
-      
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0 ; jDim < nDim; jDim++) {
-          Delta = 0.0; if (iDim == jDim) Delta = 1.0;
-          tau[iDim][jDim] = Lam_Visc_Wall*(  grad_primvar[jDim+1][iDim]
-                                           + grad_primvar[iDim+1][jDim]) -
-          TWO3*Lam_Visc_Wall*div_vel*Delta;
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+        
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          /*--- Get coordinates of the current vertex and nearest normal point ---*/
+          
+          Coord = geometry->node[iPoint]->GetCoord();
+          Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+          
+          /*--- Compute dual-grid area and boundary normal ---*/
+          
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            UnitNormal[iDim] = -Normal[iDim]/Area;
+          
+          /*--- Get the velocity, pressure, and temperature at the nearest
+           (normal) interior point. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            Vel[iDim] = node[Point_Normal]->GetVelocity(iDim);
+          P_Normal = node[Point_Normal]->GetPressure();
+          T_Normal = node[Point_Normal]->GetTemperature();
+          
+          /*--- Compute the wall-parallel velocity at first point off the wall ---*/
+          
+          VelNormal = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            VelNormal += Vel[iDim] * UnitNormal[iDim];
+          for (iDim = 0; iDim < nDim; iDim++)
+            VelTang[iDim] = Vel[iDim] - VelNormal*UnitNormal[iDim];
+          
+          VelTangMod = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            VelTangMod += VelTang[iDim]*VelTang[iDim];
+          VelTangMod = sqrt(VelTangMod);
+          
+          /*--- Compute normal distance of the interior point from the wall ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+          
+          WallDistMod = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            WallDistMod += WallDist[iDim]*WallDist[iDim];
+          WallDistMod = sqrt(WallDistMod);
+          
+          /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
+          
+          T_Wall = T_Normal/(1.0 + (0.5*Gamma_Minus_One*Recovery)
+                             *(VelTangMod*VelTangMod)/(VelInfMod*VelInfMod));
+          
+          /*--- Extrapolate the pressure from the interior & compute the
+           wall density using the equation of state ---*/
+          
+          P_Wall = P_Normal;
+          Density_Wall = P_Wall/(Gas_Constant*T_Wall);
+          
+          /*--- Compute the shear stress at the wall in the regular fashion
+           by using the stress tensor on the surface ---*/
+          
+          Lam_Visc_Wall = node[iPoint]->GetLaminarViscosity();
+          grad_primvar  = node[iPoint]->GetGradient_Primitive();
+          
+          div_vel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            div_vel += grad_primvar[iDim+1][iDim];
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0 ; jDim < nDim; jDim++) {
+              Delta = 0.0; if (iDim == jDim) Delta = 1.0;
+              tau[iDim][jDim] = Lam_Visc_Wall*(  grad_primvar[jDim+1][iDim]
+                                               + grad_primvar[iDim+1][jDim]) -
+              TWO3*Lam_Visc_Wall*div_vel*Delta;
+            }
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++)
+              TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
+          }
+          
+          /*--- Compute wall shear stress as the magnitude of the wall-tangential
+           component of the shear stress tensor---*/
+          
+          TauNormal = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            TauNormal += TauElem[iDim] * UnitNormal[iDim];
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+          
+          WallShearStress = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+          WallShearStress = sqrt(WallShearStress);
+          
+          //cout << iVertex << "   " << T_Wall << "  " << T_Normal << "  " << VelTangMod << "   " <<  P_Wall << "  " << Density_Wall << "   " << WallShearStress << endl;
+          
+          /*--- Calculate the quantities from boundary layer theory and
+           iteratively solve for a new wall shear stress. Use the current wall
+           shear stress as a starting guess for the wall function. ---*/
+          
+          Tau_Wall_Old = WallShearStress;
+          counter = 0; diff = 1.0;
+          
+          while (diff > tol) {
+            
+            /*--- Friction velocity and u+ ---*/
+            
+            U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
+            U_Plus = VelTangMod/U_Tau;
+            
+            /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
+            
+            Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
+            Beta = 0.0; // For adiabatic flows only
+            Q    = sqrt(Beta*Beta + 4.0*Gam);
+            Phi  = asin(-1.0*Beta/Q);
+            
+            /*--- Y+ defined by White & Christoph (compressibility and heat transfer) ---*/
+            
+            Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
+            
+            /*--- Spalding's universal form for the BL velocity with the
+             outer velocity form of White & Christoph above. ---*/
+            
+            Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)*
+                                              (1.0 + kappa*U_Plus
+                                               + kappa*kappa*U_Plus*U_Plus/2.0
+                                               + kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
+            
+            /*--- Calculate an updated value for the wall shear stress
+             using the y+ value, the definition of y+, and the definition of
+             the friction velocity. ---*/
+            
+            Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
+            
+            /*--- Difference between the old and new Tau. Update old value. ---*/
+            
+            diff = fabs(Tau_Wall-Tau_Wall_Old);
+            Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
+            
+            counter++;
+            if (counter > 100) break;
+            
+          }
+          
+          //cout << Y_Plus << "  " << Tau_Wall << "    " << WallShearStress << "   Ratio: "<< Tau_Wall/WallShearStress <<  "   " << counter << endl;
+          
+          /*--- Store this value for the wall shear stress at the node.  ---*/
+          
+          
+          
         }
-        TauElem[iDim] = 0.0;
-        for (jDim = 0; jDim < nDim; jDim++)
-          TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
-      }
-      
-      /*--- Compute wall shear stress as the magnitude of the wall-tangential
-       component of the shear stress tensor---*/
-      
-      TauNormal = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauNormal += TauElem[iDim] * UnitNormal[iDim];
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-      
-      WallShearStress = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        WallShearStress += TauTangent[iDim]*TauTangent[iDim];
-      WallShearStress = sqrt(WallShearStress);
-      
-      //cout << iVertex << "   " << T_Wall << "  " << T_Normal << "  " << VelTangMod << "   " <<  P_Wall << "  " << Density_Wall << "   " << WallShearStress << endl;
-      
-      /*--- Calculate the quantities from boundary layer theory and
-       iteratively solve for a new wall shear stress. Use the current wall
-       shear stress as a starting guess for the wall function. ---*/
-      
-      Tau_Wall_Old = WallShearStress;
-      counter = 0; diff = 1.0;
-      
-      while (diff > tol) {
-        
-        /*--- Friction velocity and u+ ---*/
-        
-        U_Tau = sqrt(Tau_Wall_Old/Density_Wall);
-        U_Plus = VelTangMod/U_Tau;
-        
-        /*--- Gamma, Beta, Q, and Phi, defined by Nichols & Nelson (2004) ---*/
-        
-        Gam  = Recovery*U_Tau*U_Tau/(2.0*Cp*T_Wall);
-        Beta = 0.0; // For adiabatic flows only
-        Q    = sqrt(Beta*Beta + 4.0*Gam);
-        Phi  = asin(-1.0*Beta/Q);
-        
-        /*--- Y+ defined by White & Christoph (compressibility and heat transfer) ---*/
-        
-        Y_Plus_White = exp((kappa/sqrt(Gam))*(asin((2.0*Gam*U_Plus - Beta)/Q) - Phi))*exp(-1.0*kappa*B);
-        
-        /*--- Spalding's universal form for the BL velocity with the
-         outer velocity form of White & Christoph above. ---*/
-        
-        Y_Plus = U_Plus + Y_Plus_White - (exp(-1.0*kappa*B)*
-                                          (1.0 + kappa*U_Plus
-                                           + kappa*kappa*U_Plus*U_Plus/2.0
-                                           + kappa*kappa*kappa*U_Plus*U_Plus*U_Plus/6.0));
-        
-        /*--- Calculate an updated value for the wall shear stress
-         using the y+ value, the definition of y+, and the definition of
-         the friction velocity. ---*/
-        
-        Tau_Wall = (1.0/Density_Wall)*pow(Y_Plus*Lam_Visc_Wall/WallDistMod,2.0);
-        
-        /*--- Difference between the old and new Tau. Update old value. ---*/
-        
-        diff = fabs(Tau_Wall-Tau_Wall_Old);
-        Tau_Wall_Old += 0.25*(Tau_Wall-Tau_Wall_Old);
-        
-        counter++;
-        if (counter > 100) break;
         
       }
-      
-      //cout << Y_Plus << "  " << Tau_Wall << "    " << WallShearStress << "   Ratio: "<< Tau_Wall/WallShearStress <<  "   " << counter << endl;
-      
-      /*--- Now modify the viscous fluxes for all of the nearest neighbors
-       one point off of the wall. ---*/
-      
       
     }
   }
+  
 }

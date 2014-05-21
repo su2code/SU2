@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
-    /*--- Definition of the configuration option class for all zones. In this
+      /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
@@ -194,11 +194,12 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
     
-    /*--- Set the near-field and interface boundary conditions, if necessary. ---*/
+    /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
     
     for (iMesh = 0; iMesh <= config_container[iZone]->GetMGLevels(); iMesh++) {
       geometry_container[iZone][iMesh]->MatchNearField(config_container[iZone]);
       geometry_container[iZone][iMesh]->MatchInterface(config_container[iZone]);
+      geometry_container[iZone][iMesh]->MatchActuator_Disk(config_container[iZone]);
     }
     
     /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].

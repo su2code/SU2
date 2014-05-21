@@ -391,6 +391,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void MatchNearField(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void MatchActuator_Disk(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -964,6 +970,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchNearField(CConfig *config);
+  
+  /*!
+	 * \brief Mach the near field boundary condition.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void MatchActuator_Disk(CConfig *config);
 
 	/*! 
 	 * \brief Mach the interface boundary condition.
@@ -1313,6 +1325,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchNearField(CConfig *config);
+  
+  /*!
+	 * \brief Mach the near field boundary condition.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void MatchActuator_Disk(CConfig *config);
 
 	/*! 
 	 * \brief Mach the interface boundary condition.
