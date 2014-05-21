@@ -11459,12 +11459,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
             iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
             if (iDomain == geometry->node[iPoint]->GetColor()) {
 
-              if (Marker_All_SendRecv[iMarker] > 0) {
+              if (config->GetMarker_All_SendRecv(iMarker) > 0) {
 
                 /*--- Identify the color of the receptor ---*/
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-                    (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+                    (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
                       jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
                       ReceptorColor = geometry->node[jPoint]->GetColor();
                     }
@@ -11474,12 +11474,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 nTotalSendDomain_Periodic++;
 
               }
-              if (Marker_All_SendRecv[iMarker] < 0) {
+              if (config->GetMarker_All_SendRecv(iMarker) < 0) {
 
                 /*--- Identify the color of the donor ---*/
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+                      (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
                     jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
                     DonorColor = geometry->node[jPoint]->GetColor();
                   }
@@ -11541,80 +11541,81 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Evaluate the number of already existing periodic boundary conditions ---*/
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-
+        
         if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
-
+          
           for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
+            
             iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
             Transformation = geometry->bound[iMarker][iVertex]->GetRotation_Type();
-
+            
             if (iDomain == geometry->node[iPoint]->GetColor()) {
-
+              
               /*--- If the information is going to be sended, find the
                domain of the receptor ---*/
-              if (Marker_All_SendRecv[iMarker] > 0) {
-
+              if (config->GetMarker_All_SendRecv(iMarker) > 0) {
+                
                 /*--- Identify the color of the receptor ---*/
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker])) {
+                      (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
                     jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
                     ReceptorColor = geometry->node[jPoint]->GetColor();
                   }
                 }
-
+                
                 /*--- For each color of the receptor we will han an extra marker (+) ---*/
                 Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
                 Buffer_Send_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] = ReceptorColor;
                 
-                if ((rank == 0) && (iDomain == 1) && (ReceptorColor == 1)) {
-                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" DonorColor "<< ReceptorColor << endl;
-                }
+//                if ((rank == 0) && (iDomain == 1) && (ReceptorColor == 1)) {
+//                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" DonorColor "<< ReceptorColor << endl;
+//                }
                 
                 iTotalSendDomain_Periodic++;
-
+                
               }
-
-
+              
+              
               /*--- If the information is goint to be received,
                find the domain if the donor ---*/
-              if (Marker_All_SendRecv[iMarker] < 0) {
-
+              if (config->GetMarker_All_SendRecv(iMarker) < 0) {
+                
                 /*--- Identify the color of the donor ---*/
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-                      (Marker_All_SendRecv[jMarker] == -Marker_All_SendRecv[iMarker] )) {
+                      (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker) )) {
                     jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
                     DonorColor = geometry->node[jPoint]->GetColor();
                   }
                 }
-
+                
                 /*--- For each color of the donor we will han an extra marker (-) ---*/
                 Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
                 Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
                 
-                if ((rank == 0) && (iDomain == 1) && (DonorColor == 1)) {
-                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
-                }
+//                if ((rank == 0) && (iDomain == 1) && (DonorColor == 1)) {
+//                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
+//                }
                 
                 iTotalReceivedDomain_Periodic++;
-
+                
               }
             }
           }
         }
       }
-
-
+      
+      
       MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 0);
       MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 1);
       MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicReceptor,   nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
       MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
       MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 4);
       MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicDonor,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 5);
-
+      
       delete[] Buffer_Send_SendDomain_Periodic;
       delete[] Buffer_Send_SendDomain_PeriodicTrans;
       delete[] Buffer_Send_SendDomain_PeriodicReceptor;
@@ -11624,6 +11625,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 
     }
 
+    
     MPI::COMM_WORLD.Barrier();
 
     if (rank == iDomain) {
@@ -11654,10 +11656,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
               bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
               
-              if ((rank == 1) && (jDomain == 1)) {
-                cout <<"Send... after MPI "<< Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic] << " " << jDomain << endl;
-                
-              }
+//              if ((rank == 1) && (jDomain == 1)) {
+//                cout <<"Send... after MPI "<< Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic] << " " << jDomain << endl;
+//                
+//              }
               
               nVertexDomain[nMarker]++;
               iVertex++;
@@ -11681,10 +11683,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
               bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
               
-              if ((rank == 1) && (jDomain == 1)) {
-                cout <<"Receive... after MPI "<< Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] << " " << jDomain << endl;
-                
-              }
+//              if ((rank == 1) && (jDomain == 1)) {
+//                cout <<"Receive... after MPI "<< Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] << " " << jDomain << endl;
+//                
+//              }
               
               nVertexDomain[nMarker]++;
               iVertex++;
@@ -11710,6 +11712,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
 
   }
   
+  /*--- Set the value of Marker_All_SendRecv in the config structure ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
+  }
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
 #ifdef WINDOWS
