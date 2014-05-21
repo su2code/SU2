@@ -105,8 +105,8 @@ int main(int argc, char *argv[]) {
      divide the grid between the nodes ---*/
     CDomainGeometry *domain = new CDomainGeometry(geometry, config);
     
-    /*--- Add the Send/Receive boundaries ---*/
-    domain->SetSendReceive(config);
+//    /*--- Add the Send/Receive boundaries ---*/
+//    domain->SetSendReceive(config);
     
 #ifndef NO_MPI
 #ifdef WINDOWS
