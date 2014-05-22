@@ -1324,23 +1324,10 @@ public:
 	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void ComputeResidual_Axisymmetric(double *val_residual, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void ComputeResidual_Axisymmetric_ad(double *val_residual, double *val_residuald, CConfig *config);
-    
-	/*!
-	 * \brief Calculation of axisymmetric source term Jacobian
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config);
-    
-    /*!
+	virtual void ComputeAxisymmetric(double *val_residual, double **val_Jacobian,
+                                   CConfig *config);
+  
+  /*!
 	 * \brief Calculation of the translational-vibrational energy exchange source term
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[out] val_residual - residual of the source terms
@@ -5378,6 +5365,7 @@ private:
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
   int    *alphak, *betak;
   double *X, **dXdr; // Mole fraction
+  double *Y, **dYdr; // Mass fraction
   double ***dTausrdU, **dTauMWdU, **dTaupsdU, **dTausdU;
   double **RxnConstantTable;
   double *estar, *evib;
@@ -5429,6 +5417,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config);
+  
+  void ComputeAxisymmetric(double *val_residual, double **val_Jacobian, CConfig *config);
 };
 
 

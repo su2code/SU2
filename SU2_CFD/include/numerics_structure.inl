@@ -63,11 +63,7 @@ inline void CNumerics::ComputeResidual(double *val_residual, double **val_Jacobi
 
 inline void CNumerics::ComputeResidual_TransLM(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config, double &gamma_sep) {}
 
-inline void CNumerics::ComputeResidual_Axisymmetric(double *val_residual, CConfig *config) { }
-
-inline void CNumerics::ComputeResidual_Axisymmetric_ad(double *val_residual, double *val_residuald, CConfig *config) { }
-
-inline void CNumerics::SetJacobian_Axisymmetric(double **val_Jacobian_i, CConfig *config) { }
+inline void CNumerics::ComputeAxisymmetric(double *val_residual, double **val_Jacobian, CConfig *config) { }
 
 inline void CNumerics::ComputeVibRelaxation(double *val_residual, double **val_Jacobian_i, CConfig *config) { }
 

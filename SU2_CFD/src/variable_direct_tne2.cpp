@@ -1373,7 +1373,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   if (radical2 < 0.0) {
 //    unsigned short iVar;
     converr = true;
-    V[A_INDEX] = 1E4;
+    V[A_INDEX] = EPS;
 //    cout << "Soundspeed NaN" << endl;
 //    for (iVar = 0; iVar < nVar; iVar++)
 //      cout << "dPdU[" << iVar << "]: " << val_dPdU[iVar] << endl;

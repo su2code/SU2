@@ -594,17 +594,6 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
     if (mF >= 0.0) FcLR = FcL;
     else           FcLR = FcR;
     
-//    /*--- Calculate supplementary values ---*/
-//    conc_i = 0.0; conc_j = 0.0;
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      conc_i += V_i[RHOS_INDEX+iSpecies]/Ms[iSpecies];
-//      conc_j += V_j[RHOS_INDEX+iSpecies]/Ms[iSpecies];
-//    }
-//    dPdrhoE_i = Ru/rhoCvtr_i * conc_i;
-//    dPdrhoE_j = Ru/rhoCvtr_j * conc_j;
-//    dPdrhoEve_i = -dPdrhoE_i + rho_el_i * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_i;
-//    dPdrhoEve_j = -dPdrhoE_j + rho_el_j * Ru/Ms[nSpecies-1] * 1.0/rhoCvve_j;
-    
     // Sound speed derivatives: Species density
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
@@ -612,11 +601,6 @@ void CUpwAUSM_TNE2::ComputeResidual(double *val_residual,
                                        + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
       daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
                                        + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
-      
-//      daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdrhoE_i)*P_i/rho_i
-//                                       + 1.0/rho_i*(1.0+dPdrhoE_i)*(dPdU_i[iSpecies] - P_i/rho_i));
-//      daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdrhoE_j)*P_j/rho_j
-//                                       + 1.0/rho_j*(1.0+dPdrhoE_j)*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
       daL[nSpecies-1] = 1.0/(2.0*a_i*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
@@ -1836,6 +1820,7 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   betak  = new int[nSpecies];
   A      = new double[5];
   X      = new double[nSpecies];
+  Y      = new double[nSpecies];
   eves   = new double[nSpecies];
   estar  = new double[nSpecies];
   evib   = new double[nSpecies];
@@ -1851,8 +1836,11 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   dRbok  = new double[nVar];
   
   dXdr = new double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  dYdr = new double*[nSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dXdr[iSpecies] = new double[nSpecies];
+    dYdr[iSpecies] = new double[nSpecies];
+  }
   
 //  var = new CTNE2EulerVariable(nDim, nVar, nPrimVar, nPrimVarGrad, config);
   
@@ -1867,9 +1855,12 @@ CSource_TNE2::~CSource_TNE2(void) {
     delete [] RxnConstantTable[iVar];
   delete [] RxnConstantTable;
   
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     delete [] dXdr[iSpecies];
+    delete [] dYdr[iSpecies];
+  }
   delete [] dXdr;
+  delete [] dYdr;
   
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
@@ -1891,6 +1882,7 @@ CSource_TNE2::~CSource_TNE2(void) {
   
   delete [] A;
   delete [] X;
+  delete [] Y;
   delete [] eves;
   delete [] estar;
   delete [] evib;
@@ -1964,7 +1956,7 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   int ***RxnMap;
   double T_min, epsilon;
   double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
-  double rho, u, v, w, rhoCvtr, rhoCvve, P;
+  double rho, rhoCvtr, rhoCvve, P;
   double *Ms, *thetav, **thetae, **g, fwdRxn, bkwRxn, alpha, Ru;
   double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
   double *hf, *Tref, *xi;
@@ -2006,9 +1998,6 @@ void CSource_TNE2::ComputeChemistry(double *val_residual,
   P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  u       = V_i[VEL_INDEX];
-  v       = V_i[VEL_INDEX+1];
-  w       = V_i[VEL_INDEX+2];
   rhoCvtr = V_i[RHOCVTR_INDEX];
   rhoCvve = V_i[RHOCVVE_INDEX];
   
@@ -2231,7 +2220,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, kSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
-  double rhos, P, T, Tve, u, v, w, rhoCvtr, rhoCvve, Ru, conc, N;
+  double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
   double Qtv, taunum, taudenom;
   double mu, A_sr, B_sr, num, denom;
   double Cs;
@@ -2269,9 +2258,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
-  u       = V_i[VEL_INDEX];
-  v       = V_i[VEL_INDEX+1];
-  w       = V_i[VEL_INDEX+2];
   rhoCvtr = V_i[RHOCVTR_INDEX];
   rhoCvve = V_i[RHOCVVE_INDEX];
   nEv     = nSpecies+nDim+1;
@@ -2307,11 +2293,11 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (thetav[iSpecies] != 0.0) {
       /*--- Rename ---*/
-      rhos = V_i[RHOS_INDEX+iSpecies];
+      rhos   = V_i[RHOS_INDEX+iSpecies];
       thoT   = thetav[iSpecies]/T;
       expt   = exp(thetav[iSpecies]/T);
       thoTve = thetav[iSpecies]/Tve;
-      exptv = exp(thetav[iSpecies]/Tve);
+      exptv  = exp(thetav[iSpecies]/Tve);
       
       /*--- Millikan & White relaxation time ---*/
       num   = 0.0;
@@ -2418,5 +2404,97 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
         }
       }
     }
+  }
+}
+
+void CSource_TNE2::ComputeAxisymmetric(double *val_residual,
+                                       double **val_Jacobian,
+                                       CConfig *config) {
+  
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
+  double rho, rhou, rhov, rhoEve, vel2, H, yinv;
+  
+  
+//	double yinv, Enthalpy_i, Velocity_i, v2;
+	
+  /*--- Calculate inverse of y coordinate ---*/
+	if (Coord_i[1] > 0.0) yinv = 1.0/Coord_i[1];
+	else yinv = 0.0;
+  
+  /*--- Rename for convenience ---*/
+  rho    = V_i[RHO_INDEX];
+  rhou   = U_i[nSpecies];
+  rhov   = U_i[nSpecies+1];
+  rhoEve = U_i[nSpecies+nDim+1];
+  H      = V_i[H_INDEX];
+  vel2   = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    vel2 += V_i[VEL_INDEX+iDim]*V_i[VEL_INDEX+iDim];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Y[iSpecies] = V_i[RHOS_INDEX+iSpecies] / rho;
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_residual[iSpecies] = yinv*rhov*Y[iSpecies]*Volume;
+  val_residual[nSpecies]   = yinv*rhov*U_i[nSpecies]/rho*Volume;
+  val_residual[nSpecies+1] = yinv*rhov*U_i[nSpecies+1]/rho*Volume;
+  val_residual[nSpecies+2] = yinv*rhov*H*Volume;
+  val_residual[nSpecies+3] = yinv*rhov*U_i[nSpecies+nDim+1]/rho*Volume;
+  
+  if (implicit) {
+    
+    /*--- Initialize ---*/
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian[iVar][jVar] = 0.0;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
+        dYdr[iSpecies][jSpecies] = 0.0;
+    
+    /*--- Calculate additional quantities ---*/
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        dYdr[iSpecies][jSpecies] += -1/rho*Ys[iSpecies];
+      }
+      dYdr[iSpecies][iSpecies] += 1/rho;
+    }
+    
+    /*--- Populate Jacobian ---*/
+
+    // Species density
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        val_Jacobian[iSpecies][jSpecies] = dYdr[iSpecies][jSpecies]*rhov;
+      }
+      val_Jacobian[iSpecies][nSpecies+1] = Y[iSpecies];
+    }
+    
+    // X-momentum
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_Jacobian[nSpecies][iSpecies] = -rhou*rhov/(rho*rho);
+    val_Jacobian[nSpecies][nSpecies] = rhov/rho;
+    val_Jacobian[nSpecies][nSpecies+1] = rhou/rho;
+    
+    // Y-momentum
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_Jacobian[nSpecies+1][iSpecies] = -rhov*rhov/(rho*rho);
+    val_Jacobian[nSpecies+1][nSpecies+1] = 2*rhov/rho;
+    
+    // Energy
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_Jacobian[nSpecies+nDim][iSpecies]      = -H*rhov/rho + dPdU_i[iSpecies]*rhov/rho;
+    val_Jacobian[nSpecies+nDim][nSpecies]        = dPdU_i[nSpecies]*rhov/rho;
+    val_Jacobian[nSpecies+nDim][nSpecies+1]      = H + dPdU_i[nSpecies+1]*rhov/rho;
+    val_Jacobian[nSpecies+nDim][nSpecies+nDim]   = (1+dPdU_i[nSpecies+nDim])*rhov/rho;
+    val_Jacobian[nSpecies+nDim][nSpecies+nDim+1] = dPdU_i[nSpecies+nDim+1]*rhov/rho;
+    
+    // Vib-el energy
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_Jacobian[nSpecies+nDim+1][iSpecies] = -rhoEve*rhov/(rho*rho);
+    val_Jacobian[nSpecies+nDim+1][nSpecies+1] = rhoEve/rho;
+    val_Jacobian[nSpecies+nDim+1][nSpecies+nDim+1] = rhov/rho;
+    
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian[iVar][jVar] *= yinv*Volume;
   }
 }

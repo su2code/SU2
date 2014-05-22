@@ -2346,12 +2346,22 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[iPoint]->GetCoord() );
     
     /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
     if (config->GetExtraOutput()) {
       for (iVar = 0; iVar < nVar; iVar++) {
         OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
       }
+    }
+    
+    /*--- Compute axisymmetric source terms (if needed) ---*/
+    if (config->GetAxisymmetric()) {
+      numerics->ComputeAxisymmetric(Residual, Jacobian_i, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     }
     
     /*--- Compute the non-equilibrium chemistry ---*/
@@ -2412,39 +2422,40 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	unsigned long iVertex, iPoint;
 	unsigned short iDim, iMarker, Boundary, Monitoring;
-	double Pressure, *Normal = NULL, dist[3], *Coord, Face_Area, PressInviscid;
+	double Pressure, *Normal = NULL, *Coord, Area;
 	double factor, NFPressOF, RefVel2, RefDensity, RefPressure;
   
+  double MomentDist[3];
+  double Force[3];
+  double UnitNormal[3];
+
 	double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
 	double Beta            = config->GetAoS()*PI_NUMBER/180.0;
 	double RefAreaCoeff    = config->GetRefAreaCoeff();
 	double RefLengthMoment = config->GetRefLengthMoment();
 	double *Origin         = config->GetRefOriginMoment(0);
-	//double Pressure_Inf    = config->GetPressure_FreeStreamND();
-	//double *Velocity_Inf   = config->GetVelocity_FreeStreamND();
   
-	/*--- If we have a rotating frame problem or an unsteady problem with
-   mesh motion, use special reference values for the force coefficients.
-   Otherwise, use the freestream values, which is the standard convention. ---*/
   
+	/*--- Use free stream reference values ---*/
   RefVel2     = node_infty->GetVelocity2();
 	RefDensity  = node_infty->GetDensity();
 	RefPressure = node_infty->GetPressure();
+  factor      = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
   
+
 	/*-- Initialization ---*/
-	Total_CDrag = 0.0; Total_CLift = 0.0;  Total_CSideForce = 0.0;
-	Total_CMx = 0.0;   Total_CMy = 0.0;    Total_CMz = 0.0;
-	Total_CFx = 0.0;   Total_CFy = 0.0;    Total_CFz = 0.0;
-	Total_CEff = 0.0;  Total_Heat = 0.0;
+	Total_CDrag   = 0.0; Total_CLift = 0.0; Total_CSideForce = 0.0;
+	Total_CMx     = 0.0; Total_CMy   = 0.0; Total_CMz = 0.0;
+	Total_CFx     = 0.0; Total_CFy   = 0.0; Total_CFz = 0.0;
+	Total_CEff    = 0.0; Total_Heat  = 0.0;
   Total_MaxHeat = 0.0;
-	AllBound_CDrag_Inv = 0.0;        AllBound_CLift_Inv = 0.0;  AllBound_CSideForce_Inv = 0.0;
-	AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;    AllBound_CMz_Inv = 0.0;
-	AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;    AllBound_CFz_Inv = 0.0;
-	AllBound_CEff_Inv = 0.0;
+	AllBound_CDrag_Inv = 0.0; AllBound_CLift_Inv = 0.0; AllBound_CSideForce_Inv = 0.0;
+	AllBound_CMx_Inv   = 0.0; AllBound_CMy_Inv = 0.0;   AllBound_CMz_Inv = 0.0;
+	AllBound_CFx_Inv   = 0.0; AllBound_CFy_Inv = 0.0;   AllBound_CFz_Inv = 0.0;
+	AllBound_CEff_Inv  = 0.0;
   
+
 	/*--- Loop over the Euler and Navier-Stokes markers ---*/
-	factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
-  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		Boundary   = config->GetMarker_All_Boundary(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
@@ -2458,102 +2469,124 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         (Boundary == ISOTHERMAL_NONCATALYTIC) ||
         (Boundary == NEARFIELD_BOUNDARY     )) {
       
+      /*--- Force initialization on each marker ---*/
+      CDrag_Inv[iMarker]      = 0.0;
+      CLift_Inv[iMarker]      = 0.0;
+      CSideForce_Inv[iMarker] = 0.0;
+      CMx_Inv[iMarker]        = 0.0;
+      CMy_Inv[iMarker]        = 0.0;
+      CMz_Inv[iMarker]        = 0.0;
+      CEff_Inv[iMarker]       = 0.0;
+      CFx_Inv[iMarker]        = 0.0;
+      CFy_Inv[iMarker]        = 0.0;
+      CFz_Inv[iMarker]        = 0.0;
+
 			for (iDim = 0; iDim < nDim; iDim++) ForceInviscid[iDim] = 0.0;
 			MomentInviscid[0] = 0.0; MomentInviscid[1] = 0.0; MomentInviscid[2] = 0.0;
-			NFPressOF = 0.0; PressInviscid = 0.0;
+			NFPressOF = 0.0;
       
+      
+      /*--- Loop over vertices to compute forces ---*/
 			for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+
+        /*--- Calculate pressure ---*/
 				Pressure = node[iPoint]->GetPressure();
-        
 				CPressure[iMarker][iVertex] = (Pressure - RefPressure)*factor*RefAreaCoeff;
         
-				/*--- Note that the pressure coefficient is computed at the
+				
+        /*--- Note that the pressure coefficient is computed at the
 				 halo cells (for visualization purposes), but not the forces ---*/
 				if ( (geometry->node[iPoint]->GetDomain()) && (Monitoring == YES) ) {
 					Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 					Coord = geometry->node[iPoint]->GetCoord();
           
+          
 					/*--- Quadratic objective function for the near field.
            This uses the infinity pressure regardless of Mach number. ---*/
-					NFPressOF += 0.5*(Pressure - Pressure_Inf)*(Pressure - Pressure_Inf)*Normal[nDim-1];
+					NFPressOF += 0.5*((Pressure - Pressure_Inf)*
+                            (Pressure - Pressure_Inf))*Normal[nDim-1];
           
-					Face_Area = 0.0;
-					for (iDim = 0; iDim < nDim; iDim++) {
-						/*--- Total force, distance computation, and face area
-             Note that we have subtracted the Pressure at the infinity, this is important when dealing with
-             non-closed surfaces---*/
-						ForceInviscid[iDim] -= (Pressure - Pressure_Inf)*Normal[iDim]*factor;
-						dist[iDim] = Coord[iDim] - Origin[iDim];
-						Face_Area += Normal[iDim]*Normal[iDim];
-					}
-					Face_Area = sqrt(Face_Area);
-					PressInviscid += CPressure[iMarker][iVertex]*Face_Area;
           
-					/*--- Moment with respect to the reference axis ---*/
-					if (iDim == 3) {
-						MomentInviscid[0] -= (Pressure - Pressure_Inf)*(Normal[2]*dist[1]-Normal[1]*dist[2])*factor/RefLengthMoment;
-						MomentInviscid[1] -= (Pressure - Pressure_Inf)*(Normal[0]*dist[2]-Normal[2]*dist[0])*factor/RefLengthMoment;
-					}
-					MomentInviscid[2]   -= (Pressure - Pressure_Inf)*(Normal[1]*dist[0]-Normal[0]*dist[1])*factor/RefLengthMoment;
+          /*--- Geometry terms ---*/
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            UnitNormal[iDim] = Normal[iDim]/Area;
+            MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+          }
           
+          
+          /*--- Compute force, note minus sign due to outward orientation of 
+           the normal vector ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim]*factor;
+            ForceInviscid[iDim] += Force[iDim];
+          }
+          
+          
+          /*--- Compute moment w.r.t. reference axis ---*/
+          if (iDim == 3) {
+            MomentInviscid[0] += (Force[2]*MomentDist[1] -
+                                  Force[1]*MomentDist[2]  )/RefLengthMoment;
+            MomentInviscid[1] += (Force[0]*MomentDist[2] -
+                                  Force[2]*MomentDist[0]  )/RefLengthMoment;
+          }
+          MomentInviscid[2] += (Force[1]*MomentDist[0] -
+                                Force[0]*MomentDist[1]  )/RefLengthMoment;
 				}
 			}
       
-			/*--- Transform ForceInviscid and MomentInviscid into non-dimensional coefficient ---*/
+      
+      /*--- Project forces and store non-dimensional coefficients ---*/
 			if  (Monitoring == YES) {
 				if (nDim == 2) {
 					if (Boundary != NEARFIELD_BOUNDARY) {
-						CDrag_Inv[iMarker]        =  ForceInviscid[0]*cos(Alpha) + ForceInviscid[1]*sin(Alpha);
-						CLift_Inv[iMarker]        = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[1]*cos(Alpha);
-						CSideForce_Inv[iMarker]   = 0.0;
-						CMx_Inv[iMarker]          = 0.0;
-						CMy_Inv[iMarker]          = 0.0;
-						CMz_Inv[iMarker]          = MomentInviscid[2];
-						CEff_Inv[iMarker]         = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
-						CFx_Inv[iMarker]          = ForceInviscid[0];
-						CFy_Inv[iMarker]          = ForceInviscid[1];
-						CFz_Inv[iMarker]          = 0.0;
+						CDrag_Inv[iMarker] =  ForceInviscid[0]*cos(Alpha) + ForceInviscid[1]*sin(Alpha);
+						CLift_Inv[iMarker] = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[1]*cos(Alpha);
+            CEff_Inv[iMarker]  = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+            CFx_Inv[iMarker]   = ForceInviscid[0];
+						CFy_Inv[iMarker]   = ForceInviscid[1];
+						CMz_Inv[iMarker]   = MomentInviscid[2];
 					}
-					else {
-						CDrag_Inv[iMarker] = 0.0; CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;
-						CMx_Inv[iMarker] = 0.0; CMy_Inv[iMarker] = 0.0; CMz_Inv[iMarker] = 0.0;
-						CFx_Inv[iMarker] = 0.0; CFy_Inv[iMarker] = 0.0; CFz_Inv[iMarker] = 0.0;
-						CEff_Inv[iMarker] = 0.0;
-					}
+					else { }
 				}
 				if (nDim == 3) {
 					if (Boundary != NEARFIELD_BOUNDARY) {
-						CDrag_Inv[iMarker] =  ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta);
-						CLift_Inv[iMarker] = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha);
-						CSideForce_Inv[iMarker] = -ForceInviscid[0]*sin(Beta)*cos(Alpha) + ForceInviscid[1]*cos(Beta) - ForceInviscid[2]*sin(Beta)*sin(Alpha);
-						CMx_Inv[iMarker] = MomentInviscid[0];
+						CDrag_Inv[iMarker] = ForceInviscid[0]*cos(Alpha)*cos(Beta) +
+                                 ForceInviscid[1]*sin(Beta)            +
+                                 ForceInviscid[2]*sin(Alpha)*cos(Beta);
+						CLift_Inv[iMarker] = -ForceInviscid[0]*sin(Alpha) +
+                                  ForceInviscid[2]*cos(Alpha);
+						CSideForce_Inv[iMarker] = -ForceInviscid[0]*sin(Beta)*cos(Alpha) +
+                                       ForceInviscid[1]*cos(Beta)            -
+                                       ForceInviscid[2]*sin(Beta)*sin(Alpha);
+						CEff_Inv[iMarker] = CLift_Inv[iMarker] /
+                               (CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+            CMx_Inv[iMarker] = MomentInviscid[0];
 						CMy_Inv[iMarker] = MomentInviscid[1];
 						CMz_Inv[iMarker] = MomentInviscid[2];
-						CEff_Inv[iMarker] = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
 						CFx_Inv[iMarker] = ForceInviscid[0];
 						CFy_Inv[iMarker] = ForceInviscid[1];
 						CFz_Inv[iMarker] = ForceInviscid[2];
             
 					}
-					else {
-						CDrag_Inv[iMarker] = 0.0; CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;
-						CMx_Inv[iMarker] = 0.0; CMy_Inv[iMarker] = 0.0; CMz_Inv[iMarker] = 0.0;
-						CFx_Inv[iMarker] = 0.0; CFy_Inv[iMarker] = 0.0; CFz_Inv[iMarker] = 0.0;
-						CEff_Inv[iMarker] = 0.0;
-					}
+					else { }
 				}
         
-				AllBound_CDrag_Inv += CDrag_Inv[iMarker];
-				AllBound_CLift_Inv += CLift_Inv[iMarker];
+				AllBound_CDrag_Inv      += CDrag_Inv[iMarker];
+				AllBound_CLift_Inv      += CLift_Inv[iMarker];
 				AllBound_CSideForce_Inv += CSideForce_Inv[iMarker];
-				AllBound_CMx_Inv += CMx_Inv[iMarker];
-				AllBound_CMy_Inv += CMy_Inv[iMarker];
-				AllBound_CMz_Inv += CMz_Inv[iMarker];
-				AllBound_CEff_Inv += CEff_Inv[iMarker];
-				AllBound_CFx_Inv += CFx_Inv[iMarker];
-				AllBound_CFy_Inv += CFy_Inv[iMarker];
-				AllBound_CFz_Inv += CFz_Inv[iMarker];
+				AllBound_CEff_Inv       += CEff_Inv[iMarker];
+        AllBound_CFx_Inv        += CFx_Inv[iMarker];
+				AllBound_CFy_Inv        += CFy_Inv[iMarker];
+				AllBound_CFz_Inv        += CFz_Inv[iMarker];
+				AllBound_CMx_Inv        += CMx_Inv[iMarker];
+				AllBound_CMy_Inv        += CMy_Inv[iMarker];
+				AllBound_CMz_Inv        += CMz_Inv[iMarker];
 			}
 		}
 	}
@@ -2596,19 +2629,16 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 #endif
 #endif
 
-  
-  
-	Total_CDrag += AllBound_CDrag_Inv;
-	Total_CLift += AllBound_CLift_Inv;
+	Total_CDrag      += AllBound_CDrag_Inv;
+	Total_CLift      += AllBound_CLift_Inv;
 	Total_CSideForce += AllBound_CSideForce_Inv;
-	Total_CMx += AllBound_CMx_Inv;
-	Total_CMy += AllBound_CMy_Inv;
-	Total_CMz += AllBound_CMz_Inv;
-	Total_CEff += AllBound_CEff_Inv;
-	Total_CFx += AllBound_CFx_Inv;
-	Total_CFy += AllBound_CFy_Inv;
-	Total_CFz += AllBound_CFz_Inv;
-  
+  Total_CEff       += AllBound_CEff_Inv;
+  Total_CFx        += AllBound_CFx_Inv;
+	Total_CFy        += AllBound_CFy_Inv;
+	Total_CFz        += AllBound_CFz_Inv;
+	Total_CMx        += AllBound_CMx_Inv;
+	Total_CMy        += AllBound_CMy_Inv;
+	Total_CMz        += AllBound_CMz_Inv;
 }
 
 void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -3596,15 +3626,17 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
                                      CSolver **solution_container,
                                      CNumerics *numerics, CConfig *config,
                                      unsigned short val_marker) {
-  unsigned short iDim, iSpecies, iVar, jVar;
+  unsigned short iDim, jDim, iSpecies, iVar, jVar;
 	unsigned long iPoint, iVertex;
   bool implicit;
   double *Normal, *UnitNormal, *Ms, *dPdU;
   double Area, rhoCvtr, rhoCvve, rho_el, Ru;
-  double rho, cs, u, v, w, P, rhoE, rhoEve, conc, Beta;
+  double rho, cs, P, rhoE, rhoEve, conc, Beta;
+  double *u;
   
   /*--- Allocate arrays ---*/
   UnitNormal = new double[3];
+  u = new double[nDim];
   
   /*--- Set booleans based on configuration options ---*/
 	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -3656,14 +3688,13 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
             Jacobian_i[iVar][jVar] = 0.0;
         
         rho     = node[iPoint]->GetDensity();
-        u       = node[iPoint]->GetVelocity(0);
-        v       = node[iPoint]->GetVelocity(1);
-        w       = node[iPoint]->GetVelocity(2);
         rhoCvtr = node[iPoint]->GetRhoCv_tr();
         rhoCvve = node[iPoint]->GetRhoCv_ve();
         rhoE    = node[iPoint]->GetSolution(nSpecies+nDim);
         rhoEve  = node[iPoint]->GetSolution(nSpecies+nDim+1);
         dPdU    = node[iPoint]->GetdPdU();
+        for (iDim = 0; iDim < nDim; iDim++)
+          u[iDim] = node[iPoint]->GetVelocity(iDim);
         
         /*--- If free electrons are present, retrieve the electron gas density ---*/
         if (config->GetIonization()) rho_el = node[iPoint]->GetMassFraction(nSpecies-1) * rho;
@@ -3674,50 +3705,69 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
           cs    = node[iPoint]->GetMassFraction(iSpecies);
           conc += cs * rho/Ms[iSpecies];
           
-          Jacobian_i[nSpecies][iSpecies]   = dPdU[iSpecies] * UnitNormal[0];
-          Jacobian_i[nSpecies+1][iSpecies] = dPdU[iSpecies] * UnitNormal[1];
-          Jacobian_i[nSpecies+2][iSpecies] = dPdU[iSpecies] * UnitNormal[2];
-          Jacobian_i[nSpecies+3][iSpecies] = 0.0;
-          Jacobian_i[nSpecies+4][iSpecies] = 0.0;
+          /////// NEW //////
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Jacobian_i[nSpecies+iDim][iSpecies] = dPdU[iSpecies] * UnitNormal[iDim];
+            Jacobian_i[iSpecies][nSpecies+iDim] = cs * UnitNormal[iDim];
+          }
           
-          Jacobian_i[iSpecies][nSpecies]   = cs * UnitNormal[0];
-          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitNormal[1];
-          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitNormal[2];
-          Jacobian_i[iSpecies][nSpecies+3] = 0.0;
-          Jacobian_i[iSpecies][nSpecies+4] = 0.0;
+          /////// OLD //////
+//          Jacobian_i[nSpecies][iSpecies]   = dPdU[iSpecies] * UnitNormal[0];
+//          Jacobian_i[nSpecies+1][iSpecies] = dPdU[iSpecies] * UnitNormal[1];
+//          Jacobian_i[nSpecies+2][iSpecies] = dPdU[iSpecies] * UnitNormal[2];
+//          Jacobian_i[nSpecies+3][iSpecies] = 0.0;
+//          Jacobian_i[nSpecies+4][iSpecies] = 0.0;
+//          
+//          Jacobian_i[iSpecies][nSpecies]   = cs * UnitNormal[0];
+//          Jacobian_i[iSpecies][nSpecies+1] = cs * UnitNormal[1];
+//          Jacobian_i[iSpecies][nSpecies+2] = cs * UnitNormal[2];
+//          Jacobian_i[iSpecies][nSpecies+3] = 0.0;
+//          Jacobian_i[iSpecies][nSpecies+4] = 0.0;
         }
         
         Beta = Ru*conc/rhoCvtr;
         
-        Jacobian_i[nSpecies][nSpecies]     = u*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+3]   = dPdU[nSpecies+3]*UnitNormal[0];
-        Jacobian_i[nSpecies][nSpecies+4]   = dPdU[nSpecies+4]*UnitNormal[0];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0; jDim < nDim; jDim++) {
+            Jacobian_i[nSpecies+iDim][nSpecies+jDim] = u[iDim]*UnitNormal[jDim]
+                                                     + dPdU[nSpecies+jDim]*UnitNormal[iDim];
+          }
+          Jacobian_i[nSpecies+iDim][nSpecies+nDim]   = dPdU[nSpecies+nDim]  *UnitNormal[iDim];
+          Jacobian_i[nSpecies+iDim][nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*UnitNormal[iDim];
+          
+          Jacobian_i[nSpecies+nDim][nSpecies+iDim]   = (rhoE+P)/rho * UnitNormal[iDim];
+          Jacobian_i[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho   * UnitNormal[iDim];
+        }
         
-        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+3] = dPdU[nSpecies+3]*UnitNormal[1];
-        Jacobian_i[nSpecies+1][nSpecies+4] = dPdU[nSpecies+4]*UnitNormal[1];
-        
-        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+3] = dPdU[nSpecies+3]*UnitNormal[2];
-        Jacobian_i[nSpecies+2][nSpecies+4] = dPdU[nSpecies+4]*UnitNormal[2];
-        
-        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitNormal[0];
-        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitNormal[1];
-        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitNormal[2];
-        Jacobian_i[nSpecies+3][nSpecies+3] = 0.0;
-        Jacobian_i[nSpecies+3][nSpecies+4] = 0.0;
-        
-        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitNormal[0];
-        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitNormal[1];
-        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitNormal[2];
-        Jacobian_i[nSpecies+4][nSpecies+3] = 0.0;
-        Jacobian_i[nSpecies+4][nSpecies+4] = 0.0;
+//        Jacobian_i[nSpecies][nSpecies]     = u*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[0];
+//        Jacobian_i[nSpecies][nSpecies+1]   = u*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[0];
+//        Jacobian_i[nSpecies][nSpecies+2]   = u*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[0];
+//        Jacobian_i[nSpecies][nSpecies+3]   = dPdU[nSpecies+3]*UnitNormal[0];
+//        Jacobian_i[nSpecies][nSpecies+4]   = dPdU[nSpecies+4]*UnitNormal[0];
+//        
+//        Jacobian_i[nSpecies+1][nSpecies]   = v*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[1];
+//        Jacobian_i[nSpecies+1][nSpecies+1] = v*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[1];
+//        Jacobian_i[nSpecies+1][nSpecies+2] = v*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[1];
+//        Jacobian_i[nSpecies+1][nSpecies+3] = dPdU[nSpecies+3]*UnitNormal[1];
+//        Jacobian_i[nSpecies+1][nSpecies+4] = dPdU[nSpecies+4]*UnitNormal[1];
+//        
+//        Jacobian_i[nSpecies+2][nSpecies]   = w*UnitNormal[0] + dPdU[nSpecies]*UnitNormal[2];
+//        Jacobian_i[nSpecies+2][nSpecies+1] = w*UnitNormal[1] + dPdU[nSpecies+1]*UnitNormal[2];
+//        Jacobian_i[nSpecies+2][nSpecies+2] = w*UnitNormal[2] + dPdU[nSpecies+2]*UnitNormal[2];
+//        Jacobian_i[nSpecies+2][nSpecies+3] = dPdU[nSpecies+3]*UnitNormal[2];
+//        Jacobian_i[nSpecies+2][nSpecies+4] = dPdU[nSpecies+4]*UnitNormal[2];
+//        
+//        Jacobian_i[nSpecies+3][nSpecies]   = (rhoE+P)/rho * UnitNormal[0];
+//        Jacobian_i[nSpecies+3][nSpecies+1] = (rhoE+P)/rho * UnitNormal[1];
+//        Jacobian_i[nSpecies+3][nSpecies+2] = (rhoE+P)/rho * UnitNormal[2];
+//        Jacobian_i[nSpecies+3][nSpecies+3] = 0.0;
+//        Jacobian_i[nSpecies+3][nSpecies+4] = 0.0;
+//        
+//        Jacobian_i[nSpecies+4][nSpecies]   = rhoEve/rho * UnitNormal[0];
+//        Jacobian_i[nSpecies+4][nSpecies+1] = rhoEve/rho * UnitNormal[1];
+//        Jacobian_i[nSpecies+4][nSpecies+2] = rhoEve/rho * UnitNormal[2];
+//        Jacobian_i[nSpecies+4][nSpecies+3] = 0.0;
+//        Jacobian_i[nSpecies+4][nSpecies+4] = 0.0;
         
         /*--- Integrate over the dual-grid area ---*/
         for (iVar = 0; iVar < nVar; iVar++)
@@ -3728,8 +3778,10 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
         Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
         
 			}
-		}
+    }
 	}
+  delete [] UnitNormal;
+  delete [] u;
 }
 
 void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_container,
@@ -3759,18 +3811,18 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   conv_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
   conv_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
   
-  if (viscous) {
-    visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
-    visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
-    visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
-    visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
-    visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
-    visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
-    visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
-    visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
-    visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
-    visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
-  }
+//  if (viscous) {
+//    visc_numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
+//    visc_numerics->SetRhoIndex    ( node[0]->GetRhoIndex()     );
+//    visc_numerics->SetPIndex      ( node[0]->GetPIndex()       );
+//    visc_numerics->SetTIndex      ( node[0]->GetTIndex()       );
+//    visc_numerics->SetTveIndex    ( node[0]->GetTveIndex()     );
+//    visc_numerics->SetVelIndex    ( node[0]->GetVelIndex()     );
+//    visc_numerics->SetHIndex      ( node[0]->GetHIndex()       );
+//    visc_numerics->SetAIndex      ( node[0]->GetAIndex()       );
+//    visc_numerics->SetRhoCvtrIndex( node[0]->GetRhoCvtrIndex() );
+//    visc_numerics->SetRhoCvveIndex( node[0]->GetRhoCvveIndex() );
+//  }
   
 	/*--- Loop over all the vertices on this boundary (val_marker) ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3815,49 +3867,49 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
 				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
 			/*--- Viscous contribution ---*/
-			if (viscous) {
-        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
-                                geometry->node[Point_Normal]->GetCoord() );
-        visc_numerics->SetNormal(Normal);
-        
-        /*--- Primitive variables, and gradient ---*/
-        visc_numerics->SetConservative(node[iPoint]->GetSolution(),
-                                       node_infty->GetSolution() );
-        visc_numerics->SetConsVarGradient(node[iPoint]->GetGradient(),
-                                          node_infty->GetGradient() );
-        visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
-                                    node_infty->GetPrimVar() );
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                          node_infty->GetGradient_Primitive() );
-        
-        /*--- Pass supplementary information to CNumerics ---*/
-        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
-        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
-        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
-        
-        /*--- Species diffusion coefficients ---*/
-        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
-                                         node_infty->GetDiffusionCoeff() );
-        
-        /*--- Laminar viscosity ---*/
-        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
-                                           node_infty->GetLaminarViscosity() );
-        
-        /*--- Thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
-                                              node_infty->GetThermalConductivity());
-        
-        /*--- Vib-el. thermal conductivity ---*/
-        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
-                                                 node_infty->GetThermalConductivity_ve() );
-        
-        /*--- Compute and update residual ---*/
-        visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-        if (implicit) {
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        }
-			}
+//			if (viscous) {
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+//                                geometry->node[Point_Normal]->GetCoord() );
+//        visc_numerics->SetNormal(Normal);
+//        
+//        /*--- Primitive variables, and gradient ---*/
+//        visc_numerics->SetConservative(node[iPoint]->GetSolution(),
+//                                       node_infty->GetSolution() );
+//        visc_numerics->SetConsVarGradient(node[iPoint]->GetGradient(),
+//                                          node_infty->GetGradient() );
+//        visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
+//                                    node_infty->GetPrimVar() );
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+//                                          node_infty->GetGradient_Primitive() );
+//        
+//        /*--- Pass supplementary information to CNumerics ---*/
+//        visc_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+//        visc_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+//        visc_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
+//        
+//        /*--- Species diffusion coefficients ---*/
+//        visc_numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
+//                                         node_infty->GetDiffusionCoeff() );
+//        
+//        /*--- Laminar viscosity ---*/
+//        visc_numerics->SetLaminarViscosity(node[iPoint]->GetLaminarViscosity(),
+//                                           node_infty->GetLaminarViscosity() );
+//        
+//        /*--- Thermal conductivity ---*/
+//        visc_numerics->SetThermalConductivity(node[iPoint]->GetThermalConductivity(),
+//                                              node_infty->GetThermalConductivity());
+//        
+//        /*--- Vib-el. thermal conductivity ---*/
+//        visc_numerics->SetThermalConductivity_ve(node[iPoint]->GetThermalConductivity_ve(),
+//                                                 node_infty->GetThermalConductivity_ve() );
+//        
+//        /*--- Compute and update residual ---*/
+//        visc_numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+//        if (implicit) {
+//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//        }
+//			}
 		}
 	}
   
@@ -5631,6 +5683,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
   
   /*--- loop over interior points ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//    if (geometry->node[iPoint]->GetSolidBoundary()) {
     
     /*--- Set conserved & primitive variables  ---*/
     numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
@@ -5643,12 +5696,22 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[iPoint]->GetCoord() );
     
     /*--- Store the value of the source term residuals (only for visualization and debugging) ---*/
     if (config->GetExtraOutput()) {
       for (iVar = 0; iVar < nVar; iVar++) {
         OutputVariables[iPoint* (unsigned long) nOutputVariables + iVar] = 0.0;
       }
+    }
+    
+    /*--- Compute axisymmetric source terms (if needed) ---*/
+    if (config->GetAxisymmetric()) {
+      numerics->ComputeAxisymmetric(Residual, Jacobian_i, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     }
     
     /*--- Compute the non-equilibrium chemistry ---*/
@@ -5888,6 +5951,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
 //        // NO SOURCE TERMS TO BE SET HERE!
 //        break;
 //    }
+//  }
 //  }
 }
 
