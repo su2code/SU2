@@ -6791,9 +6791,9 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
             Jacobian_i[iVar][jVar] = 0.0;
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          Jacobian_i[nSpecies+3][iVar] = -(ktr*theta/dij*dTdU[iVar] +
-                                           kve*theta/dij*dTvedU[iVar])*Area;
-          Jacobian_i[nSpecies+4][iVar] = -(kve*theta/dij*dTvedU[iVar])*Area;
+          Jacobian_i[nSpecies+nDim][iVar] = -(ktr*theta/dij*dTdU[iVar] +
+                                              kve*theta/dij*dTvedU[iVar])*Area;
+          Jacobian_i[nSpecies+nDim+1][iVar] = -(kve*theta/dij*dTvedU[iVar])*Area;
         }
         
         /*--- Apply the changes to the linear system ---*/

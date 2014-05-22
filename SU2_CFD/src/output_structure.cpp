@@ -4552,6 +4552,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
               if (iVar == 0) strcpy(flow_resid, resid_aux);
               else strcat(flow_resid, resid_aux);
             }
+            if (nDim == 2) {
+              sprintf(resid_aux, ", %12.10f", dummy);
+              strcat(flow_resid, resid_aux);
+            }
             
             if (adjoint) {
               
@@ -4563,6 +4567,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                 sprintf (resid_aux, ", %12.10f", log10 (residual_adjTNE2[iVar]));
                 if (iVar == 0) strcpy(adj_flow_resid, resid_aux);
                 else strcat(adj_flow_resid, resid_aux);
+              }
+              if (nDim == 2) {
+                sprintf(resid_aux, ", %12.10f", dummy);
+                strcat(adj_flow_resid, resid_aux);
               }
             }
             
