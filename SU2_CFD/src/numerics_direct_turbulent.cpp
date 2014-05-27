@@ -1378,6 +1378,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = SAResidual[i];
     }
     Residual[1] = newdestruction;
+    Residual[3] = Residual[0] + Residual[1] + Residual[2];
     
     for (int i= 0; i < nResidual; i++){
       NondimResidual[i] = Residual[i];
