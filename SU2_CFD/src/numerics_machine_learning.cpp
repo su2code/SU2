@@ -106,9 +106,9 @@ CSumNeuron::CSumNeuron(CActivator* activator){
 #ifndef NO_JSONCPP
 CSumNeuron::CSumNeuron(Json::Value json){
   string type = json["Type"].asString();
-  if (type.compare("github.com/reggo/reggo/nnet/Tanh") == 0){
+  if (type.compare("github.com/reggo/reggo/supervised/nnet/Tanh") == 0){
     this->activator = new CTanhActivator(json["Value"]);
-  }else if(type.compare("github.com/reggo/reggo/nnet/Linear") == 0){
+  }else if(type.compare("github.com/reggo/reggo/supervised/nnet/Linear") == 0){
     this->activator = new CLinearActivator(json["Value"]);
   }else{
     cout << "Unknown activator type: " << type << endl;
@@ -213,7 +213,7 @@ CNeurNet::CNeurNet(Json::Value json){
       
       // get the neurons
       string type = neuron["Type"].asString();
-      if (type.compare("github.com/reggo/reggo/nnet/SumNeuron") == 0){
+      if (type.compare("github.com/reggo/reggo/supervised/nnet/SumNeuron") == 0){
         this->neurons[i][j] = new CSumNeuron(neuron["Value"]);
       }else{
         cout << "neuron type unknown: " << type << endl;
@@ -318,7 +318,7 @@ void CNeurNet::Predict(double * input, double * output){
 CPredictor* parse_predictor(Json::Value json){
   string type = json["Type"].asString();
   Json::Value value = json["Value"];
-  if (type.compare("github.com/reggo/reggo/nnet/Net*")==0){
+  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*")==0){
     CPredictor* predictor = new CNeurNet(value);
     return predictor;
   }
