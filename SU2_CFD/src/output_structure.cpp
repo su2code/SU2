@@ -2028,7 +2028,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetSolution(iVar);
         jVar++;
       }
-      
+
       /*--- Residual (first, second and third system of equations) ---*/
       if (config->GetWrt_Residuals()) {
         for (iVar = 0; iVar < nVar_First; iVar++) {
@@ -4663,7 +4663,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             
             cout << "     Res[Rho]" << "     Res[RhoE]" << "   Res[RhoEve]" << "   CDrag(Total)";
             if (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
-              cout << "   HeatLoad(Total)" << endl;
+              cout << "   Q(Total)" << endl;
             else cout << endl;
             break;
             

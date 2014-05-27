@@ -2132,26 +2132,26 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     //    sumY += rho*Ds[iSpecies]*theta/dij*(V_j[RHOS_INDEX+iSpecies] -
     //                                        V_i[RHOS_INDEX+iSpecies])/rho;
-    sumY += rho*Ds[iSpecies]*theta/dij*(V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX] -
-                                        V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX]);
-    //    for (iDim = 0; iDim < nDim; iDim++)
-    //      sumY += Ds[iSpecies]*(val_Mean_GradPrimVar[RHOS_INDEX+iSpecies][iDim] -
-    //                            Ys[iSpecies]*val_Mean_GradPrimVar[RHO_INDEX][iDim])*val_normal[iDim];
+//    sumY += rho*Ds[iSpecies]*theta/dij*(V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX] -
+//                                        V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX]);
+    for (iDim = 0; iDim < nDim; iDim++)
+      sumY += Ds[iSpecies]*(val_Mean_GradPrimVar[RHOS_INDEX+iSpecies][iDim] -
+                            Ys[iSpecies]*val_Mean_GradPrimVar[RHO_INDEX][iDim])*val_normal[iDim];
   }
   
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    dFdYj[iSpecies][iSpecies] = rho*Ds[iSpecies]*theta/dij;
-    dFdYi[iSpecies][iSpecies] = -dFdYj[iSpecies][iSpecies];
-  }
-  
-//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-//    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-//      dFdYi[iSpecies][jSpecies] = Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
-//      dFdYj[iSpecies][jSpecies] = -Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
-//    }
-//    dFdYi[iSpecies][iSpecies] += -rho*Ds[iSpecies]*theta/dij - 0.5*sumY;
-//    dFdYj[iSpecies][iSpecies] += rho*Ds[iSpecies]*theta/dij - 0.5*sumY;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    dFdYj[iSpecies][iSpecies] = rho*Ds[iSpecies]*theta/dij;
+//    dFdYi[iSpecies][iSpecies] = -dFdYj[iSpecies][iSpecies];
 //  }
+  
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+      dFdYi[iSpecies][jSpecies] = Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
+      dFdYj[iSpecies][jSpecies] = -Ys[iSpecies]*rho*Ds[jSpecies]*theta/dij;
+    }
+    dFdYi[iSpecies][iSpecies] += -rho*Ds[iSpecies]*theta/dij - 0.5*sumY;
+    dFdYj[iSpecies][iSpecies] += rho*Ds[iSpecies]*theta/dij - 0.5*sumY;
+  }
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
 //    sumdFdYih[iSpecies]   = 0.0;
 //    sumdFdYjh[iSpecies]   = 0.0;

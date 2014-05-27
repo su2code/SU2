@@ -2028,12 +2028,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         CharVibTemp[1] = 0.0;
         
         // Formation enthalpy: (JANAF values [KJ/Kmol])
+        // J/kg - from Scalabrin
         Enthalpy_Formation[0] = 0.0;					//N2
-        Enthalpy_Formation[1] = 472.683E3;		//N
+        Enthalpy_Formation[1] = 3.36E7;		//N
+//        Enthalpy_Formation[1] = 472.683E3;		//N
         
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
-        Ref_Temperature[1] = 298.15;
+        Ref_Temperature[1] = 0.0;
         
         // Number of electron states
         nElStates[0] = 15;                    // N2

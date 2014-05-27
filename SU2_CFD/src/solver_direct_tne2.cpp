@@ -4801,20 +4801,21 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 #endif
   
 	/*--- Array initialization ---*/
-	CDrag_Visc    = NULL;
-	CLift_Visc    = NULL;
-	CMx_Visc      = NULL;
-	CMy_Visc      = NULL;
-	CMz_Visc      = NULL;
-	CFx_Visc      = NULL;
-	CFy_Visc      = NULL;
-	CFz_Visc      = NULL;
-	CEff_Visc     = NULL;
+	CDrag_Visc       = NULL;
+	CLift_Visc       = NULL;
+	CMx_Visc         = NULL;
+	CMy_Visc         = NULL;
+	CMz_Visc         = NULL;
+	CFx_Visc         = NULL;
+	CFy_Visc         = NULL;
+	CFz_Visc         = NULL;
+	CEff_Visc        = NULL;
   Heat_Visc        = NULL;
-  MaxHeatFlux_Visc     = NULL;
-	ForceViscous  = NULL;
-	MomentViscous = NULL;
-	CSkinFriction = NULL;
+  MaxHeatFlux_Visc = NULL;
+	ForceViscous     = NULL;
+	MomentViscous    = NULL;
+	CSkinFriction    = NULL;
+  YPlus            = NULL;
   
   /*--- Initialize counters ---*/
   counter_local  = 0;
@@ -4958,6 +4959,11 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
 		CSkinFriction[iMarker] = new double [geometry->nVertex[iMarker]];
   
+  /*--- Y+ of all members ---*/
+  YPlus = new double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    YPlus[iMarker] = new double[geometry->nVertex[iMarker]];
+  
 	/*--- Non dimensional coefficients ---*/
 	ForceInviscid  = new double[3];
 	MomentInviscid = new double[3];
@@ -4992,7 +4998,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFy_Visc      = new double[nMarker];
 	CFz_Visc      = new double[nMarker];
   Heat_Visc        = new double[nMarker];
-  MaxHeatFlux_Visc     = new double[nMarker];
+  MaxHeatFlux_Visc = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
 	Pressure_Inf       = config->GetPressure_FreeStream();
@@ -5280,6 +5286,13 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
   if (MaxHeatFlux_Visc != NULL) delete [] MaxHeatFlux_Visc;
 	if (ForceViscous != NULL) delete [] ForceViscous;
 	if (MomentViscous != NULL) delete [] MomentViscous;
+  
+  if (YPlus != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] YPlus[iMarker];
+    }
+    delete [] YPlus;
+  }
   
 	if (CSkinFriction != NULL) {
 		for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -5963,15 +5976,25 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint, iPointNormal;
   double **Grad_PrimVar;
   double Delta, Viscosity, ThermalCond, ThermalCond_ve;
-  double **Tau, *TauTangent, TauNormal, *TauElem;
-  double WallShearStress, FrictionVel;
-  double *Normal, *UnitaryNormal, *Coord, *Coord_Normal, Area;
+  double TauNormal;
+  double FrictionVel;
+  double *Normal, *Coord, *Coord_Normal, Area;
+  double Force[3];
   double MomentDist[3];
   double RefDensity, Density;
-  double Velocity_Inf[3], div_vel, RefVel2;
+  double div_vel, RefVel2;
   double dTn, dTven, pnorm, HeatLoad;
   double Alpha, Beta, RefLengthMoment, RefAreaCoeff, *Origin;
   double factor;
+  
+  double WallShearStress, WallDistMod, WallDist[3];
+  
+  double Vel[3], Velocity_Inf[3];
+  
+  double UnitNormal[3];
+  double TauElem[3];
+  double TauTangent[3];
+  double Tau[3][3];
   
   /*--- Retrieve index information from CVariable ---*/
   VEL_INDEX = node[0]->GetVelIndex();
@@ -6007,14 +6030,6 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	AllBound_HeatFlux_Visc     = 0.0; AllBound_MaxHeatFlux_Visc  = 0.0;
 	AllBound_CEff_Visc  = 0.0;
   
-	/*--- Vector and variables initialization ---*/
-	UnitaryNormal = new double [nDim];
-	TauElem       = new double [nDim];
-	TauTangent    = new double [nDim];
-	Tau           = new double* [nDim];
-	for (iDim = 0; iDim < nDim; iDim++)
-		Tau[iDim]   = new double [nDim];
-  
 	/*--- Loop over the Navier-Stokes markers ---*/
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		
@@ -6023,9 +6038,9 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
     /*--- Forces initialization at each Marker ---*/
-    CDrag_Visc[iMarker] = 0.0; CLift_Visc[iMarker]    = 0.0; CEff_Visc[iMarker] = 0.0;
-    CMx_Visc[iMarker]   = 0.0; CMy_Visc[iMarker]      = 0.0; CMz_Visc[iMarker]  = 0.0;
-    CFx_Visc[iMarker]   = 0.0; CFy_Visc[iMarker]      = 0.0; CFz_Visc[iMarker]  = 0.0;
+    CDrag_Visc[iMarker] = 0.0; CLift_Visc[iMarker] = 0.0; CEff_Visc[iMarker] = 0.0;
+    CMx_Visc[iMarker]   = 0.0; CMy_Visc[iMarker]   = 0.0; CMz_Visc[iMarker]  = 0.0;
+    CFx_Visc[iMarker]   = 0.0; CFy_Visc[iMarker]   = 0.0; CFz_Visc[iMarker]  = 0.0;
     Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ForceViscous[iDim]  = 0.0;
@@ -6043,12 +6058,20 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
       /*--- Loop over the boundary points ---*/
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
-        /*--- Retrieve grid information ---*/
+        /*--- Acquire & calculate geometric parameters ---*/
 				iPoint       = geometry->vertex[iMarker][iVertex]->GetNode();
 				iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 				Coord        = geometry->node[iPoint]->GetCoord();
 				Coord_Normal = geometry->node[iPointNormal]->GetCoord();
 				Normal       = geometry->vertex[iMarker][iVertex]->GetNormal();
+				Area         = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+				for (iDim = 0; iDim < nDim; iDim++) {
+					UnitNormal[iDim] = Normal[iDim]/Area;
+					MomentDist[iDim] = Coord[iDim] - Origin[iDim];
+				}
         
         /*--- Get vertex flow parameters ---*/
 				Grad_PrimVar   = node[iPoint]->GetGradient_Primitive();
@@ -6057,22 +6080,10 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         ThermalCond_ve = node[iPoint]->GetThermalConductivity_ve();
         Density        = node[iPoint]->GetDensity();
         
-        /*--- Calculate geometry parameters ---*/
-				Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
-				for (iDim = 0; iDim < nDim; iDim++) {
-					UnitaryNormal[iDim] = Normal[iDim]/Area;
-					MomentDist[iDim] = Coord[iDim] - Origin[iDim];
-				}
-        
-        /*--- Calculate the divergence of the velocity vector ---*/
-				div_vel = 0.0;
+        /*--- Calculate the viscous stress tensor ---*/
+        div_vel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           div_vel += Grad_PrimVar[VEL_INDEX+iDim][iDim];
-        
-        /*--- Calculate the viscous stress tensor ---*/
 				for (iDim = 0; iDim < nDim; iDim++) {
 					for (jDim = 0 ; jDim < nDim; jDim++) {
 						Delta = 0.0; if (iDim == jDim) Delta = 1.0;
@@ -6082,25 +6093,36 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					}
 					TauElem[iDim] = 0.0;
 					for (jDim = 0; jDim < nDim; jDim++)
-						TauElem[iDim] += Tau[iDim][jDim]*UnitaryNormal[jDim];
+						TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
 				}
         
 				/*--- Compute wall shear stress (using the stress tensor) ---*/
 				TauNormal = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          TauNormal += TauElem[iDim] * UnitaryNormal[iDim];
+          TauNormal += TauElem[iDim] * UnitNormal[iDim];
 				for (iDim = 0; iDim < nDim; iDim++)
-          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitaryNormal[iDim];
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
 				WallShearStress = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           WallShearStress += TauTangent[iDim]*TauTangent[iDim];
 				WallShearStress = sqrt(WallShearStress);
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
+        WallDistMod = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          WallDistMod += WallDist[iDim]*WallDist[iDim];
+        WallDistMod = sqrt(WallDistMod);
         
 				/*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
 				CSkinFriction[iMarker][iVertex] = WallShearStress / (0.5*RefDensity*RefVel2);
         
 				/*--- Compute y+ and non-dimensional velocity ---*/
 				FrictionVel = sqrt(fabs(WallShearStress)/Density);
+        YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
         
 				/*--- Compute heat flux on the wall ---*/
 				dTn = 0.0; dTven = 0.0;
@@ -6117,17 +6139,15 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
           
 					for (iDim = 0; iDim < nDim; iDim++) {
-						ForceViscous[iDim] += TauElem[iDim]*Area*factor;
+            Force[iDim] = TauElem[iDim]*Area*factor;
+						ForceViscous[iDim] += Force[iDim];
 					}
           
 					if (iDim == 3) {
-            MomentViscous[0] += (TauElem[2]*MomentDist[1] -
-                                 TauElem[1]*MomentDist[2])*Area*factor/RefLengthMoment;
-            MomentViscous[1] += (TauElem[0]*MomentDist[2] -
-                                 TauElem[2]*MomentDist[0])*Area*factor/RefLengthMoment;
+            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLengthMoment;
+            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLengthMoment;
           }
-					MomentViscous[2] += (TauElem[1]*MomentDist[0] -
-                               TauElem[0]*MomentDist[1])*Area*factor/RefLengthMoment;
+          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLengthMoment;
 				}
 			}
       
@@ -6137,8 +6157,6 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				if (nDim == 2) {
 					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
 					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
-					CMx_Visc[iMarker]   = 0.0;
-					CMy_Visc[iMarker]   = 0.0;
 					CMz_Visc[iMarker]   = MomentViscous[2];
 					CEff_Visc[iMarker]  = CLift_Visc[iMarker]/(CDrag_Visc[iMarker]+EPS);
 					CFx_Visc[iMarker]   = ForceViscous[0];
@@ -6246,13 +6264,6 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFz     += AllBound_CFz_Visc;
   Total_Heat     = AllBound_HeatFlux_Visc;
   Total_MaxHeat  = pow(AllBound_MaxHeatFlux_Visc, 1.0/pnorm);
-  
-	for (iDim = 0; iDim < nDim; iDim++)
-		delete [] Tau[iDim];
-	delete [] Tau;
-	delete [] UnitaryNormal;
-	delete [] TauTangent;
-	delete [] TauElem;
 }
 
 

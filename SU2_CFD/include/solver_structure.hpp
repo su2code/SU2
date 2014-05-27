@@ -5591,7 +5591,7 @@ protected:
   *ForceInviscid,		        /*!< \brief Inviscid forces at domain boundaries. */
 	*MomentInviscid,	        /*!< \brief Inviscid moments at domain boundaries. */
 	**CPressure,		          /*!< \brief Cp at each node on domain boundaries . */
-	**HeatFlux,		      /*!< \brief Cq at each node on domain boundaries . */
+	**HeatFlux,               /*!< \brief Cq at each node on domain boundaries . */
 	**CharacPrimVar,		      /*!< \brief Value of the characteristic variables at the boundary . */
   AllBound_CDrag_Inv,	      /*!< \brief Sum of CDrag_Inv from all boundaries. */
 	AllBound_CLift_Inv,			  /*!< \brief Sum of CLift_Inv from all boundaries. */
@@ -6187,8 +6187,8 @@ private:
 	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  
-	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
+	**CSkinFriction,	/*!< \brief Skin friction coefficient for each boundary and vertex. */
+  **YPlus;  /*!< \brief Y+ value for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
 	double AllBound_CDrag_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */

@@ -2221,7 +2221,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   unsigned short iSpecies, jSpecies, kSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl, *nElStates;
   double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
-  double Qtv, taunum, taudenom;
+  double Qtv, taunum, taudenom, taurelax;
   double mu, A_sr, B_sr, num, denom;
   double Cs;
   double thoTve, exptv;
@@ -2345,66 +2345,66 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
             tauMW[iSpecies]*dTaupsdU[iSpecies][iVar] +
             dTauMWdU[iSpecies][iVar]*tauP[iSpecies];
 
-//      taunum   += rhos/Ms[iSpecies];
-//      taudenom += rhos/(Ms[iSpecies]*taus);
-//      
-//    }
-//  }
-//  tau = taunum/taudenom;
-//  val_residual[nEv] = rhoCvve/tau * (T-Tve) * Volume;
-//  
-//  if (implicit) {
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
-//      val_Jacobian_i[nEv][iSpecies] = Cvves[iSpecies]/tau * (T-Tve)*Volume;
-//    }
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      val_Jacobian_i[nEv][iVar] += rhoCvve/tau*(dTdU_i[iVar]-dTvedU_i[iVar])*Volume;
-//  }
-  
+      taunum   += rhos/Ms[iSpecies];
+      taudenom += rhos/(Ms[iSpecies]*taus[iSpecies]);
       
-      /*--- Vibrational energy terms ---*/
-      estar[iSpecies] = Ru/Ms[iSpecies]*thetav[iSpecies] / (expt-1.0);
-      evib[iSpecies]  = Ru/Ms[iSpecies]*thetav[iSpecies] / (exptv-1.0);
-      
-      /*--- Add species contribution to residual ---*/
-      val_residual[nEv] += rhos * (estar[iSpecies] - evib[iSpecies]) / taus[iSpecies] * Volume;
     }
   }
+  taurelax = taunum/taudenom;
+  val_residual[nEv] = rhoCvve/taurelax * (T-Tve) * Volume;
   
   if (implicit) {
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      if (thetav[iSpecies] != 0) {
-        
-        /*--- Rename ---*/
-        rhos = V_i[RHOS_INDEX+iSpecies];
-        thoT   = thetav[iSpecies]/T;
-        expt   = exp(thetav[iSpecies]/T);
-        thoTve = thetav[iSpecies]/Tve;
-        exptv = exp(thetav[iSpecies]/Tve);
-
-        /*--- Calculate species specific heats ---*/
-        Cvvst = Ru/Ms[iSpecies] * thoT*thoT * expt
-              / ((expt-1.0)*(expt-1.0));
-        Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv
-              / ((exptv-1.0)*(exptv-1.0));
-        
-        val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies] -
-                                          evib[iSpecies]   )
-                                       /taus[iSpecies] * Volume;
-        
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_i[nEv][jVar] +=
-              U_i[iSpecies]/taus[iSpecies] * (Cvvst*dTdU_i[jVar] -
-                                              Cvvs*dTvedU_i[jVar]  ) * Volume;
-          
-          val_Jacobian_i[nEv][jVar] +=
-              -U_i[iSpecies]/(taus[iSpecies]*taus[iSpecies])*
-              (estar[iSpecies]-evib[iSpecies])*dTausdU[iSpecies][iVar] * Volume;
-        }
-      }
+      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
+      val_Jacobian_i[nEv][iSpecies] = Cvves[iSpecies]/taurelax * (T-Tve)*Volume;
     }
+    for (iVar = 0; iVar < nVar; iVar++)
+      val_Jacobian_i[nEv][iVar] += rhoCvve/taurelax*(dTdU_i[iVar]-dTvedU_i[iVar])*Volume;
   }
+//
+//      
+//      /*--- Vibrational energy terms ---*/
+//      estar[iSpecies] = Ru/Ms[iSpecies]*thetav[iSpecies] / (expt-1.0);
+//      evib[iSpecies]  = Ru/Ms[iSpecies]*thetav[iSpecies] / (exptv-1.0);
+//      
+//      /*--- Add species contribution to residual ---*/
+//      val_residual[nEv] += rhos * (estar[iSpecies] - evib[iSpecies]) / taus[iSpecies] * Volume;
+//    }
+//  }
+//  
+//  if (implicit) {
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      if (thetav[iSpecies] != 0) {
+//        
+//        /*--- Rename ---*/
+//        rhos = V_i[RHOS_INDEX+iSpecies];
+//        thoT   = thetav[iSpecies]/T;
+//        expt   = exp(thetav[iSpecies]/T);
+//        thoTve = thetav[iSpecies]/Tve;
+//        exptv = exp(thetav[iSpecies]/Tve);
+//
+//        /*--- Calculate species specific heats ---*/
+//        Cvvst = Ru/Ms[iSpecies] * thoT*thoT * expt
+//              / ((expt-1.0)*(expt-1.0));
+//        Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv
+//              / ((exptv-1.0)*(exptv-1.0));
+//        
+//        val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies] -
+//                                          evib[iSpecies]   )
+//                                       /taus[iSpecies] * Volume;
+//        
+//        for (jVar = 0; jVar < nVar; jVar++) {
+//          val_Jacobian_i[nEv][jVar] +=
+//              U_i[iSpecies]/taus[iSpecies] * (Cvvst*dTdU_i[jVar] -
+//                                              Cvvs*dTvedU_i[jVar]  ) * Volume;
+//          
+//          val_Jacobian_i[nEv][jVar] +=
+//              -U_i[iSpecies]/(taus[iSpecies]*taus[iSpecies])*
+//              (estar[iSpecies]-evib[iSpecies])*dTausdU[iSpecies][iVar] * Volume;
+//        }
+//      }
+//    }
+//  }
 }
 
 void CSource_TNE2::ComputeAxisymmetric(double *val_residual,
