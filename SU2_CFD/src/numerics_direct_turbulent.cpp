@@ -1089,8 +1089,6 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
-  cout << "TurbML source" << endl;
-  
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -1451,8 +1449,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   cout << endl;
    */
-  
-    cout << "Done TurbML source" << endl;
 }
 
 int CSourcePieceWise_TurbML::NumResidual(){
