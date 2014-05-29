@@ -1,6 +1,52 @@
 #include "../include/numerics_machine_learning.hpp"
 using namespace std;
 
+// This is up here because otherwise it's not in scope of the functions below
+#ifndef NO_JSONCPP
+CPredictor* parse_predictor(Json::Value json){
+  string type = json["Type"].asString();
+  Json::Value value = json["Value"];
+  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*")==0){
+    CPredictor* predictor = new CNeurNet(value);
+    return predictor;
+  }
+  if (type.compare("github.com/btracey/ransuq/mlalg/MulPredictor")==0){
+    CPredictor* predictor = new CMulPredictor(value);
+    return predictor;
+  }
+  cout << "No Match for predictor type: " << type << endl;
+  return NULL;
+}
+
+CScaler* parse_cscaler(Json::Value json){
+  
+  string type = json["Type"].asString();
+  Json::Value value = json["Value"];
+  if (type.compare("github.com/reggo/reggo/scale/Normal*") == 0){
+    // We matched the normal scaler. Now, allocate a new one
+    CScaler * scaler = new CNormalScaler(value);
+    return scaler;
+  }else if(type.compare("github.com/btracey/ransuq/mlalg/MulInputScaler*") == 0){
+    // Allocate a MulScaler
+    CScaler * scaler = new CMulInputScaler(value);
+    return scaler;
+  }else if(type.compare("github.com/btracey/ransuq/mlalg/MulOutputScaler*") == 0){
+    // Allocate a MulScaler
+    CScaler * scaler = new CMulOutputScaler(value);
+    return scaler;
+  }else{
+    cout << "NoMatch for scaler type: "<< type << endl;
+    exit(1);
+  }
+  cout << "Shouldnt' be here" << endl;
+  exit(1);
+  
+  return NULL;
+}
+#endif
+
+
+
 CScaler::CScaler(){}
 CScaler::~CScaler(){}
 
@@ -66,6 +112,51 @@ void CNormalScaler::Unscale(double * inputs){
 	}
 	return;
 }
+
+CMulInputScaler::CMulInputScaler(){}
+
+#ifndef NO_JSONCPP
+CMulInputScaler::CMulInputScaler(Json::Value json){
+  // Get the scaler subfield
+  this->InnerScaler = parse_cscaler(json["Scaler"]);
+
+  // Get the constant
+  this->MulScale = json["MulOutputScaler"]["MulScale"].asDouble();
+}
+#endif
+
+CMulInputScaler::~CMulInputScaler(){}
+void CMulInputScaler::Scale(double * inputs){
+  inputs[0] /= this->MulScale;
+  double * second = &inputs[1];
+  this->InnerScaler->Scale(second);
+  return;
+}
+
+void CMulInputScaler::Unscale(double * inputs){
+  inputs[0] *= this->MulScale;
+  double * second = &inputs[1];
+  this->InnerScaler->Unscale(second);
+  return;
+}
+
+CMulOutputScaler::CMulOutputScaler(){}
+CMulOutputScaler::~CMulOutputScaler(){}
+void CMulOutputScaler::Scale(double * outputs){
+  outputs[0] /= this->MulScale;
+  return;
+}
+
+#ifndef NO_JSONCPP
+CMulOutputScaler::CMulOutputScaler(Json::Value json){
+  this->MulScale = json["MulScale"].asDouble();
+}
+void CMulOutputScaler::Unscale(double * outputs){
+  outputs[0] *= this->MulScale;
+  return;
+}
+#endif
+
 
 CActivator::CActivator(){}
 CActivator::~CActivator(){}
@@ -146,6 +237,26 @@ int CPredictor::InputDim(){
 
 int CPredictor::OutputDim(){
   return this->outputDim;
+}
+
+CMulPredictor::CMulPredictor(){}
+#ifndef NO_JSONCPP
+CMulPredictor::CMulPredictor(Json::Value json){
+  this->Inner = parse_predictor(json["Inner"]);
+  this->inputDim = this->Inner->InputDim() + 1;
+  this->outputDim = this->Inner->OutputDim();
+}
+#endif
+
+CMulPredictor::~CMulPredictor(){}
+
+void CMulPredictor::Predict(double * input, double * output){
+  double * secondInput = &input[1];
+  this->Inner->Predict(secondInput, output);
+  for (int i = 0; i < this->OutputDim(); i++){
+    output[i] *= input[0];
+  }
+  return;
 }
 
 CNeurNet::CNeurNet(){}
@@ -314,36 +425,7 @@ void CNeurNet::Predict(double * input, double * output){
   return;
 }
 
-#ifndef NO_JSONCPP
-CPredictor* parse_predictor(Json::Value json){
-  string type = json["Type"].asString();
-  Json::Value value = json["Value"];
-  if (type.compare("github.com/reggo/reggo/supervised/nnet/Net*")==0){
-    CPredictor* predictor = new CNeurNet(value);
-    return predictor;
-  }
-  cout << "No Match for predictor type: " << type << endl;
-  return NULL;
-}
 
-CScaler* parse_cscaler(Json::Value json){
-  
-  string type = json["Type"].asString();
-  Json::Value value = json["Value"];
-  if (type.compare("github.com/reggo/reggo/scale/Normal*") == 0){
-    // We matched the normal scaler. Now, allocate a new one
-    CScaler * scaler = new CNormalScaler(value);
-    return scaler;
-  }else{
-    cout << "NoMatch for scaler type: "<< type << endl;
-    exit(1);
-  }
-  cout << "Shouldnt' be here" << endl;
-  exit(1);
-  
-  return NULL;
-}
-#endif
 
 // get_file_contents gets all of the file contents and returns them as a string
 string get_file_contents(string filename){

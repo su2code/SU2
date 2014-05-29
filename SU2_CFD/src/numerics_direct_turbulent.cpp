@@ -1224,14 +1224,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
   }else if(featureset.compare("production")==0){
+//    cout <<"In production" << endl;
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
     
-    netInput[0] = SANondimInputs->Chi;
-    netInput[1] = SANondimInputs->OmegaBar;
-    netInput[2] = SANondimInputs->SourceNondim;
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = SANondimInputs->OmegaBar;
     
 //    cout << "Net inputs ";
 //    for (int i = 0; i < 3; i++){
@@ -1282,17 +1283,17 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       nOutputMLVariables = 1;
       netInput = new double[nInputMLVariables];
       netOutput = new double[nOutputMLVariables];
-      
-      netInput[0] = SANondimInputs->Chi;
-      netInput[1] = SANondimInputs->OmegaBar;
-      netInput[2] = SANondimInputs->SourceNondim;
+    
+      netInput[0] = SANondimInputs->SourceNondim;
+      netInput[1] = SANondimInputs->Chi;
+      netInput[2] = SANondimInputs->OmegaBar;
       
       // Predict using Nnet
       MLModel->Predict(netInput, netOutput);
       
       // Gather the appropriate values
       Residual[0] = SAResidual[0];
-      Residual[1] = netOutput[1];
+      Residual[1] = netOutput[0];
       Residual[2] = SAResidual[2];
       Residual[3] = Residual[0] - Residual[1] + Residual[2];
       
@@ -1324,6 +1325,29 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = NondimResidual[i];
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("cross_production")==0){
+    nInputMLVariables = 3;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = SANondimInputs->NuHatGradNormBar;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = SAResidual[0];
+    Residual[1] = SAResidual[1];
+    Residual[2] = netOutput[0];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
   }else if (featureset.compare("nondim_source")==0){
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
@@ -1346,6 +1370,30 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = NondimResidual[i];
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("source")==0){
+    nInputMLVariables =4;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = SANondimInputs->OmegaBar;
+    netInput[3] = SANondimInputs->NuHatGradNormBar;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
   }else if (featureset.compare("fw_les_2")==0){
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
@@ -1378,7 +1426,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = SAResidual[i];
     }
     Residual[1] = newdestruction;
-    Residual[3] = Residual[0] + Residual[1] + Residual[2];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
     
     for (int i= 0; i < nResidual; i++){
       NondimResidual[i] = Residual[i];
@@ -1437,6 +1485,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   val_residual[0] = Residual[3] * Volume;
   val_Jacobian_i[0][0] = SAJacobian[0] * Volume;
   
+  
   /*
   cout << "Sa resid ";
   for (int i = 0; i < nResidual; i++){
@@ -1449,6 +1498,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   cout << endl;
    */
+  
 }
 
 int CSourcePieceWise_TurbML::NumResidual(){
