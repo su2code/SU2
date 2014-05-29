@@ -45,6 +45,32 @@ public:
 	void Unscale(double *);
 };
 
+class CMulInputScaler : public CScaler{
+public:
+  double MulScale;
+  CScaler* InnerScaler;
+  CMulInputScaler();
+#ifndef NO_JSONCPP
+  CMulInputScaler(Json::Value);
+#endif
+  ~CMulInputScaler();
+  void Scale(double *);
+	void Unscale(double *);
+};
+
+class CMulOutputScaler : public CScaler{
+public:
+  double MulScale;
+  CMulOutputScaler();
+#ifndef NO_JSONCPP
+  CMulOutputScaler(Json::Value);
+#endif
+  ~CMulOutputScaler();
+  void Scale(double *);
+	void Unscale(double *);
+  
+};
+
 class CActivator{
 public:
 	CActivator();
@@ -102,7 +128,7 @@ protected:
   int outputDim;
 public:
   CPredictor();
-  ~CPredictor();
+  virtual  ~CPredictor();
   virtual void Predict(double *, double *){cout << "In base Predict, this is bad";};
   int InputDim();
   int OutputDim();
@@ -119,6 +145,18 @@ public:
 public:
   void Predict(double *inputs, double *outputs);
   // Need to add predict method
+};
+
+class CMulPredictor : public CPredictor{
+public:
+  CMulPredictor();
+#ifndef NO_JSONCPP
+  CMulPredictor(Json::Value);
+#endif
+  ~CMulPredictor();
+  CPredictor* Inner;
+  void Predict(double *, double *);
+  
 };
 
 class CNeurNet : public CPredictor {
