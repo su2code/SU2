@@ -301,9 +301,6 @@
 		0541ABE41370DC56002D668B /* InLine */ = {
 			isa = PBXGroup;
 			children = (
-				05E6DBB017EB624700FA1F7E /* integration_structure.inl */,
-				05E6DBB117EB624700FA1F7E /* numerics_structure.inl */,
-				05DF0B1318CFB4E400DC3CFE /* numerics_machine_learning.inl */,
 				05E6DBB217EB624700FA1F7E /* solver_structure.inl */,
 				05E6DBB317EB624700FA1F7E /* variable_structure.inl */,
 				05E6DA9F17EB603F00FA1F7E /* config_structure.inl */,
@@ -315,6 +312,9 @@
 				05E6DAA517EB603F00FA1F7E /* matrix_structure.inl */,
 				05E6DAA617EB603F00FA1F7E /* primal_grid_structure.inl */,
 				05E6DAA717EB603F00FA1F7E /* vector_structure.inl */,
+				05E6DBB017EB624700FA1F7E /* integration_structure.inl */,
+				05E6DBB117EB624700FA1F7E /* numerics_structure.inl */,
+				05DF0B1318CFB4E400DC3CFE /* numerics_machine_learning.inl */,
 			);
 			name = InLine;
 			sourceTree = "<group>";
@@ -327,11 +327,7 @@
 				05E6DACC17EB608000FA1F7E /* option_structure.hpp */,
 				05E6DBB417EB627400FA1F7E /* definition_structure.hpp */,
 				05E6DBB517EB627400FA1F7E /* integration_structure.hpp */,
-				C6B325BF18F7832900C0E798 /* su2mpi.hpp */,
 				05E6DBB617EB627400FA1F7E /* iteration_structure.hpp */,
-				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
-				05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */,
-				05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */,
 				05E6DBB817EB627400FA1F7E /* output_structure.hpp */,
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBB17EB627400FA1F7E /* variable_structure.hpp */,
@@ -343,6 +339,10 @@
 				05E6DACB17EB608000FA1F7E /* matrix_structure.hpp */,
 				05E6DACD17EB608000FA1F7E /* primal_grid_structure.hpp */,
 				05E6DACE17EB608000FA1F7E /* vector_structure.hpp */,
+				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
+				05DF0B0D18CFB29E00DC3CFE /* numerics_machine_learning.hpp */,
+				05DF0B0C18CFB29800DC3CFE /* numerics_machine_learning_turbulent.hpp */,
+				C6B325BF18F7832900C0E798 /* su2mpi.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
