@@ -2332,6 +2332,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
 CSurfaceMovement::CSurfaceMovement(void) : CGridMovement() {
 	nFFDBox = 0;
+  nLevel = 0;
 	FFDBoxDefinition = false;
 }
 
@@ -5712,90 +5713,95 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeF
 	char *cstr = new char [val_mesh_filename.size()+1];
 	strcpy (cstr, val_mesh_filename.c_str());
   double *parcoord, *coord;
-
+  
   unsigned short nDim = geometry->GetnDim();
-
-	mesh_file.precision(15);
-	mesh_file.open(cstr, ios::out | ios::app);
-	
-	mesh_file << "FFD_NBOX= " << nFFDBox << endl;
-	mesh_file << "FFD_NLEVEL= " << nLevel << endl;
-	
-	for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
-		
-		mesh_file << "FFD_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
-		mesh_file << "FFD_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
+  
+  if (nFFDBox != 0) {
     
-		mesh_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
-		mesh_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
-		if (nDim == 3) mesh_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
-		
-		mesh_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
-		for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
-			mesh_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
-		mesh_file << "FFD_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
-		for (iChildFFDBox = 0; iChildFFDBox < FFDBox[iFFDBox]->GetnChildFFDBox(); iChildFFDBox++)
-			mesh_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
-		
-    if (nDim == 2) {
-      mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/int(2) << endl;
-      for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints()/int(2); iCornerPoints++) {
-        coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
-        mesh_file << coord[0] << "\t" << coord[1] << endl;
-      }
-    }
-    else {
-      mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
-      for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
-        coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
-        mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
-      }
-    }
+    mesh_file.precision(15);
+    mesh_file.open(cstr, ios::out | ios::app);
     
-		/*--- No FFD definition ---*/
-		if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
-			mesh_file << "FFD_CONTROL_POINTS= 0" << endl;
-			mesh_file << "FFD_SURFACE_POINTS= 0" << endl;
-		}
-		else {
-			mesh_file << "FFD_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
-			for (iOrder = 0; iOrder < FFDBox[iFFDBox]->GetlOrder(); iOrder++)
-				for (jOrder = 0; jOrder < FFDBox[iFFDBox]->GetmOrder(); jOrder++)
-					for (kOrder = 0; kOrder < FFDBox[iFFDBox]->GetnOrder(); kOrder++) {
-						double *coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
-						mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
-					}
-
-      /*--- Compute the number of points on the new surfaces, note that we are not
-       adding the new ghost points (receive), which eventually are also inside the chunck ---*/
-      unsigned long nSurfacePoint = 0;
-      for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-        iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-        
-        /*--- Note that we cannot use && because of the range of 
-         geometry->GetGlobal_to_Local_Point(iPoint) is smaller than iPoint ---*/
-        
-        if (iPoint <= geometry->GetMax_GlobalPoint()) {
-          if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) nSurfacePoint++;
+    mesh_file << "FFD_NBOX= " << nFFDBox << endl;
+    mesh_file << "FFD_NLEVEL= " << nLevel << endl;
+    
+    for (iFFDBox = 0 ; iFFDBox < nFFDBox; iFFDBox++) {
+      
+      mesh_file << "FFD_TAG= " << FFDBox[iFFDBox]->GetTag() << endl;
+      mesh_file << "FFD_LEVEL= " << FFDBox[iFFDBox]->GetLevel() << endl;
+      
+      mesh_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
+      mesh_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
+      if (nDim == 3) mesh_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
+      
+      mesh_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
+      for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
+        mesh_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
+      mesh_file << "FFD_CHILDREN= " << FFDBox[iFFDBox]->GetnChildFFDBox() << endl;
+      for (iChildFFDBox = 0; iChildFFDBox < FFDBox[iFFDBox]->GetnChildFFDBox(); iChildFFDBox++)
+        mesh_file << FFDBox[iFFDBox]->GetChildFFDBoxTag(iChildFFDBox) << endl;
+      
+      if (nDim == 2) {
+        mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints()/int(2) << endl;
+        for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints()/int(2); iCornerPoints++) {
+          coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
+          mesh_file << coord[0] << "\t" << coord[1] << endl;
+        }
+      }
+      else {
+        mesh_file << "FFD_CORNER_POINTS= " << FFDBox[iFFDBox]->GetnCornerPoints() << endl;
+        for (iCornerPoints = 0; iCornerPoints < FFDBox[iFFDBox]->GetnCornerPoints(); iCornerPoints++) {
+          coord = FFDBox[iFFDBox]->GetCoordCornerPoints(iCornerPoints);
+          mesh_file << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
         }
       }
       
-      mesh_file << "FFD_SURFACE_POINTS= " << nSurfacePoint << endl;
-      for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
-        iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
-        iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
-        if (iPoint <= geometry->GetMax_GlobalPoint()) {
-          if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) {
-            parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-            mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
+      /*--- No FFD definition ---*/
+      if (FFDBox[iFFDBox]->GetnControlPoints() == 0) {
+        mesh_file << "FFD_CONTROL_POINTS= 0" << endl;
+        mesh_file << "FFD_SURFACE_POINTS= 0" << endl;
+      }
+      else {
+        mesh_file << "FFD_CONTROL_POINTS= " << FFDBox[iFFDBox]->GetnControlPoints() << endl;
+        for (iOrder = 0; iOrder < FFDBox[iFFDBox]->GetlOrder(); iOrder++)
+          for (jOrder = 0; jOrder < FFDBox[iFFDBox]->GetmOrder(); jOrder++)
+            for (kOrder = 0; kOrder < FFDBox[iFFDBox]->GetnOrder(); kOrder++) {
+              double *coord = FFDBox[iFFDBox]->GetCoordControlPoints(iOrder, jOrder, kOrder);
+              mesh_file << iOrder << "\t" << jOrder << "\t" << kOrder << "\t" << coord[0] << "\t" << coord[1] << "\t" << coord[2] << endl;
+            }
+        
+        /*--- Compute the number of points on the new surfaces, note that we are not
+         adding the new ghost points (receive), which eventually are also inside the chunck ---*/
+        unsigned long nSurfacePoint = 0;
+        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
+          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
+          
+          /*--- Note that we cannot use && because of the range of
+           geometry->GetGlobal_to_Local_Point(iPoint) is smaller than iPoint ---*/
+          
+          if (iPoint <= geometry->GetMax_GlobalPoint()) {
+            if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) nSurfacePoint++;
           }
         }
+        
+        mesh_file << "FFD_SURFACE_POINTS= " << nSurfacePoint << endl;
+        for (iSurfacePoints = 0; iSurfacePoints < FFDBox[iFFDBox]->GetnSurfacePoint(); iSurfacePoints++) {
+          iMarker = FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints);
+          iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
+          if (iPoint <= geometry->GetMax_GlobalPoint()) {
+            if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) {
+              parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
+              mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
+            }
+          }
+        }
+        
       }
-			
-		}
-		
-	}
-	mesh_file.close();
+      
+    }
+    mesh_file.close();
+    
+  }
+  
 }
 
 CFreeFormDefBox::CFreeFormDefBox(void) : CGridMovement() { }

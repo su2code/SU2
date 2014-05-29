@@ -32,6 +32,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0529A91E1925F54700C549AD /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
 		05E4144317600FBB00A448E0 /* SU2_DDC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_DDC; sourceTree = BUILT_PRODUCTS_DIR; };
 		05E6DA6017EB5F8600FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
 		05E6DA6117EB5F8600FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
@@ -130,6 +131,7 @@
 		08FB7794FE84155DC02AAC07 /* SU2_DDC */ = {
 			isa = PBXGroup;
 			children = (
+				0529A91E1925F54700C549AD /* config_template.cfg */,
 				05E415481760112D00A448E0 /* InLine */,
 				05E415471760111D00A448E0 /* Include */,
 				05E415491760113500A448E0 /* Source */,
