@@ -151,12 +151,12 @@ void CMulOutputScaler::Scale(double * outputs){
 CMulOutputScaler::CMulOutputScaler(Json::Value json){
   this->MulScale = json["MulScale"].asDouble();
 }
+#endif
+
 void CMulOutputScaler::Unscale(double * outputs){
   outputs[0] *= this->MulScale;
   return;
 }
-#endif
-
 
 CActivator::CActivator(){}
 CActivator::~CActivator(){}
@@ -571,7 +571,8 @@ void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
   this->SourceNondim = 1.0 /( distSq / (nuSum * nuSum) );
   this->NuGradNondim = 1.0 /( dist / nuSum );
   
-  if (isinf(this->NuGradNondim)){
+  if ((this->NuGradNondim == this->NuGradNondim) &&
+      ((this->NuGradNondim - this->NuGradNondim) != 0.0)) {
     cout << this->NuGradNondim;
     cout << "Inf NuGrad" << endl;
     cout << "dist = " << dist << endl;

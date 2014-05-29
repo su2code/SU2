@@ -8825,7 +8825,8 @@ void CMultiGridGeometry::MatchNearField(CConfig *config) {
 void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
   
   unsigned short iMarker;
-  unsigned long iVertex, iPoint, iProcessor;
+  unsigned long iVertex, iPoint;
+  int iProcessor;
   
 #ifdef NO_MPI
   iProcessor = MASTER_NODE;
