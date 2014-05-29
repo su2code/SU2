@@ -25,7 +25,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 	
-	char buffer_vtk[100], buffer_plt[100]; 
+	char buffer_plt[100];
 	string MeshFile;
 	unsigned short nZone = 1;
     

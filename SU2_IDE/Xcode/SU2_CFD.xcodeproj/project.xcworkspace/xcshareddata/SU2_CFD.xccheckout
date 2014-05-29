@@ -5,7 +5,11 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
+<<<<<<< HEAD
 	<string>FCE1F085-522F-41C7-BBD0-5BC1BAAAB970</string>
+=======
+	<string>6E558636-8AE4-4ABB-BFCF-429E011C0917</string>
+>>>>>>> origin/feature_periodic
 	<key>IDESourceControlProjectName</key>
 	<string>SU2_CFD</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
