@@ -2161,7 +2161,6 @@ public:
     
     string tname = "actuator disk";
     stringstream ss;
-    unsigned short i = 0;
     for (int i = 0; i < this->inlet_size; i++){
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
