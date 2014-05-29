@@ -969,7 +969,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	double RefLengthMoment  = config->GetRefLengthMoment();
 	double *RefOriginMoment = config->GetRefOriginMoment(0);
   double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
-	double x_origin, y_origin, z_origin, WDrag, Area;
+	double x_origin, y_origin, z_origin, Area;
 	double RefVel2, RefDensity;
   int rank = MASTER_NODE;
   
@@ -1021,8 +1021,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 	double invCD  = 1.0 / C_d;
 	double CLCD2  = C_l / (C_d*C_d);
-	double invCQ  = 1.0/C_q;
-	double CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
   
 	x_origin = RefOriginMoment[0];
   y_origin = RefOriginMoment[1];

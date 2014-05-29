@@ -9907,13 +9907,11 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
 double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface) {
   
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
   
   /*--- MPI initialization ---*/
   
 #ifndef NO_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   unsigned short iPlane, nPlane;
@@ -9965,25 +9963,25 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
   
   if (rank == MASTER_NODE) {
     
-  for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    Area[iPlane] = 0.0;
-    if (Xcoord_Airfoil[iPlane].size() != 0) {
-      Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane],
-                                  iPlane, config, Xcoord_Airfoil[iPlane],
-                                  Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
-                                  original_surface);
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
+      Area[iPlane] = 0.0;
+      if (Xcoord_Airfoil[iPlane].size() != 0) {
+        Area[iPlane] = Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane],
+                                    iPlane, config, Xcoord_Airfoil[iPlane],
+                                    Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
+                                    original_surface);
+      }
     }
-  }
-  
-  /*--- Compute the volume using a composite Simpson's rule ---*/
-  
-  Volume = 0.0;
-  for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
-    if (Xcoord_Airfoil[iPlane].size() != 0) {
-      Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+    
+    /*--- Compute the volume using a composite Simpson's rule ---*/
+    
+    Volume = 0.0;
+    for (iPlane = 0; iPlane < nPlane-2; iPlane+=2) {
+      if (Xcoord_Airfoil[iPlane].size() != 0) {
+        Volume += (1.0/3.0)*dPlane*(Area[iPlane] + 4.0*Area[iPlane+1] + Area[iPlane+2]);
+      }
     }
-  }
-  
+    
   }
   
   /*--- Free memory for the section cuts ---*/

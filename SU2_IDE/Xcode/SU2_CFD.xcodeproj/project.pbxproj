@@ -389,9 +389,9 @@
 			children = (
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
-				C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
+				C6B325C018F7B9DE00C0E798 /* su2mpi.cpp */,
 				0530E57417FDF9CC00733CE8 /* LinearSolver */,
 				0530E57317FDF97F00733CE8 /* Geometry */,
 				052D51AB17A22E24003BE8B2 /* Output */,
@@ -438,7 +438,7 @@
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
 			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_CFD" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -650,7 +650,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx10.8;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
@@ -661,7 +661,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx10.8;
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
