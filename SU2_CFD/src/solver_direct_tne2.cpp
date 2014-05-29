@@ -2397,6 +2397,72 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
+    
+//    /////////// DEBUG /////////////
+//    unsigned short iVar, jVar;
+//    double *S_new, *S_old, d;
+//    double *U_i, *V_i;
+//    bool RightSol;
+//    S_new = new double[nVar];
+//    S_old = new double[nVar];
+//    V_i = new double[nPrimVar];
+//
+//    cout << "Analytic" << endl;
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        cout << Jacobian_i[jVar][iVar] << "\t";
+//      }
+//      cout << endl;
+//    }
+//
+//    cout << endl << "FD: " << endl;
+//    // finite difference gradient
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//
+//      /*--- Compute baseline solution ---*/
+//      numerics->ComputeVibRelaxation(S_old, Jacobian_i, config);
+//
+//      // set displacement value
+//      U_i = node[iPoint]->GetSolution();
+//      d = 0.001*U_i[iVar];
+//      if (d == 0)
+//        d = 1E-12;
+//      U_i[iVar] += d;
+//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
+//      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+//
+//      /*-- pass to numerics ---*/
+//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar() , node[iPoint]->GetPrimVar() );
+//      numerics->SetdPdU        (node[iPoint]->GetdPdU()    , node[iPoint]->GetdPdU()    );
+//      numerics->SetdTdU        (node[iPoint]->GetdTdU()    , node[iPoint]->GetdTdU()    );
+//      numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  , node[iPoint]->GetdTvedU()  );
+//
+//      // Compute updated value
+//      numerics->ComputeVibRelaxation(S_new, Jacobian_i, config);
+//
+//      // return solution to original value
+//      U_i[iVar] -= d;
+//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
+//      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+//
+//      /*-- pass to numerics ---*/
+//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
+//      numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
+//      numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
+//      numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
+//
+//      // display FD gradient
+//      for (jVar = 0; jVar < nVar; jVar++)
+//        cout << (S_new[jVar]-S_old[jVar])/d << "\t";
+//      cout << endl;
+//    }
+//    
+//    cin.get();
+//  //////////////////// DEBUG ////////////////////
+    
+    
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       if (Residual[iVar] != Residual[iVar])
@@ -5760,70 +5826,6 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-    
-//    /////////// DEBUG /////////////
-//    unsigned short iVar, jVar;
-//    double *S_new, *S_old, d;
-//    double *U_i, *V_i;
-//    bool RightSol;
-//    S_new = new double[nVar];
-//    S_old = new double[nVar];
-//    V_i = new double[nPrimVar];
-//
-//    cout << "Analytic" << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_i[jVar][iVar] << "\t";
-//      }
-//      cout << endl;
-//    }
-//
-//    cout << endl << "FD: " << endl;
-//    // finite difference gradient
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//
-//      /*--- Compute baseline solution ---*/
-//      numerics->ComputeVibRelaxation(S_old, Jacobian_i, config);
-//
-//      // set displacement value
-//      U_i = node[iPoint]->GetSolution();
-//      d = 0.00001*U_i[iVar];
-//      if (d == 0)
-//        d = 1E-12;
-//      U_i[iVar] += d;
-//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
-//      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
-//
-//      /*-- pass to numerics ---*/
-//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar() , node[iPoint]->GetPrimVar() );
-//      numerics->SetdPdU        (node[iPoint]->GetdPdU()    , node[iPoint]->GetdPdU()    );
-//      numerics->SetdTdU        (node[iPoint]->GetdTdU()    , node[iPoint]->GetdTdU()    );
-//      numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  , node[iPoint]->GetdTvedU()  );
-//
-//      // Compute updated value
-//      numerics->ComputeVibRelaxation(S_new, Jacobian_i, config);
-//
-//      // return solution to original value
-//      U_i[iVar] -= d;
-//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
-//      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
-//
-//      /*-- pass to numerics ---*/
-//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
-//      numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
-//      numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
-//      numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
-//
-//      // display FD gradient
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        cout << (S_new[jVar]-S_old[jVar])/d << "\t";
-//      cout << endl;
-//    }
-//    
-//    cin.get();
-//  //////////////////// DEBUG ////////////////////
     
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++)

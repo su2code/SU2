@@ -1598,11 +1598,17 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, double *U,
     /*--- Specific Heat (V-E) ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       // Vibrational energy specific heat
-      Cvvs = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
-             exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
-                                        (exp(thetav[iSpecies]/Tve)-1));
-      dCvvs = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
-               2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/(Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs;
+      if (thetav[iSpecies] != 0) {
+        Cvvs = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
+        exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
+                                   (exp(thetav[iSpecies]/Tve)-1));
+        dCvvs = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
+                 2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/
+                 (Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs;
+      } else {
+        Cvvs = 0.0;
+        dCvvs = 0.0;
+      }
       
       
       // Electronic energy specific heat

@@ -1730,7 +1730,8 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 	for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 		Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+			Mean_GradPrimVar[iVar][iDim]      = 0.5*(PrimVar_Grad_i[iVar][iDim] +
+                                               PrimVar_Grad_j[iVar][iDim]);
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
 		}
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -1826,7 +1827,10 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   evib   = new double[nSpecies];
   Cvves  = new double[nSpecies];
   Cvvs   = new double[nSpecies];
+  Cves   = new double[nSpecies];
   Cvvsst = new double[nSpecies];
+  dCvvs  = new double[nSpecies];
+  dCves  = new double[nSpecies];
   tauP   = new double[nSpecies];
   tauMW  = new double[nSpecies];
   taus   = new double[nSpecies];
@@ -1888,7 +1892,10 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] evib;
   delete [] Cvves;
   delete [] Cvvs;
+  delete [] Cves;
   delete [] Cvvsst;
+  delete [] dCvvs;
+  delete [] dCves;
   delete [] tauP;
   delete [] tauMW;
   delete [] taus;
@@ -2219,13 +2226,14 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, kSpecies, iVar, jVar;
-  unsigned short nEv, nHeavy, nEl, *nElStates;
+  unsigned short iEl, nEv, nHeavy, nEl, *nElStates;
   double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
   double Qtv, taunum, taudenom, taurelax;
   double mu, A_sr, B_sr, num, denom;
+  double An1, Bn1, Bn2, Bn3, Bn4, Bd1, A, B;
   double Cs;
   double thoTve, exptv;
-  double thoT, expt, Cvvs, Cvvst;
+//  double thoT, expt;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
   
   /*--- Initialize residual and Jacobian arrays ---*/
@@ -2294,8 +2302,8 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     if (thetav[iSpecies] != 0.0) {
       /*--- Rename ---*/
       rhos   = V_i[RHOS_INDEX+iSpecies];
-      thoT   = thetav[iSpecies]/T;
-      expt   = exp(thetav[iSpecies]/T);
+//      thoT   = thetav[iSpecies]/T;
+//      expt   = exp(thetav[iSpecies]/T);
       thoTve = thetav[iSpecies]/Tve;
       exptv  = exp(thetav[iSpecies]/Tve);
       
@@ -2354,9 +2362,70 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   val_residual[nEv] = rhoCvve/taurelax * (T-Tve) * Volume;
   
   if (implicit) {
+    
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
-      val_Jacobian_i[nEv][iSpecies] = Cvves[iSpecies]/taurelax * (T-Tve)*Volume;
+      
+      // Vibrational energy specific heat
+      if (thetav[iSpecies] != 0.0) {
+      Cvvs[iSpecies] = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
+                       exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
+                                                  (exp(thetav[iSpecies]/Tve)-1));
+      dCvvs[iSpecies] = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
+                         2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/
+                         (Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs[iSpecies];
+      } else {
+        Cvvs[iSpecies]  = 0.0;
+        dCvvs[iSpecies] = 0.0;
+      }
+      
+      
+      // Electronic energy specific heat
+      An1 = 0.0;
+      Bn1 = 0.0;
+      Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
+      Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
+                            (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+      Bn4 = 0.0;
+      Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
+      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+        thoTve = thetae[iSpecies][iEl]/Tve;
+        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+        
+        An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
+        Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
+        Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
+        Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
+        Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
+        Bd1 += g[iSpecies][iEl]*exptv;
+      }
+      A = An1/Bd1;
+      B = Bn1*Bn2/Bd1;
+      Cves[iSpecies] = Ru/Ms[iSpecies]*(A-B);
+      
+      dCves[iSpecies] = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
+                                         Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
+      
+//      cout << "Cvvs[" << iSpecies << "]: " << Cvvs[iSpecies] << endl;
+//      cout << "Cves[" << iSpecies << "]: " << Cves[iSpecies] << endl;
+//      cout << "dCvvs[" << iSpecies << "]: " << dCvvs[iSpecies] << endl;
+//      cout << "dCves[" << iSpecies << "]: " << dCves[iSpecies] << endl;
+    }
+    
+//    cin.get();
+    
+    
+    
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      
+      val_Jacobian_i[nEv][iSpecies] += (T-Tve)/taurelax*(Cvvs[iSpecies] +
+                                                         Cves[iSpecies])*Volume;
+      for (iVar = 0; iVar < nVar; iVar++)
+        val_Jacobian_i[nEv][iVar] += (T-Tve)/taurelax*(V_i[RHOS_INDEX+iSpecies]*
+                                                       (dCvvs[iSpecies]-dCves[iSpecies])*
+                                                       dTdU_i[iVar])*Volume;
+      
+//      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
+//      val_Jacobian_i[nEv][iSpecies] = Cvves[iSpecies]/taurelax * (T-Tve)*Volume;
     }
     for (iVar = 0; iVar < nVar; iVar++)
       val_Jacobian_i[nEv][iVar] += rhoCvve/taurelax*(dTdU_i[iVar]-dTvedU_i[iVar])*Volume;

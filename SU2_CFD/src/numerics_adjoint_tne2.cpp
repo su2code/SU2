@@ -808,9 +808,11 @@ CAvgGrad_AdjTNE2::CAvgGrad_AdjTNE2(unsigned short val_nDim,
 	
   Edge_Vector = new double [nDim];
   
+  SigmaVel = new double*[nDim];
   SigmaPhi  = new double*[nDim];
   SigmaPsiE = new double*[nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
+    SigmaVel[iDim] = new double[nDim];
     SigmaPhi[iDim]  = new double[nDim];
     SigmaPsiE[iDim] = new double[nDim];
   }
@@ -851,9 +853,11 @@ CAvgGrad_AdjTNE2::~CAvgGrad_AdjTNE2(void) {
   delete [] Mean_GradPhi;
   
   for (iDim = 0; iDim < nDim; iDim++) {
+    delete [] SigmaVel[iDim];
     delete [] SigmaPhi[iDim];
     delete [] SigmaPsiE[iDim];
   }
+  delete [] SigmaVel;
   delete [] SigmaPhi;
   delete [] SigmaPsiE;
   
@@ -870,8 +874,8 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   
   unsigned short iDim, jDim, iSpecies, jSpecies, iVar, jVar;
   double mu_i, mu_j, ktr_i, ktr_j, kve_i, kve_j, *D_i, *D_j;
-  double rho, rho_i, rho_j, un, Ys;
-  double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn;
+  double rho, rho_i, rho_j, un_i, un_j, u2_i, u2_j, Ys;
+  double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn, SigVelGPhi;
   double dij, theta, thetax, thetay, thetaz, etax, etay, etaz;
   
   /*--- Initialize residuals ---*/
@@ -900,12 +904,18 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     UnitNormal[iDim] = Normal[iDim]/Area;
     theta += UnitNormal[iDim]*UnitNormal[iDim];
   }
-  thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
-  thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
-  thetaz = theta + (UnitNormal[2]*UnitNormal[2])/3.0;
-  etax   = UnitNormal[1]*UnitNormal[2]/3.0;
-  etay   = UnitNormal[0]*UnitNormal[2]/3.0;
-  etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+  if (iDim == 2) {
+    thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
+    thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
+    etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+  } else {
+    thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
+    thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
+    thetaz = theta + (UnitNormal[2]*UnitNormal[2])/3.0;
+    etax   = UnitNormal[1]*UnitNormal[2]/3.0;
+    etay   = UnitNormal[0]*UnitNormal[2]/3.0;
+    etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+  }
   
   /*--- Get flow state (Rename for convenience) ---*/
   D_i   = Diffusion_Coeff_i;
@@ -919,10 +929,16 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   rho_i = V_i[RHO_INDEX];
   rho_j = V_j[RHO_INDEX];
   rho   = 0.5*(rho_i+rho_j);
+  un_i = 0.0; un_j = 0.0;
+  u2_i = 0.0; u2_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     vel_i[iDim] = V_i[VEL_INDEX+iDim];
     vel_j[iDim] = V_j[VEL_INDEX+iDim];
     vel[iDim] = 0.5*(vel_i[iDim]+vel_j[iDim]);
+    un_i += vel_i[iDim]*UnitNormal[iDim];
+    un_j += vel_j[iDim]*UnitNormal[iDim];
+    u2_i += vel_i[iDim]*vel_i[iDim];
+    u2_j += vel_j[iDim]*vel_j[iDim];
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     eve_i[iSpecies] = var->CalcEve(config, V_i[TVE_INDEX], iSpecies);
@@ -1088,8 +1104,6 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
 //  //////////////////// DEBUG ////////////////////
   
   
-
-  
   
   /*--- Calculate the k=1 residual at i ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1101,67 +1115,42 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     }
   }
   
-  
-//  ////////////// DEBUG //////////////
-//  
-//  double dGYdGr;
-//  double tmp1, tmp2, tmp3, d;
-//  iSpecies = 1;
-//  jSpecies = 1;
-//  iDim = 0;
-//  Ys = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
-//  
-//  d = 0.0001*PrimVar_Grad_i[RHOS_INDEX+jSpecies][iDim];
-//  
-//  // Calculate baseline
-//  tmp1 = 1/rho_i*(PrimVar_Grad_i[RHOS_INDEX+iSpecies][iDim] -
-//                  Ys*PrimVar_Grad_i[RHO_INDEX][iDim]);
-//  
-//  // Perturb value
-//  PrimVar_Grad_i[RHOS_INDEX+jSpecies][iDim] += d;
-//  PrimVar_Grad_i[RHO_INDEX][iDim] += d;
-//  
-//  // Calculate perturbed
-//  tmp2 = 1/rho_i*(PrimVar_Grad_i[RHOS_INDEX+iSpecies][iDim] -
-//                  Ys*PrimVar_Grad_i[RHO_INDEX][iDim]);
-//  
-//  // Restore value
-//  PrimVar_Grad_i[RHOS_INDEX+iSpecies][iDim] -= d;
-//  PrimVar_Grad_i[RHO_INDEX][iDim] -= d;
-//  
-//  dGYdGr = (tmp2-tmp1)/d;
-//  
-//  tmp3 = -1/rho_i*Ys;
-//  if (iSpecies == jSpecies)
-//    tmp3 += 1/rho_i;
-//  
-//  cout << "tmp3 vs. dYdrs: " << tmp3 << ", " << dYdrs[iSpecies][jSpecies] << endl;
-//  cout << dGYdGr << ", " << tmp3 << endl;
-//  cin.get();
-//  
-//  ////////////// DEBUG //////////////
-  
   // k = 2
   /*--- Calculate auxiliary quantities for SigmaPsiE ---*/
   GPsiEdotVel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     GPsiEdotVel += Mean_GradPsiE[iDim]*vel_i[iDim];
   
-  /*--- Initialize SigmaPsiE ---*/
+  /*--- Initialize SigmaPsiE & SigmaVel ---*/
   for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
+    for (jDim = 0; jDim < nDim; jDim++) {
       SigmaPsiE[iDim][jDim] = 0.0;
+      SigmaVel[iDim][jDim] = 0.0;
+    }
   
-  /*--- Calculate SigmaPsiE ---*/
+  /*--- Calculate SigmaPsiE & SigmaVel ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       SigmaPsiE[iDim][jDim] += Mean_GradPsiE[iDim]*vel_i[jDim] +
                                Mean_GradPsiE[jDim]*vel_i[iDim];
+      SigmaVel[iDim][jDim] += vel_i[iDim]*UnitNormal[jDim] + vel_i[jDim]*UnitNormal[iDim];
     }
     SigmaPsiE[iDim][iDim] -= 2.0/3.0*GPsiEdotVel;
+    SigmaVel[iDim][iDim] -= 2.0/3.0*un_i;
   }
   
   /*--- Calculate the k=2 residual at i (SigmaPhi + SigmaPsiE) dot n ---*/
+  SigVelGPhi = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      SigVelGPhi += SigmaVel[iDim][jDim]*Mean_GradPhi[jDim][iDim];
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_residual_i[iSpecies] += -mu_i/rho_i*(SigVelGPhi*Area +
+                                             u2_i*GPsiEdotn +
+                                             un_i*GPsiEdotVel*Area/3.0);
+  
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       val_residual_i[nSpecies+iDim] += mu_i/rho_i*(SigmaPhi[iDim][jDim] +
@@ -1182,10 +1171,6 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   /*--- Calculate Jacobians for implicit time-stepping ---*/
   if (implicit) {
     
-    /*--- Calculate projected velocity at node i ---*/
-    un = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      un += vel_i[iDim]*UnitNormal[iDim];
     
     /*--- Jacobian from k = 1 viscous flux ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1200,24 +1185,50 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     }
     
     /*--- Jacobian from k = 2 viscous flux ---*/
-    // x-momentum
-    val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
-    val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
-    val_Jacobian_ij[nSpecies][nSpecies+2]   += mu_i/(rho_i*dij) * etay   * Area;
-    val_Jacobian_ij[nSpecies][nSpecies+3]   += mu_i/(rho_i*dij) *
-                                               (vel_i[0]*theta+un*UnitNormal[0]/3.0)*Area;
-    // y-momentum
-    val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
-    val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
-    val_Jacobian_ij[nSpecies+1][nSpecies+2] += mu_i/(rho_i*dij) * etax   * Area;
-    val_Jacobian_ij[nSpecies+1][nSpecies+3] += mu_i/(rho_i*dij) *
-                                               (vel_i[1]*theta+un*UnitNormal[1]/3.0)*Area;
-    // z-momentum
-    val_Jacobian_ij[nSpecies+2][nSpecies]   += mu_i/(rho_i*dij) * etay   * Area;
-    val_Jacobian_ij[nSpecies+2][nSpecies+1] += mu_i/(rho_i*dij) * etax   * Area;
-    val_Jacobian_ij[nSpecies+2][nSpecies+2] += mu_i/(rho_i*dij) * thetaz * Area;
-    val_Jacobian_ij[nSpecies+2][nSpecies+3] += mu_i/(rho_i*dij) *
-                                               (vel_i[2]*theta+un*UnitNormal[2]/3.0)*Area;
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          val_Jacobian_ij[iSpecies][nSpecies+iDim] += -mu_i/rho_i*SigmaVel[jDim][iDim]*UnitNormal[jDim]/dij*Area;
+        }
+      }
+      val_Jacobian_ij[iSpecies][nSpecies+nDim] += -mu_i/rho_i*(u2_i*theta/dij - un_i*un_i/(3*dij))*Area;
+    }
+    if (iDim == 2) {
+      // x-momentum
+      val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+3]   += mu_i/(rho_i*dij) *
+                                                 (vel_i[0]*theta +
+                                                  un_i*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+3] += mu_i/(rho_i*dij) *
+                                                 (vel_i[1]*theta +
+                                                  un_i*UnitNormal[1]/3.0)*Area;
+    } else {
+      // x-momentum
+      val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+2]   += mu_i/(rho_i*dij) * etay   * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+3]   += mu_i/(rho_i*dij) *
+                                                 (vel_i[0]*theta +
+                                                  un_i*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+2] += mu_i/(rho_i*dij) * etax   * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+3] += mu_i/(rho_i*dij) *
+                                                 (vel_i[1]*theta +
+                                                  un_i*UnitNormal[1]/3.0)*Area;
+      // z-momentum
+      val_Jacobian_ij[nSpecies+2][nSpecies]   += mu_i/(rho_i*dij) * etay   * Area;
+      val_Jacobian_ij[nSpecies+2][nSpecies+1] += mu_i/(rho_i*dij) * etax   * Area;
+      val_Jacobian_ij[nSpecies+2][nSpecies+2] += mu_i/(rho_i*dij) * thetaz * Area;
+      val_Jacobian_ij[nSpecies+2][nSpecies+3] += mu_i/(rho_i*dij) *
+                                                 (vel_i[2]*theta +
+                                                  un_i*UnitNormal[2]/3.0)*Area;
+    }
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1283,19 +1294,33 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   
   /*--- Initialize SigmaPsiE ---*/
   for (iDim = 0; iDim < nDim; iDim++)
-    for (jDim = 0; jDim < nDim; jDim++)
+    for (jDim = 0; jDim < nDim; jDim++) {
       SigmaPsiE[iDim][jDim] = 0.0;
+      SigmaVel[iDim][jDim] = 0.0;
+    }
   
-  /*--- Calculate SigmaPsiE ---*/
+  /*--- Calculate SigmaPsiE & SigmaVel ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       SigmaPsiE[iDim][jDim] += Mean_GradPsiE[iDim]*vel_j[jDim] +
                                Mean_GradPsiE[jDim]*vel_j[iDim];
+      SigmaVel[iDim][jDim] += vel_j[iDim]*UnitNormal[jDim]+vel_j[jDim]*UnitNormal[iDim];
     }
     SigmaPsiE[iDim][iDim] -= 2.0/3.0*GPsiEdotVel;
+    SigmaVel[iDim][iDim]  -= 2.0/3.0*un_j;
   }
   
-  /*--- Calculate the residual at j (SigmaPhi + SigmaPsiE) dot n ---*/
+  /*--- Calculate the k=2 residual at j (SigmaPhi + SigmaPsiE) dot n ---*/
+  SigVelGPhi = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      SigVelGPhi += SigmaVel[iDim][jDim]*Mean_GradPhi[jDim][iDim];
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    val_residual_j[iSpecies] += -mu_j/rho_j*(SigVelGPhi*Area +
+                                             u2_j*GPsiEdotn  +
+                                             un_j*GPsiEdotVel*Area/3.0);
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       val_residual_j[nSpecies+iDim] += mu_j/rho_j*(SigmaPhi[iDim][jDim] +
@@ -1319,11 +1344,6 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   /*--- Calculate Jacobians for implicit time-stepping ---*/
   if (implicit) {
     
-    /*--- Calculate projected velocity at node i ---*/
-    un = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      un += vel_j[iDim]*UnitNormal[iDim];
-    
     /*--- Jacobian from k = 1 viscous flux ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
@@ -1336,26 +1356,43 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
       }
     }
     
-    
     /*--- Jacobian from k = 2 viscous flux ---*/
-    // x-momentum
-    val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
-    val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
-    val_Jacobian_jj[nSpecies][nSpecies+2]   += mu_j/(rho_j*dij) * etay   * Area;
-    val_Jacobian_jj[nSpecies][nSpecies+3]   += mu_j/(rho_j*dij) *
-                                               (vel_j[0]*theta+un*UnitNormal[0]/3.0)*Area;
-    // y-momentum
-    val_Jacobian_jj[nSpecies+1][nSpecies]   += mu_j/(rho_j*dij) * etaz   * Area;
-    val_Jacobian_jj[nSpecies+1][nSpecies+1] += mu_j/(rho_j*dij) * thetay * Area;
-    val_Jacobian_jj[nSpecies+1][nSpecies+2] += mu_j/(rho_j*dij) * etax   * Area;
-    val_Jacobian_jj[nSpecies+1][nSpecies+3] += mu_j/(rho_j*dij) *
-                                               (vel_j[1]*theta+un*UnitNormal[1]/3.0)*Area;
-    // z-momentum
-    val_Jacobian_jj[nSpecies+2][nSpecies]   += mu_j/(rho_j*dij) * etay   * Area;
-    val_Jacobian_jj[nSpecies+2][nSpecies+1] += mu_j/(rho_j*dij) * etax   * Area;
-    val_Jacobian_jj[nSpecies+2][nSpecies+2] += mu_j/(rho_j*dij) * thetaz * Area;
-    val_Jacobian_jj[nSpecies+2][nSpecies+3] += mu_j/(rho_j*dij) *
-                                               (vel_j[2]*theta+un*UnitNormal[2]/3.0)*Area;
+    if (iDim == 2) {
+      // x-momentum
+      val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+2]   += mu_j/(rho_j*dij) *
+                                                 (vel_j[0]*theta +
+                                                  un_j*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_jj[nSpecies+1][nSpecies]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+1] += mu_j/(rho_j*dij) * thetay * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+2] += mu_j/(rho_j*dij) *
+                                               (vel_j[1]*theta +
+                                                un_j*UnitNormal[1]/3.0)*Area;
+    } else {
+      // x-momentum
+      val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+2]   += mu_j/(rho_j*dij) * etay   * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+3]   += mu_j/(rho_j*dij) *
+                                                 (vel_j[0]*theta +
+                                                 un_j*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_jj[nSpecies+1][nSpecies]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+1] += mu_j/(rho_j*dij) * thetay * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+2] += mu_j/(rho_j*dij) * etax   * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+3] += mu_j/(rho_j*dij) *
+                                                 (vel_j[1]*theta +
+                                                  un_j*UnitNormal[1]/3.0)*Area;
+      // z-momentum
+      val_Jacobian_jj[nSpecies+2][nSpecies]   += mu_j/(rho_j*dij) * etay   * Area;
+      val_Jacobian_jj[nSpecies+2][nSpecies+1] += mu_j/(rho_j*dij) * etax   * Area;
+      val_Jacobian_jj[nSpecies+2][nSpecies+2] += mu_j/(rho_j*dij) * thetaz * Area;
+      val_Jacobian_jj[nSpecies+2][nSpecies+3] += mu_j/(rho_j*dij) *
+                                               (vel_j[2]*theta +
+                                                un_j*UnitNormal[2]/3.0)*Area;
+    }
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
@@ -2313,53 +2350,79 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     val_residual[iSpecies] += (-GPhiEta + GPsiEvelPi)*mu2*Volume;
   }
-  // X-momentum
-  val_residual[nSpecies]   += ((GPhiGInvRho[0] + 1.0/3.0*GPsi[nSpecies][0]*GInvRho[0]) +
-                              (GPsi[nSpecies+1][0]*GInvRho[1] - 2.0/3.0*GPsi[nSpecies+1][1]*GInvRho[0]) +
-                              (GPsi[nSpecies+2][0]*GInvRho[2] - 2.0/3.0*GPsi[nSpecies+2][2]*GInvRho[0]) +
-                              (GPsi[nSpecies+3][0]*velGInvRho + GPsiEZetaTau[0]))*mu2*Volume;
-  // Y-momentum
-  val_residual[nSpecies+1] += ((GPsi[nSpecies][1]*GInvRho[0]   - 2.0/3.0*GPsi[nSpecies][0]*GInvRho[1]) +
-                              (GPhiGInvRho[1] + 1.0/3.0*GPsi[nSpecies+1][1]*GInvRho[1]) +
-                              (GPsi[nSpecies+2][1]*GInvRho[2] - 2.0/3.0*GPsi[nSpecies+2][2]*GInvRho[1]) +
-                              (GPsi[nSpecies+3][1]*velGInvRho + GPsiEZetaTau[1]))*mu2*Volume;
-  // Z-momentum
-  val_residual[nSpecies+2] += ((GPsi[nSpecies][2]*GInvRho[0]   - 2.0/3.0*GPsi[nSpecies][0]*GInvRho[2]) +
-                              (GPsi[nSpecies+1][2]*GInvRho[1] - 2.0/3.0*GPsi[nSpecies+1][1]*GInvRho[2]) +
-                              (GPhiGInvRho[2] + 1.0/3.0*GPsi[nSpecies+2][2]*GInvRho[2]) +
-                              (GPsi[nSpecies+3][2]*velGInvRho + GPsiEZetaTau[2]))*mu2*Volume;
+  if (iDim == 2) {
+    // X-momentum
+    val_residual[nSpecies]   += ((GPhiGInvRho[0] + 1.0/3.0*GPsi[nSpecies][0]*GInvRho[0]) +
+                                 (GPsi[nSpecies+1][0]*GInvRho[1] - 2.0/3.0*GPsi[nSpecies+1][1]*GInvRho[0]) +
+                                 (GPsi[nSpecies+nDim][0]*velGInvRho + GPsiEZetaTau[0]))*mu2*Volume;
+    // Y-momentum
+    val_residual[nSpecies+1] += ((GPsi[nSpecies][1]*GInvRho[0]   - 2.0/3.0*GPsi[nSpecies][0]*GInvRho[1]) +
+                                 (GPhiGInvRho[1] + 1.0/3.0*GPsi[nSpecies+1][1]*GInvRho[1]) +
+                                 (GPsi[nSpecies+nDim][1]*velGInvRho + GPsiEZetaTau[1]))*mu2*Volume;
+  } else {
+    // X-momentum
+    val_residual[nSpecies]   += ((GPhiGInvRho[0] + 1.0/3.0*GPsi[nSpecies][0]*GInvRho[0]) +
+                                 (GPsi[nSpecies+1][0]*GInvRho[1] - 2.0/3.0*GPsi[nSpecies+1][1]*GInvRho[0]) +
+                                 (GPsi[nSpecies+2][0]*GInvRho[2] - 2.0/3.0*GPsi[nSpecies+2][2]*GInvRho[0]) +
+                                 (GPsi[nSpecies+3][0]*velGInvRho + GPsiEZetaTau[0]))*mu2*Volume;
+    // Y-momentum
+    val_residual[nSpecies+1] += ((GPsi[nSpecies][1]*GInvRho[0]   - 2.0/3.0*GPsi[nSpecies][0]*GInvRho[1]) +
+                                 (GPhiGInvRho[1] + 1.0/3.0*GPsi[nSpecies+1][1]*GInvRho[1]) +
+                                 (GPsi[nSpecies+2][1]*GInvRho[2] - 2.0/3.0*GPsi[nSpecies+2][2]*GInvRho[1]) +
+                                 (GPsi[nSpecies+3][1]*velGInvRho + GPsiEZetaTau[1]))*mu2*Volume;
+    // Z-momentum
+    val_residual[nSpecies+2] += ((GPsi[nSpecies][2]*GInvRho[0]   - 2.0/3.0*GPsi[nSpecies][0]*GInvRho[2]) +
+                                 (GPsi[nSpecies+1][2]*GInvRho[1] - 2.0/3.0*GPsi[nSpecies+1][1]*GInvRho[2]) +
+                                 (GPhiGInvRho[2] + 1.0/3.0*GPsi[nSpecies+2][2]*GInvRho[2]) +
+                                 (GPsi[nSpecies+3][2]*velGInvRho + GPsiEZetaTau[2]))*mu2*Volume;
+  }
   
-  
-  /*--- Contribution to viscous residual from Av3 ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     // Mass conservation
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       
-      val_residual[iSpecies] += GPsi[nSpecies+3][iDim] * (1/rhoCvtr * (vel[0]*PrimVar_Grad_i[VEL_INDEX][iDim]   +
-                                                                       vel[1]*PrimVar_Grad_i[VEL_INDEX+1][iDim] +
-                                                                       vel[2]*PrimVar_Grad_i[VEL_INDEX+2][iDim] -
-                                                                       Cvtrs[iSpecies]*PrimVar_Grad_i[T_INDEX][iDim])
-                                                          -dTdU_i[iSpecies]/rhoCvtr *
-                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim])* mu3 * Volume;
+      for (jDim = 0; jDim < nDim; jDim++)
+        val_residual[iSpecies] += GPsi[nSpecies+nDim][iDim] * (1/rhoCvtr * (vel[jDim]*PrimVar_Grad_i[VEL_INDEX+jDim][iDim])) * mu3 * Volume;
+      val_residual[iSpecies] +=
+          GPsi[nSpecies+nDim][iDim] * (1/rhoCvtr * (Cvtrs[iSpecies]*PrimVar_Grad_i[T_INDEX][iDim])
+                                       -dTdU_i[iSpecies]/rhoCvtr *
+                                       PrimVar_Grad_i[RHOCVTR_INDEX][iDim])* mu3 * Volume;
+      
+//      val_residual[iSpecies] += GPsi[nSpecies+3][iDim] * (1/rhoCvtr * (vel[0]*PrimVar_Grad_i[VEL_INDEX][iDim]   +
+//                                                                       vel[1]*PrimVar_Grad_i[VEL_INDEX+1][iDim] +
+//                                                                       vel[2]*PrimVar_Grad_i[VEL_INDEX+2][iDim] -
+//                                                                       Cvtrs[iSpecies]*PrimVar_Grad_i[T_INDEX][iDim])
+//                                                          -dTdU_i[iSpecies]/rhoCvtr *
+//                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim])* mu3 * Volume;
     }
-    // X-momentum
-    val_residual[nSpecies]   += GPsi[nSpecies+3][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX][iDim]
-                                                          -dTdU_i[nSpecies]/rhoCvtr *
-                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
-    // Y-momentum
-    val_residual[nSpecies+1] += GPsi[nSpecies+3][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+1][iDim]
-                                                          -dTdU_i[nSpecies+1]/rhoCvtr *
-                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
-    // Z-momentum
-    val_residual[nSpecies+2] += GPsi[nSpecies+3][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+2][iDim]
-                                                          -dTdU_i[nSpecies+2]/rhoCvtr *
-                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
+    
+    // Momentum eqns.
+    for (jDim = 0; jDim < nDim; jDim++) {
+      val_residual[nSpecies+jDim] +=
+          GPsi[nSpecies+nDim][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+jDim][iDim]
+                                       -dTdU_i[nSpecies+jDim]/rhoCvtr *
+                                       PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
+    }
+//    // X-momentum
+//    val_residual[nSpecies]   += GPsi[nSpecies+3][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX][iDim]
+//                                                          -dTdU_i[nSpecies]/rhoCvtr *
+//                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
+//    // Y-momentum
+//    val_residual[nSpecies+1] += GPsi[nSpecies+3][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+1][iDim]
+//                                                          -dTdU_i[nSpecies+1]/rhoCvtr *
+//                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
+//    // Z-momentum
+//    val_residual[nSpecies+2] += GPsi[nSpecies+3][iDim] * (-1/rhoCvtr*PrimVar_Grad_i[VEL_INDEX+2][iDim]
+//                                                          -dTdU_i[nSpecies+2]/rhoCvtr *
+//                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
     // Energy
-    val_residual[nSpecies+3] += GPsi[nSpecies+3][iDim] * (-dTdU_i[nSpecies+3]/rhoCvtr *
-                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
+    val_residual[nSpecies+nDim] +=
+        GPsi[nSpecies+nDim][iDim] * (-dTdU_i[nSpecies+nDim]/rhoCvtr *
+                                     PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
     // Vib.-el. energy
-    val_residual[nSpecies+4] += GPsi[nSpecies+3][iDim] * (-dTdU_i[nSpecies+4]/rhoCvtr *
-                                                          PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
+    val_residual[nSpecies+nDim+1] +=
+        GPsi[nSpecies+nDim][iDim] * (-dTdU_i[nSpecies+nDim+1]/rhoCvtr *
+                                     PrimVar_Grad_i[RHOCVTR_INDEX][iDim]) * mu3 * Volume;
   }
   
   /*--- Contribution to viscous residual from Av4 ---*/

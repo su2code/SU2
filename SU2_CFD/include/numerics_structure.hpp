@@ -5372,7 +5372,8 @@ private:
   double **tau_sr, *tauP, *tauMW, *taus;
   double *dkf, *dkb, *dRfok, *dRbok, *A;
   double *eves, *Cvves;
-  double *Cvvs, *Cvvsst;
+  double *Cvvs, *dCvvs, *Cvvsst;
+  double *Cves, *dCves;
 //  CVariable *var;
 
 public:
@@ -5655,6 +5656,7 @@ private:
   double **dYdrs; /*!< \brief Derivative of mass fraction w.r.t. species density. */
   double *DdYk;
   
+  double **SigmaVel;
   double **SigmaPhi;
   double **SigmaPsiE;
   bool implicit;			/*!< \brief Implicit calculus. */

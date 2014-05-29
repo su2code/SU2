@@ -1580,6 +1580,25 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[iPoint]->GetCoord() );
+    
+    /*--- Compute axisymmetric source terms ---*/
+    if (config->GetAxisymmetric()) {
+      numerics->ComputeAxisymmetric(Residual_i, Jacobian_i, config);
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+      for (iVar = 0; iVar < nVar; iVar ++) {
+        Residual[iVar] = 0.0;
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Residual[iVar] += Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
+        }
+      }
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+    }
     
     /*--- Compute chemistry source terms ---*/
     numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
@@ -1612,6 +1631,7 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
     
     /*--- Compute vibrational relaxation source terms ---*/
     numerics->ComputeVibRelaxation(Residual_i, Jacobian_i, config);
@@ -3054,10 +3074,29 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
 		/*--- Set volume ---*/
 		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[iPoint]->GetCoord() );
+    second_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                              geometry->node[iPoint]->GetCoord() );
     
-    /*--- Calculate direct-problem source terms ---*/
-//    if (!geometry->node[iPoint]->GetSolidBoundary()) {
-      
+    
+    /*--- Compute axisymmetric source terms ---*/
+    if (config->GetAxisymmetric()) {
+      numerics->ComputeAxisymmetric(Residual_i, Jacobian_i, config);
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+      for (iVar = 0; iVar < nVar; iVar ++) {
+        Residual[iVar] = 0.0;
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Residual[iVar] += Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
+        }
+      }
+      LinSysRes.AddBlock(iPoint, Residual);
+      if (implicit)
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+    }
+    
       /*--- Compute chemistry source terms ---*/
       numerics->ComputeChemistry(Residual_i, Jacobian_i, config);
       
