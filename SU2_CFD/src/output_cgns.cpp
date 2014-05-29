@@ -41,7 +41,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
 	nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -199,7 +199,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
   /*--- Remove the domain number from the CGNS filename ---*/
   int nProcessor;
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -365,7 +365,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
 #endif

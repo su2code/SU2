@@ -35,8 +35,8 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifndef NO_MPI
   int size;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -142,7 +142,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
 #ifndef NO_MPI
   int size;
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
   size = MPI::COMM_WORLD.Get_size();
 #endif
@@ -189,7 +189,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif

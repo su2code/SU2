@@ -97,7 +97,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -238,7 +238,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -3500,7 +3500,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	double *Buffer_Send_Coord, *Buffer_Receive_Coord;
 
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
 	nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -3542,7 +3542,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 #ifndef NO_MPI
  
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
 	nProcessor = MPI::COMM_WORLD.Get_size();
 #endif

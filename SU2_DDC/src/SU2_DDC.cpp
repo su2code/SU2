@@ -34,18 +34,16 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
-  static char buffer[MAX_MPI_BUFFER]; // buffer size in bytes
-  
-  void *ptr;
-
+  static char Buffer[MAX_MPI_BUFFER]; // buffer size in bytes
+  int BufferSize = MAX_MPI_BUFFER;
 #ifdef WINDOWS
 	MPI_Init(&argc,&argv);
-	MPI_Buffer_attach(buffer,MAX_MPI_BUFFER);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&size);
+	MPI_Buffer_attach(Buffer, BufferSize);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
 	MPI::Init(argc, argv);
-	MPI::Attach_buffer(buffer, MAX_MPI_BUFFER);
+	MPI::Attach_buffer(Buffer, BufferSize);
 	rank = MPI::COMM_WORLD.Get_rank();
 	size = MPI::COMM_WORLD.Get_size();
 #endif	
@@ -104,7 +102,7 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     CDomainGeometry *domain = new CDomainGeometry(geometry, config);
-    
+
     /*--- Add the Send/Receive boundaries ---*/
     domain->SetSendReceive(config);
     
@@ -126,7 +124,7 @@ int main(int argc, char *argv[]) {
   MPI::COMM_WORLD.Barrier();
 #endif
 #endif
-    
+
     /*--- Write tecplot files ---*/
     if (config->GetVisualize_Partition()) {
       sprintf (buffer_plt, "_%d.dat", int(rank+1));
@@ -182,10 +180,11 @@ int main(int argc, char *argv[]) {
     /*--- Finalize MPI parallelization ---*/
 #ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Buffer_detach(buffer,NULL);
+	MPI_Buffer_detach(&Buffer, &BufferSize);
 	MPI_Finalize();
 #else
     MPI::COMM_WORLD.Barrier();
+    void *ptr;
     MPI::Detach_buffer(ptr);
     MPI::Finalize();
 #endif

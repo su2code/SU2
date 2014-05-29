@@ -93,7 +93,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1905,7 +1905,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   rank = MASTER_NODE;
 #else
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -4078,7 +4078,7 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -4385,7 +4385,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -6007,7 +6007,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   int rank, jProcessor;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -6168,7 +6168,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
     iProcessor = MASTER_NODE;
 #else
 #ifdef WINDOWS
-    MPI_Comm_rank(MPI_COMM_WORLD,&iProcessor);
+    MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #else
     iProcessor = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -6883,13 +6883,13 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
   double *Buffer_Send_Coord = NULL, *Buffer_Receive_Coord = NULL;
   
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
   
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -7144,7 +7144,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -7615,7 +7615,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   rank = MASTER_NODE;
 #else
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif

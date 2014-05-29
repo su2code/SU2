@@ -1783,7 +1783,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         Local_nElemWedge = nelem_wedge;
         Local_nElemPyramid = nelem_pyramid;
 #ifdef WINDOWS
-        // MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce(&Local_nElemTri, &Global_nelem_triangle, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce(&Local_nElemQuad, &Global_nelem_quad, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce(&Local_nElemTet, &Global_nelem_tetra, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -8832,7 +8831,7 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
   iProcessor = MASTER_NODE;
 #else
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&iProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #else
   iProcessor = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -10440,8 +10439,8 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
   
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -10690,8 +10689,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   int rank, size;
   
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&rank);
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -12069,8 +12068,8 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   int rank, size;
   
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&rank);
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -12262,7 +12261,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   int size;
   
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
   size = MPI::COMM_WORLD.Get_size();
 #endif
