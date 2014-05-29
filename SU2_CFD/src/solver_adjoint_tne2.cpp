@@ -52,7 +52,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1014,7 +1014,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1225,7 +1225,7 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 	rank = MASTER_NODE;
 #else
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -2497,7 +2497,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -2777,7 +2777,7 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
 	rank = MASTER_NODE;
 #else
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif

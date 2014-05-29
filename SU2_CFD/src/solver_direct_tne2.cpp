@@ -62,7 +62,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1769,7 +1769,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 	rank = MASTER_NODE;
 #else
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -4584,7 +4584,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -4790,7 +4790,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif

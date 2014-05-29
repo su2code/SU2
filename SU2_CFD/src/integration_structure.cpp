@@ -257,8 +257,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #ifndef NO_MPI
   int size, rank;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
   size = MPI::COMM_WORLD.Get_size();
   rank = MPI::COMM_WORLD.Get_rank();

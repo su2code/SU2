@@ -165,7 +165,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
   int nProcessor, iProcessor;
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else  
 	nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -1512,7 +1512,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1658,7 +1658,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1901,7 +1901,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif

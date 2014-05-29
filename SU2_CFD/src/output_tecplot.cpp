@@ -77,7 +77,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   /*--- Remove the domain number from the surface csv filename ---*/
   int nProcessor;
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -470,7 +470,7 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
     nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -760,7 +760,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
     nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -1086,7 +1086,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
     nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -1429,7 +1429,7 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 #ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
     nProcessor = MPI::COMM_WORLD.Get_size();
 #endif

@@ -152,8 +152,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #ifdef WINDOWS
   int rank, iProcessor, nProcessor;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   int rank = MPI::COMM_WORLD.Get_rank();
   int iProcessor, nProcessor = MPI::COMM_WORLD.Get_size();
@@ -516,8 +516,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   int rank, iProcessor, nProcessor;
   
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   nProcessor = MPI::COMM_WORLD.Get_size();
@@ -751,8 +751,8 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
   
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -873,8 +873,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   /*--- MPI preprocessing ---*/
   int iProcessor, nProcessor, rank;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
   rank = MPI::COMM_WORLD.Get_rank();
@@ -1064,7 +1064,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1162,7 +1162,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   int iProcessor, jProcessor, nProcessor;
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -1405,7 +1405,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -1503,7 +1503,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   int iProcessor, jProcessor, nProcessor;
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
 #endif
@@ -2239,8 +2239,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   /*--- MPI preprocessing ---*/
   int rank, iProcessor, nProcessor;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   nProcessor = MPI::COMM_WORLD.Get_size();
@@ -3433,8 +3433,8 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   /*--- MPI preprocessing ---*/
   int rank, nProcessor, iProcessor;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   nProcessor = MPI::COMM_WORLD.Get_size();
@@ -3719,7 +3719,7 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -3746,7 +3746,7 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -3778,7 +3778,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -3980,7 +3980,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
   
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -5139,7 +5139,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #ifndef NO_MPI
   int size;
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -5157,7 +5157,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
 #ifdef WINDOWS
-    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 #else
     size = MPI::COMM_WORLD.Get_size();
 #endif
@@ -5348,7 +5348,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -5642,7 +5642,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -6270,8 +6270,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
   int nProcessor;
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   nProcessor = MPI::COMM_WORLD.Get_size();
   rank = MPI::COMM_WORLD.Get_rank();

@@ -40,7 +40,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 #ifndef NO_MPI
   int rank;
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -233,7 +233,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   int rank = MASTER_NODE;
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -405,7 +405,7 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
 #ifndef NO_MPI
 	int rank;
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
@@ -456,7 +456,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
 
 #ifndef NO_MPI
 #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MPI::COMM_WORLD.Get_rank();
 #endif
