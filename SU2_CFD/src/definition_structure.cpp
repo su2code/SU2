@@ -34,13 +34,8 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   
 #ifndef NO_MPI
   int size;
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
   if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
@@ -62,13 +57,8 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifdef NO_MPI
         exit(1);
 #else
-#ifdef WINDOWS
 		MPI_Abort(MPI_COMM_WORLD,1);
 		MPI_Finalize();
-#else
-        MPI::COMM_WORLD.Abort(1);
-        MPI::Finalize();
-#endif
 #endif
       }
       
@@ -88,13 +78,8 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #ifdef NO_MPI
               exit(1);
 #else
-#ifdef WINDOWS
 			  MPI_Abort(MPI_COMM_WORLD,1);
 			  MPI_Finalize();
-#else
-              MPI::COMM_WORLD.Abort(1);
-              MPI::Finalize();
-#endif
 #endif
             }
           }
@@ -141,11 +126,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   
 #ifndef NO_MPI
   int size;
-#ifdef WINDOWS
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-#endif
   if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
@@ -188,11 +169,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   int rank = MASTER_NODE;
 
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -251,11 +228,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   
 #ifndef NO_MPI
   /*--- Synchronization point before the multigrid algorithm ---*/
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
   /*--- Loop over all the new grid ---*/

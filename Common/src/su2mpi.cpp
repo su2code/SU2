@@ -7,13 +7,8 @@ namespace SU2MPI {
 #ifdef NO_MPI
     exit(1);
 #else
-#ifdef WINDOWS
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
   }
   
@@ -32,11 +27,7 @@ namespace SU2MPI {
   int Rank(){
     int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
     return rank;
   }

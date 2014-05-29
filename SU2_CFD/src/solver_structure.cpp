@@ -164,11 +164,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 #else
   
   int nProcessor, iProcessor;
-#ifdef WINDOWS
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else  
-	nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
 
   double *sbuf_residual, *rbuf_residual;
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
@@ -181,13 +177,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   Local_nPointDomain = geometry->GetnPointDomain();
  
 
-#ifdef WINDOWS
   MPI_Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(sbuf_residual, rbuf_residual, nVar, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
   
   for (iVar = 0; iVar < nVar; iVar++)
     SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
@@ -207,13 +198,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
     sbuf_point[iVar] = GetPoint_Max(iVar);
   }
 
-#ifdef WINDOWS
   MPI_Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
   MPI_Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allgather(sbuf_residual, nVar, MPI::DOUBLE, rbuf_residual, nVar, MPI::DOUBLE);
-  MPI::COMM_WORLD.Allgather(sbuf_point, nVar, MPI::UNSIGNED_LONG, rbuf_point, nVar, MPI::UNSIGNED_LONG);
-#endif
   
   for (iVar = 0; iVar < nVar; iVar++) {
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
@@ -1511,11 +1497,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   unsigned short nDim=geometry->GetnDim();
@@ -1657,11 +1639,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	unsigned long iPoint, index, iPoint_Global;
@@ -1784,6 +1762,10 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   Solution = new double[nVar];
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1811,13 +1793,8 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 #ifndef NO_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -1900,11 +1877,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	/*--- Restart the solution from file information ---*/

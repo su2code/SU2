@@ -71,11 +71,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 #ifndef NO_MPI
 	int nProcessor;
 	/*--- Remove the domain number from the surface csv filename ---*/
-#ifdef WINDOWS
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-	nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
 	if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
 #endif
     

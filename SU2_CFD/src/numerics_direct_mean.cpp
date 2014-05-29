@@ -3089,13 +3089,8 @@ void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobia
 #ifdef NO_MPI
     exit(1);
 #else
-#ifdef WINDOWS
 	MPI_Abort(MPI_COMM_WORLD,1);
 	MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
     
   }

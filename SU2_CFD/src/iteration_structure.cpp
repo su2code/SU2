@@ -39,11 +39,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   
 #ifndef NO_MPI
   int rank;
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
@@ -232,11 +228,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
@@ -404,11 +396,7 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
   
 #ifndef NO_MPI
 	int rank;
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -455,11 +443,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
   rank    = MASTER_NODE;
 
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -807,11 +791,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Gust Parameters from config ---*/
@@ -852,13 +832,8 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
 #ifdef NO_MPI
     exit(1);
 #else
-#ifdef WINDOWS
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
   }
   
@@ -1035,11 +1010,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   
 	int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	/*--- Perform mesh movement depending on specified type ---*/
@@ -1328,11 +1299,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Local variables and initialization ---*/

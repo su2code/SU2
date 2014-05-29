@@ -32,18 +32,10 @@ int main(int argc, char *argv[]) {
   string str;
   
 #ifndef NO_MPI
-
   /*--- MPI initialization ---*/
-
-#ifdef WINDOWS
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else  
-  MPI::Init(argc,argv);
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -84,13 +76,8 @@ int main(int argc, char *argv[]) {
 #ifdef NO_MPI
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
-#else
-  MPI::COMM_WORLD.Barrier();
-  StartTime = MPI::Wtime();
-#endif
 #endif
   
   /*--- Computational grid preprocesing ---*/
@@ -157,14 +144,8 @@ int main(int argc, char *argv[]) {
   surface_movement->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
   
 #ifndef NO_MPI
-  
   /*--- MPI syncronization point ---*/
-  
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else 
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
   /*--- Volumetric grid deformation ---*/
@@ -231,13 +212,8 @@ int main(int argc, char *argv[]) {
 #ifdef NO_MPI
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
-#else
-  MPI::COMM_WORLD.Barrier();
-  StopTime = MPI::Wtime();
-#endif
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
@@ -255,13 +231,8 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- Finalize MPI parallelization ---*/
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
-#else
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI::Finalize();
-#endif
 #endif
   
   return EXIT_SUCCESS;
