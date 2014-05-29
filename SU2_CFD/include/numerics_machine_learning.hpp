@@ -14,9 +14,6 @@
 #endif
 
 #include "../include/numerics_machine_learning_turbulent.hpp"
-#ifdef WINDOWS
-#define isinf(x) (!_finite(x))
-#endif
 
 using namespace std;
 
