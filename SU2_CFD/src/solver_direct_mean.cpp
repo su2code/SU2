@@ -6007,6 +6007,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   int rank, jProcessor;
 #ifdef WINDOWS
+  MPI_Status status;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
@@ -6077,7 +6078,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         
         if (jProcessor != rank) {
 #ifdef WINDOWS
-          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
 #else
           MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
 #endif
@@ -6168,6 +6169,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
     iProcessor = MASTER_NODE;
 #else
 #ifdef WINDOWS
+    MPI_Status status;
     MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #else
     iProcessor = MPI::COMM_WORLD.Get_rank();
@@ -6249,7 +6251,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
             if (jProcessor != iProcessor) {
 #ifndef NO_MPI
 #ifdef WINDOWS
-              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, NULL);
+              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
 #else
               MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
 #endif
