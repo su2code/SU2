@@ -256,13 +256,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
 #ifndef NO_MPI
   int size, rank;
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	bool Already_Converged = Convergence;
@@ -338,13 +333,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   /*--- Convergence criteria ---*/
   sbuf_conv[0] = Convergence;
-#ifdef WINDOWS
   MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
-#else  
-  MPI::COMM_WORLD.Reduce(sbuf_conv, rbuf_conv, 1, MPI::UNSIGNED_SHORT, MPI::SUM, MASTER_NODE);
-  MPI::COMM_WORLD.Barrier();
-#endif
 
   /*-- Compute global convergence criteria in the master node --*/
   sbuf_conv[0] = 0;
@@ -353,11 +343,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     else sbuf_conv[0] = 0;
   }
 
-#ifdef WINDOWS
   MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Bcast(sbuf_conv, 1, MPI::UNSIGNED_SHORT, MASTER_NODE);
-#endif
   
   if (sbuf_conv[0] == 1) Convergence = true;
   else Convergence = false;
@@ -376,22 +362,13 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #else
     if (rank == MASTER_NODE)
       cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Abort(MPI_COMM_WORLD,1);
-#else
-    MPI::COMM_WORLD.Barrier();
-    MPI::COMM_WORLD.Abort(1);
-#endif
 #endif  
 	}
   
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif 
 #endif
   
 }
@@ -427,13 +404,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     string Marker_Tag, Monitoring_Tag;
 	int rank, nProcessor;
     
-#ifdef WINDOWS
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-    rank = MPI::COMM_WORLD.Get_rank();
-    nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+
     /*--- Only if mater node allocate memory ---*/
     if (rank == MASTER_NODE) {
       plunge_all = new double[nProcessor];
@@ -458,17 +431,10 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
       
       /*--- Gather the data on the master node. ---*/
-#ifdef WINDOWS
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(&plunge, 1, MPI::DOUBLE, plunge_all, 1, MPI::DOUBLE, MASTER_NODE);
-      MPI::COMM_WORLD.Gather(&pitch, 1, MPI::DOUBLE, pitch_all, 1, MPI::DOUBLE, MASTER_NODE);
-      MPI::COMM_WORLD.Gather(&owner, 1, MPI::UNSIGNED_LONG, owner_all, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
-#endif
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {

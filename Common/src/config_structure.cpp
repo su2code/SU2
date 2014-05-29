@@ -26,11 +26,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Initialize pointers to Null---*/
@@ -1082,11 +1078,7 @@ void CConfig::SetParsing(char case_filename[200]) {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Read the configuration file ---*/
@@ -1398,11 +1390,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   int size = SINGLE_NODE;
 #else
   int size;
-#ifdef WINDOWS
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
   
 #ifdef NO_TECIO
@@ -2920,11 +2908,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 #else
   /*--- Identify the solvers that work in serial ---*/
   if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
-#ifdef WINDOWS
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
-#else
-  nDomain = MPI::COMM_WORLD.Get_size();
-#endif
   else
     nDomain = SINGLE_NODE;
 #endif
@@ -5304,12 +5288,9 @@ CConfig::~CConfig(void)
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
   
 #ifndef NO_MPI
+  
   int size;
-#ifdef WINDOWS
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-#endif
   
   string old_name;
   char buffer[10];
@@ -5500,11 +5481,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
     }
 #else
     int rank;
-#ifdef WINDOWS
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = MPI::COMM_WORLD.Get_rank();
-#endif
     if ((change) && (rank == MASTER_NODE)) {
       cout <<"\n New value of the CFL number: ";
       for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
@@ -6067,11 +6044,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
   int rank = MASTER_NODE;
   
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   Velocity_FreeStreamND = new double[val_nDim];

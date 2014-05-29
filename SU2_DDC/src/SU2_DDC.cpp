@@ -36,17 +36,10 @@ int main(int argc, char *argv[]) {
 	/*--- MPI initialization, and buffer setting ---*/
   static char Buffer[MAX_MPI_BUFFER]; // buffer size in bytes
   int BufferSize = MAX_MPI_BUFFER;
-#ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Buffer_attach(Buffer, BufferSize);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-	MPI::Init(argc, argv);
-	MPI::Attach_buffer(Buffer, BufferSize);
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
-#endif	
 #endif
 	
 	/*--- Definition of some important class ---*/
@@ -67,11 +60,7 @@ int main(int argc, char *argv[]) {
   }
   
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
 	/*--- Set domains for parallel computation (if any) ---*/
@@ -92,11 +81,7 @@ int main(int argc, char *argv[]) {
     }
     
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     /*--- Allocate the memory of the current domain, and
@@ -107,22 +92,14 @@ int main(int argc, char *argv[]) {
     domain->SetSendReceive(config);
     
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------------------- Write mesh files --------------------------" << endl;
     
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
 
     /*--- Write tecplot files ---*/
@@ -140,11 +117,7 @@ int main(int argc, char *argv[]) {
     domain->SetMeshFile(config, cstr_su2);
     
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     if (rank == MASTER_NODE)
@@ -153,22 +126,14 @@ int main(int argc, char *argv[]) {
     /*--- Write the FFD information ---*/
     
 #ifndef NO_MPI
-#ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
     
 #ifndef NO_MPI
-#ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -178,16 +143,9 @@ int main(int argc, char *argv[]) {
     
 #ifndef NO_MPI
     /*--- Finalize MPI parallelization ---*/
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Buffer_detach(&Buffer, &BufferSize);
 	MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Barrier();
-    void *ptr;
-    MPI::Detach_buffer(ptr);
-    MPI::Finalize();
-#endif
 #endif
     
   }

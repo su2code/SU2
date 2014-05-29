@@ -32,11 +32,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   int rank = MASTER_NODE;
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   nPoint =        geometry->GetnPoint();
@@ -1023,11 +1019,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   /*--- Compute MaxVonMises_Stress using all the nodes ---*/
   double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-#ifdef WINDOWS
   MPI_Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI::DOUBLE, MPI::MAX);
-#endif
   
 #endif
   
@@ -1318,13 +1310,8 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
   
 #ifndef NO_MPI
-#ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
   
   /*--- Reset the value of the Flow_Pressure ---*/

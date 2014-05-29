@@ -41,15 +41,9 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-	MPI::Init(argc,argv);
-	rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -436,13 +430,8 @@ int main(int argc, char *argv[]) {
 #ifdef NO_MPI
           exit(1);
 #else
-#ifdef WINDOWS
 		  MPI_Abort(MPI_COMM_WORLD,1);
 		  MPI_Finalize();
-#else
-          MPI::COMM_WORLD.Abort(1);
-          MPI::Finalize();
-#endif
 #endif
         }
 
@@ -543,11 +532,7 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 	
 #ifndef NO_MPI
-#ifdef WINDOWS
 	MPI_Finalize();
-#else
-	MPI::Finalize();
-#endif
 #endif
 	
   /*--- Deallocate memory ---*/

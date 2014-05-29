@@ -34,15 +34,9 @@ int main(int argc, char *argv[]) {
 
 #ifndef NO_MPI
 	/*--- MPI initialization, and buffer setting ---*/
-#ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-	MPI::Init(argc, argv);
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
   
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -87,11 +81,7 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- Synchronization point after the geometrical definition subroutine ---*/
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
   if (rank == MASTER_NODE)
@@ -99,11 +89,7 @@ int main(int argc, char *argv[]) {
   
 #ifndef NO_MPI
   /*--- Synchronization point after the solution subroutine ---*/
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
 	/*--- Definition of the output class (one for all the zones) ---*/
@@ -214,11 +200,7 @@ int main(int argc, char *argv[]) {
 
 #ifndef NO_MPI
   /*--- Finalize MPI parallelization ---*/
-#ifdef WINDOWS
   MPI_Finalize();
-#else
-  MPI::Finalize();
-#endif
 #endif
   
   /*--- End solver ---*/
