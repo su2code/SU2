@@ -10364,10 +10364,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Bsend(Buffer_Send_Rotation, nPeriodic*3, MPI_DOUBLE, iDomain, 24, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Translate, nPeriodic*3, MPI_DOUBLE, iDomain, 25, MPI_COMM_WORLD);
       
-      delete [] Buffer_Send_Center;
-      delete [] Buffer_Send_Rotation;
-      delete [] Buffer_Send_Translate;
-      
     }
     
     if (rank == iDomain) {
@@ -11069,6 +11065,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
   if (rank == MASTER_NODE) {
     
+    delete [] Buffer_Send_Center;
+    delete [] Buffer_Send_Rotation;
+    delete [] Buffer_Send_Translate;
+
     for (iDomain = 0; iDomain < size; iDomain++)
       delete[] Global_to_Local_Point[iDomain];
     delete[] ElemIn;
