@@ -2840,6 +2840,8 @@ void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config,
 
 				CartCoord = FFDBoxParent->EvalCartesianCoord(ParamCoord);
 				FFDBoxChild->SetCoordControlPoints(CartCoord, iOrder, jOrder, kOrder);
+        FFDBoxChild->SetCoordControlPoints_Copy(CartCoord, iOrder, jOrder, kOrder);
+        
 			}
 	
 	if (rank == MASTER_NODE)
@@ -6102,18 +6104,17 @@ void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox *FFDBox) {
 		Coord_Control_Points[0][1][1][iDim]	= FFDBox->GetCoordCornerPoints(iDim, 7);
 	}
 	
-	for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
-		for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++)
+	for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++) {
+		for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++) {
 			for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
 				ParamCoord = ParamCoord_SupportCP[iOrder][jOrder][kOrder];
 				CartCoordNew = EvalCartesianCoord(ParamCoord);
-				CartCoordOld = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
-				index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
-				movement[0] = CartCoordNew[0] - CartCoordOld[0]; 
-				movement[1] = CartCoordNew[1] - CartCoordOld[1]; 
-				movement[2] = CartCoordNew[2] - CartCoordOld[2]; 
-				FFDBox->SetControlPoints(index, movement);
+        FFDBox->SetCoordControlPoints(CartCoordNew, iOrder, jOrder, kOrder);
+        FFDBox->SetCoordControlPoints_Copy(CartCoordNew, iOrder, jOrder, kOrder);
 			}
+    }
+  }
+
 }
 
 void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bool original) {
