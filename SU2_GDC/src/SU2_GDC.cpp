@@ -304,15 +304,16 @@ int main(int argc, char *argv[]) {
         for (iFFDBox = 0; iFFDBox < surface_mov->GetnFFDBox(); iFFDBox++) {
           
           switch ( config->GetDesign_Variable(iDV) ) {
-            case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_CAMBER_2D : surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_THICKNESS_2D : surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_CONTROL_POINT : surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_DIHEDRAL_ANGLE : surface_mov->SetFFDDihedralAngle(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_TWIST_ANGLE : surface_mov->SetFFDTwistAngle(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_ROTATION : surface_mov->SetFFDRotation(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_CAMBER : surface_mov->SetFFDCamber(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
-            case FFD_THICKNESS : surface_mov->SetFFDThickness(boundary, config, FFDBox[iFFDBox], iFFDBox, iDV, true); break;
+            case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_CAMBER_2D :        surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_THICKNESS_2D :     surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_CONTROL_POINT :    surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_DIHEDRAL_ANGLE :   surface_mov->SetFFDDihedralAngle(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_TWIST_ANGLE :      surface_mov->SetFFDTwistAngle(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_ROTATION :         surface_mov->SetFFDRotation(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_CAMBER :           surface_mov->SetFFDCamber(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_THICKNESS :        surface_mov->SetFFDThickness(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_CONTROL_SURFACE :  surface_mov->SetFFDControl_Surface(boundary, config, FFDBox[iFFDBox], iDV, true); break;
           }
           
           /*--- Recompute cartesian coordinates using the new control points position ---*/

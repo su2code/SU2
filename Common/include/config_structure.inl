@@ -273,6 +273,8 @@ inline double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
 
 inline double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
 
+inline string CConfig::GetFFDTag(unsigned short val_dv) {	return FFDTag[val_dv]; }
+
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
