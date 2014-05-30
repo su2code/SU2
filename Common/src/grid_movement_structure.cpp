@@ -2671,9 +2671,9 @@ void CSurfaceMovement::CopyBoundary(CGeometry *geometry, CConfig *config) {
 
 void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
   
-	unsigned short iMarker, iDim;
+	unsigned short iMarker, iDim, iOrder, jOrder, kOrder, lOrder, mOrder, nOrder;
 	unsigned long iVertex, iPoint, TotalVertex = 0;
-	double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff;
+	double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff, *Coord;
 	int rank;
   unsigned short nDim = geometry->GetnDim();
   
@@ -2683,17 +2683,46 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	rank = MASTER_NODE;
 #endif
 	
+  /*--- Change order and control points reduce the
+   complexity of the point inversion (this only works with boxes, 
+   and we maintain an internal copy) ---*/
+  
+  for (iOrder = 0; iOrder < 2; iOrder++) {
+    for (jOrder = 0; jOrder < 2; jOrder++) {
+      for (kOrder = 0; kOrder < 2; kOrder++) {
+        
+        lOrder = 0; mOrder = 0; nOrder = 0;
+        if (iOrder == 1) {lOrder = FFDBox->GetlOrder()-1;}
+        if (jOrder == 1) {mOrder = FFDBox->GetmOrder()-1;}
+        if (kOrder == 1) {nOrder = FFDBox->GetnOrder()-1;}
+
+        Coord = FFDBox->GetCoordControlPoints(lOrder, mOrder, nOrder);
+        
+        FFDBox->SetCoordControlPoints(Coord, iOrder, jOrder, kOrder);
+        
+      }
+    }
+  }
+
+  FFDBox->SetlOrder(2); FFDBox->SetmOrder(2); FFDBox->SetnOrder(2);
+  FFDBox->SetnControlPoints();
+  
+  /*--- Point inversion algorithm with a basic box ---*/
+  
 	ParamCoordGuess[0]  = 0.5; ParamCoordGuess[1] = 0.5; ParamCoordGuess[2] = 0.5;
   CartCoord[0]        = 0.0; CartCoord[1]       = 0.0; CartCoord[2]       = 0.0;
 
   /*--- Count the number of vertices ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		if (config->GetMarker_All_DV(iMarker) == YES)
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++)
         TotalVertex++;
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
 		if (config->GetMarker_All_DV(iMarker) == YES) {
+      
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         /*--- Get the cartesian coordinates ---*/
@@ -2706,7 +2735,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 				/*--- If the point is inside the FFD, compute the value of the parametric coordinate ---*/
         
 				if (FFDBox->GetPointFFD(geometry, config, iPoint)) {
-					
+          
 					/*--- Find the parametric coordinate ---*/
           
 					ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config->GetFFD_Tol(), config->GetnFFD_Iter());
@@ -2754,6 +2783,11 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	
 	if (rank == MASTER_NODE) 
 		cout << "Compute parametric coord      | FFD box: " << FFDBox->GetTag() << ". Max Diff: " << MaxDiff <<"."<< endl;
+  
+  
+  /*--- After the point inversion, copy the original information back ---*/
+  
+  FFDBox->SetOriginalControlPoints();
 	
 }
 
@@ -3316,15 +3350,15 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
     
 		/*--- xyz-coordinates of a point on the line of rotation. ---*/
     
-		double a = config->GetParamDV(0,1);
-		double b = config->GetParamDV(0,2);
-		double c = config->GetParamDV(0,3);
+		double a = config->GetParamDV(iDV, 1);
+		double b = config->GetParamDV(iDV, 2);
+		double c = config->GetParamDV(iDV, 3);
 		
 		/*--- xyz-coordinate of the line's direction vector. ---*/
     
-		double u = config->GetParamDV(0,4)-config->GetParamDV(0,1);
-		double v = config->GetParamDV(0,5)-config->GetParamDV(0,2);
-		double w = config->GetParamDV(0,6)-config->GetParamDV(0,3);
+		double u = config->GetParamDV(iDV, 4)-config->GetParamDV(iDV, 1);
+		double v = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
+		double w = config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3);
 		
 		/*--- The angle of rotation. ---*/
     
@@ -3383,15 +3417,15 @@ void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
     
 		/*--- xyz-coordinates of a point on the line of rotation. ---*/
     
-		double a = config->GetParamDV(0,1);
-		double b = config->GetParamDV(0,2);
-		double c = config->GetParamDV(0,3);
+		double a = config->GetParamDV(iDV, 1);
+		double b = config->GetParamDV(iDV, 2);
+		double c = config->GetParamDV(iDV, 3);
 		
 		/*--- xyz-coordinate of the line's direction vector. ---*/
     
-		double u = config->GetParamDV(0,4)-config->GetParamDV(0,1);
-		double v = config->GetParamDV(0,5)-config->GetParamDV(0,2);
-		double w = config->GetParamDV(0,6)-config->GetParamDV(0,3);
+		double u = config->GetParamDV(iDV, 4)-config->GetParamDV(iDV, 1);
+		double v = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
+		double w = config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3);
 		
 		/*--- The angle of rotation. ---*/
     
@@ -5624,6 +5658,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 					FFDBox_line >> iDegree; FFDBox_line >> jDegree; FFDBox_line >> kDegree; 
 					FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2]; 
 					FFDBox[iFFDBox]->SetCoordControlPoints(coord, iDegree, jDegree, kDegree); 
+					FFDBox[iFFDBox]->SetCoordControlPoints_Copy(coord, iDegree, jDegree, kDegree);
 				}
 				
 				getline (mesh_file,text_line);
@@ -5894,6 +5929,11 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_
 	mDegree = val_mDegree; mOrder = mDegree+1;
 	nDegree = val_nDegree; nOrder = nDegree+1;
 	nControlPoints = lOrder*mOrder*nOrder;
+  
+  lDegree_Copy = val_lDegree; lOrder_Copy = lDegree+1;
+	mDegree_Copy = val_mDegree; mOrder_Copy = mDegree+1;
+	nDegree_Copy = val_nDegree; nOrder_Copy = nDegree+1;
+	nControlPoints_Copy = lOrder_Copy*mOrder_Copy*nOrder_Copy;
 	
 	Coord_Control_Points = new double*** [lOrder];
 	ParCoord_Control_Points = new double*** [lOrder];
@@ -5910,18 +5950,15 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_
 				Coord_Control_Points[iOrder][jOrder][kOrder] = new double [nDim];
 				ParCoord_Control_Points[iOrder][jOrder][kOrder] = new double [nDim];
 				Coord_Control_Points_Copy[iOrder][jOrder][kOrder] = new double [nDim];
+        for (iDim = 0; iDim < nDim; iDim++) {
+					Coord_Control_Points[iOrder][jOrder][kOrder][iDim] = 0.0;
+          ParCoord_Control_Points[iOrder][jOrder][kOrder][iDim] = 0.0;
+          Coord_Control_Points_Copy[iOrder][jOrder][kOrder][iDim] = 0.0;
+        }
 			}
 		}
 	}
-	
-	/*--- Zero-initialization ---*/
-  
-	for (iOrder = 0; iOrder < lOrder; iOrder++) 
-		for (jOrder = 0; jOrder < mOrder; jOrder++) 
-			for (kOrder = 0; kOrder < nOrder; kOrder++)
-				for (iDim = 0; iDim < nDim; iDim++)
-					Coord_Control_Points[iOrder][jOrder][kOrder][iDim] = 0.0;
-  
+	 
 }
 
 CFreeFormDefBox::~CFreeFormDefBox(void) {
@@ -6101,7 +6138,7 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
 	}
 	else FFDBox_file.open(FFDBox_filename, ios::out | ios::app);
 
-	FFDBox_file << "ZONE T= \"ID " << iFFDBox;
+	FFDBox_file << "ZONE T= \"" << Tag;
   if (original) FFDBox_file << " (Original FFD)\"";
   else FFDBox_file << " (Deformed FFD)\"";
   if (nDim == 2) FFDBox_file << ", I="<<lDegree+1<<", J="<<mDegree+1<<", DATAPACKING=POINT" << endl;
@@ -6433,7 +6470,6 @@ unsigned long CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
 	return binomial[m];
   
 }
-
 
 bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
 	double Coord[3] = {0.0, 0.0, 0.0};
