@@ -77,20 +77,20 @@ public:
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
-	unsigned short nDim;						/*!< \brief Number of dimensions of the problem. */
-	unsigned short nCornerPoints,		/*!< \brief Number of corner points of the FFDBox. */
-	nControlPoints;									/*!< \brief Number of control points of the FFDBox. */
+	unsigned short nDim;                  /*!< \brief Number of dimensions of the problem. */
+	unsigned short nCornerPoints,         /*!< \brief Number of corner points of the FFDBox. */
+	nControlPoints, nControlPoints_Copy;  /*!< \brief Number of control points of the FFDBox. */
 	double **Coord_Corner_Points,		/*!< \brief Coordinates of the corner points. */
 	****Coord_Control_Points,				/*!< \brief Coordinates of the control points. */
 	****ParCoord_Control_Points,		/*!< \brief Coordinates of the control points. */
 	****Coord_Control_Points_Copy,	/*!< \brief Coordinates of the control points (copy). */
 	****Coord_SupportCP;						/*!< \brief Coordinates of the support control points. */
-	unsigned short lOrder,	/*!< \brief Order of the FFDBox in the i direction. */
-	mOrder,									/*!< \brief Order of the FFDBox in the j direction. */
-	nOrder;									/*!< \brief Order of the FFDBox in the k direction. */
-	unsigned short lDegree, /*!< \brief Degree of the FFDBox in the i direction. (lOrder - 1)*/
-	mDegree,								/*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
-	nDegree;								/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
+	unsigned short lOrder, lOrder_Copy,	/*!< \brief Order of the FFDBox in the i direction. */
+	mOrder,	mOrder_Copy, 								/*!< \brief Order of the FFDBox in the j direction. */
+	nOrder, nOrder_Copy;									/*!< \brief Order of the FFDBox in the k direction. */
+	unsigned short lDegree, lDegree_Copy, /*!< \brief Degree of the FFDBox in the i direction. (lOrder - 1)*/
+	mDegree, mDegree_Copy,								/*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
+	nDegree, nDegree_Copy;								/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
 	double *ParamCoord, *ParamCoord_,	/*!< \brief Parametric coordinates of a point. */
 	*cart_coord, *cart_coord_;			/*!< \brief Cartesian coordinates of a point. */
   double ObjFunc;			/*!< \brief Objective function of the point inversion process. */
@@ -279,6 +279,12 @@ public:
 	 * \return Number of control points.
 	 */	
 	unsigned short GetnControlPoints(void);
+  
+  /*!
+	 * \brief Get the number of control points.
+	 * \return Number of control points.
+	 */
+	void SetnControlPoints(void);
 	
 	/*! 
 	 * \brief Get the number of numerical points on the surface.
@@ -315,6 +321,15 @@ public:
 	 * \param[in] kDegree - Index of the FFDBox, k direction.
 	 */	
 	void SetCoordControlPoints(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);	
+
+  /*!
+	 * \brief Set the coordinates of the control points.
+	 * \param[in] val_coord - Coordinates of the control point.
+	 * \param[in] iDegree - Index of the FFDBox, i direction.
+	 * \param[in] jDegree - Index of the FFDBox, j direction.
+	 * \param[in] kDegree - Index of the FFDBox, k direction.
+	 */
+	void SetCoordControlPoints_Copy(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
 	/*! 
 	 * \brief Set the coordinates of the control points.
@@ -466,6 +481,24 @@ public:
 	 * \return Order in the n direction of the FFD FFDBox.
 	 */		
 	unsigned short GetnOrder(void);
+  
+  /*!
+	 * \brief Get the order in the l direction of the FFD FFDBox.
+	 * \return Order in the l direction of the FFD FFDBox.
+	 */
+	void SetlOrder(double val_lOrder);
+	
+	/*!
+	 * \brief Get the order in the m direction of the FFD FFDBox.
+	 * \return Order in the m direction of the FFD FFDBox.
+	 */
+	void SetmOrder(double val_mOrder);
+	
+	/*!
+	 * \brief Get the order in the n direction of the FFD FFDBox.
+	 * \return Order in the n direction of the FFD FFDBox.
+	 */
+	void SetnOrder(double val_nOrder);
 	
 	/*! 
 	 * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
