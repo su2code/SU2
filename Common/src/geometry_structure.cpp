@@ -10164,10 +10164,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   double* Buffer_translate;
   
   int rank, size;
-
+  
   MPI_Status status;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   
   /*--- Basic dimensionalization ---*/
   nDomain = size;
@@ -10337,7 +10337,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Bsend(&nElemHexahedron,    1,  MPI_UNSIGNED_LONG,   iDomain, 9, MPI_COMM_WORLD);
       MPI_Bsend(&nElemWedge,         1,  MPI_UNSIGNED_LONG,   iDomain, 10, MPI_COMM_WORLD);
       MPI_Bsend(&nElemPyramid,       1,  MPI_UNSIGNED_LONG,   iDomain, 11, MPI_COMM_WORLD);
-
+      
       /*--- Allocate the send buffer vector ---*/
       Buffer_Send_BoundLine =           new unsigned long [nBoundLineTotal*2];
       Buffer_Send_BoundTriangle =       new unsigned long [nBoundTriangleTotal*3];
@@ -10357,13 +10357,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Bsend(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI_CHAR, iDomain, 21, MPI_COMM_WORLD);
       
       /*--- Send the size of buffers ---*/
-      
       MPI_Bsend(&nPeriodic, 1, MPI_UNSIGNED_SHORT, iDomain, 22, MPI_COMM_WORLD);
       
       MPI_Bsend(Buffer_center, nPeriodic*3, MPI_DOUBLE, iDomain, 23, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_rotation, nPeriodic*3, MPI_DOUBLE, iDomain, 24, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_translate, nPeriodic*3, MPI_DOUBLE, iDomain, 25, MPI_COMM_WORLD);
-      
+
     }
     
     if (rank == iDomain) {
@@ -10399,6 +10398,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       }
       
       /*--- Receive the size of buffers ---*/
+
       MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, &status);
       
       if (rank != MASTER_NODE) {
@@ -10406,12 +10406,10 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         Buffer_rotation  = new double[nPeriodic*3];
         Buffer_translate = new double[nPeriodic*3];
         
-        MPI::COMM_WORLD.Recv(Buffer_center, nPeriodic*3, MPI::DOUBLE, MASTER_NODE, 23);
-        MPI::COMM_WORLD.Recv(Buffer_rotation, nPeriodic*3, MPI::DOUBLE, MASTER_NODE, 24);
-        MPI::COMM_WORLD.Recv(Buffer_translate, nPeriodic*3, MPI::DOUBLE, MASTER_NODE, 25);
+        MPI_Recv(Buffer_center, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 23, MPI_COMM_WORLD, &status);
+        MPI_Recv(Buffer_rotation, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 24, MPI_COMM_WORLD, &status);
+        MPI_Recv(Buffer_translate, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 25, MPI_COMM_WORLD, &status);
       }
-
-#endif
       
       if (rank != MASTER_NODE) {
         
@@ -10437,7 +10435,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         delete [] Buffer_rotation;
         delete [] Buffer_translate;
       }
-
+      
       /*--- Allocate the receive buffer vector ---*/
       Buffer_Receive_Coord =              new double [nPointTotal*nDim];
       Buffer_Receive_Color =              new unsigned long [nPointTotal];
@@ -10772,36 +10770,36 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   }
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
-MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
   
   /*--- Set the periodic boundary conditions ---*/
   
   unsigned long ReceptorColor, DonorColor, Transformation;
   unsigned short jMarker;
-
+  
   unsigned long *nSendDomain_Periodic = new unsigned long [nDomain];
   unsigned long *iSendDomain_Periodic = new unsigned long [nDomain];
   unsigned long *nReceivedDomain_Periodic = new unsigned long [nDomain];
   unsigned long *iReceivedDomain_Periodic = new unsigned long [nDomain];
   unsigned long nTotalSendDomain_Periodic, iTotalSendDomain_Periodic;
   unsigned long nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic;
-
+  
   unsigned long *Buffer_Send_SendDomain_Periodic;
   unsigned long *Buffer_Send_SendDomain_PeriodicTrans;
   unsigned long *Buffer_Send_SendDomain_PeriodicReceptor;
   unsigned long *Buffer_Send_ReceivedDomain_Periodic;
   unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans;
   unsigned long *Buffer_Send_ReceivedDomain_PeriodicDonor;
-
+  
   unsigned long *Buffer_Receive_SendDomain_Periodic;
   unsigned long *Buffer_Receive_SendDomain_PeriodicTrans;
   unsigned long *Buffer_Receive_SendDomain_PeriodicReceptor;
   unsigned long *Buffer_Receive_ReceivedDomain_Periodic;
   unsigned long *Buffer_Receive_ReceivedDomain_PeriodicTrans;
   unsigned long *Buffer_Receive_ReceivedDomain_PeriodicDonor;
-
+  
   for (iDomain = 0; iDomain < size; iDomain++) {
-
+    
     if (rank == MASTER_NODE) {
       
       /*--- Inizialization ---*/
@@ -10811,31 +10809,31 @@ MPI_Barrier(MPI_COMM_WORLD);
       }
       nTotalSendDomain_Periodic = 0;
       nTotalReceivedDomain_Periodic = 0;
-
+      
       /*--- Dimensionalization of the periodic auxiliar vectors ---*/
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
           for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
             iPoint = geometry->bound[iMarker][iVertex]->GetNode(0);
             if (iDomain == geometry->node[iPoint]->GetColor()) {
-
+              
               if (config->GetMarker_All_SendRecv(iMarker) > 0) {
-
+                
                 /*--- Identify the color of the receptor ---*/
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
-                    (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
-                      jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
-                      ReceptorColor = geometry->node[jPoint]->GetColor();
-                    }
+                      (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
+                    jPoint = geometry->bound[jMarker][iVertex]->GetNode(0);
+                    ReceptorColor = geometry->node[jPoint]->GetColor();
+                  }
                 }
-
+                
                 nSendDomain_Periodic[ReceptorColor]++;
                 nTotalSendDomain_Periodic++;
-
+                
               }
               if (config->GetMarker_All_SendRecv(iMarker) < 0) {
-
+                
                 /*--- Identify the color of the donor ---*/
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
@@ -10844,16 +10842,16 @@ MPI_Barrier(MPI_COMM_WORLD);
                     DonorColor = geometry->node[jPoint]->GetColor();
                   }
                 }
-
+                
                 nReceivedDomain_Periodic[DonorColor]++;
                 nTotalReceivedDomain_Periodic++;
-
+                
               }
             }
           }
         }
       }
-
+      
       /*--- Allocate the send buffer vector ---*/
       Buffer_Send_SendDomain_Periodic               = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Send_SendDomain_PeriodicTrans          = new unsigned long [nTotalSendDomain_Periodic];
@@ -10861,25 +10859,25 @@ MPI_Barrier(MPI_COMM_WORLD);
       Buffer_Send_ReceivedDomain_Periodic           = new unsigned long [nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicTrans      = new unsigned long [nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicDonor      = new unsigned long [nTotalReceivedDomain_Periodic];
-
+      
       /*--- Send the size of buffers ---*/
       MPI_Bsend(&nTotalSendDomain_Periodic,       1, MPI_UNSIGNED_LONG, iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(&nTotalReceivedDomain_Periodic,   1, MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
       MPI_Bsend(nSendDomain_Periodic,             size, MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
       MPI_Bsend(nReceivedDomain_Periodic,         size, MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
-
+      
     }
-
+    
     MPI_Barrier(MPI_COMM_WORLD);
-
+    
     if (rank == iDomain) {
-
+      
       /*--- Receive the size of buffers---*/
-      MPI_Recv(&nTotalSendDomain_Periodic,       1, MPI_UNSIGNED_LONG, 0, MASTER_NODE, &status);
-      MPI_Recv(&nTotalReceivedDomain_Periodic,   1, MPI_UNSIGNED_LONG, 1, MASTER_NODE, &status);
-      MPI_Recv(nSendDomain_Periodic,             size, MPI_UNSIGNED_LONG, 2, MASTER_NODE, &status);
-      MPI_Recv(nReceivedDomain_Periodic,         size, MPI_UNSIGNED_LONG, 3, MASTER_NODE, &status);
-
+      MPI_Recv(&nTotalSendDomain_Periodic,       1, MPI_UNSIGNED_LONG, MASTER_NODE, 0, MPI_COMM_WORLD, &status);
+      MPI_Recv(&nTotalReceivedDomain_Periodic,   1, MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, &status);
+      MPI_Recv(nSendDomain_Periodic,             size, MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(nReceivedDomain_Periodic,         size, MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, &status);
+      
       /*--- Allocate the send buffer vector ---*/
       Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Receive_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
@@ -10887,11 +10885,11 @@ MPI_Barrier(MPI_COMM_WORLD);
       Buffer_Receive_ReceivedDomain_Periodic       = new unsigned long [nTotalReceivedDomain_Periodic];
       Buffer_Receive_ReceivedDomain_PeriodicTrans  = new unsigned long [nTotalReceivedDomain_Periodic];
       Buffer_Receive_ReceivedDomain_PeriodicDonor  = new unsigned long [nTotalReceivedDomain_Periodic];
-
+      
     }
-
+    
     MPI_Barrier(MPI_COMM_WORLD);
-
+    
     /*--- Copy SendDomain_Periodic, SendDomain_PeriodicTrans, ReceivedDomain_Periodic,
      and ReceivedDomain_PeriodicTrans ---*/
     if (rank == MASTER_NODE) {
@@ -10929,9 +10927,9 @@ MPI_Barrier(MPI_COMM_WORLD);
                 Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
                 Buffer_Send_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] = ReceptorColor;
                 
-//                if ((rank == 0) && (iDomain == 1) && (ReceptorColor == 1)) {
-//                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" DonorColor "<< ReceptorColor << endl;
-//                }
+                //                if ((rank == 0) && (iDomain == 1) && (ReceptorColor == 1)) {
+                //                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" DonorColor "<< ReceptorColor << endl;
+                //                }
                 
                 iTotalSendDomain_Periodic++;
                 
@@ -10956,9 +10954,9 @@ MPI_Barrier(MPI_COMM_WORLD);
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
                 Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
                 
-//                if ((rank == 0) && (iDomain == 1) && (DonorColor == 1)) {
-//                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
-//                }
+                //                if ((rank == 0) && (iDomain == 1) && (DonorColor == 1)) {
+                //                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
+                //                }
                 
                 iTotalReceivedDomain_Periodic++;
                 
@@ -10969,12 +10967,12 @@ MPI_Barrier(MPI_COMM_WORLD);
       }
       
       
-      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 0);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 1);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_SendDomain_PeriodicReceptor,   nTotalSendDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 2);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 3);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 4);
-      MPI::COMM_WORLD.Bsend(Buffer_Send_ReceivedDomain_PeriodicDonor,  nTotalReceivedDomain_Periodic, MPI::UNSIGNED_LONG, iDomain, 5);
+      MPI_Bsend(Buffer_Send_SendDomain_Periodic,           nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, iDomain, 0, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_SendDomain_PeriodicTrans,      nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_SendDomain_PeriodicReceptor,   nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_ReceivedDomain_Periodic,       nTotalReceivedDomain_Periodic, MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_ReceivedDomain_PeriodicTrans,  nTotalReceivedDomain_Periodic, MPI_UNSIGNED_LONG, iDomain, 4, MPI_COMM_WORLD);
+      MPI_Bsend(Buffer_Send_ReceivedDomain_PeriodicDonor,  nTotalReceivedDomain_Periodic, MPI_UNSIGNED_LONG, iDomain, 5, MPI_COMM_WORLD);
       
       delete[] Buffer_Send_SendDomain_Periodic;
       delete[] Buffer_Send_SendDomain_PeriodicTrans;
@@ -10982,14 +10980,14 @@ MPI_Barrier(MPI_COMM_WORLD);
       delete[] Buffer_Send_ReceivedDomain_Periodic;
       delete[] Buffer_Send_ReceivedDomain_PeriodicTrans;
       delete[] Buffer_Send_ReceivedDomain_PeriodicDonor;
-
+      
     }
-
+    
     
     MPI::COMM_WORLD.Barrier();
-
+    
     if (rank == iDomain) {
-
+      
       /*--- Receive the size of buffers---*/
       MPI_Recv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 0, MPI_COMM_WORLD, &status);
       MPI_Recv(Buffer_Receive_SendDomain_PeriodicTrans,     nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, &status);
@@ -10997,14 +10995,14 @@ MPI_Barrier(MPI_COMM_WORLD);
       MPI_Recv(Buffer_Receive_ReceivedDomain_Periodic,      nTotalReceivedDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, &status);
       MPI_Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, nTotalReceivedDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 4, MPI_COMM_WORLD, &status);
       MPI_Recv(Buffer_Receive_ReceivedDomain_PeriodicDonor, nTotalReceivedDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 5, MPI_COMM_WORLD, &status);
-
+      
       /*--- Add the new periodic markers to the domain ---*/
       
       iTotalSendDomain_Periodic = 0;
       iTotalReceivedDomain_Periodic = 0;
-
+      
       for (jDomain = 0; jDomain < size; jDomain++) {
-
+        
         if (nSendDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
           bound[nMarker] = new CPrimalGrid* [nSendDomain_Periodic[jDomain]];
@@ -11012,18 +11010,13 @@ MPI_Barrier(MPI_COMM_WORLD);
           iVertex = 0;
           for (iTotalSendDomain_Periodic = 0; iTotalSendDomain_Periodic < nTotalSendDomain_Periodic; iTotalSendDomain_Periodic++) {
             if (Buffer_Receive_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] == jDomain) {
-            
+              
               bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic], nDim);
               bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic]);
               
-//              if ((rank == 1) && (jDomain == 1)) {
-//                cout <<"Send... after MPI "<< Buffer_Receive_SendDomain_Periodic[iTotalSendDomain_Periodic] << " " << jDomain << endl;
-//                
-//              }
-              
               nVertexDomain[nMarker]++;
               iVertex++;
-          
+              
             }
           }
           
@@ -11031,7 +11024,7 @@ MPI_Barrier(MPI_COMM_WORLD);
           nElem_Bound[nMarker] = nVertexDomain[nMarker];
           nMarker++;
         }
-
+        
         if (nReceivedDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
           bound[nMarker] = new CPrimalGrid* [nReceivedDomain_Periodic[jDomain]];
@@ -11043,11 +11036,6 @@ MPI_Barrier(MPI_COMM_WORLD);
               bound[nMarker][iVertex] = new CVertexMPI(Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic], nDim);
               bound[nMarker][iVertex]->SetRotation_Type(Buffer_Receive_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic]);
               
-//              if ((rank == 1) && (jDomain == 1)) {
-//                cout <<"Receive... after MPI "<< Buffer_Receive_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] << " " << jDomain << endl;
-//                
-//              }
-              
               nVertexDomain[nMarker]++;
               iVertex++;
               
@@ -11058,18 +11046,18 @@ MPI_Barrier(MPI_COMM_WORLD);
           nElem_Bound[nMarker] = nVertexDomain[nMarker];
           nMarker++;
         }
-
+        
       }
-
+      
       delete[] Buffer_Receive_SendDomain_Periodic;
       delete[] Buffer_Receive_SendDomain_PeriodicTrans;
       delete[] Buffer_Receive_SendDomain_PeriodicReceptor;
       delete[] Buffer_Receive_ReceivedDomain_Periodic;
       delete[] Buffer_Receive_ReceivedDomain_PeriodicTrans;
       delete[] Buffer_Receive_ReceivedDomain_PeriodicDonor;
-
+      
     }
-
+    
   }
   
   /*--- Set the value of Marker_All_SendRecv in the config structure ---*/
@@ -11079,7 +11067,7 @@ MPI_Barrier(MPI_COMM_WORLD);
   }
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
-MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
   
   if (rank == MASTER_NODE) {
     
@@ -11267,11 +11255,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   unsigned short iDomain, nDomain, iMarkersDomain, iLoop;
   unsigned long TotalElem;
   int size;
-#ifdef WINDOWS
   MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-#endif
   nDomain = size+1;
 #endif
   
@@ -11366,12 +11350,6 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   }
   
 #ifndef NO_MPI
-  
-  /*--- Send after receive in the .su2 file ---*/
-  unsigned short iDomain, nDomain;
-  int size;
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
   
   /*--- Identify if there are markers with the same domain
    (typically periodic in parallel) ---*/
