@@ -10397,20 +10397,20 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
       }
       
-      /*--- Receive the size of buffers ---*/
+      /*--- Periodic boundary conditions, set the values in the config files of all the files ---*/
 
       MPI_Recv(&nPeriodic, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, 22, MPI_COMM_WORLD, &status);
       
-      if (rank != MASTER_NODE) {
-        Buffer_center = new double[nPeriodic*3];
-        Buffer_rotation  = new double[nPeriodic*3];
-        Buffer_translate = new double[nPeriodic*3];
-        
-        MPI_Recv(Buffer_center, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 23, MPI_COMM_WORLD, &status);
-        MPI_Recv(Buffer_rotation, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 24, MPI_COMM_WORLD, &status);
-        MPI_Recv(Buffer_translate, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 25, MPI_COMM_WORLD, &status);
-      }
+      Buffer_center = new double[nPeriodic*3];
+      Buffer_rotation  = new double[nPeriodic*3];
+      Buffer_translate = new double[nPeriodic*3];
       
+      MPI_Recv(Buffer_center, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 23, MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_rotation, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 24, MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_translate, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 25, MPI_COMM_WORLD, &status);
+      
+      /*--- The MASTER_NODE has the right config file... no need to modify its value ---*/
+
       if (rank != MASTER_NODE) {
         
         config->SetnPeriodicIndex(nPeriodic);
@@ -10418,8 +10418,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
           
           double* center = new double[3];       // Do not deallocate the memory
-          double* rotation  = new double[3];   // Do not deallocate the memory
-          double* translate = new double[3];   // Do not deallocate the memory
+          double* rotation  = new double[3];    // Do not deallocate the memory
+          double* translate = new double[3];    // Do not deallocate the memory
           
           for (iDim = 0; iDim < 3; iDim++) {
             center[iDim] = Buffer_center[iDim+iPeriodic*3];
@@ -10431,11 +10431,12 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
           config->SetPeriodicTranslate(iPeriodic, translate);
         }
         
-        delete [] Buffer_center;
-        delete [] Buffer_rotation;
-        delete [] Buffer_translate;
       }
-      
+
+      delete [] Buffer_center;
+      delete [] Buffer_rotation;
+      delete [] Buffer_translate;
+
       /*--- Allocate the receive buffer vector ---*/
       Buffer_Receive_Coord =              new double [nPointTotal*nDim];
       Buffer_Receive_Color =              new unsigned long [nPointTotal];
@@ -10976,7 +10977,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     }
     
     
-    MPI::COMM_WORLD.Barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
     
     if (rank == iDomain) {
       
