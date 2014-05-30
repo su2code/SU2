@@ -7941,6 +7941,9 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
+    /*--- Wall shear stress values (wall functions) ---*/
+    numerics->SetTauWall(node[iPoint]->GetTauWall(), node[iPoint]->GetTauWall());
+    
     /*--- Compute and update residual ---*/
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
@@ -9093,7 +9096,7 @@ void CNSSolver::Compute_Wall_Functions_Mean(CGeometry *geometry, CSolver **solve
           //cout << Y_Plus << "  " << Tau_Wall << "    " << WallShearStress << "   Ratio: "<< Tau_Wall/WallShearStress <<  "   " << counter << endl;
           
           /*--- Store this value for the wall shear stress at the node.  ---*/
-          
+          node[iPoint]->SetTauWall(Tau_Wall);
           
           
         }

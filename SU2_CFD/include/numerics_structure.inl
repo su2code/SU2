@@ -430,3 +430,15 @@ inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jaco
 
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, 
 									double **val_Jacobian_j, double *val_Jacobian_muj, double ***val_Jacobian_gradj, CConfig *config) { }
+
+inline void CNumerics::SetTauWall(double val_tauwall_i, double val_tauwall_j) { }
+
+inline void CAvgGrad_Flow::SetTauWall(double val_tauwall_i, double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}
+
+inline void CAvgGradCorrected_Flow::SetTauWall(double val_tauwall_i, double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}

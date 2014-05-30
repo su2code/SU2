@@ -2432,8 +2432,14 @@ void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
     }
   }
   
+  /*--- Wall shear stress values (wall functions) ---*/
+  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+  else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
+  else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
+  else Mean_TauWall = -1.0;
+  
   /*--- Get projected flux tensor ---*/
-  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall);
   
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -2456,7 +2462,7 @@ void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
       }
     }
     else {
-      GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
+      GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall,
                          dist_ij, UnitNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
     }
     
@@ -2637,8 +2643,14 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
     }
   }
   
+  /*--- Wall shear stress values (wall functions) ---*/
+  if (TauWall_i > 0.0 && TauWall_j > 0.0) Mean_TauWall = 0.5*(TauWall_i + TauWall_j);
+  else if (TauWall_i > 0.0) Mean_TauWall = TauWall_i;
+  else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
+  else Mean_TauWall = -1.0;
+  
   /*--- Get projected flux tensor ---*/
-  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall);
   
   /*--- Save residual value ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -2656,7 +2668,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
       }
     }
     else {
-      GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
+      GetViscousProjJacs(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall,
                          sqrt(dist_ij_2), UnitNormal, Area, Proj_Flux_Tensor, val_Jacobian_i, val_Jacobian_j);
     }
     

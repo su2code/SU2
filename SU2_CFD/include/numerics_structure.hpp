@@ -816,12 +816,14 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[in] val_laminar_viscosity - Laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_tau_wall - Wall shear stress (wall functions).
 	 */
     
 	void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
                           double val_turb_ke, double *val_normal,
                           double val_laminar_viscosity,
-                          double val_eddy_viscosity);
+                          double val_eddy_viscosity,
+                          double val_tau_wall);
   
     
     /*!
@@ -932,6 +934,7 @@ public:
 	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
 	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_tau_wall - Value of the wall shear stress (wall functions).
 	 * \param[in] val_dist_ij - Distance between the points.
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[in] val_dS - Area of the face between two nodes.
@@ -942,6 +945,7 @@ public:
 	void GetViscousProjJacs(double *val_Mean_PrimVar,
                           double val_laminar_viscosity,
                           double val_eddy_viscosity,
+                          double val_tau_wall,
                           double val_dist_ij,
                           double *val_normal, double val_dS,
                           double *val_Proj_Visc_Flux,
@@ -1445,6 +1449,13 @@ public:
 	 * \param[in] config - Normal vector
 	 */
   void CreateBasis(double *val_Normal);
+  
+  /*!
+	 * \brief A virtual member. Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+	virtual void SetTauWall(double val_tauwall_i, double val_tauwall_j);
     
 };
 
@@ -2879,7 +2890,9 @@ private:
 	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
 	Mean_turb_ke,				/*!< \brief Mean value of the turbulent kinetic energy. */
 	*ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
-	dist_ij;						/*!< \brief Length of the edge and face. */
+	dist_ij,						/*!< \brief Length of the edge and face. */
+  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
+  TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
 	bool implicit; /*!< \brief Implicit calculus. */
     
 public:
@@ -2905,6 +2918,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+  void SetTauWall(double val_tauwall_i, double val_tauwall_j);
+  
 };
 
 /*!
@@ -3186,6 +3207,8 @@ private:
 	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,			/*!< \brief Mean value of the viscosity. */
 	Mean_turb_ke,				/*!< \brief Mean value of the turbulent kinetic energy. */
 	dist_ij_2,					/*!< \brief Length of the edge and face. */
+  TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
+  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
 	*ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
 	bool implicit;			/*!< \brief Implicit calculus. */
     
@@ -3212,6 +3235,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+  
+  /*!
+	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+  void SetTauWall(double val_tauwall_i, double val_tauwall_j);
 };
 
 /*!

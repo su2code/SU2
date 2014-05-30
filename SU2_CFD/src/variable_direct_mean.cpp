@@ -450,6 +450,9 @@ CNSVariable::CNSVariable(double val_density, double *val_velocity, double val_en
 	Prandtl_Lam     = config->GetPrandtl_Lam();
 	Prandtl_Turb    = config->GetPrandtl_Turb();
   
+  /*--- Initialize the wall shear stress to -1.0 (no wall functions) ---*/
+  Tau_Wall = -1.0;
+  
 }
 
 CNSVariable::CNSVariable(double *val_solution, unsigned short val_ndim,
@@ -460,6 +463,10 @@ CNSVariable::CNSVariable(double *val_solution, unsigned short val_ndim,
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
 	Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  /*--- Initialize the wall shear stress to -1.0 (no wall functions) ---*/
+  Tau_Wall = -1.0;
+  
 }
 
 CNSVariable::~CNSVariable(void) { }

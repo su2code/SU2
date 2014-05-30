@@ -1566,6 +1566,17 @@ public:
 	 */
 	virtual double *GetSolution_Direct(void);
   
+  /*!
+	 * \brief A virtual member. Set the value of the wall shear stress computed by a wall function.
+	 */
+	virtual void SetTauWall(double val_tau_wall);
+  
+  /*!
+	 * \brief A virtual member. Get the value of the wall shear stress computed by a wall function.
+	 * \return Value of the wall shear stress computed by a wall function.
+	 */
+	virtual double GetTauWall(void);
+  
 };
 
 /*!
@@ -2199,6 +2210,7 @@ private:
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
 	double Vorticity[3];		/*!< \brief Vorticity of the fluid. */
 	double StrainMag;           /*!< \brief Magnitude of rate of strain tensor. */
+  double Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
 public:
 
 	/*!
@@ -2326,6 +2338,18 @@ public:
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
 	bool SetPrimVar_FreeSurface(double eddy_visc, double turb_ke, CConfig *config);
+  
+  /*!
+	 * \brief Set the value of the wall shear stress computed by a wall function.
+	 */
+	void SetTauWall(double val_tau_wall);
+  
+  /*!
+	 * \brief Get the value of the wall shear stress computed by a wall function.
+	 * \return Value of the wall shear stress computed by a wall function.
+	 */
+	double GetTauWall(void);
+  
 };
 
 /*! 
