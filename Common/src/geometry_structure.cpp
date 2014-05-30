@@ -10927,10 +10927,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 Buffer_Send_SendDomain_PeriodicTrans[iTotalSendDomain_Periodic] = Transformation;
                 Buffer_Send_SendDomain_PeriodicReceptor[iTotalSendDomain_Periodic] = ReceptorColor;
                 
-                //                if ((rank == 0) && (iDomain == 1) && (ReceptorColor == 1)) {
-                //                  cout <<"Send... before MPI "<< Buffer_Send_SendDomain_Periodic[iTotalSendDomain_Periodic] <<" DonorColor "<< ReceptorColor << endl;
-                //                }
-                
                 iTotalSendDomain_Periodic++;
                 
               }
@@ -10953,10 +10949,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
                 Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
-                
-                //                if ((rank == 0) && (iDomain == 1) && (DonorColor == 1)) {
-                //                  cout <<"Receive... before MPI "<< Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] <<" DonorColor "<< DonorColor << endl;
-                //                }
                 
                 iTotalReceivedDomain_Periodic++;
                 
@@ -11109,8 +11101,8 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   vector<unsigned long>::iterator it;
   
   int rank, size;
-  MPI_Comm_size(MPI_COMM_WORLD,&rank);
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   
   int nDomain = size;
   
