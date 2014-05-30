@@ -1949,6 +1949,13 @@ public:
 	 * \return Design variable parameter.
 	 */		
 	double GetParamDV(unsigned short val_dv, unsigned short val_param);
+  
+  /*!
+	 * \brief Get the FFD Tag of a particular design variable.
+	 * \param[in] val_dv - Number of the design variable that we want to read.
+	 * \return Design variable parameter.
+	 */
+	string GetFFDTag(unsigned short val_dv);
 
 	/*! 
 	 * \brief Get the number of design variables.

@@ -897,7 +897,8 @@ enum ENUM_PARAM {
   AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
   FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 27		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_THICKNESS_2D = 27,		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_CONTROL_SURFACE = 28		/*!< \brief Free form deformation for 3D design (control surface). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -913,6 +914,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_TWIST_ANGLE", FFD_TWIST_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
+("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
@@ -1757,6 +1759,7 @@ public:
         case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
         case FFD_TWIST_ANGLE: nParamDV = 7; break;
         case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
@@ -1783,6 +1786,7 @@ public:
              (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
              (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
              (this->design_variable[iDV] == FFD_ROTATION) ||
+             (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
              (this->design_variable[iDV] == FFD_THICKNESS))) {
               ss >> this->FFDTag[iDV];
@@ -3652,6 +3656,7 @@ public:
         case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
         case FFD_TWIST_ANGLE: nParamDV = 7; break;
         case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
@@ -3702,6 +3707,7 @@ public:
         case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
         case FFD_TWIST_ANGLE: nParamDV = 7; break;
         case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         default : {

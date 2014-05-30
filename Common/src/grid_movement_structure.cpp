@@ -2422,6 +2422,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
            (config->GetDesign_Variable(0) == FFD_DIHEDRAL_ANGLE) ||
            (config->GetDesign_Variable(0) == FFD_TWIST_ANGLE) ||
            (config->GetDesign_Variable(0) == FFD_ROTATION) ||
+           (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
            (config->GetDesign_Variable(0) == FFD_CAMBER) ||
            (config->GetDesign_Variable(0) == FFD_THICKNESS) ) {
     
@@ -2491,15 +2492,16 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
             
             for (iDV = 0; iDV < config->GetnDV(); iDV++) {
               switch ( config->GetDesign_Variable(iDV) ) {
-                case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_CAMBER_2D : SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_THICKNESS_2D : SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_CONTROL_POINT : SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_DIHEDRAL_ANGLE : SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_TWIST_ANGLE : SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_ROTATION : SetFFDRotation(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_CAMBER : SetFFDCamber(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
-                case FFD_THICKNESS : SetFFDThickness(geometry, config, FFDBox[iFFDBox], iFFDBox, iDV, false); break;
+                case FFD_CONTROL_POINT_2D : SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_DIHEDRAL_ANGLE :   SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_TWIST_ANGLE :      SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, false); break;
               }
             }
             
@@ -2971,15 +2973,16 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 	
 }
 
-void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox,
+void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	
 	double movement[3], Ampl;
-	unsigned short design_FFDBox, index[3];
-		
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
+	unsigned short index[3];
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
     
     /*--- Set control points to its original value ---*/
     
@@ -3010,15 +3013,16 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 		
 }
 
-void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox,
+void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	
 	double movement[3], Ampl;
-	unsigned short design_FFDBox, index[3];
+	unsigned short index[3];
+	string design_FFDBox;
   
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3042,14 +3046,15 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
   
 }
 
-void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox,
+void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																		unsigned short iDV, bool ResetDef) {
 	double Ampl, movement[3];
-	unsigned short design_FFDBox, index[3], kIndex;
+	unsigned short index[3], kIndex;
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
-	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3058,10 +3063,7 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 		for (kIndex = 0; kIndex < 2; kIndex++) {
       
 			Ampl = config->GetDV_Value(iDV);
-			
-			design_FFDBox = int(config->GetParamDV(iDV, 0));
-			if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxes!!"<< endl; exit(1); }
-			
+						
       movement[0] = 0.0;
 			if (kIndex == 0) movement[1] = Ampl;
 			else movement[1] = Ampl;
@@ -3079,14 +3081,15 @@ void CSurfaceMovement::SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFr
 	
 }
 
-void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox,
+void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
 	double Ampl, movement[3];
-	unsigned short design_FFDBox, index[3], kIndex;
+	unsigned short index[3], kIndex;
+	string design_FFDBox;
   
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3096,9 +3099,6 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 			
 			Ampl = config->GetDV_Value(iDV);
 			
-			design_FFDBox = int(config->GetParamDV(iDV, 0));
-      if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxes!!"<< endl; exit(1); }
-
       movement[0] = 0.0;
 			if (kIndex == 0) movement[1] = -Ampl;
 			else movement[1] = Ampl;
@@ -3116,14 +3116,15 @@ void CSurfaceMovement::SetFFDThickness_2D(CGeometry *geometry, CConfig *config, 
 	
 }
 
-void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
+void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																		unsigned short iDV, bool ResetDef) {
 	double Ampl, movement[3];
-	unsigned short design_FFDBox, index[3], kIndex;
+	unsigned short index[3], kIndex;
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
-	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3132,10 +3133,7 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 		for (kIndex = 0; kIndex < 2; kIndex++) {
 						
 			Ampl = config->GetDV_Value(iDV);
-			
-			design_FFDBox = int(config->GetParamDV(iDV, 0));
-			if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxes!!"<< endl; exit(1); }
-			
+						
 			index[0] = int(config->GetParamDV(iDV, 1));
 			index[1] = int(config->GetParamDV(iDV, 2)); 
 			index[2] = kIndex;
@@ -3152,14 +3150,15 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 	
 }
 
-void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
+void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
 	double Ampl, movement[3];
-	unsigned short design_FFDBox, index[3], kIndex;
-		
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
+	unsigned short index[3], kIndex;
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3169,9 +3168,6 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 			
 			Ampl = config->GetDV_Value(iDV);
 			
-			design_FFDBox = int(config->GetParamDV(iDV, 0));
-      if (design_FFDBox > nFFDBox) { cout <<"The FFDBox ID is bigger than the number of FFDBoxes!!"<< endl; exit(1); }
-
 			index[0] = int(config->GetParamDV(iDV, 1));
 			index[1] = int(config->GetParamDV(iDV, 2)); 
 			index[2] = kIndex;
@@ -3189,14 +3185,15 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 }
 
 
-void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
+void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																					 unsigned short iDV, bool ResetDef) {
-	unsigned short iOrder, jOrder, kOrder, design_FFDBox, index[3];
+	unsigned short iOrder, jOrder, kOrder, index[3];
 	double movement[3], theta;
-			
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3221,15 +3218,16 @@ void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config,
 
 }
 
-void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
+void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																				unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
 	double  x, y, z, movement[3];
-	unsigned short index[3], design_FFDBox;
+	unsigned short index[3];
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
-	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3301,15 +3299,16 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 }
 
 
-void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, 
+void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
 	double  movement[3], x, y, z;
-	unsigned short index[3], design_FFDBox;
-		
-	design_FFDBox = int(config->GetParamDV(iDV, 0));
+	unsigned short index[3];
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
 	
-	if (design_FFDBox == iFFDBox) {
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
     /*--- Set control points to its original value ---*/
     
@@ -3333,8 +3332,8 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 		
 		/*--- An intermediate value used in computations. ---*/
     
-		double u2=u*u; double v2=v*v; double w2=w*w;     
-		double cosT = cos(theta); double sinT = sin(theta);  
+		double u2=u*u; double v2=v*v; double w2=w*w;
+		double cosT = cos(theta); double sinT = sin(theta);
 		double l2 = u2 + v2 + w2; double l = sqrt(l2);
 		
 		/*--- Change the value of the control point if move is true ---*/
@@ -3350,12 +3349,12 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 					+ l*(-c*v + b*w - w*y + v*z)*sinT;
 					movement[0] = movement[0]/l2 - x;
 					
-					movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z) 
+					movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
 					+ (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
 					+ l*(c*u - a*w + w*x - u*z)*sinT;
 					movement[1] = movement[1]/l2 - y;
 					
-					movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z) 
+					movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
 					+ (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
 					+ l*(-b*u + a*v - v*x + u*y)*sinT;
 					movement[2] = movement[2]/l2 - z;
@@ -3363,7 +3362,73 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 					FFDBox->SetControlPoints(index, movement);
           
 				}
+	}
+	
+}
+
+void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
+																			unsigned short iDV, bool ResetDef) {
+	unsigned short iOrder, jOrder, kOrder;
+	double  movement[3], x, y, z;
+	unsigned short index[3];
+	string design_FFDBox;
+  
+	design_FFDBox = config->GetFFDTag(iDV);
+	
+	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 		
+    /*--- Set control points to its original value ---*/
+    
+    if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+    
+		/*--- xyz-coordinates of a point on the line of rotation. ---*/
+    
+		double a = config->GetParamDV(0,1);
+		double b = config->GetParamDV(0,2);
+		double c = config->GetParamDV(0,3);
+		
+		/*--- xyz-coordinate of the line's direction vector. ---*/
+    
+		double u = config->GetParamDV(0,4)-config->GetParamDV(0,1);
+		double v = config->GetParamDV(0,5)-config->GetParamDV(0,2);
+		double w = config->GetParamDV(0,6)-config->GetParamDV(0,3);
+		
+		/*--- The angle of rotation. ---*/
+    
+		double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
+		
+		/*--- An intermediate value used in computations. ---*/
+    
+		double u2=u*u; double v2=v*v; double w2=w*w;
+		double cosT = cos(theta); double sinT = sin(theta);
+		double l2 = u2 + v2 + w2; double l = sqrt(l2);
+		
+		/*--- Change the value of the control point if move is true ---*/
+    
+		for (iOrder = 0; iOrder < FFDBox->GetlOrder()-2; iOrder++)
+			for (jOrder = 2; jOrder < FFDBox->GetmOrder()-2; jOrder++)
+				for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
+					index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
+					double *coord = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
+					x = coord[0]; y = coord[1]; z = coord[2];
+					movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
+					+ (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
+					+ l*(-c*v + b*w - w*y + v*z)*sinT;
+					movement[0] = movement[0]/l2 - x;
+					
+					movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
+					+ (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
+					+ l*(c*u - a*w + w*x - u*z)*sinT;
+					movement[1] = movement[1]/l2 - y;
+					
+					movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
+					+ (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
+					+ l*(-b*u + a*v - v*x + u*y)*sinT;
+					movement[2] = movement[2]/l2 - z;
+					
+					FFDBox->SetControlPoints(index, movement);
+          
+				}
 	}
 	
 }
