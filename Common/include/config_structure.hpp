@@ -251,6 +251,7 @@ private:
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
+  string *FFDTag;				/*!< \brief Parameters of the design variable. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
@@ -829,11 +830,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV,
+  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, design_variable);
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
