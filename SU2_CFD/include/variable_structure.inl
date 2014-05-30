@@ -382,6 +382,10 @@ inline void CVariable::SetVorticity(void) { }
 
 inline void CVariable::SetStrainMag(void) { }
 
+inline void CVariable::SetTauWall(double val_tau_wall) { }
+
+inline double CVariable::GetTauWall(void) { return 0; }
+
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
 inline void CVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, double val_value) { }
@@ -610,6 +614,10 @@ inline bool CNSVariable::SetPressure(double Gamma, double turb_ke) {
    if (Primitive[nDim+1] > 0.0) return false;
    else return true;
 }
+
+inline void CNSVariable::SetTauWall(double val_tau_wall) { Tau_Wall = val_tau_wall; }
+
+inline double CNSVariable::GetTauWall(void) { return Tau_Wall; }
 
 inline double CTransLMVariable::GetIntermittency() { return Solution[0]; }
 

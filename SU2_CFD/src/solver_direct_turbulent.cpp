@@ -2145,8 +2145,8 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
   
   /*--- Local variables ---*/
   
-  unsigned short iDim, jDim, iVar, jVar;
-  unsigned long iVertex, iPoint, jPoint, Point_Normal, counter;
+  unsigned short iDim, jDim, iVar, jVar, iNode;
+  unsigned long iVertex, iPoint, jPoint, iPoint_Neighbor, counter;
   
   double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
   double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
@@ -2193,7 +2193,9 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
   
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+    
+    for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
+      iPoint_Neighbor = geometry->node[iPoint]->GetPoint(iNode);
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     
@@ -2202,7 +2204,7 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
       /*--- Get coordinates of the current vertex and nearest normal point ---*/
       
       Coord = geometry->node[iPoint]->GetCoord();
-      Coord_Normal = geometry->node[Point_Normal]->GetCoord();
+      Coord_Normal = geometry->node[iPoint_Neighbor]->GetCoord();
       
       /*--- Compute dual-grid area and boundary normal ---*/
       
@@ -2220,9 +2222,9 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
        (normal) interior point. ---*/
       
       for (iDim = 0; iDim < nDim; iDim++)
-        Vel[iDim] = solver_container[FLOW_SOL]->node[Point_Normal]->GetVelocity(iDim);
-      P_Normal = solver_container[FLOW_SOL]->node[Point_Normal]->GetPressure();
-      T_Normal = solver_container[FLOW_SOL]->node[Point_Normal]->GetTemperature();
+        Vel[iDim] = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetVelocity(iDim);
+      P_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetPressure();
+      T_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetTemperature();
       
       /*--- Compute the wall-parallel velocity at first point off the wall ---*/
       
@@ -2350,7 +2352,7 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
       
       /*--- Now compute the Eddy viscosity at the first point off of the wall ---*/
       
-      double Lam_Visc_Normal = solver_container[FLOW_SOL]->node[Point_Normal]->GetLaminarViscosity();
+      double Lam_Visc_Normal = solver_container[FLOW_SOL]->node[iPoint_Neighbor]->GetLaminarViscosity();
       double dypw_dyp = 2.0*Y_Plus_White*(kappa*sqrt(Gam)/Q)*sqrt(1.0 - pow(2.0*Gam*U_Plus - Beta,2.0)/(Q*Q));
       
       double Eddy_Visc = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
@@ -2378,18 +2380,23 @@ void CTurbSASolver::Compute_Wall_Functions(CGeometry *geometry, CSolver **solver
       
       //cout << "Turb: " << nu_til << "   " << counter << endl;
 
-//      /*--- Set the value of nu_tilde at the first point off the wall as
-//       a Dirichlet boundary condition. ---*/
-//      
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        Solution[iVar] = nu_til;
-//      
-//      node[Point_Normal]->SetSolution_Old(Solution);
-//      LinSysRes.SetBlock_Zero(Point_Normal);
-//      
-//      /*--- includes 1 in the diagonal ---*/
-//      
-//      Jacobian.DeleteValsRowi(Point_Normal);
+      /*--- Set the value of nu_tilde at the first point off the wall as
+       a Dirichlet boundary condition. ---*/
+      
+      // check if this is a wall point first
+      if (!geometry->node[iPoint_Neighbor]->GetBoundary()) {
+        
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution[iVar] = nu_til;
+      
+      node[iPoint_Neighbor]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint_Neighbor);
+      
+      /*--- includes 1 in the diagonal ---*/
+      
+      Jacobian.DeleteValsRowi(iPoint_Neighbor);
+      }
+    }
       
     }
   }
