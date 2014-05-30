@@ -148,13 +148,14 @@ inline void CFreeFormDefBox::SetControlPoints(unsigned short *val_index, double 
 }
 
 inline void CFreeFormDefBox::SetOriginalControlPoints() {
-	for (unsigned short iDegree = 0; iDegree <= lDegree; iDegree++)
-		for (unsigned short jDegree = 0; jDegree <= mDegree; jDegree++)
-			for (unsigned short kDegree = 0; kDegree <= nDegree; kDegree++)
+	for (unsigned short iDegree = 0; iDegree <= lDegree_Copy; iDegree++)
+		for (unsigned short jDegree = 0; jDegree <= mDegree_Copy; jDegree++)
+			for (unsigned short kDegree = 0; kDegree <= nDegree_Copy; kDegree++)
 				for (unsigned short iDim = 0; iDim < nDim; iDim++)
 					Coord_Control_Points[iDegree][jDegree][kDegree][iDim] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][iDim];
           
   lDegree = lDegree_Copy; mDegree = mDegree_Copy; nDegree = nDegree_Copy;
+  lOrder = lOrder_Copy; mOrder = mOrder_Copy; nOrder = nOrder_Copy;
   nControlPoints = nControlPoints_Copy;
 }
 
