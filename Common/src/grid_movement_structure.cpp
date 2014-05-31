@@ -6070,11 +6070,10 @@ void CFreeFormDefBox::SetSupportCP(CFreeFormDefBox *FFDBox) {
 
 void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox *FFDBox) {
 	unsigned short iDim, iOrder, jOrder, kOrder;
-	double movement[3], *CartCoordOld, *CartCoordNew, *ParamCoord;
+	double *CartCoordNew, *ParamCoord;
 	unsigned short lOrder = FFDBox->GetlOrder();
 	unsigned short mOrder = FFDBox->GetmOrder();
 	unsigned short nOrder = FFDBox->GetnOrder();
-	unsigned short *index = new unsigned short[nDim];
 
 	double ****ParamCoord_SupportCP = new double*** [lOrder];
 	for (iOrder = 0; iOrder < lOrder; iOrder++) {
