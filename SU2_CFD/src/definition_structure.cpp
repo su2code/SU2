@@ -134,16 +134,20 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   }
 #endif
   
+  /*--- Open grid file ---*/
+  
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
+
   switch (val_format) {
     case SU2:
       
-      /*--- Open grid file ---*/
-      strcpy (cstr, val_mesh_filename.c_str());
-      mesh_file.open(cstr, ios::in);
-      
       /*--- Read SU2 mesh file ---*/
+      
       while (getline (mesh_file,text_line)) {
+        
         /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+        
         position = text_line.find ("NDIME=",0);
         if (position != string::npos) {
           text_line.erase (0,6); nDim = atoi(text_line.c_str()); isFound = true;
@@ -152,13 +156,72 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       break;
       
     case CGNS:
-      nDim = 3;
+      
+#ifndef NO_CGNS
+      
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      
+      int fn, nbases, nzones, file_type;
+      int cell_dim, phys_dim;
+      char basename[CGNS_STRING_SIZE];
+      
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      
+      if ( cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK ) {
+        printf( "\n\n   !!! Error !!!\n" );
+        printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+        printf( " Now exiting...\n\n");
+        exit(0);
+      }
+      
+      /*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+      
+      if ( cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn) ) cg_error_exit();
+      
+      /*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+      
+      if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+      
+      /*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+      
+      if ( nbases > 1 ) {
+        printf("\n\n   !!! Error !!!\n" );
+        printf("CGNS reader currently incapable of handling more than 1 database.");
+        printf("Now exiting...\n\n");
+        exit(0);
+      }
+      
+      /*--- Read the databases. Note that the indexing starts at 1. ---*/
+      for ( int i = 1; i <= nbases; i++ ) {
+        
+        if ( cg_base_read(fn, i, basename, &cell_dim, &phys_dim) ) cg_error_exit();
+        
+        /*--- Get the number of zones for this base. ---*/
+        
+        if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
+      
+      }
+      
+      nDim = cell_dim;
+
+#endif
+      
       break;
       
     case NETCDF_ASCII:
       nDim = 3;
+      printf("NETCDF_ASCII runder development, by default nDim = 3.");
       break;
+      
   }
+  
+  mesh_file.close();
+
   return (unsigned short) nDim;
 }
 

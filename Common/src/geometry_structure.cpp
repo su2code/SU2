@@ -1189,7 +1189,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type, iMarker, iChar, iCount = 0;
-  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
+  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8],
+  vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
   char cstr[200];
   double Coord_2D[2], Coord_3D[3], dummyDouble;
   string::size_type position;
@@ -1220,10 +1221,12 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
   
   /*--- Open grid file ---*/
+  
   strcpy (cstr, val_mesh_filename.c_str());
   mesh_file.open(cstr, ios::in);
   
   /*--- Check the grid ---*/
+  
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
 #ifdef NO_MPI
@@ -1237,6 +1240,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   /*--- If divided grid, we need the global index to
    perform the right element division, this is just a hack in the future we
    should read first the coordinates ---*/
+  
   if (config->GetDivide_Element()) {
     
     unsigned long nDim_, nElem_, nPoint_;
@@ -1260,6 +1264,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         text_line.erase (0,6);
         
         /*--- Now read the number of points and ghost points. ---*/
+        
         stringstream  stream_line(text_line);
         stream_line >> nPoint_;
         
@@ -1279,6 +1284,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
     }
     
     /*--- Close and open again the grid file ---*/
+    
     mesh_file.close();
     strcpy (cstr, val_mesh_filename.c_str());
     mesh_file.open(cstr, ios::in);
@@ -1286,6 +1292,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   }
   
   /*--- If more than one, find the zone in the mesh file ---*/
+  
   if (val_nZone > 1 || time_spectral) {
     if (time_spectral) {
       if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
@@ -1306,9 +1313,11 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   }
   
   /*--- Read grid file with format SU2 ---*/
+  
   while (getline (mesh_file,text_line)) {
     
     /*--- Read the dimension of the problem ---*/
+    
     position = text_line.find ("NDIME=",0);
     if (position != string::npos) {
       if (domain_flag == false) {
@@ -1318,12 +1327,11 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           if (nDim == 3) cout << "Three dimensional problem." << endl;
         }
         domain_flag = true;
-      } else {
-        break;
-      }
+      } else { break; }
     }
     
     /*--- Read the information about inner elements ---*/
+    
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
@@ -1340,12 +1348,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #else
       Global_nElem = nElem;
 #endif
+      
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_DDC))
         cout << Global_nElem << " interior elements including halo cells. " << endl;
       else if (rank == MASTER_NODE)
         cout << Global_nElem << " interior elements. " << endl;
       
       /*--- Allocate space for elements ---*/
+      
       if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
       else {
         if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
@@ -1357,6 +1367,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       unsigned long smallest;
       
       /*--- Indirection matrix for dividing prisms into tets, using vtk format, and conversion table for local numbering of prisms in vtk format ---*/
+      
       CT_FromVTK_Prism[0] = 1;  CT_FromVTK_Prism[1] = 3;  CT_FromVTK_Prism[2] = 2;  CT_FromVTK_Prism[3] = 4;  CT_FromVTK_Prism[4] = 6;  CT_FromVTK_Prism[5] = 5;
       
       IndirectionPrism[0][0] = 0; IndirectionPrism[0][1] = 2; IndirectionPrism[0][2] = 1; IndirectionPrism[0][3] = 3; IndirectionPrism[0][4] = 5; IndirectionPrism[0][5] = 4;
@@ -1367,6 +1378,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       IndirectionPrism[5][0] = 4; IndirectionPrism[5][1] = 5; IndirectionPrism[5][2] = 3; IndirectionPrism[5][3] = 1; IndirectionPrism[5][4] = 2; IndirectionPrism[5][5] = 0;
       
       /*--- Indirection matrix for dividing hexahedron into tets ---*/
+      
       IndirectionHexa[1][1] = 1; IndirectionHexa[1][2] = 2; IndirectionHexa[1][3] = 3; IndirectionHexa[1][4] = 4; IndirectionHexa[1][5] = 5; IndirectionHexa[1][6] = 6; IndirectionHexa[1][7] = 7; IndirectionHexa[1][8] = 8;
       IndirectionHexa[2][1] = 2; IndirectionHexa[2][2] = 1; IndirectionHexa[2][3] = 5; IndirectionHexa[2][4] = 6; IndirectionHexa[2][5] = 3; IndirectionHexa[2][6] = 4; IndirectionHexa[2][7] = 8; IndirectionHexa[2][8] = 7;
       IndirectionHexa[3][1] = 3; IndirectionHexa[3][2] = 2; IndirectionHexa[3][3] = 6; IndirectionHexa[3][4] = 7; IndirectionHexa[3][5] = 4; IndirectionHexa[3][6] = 1; IndirectionHexa[3][7] = 5; IndirectionHexa[3][8] = 8;
@@ -1378,6 +1390,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       
       
       /*--- Loop over all the volumetric elements ---*/
+      
       while (ielem_div < nElem) {
         getline(mesh_file,text_line);
         istringstream elem_line(text_line);
@@ -1477,12 +1490,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
               if (index1 < index2) code3 = 1;
               
               /*--- Rotation of 120 degrees ---*/
+              
               if ((!code1 && !code2 && code3) || (code1 && code2 && !code3)) {
                 temp = two; two = five; five = four; four = temp;
                 temp = six; six = eight; eight = three; three = temp;
               }
               
               /*--- Rotation of 240 degrees ---*/
+              
               if ((!code1 && code2 && !code3) || (code1 && !code2 && code3)) {
                 temp = two; two = four; four = five; five = temp;
                 temp = six; six = three; three = eight; eight = temp;
@@ -1514,34 +1529,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
                 ielem++; nelem_tetra++;
                 
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                
               }
               if ((code1 + code2 + code3) == 2) {
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[six], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[seven], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[six], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                
                 elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
                 ielem++; nelem_tetra++;
                 elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[seven], vnodes_hexa[eight]);
@@ -1568,32 +1557,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 ielem++; nelem_tetra++;
                 elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[one]);
                 ielem++; nelem_tetra++;
-                
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[two], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[four]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[four]);
-                //                ielem++; nelem_tetra++;
-                
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[four], vnodes_hexa[eight]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
               }
               
             }
@@ -1697,6 +1660,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
       
       /*--- Communicate the number of each element type to all processors. ---*/
+      
 #ifndef NO_MPI
       if (config->GetKind_SU2() != SU2_DDC) {
         Local_nElemTri = nelem_triangle;
@@ -1736,23 +1700,19 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #endif
       
       /*--- Print information about the elements to the console ---*/
+      
       if (rank == MASTER_NODE) {
-        if (Global_nelem_triangle > 0)
-          cout << Global_nelem_triangle << " triangles." << endl;
-        if (Global_nelem_quad > 0)
-          cout << Global_nelem_quad << " quadrilaterals." << endl;
-        if (Global_nelem_tetra > 0)
-          cout << Global_nelem_tetra << " tetrahedra." << endl;
-        if (Global_nelem_hexa > 0)
-          cout << Global_nelem_hexa << " hexahedra." << endl;
-        if (Global_nelem_wedge > 0)
-          cout << Global_nelem_wedge << " prisms." << endl;
-        if (Global_nelem_pyramid > 0)
-          cout << Global_nelem_pyramid << " pyramids." << endl;
+        if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles." << endl;
+        if (Global_nelem_quad > 0)      cout << Global_nelem_quad << " quadrilaterals." << endl;
+        if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra << " tetrahedra." << endl;
+        if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa << " hexahedra." << endl;
+        if (Global_nelem_wedge > 0)     cout << Global_nelem_wedge << " prisms." << endl;
+        if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid << " pyramids." << endl;
       }
     }
     
     /*--- Read number of points ---*/
+    
     position = text_line.find ("NPOIN=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
@@ -1763,12 +1723,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         iCount++;
       
       /*--- Now read and store the number of points and possible ghost points. ---*/
+      
       stringstream  stream_line(text_line);
       if (iCount == 2) {
         stream_line >> nPoint;
         stream_line >> nPointDomain;
         
         /*--- Set some important point information for parallel simulations. ---*/
+        
 #ifndef NO_MPI
         if (config->GetKind_SU2() != SU2_DDC) {
           Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
@@ -1784,8 +1746,10 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         Global_nPoint = nPoint;
         Global_nPointDomain = nPointDomain;
 #endif
+        
         if (rank == MASTER_NODE)
           cout << Global_nPointDomain << " points, and " << Global_nPoint-Global_nPointDomain << " ghost points." << endl;
+        
       }
       else if (iCount == 1) {
         stream_line >> nPoint;
@@ -2119,7 +2083,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   
   /*--- Initialize counters for local/global points & elements ---*/
   FinestMGLevel = true;
-  Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -2917,36 +2881,16 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
               cg_npe( elmt_type, &npe);
               switch (elmt_type) {
-                case NODE:
-                  VTK_Type = 1;
-                  break;
-                case BAR_2:
-                  VTK_Type = 3;
-                  break;
-                case BAR_3:
-                  VTK_Type = 3;
-                  break;
-                case TRI_3:
-                  VTK_Type = 5;
-                  break;
-                case QUAD_4:
-                  VTK_Type = 9;
-                  break;
-                case TETRA_4:
-                  VTK_Type = 10;
-                  break;
-                case HEXA_8:
-                  VTK_Type = 12;
-                  break;
-                case PENTA_6:
-                  VTK_Type = 13;
-                  break;
-                case PYRA_5:
-                  VTK_Type = 14;
-                  break;
-                default: // error
-                  VTK_Type = -1;
-                  break;
+                case NODE: VTK_Type = 1; break;
+                case BAR_2: VTK_Type = 3; break;
+                case BAR_3: VTK_Type = 3; break;
+                case TRI_3: VTK_Type = 5; break;
+                case QUAD_4: VTK_Type = 9; break;
+                case TETRA_4: VTK_Type = 10; break;
+                case HEXA_8: VTK_Type = 12; break;
+                case PENTA_6: VTK_Type = 13; break;
+                case PYRA_5: VTK_Type = 14; break;
+                default: VTK_Type = -1; break;
               }
               /*--- Transfer the nodes for this element. ---*/
               for ( int j = 1; j < npe+1; j++ ) {
@@ -2997,6 +2941,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
+          config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
           config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
         }
