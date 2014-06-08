@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- MPI initialization ---*/
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     config[ZONE_0] = new CConfig(mesh_file, SU2_MDC, ZONE_0, nZone, 0, VERB_HIGH);
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Change the name of the input-output files for the parallel computation ---*/
   
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
   surface_movement->SetSurface_Deformation(geometry[ZONE_0], config[ZONE_0]);
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- MPI syncronization point ---*/
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
   cout << endl << "------------------------- Exit Success (SU2_MDC) ------------------------" << endl << endl;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();

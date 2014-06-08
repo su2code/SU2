@@ -413,7 +413,7 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, u
   int rank = MASTER_NODE;
   double **Coord_Variation;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long nLocalVertex, nGlobalVertex, MaxLocalVertex, *Buffer_Send_nVertex, *Buffer_Receive_nVertex, nBuffer;
   int nProcessor, iProcessor;
   double *Buffer_Send_Coord, *Buffer_Receive_Coord;
@@ -521,7 +521,7 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, u
   }
   
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Copy the coordinates of all the points in the plane to the master node ---*/
   
@@ -692,7 +692,7 @@ void CGeometry::ComputeAirfoil_Section(double *Plane_P0, double *Plane_Normal, u
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -708,7 +708,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   bool *Check_Edge;
   int rank;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -949,7 +949,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   double MyMeanK = MeanK; MeanK = 0.0;
   double MyMaxK = MaxK; MaxK = 0.0;
   unsigned long MynPointDomain = TotalnPointDomain; TotalnPointDomain = 0;
@@ -974,7 +974,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   double MySigmaK = SigmaK; SigmaK = 0.0;
   MPI_Allreduce(&MySigmaK, &SigmaK, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -1001,7 +1001,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   /*--- Variables and buffers needed for MPI ---*/
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #else
   nProcessor = 1;
@@ -1016,7 +1016,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   Buffer_Send_nVertex[0] = nLocalVertex;
   
   /*--- Communicate to all processors the total number of critical edge nodes. ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&nLocalVertex, &nGlobalVertex,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalVertex, &MaxLocalVertex, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -1049,7 +1049,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
       Buffer_Send_Coord[iVertex*nDim+iDim] = node[iPoint]->GetCoord(iDim);
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
 #else
   for (iVertex = 0; iVertex < Point_Critical.size(); iVertex++) {
@@ -1109,7 +1109,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   /*--- Initialize counters for local/global points & elements ---*/
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1128,7 +1128,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       break;
     default:
       cout << "Unrecognized mesh format specified!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
       exit(1);
 #else
       MPI_Abort(MPI_COMM_WORLD,1);
@@ -1201,7 +1201,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   nZone = val_nZone;
   
   /*--- Initialize counters for local/global points & elements ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long LocalIndex;
   unsigned long Local_nPoint, Local_nPointDomain;
   unsigned long Local_nElem;
@@ -1229,7 +1229,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
@@ -1336,7 +1336,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
     if (position != string::npos) {
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       if (config->GetKind_SU2() != SU2_DDC) {
         Local_nElem = nElem;
         MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1661,7 +1661,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       
       /*--- Communicate the number of each element type to all processors. ---*/
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       if (config->GetKind_SU2() != SU2_DDC) {
         Local_nElemTri = nelem_triangle;
         Local_nElemQuad = nelem_quad;
@@ -1731,7 +1731,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         
         /*--- Set some important point information for parallel simulations. ---*/
         
-#ifndef NO_MPI
+#ifdef HAVE_MPI
         if (config->GetKind_SU2() != SU2_DDC) {
           Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
           MPI_Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1760,7 +1760,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       }
       else {
         cout << "NPOIN improperly specified!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         exit(1);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
@@ -1776,7 +1776,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         switch(nDim) {
           case 2:
             GlobalIndex = iPoint;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
             point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
             if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
@@ -1786,7 +1786,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
             iPoint++; break;
           case 3:
             GlobalIndex = iPoint;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
             point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
 #else
             if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex; }
@@ -1848,7 +1848,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 
                 if (nDim == 3) {
                   cout << "Please remove line boundary conditions from the mesh file!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
                   exit(1);
 #else
                   MPI_Abort(MPI_COMM_WORLD,1);
@@ -1974,7 +1974,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           text_line.erase (0,15); iIndex = atoi(text_line.c_str());
           if (iIndex != iPeriodic) {
             cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
             exit(1);
 #else
             MPI_Abort(MPI_COMM_WORLD,1);
@@ -2034,7 +2034,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
    Francisco Palacios. Improvements for mixed-element meshes generated
    by ICEM added by Martin Spel (3D) & Shlomy Shitrit (2D), April 2014. ---*/
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
   /*--- Local variables and initialization ---*/
   string text_line, Marker_Tag;
@@ -2912,7 +2912,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                 
                 if (nDim == 3) {
                   cout << "Please remove line boundary conditions from the mesh file!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
                   exit(1);
 #else
                   MPI_Abort(MPI_COMM_WORLD,1);
@@ -3039,7 +3039,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
   
   /*--- Throw error if not in serial mode. ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   cout << "Parallel support with NETCDF format not yet implemented!!" << endl;
   MPI_Abort(MPI_COMM_WORLD,1);
   MPI_Finalize();
@@ -3713,13 +3713,13 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   unsigned long iPoint, iVertex, nVertex_SolidWall;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   if (rank == MASTER_NODE)
     cout << "Computing wall distances." << endl;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
   
@@ -3897,7 +3897,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   double *Normal, PositiveZArea;
   int rank = MASTER_NODE;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   PositiveZArea = 0.0;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -4261,7 +4261,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
   unsigned short nMarker_NearfieldBound = config->GetnMarker_NearFieldBound();
   
   if (nMarker_NearfieldBound != 0) {
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     
     unsigned short iMarker, jMarker;
     unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
@@ -4458,7 +4458,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       if (iBC == 0) { Beneficiary = ACTDISK_INLET; Donor = ACTDISK_OUTLET; }
       if (iBC == 1) { Beneficiary = ACTDISK_OUTLET; Donor = ACTDISK_INLET; }
       
-#ifdef NO_MPI
+#ifndef HAVE_MPI
       rank = MASTER_NODE;
       nProcessor = SINGLE_NODE;
 #else
@@ -4490,7 +4490,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       
       /*--- Send actuator disk vertex information --*/
       
-#ifdef NO_MPI
+#ifndef HAVE_MPI
       nGlobalVertex_ActDisk = nLocalVertex_ActDisk;
       MaxLocalVertex_ActDisk = nLocalVertex_ActDisk;
       Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
@@ -4534,7 +4534,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
         }
       }
       
-#ifdef NO_MPI
+#ifndef HAVE_MPI
       for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
         Buffer_Receive_Coord[iBuffer_Coord] = Buffer_Send_Coord[iBuffer_Coord];
       for (unsigned long iBuffer_Point = 0; iBuffer_Point < nBuffer_Point; iBuffer_Point++)
@@ -4602,7 +4602,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
         }
       }
       
-#ifdef NO_MPI
+#ifndef HAVE_MPI
       maxdist_global = maxdist_local;
 #else
       MPI_Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
@@ -4619,7 +4619,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
       delete[] Buffer_Send_nVertex;
       delete[] Buffer_Receive_nVertex;
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
 #endif
       
@@ -4634,7 +4634,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
   unsigned short nMarker_InterfaceBound = config->GetnMarker_InterfaceBound();
   
   if (nMarker_InterfaceBound != 0) {
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     
     unsigned short iMarker, jMarker;
     unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
@@ -4813,7 +4813,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
 void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor,
                                   unsigned short val_iZone, unsigned short val_nZone) {
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   unsigned short iMarker, jMarker;
   unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
@@ -4968,7 +4968,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   bool change_face_orientation;
   int rank;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -5060,7 +5060,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
   
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&my_DomainVolume, &DomainVolume, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   DomainVolume = my_DomainVolume;
@@ -5101,7 +5101,7 @@ void CPhysicalGeometry::VisualizeControlVolume(CConfig *config, unsigned short a
   double r[3][3]; unsigned short node_counter;
   
   /*--- This routine is only meant for visualization in serial currently ---*/
-  //#ifdef NO_MPI
+  //#ifndef HAVE_MPI
   rank = MASTER_NODE;
   
   /*--- Access the point number for control volume we want to vizualize ---*/
@@ -5591,7 +5591,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++)
       output_file << scientific << "\t" << node[iPoint]->GetCoord(iDim) ;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     output_file << "\t" << iPoint << endl;
 #else
     output_file << "\t" << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
@@ -5761,7 +5761,7 @@ void CPhysicalGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filenam
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++)
           output_file << scientific << node[iPoint]->GetCoord(iDim) << "\t";
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         output_file << iPoint << endl;
 #else
         output_file << iPoint << "\t" << node[iPoint]->GetGlobalIndex() << endl;
@@ -6308,9 +6308,9 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[200], bool new_file, CCon
 
 void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
-#ifndef NO_METIS
+#ifdef HAVE_METIS
   
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron, kPoint, jPoint, iVertex;
@@ -6540,7 +6540,7 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config) {
   double RotVel[3], Distance[3], *Coord, Center[3], Omega[3], L_Ref;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -6640,7 +6640,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
   
   newCoord = new double[nDim];
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -6671,7 +6671,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
           Buffer_Send_Coord[iDim*nVertexS+iVertex] = Coord[iDim];
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
                    Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,&status);
@@ -6760,7 +6760,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
   
   delete [] newCoord;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -6775,7 +6775,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
   
   newGridVel = new double[nDim];
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -6806,7 +6806,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
           Buffer_Send_GridVel[iDim*nVertexS+iVertex] = GridVel[iDim];
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
                    Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,&status);
@@ -6892,7 +6892,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
   
   delete [] newGridVel;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -7404,7 +7404,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   vector<unsigned long> Suitable_Indirect_Neighbors, Aux_Parent;
   vector<unsigned long>::iterator it;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   rank = MASTER_NODE;
 #else
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -7797,7 +7797,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
         Buffer_Send_Parent[iVertex] = fine_grid->node[iPoint]->GetParent_CV();
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
                    Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,&status);
@@ -7901,7 +7901,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   Local_nPointCoarse = nPoint;
   Local_nPointFine = fine_grid->GetnPoint();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&Local_nPointCoarse, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&Local_nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
@@ -8259,7 +8259,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
 
 void CMultiGridGeometry::MatchNearField(CConfig *config) {
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
@@ -8298,7 +8298,7 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
   unsigned long iVertex, iPoint;
   int iProcessor;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   iProcessor = MASTER_NODE;
 #else
   MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
@@ -8320,7 +8320,7 @@ void CMultiGridGeometry::MatchActuator_Disk(CConfig *config) {
 
 void CMultiGridGeometry::MatchInterface(CConfig *config) {
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
@@ -8785,7 +8785,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
   double Coord_2D[2], Coord_3D[3];
   string::size_type position;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long LocalIndex;
   unsigned long Local_nPoint, Local_nPointDomain, Global_nPoint = 0;
   unsigned long Local_nElem, Global_nElem = 0;
@@ -8806,7 +8806,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
   mesh_file.open(cstr, ios::in);
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CBoundaryGeometry)!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
@@ -8855,7 +8855,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
       if (size == 1)
         cout << nElem << " interior elements. ";
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       Local_nElem = nElem;
       MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -8884,7 +8884,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           cout << nPoint << " points, and " << nPoint-nPointDomain << " ghost points." << endl;
         
         /*--- Set some important point information for parallel simulations. ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
         Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
         MPI_Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
         MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -8900,7 +8900,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
       }
       else {
         cout << "NPOIN improperly specified!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         exit(1);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
@@ -8915,7 +8915,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
         switch(nDim) {
           case 2:
             GlobalIndex = iPoint;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
             point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
             point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex;
@@ -8924,7 +8924,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
             iPoint++; break;
           case 3:
             GlobalIndex = iPoint;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
             point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
 #else
             point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex;
@@ -9059,7 +9059,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           text_line.erase (0,15); iIndex = atoi(text_line.c_str());
           if (iIndex != iPeriodic) {
             cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
             exit(1);
 #else
             MPI_Abort(MPI_COMM_WORLD,1);
@@ -9106,7 +9106,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
   /*--- Close the input file ---*/
   mesh_file.close();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   if ((size > SINGLE_NODE) && (rank == MASTER_NODE))
     cout << Global_nElem << " interior elements (incl. halo cells). " << Global_nPoint << " points (incl. ghost points) " << endl;
 #endif
@@ -9353,13 +9353,13 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   nPointLocal = nPoint;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nPointGlobal = nPointLocal;
@@ -9376,7 +9376,7 @@ void CBoundaryGeometry::SetBoundSensitivity(CConfig *config) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         
         /*--- The sensitivity file uses the global numbering ---*/
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         iPoint = vertex[iMarker][iVertex]->GetNode();
 #else
         iPoint = node[vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
@@ -9861,7 +9861,7 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
   
   /*--- MPI initialization ---*/
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -10078,7 +10078,7 @@ void CBoundaryGeometry::SetBoundTecPlot(char mesh_filename[200], bool new_file, 
 
 CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   unsigned long nElemTotal, nPointTotal, nPointDomainTotal, nPointGhost, nPointPeriodic, nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal, iBoundRectangleTotal, ReceptorColor, DonorColor, Transformation, nTotalSendDomain_Periodic, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic, *nReceivedDomain_Periodic;
   unsigned short iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle, iNode, iDim, iMarker, jMarker, nMarkerDomain, iMarkerDomain, nDomain, iDomain, jDomain, jNode, nPeriodic, iPeriodic, overhead = 4;
@@ -11077,7 +11077,7 @@ CDomainGeometry::~CDomainGeometry(void) {
 
 void CDomainGeometry::SetSendReceive(CConfig *config) {
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
   unsigned long iVertex, LocalNode;
@@ -11229,7 +11229,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   ofstream output_file;
   string Grid_Marker;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned short iDomain, nDomain, iMarkersDomain, iLoop;
   unsigned long TotalElem;
   int size;
@@ -11263,7 +11263,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   
   unsigned short Duplicate_SendReceive = 0;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Identify if there are markers with the same domain
    (typically periodic in parallel) ---*/
@@ -11327,7 +11327,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Identify if there are markers with the same domain
    (typically periodic in parallel) ---*/

@@ -37,7 +37,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -227,7 +227,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -394,7 +394,7 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();  
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -442,7 +442,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
   ExtIter = config_container[ZONE_0]->GetExtIter();
   rank    = MASTER_NODE;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -790,7 +790,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -829,7 +829,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
     cout << "ERROR: The gust length needs to be positive" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
@@ -1009,7 +1009,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	}
   
 	int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1298,7 +1298,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
                      CConfig **config_container, unsigned short nZone, unsigned short iZone) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   

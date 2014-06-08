@@ -25,7 +25,7 @@
 CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1122,14 +1122,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   unsigned short iZone;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   int size = SINGLE_NODE;
 #else
   int size;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
-#ifdef NO_TECIO
+#ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
     cout << "Tecplot binary file requested but SU^2 was built without TecIO support." << "\n";
     Output_FileFormat = TECPLOT;
@@ -2639,7 +2639,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) {
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   nDomain = SINGLE_NODE;
 #else
   /*--- Identify the solvers that work in serial ---*/
@@ -4869,7 +4869,7 @@ CConfig::~CConfig(void)
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   int size;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -5054,7 +5054,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
       }
     }
     
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     if (change) {
       cout <<"\n New value of the CFL number: ";
       for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
@@ -5625,7 +5625,7 @@ void CConfig::SetNondimensionalization(unsigned short val_nDim, unsigned short v
   unsigned short iDim;
   int rank = MASTER_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   

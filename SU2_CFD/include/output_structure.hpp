@@ -33,11 +33,11 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
 #include "cgnslib.h"
 #endif
 
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
 #include "TECIO.h"
 #endif
 

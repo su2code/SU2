@@ -2522,7 +2522,7 @@ public:
   void SetValue(const vector<string> & value) {
     
     int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
     
@@ -2535,7 +2535,7 @@ public:
           cerr << "ERROR: Cannot find value " << value[0] << " in given map." << endl;
           cerr << "Please check the name of the variable in the config file." << endl;
         }
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         exit(1);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
@@ -2554,7 +2554,7 @@ public:
             cerr << "ERROR: Cannot find value " << value[i] << " in given map." << endl;
             cerr << "Please check the name of the variable in the config file." << endl;
           }
-#ifdef NO_MPI
+#ifndef HAVE_MPI
           exit(1);
 #else
           MPI_Abort(MPI_COMM_WORLD,1);

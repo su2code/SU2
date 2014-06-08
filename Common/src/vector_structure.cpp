@@ -45,7 +45,7 @@ CSysVector::CSysVector(const unsigned long & size, const double & val) {
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -72,7 +72,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   for (unsigned int i = 0; i < nElm; i++)
     vec_val[i] = val;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -92,7 +92,7 @@ CSysVector::CSysVector(const CSysVector & u) {
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
@@ -116,7 +116,7 @@ CSysVector::CSysVector(const unsigned long & size, const double* u_array) {
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -143,7 +143,7 @@ CSysVector::CSysVector(const unsigned long & numBlk, const unsigned long & numBl
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u_array[i];
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -159,7 +159,7 @@ CSysVector::~CSysVector() {
   nBlk = -1;
   nBlkDomain = -1;
   nVar = -1;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   myrank = -1;
 #endif
 }
@@ -181,7 +181,7 @@ void CSysVector::Initialize(const unsigned long & numBlk, const unsigned long & 
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = val;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int myrank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   unsigned long nElmLocal = (unsigned long)nElm;
@@ -237,7 +237,7 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   myrank = u.myrank;
   nElmGlobal = u.nElmGlobal;
 #endif
@@ -410,7 +410,7 @@ double dotProd(const CSysVector & u, const CSysVector & v) {
     loc_prod += u.vec_val[i]*v.vec_val[i];
   double prod = 0.0;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   prod = loc_prod;

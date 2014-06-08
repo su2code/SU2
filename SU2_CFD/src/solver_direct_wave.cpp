@@ -29,7 +29,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	unsigned short nMarker, iVar, nLineLets;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -734,7 +734,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 	int rank;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;

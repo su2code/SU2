@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   
   /*--- MPI initialization ---*/
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 	
   /*--- Change the name of the input-output files for the parallel computation ---*/
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	config->SetFileNameDomain(rank+1);
 #endif
 	
@@ -531,7 +531,7 @@ int main(int argc, char *argv[]) {
 	
   /*--- Finalize MPI parallelization ---*/
 	
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Finalize();
 #endif
 	

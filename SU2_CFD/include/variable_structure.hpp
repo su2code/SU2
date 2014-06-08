@@ -498,18 +498,6 @@ public:
 	 */
 	virtual void SetPreconditioner_Beta(double val_Beta);
 
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \return Value of the magnetic field
-	 */
-	virtual double* GetMagneticField();
-
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-	virtual void SetMagneticField(double* val_B);
-
        /*!
 	 * \brief Get the value of the wind gust
 	 * \param[out] Value of the wind gust
@@ -2144,12 +2132,6 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	void SetPreconditioner_Beta(double val_Beta);
-
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \param[out] Value of the magnetic field
-	 */
-	double* GetMagneticField();
 
 	/*!
 	 * \brief Set the value of the magnetic field

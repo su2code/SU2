@@ -23,7 +23,7 @@
 
 #pragma once
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 #include <ctime>
