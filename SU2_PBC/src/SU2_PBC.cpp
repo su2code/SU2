@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	string MeshFile;
 	unsigned short nZone = 1;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Init(&argc,&argv);
 #endif
   
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	/*--- Output of the grid for debuging purposes ---*/
   strcpy (buffer_plt, "periodic_halo.plt"); periodic->SetTecPlot(buffer_plt);
 	
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Finalize();
 #endif
     

@@ -23,7 +23,7 @@
 
 #pragma once
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 
@@ -36,13 +36,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef NO_METIS
+#ifdef HAVE_METIS
 extern "C" {
 #include "metis.h"
 }
 #endif
 
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
 #include "cgnslib.h"
 #endif
 

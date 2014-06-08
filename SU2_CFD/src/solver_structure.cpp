@@ -156,7 +156,7 @@ CSolver::~CSolver(void) {
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
 	for (iVar = 0; iVar < nVar; iVar++)
     SetRes_RMS(iVar, max(EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
@@ -1496,7 +1496,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
    This routine is limited to 2 dimensional problems ---*/
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1638,7 +1638,7 @@ CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1762,7 +1762,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   Solution = new double[nVar];
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -1790,7 +1790,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -1876,7 +1876,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
   
 	int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   

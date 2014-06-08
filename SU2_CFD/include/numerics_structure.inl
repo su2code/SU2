@@ -416,8 +416,6 @@ inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossPr
 
 inline double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 
-inline double* CSource_Magnet::GetMagneticField() { return Current_Density; }
-
 inline double CNumerics::GetElec_CondIntegral() {return 0;}
 
 inline double CSource_JouleHeating::GetElec_CondIntegral() {return Elec_Conduct*Coord_i[1]*(Coord_i[1]-Coord_j[1]);}

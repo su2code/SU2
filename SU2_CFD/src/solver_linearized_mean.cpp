@@ -31,7 +31,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	ifstream restart_file;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   

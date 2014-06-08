@@ -116,10 +116,6 @@ inline double CVariable::GetPreconditioner_Beta() { return 0; }
 
 inline void CVariable::SetPreconditioner_Beta( double val_Beta) { }
 
-inline double* CVariable::GetMagneticField() { return 0; }
-
-inline void CVariable::SetMagneticField( double* val_B) {}
-
 inline double* CVariable::GetWindGust() { return 0; }
 
 inline void CVariable::SetWindGust( double* val_WindGust) {}

@@ -23,10 +23,10 @@
 
 #pragma once
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
-#ifndef NO_MUTATIONPP
+#ifdef HAVE_MUTATIONPP
 #include "mutation++.h"
 #endif
 #include <iostream>

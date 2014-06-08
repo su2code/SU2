@@ -52,7 +52,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 	bool axisymmetric = config->GetAxisymmetric();
 
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -318,7 +318,7 @@ void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -346,7 +346,7 @@ void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -434,7 +434,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
   *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -462,7 +462,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -549,7 +549,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
   *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -577,7 +577,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
           Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -664,7 +664,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -697,7 +697,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
             Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -786,7 +786,7 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
   *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -814,7 +814,7 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
           Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -900,7 +900,7 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -927,7 +927,7 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
         Buffer_Send_Lambda[iVertex] = node[iPoint]->GetSensor();
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -979,7 +979,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   bool grid_movement      = config->GetGrid_Movement();
 
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1537,7 +1537,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool RightSol;
   int rank;
 
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	rank = MASTER_NODE;
 #else
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1598,7 +1598,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -2619,7 +2619,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   double MyTotal_Sens_Geo   = Total_Sens_Geo;     Total_Sens_Geo = 0.0;
   double MyTotal_Sens_Mach  = Total_Sens_Mach;    Total_Sens_Mach = 0.0;
@@ -3231,7 +3231,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   double *Psi_i = new double[nVar];
   double *Psi_j = new double[nVar];
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -3424,7 +3424,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   double *Psi_in_ghost = new double[nVar];
   
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   
 	for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -4749,7 +4749,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -4978,7 +4978,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool RightSol;
   int rank;
 
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	rank = MASTER_NODE;
 #else
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -5054,7 +5054,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -5819,7 +5819,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   double MyTotal_Sens_Geo   = Total_Sens_Geo;     Total_Sens_Geo = 0.0;
   double MyTotal_Sens_Mach  = Total_Sens_Mach;    Total_Sens_Mach = 0.0;

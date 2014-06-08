@@ -4770,12 +4770,6 @@ public:
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
     
 	/*!
-	 * \brief Get the value of the magnetic field
-	 * \param[out] MagneticField - Value of the Magnetic Field.
-	 */
-	double* GetMagneticField();
-    
-	/*!
 	 * \brief Destructor of the class.
 	 */
 	~CSource_Magnet(void);
