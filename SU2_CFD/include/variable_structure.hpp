@@ -1819,7 +1819,6 @@ protected:
 	double Velocity2;			/*!< \brief Square of the velocity vector. */
 	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
-	double *B_Field;		/*! < \brief Magnetic field value */
   double *WindGust;           /*! < \brief Wind gust value */
   double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 

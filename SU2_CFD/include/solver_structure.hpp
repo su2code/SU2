@@ -324,12 +324,12 @@ public:
 	 */
 	void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config);
     
-    /*!
+  /*!
 	 * \brief MPI gradients.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-    virtual void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
+  virtual void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Compute the Least Squares gradient of the grid velocity.
@@ -2949,7 +2949,6 @@ private:
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  
 	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
@@ -3181,7 +3180,7 @@ public:
 	 */
 	CTurbSolver(CConfig *config);
     
-    /*!
+  /*!
 	 * \brief Impose the send-receive boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
