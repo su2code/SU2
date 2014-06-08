@@ -2233,7 +2233,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   double An1, Bn1, Bn2, Bn3, Bn4, Bd1, A, B;
   double Cs;
   double thoTve, exptv;
-//  double thoT, expt;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
   
   /*--- Initialize residual and Jacobian arrays ---*/
@@ -2302,8 +2301,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     if (thetav[iSpecies] != 0.0) {
       /*--- Rename ---*/
       rhos   = V_i[RHOS_INDEX+iSpecies];
-//      thoT   = thetav[iSpecies]/T;
-//      expt   = exp(thetav[iSpecies]/T);
       thoTve = thetav[iSpecies]/Tve;
       exptv  = exp(thetav[iSpecies]/Tve);
       
@@ -2404,16 +2401,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       
       dCves[iSpecies] = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
                                          Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
-      
-//      cout << "Cvvs[" << iSpecies << "]: " << Cvvs[iSpecies] << endl;
-//      cout << "Cves[" << iSpecies << "]: " << Cves[iSpecies] << endl;
-//      cout << "dCvvs[" << iSpecies << "]: " << dCvvs[iSpecies] << endl;
-//      cout << "dCves[" << iSpecies << "]: " << dCves[iSpecies] << endl;
     }
-    
-//    cin.get();
-    
-    
     
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
       
@@ -2421,11 +2409,9 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
                                                          Cves[iSpecies])*Volume;
       for (iVar = 0; iVar < nVar; iVar++)
         val_Jacobian_i[nEv][iVar] += (T-Tve)/taurelax*(V_i[RHOS_INDEX+iSpecies]*
-                                                       (dCvvs[iSpecies]-dCves[iSpecies])*
-                                                       dTdU_i[iVar])*Volume;
+                                                       (dCvvs[iSpecies]+dCves[iSpecies])*
+                                                       dTvedU_i[iVar])*Volume;
       
-//      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
-//      val_Jacobian_i[nEv][iSpecies] = Cvves[iSpecies]/taurelax * (T-Tve)*Volume;
     }
     for (iVar = 0; iVar < nVar; iVar++)
       val_Jacobian_i[nEv][iVar] += rhoCvve/taurelax*(dTdU_i[iVar]-dTvedU_i[iVar])*Volume;
