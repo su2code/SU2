@@ -564,10 +564,6 @@ inline double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CEulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
 
-inline void CEulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
-
-inline double* CEulerVariable::GetMagneticField() { return B_Field;}
-
 inline void CEulerVariable::SetWindGust( double* val_WindGust) { 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)	
             WindGust[iDim] = val_WindGust[iDim];}
