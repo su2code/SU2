@@ -3364,7 +3364,7 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 		
 		/*--- The angle of rotation. ---*/
     
-		double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
+		double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
 		/*--- An intermediate value used in computations. ---*/
     
@@ -3431,7 +3431,7 @@ void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
 		
 		/*--- The angle of rotation. ---*/
     
-		double theta = config->GetDV_Value(0)*PI_NUMBER/180.0;
+		double theta = -config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
 		/*--- An intermediate value used in computations. ---*/
     
@@ -3828,7 +3828,7 @@ void CSurfaceMovement::SetDisplacement(CGeometry *boundary, CConfig *config, uns
 	unsigned long iVertex;
 	unsigned short iMarker;
 	double VarCoord[3];
-	double Ampl = config->GetDV_Value(0);
+	double Ampl = config->GetDV_Value(iDV);
 	
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
