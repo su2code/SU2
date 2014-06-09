@@ -1189,7 +1189,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type, iMarker, iChar, iCount = 0;
-  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
+  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0, *Local2Global = NULL, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8],
+  vnodes_wedge[6], vnodes_pyramid[5], dummyLong, GlobalIndex, iElem;
   char cstr[200];
   double Coord_2D[2], Coord_3D[3], dummyDouble;
   string::size_type position;
@@ -1220,10 +1221,12 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
   
   /*--- Open grid file ---*/
+  
   strcpy (cstr, val_mesh_filename.c_str());
   mesh_file.open(cstr, ios::in);
   
   /*--- Check the grid ---*/
+  
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
 #ifdef NO_MPI
@@ -1237,6 +1240,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   /*--- If divided grid, we need the global index to
    perform the right element division, this is just a hack in the future we
    should read first the coordinates ---*/
+  
   if (config->GetDivide_Element()) {
     
     unsigned long nDim_, nElem_, nPoint_;
@@ -1260,6 +1264,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         text_line.erase (0,6);
         
         /*--- Now read the number of points and ghost points. ---*/
+        
         stringstream  stream_line(text_line);
         stream_line >> nPoint_;
         
@@ -1279,6 +1284,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
     }
     
     /*--- Close and open again the grid file ---*/
+    
     mesh_file.close();
     strcpy (cstr, val_mesh_filename.c_str());
     mesh_file.open(cstr, ios::in);
@@ -1286,6 +1292,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   }
   
   /*--- If more than one, find the zone in the mesh file ---*/
+  
   if (val_nZone > 1 || time_spectral) {
     if (time_spectral) {
       if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
@@ -1306,9 +1313,11 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   }
   
   /*--- Read grid file with format SU2 ---*/
+  
   while (getline (mesh_file,text_line)) {
     
     /*--- Read the dimension of the problem ---*/
+    
     position = text_line.find ("NDIME=",0);
     if (position != string::npos) {
       if (domain_flag == false) {
@@ -1318,12 +1327,11 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           if (nDim == 3) cout << "Three dimensional problem." << endl;
         }
         domain_flag = true;
-      } else {
-        break;
-      }
+      } else { break; }
     }
     
     /*--- Read the information about inner elements ---*/
+    
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
@@ -1340,12 +1348,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #else
       Global_nElem = nElem;
 #endif
+      
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_DDC))
         cout << Global_nElem << " interior elements including halo cells. " << endl;
       else if (rank == MASTER_NODE)
         cout << Global_nElem << " interior elements. " << endl;
       
       /*--- Allocate space for elements ---*/
+      
       if (!config->GetDivide_Element()) elem = new CPrimalGrid*[nElem];
       else {
         if (nDim == 2) elem = new CPrimalGrid*[2*nElem];
@@ -1357,6 +1367,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       unsigned long smallest;
       
       /*--- Indirection matrix for dividing prisms into tets, using vtk format, and conversion table for local numbering of prisms in vtk format ---*/
+      
       CT_FromVTK_Prism[0] = 1;  CT_FromVTK_Prism[1] = 3;  CT_FromVTK_Prism[2] = 2;  CT_FromVTK_Prism[3] = 4;  CT_FromVTK_Prism[4] = 6;  CT_FromVTK_Prism[5] = 5;
       
       IndirectionPrism[0][0] = 0; IndirectionPrism[0][1] = 2; IndirectionPrism[0][2] = 1; IndirectionPrism[0][3] = 3; IndirectionPrism[0][4] = 5; IndirectionPrism[0][5] = 4;
@@ -1367,6 +1378,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       IndirectionPrism[5][0] = 4; IndirectionPrism[5][1] = 5; IndirectionPrism[5][2] = 3; IndirectionPrism[5][3] = 1; IndirectionPrism[5][4] = 2; IndirectionPrism[5][5] = 0;
       
       /*--- Indirection matrix for dividing hexahedron into tets ---*/
+      
       IndirectionHexa[1][1] = 1; IndirectionHexa[1][2] = 2; IndirectionHexa[1][3] = 3; IndirectionHexa[1][4] = 4; IndirectionHexa[1][5] = 5; IndirectionHexa[1][6] = 6; IndirectionHexa[1][7] = 7; IndirectionHexa[1][8] = 8;
       IndirectionHexa[2][1] = 2; IndirectionHexa[2][2] = 1; IndirectionHexa[2][3] = 5; IndirectionHexa[2][4] = 6; IndirectionHexa[2][5] = 3; IndirectionHexa[2][6] = 4; IndirectionHexa[2][7] = 8; IndirectionHexa[2][8] = 7;
       IndirectionHexa[3][1] = 3; IndirectionHexa[3][2] = 2; IndirectionHexa[3][3] = 6; IndirectionHexa[3][4] = 7; IndirectionHexa[3][5] = 4; IndirectionHexa[3][6] = 1; IndirectionHexa[3][7] = 5; IndirectionHexa[3][8] = 8;
@@ -1378,6 +1390,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       
       
       /*--- Loop over all the volumetric elements ---*/
+      
       while (ielem_div < nElem) {
         getline(mesh_file,text_line);
         istringstream elem_line(text_line);
@@ -1477,12 +1490,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
               if (index1 < index2) code3 = 1;
               
               /*--- Rotation of 120 degrees ---*/
+              
               if ((!code1 && !code2 && code3) || (code1 && code2 && !code3)) {
                 temp = two; two = five; five = four; four = temp;
                 temp = six; six = eight; eight = three; three = temp;
               }
               
               /*--- Rotation of 240 degrees ---*/
+              
               if ((!code1 && code2 && !code3) || (code1 && !code2 && code3)) {
                 temp = two; two = four; four = five; five = temp;
                 temp = six; six = three; three = eight; eight = temp;
@@ -1514,34 +1529,8 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
                 ielem++; nelem_tetra++;
                 
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[eight], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[three], vnodes_hexa[four]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                
               }
               if ((code1 + code2 + code3) == 2) {
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[six], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[eight], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[five], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[four], vnodes_hexa[seven], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[six], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                
                 elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
                 ielem++; nelem_tetra++;
                 elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[five], vnodes_hexa[seven], vnodes_hexa[eight]);
@@ -1568,32 +1557,6 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 ielem++; nelem_tetra++;
                 elem[ielem] = new CTetrahedron(vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[one]);
                 ielem++; nelem_tetra++;
-                
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[two], vnodes_hexa[three]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[eight], vnodes_hexa[seven], vnodes_hexa[four]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[three], vnodes_hexa[four]);
-                //                ielem++; nelem_tetra++;
-                
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[seven], vnodes_hexa[six]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[two], vnodes_hexa[three], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[three], vnodes_hexa[four], vnodes_hexa[seven]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[six], vnodes_hexa[seven], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[four], vnodes_hexa[eight]);
-                //                ielem++; nelem_tetra++;
-                //                elem[ielem] = new CTetrahedron(vnodes_hexa[one], vnodes_hexa[seven], vnodes_hexa[eight], vnodes_hexa[five]);
-                //                ielem++; nelem_tetra++;
               }
               
             }
@@ -1697,6 +1660,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       if (config->GetDivide_Element()) nElem = nelem_triangle + nelem_quad + nelem_tetra + nelem_hexa + nelem_wedge + nelem_pyramid;
       
       /*--- Communicate the number of each element type to all processors. ---*/
+      
 #ifndef NO_MPI
       if (config->GetKind_SU2() != SU2_DDC) {
         Local_nElemTri = nelem_triangle;
@@ -1736,23 +1700,19 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
 #endif
       
       /*--- Print information about the elements to the console ---*/
+      
       if (rank == MASTER_NODE) {
-        if (Global_nelem_triangle > 0)
-          cout << Global_nelem_triangle << " triangles." << endl;
-        if (Global_nelem_quad > 0)
-          cout << Global_nelem_quad << " quadrilaterals." << endl;
-        if (Global_nelem_tetra > 0)
-          cout << Global_nelem_tetra << " tetrahedra." << endl;
-        if (Global_nelem_hexa > 0)
-          cout << Global_nelem_hexa << " hexahedra." << endl;
-        if (Global_nelem_wedge > 0)
-          cout << Global_nelem_wedge << " prisms." << endl;
-        if (Global_nelem_pyramid > 0)
-          cout << Global_nelem_pyramid << " pyramids." << endl;
+        if (Global_nelem_triangle > 0)  cout << Global_nelem_triangle << " triangles." << endl;
+        if (Global_nelem_quad > 0)      cout << Global_nelem_quad << " quadrilaterals." << endl;
+        if (Global_nelem_tetra > 0)     cout << Global_nelem_tetra << " tetrahedra." << endl;
+        if (Global_nelem_hexa > 0)      cout << Global_nelem_hexa << " hexahedra." << endl;
+        if (Global_nelem_wedge > 0)     cout << Global_nelem_wedge << " prisms." << endl;
+        if (Global_nelem_pyramid > 0)   cout << Global_nelem_pyramid << " pyramids." << endl;
       }
     }
     
     /*--- Read number of points ---*/
+    
     position = text_line.find ("NPOIN=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
@@ -1763,12 +1723,14 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         iCount++;
       
       /*--- Now read and store the number of points and possible ghost points. ---*/
+      
       stringstream  stream_line(text_line);
       if (iCount == 2) {
         stream_line >> nPoint;
         stream_line >> nPointDomain;
         
         /*--- Set some important point information for parallel simulations. ---*/
+        
 #ifndef NO_MPI
         if (config->GetKind_SU2() != SU2_DDC) {
           Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
@@ -1784,8 +1746,10 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         Global_nPoint = nPoint;
         Global_nPointDomain = nPointDomain;
 #endif
+        
         if (rank == MASTER_NODE)
           cout << Global_nPointDomain << " points, and " << Global_nPoint-Global_nPointDomain << " ghost points." << endl;
+        
       }
       else if (iCount == 1) {
         stream_line >> nPoint;
@@ -2119,7 +2083,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   
   /*--- Initialize counters for local/global points & elements ---*/
   FinestMGLevel = true;
-  Global_nPoint = 0; Global_nPointDomain = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -2917,36 +2881,16 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               ElementType_t elmt_type = ElementType_t (connElems[k][s][0][i]);
               cg_npe( elmt_type, &npe);
               switch (elmt_type) {
-                case NODE:
-                  VTK_Type = 1;
-                  break;
-                case BAR_2:
-                  VTK_Type = 3;
-                  break;
-                case BAR_3:
-                  VTK_Type = 3;
-                  break;
-                case TRI_3:
-                  VTK_Type = 5;
-                  break;
-                case QUAD_4:
-                  VTK_Type = 9;
-                  break;
-                case TETRA_4:
-                  VTK_Type = 10;
-                  break;
-                case HEXA_8:
-                  VTK_Type = 12;
-                  break;
-                case PENTA_6:
-                  VTK_Type = 13;
-                  break;
-                case PYRA_5:
-                  VTK_Type = 14;
-                  break;
-                default: // error
-                  VTK_Type = -1;
-                  break;
+                case NODE: VTK_Type = 1; break;
+                case BAR_2: VTK_Type = 3; break;
+                case BAR_3: VTK_Type = 3; break;
+                case TRI_3: VTK_Type = 5; break;
+                case QUAD_4: VTK_Type = 9; break;
+                case TETRA_4: VTK_Type = 10; break;
+                case HEXA_8: VTK_Type = 12; break;
+                case PENTA_6: VTK_Type = 13; break;
+                case PYRA_5: VTK_Type = 14; break;
+                default: VTK_Type = -1; break;
               }
               /*--- Transfer the nodes for this element. ---*/
               for ( int j = 1; j < npe+1; j++ ) {
@@ -2997,6 +2941,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
           config->SetMarker_All_Plotting(iMarker, config->GetMarker_Config_Plotting(Marker_Tag));
           config->SetMarker_All_DV(iMarker, config->GetMarker_Config_DV(Marker_Tag));
           config->SetMarker_All_Moving(iMarker, config->GetMarker_Config_Moving(Marker_Tag));
+          config->SetMarker_All_PerBound(iMarker, config->GetMarker_Config_PerBound(Marker_Tag));
           config->SetMarker_All_SendRecv(iMarker, NONE);
           config->SetMarker_All_Out_1D(iMarker, config->GetMarker_Config_Out_1D(Marker_Tag));
         }
@@ -10135,14 +10080,22 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
 #ifndef NO_MPI
   
-  unsigned long nElemTotal, nPointTotal, nPointDomainTotal, nPointGhost, nPointPeriodic, nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal, iBoundRectangleTotal;
-  unsigned short iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle, iNode, iDim, iMarker, nMarkerDomain, iMarkerDomain, nDomain, iDomain, jDomain, jNode, nPeriodic, iPeriodic;
-  
-  long vnodes_local[8];
+  unsigned long nElemTotal, nPointTotal, nPointDomainTotal, nPointGhost, nPointPeriodic, nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal, iBoundRectangleTotal, ReceptorColor, DonorColor, Transformation, nTotalSendDomain_Periodic, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic, *nReceivedDomain_Periodic;
+  unsigned short iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle, iNode, iDim, iMarker, jMarker, nMarkerDomain, iMarkerDomain, nDomain, iDomain, jDomain, jNode, nPeriodic, iPeriodic, overhead = 4;
+  bool *ElemIn, *MarkerIn, **VertexIn;
+  long vnodes_local[8], **Global_to_Local_Point;
   double coord[3];
   char Marker_All_Tag[MAX_NUMBER_MARKER][200];
+  int rank, size, SizeBuffer[12], MaxBuffer, TotalBuffer;
+
+  /*--- MPI initialization ---*/
+
+  MPI_Status status;
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   
   /*--- Define buffer vector interior domain ---*/
+  
   double        *Buffer_Send_Coord,             *Buffer_Receive_Coord;
   unsigned long *Buffer_Send_Color,             *Buffer_Receive_Color;
   unsigned long *Buffer_Send_GlobalPointIndex,  *Buffer_Receive_GlobalPointIndex;
@@ -10154,33 +10107,39 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long *Buffer_Send_Pyramid,           *Buffer_Receive_Pyramid;
   
   /*--- Define buffer vector boundary ---*/
+  
   unsigned long *Buffer_Send_BoundLine,           *Buffer_Receive_BoundLine;
   unsigned long *Buffer_Send_BoundTriangle,       *Buffer_Receive_BoundTriangle;
   unsigned long *Buffer_Send_BoundRectangle,      *Buffer_Receive_BoundRectangle;
   unsigned long *Buffer_Send_Local2Global_Marker, *Buffer_Receive_Local2Global_Marker;
   
+  /*--- Define buffer vector periodic boundary conditions ---*/
+
   double *Buffer_Send_Center,                     *Buffer_Receive_Center;
   double *Buffer_Send_Rotation,                   *Buffer_Receive_Rotation;
   double *Buffer_Send_Translate,                  *Buffer_Receive_Translate;
   
-  int rank, size;
-  
-  MPI_Status status;
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  unsigned long *Buffer_Send_SendDomain_Periodic,           *Buffer_Receive_SendDomain_Periodic;
+  unsigned long *Buffer_Send_SendDomain_PeriodicTrans,      *Buffer_Receive_SendDomain_PeriodicTrans;
+  unsigned long *Buffer_Send_SendDomain_PeriodicReceptor,   *Buffer_Receive_SendDomain_PeriodicReceptor;
+  unsigned long *Buffer_Send_ReceivedDomain_Periodic,       *Buffer_Receive_ReceivedDomain_Periodic;
+  unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans,  *Buffer_Receive_ReceivedDomain_PeriodicTrans;
+  unsigned long *Buffer_Send_ReceivedDomain_PeriodicDonor,  *Buffer_Receive_ReceivedDomain_PeriodicDonor;
   
   /*--- Basic dimensionalization ---*/
+  
   nDomain = size;
-  
-  bool *ElemIn, *MarkerIn, **VertexIn;
-  long **Global_to_Local_Point;
   Marker_All_SendRecv = new short[MAX_NUMBER_MARKER];
-  
+  nSendDomain_Periodic = new unsigned long [nDomain];
+  nReceivedDomain_Periodic = new unsigned long [nDomain];
+
   /*--- Auxiliar vector defined in the master node (based on the original geometry) ---*/
+  
   if (rank == MASTER_NODE) {
     
     ElemIn = new bool [geometry->GetnElem()];
     MarkerIn = new bool [geometry->GetnMarker()];
+    
     VertexIn = new bool* [geometry->GetnMarker()];
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       VertexIn[iMarker] = new bool [geometry->GetnElem_Bound(iMarker)];
@@ -10188,8 +10147,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     nDim = geometry->GetnDim();
     nPeriodic = config->GetnPeriodicIndex();
     
-    Global_to_Local_Point = new long* [size];
-    for (iDomain = 0; iDomain < size; iDomain++) {
+    Global_to_Local_Point = new long* [nDomain];
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
       Global_to_Local_Point[iDomain] =  new long[geometry->GetnPoint()];
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
         Global_to_Local_Point[iDomain][iPoint] = -1;
@@ -10201,12 +10160,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     
   }
   
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
     
     if (rank == MASTER_NODE) {
       
-      /*--- Interior dimensionalization ---*/
-      /*--- Loop over the original grid to perform the dimensionalizaton of the domain variables ---*/
+      /*--- Interior dimensionalization. Loop over the original grid to perform the 
+       dimensionalizaton of the domain variables ---*/
+      
       nElemTotal = 0; nPointTotal = 0; nPointGhost = 0; nPointDomainTotal = 0; nPointPeriodic = 0;
       nElemTriangle = 0; nElemRectangle = 0; nElemTetrahedron = 0; nElemHexahedron = 0; nElemWedge = 0; nElemPyramid = 0;
       
@@ -10215,6 +10175,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
         
         /*--- Check if the element belong to the domain ---*/
+        
         ElemIn[iElem] = false;
         for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->elem[iElem]->GetNode(iNode);
@@ -10225,6 +10186,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         
         /*--- If an element belong to the domain (at least one point belong has the
          same color as the domain)---*/
+        
         if (ElemIn[iElem]) {
           for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
             iPoint = geometry->elem[iElem]->GetNode(iNode);
@@ -10258,8 +10220,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         }
       }
       
-      /*--- Boundary dimensionalization ---*/
-      /*--- Dimensionalization with physical boundaries, compute nMarkerDomain, nVertexDomain[nMarkerDomain] ---*/
+      /*--- Boundary dimensionalization. Dimensionalization with physical boundaries, compute nMarkerDomain, 
+       nVertexDomain[nMarkerDomain] ---*/
+      
       nMarkerDomain = 0;
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         nVertexDomain[iMarker] = 0;
@@ -10268,6 +10231,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         nBoundRectangle[iMarker] = 0; nBoundRectangleTotal = 0;
         
         /*--- Create a copy of the markers ---*/
+        
         Marker_All_SendRecv[iMarker] = config->GetMarker_All_SendRecv(iMarker);
         sprintf(Marker_All_Tag[iMarker], "%s", config->GetMarker_All_Tag(iMarker).c_str());
       }
@@ -10315,6 +10279,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     if (rank == MASTER_NODE) {
       
       /*--- Allocate the send buffer vector ---*/
+      
       Buffer_Send_Coord =             new double [nPointTotal*nDim];
       Buffer_Send_Color =             new unsigned long [nPointTotal];
       Buffer_Send_GlobalPointIndex =  new unsigned long [nPointTotal];
@@ -10326,6 +10291,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_Pyramid =           new unsigned long [nElemPyramid*5];
       
       /*--- Send the size of buffers ---*/
+      
       MPI_Bsend(&nDim,               1,  MPI_UNSIGNED_SHORT,  iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(&nPointTotal,        1,  MPI_UNSIGNED_LONG,   iDomain, 1, MPI_COMM_WORLD);
       MPI_Bsend(&nPointDomainTotal,  1,  MPI_UNSIGNED_LONG,   iDomain, 2, MPI_COMM_WORLD);
@@ -10340,16 +10306,18 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Bsend(&nElemPyramid,       1,  MPI_UNSIGNED_LONG,   iDomain, 11, MPI_COMM_WORLD);
       
       /*--- Allocate the send buffer vector ---*/
+      
       Buffer_Send_BoundLine =           new unsigned long [nBoundLineTotal*2];
       Buffer_Send_BoundTriangle =       new unsigned long [nBoundTriangleTotal*3];
       Buffer_Send_BoundRectangle =      new unsigned long [nBoundRectangleTotal*4];
       Buffer_Send_Local2Global_Marker = new unsigned long [nMarkerDomain];
       
       /*--- Send the size of buffers ---*/
+      
       MPI_Bsend(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, iDomain, 12, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundTriangleTotal,  1, MPI_UNSIGNED_LONG, iDomain, 13, MPI_COMM_WORLD);
       MPI_Bsend(&nBoundRectangleTotal, 1, MPI_UNSIGNED_LONG, iDomain, 14, MPI_COMM_WORLD);
-      MPI_Bsend(&nMarkerDomain,        1, MPI_UNSIGNED_LONG, iDomain, 15, MPI_COMM_WORLD);
+      MPI_Bsend(&nMarkerDomain,        1, MPI_UNSIGNED_SHORT, iDomain, 15, MPI_COMM_WORLD);
       MPI_Bsend(nVertexDomain,         MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG, iDomain, 16, MPI_COMM_WORLD);
       MPI_Bsend(nBoundLine,            MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG, iDomain, 17, MPI_COMM_WORLD);
       MPI_Bsend(nBoundTriangle,        MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG, iDomain, 18, MPI_COMM_WORLD);
@@ -10358,8 +10326,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Bsend(Marker_All_Tag,        MAX_NUMBER_MARKER*200, MPI_CHAR, iDomain, 21, MPI_COMM_WORLD);
       
       /*--- Send the size of buffers ---*/
+      
       MPI_Bsend(&nPeriodic, 1, MPI_UNSIGNED_SHORT, iDomain, 22, MPI_COMM_WORLD);
       
+      /*--- Send the periodic config information ---*/
+
       MPI_Bsend(Buffer_Send_Center, nPeriodic*3, MPI_DOUBLE, iDomain, 23, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Rotation, nPeriodic*3, MPI_DOUBLE, iDomain, 24, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Translate, nPeriodic*3, MPI_DOUBLE, iDomain, 25, MPI_COMM_WORLD);
@@ -10369,6 +10340,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     if (rank == iDomain) {
       
       /*--- Receive the size of buffers---*/
+      
       MPI_Recv(&nDim,               1, MPI_UNSIGNED_SHORT,   MASTER_NODE, 0, MPI_COMM_WORLD, &status);
       MPI_Recv(&nPointTotal,        1, MPI_UNSIGNED_LONG,    MASTER_NODE, 1, MPI_COMM_WORLD, &status);
       MPI_Recv(&nPointDomainTotal,  1, MPI_UNSIGNED_LONG,    MASTER_NODE, 2, MPI_COMM_WORLD, &status);
@@ -10383,10 +10355,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       MPI_Recv(&nElemPyramid,       1, MPI_UNSIGNED_LONG,    MASTER_NODE, 11, MPI_COMM_WORLD, &status);
       
       /*--- Receive the size of buffers ---*/
+      
       MPI_Recv(&nBoundLineTotal,      1, MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, &status);
       MPI_Recv(&nBoundTriangleTotal,  1, MPI_UNSIGNED_LONG, MASTER_NODE, 13, MPI_COMM_WORLD, &status);
       MPI_Recv(&nBoundRectangleTotal, 1, MPI_UNSIGNED_LONG, MASTER_NODE, 14, MPI_COMM_WORLD, &status);
-      MPI_Recv(&nMarkerDomain,        1, MPI_UNSIGNED_LONG, MASTER_NODE, 15, MPI_COMM_WORLD, &status);
+      MPI_Recv(&nMarkerDomain,        1, MPI_UNSIGNED_SHORT, MASTER_NODE, 15, MPI_COMM_WORLD, &status);
       MPI_Recv(nVertexDomain,         MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG, MASTER_NODE, 16, MPI_COMM_WORLD, &status);
       MPI_Recv(nBoundLine,            MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG, MASTER_NODE, 17, MPI_COMM_WORLD, &status);
       MPI_Recv(nBoundTriangle,        MAX_NUMBER_MARKER, MPI_UNSIGNED_LONG, MASTER_NODE, 18, MPI_COMM_WORLD, &status);
@@ -10439,6 +10412,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       delete [] Buffer_Receive_Translate;
 
       /*--- Allocate the receive buffer vector ---*/
+      
       Buffer_Receive_Coord =              new double [nPointTotal*nDim];
       Buffer_Receive_Color =              new unsigned long [nPointTotal];
       Buffer_Receive_GlobalPointIndex =   new unsigned long [nPointTotal];
@@ -10450,6 +10424,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_Pyramid =            new unsigned long [nElemPyramid*5];
       
       /*--- Allocate the receive buffer vector ---*/
+      
       Buffer_Receive_BoundLine =            new unsigned long [nBoundLineTotal*2];
       Buffer_Receive_BoundTriangle =        new unsigned long [nBoundTriangleTotal*3];
       Buffer_Receive_BoundRectangle =       new unsigned long [nBoundRectangleTotal*4];
@@ -10458,11 +10433,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     }
     
     /*--- Set the value of the Send buffers ---*/
+    
     if (rank == MASTER_NODE) {
       
       /*--- Set the value of the interior geometry ---*/
+      
       iElemTotal = 0; iPointTotal = 0; iPointDomain = 0; iPointPeriodic = nPointDomainTotal; iPointGhost = nPointDomainTotal + nPointPeriodic;
       iElemTriangle = 0; iElemRectangle = 0; iElemTetrahedron = 0; iElemHexahedron = 0; iElemWedge = 0; iElemPyramid = 0;
+      
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iDomain][iPoint] = -1;
       
       for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -10482,12 +10460,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               Global_to_Local_Point[iDomain][iPoint] = iPointTotal;
               
               /*--- Copy the information to be sended ---*/
+              
               Buffer_Send_Color[iPointTotal] = geometry->node[iPoint]->GetColor();
               Buffer_Send_GlobalPointIndex[iPointTotal] = iPoint;
               for (iDim = 0; iDim < nDim; iDim++)
                 Buffer_Send_Coord[nDim*iPointTotal+iDim] = geometry->node[iPoint]->GetCoord(iDim);
               
               /*--- Compute the index for the periodic and extra Ghost points. ---*/
+              
               if ( geometry->node[iPoint]->GetColor() == iDomain ) {
                 if ( iPoint > geometry->GetnPointDomain() - 1) iPointPeriodic++;
                 else iPointDomain++;
@@ -10498,6 +10478,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
           }
           
           /*--- Create the elements ---*/
+          
           switch(geometry->elem[iElem]->GetVTK_Type()) {
             case TRIANGLE:
               for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
@@ -10537,6 +10518,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       }
       
       /*--- Set the value of the boundary geometry ---*/
+      
       iMarkerDomain = 0;
       iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
       
@@ -10545,19 +10527,23 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) {
           
           /*--- If the marker is in the domain ---*/
+          
           if (MarkerIn[iMarker]) {
             
             for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
               
               /*--- If the vertex is in the domain ---*/
+              
               if (VertexIn[iMarker][iVertex]) {
                 
                 /*--- Read the points in the local domain ---*/
+                
                 for (iNode = 0; iNode < geometry->bound[iMarker][iVertex]->GetnNodes(); iNode++) {
                   vnodes_local[iNode] = Global_to_Local_Point[iDomain][geometry->bound[iMarker][iVertex]->GetNode(iNode)];
                 }
                 
                 /*--- Create the data structure for the boundaries ---*/
+                
                 switch(geometry->bound[iMarker][iVertex]->GetVTK_Type()) {
                   case LINE:
                     Buffer_Send_BoundLine[2*iBoundLineTotal+0] = vnodes_local[0];
@@ -10589,22 +10575,22 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       }
       
       /*--- Estimate the size of the buffer for each domain ---*/
-      int SizeBuffer[12];
-      SizeBuffer[0] = (nPointTotal*nDim)*sizeof(double) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[1] = (nPointTotal)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[2] = (nElemTriangle*3)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[3] = (nElemRectangle*4)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[4] = (nElemTetrahedron*4)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[5] = (nElemHexahedron*8)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[6] = (nElemWedge*6)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[7] = (nElemPyramid*5)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[8] = (nBoundLineTotal*2)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[9] = (nBoundTriangleTotal*3)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[10] = (nBoundRectangleTotal*4)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
-      SizeBuffer[11] = (nMarkerDomain)*sizeof(unsigned long) + MPI_BSEND_OVERHEAD;
       
-      int MaxBuffer = max(SizeBuffer[0], max(SizeBuffer[1], max(SizeBuffer[2], max(SizeBuffer[3], max(SizeBuffer[4], max(SizeBuffer[5], max(SizeBuffer[6], max(SizeBuffer[7], max(SizeBuffer[8], max(SizeBuffer[9], max(SizeBuffer[10], SizeBuffer[11])))))))))));
-      int TotalBuffer = SizeBuffer[0]+SizeBuffer[1]+SizeBuffer[2]+SizeBuffer[3]+SizeBuffer[4]+SizeBuffer[5]+SizeBuffer[6]+SizeBuffer[7]+SizeBuffer[8]+SizeBuffer[9]+SizeBuffer[10]+SizeBuffer[11];
+      SizeBuffer[0] =   (nPointTotal*nDim)*sizeof(double)               + MPI_BSEND_OVERHEAD;
+      SizeBuffer[1] =   (nPointTotal)*sizeof(unsigned long)             + MPI_BSEND_OVERHEAD;
+      SizeBuffer[2] =   (nElemTriangle*3)*sizeof(unsigned long)         + MPI_BSEND_OVERHEAD;
+      SizeBuffer[3] =   (nElemRectangle*4)*sizeof(unsigned long)        + MPI_BSEND_OVERHEAD;
+      SizeBuffer[4] =   (nElemTetrahedron*4)*sizeof(unsigned long)      + MPI_BSEND_OVERHEAD;
+      SizeBuffer[5] =   (nElemHexahedron*8)*sizeof(unsigned long)       + MPI_BSEND_OVERHEAD;
+      SizeBuffer[6] =   (nElemWedge*6)*sizeof(unsigned long)            + MPI_BSEND_OVERHEAD;
+      SizeBuffer[7] =   (nElemPyramid*5)*sizeof(unsigned long)          + MPI_BSEND_OVERHEAD;
+      SizeBuffer[8] =   (nBoundLineTotal*2)*sizeof(unsigned long)       + MPI_BSEND_OVERHEAD;
+      SizeBuffer[9] =   (nBoundTriangleTotal*3)*sizeof(unsigned long)   + MPI_BSEND_OVERHEAD;
+      SizeBuffer[10] =  (nBoundRectangleTotal*4)*sizeof(unsigned long)  + MPI_BSEND_OVERHEAD;
+      SizeBuffer[11] =  (nMarkerDomain)*sizeof(unsigned long)           + MPI_BSEND_OVERHEAD;
+      
+      MaxBuffer = max(SizeBuffer[0], max(SizeBuffer[1], max(SizeBuffer[2], max(SizeBuffer[3], max(SizeBuffer[4], max(SizeBuffer[5], max(SizeBuffer[6], max(SizeBuffer[7], max(SizeBuffer[8], max(SizeBuffer[9], max(SizeBuffer[10], SizeBuffer[11])))))))))));
+      TotalBuffer = SizeBuffer[0]+SizeBuffer[1]+SizeBuffer[2]+SizeBuffer[3]+SizeBuffer[4]+SizeBuffer[5]+SizeBuffer[6]+SizeBuffer[7]+SizeBuffer[8]+SizeBuffer[9]+SizeBuffer[10]+SizeBuffer[11];
       
       cout.precision(2);
       cout.setf(ios::fixed, ios::floatfield);
@@ -10614,6 +10600,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       cout << "Comm buff: "<< double(TotalBuffer)/1048576 <<"MB of "<< double(MAX_MPI_BUFFER)/1048576 <<"MB."<< endl;
       
       /*--- Send the buffers with the geometrical information ---*/
+      
       MPI_Bsend(Buffer_Send_Coord,                 nPointTotal*nDim,   MPI_DOUBLE,        iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_GlobalPointIndex,      nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
       MPI_Bsend(Buffer_Send_Color,                 nPointTotal,        MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
@@ -10646,28 +10633,29 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
     }
     
-    /*--- Set a communitation barrier before
-     receiving to reduce the buffering ---*/
+    /*--- Set a communitation barrier before receiving to reduce the buffering ---*/
+    
     MPI_Barrier(MPI_COMM_WORLD);
     
     if (rank == iDomain) {
       
       /*--- Receive the buffers with the geometrical information ---*/
-      MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,    MPI_DOUBLE,        MASTER_NODE, 0, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_GlobalPointIndex,      nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Color,                 nPointTotal,         MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Triangle,              nElemTriangle*3,     MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Rectangle,             nElemRectangle*4,    MPI_UNSIGNED_LONG, MASTER_NODE, 5, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,  MPI_UNSIGNED_LONG, MASTER_NODE, 6, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,   MPI_UNSIGNED_LONG, MASTER_NODE, 7, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Wedge,                 nElemWedge*6,        MPI_UNSIGNED_LONG, MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,      MPI_UNSIGNED_LONG, MASTER_NODE, 9, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,      MPI_UNSIGNED_LONG, MASTER_NODE, 10, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,  MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4, MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, &status);
-      MPI_Recv(Buffer_Receive_Local2Global_Marker,   nMarkerDomain,          MPI_UNSIGNED_LONG, MASTER_NODE, 13, MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Coord,                 nPointTotal*nDim,        MPI_DOUBLE,        MASTER_NODE, 0,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_GlobalPointIndex,      nPointTotal,             MPI_UNSIGNED_LONG, MASTER_NODE, 1,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Color,                 nPointTotal,             MPI_UNSIGNED_LONG, MASTER_NODE, 2,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Triangle,              nElemTriangle*3,         MPI_UNSIGNED_LONG, MASTER_NODE, 3,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Rectangle,             nElemRectangle*4,        MPI_UNSIGNED_LONG, MASTER_NODE, 5,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Tetrahedron,           nElemTetrahedron*4,      MPI_UNSIGNED_LONG, MASTER_NODE, 6,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Hexahedron,            nElemHexahedron*8,       MPI_UNSIGNED_LONG, MASTER_NODE, 7,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Wedge,                 nElemWedge*6,            MPI_UNSIGNED_LONG, MASTER_NODE, 8,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Pyramid,               nElemPyramid*5,          MPI_UNSIGNED_LONG, MASTER_NODE, 9,  MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_BoundLine,             nBoundLineTotal*2,       MPI_UNSIGNED_LONG, MASTER_NODE, 10, MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_BoundTriangle,         nBoundTriangleTotal*3,   MPI_UNSIGNED_LONG, MASTER_NODE, 11, MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_BoundRectangle,        nBoundRectangleTotal*4,  MPI_UNSIGNED_LONG, MASTER_NODE, 12, MPI_COMM_WORLD, &status);
+      MPI_Recv(Buffer_Receive_Local2Global_Marker,   nMarkerDomain,           MPI_UNSIGNED_LONG, MASTER_NODE, 13, MPI_COMM_WORLD, &status);
       
       /*--- Create the domain structures for the points ---*/
+      
       nPoint = nPointTotal; iPoint = 0;
       nPointDomain = nPointDomainTotal;
       node = new CPoint*[nPoint];
@@ -10684,6 +10672,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Receive_Color;
       
       /*--- Create the domain structures for the elements ---*/
+      
       nElem = nElemTotal; iElem = 0;
       elem = new CPrimalGrid*[nElem];
       
@@ -10720,15 +10709,15 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Receive_Pyramid;
       
       /*--- Create the domain structures for the boundaries ---*/
-      nMarker = nMarkerDomain;
-      unsigned short overhead = 4;
       
-      nElem_Bound = new unsigned long [nMarker+(overhead*size)];
-      Local_to_Global_Marker = new unsigned short [nMarker+(overhead*size)];
+      nMarker = nMarkerDomain;
+      
+      nElem_Bound = new unsigned long [nMarker+(overhead*nDomain)];
+      Local_to_Global_Marker = new unsigned short [nMarker+(overhead*nDomain)];
       
       for (iMarker = 0; iMarker < nMarker; iMarker++) nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
-      bound = new CPrimalGrid**[nMarker+(overhead*size)];
+      bound = new CPrimalGrid**[nMarker+(overhead*nDomain)];
       for (iMarker = 0; iMarker < nMarker; iMarker++) bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
       
       iBoundLineTotal = 0; iBoundTriangleTotal = 0; iBoundRectangleTotal = 0;
@@ -10771,48 +10760,25 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     
   }
   
-  /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
   MPI_Barrier(MPI_COMM_WORLD);
   
   /*--- Set the periodic boundary conditions ---*/
   
-  unsigned long ReceptorColor, DonorColor, Transformation;
-  unsigned short jMarker;
-  
-  unsigned long *nSendDomain_Periodic = new unsigned long [nDomain];
-  unsigned long *iSendDomain_Periodic = new unsigned long [nDomain];
-  unsigned long *nReceivedDomain_Periodic = new unsigned long [nDomain];
-  unsigned long *iReceivedDomain_Periodic = new unsigned long [nDomain];
-  unsigned long nTotalSendDomain_Periodic, iTotalSendDomain_Periodic;
-  unsigned long nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic;
-  
-  unsigned long *Buffer_Send_SendDomain_Periodic;
-  unsigned long *Buffer_Send_SendDomain_PeriodicTrans;
-  unsigned long *Buffer_Send_SendDomain_PeriodicReceptor;
-  unsigned long *Buffer_Send_ReceivedDomain_Periodic;
-  unsigned long *Buffer_Send_ReceivedDomain_PeriodicTrans;
-  unsigned long *Buffer_Send_ReceivedDomain_PeriodicDonor;
-  
-  unsigned long *Buffer_Receive_SendDomain_Periodic;
-  unsigned long *Buffer_Receive_SendDomain_PeriodicTrans;
-  unsigned long *Buffer_Receive_SendDomain_PeriodicReceptor;
-  unsigned long *Buffer_Receive_ReceivedDomain_Periodic;
-  unsigned long *Buffer_Receive_ReceivedDomain_PeriodicTrans;
-  unsigned long *Buffer_Receive_ReceivedDomain_PeriodicDonor;
-  
-  for (iDomain = 0; iDomain < size; iDomain++) {
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
     
     if (rank == MASTER_NODE) {
       
       /*--- Inizialization ---*/
-      for (jDomain = 0; jDomain < size; jDomain++) {
-        nSendDomain_Periodic[jDomain] = 0;      iSendDomain_Periodic[jDomain] = 0;
-        nReceivedDomain_Periodic[jDomain] = 0;  iReceivedDomain_Periodic[jDomain] = 0;
+      
+      for (jDomain = 0; jDomain < nDomain; jDomain++) {
+        nSendDomain_Periodic[jDomain] = 0;
+        nReceivedDomain_Periodic[jDomain] = 0;
       }
       nTotalSendDomain_Periodic = 0;
       nTotalReceivedDomain_Periodic = 0;
       
       /*--- Dimensionalization of the periodic auxiliar vectors ---*/
+      
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
           for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {
@@ -10837,6 +10803,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               if (config->GetMarker_All_SendRecv(iMarker) < 0) {
                 
                 /*--- Identify the color of the donor ---*/
+                
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
                       (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker))) {
@@ -10855,6 +10822,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       }
       
       /*--- Allocate the send buffer vector ---*/
+      
       Buffer_Send_SendDomain_Periodic               = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Send_SendDomain_PeriodicTrans          = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Send_SendDomain_PeriodicReceptor       = new unsigned long [nTotalSendDomain_Periodic];
@@ -10863,10 +10831,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_ReceivedDomain_PeriodicDonor      = new unsigned long [nTotalReceivedDomain_Periodic];
       
       /*--- Send the size of buffers ---*/
+      
       MPI_Bsend(&nTotalSendDomain_Periodic,       1, MPI_UNSIGNED_LONG, iDomain, 0, MPI_COMM_WORLD);
       MPI_Bsend(&nTotalReceivedDomain_Periodic,   1, MPI_UNSIGNED_LONG, iDomain, 1, MPI_COMM_WORLD);
-      MPI_Bsend(nSendDomain_Periodic,             size, MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
-      MPI_Bsend(nReceivedDomain_Periodic,         size, MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
+      MPI_Bsend(nSendDomain_Periodic,             nDomain, MPI_UNSIGNED_LONG, iDomain, 2, MPI_COMM_WORLD);
+      MPI_Bsend(nReceivedDomain_Periodic,         nDomain, MPI_UNSIGNED_LONG, iDomain, 3, MPI_COMM_WORLD);
       
     }
     
@@ -10875,12 +10844,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     if (rank == iDomain) {
       
       /*--- Receive the size of buffers---*/
+      
       MPI_Recv(&nTotalSendDomain_Periodic,       1, MPI_UNSIGNED_LONG, MASTER_NODE, 0, MPI_COMM_WORLD, &status);
       MPI_Recv(&nTotalReceivedDomain_Periodic,   1, MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, &status);
-      MPI_Recv(nSendDomain_Periodic,             size, MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, &status);
-      MPI_Recv(nReceivedDomain_Periodic,         size, MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, &status);
+      MPI_Recv(nSendDomain_Periodic,             nDomain, MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, &status);
+      MPI_Recv(nReceivedDomain_Periodic,         nDomain, MPI_UNSIGNED_LONG, MASTER_NODE, 3, MPI_COMM_WORLD, &status);
       
       /*--- Allocate the send buffer vector ---*/
+      
       Buffer_Receive_SendDomain_Periodic           = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Receive_SendDomain_PeriodicTrans      = new unsigned long [nTotalSendDomain_Periodic];
       Buffer_Receive_SendDomain_PeriodicReceptor   = new unsigned long [nTotalSendDomain_Periodic];
@@ -10894,12 +10865,14 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     
     /*--- Copy SendDomain_Periodic, SendDomain_PeriodicTrans, ReceivedDomain_Periodic,
      and ReceivedDomain_PeriodicTrans ---*/
+    
     if (rank == MASTER_NODE) {
       
       iTotalSendDomain_Periodic = 0;
       iTotalReceivedDomain_Periodic = 0;
       
       /*--- Evaluate the number of already existing periodic boundary conditions ---*/
+      
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
         
         if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
@@ -10913,6 +10886,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               
               /*--- If the information is going to be sended, find the
                domain of the receptor ---*/
+              
               if (config->GetMarker_All_SendRecv(iMarker) > 0) {
                 
                 /*--- Identify the color of the receptor ---*/
@@ -10936,9 +10910,11 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
               
               /*--- If the information is goint to be received,
                find the domain if the donor ---*/
+              
               if (config->GetMarker_All_SendRecv(iMarker) < 0) {
                 
                 /*--- Identify the color of the donor ---*/
+                
                 for (jMarker = 0; jMarker < geometry->GetnMarker(); jMarker++) {
                   if ((config->GetMarker_All_Boundary(jMarker) == SEND_RECEIVE) &&
                       (config->GetMarker_All_SendRecv(jMarker) == -config->GetMarker_All_SendRecv(iMarker) )) {
@@ -10948,6 +10924,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
                 }
                 
                 /*--- For each color of the donor we will han an extra marker (-) ---*/
+                
                 Buffer_Send_ReceivedDomain_Periodic[iTotalReceivedDomain_Periodic] = Global_to_Local_Point[iDomain][iPoint];
                 Buffer_Send_ReceivedDomain_PeriodicTrans[iTotalReceivedDomain_Periodic] = Transformation;
                 Buffer_Send_ReceivedDomain_PeriodicDonor[iTotalReceivedDomain_Periodic] = DonorColor;
@@ -10983,6 +10960,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     if (rank == iDomain) {
       
       /*--- Receive the size of buffers---*/
+      
       MPI_Recv(Buffer_Receive_SendDomain_Periodic,          nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 0, MPI_COMM_WORLD, &status);
       MPI_Recv(Buffer_Receive_SendDomain_PeriodicTrans,     nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 1, MPI_COMM_WORLD, &status);
       MPI_Recv(Buffer_Receive_SendDomain_PeriodicReceptor,  nTotalSendDomain_Periodic, MPI_UNSIGNED_LONG, MASTER_NODE, 2, MPI_COMM_WORLD, &status);
@@ -10995,7 +10973,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       iTotalSendDomain_Periodic = 0;
       iTotalReceivedDomain_Periodic = 0;
       
-      for (jDomain = 0; jDomain < size; jDomain++) {
+      for (jDomain = 0; jDomain < nDomain; jDomain++) {
         
         if (nSendDomain_Periodic[jDomain] != 0) {
           nVertexDomain[nMarker] = 0;
@@ -11061,6 +11039,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   }
   
   /*--- End of the MPI stuff, each node has the right piece of the grid ---*/
+  
   MPI_Barrier(MPI_COMM_WORLD);
   
   if (rank == MASTER_NODE) {
@@ -11068,14 +11047,19 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     delete [] Buffer_Send_Center;
     delete [] Buffer_Send_Rotation;
     delete [] Buffer_Send_Translate;
-
-    for (iDomain = 0; iDomain < size; iDomain++)
+    delete [] ElemIn;
+    delete [] MarkerIn;
+    delete [] nSendDomain_Periodic;
+    delete [] nReceivedDomain_Periodic;
+    
+    for (iDomain = 0; iDomain < nDomain; iDomain++)
       delete[] Global_to_Local_Point[iDomain];
-    delete[] ElemIn;
-    delete[] MarkerIn;
+    delete[] Global_to_Local_Point;
+    
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete VertexIn[iMarker];
     delete[] VertexIn;
+    
   }
   
 #endif

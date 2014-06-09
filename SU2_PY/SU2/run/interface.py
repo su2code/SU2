@@ -45,9 +45,9 @@ slurm_job = os.environ.has_key('SLURM_JOBID')
 if slurm_job:
     mpi_Command = 'srun -n %i %s'
 elif not which('mpirun') is None:
-    mpi_Command = 'mpirun -np %i %s'
+    mpi_Command = 'mpirun -n %i %s'
 elif not which('mpiexec') is None:
-    mpi_Command = 'mpiexec -np %i %s'
+    mpi_Command = 'mpiexec -n %i %s'
 else:
     mpi_Command = ''
     
