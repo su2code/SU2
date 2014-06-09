@@ -960,14 +960,10 @@ double CTNE2EulerVariable::CalcCvve(double val_Tve, CConfig *config, unsigned sh
   Ru  = UNIVERSAL_GAS_CONSTANT;
   Tve = val_Tve;
   
-  /*--- Initialize ---*/
-  Cves = 0.0;
-  Cvvs = 0.0;
-  
   /*--- If requesting electron specific heat ---*/
   if (ionization && val_Species == nSpecies-1) {
+    Cvvs = 0.0;
     Cves = 3.0/2.0 * Ru/Ms[nSpecies-1];
-    return Cves;
   }
   
   /*--- Heavy particle specific heat ---*/
@@ -979,6 +975,8 @@ double CTNE2EulerVariable::CalcCvve(double val_Tve, CConfig *config, unsigned sh
       exptv = exp(thetav[val_Species]/Tve);
       thsqr = thetav[val_Species]*thetav[val_Species];
       Cvvs  = Ru/Ms[val_Species] * thoTve*thoTve * exptv / ((exptv-1.0)*(exptv-1.0));
+    } else {
+      Cvvs = 0.0;
     }
     
     /*--- Electronic energy ---*/
@@ -996,7 +994,10 @@ double CTNE2EulerVariable::CalcCvve(double val_Tve, CConfig *config, unsigned sh
         num3  += g[val_Species][iEl] * thoTve/Tve * exptv;
       }
       Cves = Ru/Ms[val_Species] * (num2/denom - num*num3/(denom*denom));
+    } else {
+      Cves = 0.0;
     }
+    
   }
   return Cvvs + Cves;
 }
@@ -1631,7 +1632,7 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, double *U,
         Bd1 += g[iSpecies][iEl]*exptv;
       }
       A = An1/Bd1;
-      B = Bn1*Bn2/Bd1;
+      B = Bn1*Bn2/(Bd1*Bd1);
       Cves = Ru/Ms[iSpecies]*(A-B);
   
       dCves = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -

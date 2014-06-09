@@ -2234,6 +2234,7 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   double Cs;
   double thoTve, exptv;
   double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
+  double drhoCvedU;
   
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2377,45 +2378,160 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
       
       
       // Electronic energy specific heat
-      An1 = 0.0;
-      Bn1 = 0.0;
-      Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
-      Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
-                            (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-      Bn4 = 0.0;
-      Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        thoTve = thetae[iSpecies][iEl]/Tve;
-        exptv = exp(-thetae[iSpecies][iEl]/Tve);
+      if (nElStates[iSpecies] != 0) {
+        An1 = 0.0;
+        Bn1 = 0.0;
+        Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
+        Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
+                              (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
+        Bn4 = 0.0;
+        Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
+        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+          thoTve = thetae[iSpecies][iEl]/Tve;
+          exptv = exp(-thetae[iSpecies][iEl]/Tve);
+          
+          An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
+          Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
+          Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
+          Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
+          Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
+          Bd1 += g[iSpecies][iEl]*exptv;
+        }
+        A = An1/Bd1;
+        B = Bn1*Bn2/(Bd1*Bd1);
+        Cves[iSpecies] = Ru/Ms[iSpecies]*(A-B);
         
-        An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
-        Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
-        Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
-        Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
-        Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
-        Bd1 += g[iSpecies][iEl]*exptv;
+        dCves[iSpecies] = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
+                                           Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
+      } else {
+        Cves[iSpecies] = 0.0;
+        dCves[iSpecies] = 0.0;
       }
-      A = An1/Bd1;
-      B = Bn1*Bn2/Bd1;
-      Cves[iSpecies] = Ru/Ms[iSpecies]*(A-B);
-      
-      dCves[iSpecies] = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
-                                         Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
     }
     
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    
+    /*--- Populate the Jacobian matrix ---*/
+    for (iVar = 0; iVar < nVar; iVar++) {
+      drhoCvedU = 0.0;
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+        drhoCvedU += (V_i[RHOS_INDEX+iSpecies]*(dCvvs[iSpecies]+
+                                                dCves[iSpecies])*dTvedU_i[iVar]);
+      }
       
-      val_Jacobian_i[nEv][iSpecies] += (T-Tve)/taurelax*(Cvvs[iSpecies] +
-                                                         Cves[iSpecies])*Volume;
-      for (iVar = 0; iVar < nVar; iVar++)
-        val_Jacobian_i[nEv][iVar] += (T-Tve)/taurelax*(V_i[RHOS_INDEX+iSpecies]*
-                                                       (dCvvs[iSpecies]+dCves[iSpecies])*
-                                                       dTvedU_i[iVar])*Volume;
-      
+      val_Jacobian_i[nEv][iVar] += (drhoCvedU*(T-Tve) +
+                                    rhoCvve*(dTdU_i[iVar]-
+                                             dTvedU_i[iVar]))/taurelax*Volume;
     }
-    for (iVar = 0; iVar < nVar; iVar++)
-      val_Jacobian_i[nEv][iVar] += rhoCvve/taurelax*(dTdU_i[iVar]-dTvedU_i[iVar])*Volume;
-  }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      val_Jacobian_i[nEv][iSpecies] += (Cvvs[iSpecies]+Cves[iSpecies])*(T-Tve)/taurelax*Volume;
+    }
+    
+  } // implicit
+  
+  
+  ////// debug //////
+//  double *FD, *An;
+//  double rhoCvve_new, d;
+//  double Cvve_new;
+//  FD = new double[nVar];
+//  An = new double[nVar];
+//  
+////  cout << "Tve: " << Tve << endl;
+////  Cvve_new = var->CalcCvve(Tve, config, 0);
+////  cout << "Cvve[0]: " << Cvve_new << "\t" << Cvvs[0]+Cves[0] << endl;
+////  Cvve_new = var->CalcCvve(Tve, config, 1);
+////  cout << "Cvve[1]: " << Cvve_new << "\t" << Cvvs[1]+Cves[1] << endl;
+////  cin.get();
+////  
+////  cout << "dCvves/dTve:" << endl;
+////  
+////  // analytic
+////  cout << "AN: " << (dCvvs[0]+dCves[0]) << endl;
+////  cout << "AN: " << (dCvvs[1]+dCves[1]) << endl;
+////  
+////  // perturb
+////  d = 0.000001*Tve;
+////  Tve += d;
+////  
+////  // calculate new
+////  Cvve_new = var->CalcCvve(Tve, config, 0);
+////  cout << "FD: " << (Cvve_new - (Cvvs[0]+Cves[0]))/d << endl;
+////  Cvve_new = var->CalcCvve(Tve, config, 1);
+////  cout << "FD: " << (Cvve_new - (Cvvs[1]+Cves[1]))/d << endl;
+////  cout << Cvve_new << "\t" << (Cvvs[1]+Cves[1]) << endl;
+////  
+////  cout << "Tve: " << Tve << endl;
+////  
+////  
+////  cout << endl << endl;
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    FD[iVar] = 0;
+//    An[iVar] = 0;
+//  }
+//  
+//  /*--- Analytic ---*/
+//  Tve = V_i[TVE_INDEX];
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      An[iVar] += V_i[iSpecies]*(dCvvs[iSpecies]+dCves[iSpecies])*dTvedU_i[iVar];
+//    }
+//  }
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    An[iSpecies] += (Cvvs[iSpecies]+Cves[iSpecies]);
+//  
+//  
+//  /*--- FD ---*/
+//  
+//  // baseline
+//  rhoCvve = 0;
+//  rhoCvve_new = 0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    rhoCvve += V_i[RHOS_INDEX+iSpecies]*(var->CalcCvve(Tve, config, iSpecies));
+//    rhoCvve_new += V_i[RHOS_INDEX+iSpecies]*(Cvvs[iSpecies]+Cves[iSpecies]);
+//  }
+//  
+////  cout << "RhoCvve: " << rhoCvve << "\t" << V_i[RHOCVVE_INDEX] << "\t" << rhoCvve_new << endl;
+////  cin.get();
+//  
+//  // loop over all conserved variables
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    
+//    // calculate step size
+//    d = 0.0001*U_i[iVar];
+//    if (d == 0)
+//      d = 1E-12;
+//    
+//    // perturb
+//    U_i[iVar] += d;
+//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
+//    Tve = V_i[TVE_INDEX];
+//    
+//    // Calculate new rhoCvve
+//    rhoCvve_new = 0.0;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//      rhoCvve_new += V_i[RHOS_INDEX+iSpecies]*(var->CalcCvve(Tve, config, iSpecies));
+//    
+//    // Calculate FD entry
+//    FD[iVar] = (rhoCvve_new-rhoCvve)/d;
+//    
+//    // restore
+//    U_i[iVar] -= d;
+//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
+//    Tve = V_i[TVE_INDEX];
+//  }
+//  
+//  cout << "drhoCvve/dU:" << endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    cout << An[iVar] << "\t" << FD[iVar] << endl;
+//  }
+//  
+//  cin.get();
+//  
+//  delete [] FD;
+//  delete [] An;
+  ////// debug //////
+  
 //
 //      
 //      /*--- Vibrational energy terms ---*/

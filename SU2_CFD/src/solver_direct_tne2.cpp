@@ -2424,7 +2424,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 //      
 //      // set displacement value
 //      U_i = node[iPoint]->GetSolution();
-//      d = 0.00001*U_i[iVar];
+//      d = 0.000001*U_i[iVar];
 //      if (d == 0)
 //        d = 1E-12;
 //      U_i[iVar] += d;
