@@ -32,12 +32,9 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = 1;
   
-#ifndef NO_MPI
-	/*--- MPI initialization, and buffer setting ---*/
-  static char Buffer[MAX_MPI_BUFFER]; // buffer size in bytes
-  int BufferSize = MAX_MPI_BUFFER;
+#ifdef HAVE_MPI
+	/*--- MPI initialization ---*/
 	MPI_Init(&argc,&argv);
-	MPI_Buffer_attach(Buffer, BufferSize);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -59,7 +56,7 @@ int main(int argc, char *argv[]) {
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -80,7 +77,7 @@ int main(int argc, char *argv[]) {
       
     }
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -91,14 +88,17 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     domain->SetSendReceive(config);
     
-#ifndef NO_MPI
+    /*--- Setting the right order for the MPI boundaries ---*/
+//    domain->SetBoundaries(config);
+    
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------------------- Write mesh files --------------------------" << endl;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     char *cstr_su2 = strdup(MeshFile_su2.c_str());
     domain->SetMeshFile(config, cstr_su2);
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -125,14 +125,14 @@ int main(int argc, char *argv[]) {
     
     /*--- Write the FFD information ---*/
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Read and write FFD information -------------------" << endl;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -141,10 +141,9 @@ int main(int argc, char *argv[]) {
     surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
     surface_mov->WriteFFDInfo(domain, config, FFDBox, cstr_su2);
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Finalize MPI parallelization ---*/
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Buffer_detach(&Buffer, &BufferSize);
 	MPI_Finalize();
 #endif
     

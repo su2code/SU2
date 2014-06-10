@@ -50,7 +50,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 	ifstream restart_file;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -338,7 +338,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -366,7 +366,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -462,7 +462,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -490,7 +490,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -587,7 +587,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig 
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
 
@@ -615,7 +615,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig 
           Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -715,7 +715,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new double[nDim];
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -744,7 +744,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig
             Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -843,7 +843,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConf
   double *Buffer_Receive_Undivided_Laplacian = NULL;
   double *Buffer_Send_Undivided_Laplacian = NULL;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -871,7 +871,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConf
           Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -973,7 +973,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	double RefVel2, RefDensity;
   int rank = MASTER_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -992,7 +992,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   RefDensity = solver_container[TNE2_SOL]->node_infty->GetDensity();
   
 	/*--- In parallel computations the Cd, and Cl must be recomputed using all the processors ---*/
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	C_d = solver_container[TNE2_SOL]->GetTotal_CDrag();
 	C_l = solver_container[TNE2_SOL]->GetTotal_CLift();
 	C_t = solver_container[TNE2_SOL]->GetTotal_CT();
@@ -1173,7 +1173,7 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   double SharpEdge_Distance;
   int rank;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	rank = MASTER_NODE;
 #else
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1230,7 +1230,7 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -2439,7 +2439,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 	ifstream restart_file;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -2713,7 +2713,7 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
   double SharpEdge_Distance;
   int rank;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	rank = MASTER_NODE;
 #else
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -2785,7 +2785,7 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -3530,7 +3530,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //    }
 //  }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   double MyTotal_Sens_Geo   = Total_Sens_Geo;     Total_Sens_Geo = 0.0;
 //  double MyTotal_Sens_Mach  = Total_Sens_Mach;    Total_Sens_Mach = 0.0;

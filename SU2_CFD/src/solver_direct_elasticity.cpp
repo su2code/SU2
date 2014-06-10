@@ -31,7 +31,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   double dull_val;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1015,7 +1015,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Compute MaxVonMises_Stress using all the nodes ---*/
   double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
@@ -1309,7 +1309,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif

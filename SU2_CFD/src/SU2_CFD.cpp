@@ -54,12 +54,9 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- MPI initialization, and buffer setting ---*/
-  static char Buffer[MAX_MPI_BUFFER]; // buffer size in bytes
-  int BufferSize = MAX_MPI_BUFFER;
   MPI_Init(&argc,&argv);
-	MPI_Buffer_attach(Buffer, BufferSize);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -131,7 +128,7 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
     config_container[iZone]->SetFileNameDomain(rank+1);
 #endif
@@ -160,7 +157,7 @@ int main(int argc, char *argv[]) {
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point after the geometrical definition subroutine ---*/
 MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -208,7 +205,7 @@ MPI_Barrier(MPI_COMM_WORLD);
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Synchronization point after the solution preprocessing subroutine ---*/
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -228,7 +225,7 @@ MPI_Barrier(MPI_COMM_WORLD);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Synchronization point after the integration definition subroutine ---*/
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -246,7 +243,7 @@ MPI_Barrier(MPI_COMM_WORLD);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Synchronization point after the solver definition subroutine ---*/
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -308,7 +305,7 @@ MPI_Barrier(MPI_COMM_WORLD);
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
   MPI_Barrier(MPI_COMM_WORLD);
@@ -402,7 +399,7 @@ MPI_Barrier(MPI_COMM_WORLD);
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
     
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
     MPI_Barrier(MPI_COMM_WORLD);
@@ -513,7 +510,7 @@ MPI_Barrier(MPI_COMM_WORLD);
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
   MPI_Barrier(MPI_COMM_WORLD);
@@ -533,10 +530,9 @@ MPI_Barrier(MPI_COMM_WORLD);
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Buffer_detach(&Buffer, &BufferSize);
   MPI_Finalize();
 #endif
   

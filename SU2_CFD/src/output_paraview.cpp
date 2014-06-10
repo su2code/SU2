@@ -68,7 +68,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int nProcessor;
 	/*--- Remove the domain number from the surface csv filename ---*/
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);

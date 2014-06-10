@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 	char file_name[200];
   unsigned short nZone = 1;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Init(&argc,&argv);
 #endif
 	
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
 		geometry->SetMeshFile (config, config->GetMesh_Out_FileName());
 	}
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Finalize();
 #endif
 	
