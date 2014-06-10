@@ -9,7 +9,7 @@
 #include <math.h>
 #include <sstream>
 
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 #include <json/json.h>
 #endif
 
@@ -34,7 +34,7 @@ private:
 public:
 	CNormalScaler();
 	CNormalScaler(int,double*,double*);
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CNormalScaler(Json::Value);
 #endif
 	~CNormalScaler();
@@ -47,7 +47,7 @@ public:
   double MulScale;
   CScaler* InnerScaler;
   CMulInputScaler();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CMulInputScaler(Json::Value);
 #endif
   ~CMulInputScaler();
@@ -59,7 +59,7 @@ class CMulOutputScaler : public CScaler{
 public:
   double MulScale;
   CMulOutputScaler();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CMulOutputScaler(Json::Value);
 #endif
   ~CMulOutputScaler();
@@ -78,7 +78,7 @@ public:
 class CTanhActivator : public CActivator{
 public:
 	CTanhActivator();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CTanhActivator(Json::Value);
 #endif
 	~CTanhActivator();
@@ -88,7 +88,7 @@ public:
 class CLinearActivator : public CActivator{
 public:
 	CLinearActivator();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CLinearActivator(Json::Value);
 #endif
 	~CLinearActivator();
@@ -109,7 +109,7 @@ private:
 public:
 	CSumNeuron();
 	CSumNeuron(CActivator*); // activator, parameterStart, nParameters
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CSumNeuron(Json::Value);
 #endif
 	~CSumNeuron();
@@ -147,7 +147,7 @@ public:
 class CMulPredictor : public CPredictor{
 public:
   CMulPredictor();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CMulPredictor(Json::Value);
 #endif
   ~CMulPredictor();
@@ -172,7 +172,7 @@ private:
 	int totalNumParameters;
 public:
 	CNeurNet();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CNeurNet(Json::Value);
 #endif
 	~CNeurNet();

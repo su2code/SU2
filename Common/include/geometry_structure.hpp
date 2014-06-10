@@ -23,7 +23,7 @@
 
 #pragma once
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 
@@ -36,13 +36,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef NO_METIS
+#ifdef HAVE_METIS
 extern "C" {
 #include "metis.h"
 }
 #endif
 
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
 #include "cgnslib.h"
 #endif
 
@@ -1566,6 +1566,13 @@ public:
 	 */
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
 
+  /*!
+	 * \brief Write the .su2 file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_out_filename - Name of the output file.
+	 */
+	void SetBoundaries(CConfig *config);
+  
 	/*!
 	 * \brief Get the local index that correspond with the global numbering index.
 	 * \param[in] val_ipoint - Global point.

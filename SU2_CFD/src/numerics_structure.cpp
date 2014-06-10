@@ -814,7 +814,7 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
   
 	if(nDim == 2) {
 		cout << "P matrix not implemented for 2-D Flows!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
@@ -1018,7 +1018,7 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
   }
 	if(nDim == 2) {
 		cout << "InvP matrix not implemented for 2D flows!!!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);

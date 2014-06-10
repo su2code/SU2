@@ -116,10 +116,6 @@ inline double CVariable::GetPreconditioner_Beta() { return 0; }
 
 inline void CVariable::SetPreconditioner_Beta( double val_Beta) { }
 
-inline double* CVariable::GetMagneticField() { return 0; }
-
-inline void CVariable::SetMagneticField( double* val_B) {}
-
 inline double* CVariable::GetWindGust() { return 0; }
 
 inline void CVariable::SetWindGust( double* val_WindGust) {}
@@ -563,10 +559,6 @@ inline double CEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { r
 inline double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CEulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
-
-inline void CEulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
-
-inline double* CEulerVariable::GetMagneticField() { return B_Field;}
 
 inline void CEulerVariable::SetWindGust( double* val_WindGust) { 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)	

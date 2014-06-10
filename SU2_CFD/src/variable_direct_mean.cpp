@@ -26,7 +26,6 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
@@ -49,7 +48,6 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
@@ -188,7 +186,6 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
@@ -294,7 +291,6 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 CEulerVariable::~CEulerVariable(void) {
 	unsigned short iVar;
   
-	if (B_Field           != NULL) delete [] B_Field;
 	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;

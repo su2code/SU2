@@ -637,7 +637,6 @@ inline double CEulerSolver::GetOneD_fluxavgH(void){return OneD_EnthalpyRef;}
 
 inline void CEulerSolver::SetOneD_fluxavgH(double EnthalpyRef){OneD_EnthalpyRef = EnthalpyRef; }
 
-
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CNSSolver::GetTke_Inf(void) { return Tke_Inf; }

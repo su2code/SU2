@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- MPI initialization, and buffer setting ---*/
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 		config = new CConfig(grid_file, SU2_GPC, ZONE_0, nZone, 0, VERB_HIGH);
 	}
 	
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Change the name of the input-output files for the 
 	 parallel computation ---*/
   
@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
 				}				
     }
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 		MPI_Allreduce(&my_Gradient, &Gradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
 		Gradient = my_Gradient;
@@ -424,7 +424,7 @@ int main(int argc, char *argv[]) {
 	
 	delete [] UpdatePoint;
 	
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Finalize MPI parallelization ---*/
 	MPI_Finalize();
 #endif

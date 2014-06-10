@@ -69,7 +69,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   unsigned short solver = config->GetKind_Solver();
   unsigned short nDim = geometry->GetnDim();
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   char buffer [50];
   ofstream SurfFlow_file;
@@ -397,7 +397,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
 
 void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   unsigned long iPoint, iVertex;
   double *Solution, xCoord, yCoord, zCoord, *IntBoundary_Jump;
@@ -676,7 +676,7 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -755,7 +755,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- In serial, the single process has access to all geometry, so simply
    load the coordinates into the data structure. ---*/
@@ -948,7 +948,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
 void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -999,7 +999,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   /*--- Merge the connectivity in serial or parallel. ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- In serial, the single process has access to all connectivity,
    so simply load it into the data structure. ---*/
@@ -1267,7 +1267,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
 void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1316,7 +1316,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   /*--- Merge the connectivity in serial or parallel. ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- In serial, the single process has access to all connectivity,
    so simply load it into the data structure. ---*/
@@ -1772,7 +1772,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Merge the solution either in serial or parallel. ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- In serial, the single process has access to all solution data,
    so it is simple to retrieve and store inside Solution_Data. ---*/
@@ -3056,7 +3056,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
   nVar_Total = config->fields.size() - 1;
   
   /*--- Merge the solution either in serial or parallel. ---*/
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- In serial, the single process has access to all solution data,
    so it is simple to retrieve and store inside Solution_Data. ---*/
@@ -3350,7 +3350,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -3373,7 +3373,7 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
 void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -3401,7 +3401,7 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
 void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -3599,7 +3599,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
   
 	int rank;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MASTER_NODE;
@@ -4753,7 +4753,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
   
   int rank = MASTER_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -4766,7 +4766,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -4938,7 +4938,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
      file was written) & barrier to sync up after master node writes
      output files. ---*/
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Bcast(&wrote_base_file, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -4950,7 +4950,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -5077,7 +5077,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      file was written) & barrier to sync up after master node writes
      output files. ---*/
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Bcast(&wrote_base_file, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -5168,7 +5168,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Add AllBound information using all the nodes ---*/
   
@@ -5223,7 +5223,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   Pressure = new double [geometry->GetnPoint()];
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -5399,7 +5399,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
 
   nPointLocal = geometry->GetnPoint();
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nPointGlobal = nPointLocal;
@@ -5427,7 +5427,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
         
         /*--- The Pressure file uses the global numbering ---*/
         
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 #else
         iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
@@ -5534,7 +5534,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   double MyPressDiff = PressDiff;   PressDiff = 0.0;
   MPI_Allreduce(&MyPressDiff, &PressDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -5560,7 +5560,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   
   
   nPointLocal = geometry->GetnPoint();
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Allreduce(&nPointLocal, &nPointGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nPointGlobal = nPointLocal;
@@ -5588,7 +5588,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
         
         /*--- The Pressure file uses the global numbering ---*/
         
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 #else
         iPoint = geometry->node[geometry->vertex[iMarker][iVertex]->GetNode()]->GetGlobalIndex();
@@ -5694,7 +5694,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   double MyHeatFluxDiff = HeatFluxDiff;   HeatFluxDiff = 0.0;
   MPI_Allreduce(&MyHeatFluxDiff, &HeatFluxDiff, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -5747,7 +5747,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
   factor = 4.0*sqrt(2.0*Beta*R_Plane) / (Gamma*Pressure_Inf*Mach*Mach);
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_NearField = 0;
@@ -6239,7 +6239,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     
   }
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- Store the value of the NearField coefficient ---*/
   solver_container->SetTotal_CEquivArea(InverseDesign);

@@ -4,7 +4,7 @@ namespace SU2MPI {
   const int MASTER_NODE = 0;
   // Safetly exits with MPI
   void FinalizeAndExit1(){
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
@@ -26,7 +26,7 @@ namespace SU2MPI {
 
   int Rank(){
     int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
     return rank;

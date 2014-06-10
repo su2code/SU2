@@ -130,7 +130,6 @@ const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level
 const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
-const unsigned int MAX_MPI_BUFFER = 52430000; /*!< \brief Buffer size for parallel simulations (50MB). */
 
 const double PRANDTL = 0.72;	        	/*!< \brief Fluid's Prandtl constant (air). */
 const double PRANDTL_TURB = 0.90;	/*!< \brief Fluid's turbulent Prandtl constant (air). */
@@ -2522,7 +2521,7 @@ public:
   void SetValue(const vector<string> & value) {
     
     int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
     
@@ -2535,7 +2534,7 @@ public:
           cerr << "ERROR: Cannot find value " << value[0] << " in given map." << endl;
           cerr << "Please check the name of the variable in the config file." << endl;
         }
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         exit(1);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
@@ -2554,7 +2553,7 @@ public:
             cerr << "ERROR: Cannot find value " << value[i] << " in given map." << endl;
             cerr << "Please check the name of the variable in the config file." << endl;
           }
-#ifdef NO_MPI
+#ifndef HAVE_MPI
           exit(1);
 #else
           MPI_Abort(MPI_COMM_WORLD,1);

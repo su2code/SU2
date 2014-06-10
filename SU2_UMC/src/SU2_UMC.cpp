@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
   bool complete;
 
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- MPI initialization, and buffer setting ---*/
   MPI_Init(&argc,&argv);
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);

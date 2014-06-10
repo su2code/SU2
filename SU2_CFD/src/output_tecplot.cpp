@@ -73,7 +73,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   if (Kind_Solver == POISSON_EQUATION)
   filename = config->GetStructure_FileName().c_str();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Remove the domain number from the surface csv filename ---*/
   int nProcessor;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -427,7 +427,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
 
 void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -462,7 +462,7 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
     file.str(string());
     buffer = config->GetFlow_FileName();
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -727,7 +727,7 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
 
 void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -748,7 +748,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
     file.str(string());
     buffer = config->GetSurfFlowCoeff_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -1035,7 +1035,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
 
 void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -1070,7 +1070,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
   file.str(string());
   buffer = config->GetFlow_FileName();
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -1390,7 +1390,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 
 void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -1409,7 +1409,7 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   file.str(string());
   buffer = config->GetSurfFlowCoeff_FileName();
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);

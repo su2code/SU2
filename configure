@@ -5376,10 +5376,10 @@ $as_echo "<<< Configuring library with Tecplot TecIO support >>>" >&6; }
 
 
 if (test $enabletecio = yes); then
-  su2_externals_INCLUDES="$TECIO_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
 else
-  su2_externals_INCLUDES="-DNO_TECIO $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
  if test x$enabletecio = xyes; then
   BUILD_TECIO_TRUE=
@@ -5494,10 +5494,10 @@ $as_echo "$ac_cv_tls" >&6; }
 
 
 if (test $enablemetis = yes); then
-  su2_externals_INCLUDES="$METIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
 else
-  su2_externals_INCLUDES="-DNO_METIS $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
  if test x$enablemetis = xyes; then
   BUILD_METIS_TRUE=
@@ -5721,7 +5721,7 @@ else
   BUILD_CGNS_FALSE=
 fi
 
-	CGNS_CXX=-I"$with_CGNS_include"
+	CGNS_CXX="-DHAVE_CGNS -I"$with_CGNS_include""
 	CGNS_LD="$with_CGNS_lib"/$CGNSlib
 else
 	 if false; then
@@ -5732,7 +5732,7 @@ else
   BUILD_CGNS_FALSE=
 fi
 
-	CGNS_CXX=-DNO_CGNS
+	CGNS_CXX=
 	CGNS_LD=
 fi
 
@@ -5823,7 +5823,7 @@ else
   BUILD_MUTATIONPP_FALSE=
 fi
 
-	MUTATIONPP_CXX=-I"$with_Mutationpp_include"
+	MUTATIONPP_CXX="-DHAVE_MUTATIONPP -I"$with_Mutationpp_include""
 	MUTATIONPP_LD="$with_Mutationpp_lib"/$Mutationpplib
 else
 	 if false; then
@@ -5834,7 +5834,7 @@ else
   BUILD_MUTATIONPP_FALSE=
 fi
 
-	MUTATIONPP_CXX=-DNO_MUTATIONPP
+	MUTATIONPP_CXX=
 	MUTATION_LD=
 fi
 
@@ -5925,7 +5925,7 @@ else
   BUILD_JSONCPP_FALSE=
 fi
 
-	JSONCPP_CXX=-I"$with_Jsoncpp_include"
+	JSONCPP_CXX="-DHAVE_JSONCPP -I"$with_Jsoncpp_include""
 	JSONCPP_LD="$with_Jsoncpp_lib"/$Jsoncpplib
 else
 	 if false; then
@@ -5936,7 +5936,7 @@ else
   BUILD_JSONCPP_FALSE=
 fi
 
-	JSONCPP_CXX=-DNO_JSONCPP
+	JSONCPP_CXX=
 	JSONCPP_LD=
 fi
 
@@ -5949,9 +5949,8 @@ have_MPI="no"
 if test "$with_MPI" != "no"
 then
 	CXX="$with_MPI"
+	CXXFLAGS="-DHAVE_MPI "$CXXFLAGS""
 	have_MPI="yes"
-else
-	CXXFLAGS=""$CXXFLAGS" -DNO_MPI"
 fi
 
 ###########################

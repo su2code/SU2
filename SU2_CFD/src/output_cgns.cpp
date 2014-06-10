@@ -24,7 +24,7 @@
 
 void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,cgns_coord,element_dims,physical_dims,cgns_err;
@@ -37,7 +37,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -52,7 +52,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		buffer = config->GetFlow_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Remove the domain number from the CGNS filename ---*/
     if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
 #endif
@@ -173,7 +173,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 
 void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,element_dims,physical_dims,cgns_err;
@@ -191,7 +191,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Remove the domain number from the CGNS filename ---*/
   int nProcessor;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -206,7 +206,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
     
 		buffer = config->GetFlow_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Remove the domain number from the CGNS filename ---*/
     if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
 #endif
@@ -338,7 +338,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 
 void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,cgns_flow,cgns_field,element_dims,physical_dims,cgns_err;
@@ -353,7 +353,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -368,7 +368,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		buffer = config->GetFlow_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Remove the domain number from the CGNS filename ---*/
     if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
 #endif

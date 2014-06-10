@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- MPI initialization, and buffer setting ---*/
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 		else { strcpy (file_name, "default.cfg"); config[iZone] = new CConfig(file_name, SU2_SOL,
                                                                           iZone, nZone, 0, VERB_HIGH); }
 		
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 		/*--- Change the name of the input-output files for a parallel computation ---*/
 		config[iZone]->SetFileNameDomain(rank+1);
 #endif
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point after the geometrical definition subroutine ---*/
 	MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point after the solution subroutine ---*/
 	MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
   }
   
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Finalize();
 #endif

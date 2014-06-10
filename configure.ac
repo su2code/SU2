@@ -50,10 +50,10 @@ su2_externals_LIBS=""
 # Tecplot
 CONFIGURE_TECIO
 if (test $enabletecio = yes); then
-  su2_externals_INCLUDES="$TECIO_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
 else
-  su2_externals_INCLUDES="-DNO_TECIO $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
 AC_CONFIG_FILES([externals/tecio/Makefile])
@@ -61,10 +61,10 @@ AC_CONFIG_FILES([externals/tecio/Makefile])
 # Metis
 CONFIGURE_METIS
 if (test $enablemetis = yes); then
-  su2_externals_INCLUDES="$METIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
 else
-  su2_externals_INCLUDES="-DNO_METIS $su2_externals_INCLUDES"
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
 AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
 AC_CONFIG_FILES([externals/metis/Makefile])
@@ -158,11 +158,11 @@ fi
 if test "$have_CGNS" != "no"
 then
   	AM_CONDITIONAL(BUILD_CGNS,true)
-	CGNS_CXX=-I"$with_CGNS_include"
+	CGNS_CXX="-DHAVE_CGNS -I"$with_CGNS_include""
 	CGNS_LD="$with_CGNS_lib"/$CGNSlib
 else
 	AM_CONDITIONAL(BUILD_CGNS,false)
-	CGNS_CXX=-DNO_CGNS
+	CGNS_CXX=
 	CGNS_LD=
 fi
 AC_SUBST([CGNS_CXX])
@@ -202,11 +202,11 @@ fi
 if test "$have_Mutationpp" != "no"
 then
   	AM_CONDITIONAL(BUILD_MUTATIONPP,true)
-	MUTATIONPP_CXX=-I"$with_Mutationpp_include"
+	MUTATIONPP_CXX="-DHAVE_MUTATIONPP -I"$with_Mutationpp_include""
 	MUTATIONPP_LD="$with_Mutationpp_lib"/$Mutationpplib
 else
 	AM_CONDITIONAL(BUILD_MUTATIONPP,false)
-	MUTATIONPP_CXX=-DNO_MUTATIONPP
+	MUTATIONPP_CXX=
 	MUTATION_LD=
 fi
 AC_SUBST([MUTATIONPP_CXX])
@@ -246,11 +246,11 @@ fi
 if test "$have_Jsoncpp" != "no"
 then
   	AM_CONDITIONAL(BUILD_JSONCPP,true)
-	JSONCPP_CXX=-I"$with_Jsoncpp_include"
+	JSONCPP_CXX="-DHAVE_JSONCPP -I"$with_Jsoncpp_include""
 	JSONCPP_LD="$with_Jsoncpp_lib"/$Jsoncpplib
 else
 	AM_CONDITIONAL(BUILD_JSONCPP,false)
-	JSONCPP_CXX=-DNO_JSONCPP
+	JSONCPP_CXX=
 	JSONCPP_LD=
 fi
 AC_SUBST([JSONCPP_CXX])
@@ -263,9 +263,8 @@ have_MPI="no"
 if test "$with_MPI" != "no"
 then
 	CXX="$with_MPI"
+	CXXFLAGS="-DHAVE_MPI "$CXXFLAGS""
 	have_MPI="yes"
-else
-	CXXFLAGS=""$CXXFLAGS" -DNO_MPI"
 fi
 
 ###########################

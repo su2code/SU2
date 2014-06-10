@@ -498,18 +498,6 @@ public:
 	 */
 	virtual void SetPreconditioner_Beta(double val_Beta);
 
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \return Value of the magnetic field
-	 */
-	virtual double* GetMagneticField();
-
-	/*!
-	 * \brief Set the value of the magnetic field
-	 * \param[in] Value of the magnetic field
-	 */
-	virtual void SetMagneticField(double* val_B);
-
        /*!
 	 * \brief Get the value of the wind gust
 	 * \param[out] Value of the wind gust
@@ -1819,7 +1807,6 @@ protected:
 	double Velocity2;			/*!< \brief Square of the velocity vector. */
 	double *TS_Source;		/*!< \brief Time spectral source term. */
 	double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
-	double *B_Field;		/*! < \brief Magnetic field value */
   double *WindGust;           /*! < \brief Wind gust value */
   double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 
@@ -2145,12 +2132,6 @@ public:
 	 * \param[in] Value of the low Mach preconditioner variable Beta
 	 */
 	void SetPreconditioner_Beta(double val_Beta);
-
-	/*!
-	 * \brief Get the value of the magnetic field
-	 * \param[out] Value of the magnetic field
-	 */
-	double* GetMagneticField();
 
 	/*!
 	 * \brief Set the value of the magnetic field

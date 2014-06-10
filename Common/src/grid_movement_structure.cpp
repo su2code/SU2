@@ -95,7 +95,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   bool Screen_Output;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -232,7 +232,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
   int rank = MASTER_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -289,7 +289,7 @@ double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
     
 	}
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
   double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
   double MinVolume_Local = MinVolume; MinVolume = 0.0;
@@ -313,7 +313,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   unsigned long iPoint, iVertex, nVertex_SolidWall;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   if (rank == MASTER_NODE)
@@ -325,7 +325,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   
   /*--- Compute the total number of nodes on deforming boundaries ---*/
   
@@ -542,7 +542,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, 
     
 	}
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
   MPI_Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
@@ -565,7 +565,7 @@ double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, 
   /*--- If there are no degenerate cells, use the minimum volume instead ---*/
   if (ElemCounter == 0) MinLength = Scale;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   double MinLength_Local = MinLength; MinLength = 0.0;
   MPI_Allreduce(&MinLength_Local, &MinLength, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #endif
@@ -1740,7 +1740,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
                                          unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -1909,7 +1909,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -2073,7 +2073,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -2215,7 +2215,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
 void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -2344,7 +2344,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 	int rank = MASTER_NODE;
 	string FFDBoxTag;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -2675,7 +2675,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	int rank;
   unsigned short nDim = geometry->GetnDim();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -2744,7 +2744,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
     }
   }
 		
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
 	MaxDiff = my_MaxDiff;
@@ -2760,7 +2760,7 @@ void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config
 	double *CartCoord, *ParamCoord, ParamCoordGuess[3];
 	int rank;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -2785,7 +2785,7 @@ void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config,
 	double *CartCoord, *ParamCoord;
 	int rank;
 	
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -2819,7 +2819,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 	my_MaxDiff = 0.0, Diff;
 	int rank;
 	
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -2879,7 +2879,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 		}
 	}
 		
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
 	MaxDiff = my_MaxDiff;
@@ -2900,7 +2900,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 	
   unsigned short nDim = geometry->GetnDim();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -2960,7 +2960,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
 		}
 	}
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
 	MaxDiff = my_MaxDiff;
@@ -3399,7 +3399,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 		}
 	}
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 
   unsigned long *Buffer_Send_nVertex, *Buffer_Receive_nVertex;
 	int iProcessor, nProcessor;
@@ -3437,7 +3437,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
     }
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
  
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
@@ -3913,7 +3913,7 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
                                     unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -3999,7 +3999,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
   string Marker_Tag, Moving_Tag;
   int rank;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -4115,7 +4115,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   string Marker_Tag, Moving_Tag;
   int rank;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -4240,7 +4240,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
   string Marker_Tag, Moving_Tag;
   int rank;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -4395,7 +4395,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
   string Marker_Tag, Moving_Tag;
   int rank;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -4696,7 +4696,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   int rank;
   bool adjoint = config->GetAdjoint();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
@@ -4775,7 +4775,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
 void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -5335,7 +5335,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   unsigned short nDim = geometry->GetnDim();
   int rank = MASTER_NODE;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 	
@@ -5601,7 +5601,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         
         nSurfacePoints[iFFDBox] = my_nSurfPoints;
         nSurfPoints = 0;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
         if (config->GetKind_SU2() != SU2_DDC)
           MPI_Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
         else
