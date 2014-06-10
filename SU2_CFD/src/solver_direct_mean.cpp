@@ -5926,6 +5926,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   int rank, jProcessor;
   MPI_Status status;
+  MPI_Request send_req, recv_req;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
@@ -5960,8 +5961,8 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           
           for (iVar = 0; iVar < nPrimVar; iVar++)
             Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
-          MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
-          
+          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
+          MPI_Wait(&send_req,&status);
         }
         
       }
@@ -5988,7 +5989,8 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         /*--- We only receive the information that belong to other boundary ---*/
         
         if (jProcessor != rank) {
-          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+          MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req);
+          MPI_Wait(&recv_req,&status);
         }
         else {
           for (iVar = 0; iVar < nPrimVar; iVar++)
@@ -6076,6 +6078,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
     iProcessor = MASTER_NODE;
 #else
     MPI_Status status;
+    MPI_Request send_req, recv_req;
     MPI_Comm_rank(MPI_COMM_WORLD, &iProcessor);
 #endif
     
@@ -6109,7 +6112,8 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               for (iVar = 0; iVar < nPrimVar; iVar++)
                 Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
               
-              MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+              MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
+              MPI_Wait(&send_req,&status);
               
             }
             
@@ -6149,7 +6153,8 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
             
             if (jProcessor != iProcessor) {
 #ifdef HAVE_MPI
-              MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+              MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req);
+              MPI_Wait(&recv_req,&status);
 #endif
             }
             else {

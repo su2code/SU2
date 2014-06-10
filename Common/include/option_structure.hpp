@@ -130,7 +130,6 @@ const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level
 const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
-const unsigned int MAX_MPI_BUFFER = 52430000; /*!< \brief Buffer size for parallel simulations (50MB). */
 
 const double PRANDTL = 0.72;	        	/*!< \brief Fluid's Prandtl constant (air). */
 const double PRANDTL_TURB = 0.90;	/*!< \brief Fluid's turbulent Prandtl constant (air). */
