@@ -33,11 +33,8 @@ int main(int argc, char *argv[]) {
   int size = 1;
   
 #ifdef HAVE_MPI
-	/*--- MPI initialization, and buffer setting ---*/
-  static char Buffer[MAX_MPI_BUFFER]; // buffer size in bytes
-  int BufferSize = MAX_MPI_BUFFER;
+	/*--- MPI initialization ---*/
 	MPI_Init(&argc,&argv);
-	MPI_Buffer_attach(Buffer, BufferSize);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -147,7 +144,6 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
     /*--- Finalize MPI parallelization ---*/
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Buffer_detach(&Buffer, &BufferSize);
 	MPI_Finalize();
 #endif
     
