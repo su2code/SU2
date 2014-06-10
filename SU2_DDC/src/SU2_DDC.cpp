@@ -91,6 +91,9 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     domain->SetSendReceive(config);
     
+    /*--- Setting the right order for the MPI boundaries ---*/
+//    domain->SetBoundaries(config);
+    
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif

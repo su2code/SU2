@@ -1566,6 +1566,13 @@ public:
 	 */
 	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
 
+  /*!
+	 * \brief Write the .su2 file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_out_filename - Name of the output file.
+	 */
+	void SetBoundaries(CConfig *config);
+  
 	/*!
 	 * \brief Get the local index that correspond with the global numbering index.
 	 * \param[in] val_ipoint - Global point.
