@@ -11222,6 +11222,197 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   
 }
 
+
+void CDomainGeometry::SetBoundaries(CConfig *config) {
+  
+#ifdef HAVE_MPI
+  
+  unsigned long iElem_Bound;
+  unsigned short iMarker, iNodes, iPeriodic, nPeriodic = 0;
+  double *center, *angles, *transl;
+  string Grid_Marker;
+  
+  unsigned short iDomain, nDomain, iMarkersDomain, iLoop;
+  unsigned long TotalElem;
+  
+  int rank, size;
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  nDomain = size+1;
+  
+  /*--- Count the number of physical markers
+   in the boundaries ---*/
+  
+  unsigned short nMarker_Physical = 0;
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (bound[iMarker][0]->GetVTK_Type() != VERTEX) {
+      nMarker_Physical++;
+    }
+  }
+  
+  /*--- Identify if there are markers that send/received with the same domain,
+   they should be together---*/
+  
+  unsigned short Duplicate_SendReceive = 0;
+  
+  for (iLoop = 0; iLoop < 2; iLoop++) {
+    
+    unsigned short *DomainCount = new unsigned short [nDomain];
+    
+    for (iDomain = 0; iDomain < nDomain; iDomain++)
+      DomainCount[iDomain] = 0;
+    
+    if (iLoop == 0) {
+      for (iDomain = 0; iDomain < nDomain; iDomain++)
+        for (iMarker = 0; iMarker < nMarker; iMarker++)
+          if (bound[iMarker][0]->GetVTK_Type() == VERTEX)
+            if (Marker_All_SendRecv[iMarker] == iDomain) DomainCount[iDomain]++;
+    }
+    else {
+      for (iDomain = 0; iDomain < nDomain; iDomain++)
+        for (iMarker = 0; iMarker < nMarker; iMarker++)
+          if (bound[iMarker][0]->GetVTK_Type() == VERTEX)
+            if (Marker_All_SendRecv[iMarker] == -iDomain) DomainCount[iDomain]++;
+    }
+    
+    for (iDomain = 0; iDomain < nDomain; iDomain++)
+      if (DomainCount[iDomain] > 1) Duplicate_SendReceive++;
+    
+    delete [] DomainCount;
+    
+  }
+  
+  unsigned short *DomainSendCount =       new unsigned short [nDomain];
+  unsigned short **DomainSendMarkers =    new unsigned short *[nDomain];
+  unsigned short *DomainReceiveCount =    new unsigned short [nDomain];
+  unsigned short **DomainReceiveMarkers = new unsigned short *[nDomain];
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    DomainSendCount[iDomain] = 0;
+    DomainSendMarkers[iDomain] = new unsigned short [nMarker];
+    
+    DomainReceiveCount[iDomain] = 0;
+    DomainReceiveMarkers[iDomain] = new unsigned short [nMarker];
+  }
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+        if (Marker_All_SendRecv[iMarker] == iDomain) {
+          DomainSendMarkers[iDomain][DomainSendCount[iDomain]] = iMarker;
+          DomainSendCount[iDomain]++;
+        }
+        if (Marker_All_SendRecv[iMarker] == -iDomain) {
+          DomainReceiveMarkers[iDomain][DomainReceiveCount[iDomain]] = iMarker;
+          DomainReceiveCount[iDomain]++;
+        }
+      }
+    }
+  }
+  
+  /*--- Create an structure to store the Send/Receive
+   boundaries, because they require some reorganization ---*/
+
+  unsigned short nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive;
+  CPrimalGrid*** bound_SendRecv = new CPrimalGrid**[nMarker_SendRecv];
+  unsigned long *nElem_Bound_SendRecv = new unsigned long [nMarker_SendRecv];
+  unsigned short iMarker_SendRecv = 0;
+  unsigned long iVertex_SendRecv = 0;
+  bool CheckStart = false;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    if (DomainSendCount[iDomain] != 0) {
+      
+      /*--- Compute the total number of elements (adding all the
+       boundaries with the same Send/Receive ---*/
+      unsigned long TotalElem = 0;
+      for (iMarkersDomain = 0; iMarkersDomain < DomainSendCount[iDomain]; iMarkersDomain++) {
+        iMarker = DomainSendMarkers[iDomain][iMarkersDomain];
+        TotalElem += nElem_Bound[iMarker];
+      }
+      if (CheckStart) iMarker_SendRecv++;
+      CheckStart = true;
+      iVertex_SendRecv = 0;
+      nElem_Bound_SendRecv[iMarker_SendRecv] = TotalElem;
+      bound_SendRecv[iMarker_SendRecv] = new CPrimalGrid*[TotalElem];
+      
+    }
+    
+    for (iMarkersDomain = 0; iMarkersDomain < DomainSendCount[iDomain]; iMarkersDomain++) {
+      iMarker = DomainSendMarkers[iDomain][iMarkersDomain];
+      
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+        bound_SendRecv[iMarker_SendRecv][iVertex_SendRecv] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0), 3);
+        bound_SendRecv[iMarker_SendRecv][iVertex_SendRecv]->SetRotation_Type(bound[iMarker][iElem_Bound]->GetRotation_Type());
+        iVertex_SendRecv++;
+      }
+      
+    }
+    
+    
+    if (DomainReceiveCount[iDomain] != 0) {
+      
+      /*--- Compute the total number of elements (adding all the
+       boundaries with the same Send/Receive ---*/
+      unsigned long TotalElem = 0;
+      for (iMarkersDomain = 0; iMarkersDomain < DomainReceiveCount[iDomain]; iMarkersDomain++) {
+        iMarker = DomainReceiveMarkers[iDomain][iMarkersDomain];
+        TotalElem += nElem_Bound[iMarker];
+      }
+      if (CheckStart) iMarker_SendRecv++;
+      CheckStart = true;
+      iVertex_SendRecv = 0;
+      nElem_Bound_SendRecv[iMarker_SendRecv] = TotalElem;
+      bound_SendRecv[iMarker_SendRecv] = new CPrimalGrid*[TotalElem];
+      
+    }
+    
+    for (iMarkersDomain = 0; iMarkersDomain < DomainReceiveCount[iDomain]; iMarkersDomain++) {
+      iMarker = DomainReceiveMarkers[iDomain][iMarkersDomain];
+      
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound_SendRecv[iMarker]; iElem_Bound++) {
+        bound_SendRecv[iMarker_SendRecv][iVertex_SendRecv] = new CVertexMPI(bound[iMarker][iElem_Bound]->GetNode(0), 3);
+        bound_SendRecv[iMarker_SendRecv][iVertex_SendRecv]->SetRotation_Type(bound[iMarker][iElem_Bound]->GetRotation_Type());
+        iVertex_SendRecv++;
+      }
+      
+    }
+    
+  }
+  
+  delete [] DomainSendCount;
+  for (iDomain = 0; iDomain < nDomain; iDomain++)
+    delete DomainSendMarkers[iDomain];
+  delete[] DomainSendMarkers;
+  
+  delete [] DomainReceiveCount;
+  for (iDomain = 0; iDomain < nDomain; iDomain++)
+    delete DomainReceiveMarkers[iDomain];
+  delete[] DomainReceiveMarkers;
+  
+  /*--- Print the send received markers to check that everithing is OK ---*/
+  
+  if (rank == 0) {
+    for (iMarker = 0; iMarker < nMarker_SendRecv; iMarker++) {
+      cout << "MARKER_TAG= SEND_RECEIVE" << endl;
+      cout << "MARKER_ELEMS= " << nElem_Bound_SendRecv[iMarker]<< endl;
+      //    if (Marker_All_SendRecv[iMarker] > 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+      //    if (Marker_All_SendRecv[iMarker] < 0) output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+      
+      for (iElem_Bound = 0; iElem_Bound < nElem_Bound_SendRecv[iMarker]; iElem_Bound++) {
+        cout << bound_SendRecv[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+        cout << bound_SendRecv[iMarker][iElem_Bound]->GetNode(0) << "\t";
+        cout << bound_SendRecv[iMarker][iElem_Bound]->GetRotation_Type() << endl;
+      }
+      
+    }
+  }
+
+#endif
+
+}
+
 void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) {
   unsigned long iElem, iPoint, iElem_Bound;
   unsigned short iMarker, iNodes, iDim, iPeriodic, nPeriodic = 0;
@@ -11262,12 +11453,12 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   }
   
   unsigned short Duplicate_SendReceive = 0;
-
+  
 #ifdef HAVE_MPI
   
   /*--- Identify if there are markers with the same domain
    (typically periodic in parallel) ---*/
-
+  
   for (iLoop = 0; iLoop < 2; iLoop++) {
     
     unsigned short *DomainCount = new unsigned short [nDomain];
@@ -11298,7 +11489,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
         }
       }
     }
-
+    
     for (iDomain = 0; iDomain < nDomain; iDomain++) {
       if (DomainCount[iDomain] > 1) Duplicate_SendReceive++;
     }
@@ -11306,7 +11497,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
     delete [] DomainCount;
     
   }
-
+  
 #endif
   
   
@@ -11431,48 +11622,48 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   delete[] DomainReceiveMarkers;
   
   
-//  for (iDomain = 0; iDomain < nDomain; iDomain++) {
-//
-//    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-//        
-//        if (Marker_All_SendRecv[iMarker] == iDomain) {
-//          
-//          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-//          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-//          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-//          
-//          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-//            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-//            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-//            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
-//          }
-//          
-//          
-//          
-//        }
-//        
-//      }
-//    }
-//  
-//    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-//        
-//        if (Marker_All_SendRecv[iMarker] == -iDomain) {
-//          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
-//          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-//          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
-//          
-//          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
-//            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
-//            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
-//            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
-//          }
-//        }
-//      }
-//    }
-//    
-//  }
+  //  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+  //
+  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  //      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+  //
+  //        if (Marker_All_SendRecv[iMarker] == iDomain) {
+  //
+  //          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+  //          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+  //          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+  //
+  //          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+  //            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+  //            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+  //            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
+  //          }
+  //
+  //
+  //
+  //        }
+  //
+  //      }
+  //    }
+  //
+  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  //      if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+  //
+  //        if (Marker_All_SendRecv[iMarker] == -iDomain) {
+  //          output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
+  //          output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+  //          output_file << "SEND_TO= " << Marker_All_SendRecv[iMarker] << endl;
+  //
+  //          for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+  //            output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
+  //            output_file << bound[iMarker][iElem_Bound]->GetNode(0) << "\t";
+  //            output_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << endl;
+  //          }
+  //        }
+  //      }
+  //    }
+  //
+  //  }
   
 #else
   

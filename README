@@ -1,5 +1,5 @@
 -----------------------------------------------------------
-  SU^2 (Stanford University Unstructured) ver 3.1.0 "eagle"
+  SU^2 ver 3.1.0 "eagle"
 -----------------------------------------------------------
 
 Computational analysis tools have revolutionized the way we design aerospace systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU^2 team is changing this, making computational analysis and design freely available as open-source software and involving everyone in its creation and development. 
@@ -8,7 +8,7 @@ Computational analysis tools have revolutionized the way we design aerospace sys
   SU^2 INTRODUCTION 
 ----------------------------------------------------------
 
-SU^2 (Stanford University Unstructured) is a suite of open-source software tools written in C++ for the numerical solution of partial differential equations (PDE) and performing PDE constrained optimization. 
+SU^2 is a suite of open-source software tools written in C++ for the numerical solution of partial differential equations (PDE) and performing PDE constrained optimization. 
 
 The primary applications are computational fluid dynamics and aerodynamic shape optimization, but has been extended to treat more general equations such as electrodynamics and chemically reacting flows. 
 
