@@ -140,6 +140,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   iZone = val_iZone;
   
   
+  // This config file is parsed by a number of programs to make it easy to write SU^2
+  // wrapper scripts (in python, go, etc.) so please do
+  // the best you can to follow the established format. It's very hard to parse c++ code
+  // and none of us that write the parsers want to write a full c++ interpreter. Please
+  // play nice with the existing format so that you don't break the existing scripts.
+  
   
   /* BEGIN_CONFIG_OPTIONS */
   
