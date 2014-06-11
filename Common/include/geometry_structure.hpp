@@ -424,13 +424,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
 	 */
-	virtual void SetTecPlot(char config_filename[200]);
+	virtual void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
   
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config_filename - Name of the file where the tecplot information is going to be stored.
 	 */
-	virtual void SetTecPlot(char config_filename[200], bool new_file);
+	virtual void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
 
 	/*! 
 	 * \brief A virtual member.
@@ -438,7 +438,7 @@ public:
    * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
+	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1005,7 +1005,7 @@ public:
 	 *            information is going to be stored.
    * \param[in] new_file - Create a new file.
 	 */
-	void SetTecPlot(char config_filename[200], bool new_file);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file);
 
 	/*! 
 	 * \brief Set the output file for boundaries in Tecplot
@@ -1014,7 +1014,7 @@ public:
 	 *            information is going to be stored.   
    * \param[in] new_file - Create a new file.
 	 */
-	void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
+	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
 	/*! 
 	 * \brief Set the output file for boundaries in STL CAD format
@@ -1023,7 +1023,7 @@ public:
 	 *            information is going to be stored.
    * \param[in] new_file - Create a new file.
 	 */
-	void SetBoundSTL(char mesh_filename[200], bool new_file, CConfig *config) ;
+	void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) ;
 
 	/*! 
 	 * \brief Check the volume element orientation.
@@ -1513,7 +1513,7 @@ public:
 	 *            information is going to be stored.
    * \param[in] new_file - Create a new file.
 	 */
-	void SetBoundTecPlot(char mesh_filename[200], bool new_file, CConfig *config);
+	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
   
 };
 
@@ -1557,7 +1557,7 @@ public:
 	 * \param[in] config_filename - Name of the file where the Tecplot
 	 *            information is going to be stored.
 	 */
-	void SetTecPlot(char config_filename[200]);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Write the .su2 file.
@@ -1625,7 +1625,7 @@ public:
 	 * \param[in] config_filename - Name of the file where the Tecplot 
 	 *            information is going to be stored.
 	 */
-	void SetTecPlot(char config_filename[200]);
+	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Write the .su2 file.

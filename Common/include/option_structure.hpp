@@ -116,15 +116,13 @@ enum SU2_COMPONENT {
   SU2_SOL = 9,	/*!< \brief Running the SU2_SOL software. */
 };
 
-const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processors. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_INDEX_VALUE = 100;	/*!< \brief Maximum value for a marker index. */
-const unsigned int MAX_NUMBER_MARKER = 200;	/*!< \brief Maximum number of domains. */
+const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */
+const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3; /*!< \brief Maximum number of zones. */
-const unsigned int MAX_OUTPUT_VARS = 20; /*!< \brief Maximum number of output vars for each solution container. */
 const unsigned int NO_RK_ITER = 0;		/*!< \brief No Runge-Kutta iteration. */
 const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
@@ -1712,17 +1710,6 @@ public:
       newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
       return newstring;
     }
-    /*
-     #if 0
-     cout << "Found " << (*nDV_) << " DV parameters" << endl;
-     cout << "DV param value = ";
-     for (unsigned int i = 0; i < value.size(); i++)
-     cout << value[i] << ", ";
-     cout << endl;
-     #endif
-     */
-    
-    
     
     this->paramDV = new double*[this->nDV];
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++){

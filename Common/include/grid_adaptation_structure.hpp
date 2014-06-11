@@ -355,7 +355,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] mesh_filename - _________________________.
 	 */	
-	void WriteAdaptSensor(CGeometry *geometry, char mesh_filename[200]);
+	void WriteAdaptSensor(CGeometry *geometry, char mesh_filename[MAX_STRING_SIZE]);
 };
 
 #include "grid_adaptation_structure.inl"
