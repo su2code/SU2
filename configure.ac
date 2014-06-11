@@ -17,7 +17,7 @@ AC_INIT([SU^2], [3.1.0], [susquared-dev@lists.stanford.edu],
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([subdir-objects])  # [SU^2], [2.0]
+AM_INIT_AUTOMAKE([subdir-objects foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
 
