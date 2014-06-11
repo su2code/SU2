@@ -26,6 +26,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	
 	unsigned short nZone = 1;
+  double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	char buffer_su2[8], buffer_plt[8], file_name[MAX_STRING_SIZE];
 	string MeshFile;
   
@@ -56,8 +57,11 @@ int main(int argc, char *argv[]) {
     
   }
   
-#ifdef HAVE_MPI
+#ifndef HAVE_MPI
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
+#else
   MPI_Barrier(MPI_COMM_WORLD);
+  StartTime = MPI_Wtime();
 #endif
   
 	/*--- Set domains for parallel computation (if any) ---*/
@@ -141,18 +145,39 @@ int main(int argc, char *argv[]) {
     surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
     surface_mov->WriteFFDInfo(domain, config, FFDBox, cstr_su2);
     
-#ifdef HAVE_MPI
-    /*--- Finalize MPI parallelization ---*/
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Finalize();
-#endif
-    
   }
   
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = double(clock())/double(CLOCKS_PER_SEC);
+#else
+  MPI_Barrier(MPI_COMM_WORLD);
+  StopTime = MPI_Wtime();
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  if (rank == MASTER_NODE) {
+    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+  }
+  
+  
 	/*--- End solver ---*/
+  
 	if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_DDC) ------------------------" << endl << endl;
 	
+  
+#ifdef HAVE_MPI
+  /*--- Finalize MPI parallelization ---*/
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Finalize();
+#endif
+  
 	return EXIT_SUCCESS;
 	
 }
