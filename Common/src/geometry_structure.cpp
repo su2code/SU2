@@ -10080,12 +10080,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
 #ifdef HAVE_MPI
   
-  unsigned long iter, nElemTotal, nPointTotal, nPointDomainTotal, nPointGhost, nPointPeriodic, nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal, iBoundRectangleTotal, ReceptorColor, DonorColor, Transformation, nTotalSendDomain_Periodic, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic, *nReceivedDomain_Periodic;
+  unsigned long iter, nElemTotal, nPointTotal, nPointDomainTotal, nPointGhost, nPointPeriodic, nElemTriangle, nElemRectangle, nElemTetrahedron, nElemHexahedron, nElemWedge, nElemPyramid, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, jElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal, iBoundRectangleTotal, ReceptorColor, DonorColor, Transformation, nTotalSendDomain_Periodic, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic, *nReceivedDomain_Periodic;
   unsigned long Buffer_Send_nPointTotal, Buffer_Send_nPointDomainTotal, Buffer_Send_nPointGhost, Buffer_Send_nPointPeriodic, Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle, Buffer_Send_nElemRectangle, Buffer_Send_nElemTetrahedron, Buffer_Send_nElemHexahedron, Buffer_Send_nElemWedge, Buffer_Send_nElemPyramid, Buffer_Send_nTotalSendDomain_Periodic, Buffer_Send_nTotalReceivedDomain_Periodic, *Buffer_Send_nSendDomain_Periodic, *Buffer_Send_nReceivedDomain_Periodic, Buffer_Send_nBoundLineTotal, Buffer_Send_nBoundTriangleTotal, Buffer_Send_nBoundRectangleTotal, Buffer_Send_nVertexDomain[MAX_NUMBER_MARKER], Buffer_Send_nBoundLine[MAX_NUMBER_MARKER], Buffer_Send_nBoundTriangle[MAX_NUMBER_MARKER], Buffer_Send_nBoundRectangle[MAX_NUMBER_MARKER];
   unsigned short iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle, iNode, iDim, iMarker, jMarker, nMarkerDomain, iMarkerDomain, nDomain, iDomain, jDomain, jNode, nPeriodic, iPeriodic, overhead = 4;
   unsigned short Buffer_Send_nMarkerDomain, Buffer_Send_nDim, Buffer_Send_Marker_All_SendRecv[MAX_NUMBER_MARKER], Buffer_Send_nPeriodic;
-  bool *ElemIn, *MarkerIn, **VertexIn;
+  bool *MarkerIn, **VertexIn;
   long vnodes_local[8], **Global_to_Local_Point;
+  unsigned long *nElem_Color, **Elem_Color;
   double coord[3];
   char Marker_All_Tag[MAX_NUMBER_MARKER][MAX_STRING_SIZE], Buffer_Send_Marker_All_Tag[MAX_NUMBER_MARKER][MAX_STRING_SIZE];
   int rank, size;
@@ -10140,10 +10141,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   nReceivedDomain_Periodic = new unsigned long [nDomain];
   
   /*--- Auxiliar vector defined in the master node (based on the original geometry) ---*/
-  
+
   if (rank == MASTER_NODE) {
     
-    ElemIn = new bool [geometry->GetnElem()];
     MarkerIn = new bool [geometry->GetnMarker()];
     
     VertexIn = new bool* [geometry->GetnMarker()];
@@ -10170,7 +10170,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     
     /*--- Divide the elements in color list to speed up the grid partitioning ---*/
     
-    unsigned long *nElem_Color = new unsigned long[nDomain];
+    nElem_Color = new unsigned long[nDomain];
     for (iDomain = 0; iDomain < nDomain; iDomain++) nElem_Color[iDomain] = 0;
     vector<long> DomainList;
     bool CheckDomain;
@@ -10187,7 +10187,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         
         CheckDomain = true;
         for (jDomain = 0; jDomain < DomainList.size(); jDomain++) {
-          if (DomainList[jDomain] = iDomain) CheckDomain = false;
+          if (DomainList[jDomain] == iDomain) CheckDomain = false;
         }
         if (CheckDomain) {
           DomainList.push_back(iDomain);
@@ -10205,14 +10205,15 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       if (nElem_Color[iDomain] > Max_nElem_Color) Max_nElem_Color = nElem_Color[iDomain];
     }
     
-    unsigned long **Elem_Color = new unsigned long* [nDomain];
+    Elem_Color = new unsigned long* [nDomain];
     for (iDomain = 0; iDomain < nDomain; iDomain++) {
       Elem_Color[iDomain] =  new unsigned long[Max_nElem_Color];
       nElem_Color[iDomain] = 0;
     }
     
-    DomainList.clear();
     for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      
+      DomainList.clear();
       for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
         iPoint = geometry->elem[iElem]->GetNode(iNode);
         iDomain = geometry->node[iPoint]->GetColor();
@@ -10221,8 +10222,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         
         CheckDomain = true;
         for (jDomain = 0; jDomain < DomainList.size(); jDomain++) {
-          if (DomainList[jDomain] = iDomain) CheckDomain = false;
+          if (DomainList[jDomain] == iDomain) CheckDomain = false;
         }
+        
         if (CheckDomain) {
           DomainList.push_back(iDomain);
           Elem_Color[iDomain][nElem_Color[iDomain]] = iElem;
@@ -10246,37 +10248,32 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iDomain][iPoint] = -1;
       
-      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-                
-        ElemIn[iElem] = false;
+      for (jElem = 0; jElem < nElem_Color[iDomain]; jElem++) {
+        
+        iElem = Elem_Color[iDomain][jElem];
+        
         for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->elem[iElem]->GetNode(iNode);
-          if ( geometry->node[iPoint]->GetColor() == iDomain ) { ElemIn[iElem] = true; break; }
-        }
-        
-        if (ElemIn[iElem]) {
-          for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-            iPoint = geometry->elem[iElem]->GetNode(iNode);
-            if (Global_to_Local_Point[iDomain][iPoint] == -1) {
-              Global_to_Local_Point[iDomain][iPoint] = 1;
-              Buffer_Send_nPointTotal++;
-              if ( geometry->node[iPoint]->GetColor() != iDomain ) Buffer_Send_nPointGhost++;
-              else {
-                if (iPoint > geometry->GetnPointDomain() - 1) { Buffer_Send_nPointGhost++;  Buffer_Send_nPointPeriodic++; }
-                else Buffer_Send_nPointDomainTotal++;
-              }
+          if (Global_to_Local_Point[iDomain][iPoint] == -1) {
+            Global_to_Local_Point[iDomain][iPoint] = 1;
+            Buffer_Send_nPointTotal++;
+            if ( geometry->node[iPoint]->GetColor() != iDomain ) Buffer_Send_nPointGhost++;
+            else {
+              if (iPoint > geometry->GetnPointDomain() - 1) { Buffer_Send_nPointGhost++;  Buffer_Send_nPointPeriodic++; }
+              else Buffer_Send_nPointDomainTotal++;
             }
           }
-          switch(geometry->elem[iElem]->GetVTK_Type()) {
-            case TRIANGLE: Buffer_Send_nElemTriangle++; break;
-            case RECTANGLE: Buffer_Send_nElemRectangle++; break;
-            case TETRAHEDRON: Buffer_Send_nElemTetrahedron++; break;
-            case HEXAHEDRON: Buffer_Send_nElemHexahedron++; break;
-            case WEDGE: Buffer_Send_nElemWedge++; break;
-            case PYRAMID: Buffer_Send_nElemPyramid++; break;
-          }
-          Buffer_Send_nElemTotal++;
         }
+        
+        switch(geometry->elem[iElem]->GetVTK_Type()) {
+          case TRIANGLE: Buffer_Send_nElemTriangle++; break;
+          case RECTANGLE: Buffer_Send_nElemRectangle++; break;
+          case TETRAHEDRON: Buffer_Send_nElemTetrahedron++; break;
+          case HEXAHEDRON: Buffer_Send_nElemHexahedron++; break;
+          case WEDGE: Buffer_Send_nElemWedge++; break;
+          case PYRAMID: Buffer_Send_nElemPyramid++; break;
+        }
+        Buffer_Send_nElemTotal++;
         
       }
       
@@ -10551,68 +10548,67 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) Global_to_Local_Point[iDomain][iPoint] = -1;
       
-      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      for (jElem = 0; jElem < nElem_Color[iDomain]; jElem++) {
         
-        if (ElemIn[iElem]) {
-          
-          for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-            iPoint = geometry->elem[iElem]->GetNode(iNode);
-            if (Global_to_Local_Point[iDomain][iPoint] == -1) {
-              
-              if ( geometry->node[iPoint]->GetColor() == iDomain ) {
-                if ( iPoint > geometry->GetnPointDomain() - 1) iPointTotal = iPointPeriodic;
-                else iPointTotal = iPointDomain;
-              }
-              else iPointTotal = iPointGhost;
-              
-              Global_to_Local_Point[iDomain][iPoint] = iPointTotal;
-              Buffer_Send_Color[iPointTotal] = geometry->node[iPoint]->GetColor();
-              Buffer_Send_GlobalPointIndex[iPointTotal] = iPoint;
-              for (iDim = 0; iDim < Buffer_Send_nDim; iDim++)
-                Buffer_Send_Coord[Buffer_Send_nDim*iPointTotal+iDim] = geometry->node[iPoint]->GetCoord(iDim);
-              
-              if ( geometry->node[iPoint]->GetColor() == iDomain ) {
-                if ( iPoint > geometry->GetnPointDomain() - 1) iPointPeriodic++;
-                else iPointDomain++;
-              }
-              else iPointGhost++;
-              
+        iElem = Elem_Color[iDomain][jElem];
+        
+        for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+          iPoint = geometry->elem[iElem]->GetNode(iNode);
+          if (Global_to_Local_Point[iDomain][iPoint] == -1) {
+            
+            if ( geometry->node[iPoint]->GetColor() == iDomain ) {
+              if ( iPoint > geometry->GetnPointDomain() - 1) iPointTotal = iPointPeriodic;
+              else iPointTotal = iPointDomain;
             }
+            else iPointTotal = iPointGhost;
             
-            vnodes_local[iNode] = Global_to_Local_Point[iDomain][iPoint];
+            Global_to_Local_Point[iDomain][iPoint] = iPointTotal;
+            Buffer_Send_Color[iPointTotal] = geometry->node[iPoint]->GetColor();
+            Buffer_Send_GlobalPointIndex[iPointTotal] = iPoint;
+            for (iDim = 0; iDim < Buffer_Send_nDim; iDim++)
+              Buffer_Send_Coord[Buffer_Send_nDim*iPointTotal+iDim] = geometry->node[iPoint]->GetCoord(iDim);
+            
+            if ( geometry->node[iPoint]->GetColor() == iDomain ) {
+              if ( iPoint > geometry->GetnPointDomain() - 1) iPointPeriodic++;
+              else iPointDomain++;
+            }
+            else iPointGhost++;
             
           }
           
-          switch(geometry->elem[iElem]->GetVTK_Type()) {
-            case TRIANGLE:
-              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-                Buffer_Send_Triangle[3*iElemTriangle+iNode] = vnodes_local[iNode];
-              iElemTriangle++; break;
-            case RECTANGLE:
-              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-                Buffer_Send_Rectangle[4*iElemRectangle+iNode] = vnodes_local[iNode];
-              iElemRectangle++; break;
-            case TETRAHEDRON:
-              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-                Buffer_Send_Tetrahedron[4*iElemTetrahedron+iNode] = vnodes_local[iNode];
-              iElemTetrahedron++; break;
-            case HEXAHEDRON:
-              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-                Buffer_Send_Hexahedron[8*iElemHexahedron+iNode] = vnodes_local[iNode];
-              iElemHexahedron++; break;
-            case WEDGE:
-              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-                Buffer_Send_Wedge[6*iElemWedge+iNode] = vnodes_local[iNode];
-              iElemWedge++; break;
-            case PYRAMID:
-              for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
-                Buffer_Send_Pyramid[5*iElemPyramid+iNode] = vnodes_local[iNode];
-              iElemPyramid++; break;
-          }
-          
-          iElemTotal++;
+          vnodes_local[iNode] = Global_to_Local_Point[iDomain][iPoint];
           
         }
+        
+        switch(geometry->elem[iElem]->GetVTK_Type()) {
+          case TRIANGLE:
+            for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+              Buffer_Send_Triangle[3*iElemTriangle+iNode] = vnodes_local[iNode];
+            iElemTriangle++; break;
+          case RECTANGLE:
+            for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+              Buffer_Send_Rectangle[4*iElemRectangle+iNode] = vnodes_local[iNode];
+            iElemRectangle++; break;
+          case TETRAHEDRON:
+            for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+              Buffer_Send_Tetrahedron[4*iElemTetrahedron+iNode] = vnodes_local[iNode];
+            iElemTetrahedron++; break;
+          case HEXAHEDRON:
+            for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+              Buffer_Send_Hexahedron[8*iElemHexahedron+iNode] = vnodes_local[iNode];
+            iElemHexahedron++; break;
+          case WEDGE:
+            for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+              Buffer_Send_Wedge[6*iElemWedge+iNode] = vnodes_local[iNode];
+            iElemWedge++; break;
+          case PYRAMID:
+            for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++)
+              Buffer_Send_Pyramid[5*iElemPyramid+iNode] = vnodes_local[iNode];
+            iElemPyramid++; break;
+        }
+        
+        iElemTotal++;
+        
       }
       
       /*--- Set the value of the boundary geometry ---*/
@@ -11200,8 +11196,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   
   if (rank == MASTER_NODE) {
     
-    delete [] ElemIn;
     delete [] MarkerIn;
+    delete [] nElem_Color;
     
     delete [] Buffer_Send_Center;
     delete [] Buffer_Send_Rotation;
@@ -11210,10 +11206,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     delete [] Buffer_Send_nSendDomain_Periodic;
     delete [] Buffer_Send_nReceivedDomain_Periodic;
     
-    for (iDomain = 0; iDomain < nDomain; iDomain++)
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
       delete[] Global_to_Local_Point[iDomain];
+      delete[] Elem_Color[iDomain];
+    }
     delete[] Global_to_Local_Point;
-    
+    delete[] Elem_Color;
+
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete VertexIn[iMarker];
     delete[] VertexIn;
