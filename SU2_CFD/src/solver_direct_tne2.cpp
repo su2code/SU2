@@ -2401,7 +2401,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 //    /////////// DEBUG /////////////
 //    unsigned short iVar, jVar;
 //    double *S_new, *S_old, d;
-//    double *U_i, *V_i;
+//    double *U_i, *V_i, *dPdU_i, *dTdU_i, *dTvedU_i;
 //    bool RightSol;
 //    S_new = new double[nVar];
 //    S_old = new double[nVar];
@@ -2424,16 +2424,17 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 //      
 //      // set displacement value
 //      U_i = node[iPoint]->GetSolution();
-//      d = 0.000001*U_i[iVar];
+//      d = 0.0001*U_i[iVar];
 //      if (d == 0)
 //        d = 1E-12;
 //      U_i[iVar] += d;
-//      node[iPoint]->SetSolution(iVar, U_i[iVar]);
+//      node[iPoint]->SetSolution(U_i);
 //      RightSol = node[iPoint]->SetPrimVar_Compressible(config);
+//      V_i = node[iPoint]->GetPrimVar();
 //      
 //      /*-- pass to numerics ---*/
-//      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar() , node[iPoint]->GetPrimVar() );
+//      numerics->SetConservative(U_i, U_i);
+//      numerics->SetPrimitive   (V_i, V_i);
 //      numerics->SetdPdU        (node[iPoint]->GetdPdU()    , node[iPoint]->GetdPdU()    );
 //      numerics->SetdTdU        (node[iPoint]->GetdTdU()    , node[iPoint]->GetdTdU()    );
 //      numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  , node[iPoint]->GetdTvedU()  );

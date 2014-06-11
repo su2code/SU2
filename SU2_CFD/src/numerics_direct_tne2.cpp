@@ -1776,7 +1776,7 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                                                         val_nVar,
                                                         config) {
 
-  unsigned short iVar, iSpecies, jSpecies;
+  unsigned short iVar, iSpecies;
   /*--- Assign booleans from CConfig ---*/
   implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
@@ -1794,25 +1794,6 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
 	for (iVar = 0; iVar < 6; iVar++)
 		RxnConstantTable[iVar] = new double[5];
   
-  dTausrdU = new double**[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    dTausrdU[iSpecies] = new double*[nSpecies];
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-      dTausrdU[iSpecies][jSpecies] = new double[nVar];
-  }
-  
-  dTauMWdU = new double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    dTauMWdU[iSpecies] = new double[nVar];
-  
-  dTaupsdU = new double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    dTaupsdU[iSpecies] = new double[nVar];
-  
-  dTausdU = new double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    dTausdU[iSpecies] = new double[nVar];
-  
   tau_sr = new double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     tau_sr[iSpecies] = new double[nSpecies];
@@ -1829,8 +1810,6 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   Cvvs   = new double[nSpecies];
   Cves   = new double[nSpecies];
   Cvvsst = new double[nSpecies];
-  dCvvs  = new double[nSpecies];
-  dCves  = new double[nSpecies];
   tauP   = new double[nSpecies];
   tauMW  = new double[nSpecies];
   taus   = new double[nSpecies];
@@ -1839,10 +1818,8 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   dRfok  = new double[nVar];
   dRbok  = new double[nVar];
   
-  dXdr = new double*[nSpecies];
   dYdr = new double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    dXdr[iSpecies] = new double[nSpecies];
     dYdr[iSpecies] = new double[nSpecies];
   }
   
@@ -1851,7 +1828,7 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
 }
 
 CSource_TNE2::~CSource_TNE2(void) {
-  unsigned short iVar, iSpecies, jSpecies;
+  unsigned short iVar, iSpecies;
   
   /*--- Deallocate arrays ---*/
   
@@ -1859,29 +1836,12 @@ CSource_TNE2::~CSource_TNE2(void) {
     delete [] RxnConstantTable[iVar];
   delete [] RxnConstantTable;
   
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    delete [] dXdr[iSpecies];
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     delete [] dYdr[iSpecies];
-  }
-  delete [] dXdr;
   delete [] dYdr;
   
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-      delete [] dTausrdU[iSpecies][jSpecies];
-    delete [] dTausrdU[iSpecies];
-  }
-  delete [] dTausrdU;
-  
-  for (iSpecies = 0;iSpecies < nSpecies; iSpecies++) {
-    delete [] dTaupsdU[iSpecies];
-    delete [] dTausdU[iSpecies];
-    delete [] dTauMWdU[iSpecies];
+  for (iSpecies = 0;iSpecies < nSpecies; iSpecies++)
     delete [] tau_sr[iSpecies];
-  }
-  delete [] dTaupsdU;
-  delete [] dTauMWdU;
-  delete [] dTausdU;
   delete [] tau_sr;
   
   delete [] A;
@@ -1894,8 +1854,6 @@ CSource_TNE2::~CSource_TNE2(void) {
   delete [] Cvvs;
   delete [] Cves;
   delete [] Cvvsst;
-  delete [] dCvvs;
-  delete [] dCves;
   delete [] tauP;
   delete [] tauMW;
   delete [] taus;
@@ -2225,16 +2183,14 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
 	// Note: Park limiting cross section
-  unsigned short iSpecies, jSpecies, kSpecies, iVar, jVar;
-  unsigned short iEl, nEv, nHeavy, nEl, *nElStates;
+  unsigned short iSpecies, jSpecies, iVar, jVar;
+  unsigned short nEv, nHeavy, nEl;
   double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
-  double Qtv, taunum, taudenom, taurelax;
+  double Qtv, taunum, taudenom;
   double mu, A_sr, B_sr, num, denom;
-  double An1, Bn1, Bn2, Bn3, Bn4, Bd1, A, B;
   double Cs;
-  double thoTve, exptv;
-  double *Ms, *thetav, **thetae, **g, *Tref, *hf, *xi;
-  double drhoCvedU;
+  double *Ms, *thetav;
+  
   
   /*--- Initialize residual and Jacobian arrays ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -2244,17 +2200,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
         val_Jacobian_i[iVar][jVar] = 0.0;
-  }
-  
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      dXdr[iSpecies][jSpecies] = 0.0;
-    }
-    for (iVar = 0; iVar < nVar; iVar++) {
-      dTauMWdU[iSpecies][iVar] = 0.0;
-      dTaupsdU[iSpecies][iVar] = 0.0;
-      dTausdU[iSpecies][iVar]  = 0.0;
-    }
   }
 
   /*--- Determine the number of heavy particle species ---*/
@@ -2273,12 +2218,6 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
   /*--- Read from CConfig ---*/
   Ms        = config->GetMolar_Mass();
   thetav    = config->GetCharVibTemp();
-  thetae    = config->GetCharElTemp();
-  g         = config->GetElDegeneracy();
-  nElStates = config->GetnElStates();
-  Tref      = config->GetRefTemperature();
-  hf        = config->GetEnthalpy_Formation();
-  xi        = config->GetRotationModes();
   
   /*--- Calculate mole fractions ---*/
   N    = 0.0;
@@ -2287,295 +2226,63 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
     conc += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies];
     N    += V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies] * AVOGAD_CONSTANT;
   }
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     X[iSpecies] = (V_i[RHOS_INDEX+iSpecies] / Ms[iSpecies]) / conc;
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-      dXdr[iSpecies][jSpecies] += -1/conc*(X[iSpecies]/Ms[jSpecies]);
-    dXdr[iSpecies][iSpecies] += 1/(conc*Ms[iSpecies]);
-  }
 
   /*--- Loop over species to calculate source term --*/
   Qtv      = 0.0;
   taunum   = 0.0;
   taudenom = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    if (thetav[iSpecies] != 0.0) {
-      /*--- Rename ---*/
-      rhos   = V_i[RHOS_INDEX+iSpecies];
-      thoTve = thetav[iSpecies]/Tve;
-      exptv  = exp(thetav[iSpecies]/Tve);
-      
-      /*--- Millikan & White relaxation time ---*/
-      num   = 0.0;
-      denom = 0.0;
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
-        A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
-        B_sr   = 0.015 * pow(mu, 0.25);
-        tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
-        num   += X[iSpecies];
-        denom += X[iSpecies] / tau_sr[iSpecies][jSpecies];
-        for (iVar = 0; iVar < nVar; iVar++)
-          dTausrdU[iSpecies][jSpecies][iVar] = (-1/P*dPdU_i[iVar]
-                                                -1.0/3.0*A_sr*pow(T,-4.0/3.0)*
-                                                dTdU_i[iVar])*tau_sr[iSpecies][jSpecies];
-      }
-      tauMW[iSpecies] = num / denom;
-      
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-        for (iVar = 0; iVar < nVar; iVar++)
-          dTauMWdU[iSpecies][iVar] += tauMW[iSpecies]/denom * X[jSpecies]/(tau_sr[iSpecies][jSpecies]*
-                                                                           tau_sr[iSpecies][jSpecies])*
-                                      dTausrdU[iSpecies][jSpecies][iVar];
-        for (kSpecies = 0; kSpecies < nSpecies; kSpecies++) {
-          dTauMWdU[iSpecies][jSpecies] +=
-              1/denom*dXdr[kSpecies][jSpecies] -
-              tauMW[iSpecies]/denom*(1/tau_sr[iSpecies][kSpecies]*dXdr[kSpecies][jSpecies]);
-        }
-      }
-      
-      /*--- Park limiting cross section ---*/
-      Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
-      tauP[iSpecies] = T*sqrt(T)/(Cs*N);
-      for (iVar = 0; iVar < nVar; iVar++)
-        dTaupsdU[iSpecies][iVar] = 3.0/(2.0*T)*tauP[iSpecies]*dTdU_i[iVar];
-      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
-        dTaupsdU[iSpecies][jSpecies] += -AVOGAD_CONSTANT*T*sqrt(T)/(Ms[jSpecies]*Cs*N*N);
-      
-      /*--- Species relaxation time ---*/
-      taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
-      
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        dTausdU[iSpecies][iVar] =
-            tauMW[iSpecies]*dTaupsdU[iSpecies][iVar] +
-            dTauMWdU[iSpecies][iVar]*tauP[iSpecies];
 
-      taunum   += rhos/Ms[iSpecies];
-      taudenom += rhos/(Ms[iSpecies]*taus[iSpecies]);
-      
+    /*--- Rename for convenience ---*/
+    rhos   = V_i[RHOS_INDEX+iSpecies];
+    
+    /*--- Millikan & White relaxation time ---*/
+    num   = 0.0;
+    denom = 0.0;
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      mu     = Ms[iSpecies]*Ms[jSpecies] / (Ms[iSpecies] + Ms[jSpecies]);
+      A_sr   = 1.16 * 1E-3 * sqrt(mu) * pow(thetav[iSpecies], 4.0/3.0);
+      B_sr   = 0.015 * pow(mu, 0.25);
+      tau_sr[iSpecies][jSpecies] = 101325.0/P * exp(A_sr*(pow(T,-1.0/3.0) - B_sr) - 18.42);
+      num   += X[iSpecies];
+      denom += X[iSpecies] / tau_sr[iSpecies][jSpecies];
     }
+    tauMW[iSpecies] = num / denom;
+    
+    /*--- Park limiting cross section ---*/
+    Cs = 1E-20*5E4*5E4*sqrt(8*Ru/(PI_NUMBER*Ms[iSpecies]));
+    tauP[iSpecies] = T*sqrt(T)/(Cs*N);
+    
+    /*--- Species relaxation time ---*/
+    taus[iSpecies] = tauMW[iSpecies] + tauP[iSpecies];
+    
+    /*--- Calculate vib.-el. energies ---*/
+    estar[iSpecies] = var->CalcEve(config, T, iSpecies);
+    eves[iSpecies]  = var->CalcEve(config, Tve, iSpecies);
+    
+    /*--- Add species contribution to residual ---*/
+    val_residual[nEv] += rhos * (estar[iSpecies] -
+                                 eves[iSpecies]) / taus[iSpecies] * Volume;
   }
-  taurelax = taunum/taudenom;
-  val_residual[nEv] = rhoCvve/taurelax * (T-Tve) * Volume;
   
   if (implicit) {
-    
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+ 
+      /*--- Rename ---*/
+      rhos = V_i[RHOS_INDEX+iSpecies];
+      Cvvsst[iSpecies] = var->CalcCvve(T, config, iSpecies);
+      Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
       
-      // Vibrational energy specific heat
-      if (thetav[iSpecies] != 0.0) {
-      Cvvs[iSpecies] = Ru/Ms[iSpecies]*(thetav[iSpecies]*thetav[iSpecies]/(Tve*Tve))*
-                       exp(thetav[iSpecies]/Tve)/((exp(thetav[iSpecies]/Tve)-1)*
-                                                  (exp(thetav[iSpecies]/Tve)-1));
-      dCvvs[iSpecies] = (-2/Tve - thetav[iSpecies]/(Tve*Tve) +
-                         2*thetav[iSpecies]*exp(thetav[iSpecies]/Tve)/
-                         (Tve*Tve*(exp(thetav[iSpecies]/Tve)-1)))*Cvvs[iSpecies];
-      } else {
-        Cvvs[iSpecies]  = 0.0;
-        dCvvs[iSpecies] = 0.0;
-      }
-      
-      
-      // Electronic energy specific heat
-      if (nElStates[iSpecies] != 0) {
-        An1 = 0.0;
-        Bn1 = 0.0;
-        Bn2 = g[iSpecies][0]*thetae[iSpecies][0]/(Tve*Tve)*exp(-thetae[iSpecies][0]/Tve);
-        Bn3 = g[iSpecies][0]*(thetae[iSpecies][0]*thetae[iSpecies][0]/
-                              (Tve*Tve*Tve*Tve))*exp(-thetae[iSpecies][0]/Tve);
-        Bn4 = 0.0;
-        Bd1 = g[iSpecies][0]*exp(-thetae[iSpecies][0]/Tve);
-        for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-          thoTve = thetae[iSpecies][iEl]/Tve;
-          exptv = exp(-thetae[iSpecies][iEl]/Tve);
-          
-          An1 += g[iSpecies][iEl]*thoTve*thoTve*exptv;
-          Bn1 += g[iSpecies][iEl]*thetae[iSpecies][iEl]*exptv;
-          Bn2 += g[iSpecies][iEl]*thoTve/Tve*exptv;
-          Bn3 += g[iSpecies][iEl]*thoTve*thoTve/(Tve*Tve)*exptv;
-          Bn4 += g[iSpecies][iEl]*thoTve*thoTve*thoTve/Tve*exptv;
-          Bd1 += g[iSpecies][iEl]*exptv;
-        }
-        A = An1/Bd1;
-        B = Bn1*Bn2/(Bd1*Bd1);
-        Cves[iSpecies] = Ru/Ms[iSpecies]*(A-B);
-        
-        dCves[iSpecies] = Ru/Ms[iSpecies]*(-2.0/Tve*(A-B) - 2*Bn2/Bd1*(A-B) -
-                                           Bn1*Bn3/(Bd1*Bd1) + Bn4/Bd1);
-      } else {
-        Cves[iSpecies] = 0.0;
-        dCves[iSpecies] = 0.0;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        val_Jacobian_i[nEv][iVar] += rhos/taus[iSpecies]*(Cvvsst[iSpecies]*dTdU_i[iVar] -
+                                                          Cvves[iSpecies]*dTvedU_i[iVar])*Volume;
       }
     }
-    
-    
-    /*--- Populate the Jacobian matrix ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      drhoCvedU = 0.0;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        drhoCvedU += (V_i[RHOS_INDEX+iSpecies]*(dCvvs[iSpecies]+
-                                                dCves[iSpecies])*dTvedU_i[iVar]);
-      }
-      
-      val_Jacobian_i[nEv][iVar] += (drhoCvedU*(T-Tve) +
-                                    rhoCvve*(dTdU_i[iVar]-
-                                             dTvedU_i[iVar]))/taurelax*Volume;
-    }
-    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-      val_Jacobian_i[nEv][iSpecies] += (Cvvs[iSpecies]+Cves[iSpecies])*(T-Tve)/taurelax*Volume;
-    }
-    
-  } // implicit
-  
-  
-  ////// debug //////
-//  double *FD, *An;
-//  double rhoCvve_new, d;
-//  double Cvve_new;
-//  FD = new double[nVar];
-//  An = new double[nVar];
-//  
-////  cout << "Tve: " << Tve << endl;
-////  Cvve_new = var->CalcCvve(Tve, config, 0);
-////  cout << "Cvve[0]: " << Cvve_new << "\t" << Cvvs[0]+Cves[0] << endl;
-////  Cvve_new = var->CalcCvve(Tve, config, 1);
-////  cout << "Cvve[1]: " << Cvve_new << "\t" << Cvvs[1]+Cves[1] << endl;
-////  cin.get();
-////  
-////  cout << "dCvves/dTve:" << endl;
-////  
-////  // analytic
-////  cout << "AN: " << (dCvvs[0]+dCves[0]) << endl;
-////  cout << "AN: " << (dCvvs[1]+dCves[1]) << endl;
-////  
-////  // perturb
-////  d = 0.000001*Tve;
-////  Tve += d;
-////  
-////  // calculate new
-////  Cvve_new = var->CalcCvve(Tve, config, 0);
-////  cout << "FD: " << (Cvve_new - (Cvvs[0]+Cves[0]))/d << endl;
-////  Cvve_new = var->CalcCvve(Tve, config, 1);
-////  cout << "FD: " << (Cvve_new - (Cvvs[1]+Cves[1]))/d << endl;
-////  cout << Cvve_new << "\t" << (Cvvs[1]+Cves[1]) << endl;
-////  
-////  cout << "Tve: " << Tve << endl;
-////  
-////  
-////  cout << endl << endl;
-//  
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    FD[iVar] = 0;
-//    An[iVar] = 0;
-//  }
-//  
-//  /*--- Analytic ---*/
-//  Tve = V_i[TVE_INDEX];
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      An[iVar] += V_i[iSpecies]*(dCvvs[iSpecies]+dCves[iSpecies])*dTvedU_i[iVar];
-//    }
-//  }
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    An[iSpecies] += (Cvvs[iSpecies]+Cves[iSpecies]);
-//  
-//  
-//  /*--- FD ---*/
-//  
-//  // baseline
-//  rhoCvve = 0;
-//  rhoCvve_new = 0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    rhoCvve += V_i[RHOS_INDEX+iSpecies]*(var->CalcCvve(Tve, config, iSpecies));
-//    rhoCvve_new += V_i[RHOS_INDEX+iSpecies]*(Cvvs[iSpecies]+Cves[iSpecies]);
-//  }
-//  
-////  cout << "RhoCvve: " << rhoCvve << "\t" << V_i[RHOCVVE_INDEX] << "\t" << rhoCvve_new << endl;
-////  cin.get();
-//  
-//  // loop over all conserved variables
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    
-//    // calculate step size
-//    d = 0.0001*U_i[iVar];
-//    if (d == 0)
-//      d = 1E-12;
-//    
-//    // perturb
-//    U_i[iVar] += d;
-//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
-//    Tve = V_i[TVE_INDEX];
-//    
-//    // Calculate new rhoCvve
-//    rhoCvve_new = 0.0;
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//      rhoCvve_new += V_i[RHOS_INDEX+iSpecies]*(var->CalcCvve(Tve, config, iSpecies));
-//    
-//    // Calculate FD entry
-//    FD[iVar] = (rhoCvve_new-rhoCvve)/d;
-//    
-//    // restore
-//    U_i[iVar] -= d;
-//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
-//    Tve = V_i[TVE_INDEX];
-//  }
-//  
-//  cout << "drhoCvve/dU:" << endl;
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    cout << An[iVar] << "\t" << FD[iVar] << endl;
-//  }
-//  
-//  cin.get();
-//  
-//  delete [] FD;
-//  delete [] An;
-  ////// debug //////
-  
-//
-//      
-//      /*--- Vibrational energy terms ---*/
-//      estar[iSpecies] = Ru/Ms[iSpecies]*thetav[iSpecies] / (expt-1.0);
-//      evib[iSpecies]  = Ru/Ms[iSpecies]*thetav[iSpecies] / (exptv-1.0);
-//      
-//      /*--- Add species contribution to residual ---*/
-//      val_residual[nEv] += rhos * (estar[iSpecies] - evib[iSpecies]) / taus[iSpecies] * Volume;
-//    }
-//  }
-//  
-//  if (implicit) {
-//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//      if (thetav[iSpecies] != 0) {
-//        
-//        /*--- Rename ---*/
-//        rhos = V_i[RHOS_INDEX+iSpecies];
-//        thoT   = thetav[iSpecies]/T;
-//        expt   = exp(thetav[iSpecies]/T);
-//        thoTve = thetav[iSpecies]/Tve;
-//        exptv = exp(thetav[iSpecies]/Tve);
-//
-//        /*--- Calculate species specific heats ---*/
-//        Cvvst = Ru/Ms[iSpecies] * thoT*thoT * expt
-//              / ((expt-1.0)*(expt-1.0));
-//        Cvvs  = Ru/Ms[iSpecies] * thoTve*thoTve * exptv
-//              / ((exptv-1.0)*(exptv-1.0));
-//        
-//        val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies] -
-//                                          evib[iSpecies]   )
-//                                       /taus[iSpecies] * Volume;
-//        
-//        for (jVar = 0; jVar < nVar; jVar++) {
-//          val_Jacobian_i[nEv][jVar] +=
-//              U_i[iSpecies]/taus[iSpecies] * (Cvvst*dTdU_i[jVar] -
-//                                              Cvvs*dTvedU_i[jVar]  ) * Volume;
-//          
-//          val_Jacobian_i[nEv][jVar] +=
-//              -U_i[iSpecies]/(taus[iSpecies]*taus[iSpecies])*
-//              (estar[iSpecies]-evib[iSpecies])*dTausdU[iSpecies][iVar] * Volume;
-//        }
-//      }
-//    }
-//  }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      val_Jacobian_i[nEv][iSpecies] += (estar[iSpecies]-eves[iSpecies])/taus[iSpecies]*Volume;
+  }
 }
 
 void CSource_TNE2::ComputeAxisymmetric(double *val_residual,
