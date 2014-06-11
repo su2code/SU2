@@ -1519,26 +1519,34 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
                                       Thermal_Conductivity_ve_j);
   
 	/*--- Mean gradient approximation ---*/
-  for (iVar = 0; iVar < nPrimVar; iVar++) {
-		PrimVar_i[iVar] = V_i[iVar];
-		PrimVar_j[iVar] = V_j[iVar];
-		Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
-	}
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+  // Mass fraction
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    PrimVar_i[iSpecies] = V_i[iSpecies]/V_i[RHO_INDEX];
+    PrimVar_j[iSpecies] = V_j[iSpecies]/V_j[RHO_INDEX];
+    Mean_PrimVar[iSpecies] = 0.5*(PrimVar_i[iSpecies] + PrimVar_j[iSpecies]);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] *
+                                              (PrimVar_Grad_i[iSpecies][iDim] -
+                                               PrimVar_i[iSpecies] *
+                                               PrimVar_Grad_i[RHO_INDEX][iDim]) +
+                                              1.0/V_j[RHO_INDEX] *
+                                              (PrimVar_Grad_j[iSpecies][iDim] -
+                                               PrimVar_j[iSpecies] *
+                                               PrimVar_Grad_j[RHO_INDEX][iDim]));
+      
+    }
+  }
+  for (iVar = nSpecies; iVar < nVar; iVar++) {
+    PrimVar_i[iVar] = V_i[iVar];
+    PrimVar_j[iVar] = V_j[iVar];
+    Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+  }
+  for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
 		for (iDim = 0; iDim < nDim; iDim++) {
 			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
 		}
 	}
-  
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    Mean_U[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      Mean_GU[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] +
-//                                 ConsVar_Grad_j[iVar][iDim]);
-//  }
-//  var->Cons2PrimVar(config, Mean_U, Mean_PrimVar, Mean_dPdU, Mean_dTdU, Mean_dTvedU);
-//  var->GradCons2GradPrimVar(config, Mean_U, Mean_PrimVar, Mean_GU, Mean_GradPrimVar);
   
 	/*--- Get projected flux tensor ---*/
 	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar,
@@ -1628,8 +1636,6 @@ void CAvgGrad_TNE2::ComputeResidual(double *val_residual,
 //    cin.get();
 //    
 //    //////////////////// DEBUG ////////////////////
-
-    
     
 	}
 }
@@ -1707,33 +1713,55 @@ void CAvgGradCorrected_TNE2::ComputeResidual(double *val_residual,
 		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
 	}
   
-  /*--- Copy a local version of the primitive variables ---*/
-	for (iVar = 0; iVar < nPrimVar; iVar++) {
-		PrimVar_i[iVar] = V_i[iVar];
-		PrimVar_j[iVar] = V_j[iVar];
+  /*--- Make a local copy of the primitive variables ---*/
+  // NOTE: We are transforming the species density terms to species mass fractions
+  // Mass fraction
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    PrimVar_i[iSpecies] = V_i[iSpecies]/V_i[RHO_INDEX];
+    PrimVar_j[iSpecies] = V_j[iSpecies]/V_j[RHO_INDEX];
+    Mean_PrimVar[iSpecies] = 0.5*(PrimVar_i[iSpecies] + PrimVar_j[iSpecies]);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iSpecies][iDim] = 0.5*(1.0/V_i[RHO_INDEX] *
+                                              (PrimVar_Grad_i[iSpecies][iDim] -
+                                               PrimVar_i[iSpecies] *
+                                               PrimVar_Grad_i[RHO_INDEX][iDim]) +
+                                              1.0/V_j[RHO_INDEX] *
+                                              (PrimVar_Grad_j[iSpecies][iDim] -
+                                               PrimVar_j[iSpecies] *
+                                               PrimVar_Grad_j[RHO_INDEX][iDim]));
+      
+    }
+  }
+  for (iVar = nSpecies; iVar < nVar; iVar++) {
+    PrimVar_i[iVar] = V_i[iVar];
+    PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
+  for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
+                                          PrimVar_Grad_j[iVar][iDim]);
+		}
+	}
+  
   
 	/*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
-	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
-                                Laminar_Viscosity_j);
-  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
-                                   Thermal_Conductivity_j);
-  Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
-                                      Thermal_Conductivity_ve_j);
+	Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
+                                          Laminar_Viscosity_j);
+  Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
+                                          Thermal_Conductivity_j);
+  Mean_Thermal_Conductivity_ve     = 0.5*(Thermal_Conductivity_ve_i +
+                                          Thermal_Conductivity_ve_j);
   
   
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 	for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 		Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradPrimVar[iVar][iDim]      = 0.5*(PrimVar_Grad_i[iVar][iDim] +
-                                               PrimVar_Grad_j[iVar][iDim]);
+		for (iDim = 0; iDim < nDim; iDim++)
 			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
-		}
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;

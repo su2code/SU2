@@ -1763,17 +1763,16 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    double val_therm_conductivity_ve,
                                    CConfig *config) {
   
+  // Requires a slightly non-standard primitive vector:
+  // Assumes -     V = [Y1, ... , Yn, T, Tve, ... ]
+  // and gradient GV = [GY1, ... , GYn, GT, GTve, ... ]
+  // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
+  
   bool ionization;
 	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
-	double *Ds, *V, **GY, **GV, mu, ktr, kve, div_vel;
+	double *Ds, *V, **GV, mu, ktr, kve, div_vel;
   double Ru;
-  double Y, rho, T, Tve;
-  
-  /*--- Allocate ---*/
-  GY = new double*[nSpecies];
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    GY[iSpecies] = new double[nDim];
-  }
+  double rho, T, Tve;
   
   /*--- Initialize ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1806,22 +1805,13 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   /*--- Calculate the velocity divergence ---*/
 	div_vel = 0.0;
 	for (iDim = 0 ; iDim < nDim; iDim++)
-		div_vel += val_gradprimvar[VEL_INDEX+iDim][iDim];
-  
-  /*--- Calculate mass fraction gradients ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Y = V[RHOS_INDEX+iSpecies]/rho;
-      GY[iSpecies][iDim] = 1.0/rho * (GV[RHOS_INDEX+iSpecies][iDim] -
-                                      Y*GV[RHO_INDEX][iDim]          );
-    }
-  }
+		div_vel += GV[VEL_INDEX+iDim][iDim];
   
   /*--- Pre-compute mixture quantities ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Vector[iDim] = 0.0;
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Vector[iDim] += rho*Ds[iSpecies]*GY[iSpecies][iDim];
+      Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
     }
   }
   
@@ -1830,15 +1820,14 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
 		for (jDim = 0 ; jDim < nDim; jDim++)
 			tau[iDim][jDim] = mu * (val_gradprimvar[VEL_INDEX+jDim][iDim] +
                               val_gradprimvar[VEL_INDEX+iDim][jDim])
-      -TWO3*mu*div_vel*delta[iDim][jDim];
+                      -TWO3*mu*div_vel*delta[iDim][jDim];
   
 	/*--- Populate entries in the viscous flux vector ---*/
 	for (iDim = 0; iDim < nDim; iDim++) {
     /*--- Species diffusion velocity ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      Y = V[RHOS_INDEX+iSpecies]/rho;
-      Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GY[iSpecies][iDim]
-                                  - Y*Vector[iDim];
+      Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
+                                  - V[RHOS_INDEX+iSpecies]*Vector[iDim];
     }
     if (ionization) {
       cout << "GetViscProjFlux -- NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!" << endl;
@@ -1858,9 +1847,9 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
     }
     
     /*--- Heat transfer terms ---*/
-		Flux_Tensor[nSpecies+nDim][iDim]   += ktr*val_gradprimvar[T_INDEX][iDim] +
-    kve*val_gradprimvar[TVE_INDEX][iDim];
-    Flux_Tensor[nSpecies+nDim+1][iDim] += kve*val_gradprimvar[TVE_INDEX][iDim];
+		Flux_Tensor[nSpecies+nDim][iDim]   += ktr*GV[T_INDEX][iDim] +
+                                          kve*GV[TVE_INDEX][iDim];
+    Flux_Tensor[nSpecies+nDim+1][iDim] += kve*GV[TVE_INDEX][iDim];
 	}
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1868,11 +1857,6 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
     }
   }
-  
-  /*--- Deallocate ---*/
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    delete [] GY[iSpecies];
-  delete [] GY;
 }
 
 
@@ -2141,7 +2125,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   Ms  = config->GetMolar_Mass();
   xi  = config->GetRotationModes();
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies]/rho;
+    Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     eve[iSpecies]  = var->CalcEve(config, Tve, iSpecies);
     hs[iSpecies]   = var->CalcHs(config, T, eve[iSpecies], iSpecies);
     Cvve[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
@@ -2158,9 +2142,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
     //                                        V_i[RHOS_INDEX+iSpecies])/rho;
 //    sumY += rho*Ds[iSpecies]*theta/dij*(V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX] -
 //                                        V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX]);
-    for (iDim = 0; iDim < nDim; iDim++)
-      sumY += Ds[iSpecies]*(val_Mean_GradPrimVar[RHOS_INDEX+iSpecies][iDim] -
-                            Ys[iSpecies]*val_Mean_GradPrimVar[RHO_INDEX][iDim])*val_normal[iDim];
+    sumY += rho*Ds[iSpecies]*theta/dij*(V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX] -
+                                        V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX]);
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      sumY += rho*Ds[iSpecies]*(val_Mean_GradPrimVar[RHOS_INDEX+iSpecies][iDim])*val_normal[iDim];
   }
   
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
