@@ -10377,6 +10377,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
       }
     }
     
+    /*--- Receive the size of buffers---*/
+    
     if (rank == iDomain) {
       
       /*--- Receive the size of buffers---*/
@@ -10413,8 +10415,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Waitall(23, recv_req, recv_stat);
         
         /*--- Periodic boundary conditions, set the values in the config files of all the files ---*/
-
-        config->SetnPeriodicIndex(nPeriodic);
+      
         Buffer_Receive_Center    = new double[nPeriodic*3];
         Buffer_Receive_Rotation  = new double[nPeriodic*3];
         Buffer_Receive_Translate = new double[nPeriodic*3];
@@ -10424,6 +10425,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Irecv(Buffer_Receive_Translate, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 25, MPI_COMM_WORLD, &recv_req[2]);
         
         MPI_Waitall(3, recv_req, recv_stat);
+        
+        config->SetnPeriodicIndex(nPeriodic);
         
         for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
           
@@ -10443,7 +10446,9 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         
       }
       
-      /*--- Remove buffers associated with teh config file ---*/
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
+      }
       
       delete [] Buffer_Receive_Center;
       delete [] Buffer_Receive_Rotation;
@@ -11118,7 +11123,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Set the value of Marker_All_SendRecv and Marker_All_Tag in the config structure ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
   }
   
