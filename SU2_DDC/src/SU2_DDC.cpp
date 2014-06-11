@@ -26,7 +26,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
 	
 	unsigned short nZone = 1;
-	char buffer_su2[8], buffer_plt[8], file_name[200];
+	char buffer_su2[8], buffer_plt[8], file_name[MAX_STRING_SIZE];
 	string MeshFile;
   
   int rank = MASTER_NODE;

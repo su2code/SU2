@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
   
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned short nZone = 1;
-  char buffer_char[50], out_file[200], in_file[200], mesh_file[200];
+  char buffer_char[50], out_file[MAX_STRING_SIZE], in_file[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
   
