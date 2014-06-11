@@ -10168,6 +10168,70 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
     Buffer_Send_nSendDomain_Periodic = new unsigned long [nDomain];
     Buffer_Send_nReceivedDomain_Periodic = new unsigned long [nDomain];
     
+    /*--- Divide the elements in color list to speed up the grid partitioning ---*/
+    
+    unsigned long *nElem_Color = new unsigned long[nDomain];
+    for (iDomain = 0; iDomain < nDomain; iDomain++) nElem_Color[iDomain] = 0;
+    vector<long> DomainList;
+    bool CheckDomain;
+    unsigned short jDomain;
+
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+      DomainList.clear();
+      for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+        iPoint = geometry->elem[iElem]->GetNode(iNode);
+        iDomain = geometry->node[iPoint]->GetColor();
+        
+        /*--- Check if the element has been already added ---*/
+        
+        CheckDomain = true;
+        for (jDomain = 0; jDomain < DomainList.size(); jDomain++) {
+          if (DomainList[jDomain] = iDomain) CheckDomain = false;
+        }
+        if (CheckDomain) {
+          DomainList.push_back(iDomain);
+          nElem_Color[iDomain]++;
+        }
+        
+      }
+      
+    }
+    
+    /*--- Find the maximum number of elements per color ---*/
+    
+    unsigned long Max_nElem_Color = 0;
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      if (nElem_Color[iDomain] > Max_nElem_Color) Max_nElem_Color = nElem_Color[iDomain];
+    }
+    
+    unsigned long **Elem_Color = new unsigned long* [nDomain];
+    for (iDomain = 0; iDomain < nDomain; iDomain++) {
+      Elem_Color[iDomain] =  new unsigned long[Max_nElem_Color];
+      nElem_Color[iDomain] = 0;
+    }
+    
+    DomainList.clear();
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+      for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
+        iPoint = geometry->elem[iElem]->GetNode(iNode);
+        iDomain = geometry->node[iPoint]->GetColor();
+        
+        /*--- Check if the element has been already added ---*/
+        
+        CheckDomain = true;
+        for (jDomain = 0; jDomain < DomainList.size(); jDomain++) {
+          if (DomainList[jDomain] = iDomain) CheckDomain = false;
+        }
+        if (CheckDomain) {
+          DomainList.push_back(iDomain);
+          Elem_Color[iDomain][nElem_Color[iDomain]] = iElem;
+          nElem_Color[iDomain]++;
+        }
+        
+      }
+    }
+    
   }
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -10414,6 +10478,13 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         
         MPI_Waitall(23, recv_req, recv_stat);
         
+        /*--- Marker_All_Tag and Marker_All_SendRecv, set the values in the config files of all the files ---*/
+        
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
+          config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
+        }
+        
         /*--- Periodic boundary conditions, set the values in the config files of all the files ---*/
       
         Buffer_Receive_Center    = new double[nPeriodic*3];
@@ -10425,6 +10496,7 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
         MPI_Irecv(Buffer_Receive_Translate, nPeriodic*3, MPI_DOUBLE, MASTER_NODE, 25, MPI_COMM_WORLD, &recv_req[2]);
         
         MPI_Waitall(3, recv_req, recv_stat);
+
         
         config->SetnPeriodicIndex(nPeriodic);
         
@@ -10444,10 +10516,6 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
           config->SetPeriodicTranslate(iPeriodic, translate);
         }
         
-      }
-      
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        config->SetMarker_All_Tag(iMarker, string(Marker_All_Tag[iMarker]));
       }
       
       delete [] Buffer_Receive_Center;
