@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	/*--- Variable definitions ---*/
 	unsigned short iZone, nZone;
 	ofstream ConvHist_file;
-	char file_name[200];
+	char file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
