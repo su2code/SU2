@@ -22,7 +22,7 @@
 
 #include "../include/config_structure.hpp"
 
-CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -50,7 +50,7 @@ CConfig::CConfig(char case_filename[200], unsigned short val_software, unsigned 
   
 }
 
-CConfig::CConfig(char case_filename[200]) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE]) {
   /*--- Initialize pointers to Null---*/
   SetPointersNull();
   
@@ -1042,7 +1042,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
 }
 
-void CConfig::SetParsing(char case_filename[200]) {
+void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   string text_line, option_name;
   ifstream case_file;
   vector<string> option_value;

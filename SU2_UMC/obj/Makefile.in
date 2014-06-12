@@ -286,9 +286,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu SU2_UMC/obj/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign SU2_UMC/obj/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu SU2_UMC/obj/Makefile
+	  $(AUTOMAKE) --foreign SU2_UMC/obj/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

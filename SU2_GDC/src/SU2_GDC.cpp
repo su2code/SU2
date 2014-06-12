@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 	double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
   vector<double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
-  char grid_file[200], buffer_char[50], out_file[200];
+  char grid_file[MAX_STRING_SIZE], buffer_char[50], out_file[MAX_STRING_SIZE];
 
  	char *cstr;
 	ofstream Gradient_file, ObjFunc_file;

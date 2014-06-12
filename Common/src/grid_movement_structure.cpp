@@ -6017,7 +6017,7 @@ void CFreeFormDefBox::SetSupportCPChange(CFreeFormDefBox *FFDBox) {
 void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bool original) {
   
 	ofstream FFDBox_file;
-  char FFDBox_filename[200];
+  char FFDBox_filename[MAX_STRING_SIZE];
   bool new_file;
 	unsigned short iDim, iDegree, jDegree, kDegree;
 	

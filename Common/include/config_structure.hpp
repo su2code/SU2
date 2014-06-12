@@ -884,12 +884,12 @@ public:
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200]);
+	CConfig(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Destructor of the class. 
@@ -4553,7 +4553,7 @@ public:
   /*!
 	 * \brief Set the config file parsing.
 	 */
-  void SetParsing(char case_filename[200]);
+  void SetParsing(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Config file postprocessing.
