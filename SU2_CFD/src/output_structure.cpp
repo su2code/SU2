@@ -4360,7 +4360,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
-            cout << "     Sens_Geo" << "    Sens_Mach" << endl;
+            cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
