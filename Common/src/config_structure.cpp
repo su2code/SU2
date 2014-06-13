@@ -154,9 +154,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Adjoint type */
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
-  
-  /* DESCRIPTION: Write extra output */
-  addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
+
   
   /* DESCRIPTION: Physical governing equations */
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
@@ -1019,6 +1017,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* CONFIG_CATEGORY: Unsupported options */
   /*--- Options that are experimental and not intended for general use ---*/
+  
+  /* DESCRIPTION: Write extra output */
+  addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
   
   /* DESCRIPTION: Location of the turb model itself */
   addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
