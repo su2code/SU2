@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -320,7 +320,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
     cout << "Computing distances to the nearest deforming surface." << endl;
   
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
    meshes after imposing design variable surface deformations (DV_MARKER). ---*/
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
@@ -332,7 +332,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
   
   /*--- Allocate an array to hold boundary node coordinates ---*/
@@ -347,7 +347,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -397,7 +397,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
       nLocalVertex_NS += geometry->GetnVertex(iMarker);
   
   /*--- Communicate to all processors the total number of deforming boundary
@@ -426,7 +426,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1614,7 +1614,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	double *VarCoord, MeanCoord[3], VarIncrement = 1.0;
   
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
    meshes after imposing design variable surface deformations (DV_MARKER). ---*/
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
@@ -1675,7 +1675,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
@@ -5095,7 +5095,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   string text_line;
   
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_MDC will use it for deforming
+   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
    meshes after imposing design variable surface deformations (DV_MARKER). ---*/
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
@@ -5268,7 +5268,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   TotalArch = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
       for (iVertex = 0; iVertex < boundary->nVertex[iMarker]-1; iVertex++) {
         Coord_i = boundary->vertex[iMarker][iVertex]->GetCoord();
         Coord_ip1 = boundary->vertex[iMarker][iVertex+1]->GetCoord();
@@ -5292,7 +5292,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
       VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
       if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_MDC))) {
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
         Point = boundary->vertex[iMarker][iVertex]->GetNode();
         Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
         
@@ -5602,7 +5602,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         nSurfacePoints[iFFDBox] = my_nSurfPoints;
         nSurfPoints = 0;
 #ifdef HAVE_MPI
-        if (config->GetKind_SU2() != SU2_DDC)
+        if (config->GetKind_SU2() != SU2_PRT)
           MPI_Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
         else
           nSurfPoints = my_nSurfPoints;
@@ -6030,7 +6030,7 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
   
 	if (new_file) {
 		FFDBox_file.open(FFDBox_filename, ios::out);
-		FFDBox_file << "TITLE = \"Visualization of the FFD boxes generated by SU2_MDC.\"" << endl;
+		FFDBox_file << "TITLE = \"Visualization of the FFD boxes generated by SU2_DEF.\"" << endl;
     if (nDim == 2) FFDBox_file << "VARIABLES = \"x\", \"y\"" << endl;
 		else FFDBox_file << "VARIABLES = \"x\", \"y\", \"z\"" << endl;
 	}

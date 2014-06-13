@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -140,7 +140,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   iZone = val_iZone;
   
   
-  // This config file is parsed by a number of programs to make it easy to write SU^2
+  // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
   // the best you can to follow the established format. It's very hard to parse c++ code
   // and none of us that write the parsers want to write a full c++ interpreter. Please
@@ -212,14 +212,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
+  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
   
-  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_PBC
+  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
@@ -1138,7 +1138,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
-    cout << "Tecplot binary file requested but SU^2 was built without TecIO support." << "\n";
+    cout << "Tecplot binary file requested but SU2 was built without TecIO support." << "\n";
     Output_FileFormat = TECPLOT;
   }
 #endif
@@ -1147,9 +1147,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Kind_SU2 = val_software;
   
-  /*--- Only SU2_DDC, and SU2_CFD work with CGNS ---*/
+  /*--- Only SU2_PRT, and SU2_CFD work with CGNS ---*/
   
-  if ((Kind_SU2 != SU2_DDC) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
+  if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
       cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
       exit(1);
@@ -1167,9 +1167,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((size > SINGLE_NODE) && ((Kind_SU2 == SU2_CFD) || (Kind_SU2 == SU2_SOL))) Mesh_FileFormat = SU2;
   
-  /*--- Don't divide the numerical grid unless running SU2_MDC ---*/
+  /*--- Don't divide the numerical grid unless running SU2_DEF ---*/
   
-  if (Kind_SU2 != SU2_MDC) Divide_Element = false;
+  if (Kind_SU2 != SU2_DEF) Divide_Element = false;
   
   /*--- Identification of free-surface problem, this problems are always unsteady and incompressible. ---*/
   
@@ -2650,7 +2650,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nDomain = SINGLE_NODE;
 #else
   /*--- Identify the solvers that work in serial ---*/
-  if ((val_software != SU2_DDC) && (val_software != SU2_MAC))
+  if ((val_software != SU2_PRT) && (val_software != SU2_MSH))
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
   else
     nDomain = SINGLE_NODE;
@@ -2973,17 +2973,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
   cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
   switch (val_software) {
-    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamic Code)  |" << endl; break;
-    case SU2_MDC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
-    case SU2_GPC: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_DDC: cout << "|  |_____/   \\____/  |____|   Suite (Domain Decomposition Code)         |" << endl; break;
-    case SU2_MAC: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
-    case SU2_GDC: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Design Code)              |" << endl; break;
-    case SU2_PBC: cout << "|  |_____/   \\____/  |____|   Suite (Periodic Boundary Code)            |" << endl; break;
+    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
+    case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
+    case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
+    case SU2_PRT: cout << "|  |_____/   \\____/  |____|   Suite (Grid Partitioning Code)            |" << endl; break;
+    case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
+    case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
   
-  cout << "|                             Release 3.1.0 \"eagle\"                     |" << endl;
+  cout << "|                             Release 3.2.0 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
@@ -3165,7 +3164,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
   }
   
-  if (val_software == SU2_GDC) {
+  if (val_software == SU2_GEO) {
     if (nMarker_GeoEval != 0) {
       cout << "Surface(s) where the geometrical based functions is evaluated: ";
       for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++) {
@@ -3179,11 +3178,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   
   cout << "Input mesh file name: " << Mesh_FileName << endl;
   
-	if (val_software == SU2_GPC) {
+	if (val_software == SU2_DOT) {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
 
-	if (val_software == SU2_MAC) {
+	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
 		case FULL: case WAKE: case TWOPHASE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
@@ -3200,18 +3199,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (val_software == SU2_MDC) {
+	if (val_software == SU2_DEF) {
 		cout << endl <<"---------------------- Grid deformation parameters ----------------------" << endl;
 		cout << "Grid deformation using a linear elasticity method." << endl;
 
     if (Hold_GridFixed == YES) cout << "Hold some regions of the mesh fixed (hardcode implementation)." <<endl;
   }
   
-  if (val_software == SU2_GPC) {
+  if (val_software == SU2_DOT) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
   
-  if ((val_software == SU2_MDC) || (val_software == SU2_GPC)) {
+  if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
     
     cout << "Design variables definition (markers <-> value <-> param):" <<endl;
     
@@ -3287,7 +3286,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_GPC)) {
+	if (((val_software == SU2_CFD) && ( Adjoint || OneShot )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -3878,7 +3877,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
   }
   
-  if (val_software == SU2_MAC) {
+  if (val_software == SU2_MSH) {
     cout << endl <<"----------------------- Grid adaptation strategy ------------------------" << endl;
     
     switch (Kind_Adaptation) {
@@ -3971,7 +3970,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
   }
   
-  if (val_software == SU2_MDC) {
+  if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
     if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
     else cout << "No file for visualizing the deformation." << endl;
@@ -3988,19 +3987,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
-  if (val_software == SU2_PBC) {
+  if (val_software == SU2_MSH) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
   }
   
-  if (val_software == SU2_SMC) {
-    cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-  }
-  
-  if (val_software == SU2_GPC) {
+  if (val_software == SU2_DOT) {
     cout << "Output gradient file name: " << ObjFunc_Grad_FileName << ". " << endl;
   }
   
-  if (val_software == SU2_MAC) {
+  if (val_software == SU2_MSH) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
     cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
@@ -4013,7 +4008,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
-  if (val_software == SU2_DDC) {
+  if (val_software == SU2_PRT) {
     if (Visualize_Partition) cout << "Visualize the partitions. " << endl;
     else cout << "Don't visualize the partitions. " << endl;
   }

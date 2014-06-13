@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -106,14 +106,12 @@ inline string StringToUpperCase(const string & str) {
  */
 enum SU2_COMPONENT {
   SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
-  SU2_MDC = 2,	/*!< \brief Running the SU2_MDC software. */
-  SU2_GPC = 3,	/*!< \brief Running the SU2_GPC software. */
-  SU2_DDC = 4,	/*!< \brief Running the SU2_DDC software. */
-  SU2_MAC = 5,	/*!< \brief Running the SU2_MAC software. */
-  SU2_GDC = 6,	/*!< \brief Running the SU2_GDC software. */
-  SU2_PBC = 7,	/*!< \brief Running the SU2_PBC software. */
-  SU2_SMC = 8,	/*!< \brief Running the SU2_SMC software. */
-  SU2_SOL = 9,	/*!< \brief Running the SU2_SOL software. */
+  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
+  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
+  SU2_PRT = 4,	/*!< \brief Running the SU2_PRT software. */
+  SU2_MSH = 5,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 7,	/*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */

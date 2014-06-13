@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# SU^2 Makefile.am for SOL
+# SU2 Makefile.am for SOL
 # Stanford University Aerospace Design Lab
 #
 # Created: 		3/16/13

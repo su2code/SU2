@@ -1,7 +1,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -28,7 +28,7 @@ import os, sys, shutil, copy
 from .. import io   as su2io
 from .. import util as su2util
 from decompose import decompose as su2decomp
-from interface import GPC as SU2_GPC
+from interface import DOT as SU2_DOT
 
 
 # ----------------------------------------------------------------------
@@ -40,7 +40,7 @@ def projection( config, step = 1e-3 ):
         
         Runs an gradient projection with:
             SU2.run.decomp()
-            SU2.run.GPC()
+            SU2.run.DOT()
             
         Assumptions:
             Redundant decomposition if config.DECOMPOSED == True
@@ -76,7 +76,7 @@ def projection( config, step = 1e-3 ):
         assert len(step) == n_DV , 'unexpected step vector length'
     else:
         step = [step]*n_DV
-    dv_old = [0.0]*n_DV # SU2_GPC input requirement, assumes linear superposition of design variables
+    dv_old = [0.0]*n_DV # SU2_DOT input requirement, assumes linear superposition of design variables
     dv_new = step
     konfig.unpack_dvs(dv_new,dv_old)
 
@@ -89,7 +89,7 @@ def projection( config, step = 1e-3 ):
     grad_plotname  = os.path.splitext(grad_filename)[0] + '_' + adj_suffix + plot_extension    
 
     # Run Projection
-    SU2_GPC(konfig)
+    SU2_DOT(konfig)
     
     # read raw gradients
     raw_gradients = su2io.read_gradients(grad_filename)
