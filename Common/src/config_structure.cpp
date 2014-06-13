@@ -2972,12 +2972,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout <<"|   \\___ \\  | |  | |   / /    Forum: www.cfd-online.com/Forums/su2/     |" << endl;
   cout <<"|   ____) | | |__| |  / /_                                              |" << endl;
   switch (val_software) {
-    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code)  |" << endl; break;
+    case SU2_CFD: cout << "|  |_____/   \\____/  |____|   Suite (Computational Fluid Dynamics Code) |" << endl; break;
     case SU2_DEF: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Deformation Code)             |" << endl; break;
     case SU2_DOT: cout << "|  |_____/   \\____/  |____|   Suite (Gradient Projection Code)          |" << endl; break;
-    case SU2_PRT: cout << "|  |_____/   \\____/  |____|   Suite (Grid Partitioning Code)         |" << endl; break;
+    case SU2_PRT: cout << "|  |_____/   \\____/  |____|   Suite (Grid Partitioning Code)            |" << endl; break;
     case SU2_MSH: cout << "|  |_____/   \\____/  |____|   Suite (Mesh Adaptation Code)              |" << endl; break;
-    case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)              |" << endl; break;
+    case SU2_GEO: cout << "|  |_____/   \\____/  |____|   Suite (Geometry Definition Code)          |" << endl; break;
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
   

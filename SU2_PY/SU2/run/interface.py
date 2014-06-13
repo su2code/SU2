@@ -261,8 +261,6 @@ def run_command( Command ):
         checks for errors from command
     """
     
-    print "the command: %s" % Command
-    print "the location: %s" % os.getcwd()
     sys.stdout.flush()
     
     proc = subprocess.Popen( Command, shell=True    ,

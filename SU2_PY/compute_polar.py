@@ -31,14 +31,20 @@ import SU2
 parser = OptionParser()
 parser.add_option("-f", "--file", dest="filename",
                   help="read config from FILE", metavar="FILE")
-parser.add_option("-p", "--partitions", dest="partitions", default=2,
+parser.add_option("-n", "--partitions", dest="partitions", default=2,
                   help="number of PARTITIONS", metavar="PARTITIONS")
+parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                  help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
 parser.add_option("-i", "--iterations", dest="iterations", default=99999,
                   help="number of ITERATIONS", metavar="ITERATIONS")
 
 (options, args)=parser.parse_args()
 options.partitions = int( options.partitions )
 options.iterations = int( options.iterations )
+
+if options.oldpartitions != "oldpartitions":
+  print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+  sys.exit()
 
 # load config, start state
 config = SU2.io.Config(options.filename)
