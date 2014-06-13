@@ -77,20 +77,20 @@ public:
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
-	unsigned short nDim;						/*!< \brief Number of dimensions of the problem. */
-	unsigned short nCornerPoints,		/*!< \brief Number of corner points of the FFDBox. */
-	nControlPoints;									/*!< \brief Number of control points of the FFDBox. */
+	unsigned short nDim;                  /*!< \brief Number of dimensions of the problem. */
+	unsigned short nCornerPoints,         /*!< \brief Number of corner points of the FFDBox. */
+	nControlPoints, nControlPoints_Copy;  /*!< \brief Number of control points of the FFDBox. */
 	double **Coord_Corner_Points,		/*!< \brief Coordinates of the corner points. */
 	****Coord_Control_Points,				/*!< \brief Coordinates of the control points. */
 	****ParCoord_Control_Points,		/*!< \brief Coordinates of the control points. */
 	****Coord_Control_Points_Copy,	/*!< \brief Coordinates of the control points (copy). */
 	****Coord_SupportCP;						/*!< \brief Coordinates of the support control points. */
-	unsigned short lOrder,	/*!< \brief Order of the FFDBox in the i direction. */
-	mOrder,									/*!< \brief Order of the FFDBox in the j direction. */
-	nOrder;									/*!< \brief Order of the FFDBox in the k direction. */
-	unsigned short lDegree, /*!< \brief Degree of the FFDBox in the i direction. (lOrder - 1)*/
-	mDegree,								/*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
-	nDegree;								/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
+	unsigned short lOrder, lOrder_Copy,	/*!< \brief Order of the FFDBox in the i direction. */
+	mOrder,	mOrder_Copy, 								/*!< \brief Order of the FFDBox in the j direction. */
+	nOrder, nOrder_Copy;									/*!< \brief Order of the FFDBox in the k direction. */
+	unsigned short lDegree, lDegree_Copy, /*!< \brief Degree of the FFDBox in the i direction. (lOrder - 1)*/
+	mDegree, mDegree_Copy,								/*!< \brief Degree of the FFDBox in the j direction. (mOrder - 1)*/
+	nDegree, nDegree_Copy;								/*!< \brief Degree of the FFDBox in the k direction. (nOrder - 1)*/
 	double *ParamCoord, *ParamCoord_,	/*!< \brief Parametric coordinates of a point. */
 	*cart_coord, *cart_coord_;			/*!< \brief Cartesian coordinates of a point. */
   double ObjFunc;			/*!< \brief Objective function of the point inversion process. */
@@ -279,6 +279,12 @@ public:
 	 * \return Number of control points.
 	 */	
 	unsigned short GetnControlPoints(void);
+  
+  /*!
+	 * \brief Get the number of control points.
+	 * \return Number of control points.
+	 */
+	void SetnControlPoints(void);
 	
 	/*! 
 	 * \brief Get the number of numerical points on the surface.
@@ -315,6 +321,15 @@ public:
 	 * \param[in] kDegree - Index of the FFDBox, k direction.
 	 */	
 	void SetCoordControlPoints(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);	
+
+  /*!
+	 * \brief Set the coordinates of the control points.
+	 * \param[in] val_coord - Coordinates of the control point.
+	 * \param[in] iDegree - Index of the FFDBox, i direction.
+	 * \param[in] jDegree - Index of the FFDBox, j direction.
+	 * \param[in] kDegree - Index of the FFDBox, k direction.
+	 */
+	void SetCoordControlPoints_Copy(double *val_coord, unsigned short iDegree, unsigned short jDegree, unsigned short kDegree);
 
 	/*! 
 	 * \brief Set the coordinates of the control points.
@@ -466,6 +481,24 @@ public:
 	 * \return Order in the n direction of the FFD FFDBox.
 	 */		
 	unsigned short GetnOrder(void);
+  
+  /*!
+	 * \brief Get the order in the l direction of the FFD FFDBox.
+	 * \return Order in the l direction of the FFD FFDBox.
+	 */
+	void SetlOrder(double val_lOrder);
+	
+	/*!
+	 * \brief Get the order in the m direction of the FFD FFDBox.
+	 * \return Order in the m direction of the FFD FFDBox.
+	 */
+	void SetmOrder(double val_mOrder);
+	
+	/*!
+	 * \brief Get the order in the n direction of the FFD FFDBox.
+	 * \return Order in the n direction of the FFD FFDBox.
+	 */
+	void SetnOrder(double val_nOrder);
 	
 	/*! 
 	 * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
@@ -1161,7 +1194,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
   
 	/*! 
 	 * \brief Set the deformation of the Free From box using the control point position.
@@ -1171,7 +1204,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDCPChange(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
   /*!
 	 * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1181,7 +1214,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDCamber_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*!
 	 * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1191,7 +1224,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
-	void SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDThickness_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
   
 	/*! 
 	 * \brief Set a camber deformation of the Free From box using the control point position.
@@ -1201,7 +1234,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -1211,7 +1244,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a dihedral angle deformation of the Free From box using the control point position.
@@ -1221,7 +1254,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a twist angle deformation of the Free From box using the control point position.
@@ -1231,7 +1264,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a rotation angle deformation of the Free From box using the control point position.
@@ -1241,8 +1274,18 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
+  /*!
+	 * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
+  
 	/*! 
 	 * \brief Read the free form information from the grid input file.
 	 * \note If there is no control point information, and no parametric 

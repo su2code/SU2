@@ -891,7 +891,8 @@ enum ENUM_PARAM {
   AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
   FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 27		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_THICKNESS_2D = 27,		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_CONTROL_SURFACE = 28		/*!< \brief Free form deformation for 3D design (control surface). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -907,6 +908,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_TWIST_ANGLE", FFD_TWIST_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
+("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
@@ -1658,10 +1660,11 @@ class COptionDVParam : public COptionBase{
   string name; // identifier for the option
   unsigned short & nDV;
   double ** & paramDV;
+  string * & FFDTag;
   unsigned short* & design_variable;
   
 public:
-  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field){
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field){
     this->name = option_field_name;
   }
   
@@ -1713,6 +1716,8 @@ public:
       this->paramDV[iDV] = new double[MAX_PARAMETERS];
     }
     
+    this->FFDTag = new string[this->nDV];
+    
     unsigned short nParamDV = 0;
     stringstream ss;
     unsigned int i = 0;
@@ -1737,6 +1742,7 @@ public:
         case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
         case FFD_TWIST_ANGLE: nParamDV = 7; break;
         case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
@@ -1750,8 +1756,28 @@ public:
       
       // ?? Not sure what's going on. Didn't touch it.
       for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
+        
         ss << option_value[i] << " ";
-        ss >> this->paramDV[iDV][iParamDV];
+        
+        if ((iParamDV == 0) &&
+            ((this->design_variable[iDV] == FFD_SETTING) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
+             (this->design_variable[iDV] == FFD_CAMBER_2D) ||
+             (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
+             (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
+             (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
+             (this->design_variable[iDV] == FFD_ROTATION) ||
+             (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
+             (this->design_variable[iDV] == FFD_CAMBER) ||
+             (this->design_variable[iDV] == FFD_THICKNESS))) {
+              ss >> this->FFDTag[iDV];
+              this->paramDV[iDV][iParamDV] = 0;
+            }
+        else
+          ss >> this->paramDV[iDV][iParamDV];
+        
         i++;
       }
       if (iDV < (this->nDV-1)) {
@@ -1772,6 +1798,7 @@ public:
   void SetDefault(){
     this->nDV = 0;
     this->paramDV = NULL;
+    this->FFDTag = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
@@ -2260,3 +2287,4 @@ public:
     this->omega = NULL;
   }
 };
+
