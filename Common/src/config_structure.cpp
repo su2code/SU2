@@ -1042,6 +1042,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /* CONFIG_CATEGORY:Python Options*/
   
+  /* DESCRIPTION: Gradient method */
+  addPythonOption("GRADIENT_METHOD");
+  
+  /* DESCRIPTION: Geometrical Parameter */
+  addPythonOption("GEO_PARAM");
+  
   /* DESCRIPTION: Setup for design variables */
   addPythonOption("DEFINITION_DV");
   
