@@ -754,11 +754,11 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = ../Common \
-                         ../SU2_MDC \
-                         ../SU2_MAC \
-                         ../SU2_GPC \
-                         ../SU2_GDC \
-                         ../SU2_DDC \
+                         ../SU2_DEF \
+                         ../SU2_MSH \
+                         ../SU2_DOT \
+                         ../SU2_GEO \
+                         ../SU2_PRT \
                          ../SU2_CFD
 
 # This tag can be used to specify the character encoding of the source files

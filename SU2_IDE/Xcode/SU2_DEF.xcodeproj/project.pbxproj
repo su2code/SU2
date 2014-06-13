@@ -1,0 +1,289 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05E6DB5C17EB61D100FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5317EB61D100FA1F7E /* config_structure.cpp */; };
+		05E6DB5D17EB61D100FA1F7E /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */; };
+		05E6DB5E17EB61D100FA1F7E /* geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */; };
+		05E6DB6017EB61D100FA1F7E /* grid_movement_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5717EB61D100FA1F7E /* grid_movement_structure.cpp */; };
+		05E6DB6117EB61D100FA1F7E /* linear_solvers_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5817EB61D100FA1F7E /* linear_solvers_structure.cpp */; };
+		05E6DB6217EB61D100FA1F7E /* matrix_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */; };
+		05E6DB6317EB61D100FA1F7E /* primal_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5A17EB61D100FA1F7E /* primal_grid_structure.cpp */; };
+		05E6DB6417EB61D100FA1F7E /* vector_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5B17EB61D100FA1F7E /* vector_structure.cpp */; };
+		05E6DC4E17EB635D00FA1F7E /* SU2_DEF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC4D17EB635D00FA1F7E /* SU2_DEF.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DD76F690486A84900D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		050BACD21374A60900564A35 /* SU2_DEF */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_DEF; sourceTree = BUILT_PRODUCTS_DIR; };
+		05A9E2DD180DCD5200BFCFD2 /* config_template.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template.cfg; path = ../../config_template.cfg; sourceTree = "<group>"; };
+		05E6DA8417EB5FD800FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
+		05E6DA8517EB5FD800FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
+		05E6DA8617EB5FD800FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
+		05E6DA8817EB5FD800FA1F7E /* grid_movement_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = grid_movement_structure.inl; path = ../../Common/include/grid_movement_structure.inl; sourceTree = "<group>"; };
+		05E6DA8917EB5FD800FA1F7E /* linear_solvers_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = linear_solvers_structure.inl; path = ../../Common/include/linear_solvers_structure.inl; sourceTree = "<group>"; };
+		05E6DA8A17EB5FD800FA1F7E /* matrix_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = matrix_structure.inl; path = ../../Common/include/matrix_structure.inl; sourceTree = "<group>"; };
+		05E6DA8B17EB5FD800FA1F7E /* primal_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = primal_grid_structure.inl; path = ../../Common/include/primal_grid_structure.inl; sourceTree = "<group>"; };
+		05E6DA8C17EB5FD800FA1F7E /* vector_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = vector_structure.inl; path = ../../Common/include/vector_structure.inl; sourceTree = "<group>"; };
+		05E6DAE317EB609400FA1F7E /* config_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = config_structure.hpp; path = ../../Common/include/config_structure.hpp; sourceTree = "<group>"; };
+		05E6DAE417EB609400FA1F7E /* dual_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = dual_grid_structure.hpp; path = ../../Common/include/dual_grid_structure.hpp; sourceTree = "<group>"; };
+		05E6DAE517EB609400FA1F7E /* geometry_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = geometry_structure.hpp; path = ../../Common/include/geometry_structure.hpp; sourceTree = "<group>"; };
+		05E6DAE717EB609400FA1F7E /* grid_movement_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = grid_movement_structure.hpp; path = ../../Common/include/grid_movement_structure.hpp; sourceTree = "<group>"; };
+		05E6DAE817EB609400FA1F7E /* linear_solvers_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = linear_solvers_structure.hpp; path = ../../Common/include/linear_solvers_structure.hpp; sourceTree = "<group>"; };
+		05E6DAE917EB609400FA1F7E /* matrix_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = matrix_structure.hpp; path = ../../Common/include/matrix_structure.hpp; sourceTree = "<group>"; };
+		05E6DAEA17EB609400FA1F7E /* option_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = option_structure.hpp; path = ../../Common/include/option_structure.hpp; sourceTree = "<group>"; };
+		05E6DAEB17EB609400FA1F7E /* primal_grid_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = primal_grid_structure.hpp; path = ../../Common/include/primal_grid_structure.hpp; sourceTree = "<group>"; };
+		05E6DAEC17EB609400FA1F7E /* vector_structure.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vector_structure.hpp; path = ../../Common/include/vector_structure.hpp; sourceTree = "<group>"; };
+		05E6DB5317EB61D100FA1F7E /* config_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = config_structure.cpp; path = ../../Common/src/config_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dual_grid_structure.cpp; path = ../../Common/src/dual_grid_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = geometry_structure.cpp; path = ../../Common/src/geometry_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5717EB61D100FA1F7E /* grid_movement_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = grid_movement_structure.cpp; path = ../../Common/src/grid_movement_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5817EB61D100FA1F7E /* linear_solvers_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure.cpp; path = ../../Common/src/linear_solvers_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = matrix_structure.cpp; path = ../../Common/src/matrix_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5A17EB61D100FA1F7E /* primal_grid_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = primal_grid_structure.cpp; path = ../../Common/src/primal_grid_structure.cpp; sourceTree = "<group>"; };
+		05E6DB5B17EB61D100FA1F7E /* vector_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vector_structure.cpp; path = ../../Common/src/vector_structure.cpp; sourceTree = "<group>"; };
+		05E6DC4C17EB635800FA1F7E /* SU2_DEF.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = SU2_DEF.hpp; path = ../../SU2_DEF/include/SU2_DEF.hpp; sourceTree = "<group>"; };
+		05E6DC4D17EB635D00FA1F7E /* SU2_DEF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SU2_DEF.cpp; path = ../../SU2_DEF/src/SU2_DEF.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8DD76F660486A84900D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		050BACD81374A60F00564A35 /* InLine */ = {
+			isa = PBXGroup;
+			children = (
+				05E6DA8417EB5FD800FA1F7E /* config_structure.inl */,
+				05E6DA8517EB5FD800FA1F7E /* dual_grid_structure.inl */,
+				05E6DA8617EB5FD800FA1F7E /* geometry_structure.inl */,
+				05E6DA8817EB5FD800FA1F7E /* grid_movement_structure.inl */,
+				05E6DA8917EB5FD800FA1F7E /* linear_solvers_structure.inl */,
+				05E6DA8A17EB5FD800FA1F7E /* matrix_structure.inl */,
+				05E6DA8B17EB5FD800FA1F7E /* primal_grid_structure.inl */,
+				05E6DA8C17EB5FD800FA1F7E /* vector_structure.inl */,
+			);
+			name = InLine;
+			sourceTree = "<group>";
+		};
+		050BACD91374A61F00564A35 /* Include */ = {
+			isa = PBXGroup;
+			children = (
+				05E6DC4C17EB635800FA1F7E /* SU2_DEF.hpp */,
+				05E6DAE317EB609400FA1F7E /* config_structure.hpp */,
+				05E6DAE417EB609400FA1F7E /* dual_grid_structure.hpp */,
+				05E6DAE517EB609400FA1F7E /* geometry_structure.hpp */,
+				05E6DAE717EB609400FA1F7E /* grid_movement_structure.hpp */,
+				05E6DAE817EB609400FA1F7E /* linear_solvers_structure.hpp */,
+				05E6DAE917EB609400FA1F7E /* matrix_structure.hpp */,
+				05E6DAEA17EB609400FA1F7E /* option_structure.hpp */,
+				05E6DAEB17EB609400FA1F7E /* primal_grid_structure.hpp */,
+				05E6DAEC17EB609400FA1F7E /* vector_structure.hpp */,
+			);
+			name = Include;
+			sourceTree = "<group>";
+		};
+		08FB7794FE84155DC02AAC07 /* SU2_DEF */ = {
+			isa = PBXGroup;
+			children = (
+				05A9E2DD180DCD5200BFCFD2 /* config_template.cfg */,
+				050BACD81374A60F00564A35 /* InLine */,
+				050BACD91374A61F00564A35 /* Include */,
+				08FB7795FE84155DC02AAC07 /* Source */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = SU2_DEF;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				05E6DC4D17EB635D00FA1F7E /* SU2_DEF.cpp */,
+				05E6DB5317EB61D100FA1F7E /* config_structure.cpp */,
+				05E6DB5417EB61D100FA1F7E /* dual_grid_structure.cpp */,
+				05E6DB5517EB61D100FA1F7E /* geometry_structure.cpp */,
+				05E6DB5717EB61D100FA1F7E /* grid_movement_structure.cpp */,
+				05E6DB5817EB61D100FA1F7E /* linear_solvers_structure.cpp */,
+				05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */,
+				05E6DB5A17EB61D100FA1F7E /* primal_grid_structure.cpp */,
+				05E6DB5B17EB61D100FA1F7E /* vector_structure.cpp */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				050BACD21374A60900564A35 /* SU2_DEF */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8DD76F620486A84900D96B5E /* SU2_DEF */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "SU2_DEF" */;
+			buildPhases = (
+				8DD76F640486A84900D96B5E /* Sources */,
+				8DD76F660486A84900D96B5E /* Frameworks */,
+				8DD76F690486A84900D96B5E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SU2_DEF;
+			productInstallPath = "$(HOME)/bin";
+			productName = SU2_DEF;
+			productReference = 050BACD21374A60900564A35 /* SU2_DEF */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0510;
+			};
+			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_DEF" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 08FB7794FE84155DC02AAC07 /* SU2_DEF */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76F620486A84900D96B5E /* SU2_DEF */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8DD76F640486A84900D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				05E6DB5C17EB61D100FA1F7E /* config_structure.cpp in Sources */,
+				05E6DB5D17EB61D100FA1F7E /* dual_grid_structure.cpp in Sources */,
+				05E6DB5E17EB61D100FA1F7E /* geometry_structure.cpp in Sources */,
+				05E6DB6017EB61D100FA1F7E /* grid_movement_structure.cpp in Sources */,
+				05E6DB6117EB61D100FA1F7E /* linear_solvers_structure.cpp in Sources */,
+				05E6DB6217EB61D100FA1F7E /* matrix_structure.cpp in Sources */,
+				05E6DB6317EB61D100FA1F7E /* primal_grid_structure.cpp in Sources */,
+				05E6DB6417EB61D100FA1F7E /* vector_structure.cpp in Sources */,
+				05E6DC4E17EB635D00FA1F7E /* SU2_DEF.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB923208733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = SU2_DEF;
+			};
+			name = Debug;
+		};
+		1DEB923308733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = /usr/local/bin;
+				PRODUCT_NAME = SU2_DEF;
+			};
+			name = Release;
+		};
+		1DEB923608733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NO_METIS,
+					NO_OMP,
+					NO_MPI,
+					NO_MUTATIONPP,
+					NO_CGNS,
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		1DEB923708733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "SU2_DEF" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923208733DC60010E9CD /* Debug */,
+				1DEB923308733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_DEF" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923608733DC60010E9CD /* Debug */,
+				1DEB923708733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}

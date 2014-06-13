@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CDualGrid{
 protected:
@@ -122,7 +122,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CPoint : public CDualGrid {
 private:
@@ -154,7 +154,7 @@ private:
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
 	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
   double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
-  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GDC). */
+  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GEO). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
 
@@ -682,7 +682,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CEdge : public CDualGrid {
 private:
@@ -819,7 +819,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CVertex : public CDualGrid {
 private:

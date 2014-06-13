@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -40,7 +40,7 @@ def main():
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
-                      help="GPC finite difference STEP", metavar="STEP")    
+                      help="DOT finite difference STEP", metavar="STEP")    
     parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
                       help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
     
