@@ -1037,6 +1037,36 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-8);
+
+  /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
+  /* CONFIG_CATEGORY:Python Options*/
+  
+  /* DESCRIPTION: Setup for design variables */
+  addPythonOption("DEFINITION_DV");
+  
+  /* DESCRIPTION: Current value of the design variables */
+  addPythonOption("DV_VALUE_NEW");
+  
+  /* DESCRIPTION: Previous value of the design variables */
+  addPythonOption("DV_VALUE_OLD");
+  
+  /* DESCRIPTION: Number of partitions of the mesh */
+  addPythonOption("NUMBER_PART");
+  
+  /* DESCRIPTION: Optimization objective function with optional scaling factor*/
+  addPythonOption("OPT_OBJECTIVE");
+  
+  /* DESCRIPTION: Optimization constraint functions with optional scaling factor */
+  addPythonOption("OPT_CONSTRAINT");
+  
+  /* DESCRIPTION: Finite different step for gradient estimation */
+  addPythonOption("FIN_DIFF_STEP");
+  
+  /* DESCRIPTION: Verbosity of the python scripts to Stdout */
+  addPythonOption("CONSOLE");
+  
+  /* DESCRIPTION: Flag specifying if the mesh was decomposed */
+  addPythonOption("DECOMPOSED");
   
   /* END_CONFIG_OPTIONS */
   
@@ -1073,15 +1103,12 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
     if (TokenizeString(text_line, option_name, option_value)) {
       if (option_map.find(option_name) == option_map.end()){
         // See if it's a python option
-        if (!GetPython_Option(option_name)){
           string newString;
           newString.append(option_name);
           newString.append(": invalid option name");
           newString.append("\n");
           errorString.append(newString);
           err_count++;
-        }
-        // Either way, no parsing to be done
         continue;
       }
       
@@ -4542,14 +4569,15 @@ bool CConfig::TokenizeString(string & str, string & option_name,
   return true;
 }
 
+/*
 bool CConfig::GetPython_Option(string & option_name) {
   
   bool isPython_Option = false;
   
-  /*--- Check option name against all known Python options
+--- Check option name against all known Python options
    for a match. These are the design options that are
    never read by the SU2 C++ codes, and we would like
-   to ignore them while processing the config file. ---*/
+   to ignore them while processing the config file. ---
   if (option_name == "OBJFUNC")       isPython_Option = true;
   if (option_name == "OBJFUNC_SCALE")    isPython_Option = true;
   if (option_name == "CONST_IEQ")      isPython_Option = true;
@@ -4575,6 +4603,7 @@ bool CConfig::GetPython_Option(string & option_name) {
   
   return isPython_Option;
 }
+ */
 
 unsigned short CConfig::GetMarker_Config_Tag(string val_marker) {
   

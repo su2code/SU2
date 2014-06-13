@@ -877,6 +877,13 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
+  void addPythonOption(const string name){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPython(name);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
 public:
 
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
@@ -915,7 +922,7 @@ public:
 	 * \brief Get information about whether this is a Python config option for design.
 	 * \return <code>TRUE</code> if this is a Python config option for design; otherwise <code>FALSE</code>.
 	 */
-	bool GetPython_Option(string & option_name);
+//	bool GetPython_Option(string & option_name);
 
 	/*! 
 	 * \brief Get reference origin for moment computation.
