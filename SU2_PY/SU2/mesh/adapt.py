@@ -4,7 +4,7 @@ import os, sys, shutil, copy
 from .. import io  as su2io
 from ..run import decompose as su2decomp
 from ..run import CFD as SU2_CFD
-from ..run import MAC as SU2_MAC
+from ..run import MSH as SU2_MSH
 
 def full(config):
     config = copy.deepcopy(config)
@@ -25,8 +25,8 @@ def full_flow(config):
     # set config
     konfig.KIND_ADAPT = 'FULL_FLOW'
     
-    # run MAC
-    SU2_MAC(konfig)
+    # run MSH
+    SU2_MSH(konfig)
     
     return
     

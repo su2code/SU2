@@ -1,9 +1,9 @@
 #!/usr/bin/env python 
 
 ## \file mesh_deformation.py
-#  \brief Python script for doing the parallel deformation using SU2_MDC.
+#  \brief Python script for doing the parallel deformation using SU2_DEF.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -35,8 +35,10 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file", dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-p", "--partitions", dest="partitions", default=2,
+    parser.add_option("-n", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-d", "--divide_grid", dest="divide_grid", default="True",
                       help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
     parser.add_option("-m", "--merge_grid",     dest="merge_grid",     default="True",
@@ -46,6 +48,10 @@ def main():
     options.partitions = int( options.partitions )
     options.divide_grid = options.divide_grid.upper() == 'TRUE'
     options.merge_grid  = options.merge_grid.upper()  == 'TRUE'
+    
+    if options.oldpartitions != "oldpartitions":
+    print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+      sys.exit()
     
     # Run Parallel Comutation
     mesh_deformation ( options.filename    ,
@@ -75,7 +81,7 @@ def mesh_deformation( filename           ,
     state.FILES.MESH = config.MESH_FILENAME
     
     # Deformation
-    info = SU2.run.MDC(config)
+    info = SU2.run.DEF(config)
     state.update(info)
     
     return state
