@@ -1,7 +1,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -55,20 +55,20 @@ else:
 #  SU2 Suite Interface Functions
 # ------------------------------------------------------------
 
-def DDC(config):
-    """ run SU2_DDC 
+def PRT(config):
+    """ run SU2_PRT 
         partitions set by config.NUMBER_PART
         currently forced to run serially
     """
     # local copy
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_DDC.cfg'
+    tempname = 'config_PRT.cfg'
     konfig.dump(tempname)
   
     processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_DDC ' + tempname
+    the_Command = 'SU2_PRT ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -96,21 +96,21 @@ def CFD(config):
     
     return
 
-def MAC(config):
-    """ run SU2_MAC
+def MSH(config):
+    """ run SU2_MSH
         partitions set by config.NUMBER_PART
         currently forced to run serially
     """    
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_MAC.cfg'
+    tempname = 'config_MSH.cfg'
     konfig.dump(tempname)
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
     processes = min([1,processes])    
     
-    the_Command = 'SU2_MAC ' + tempname
+    the_Command = 'SU2_MSH ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -118,20 +118,20 @@ def MAC(config):
     
     return
 
-def MDC(config):
-    """ run SU2_MDC
+def DEF(config):
+    """ run SU2_DEF
         partitions set by config.NUMBER_PART
         forced to run in serial, expects merged mesh input
     """
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_MDC.cfg'
+    tempname = 'config_DEF.cfg'
     konfig.dump(tempname) 
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_MDC ' + tempname
+    the_Command = 'SU2_DEF ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -139,18 +139,18 @@ def MDC(config):
     
     return
 
-def GPC(config):
-    """ run SU2_GPC
+def DOT(config):
+    """ run SU2_DOT
         partitions set by config.NUMBER_PART
     """    
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_GPC.cfg'
+    tempname = 'config_DOT.cfg'
     konfig.dump(tempname)   
     
     processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_GPC ' + tempname
+    the_Command = 'SU2_DOT ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -158,20 +158,20 @@ def GPC(config):
     
     return
 
-def GDC(config):
-    """ run SU2_GDC
+def GEO(config):
+    """ run SU2_GEO
         partitions set by config.NUMBER_PART
         forced to run in serial
     """    
     konfig = copy.deepcopy(config)
     
-    tempname = 'config_GDC.cfg'
+    tempname = 'config_GEO.cfg'
     konfig.dump(tempname)   
     
     # must run with rank 1
     processes = konfig['NUMBER_PART']
         
-    the_Command = 'SU2_GDC ' + tempname
+    the_Command = 'SU2_GEO ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -201,7 +201,7 @@ def SMC(config):
     return
 
 def PBC(config):
-    """ run SU2_PBC
+    """ run SU2_MSH
         partitions set by config.NUMBER_PART
         currently forced to run serially
     """    
@@ -214,7 +214,7 @@ def PBC(config):
     processes = konfig['NUMBER_PART']
     processes = min([1,processes])      
     
-    the_Command = 'SU2_PBC ' + tempname
+    the_Command = 'SU2_MSH ' + tempname
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -261,8 +261,6 @@ def run_command( Command ):
         checks for errors from command
     """
     
-    print "the command: %s" % Command
-    print "the location: %s" % os.getcwd()
     sys.stdout.flush()
     
     proc = subprocess.Popen( Command, shell=True    ,

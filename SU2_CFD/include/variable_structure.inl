@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -115,10 +115,6 @@ inline double CVariable::GetSolution_Min(unsigned short val_var) { return Soluti
 inline double CVariable::GetPreconditioner_Beta() { return 0; }
 
 inline void CVariable::SetPreconditioner_Beta( double val_Beta) { }
-
-inline double* CVariable::GetMagneticField() { return 0; }
-
-inline void CVariable::SetMagneticField( double* val_B) {}
 
 inline double* CVariable::GetWindGust() { return 0; }
 
@@ -563,10 +559,6 @@ inline double CEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { r
 inline double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
 inline void CEulerVariable::SetPreconditioner_Beta(double val_Beta) { Precond_Beta = val_Beta; }
-
-inline void CEulerVariable::SetMagneticField( double* val_B) { B_Field[0] = val_B[0]; B_Field[1] = val_B[1];B_Field[2] = val_B[2];}
-
-inline double* CEulerVariable::GetMagneticField() { return B_Field;}
 
 inline void CEulerVariable::SetWindGust( double* val_WindGust) { 
         for (unsigned short iDim = 0; iDim < nDim; iDim++)	

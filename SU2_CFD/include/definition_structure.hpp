@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,7 +23,7 @@
 
 #pragma once
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 #include <ctime>

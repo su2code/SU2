@@ -2,7 +2,7 @@
 using namespace std;
 
 // This is up here because otherwise it's not in scope of the functions below
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CPredictor* parse_predictor(Json::Value json){
   string type = json["Type"].asString();
   Json::Value value = json["Value"];
@@ -66,7 +66,7 @@ CNormalScaler::~CNormalScaler(){
 	delete [] sigma;
 }
 
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CNormalScaler::CNormalScaler(Json::Value json){
   int nDim = json["Dim"].asInt();
   Json::Value muVal = json["Mu"];
@@ -115,7 +115,7 @@ void CNormalScaler::Unscale(double * inputs){
 
 CMulInputScaler::CMulInputScaler(){}
 
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CMulInputScaler::CMulInputScaler(Json::Value json){
   // Get the scaler subfield
   this->InnerScaler = parse_cscaler(json["Scaler"]);
@@ -147,7 +147,7 @@ void CMulOutputScaler::Scale(double * outputs){
   return;
 }
 
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CMulOutputScaler::CMulOutputScaler(Json::Value json){
   this->MulScale = json["MulScale"].asDouble();
 }
@@ -162,7 +162,7 @@ CActivator::CActivator(){}
 CActivator::~CActivator(){}
 
 CTanhActivator::CTanhActivator(){}
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CTanhActivator::CTanhActivator(Json::Value json){
 }
 #endif
@@ -175,7 +175,7 @@ double CTanhActivator::Activate(double sum){
 }
 
 CLinearActivator::CLinearActivator(){}
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CLinearActivator::CLinearActivator(Json::Value){
 }
 #endif
@@ -194,7 +194,7 @@ CSumNeuron::CSumNeuron(){}
 CSumNeuron::CSumNeuron(CActivator* activator){
 	this->activator = activator;
 }
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CSumNeuron::CSumNeuron(Json::Value json){
   string type = json["Type"].asString();
   if (type.compare("github.com/reggo/reggo/supervised/nnet/Tanh") == 0){
@@ -240,7 +240,7 @@ int CPredictor::OutputDim(){
 }
 
 CMulPredictor::CMulPredictor(){}
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CMulPredictor::CMulPredictor(Json::Value json){
   this->Inner = parse_predictor(json["Inner"]);
   this->inputDim = this->Inner->InputDim() + 1;
@@ -261,7 +261,7 @@ void CMulPredictor::Predict(double * input, double * output){
 
 CNeurNet::CNeurNet(){}
 
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CNeurNet::CNeurNet(Json::Value json){
   this-> inputDim = json["InputDim"].asInt();
   this-> outputDim = json["OutputDim"].asInt();
@@ -449,7 +449,7 @@ string get_file_contents(string filename){
 
 // TODO: Separate filename from parse script. (make a function of a Node)
 CScalePredictor::CScalePredictor(){}
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
 CScalePredictor::CScalePredictor(string filename){
   
   if (filename.compare("none")==0) {

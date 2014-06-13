@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -144,14 +144,14 @@ unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x,
 	
 int rank = 0;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
@@ -250,14 +250,14 @@ unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVec
 	
 int rank = 0;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*---  Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
@@ -268,7 +268,7 @@ int rank = 0;
   /*---  Check the subspace size ---*/
   if (m > 1000) {
     if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
@@ -382,14 +382,14 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
                                  CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
   int rank = 0;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Check the subspace size ---*/
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);

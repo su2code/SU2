@@ -2,7 +2,7 @@
  * \file solution_adjoint_levelset.cpp
  * \brief Main subrotuines for solving the level set problem.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -32,7 +32,7 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
   bool restart = config->GetRestart();
 	
   int rank = MASTER_NODE;
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -208,7 +208,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -236,7 +236,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) 
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
@@ -322,7 +322,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
   *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
 	int send_to, receive_from;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -350,7 +350,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *
           Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter(iVar);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 		/*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
@@ -435,7 +435,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
   *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
 	int send_to, receive_from;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Status status;
 #endif
   
@@ -468,7 +468,7 @@ void CAdjLevelSetSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig 
             Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       /*--- Send/Receive information using Sendrecv ---*/
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);

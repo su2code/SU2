@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -636,7 +636,6 @@ inline void CEulerSolver::SetOneD_fluxavgU(double VelocityRef){OneD_VelocityRef=
 inline double CEulerSolver::GetOneD_fluxavgH(void){return OneD_EnthalpyRef;}
 
 inline void CEulerSolver::SetOneD_fluxavgH(double EnthalpyRef){OneD_EnthalpyRef = EnthalpyRef; }
-
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
