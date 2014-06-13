@@ -1,4 +1,4 @@
-# SU^2 Makefile.am for CFD
+# SU2 Makefile.am for CFD
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12

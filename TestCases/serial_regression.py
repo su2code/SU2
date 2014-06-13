@@ -186,7 +186,7 @@ class testcase:
 
 
 if __name__=="__main__":
-  '''This program runs SU^2 and ensures that the output matches specified values. This will be used to do nightly checks to make sure nothing is broken. '''
+  '''This program runs SU2 and ensures that the output matches specified values. This will be used to do nightly checks to make sure nothing is broken. '''
 
   # Build SU2_CFD in serial using autoconf
   os.system('./configure --prefix=$SU2_HOME CXXFLAGS="-O3"')

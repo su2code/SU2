@@ -187,7 +187,7 @@ class testcase:
     
 
 if __name__=="__main__":
-  '''This program runs SU^2 and ensures that the output matches specified values. This will be used to do nightly checks to make sure nothing is broken. '''
+  '''This program runs SU2 and ensures that the output matches specified values. This will be used to do nightly checks to make sure nothing is broken. '''
 
   # Build SU2_CFD in parallel using autoconf
   os.system('./configure --prefix=$SU2_HOME --with-MPI=mpicxx --with-Metis-lib=/home/ale11/tools/metis-5.0.1/lib --with-Metis-include=/home/ale11/tools/metis-5.0.1/include --with-Metis-version=5 CXXFLAGS="-O3"')
@@ -199,8 +199,8 @@ if __name__=="__main__":
     print 'Could not build SU2_CFD'
     sys.exit(1)
   
-  if not os.path.exists("./SU2_DDC"):
-    print 'Could not build SU2_DDC'
+  if not os.path.exists("./SU2_PRT"):
+    print 'Could not build SU2_PRT'
     sys.exit(1)
     
   os.chdir(os.environ['SU2_HOME'])  

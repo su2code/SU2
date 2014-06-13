@@ -1,4 +1,4 @@
-# SU^2 global Makefile.am
+# SU2 global Makefile.am
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
@@ -26,34 +26,26 @@ if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif
 
-if BUILD_DDC
-SUBDIRS +=SU2_DDC/obj
+if BUILD_PRT
+SUBDIRS +=SU2_PRT/obj
 endif
 
-if BUILD_GPC
-SUBDIRS +=SU2_GPC/obj
+if BUILD_DOT
+SUBDIRS +=SU2_DOT/obj
 endif
 
-if BUILD_MAC
-SUBDIRS +=SU2_MAC/obj
+if BUILD_MSH
+SUBDIRS +=SU2_MSH/obj
 endif
 
-if BUILD_MDC
-SUBDIRS +=SU2_MDC/obj
-endif
-
-if BUILD_PBC
-SUBDIRS +=SU2_PBC/obj
+if BUILD_DEF
+SUBDIRS +=SU2_DEF/obj
 endif
 
 if BUILD_SOL
 SUBDIRS +=SU2_SOL/obj
 endif
 
-if BUILD_GDC
-SUBDIRS +=SU2_GDC/obj
-endif
-
-if BUILD_UMC
-SUBDIRS +=SU2_UMC/obj
+if BUILD_GEO
+SUBDIRS +=SU2_GEO/obj
 endif

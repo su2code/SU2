@@ -95,7 +95,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>C:\Users\mcolonno\Desktop\Software\CGNS\3.1.3\src;C:\Users\mcolonno\Desktop\Software\Metis\5.0.2\include;C:\Users\mcolonno\Desktop\Software\MPICH2\include;C:\Users\mcolonno\Desktop\Software\Stanford\SU^2\trunk\Common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\mcolonno\Desktop\Software\CGNS\3.1.3\src;C:\Users\mcolonno\Desktop\Software\Metis\5.0.2\include;C:\Users\mcolonno\Desktop\Software\MPICH2\include;C:\Users\mcolonno\Desktop\Software\Stanford\SU2\trunk\Common\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -121,8 +121,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\Users\mcolonno\Desktop\Software\MPICH2\lib;C:\Users\mcolonno\Desktop\Software\Stanford\SU^2\Windows\SU2.lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SU^2.lib;mpi.lib;cxx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\mcolonno\Desktop\Software\MPICH2\lib;C:\Users\mcolonno\Desktop\Software\Stanford\SU2\Windows\SU2.lib\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SU2.lib;mpi.lib;cxx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

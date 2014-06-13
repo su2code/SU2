@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1337,7 +1337,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
       
 #ifdef HAVE_MPI
-      if (config->GetKind_SU2() != SU2_DDC) {
+      if (config->GetKind_SU2() != SU2_PRT) {
         Local_nElem = nElem;
         MPI_Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
       }
@@ -1349,7 +1349,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       Global_nElem = nElem;
 #endif
       
-      if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_DDC))
+      if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (config->GetKind_SU2() != SU2_PRT))
         cout << Global_nElem << " interior elements including halo cells. " << endl;
       else if (rank == MASTER_NODE)
         cout << Global_nElem << " interior elements. " << endl;
@@ -1662,7 +1662,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       /*--- Communicate the number of each element type to all processors. ---*/
       
 #ifdef HAVE_MPI
-      if (config->GetKind_SU2() != SU2_DDC) {
+      if (config->GetKind_SU2() != SU2_PRT) {
         Local_nElemTri = nelem_triangle;
         Local_nElemQuad = nelem_quad;
         Local_nElemTet = nelem_tetra;
@@ -1732,7 +1732,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
         /*--- Set some important point information for parallel simulations. ---*/
         
 #ifdef HAVE_MPI
-        if (config->GetKind_SU2() != SU2_DDC) {
+        if (config->GetKind_SU2() != SU2_PRT) {
           Local_nPoint = nPoint; Local_nPointDomain = nPointDomain;
           MPI_Allreduce(&Local_nPoint, &Global_nPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
           MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);

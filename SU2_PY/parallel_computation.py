@@ -3,7 +3,7 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -35,7 +35,7 @@ def main():
     parser=OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-p", "--partitions", dest="partitions", default=2,
+    parser.add_option("-n", "--partitions", dest="partitions", default=2,
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")

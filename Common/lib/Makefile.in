@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# SU^2 Makefile.am for common library
+# SU2 Makefile.am for common library
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
