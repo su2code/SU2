@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,10 +23,10 @@
 
 #pragma once
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 #include <mpi.h>
 #endif
-#ifndef NO_MUTATIONPP
+#ifdef HAVE_MUTATIONPP
 #include "mutation++.h"
 #endif
 #include <iostream>
@@ -52,7 +52,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CConfig {
 private:
@@ -666,56 +666,53 @@ private:
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
 
-	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
+  /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
+//	map<string, CAnyOptionRef*> param;
   
-  /*!<brief param_to_kind associates the config file name with the type of variable>*/
-  //map<string, OptionKind> param_to_kind;
-  
-  /*!<brief list of all of the options. This is used to keep track of the 
-   options not set so the default values can be used>*/
+  /*!<brief all_options is a map containing all of the options. This is used during config file parsing
+  to track the options which have not been set (so the default values can be used). Without this map
+   there would be no list of all the config file options. > */
   map<string, bool> all_options;
   
-  /*<brief associative array for types who need an implicit setting rather than an explicit one.
-   This map is a catch-all for types who don't hava a very specific type. One case of this is the
-   enum types, where rather than define a pain of maps for all possible enum types, we instead 
-   implicitly deference the enum value in CEnumLookup.*/
+  /*<brief param is a map from the option name (config file string) to its decoder (the specific child
+   class of COptionBase that turns the string into a value) */
   map<string, COptionBase*> option_map;
   
   
-  /*
-  // List of maps for referencing
-  map<string, double&> double_fields;  !<\brief option list associated with config parameters which are doubles
-  map<string, double> double_defaults;    !<\brief option list associated with config parameters which are doubles
-  map<string, string&> string_fields;   !<\brief option list associated with config parameters which are strings
-  map<string, string> string_defaults;  !<\brief double_defaults associates string parameters with their default values
-  map<string, int&> int_fields;
-  map<string, int> int_defaults;
-  map<string, unsigned long&> ulong_fields;
-  map<string, unsigned long> ulong_defaults;
-  map<string, unsigned short&> ushort_fields;
-  map<string, unsigned short> ushort_defaults;
-  map<string, long&> long_fields;
-  map<string, long> long_defaults;
-   */
+  // All of the addXxxOptions take in the name of the option, and a refernce to the field of that option
+  // in the option structure. Depending on the specific type, it may take in a default value, and may
+  // take in extra options. The addXxxOptions mostly follow the same pattern, so please see addDoubleOption
+  // for detailed comments.
+  //
+  // List options are those that can be an unknown number of elements, and also take in a reference to
+  // an integer. This integer will be populated with the number of elements of that type unmarshaled.
+  //
+  // Array options are those with a fixed number of elements.
+  //
+  // List and Array options should also be able to be specified with the string "NONE" indicating that there
+  // are no elements. This allows the option to be present in a config file but left blank.
   
-  
-  /*!<\brief addDoubleOption adds a option represented by a double so that it will be parsed during
-   config parsing. name is the variable name in the config file (e.g. PHYSICAL_PROBLEM), option is a
-   pointer to the location in the Config struct, and default_value is the value the option will take 
-   if it is not present in the config file
-   */
+  /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
+   value can be represented by a double.*/
   void addDoubleOption(const string name, double & option_field, double default_value){
     // Check if the key is already in the map. If this fails, it is coder error
-    // and not user error, so throw
-        // second copy for deletion
-    
+    // and not user error, so throw.
     assert(option_map.find(name) == option_map.end());
+
+    // Add this option to the list of all the options
     all_options.insert(pair<string,bool>(name,true));
+
+    // Create the parser for a double option with a reference to the option_field and the desired
+    // default value. This will take the string in the config file, convert it to a double, and
+    // place that double in the memory location specified by the reference.
     COptionBase* val = new COptionDouble(name, option_field, default_value);
+
+    // Create an association between the option name ("CFL") and the parser generated above.
+    // During configuration, the parsing script will get the option name, and use this map
+    // to find how to parse that option.
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  /*<\brief addStringOption: see addDoubleOption, but with type change */
   void addStringOption(const string name, string & option_field, string default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
@@ -723,14 +720,13 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-    /*<\brief addStringOption: see addIntegerOption, but with type change */
   void addIntegerOption(const string name, int & option_field, int default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionInt(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
+
   void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
@@ -759,7 +755,8 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  // Using templates for enum options because there are a ton of them
+  // enum types work differently than all of the others because there are a small number of valid
+  // string entries for the type. One must also provide a list of all the valid strings of that type.
   template <class Tenum>
   void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
     assert(option_map.find(name) == option_map.end());
@@ -880,19 +877,6 @@ private:
     COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_CT, ActDisk_Omega);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
-  /*
-  void addPythonOption(const string & name){
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionPython(name);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
-   */
-  
-  
- // double parseDoubleOption(string);
- // int parseIntOption(string);
 
 public:
 
@@ -901,18 +885,17 @@ public:
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200]);
+	CConfig(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
 	~CConfig(void);
-
 
   /*!
    * \brief Initializes pointers to null
@@ -4578,7 +4561,7 @@ public:
   /*!
 	 * \brief Set the config file parsing.
 	 */
-  void SetParsing(char case_filename[200]);
+  void SetParsing(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Config file postprocessing.

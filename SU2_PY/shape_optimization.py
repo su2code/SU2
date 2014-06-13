@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -34,10 +34,12 @@ def main():
     parser=OptionParser()
     parser.add_option("-f", "--file", dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-n", "--name", dest="projectname", default='',
+    parser.add_option("-r", "--name", dest="projectname", default='',
                       help="try to restart from project file NAME", metavar="NAME")
-    parser.add_option("-p", "--partitions", dest="partitions", default=1,
+    parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-g", "--gradient", dest="gradient", default="Adjoint",
                       help="Method for computing the GRADIENT (ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
     parser.add_option("-q", "--quiet", dest="quiet", default="False",
@@ -58,6 +60,10 @@ def main():
     options.step        = float( options.step )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
+    
+    if options.oldpartitions != "oldpartitions":
+    print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+      sys.exit()
     
     shape_optimization( options.filename    ,
                         options.projectname ,

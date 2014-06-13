@@ -1,4 +1,4 @@
-# SU^2 Makefile.am for Python scripts
+# SU2 Makefile.am for Python scripts
 # Stanford University Aerospace Design Lab
 #
 # Created: 	4/4/2013

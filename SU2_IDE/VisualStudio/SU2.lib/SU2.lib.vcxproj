@@ -124,29 +124,29 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - MPI|x64'">
-    <OutDir>..\..\trunk\Common\lib\Windows\64-bit\SU^2\Parallel\</OutDir>
+    <OutDir>..\..\trunk\Common\lib\Windows\64-bit\SU2\Parallel\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - Serial|x64'">
-    <OutDir>..\..\..\Common\lib\Windows\64-bit\SU^2\Serial\</OutDir>
+    <OutDir>..\..\..\Common\lib\Windows\64-bit\SU2\Serial\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - MPI|x64'">
-    <TargetName>SU^2</TargetName>
+    <TargetName>SU2</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - Serial|x64'">
-    <TargetName>SU^2</TargetName>
+    <TargetName>SU2</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - Serial|Win32'">
-    <OutDir>..\..\trunk\Common\lib\Windows\32-bit\SU^2\Serial\</OutDir>
+    <OutDir>..\..\trunk\Common\lib\Windows\32-bit\SU2\Serial\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - Serial|Win32'">
-    <TargetName>SU^2</TargetName>
+    <TargetName>SU2</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - Serial|Win32'">
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release - MPI|Win32'">
-    <OutDir>..\..\trunk\Common\lib\Windows\32-bit\SU^2\Parallel\</OutDir>
-    <TargetName>SU^2</TargetName>
+    <OutDir>..\..\trunk\Common\lib\Windows\32-bit\SU2\Parallel\</OutDir>
+    <TargetName>SU2</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

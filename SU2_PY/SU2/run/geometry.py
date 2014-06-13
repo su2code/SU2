@@ -27,7 +27,7 @@ import os, sys, shutil, copy
 
 from .. import io  as su2io
 from decompose import decompose as su2decomp
-from interface import GDC       as SU2_GDC
+from interface import GEO       as SU2_GEO
 from ..util import ordered_bunch
 
 # ----------------------------------------------------------------------
@@ -39,7 +39,7 @@ def geometry ( config , step = 1e-3 ):
         
         Runs an geometry analysis with:
             SU2.run.decomp()
-            SU2.run.GDC()
+            SU2.run.GEO()
             
         Assumptions:
             Redundant decomposition if config.DECOMPOSED == True
@@ -76,7 +76,7 @@ def geometry ( config , step = 1e-3 ):
         assert len(step) == n_DV , 'unexpected step vector length'
     else:
         step = [step]*n_DV
-    dv_old = [0.0]*n_DV # SU2_GPC input requirement, assumes linear superposition of design variables
+    dv_old = [0.0]*n_DV # SU2_DOT input requirement, assumes linear superposition of design variables
     dv_new = step
     konfig.unpack_dvs(dv_new,dv_old)    
     
@@ -84,7 +84,7 @@ def geometry ( config , step = 1e-3 ):
     su2decomp(konfig)
     
     # Run Solution
-    SU2_GDC(konfig)
+    SU2_GEO(konfig)
     
     # info out
     info = su2io.State()    

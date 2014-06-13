@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -33,11 +33,11 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
 #include "cgnslib.h"
 #endif
 
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
 #include "TECIO.h"
 #endif
 
@@ -48,7 +48,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class COutput {
 

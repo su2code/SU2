@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -297,7 +297,7 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	string mesh_filename, copy;
 	ifstream restart_file;
 	
-	char buffer[50], cstr[200];
+	char buffer[50], cstr[MAX_STRING_SIZE];
 	mesh_filename = config->GetSolution_AdjFileName();
 	copy.assign(mesh_filename);
   unsigned short lastindex = copy.find_last_of(".");
@@ -2205,7 +2205,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	//  Create boundary structure
 	geo_adapt->SetnMarker(geometry->GetnMarker());
 	geo_adapt->nElem_Bound = new unsigned long [geometry->GetnMarker()];
-	geo_adapt->Tag_to_Marker = new string [MAX_INDEX_VALUE];		
+	geo_adapt->Tag_to_Marker = new string [MAX_NUMBER_MARKER];		
 	geo_adapt->bound = new CPrimalGrid**[geometry->GetnMarker()];
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 		int nNewBCcv = 0;
@@ -3155,7 +3155,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	//  Create boundary structure
 	geo_adapt->SetnMarker(geometry->GetnMarker());
 	geo_adapt->nElem_Bound = new unsigned long [geometry->GetnMarker()];
-	geo_adapt->Tag_to_Marker = new string [MAX_INDEX_VALUE];		
+	geo_adapt->Tag_to_Marker = new string [MAX_NUMBER_MARKER];		
 	geo_adapt->bound = new CPrimalGrid**[geometry->GetnMarker()];
 
 	// Conservative estimation of the number of boundary elements.
@@ -3531,7 +3531,7 @@ void CGridAdaptation::SetRestart_FlowSolution(CConfig *config, CPhysicalGeometry
 	restart_flowfile.open(cstr, ios::out);
 	restart_flowfile.precision(15);
   
-  restart_flowfile << "Restart file generated with SU2_MAC" << endl;
+  restart_flowfile << "Restart file generated with SU2_MSH" << endl;
 
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_flowfile << iPoint <<"\t";
@@ -3549,7 +3549,7 @@ void CGridAdaptation::SetRestart_FlowSolution(CConfig *config, CPhysicalGeometry
 
 void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry *geo_adapt, string mesh_adjfilename){
 	
-  char cstr[200], buffer[50];
+  char cstr[MAX_STRING_SIZE], buffer[50];
   unsigned short iDim, iVar;
   unsigned long iPoint;
 	string copy;
@@ -3578,7 +3578,7 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
 	restart_adjfile.open(cstr, ios::out);
 	restart_adjfile.precision(15);
   
-  restart_adjfile << "Restart file generated with SU2_MAC" << endl;
+  restart_adjfile << "Restart file generated with SU2_MSH" << endl;
   
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_adjfile << iPoint <<"\t";
@@ -3605,7 +3605,7 @@ void CGridAdaptation::SetRestart_LinSolution(CConfig *config, CPhysicalGeometry 
 	restart_linfile.open(cstr_, ios::out);
 	restart_linfile.precision(15);
 
-  restart_linfile << "Restart file generated with SU2_MAC" << endl;
+  restart_linfile << "Restart file generated with SU2_MSH" << endl;
 
 	for(iPoint = 0; iPoint < nPoint_new; iPoint++){
 		restart_linfile << iPoint <<"\t";
@@ -3664,7 +3664,7 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	delete [] Sensor;
 }
 
-void CGridAdaptation::WriteAdaptSensor(CGeometry *geometry, char mesh_filename[200])
+void CGridAdaptation::WriteAdaptSensor(CGeometry *geometry, char mesh_filename[MAX_STRING_SIZE])
 {
 	unsigned long iPoint;
 	

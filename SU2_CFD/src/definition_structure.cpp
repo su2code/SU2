@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -32,7 +32,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   string::size_type position;
   int rank = MASTER_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -54,7 +54,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
         cout << "cstr=" << cstr << endl;
         cout << "There is no geometry file (GetnZone))!" << endl;
 
-#ifdef NO_MPI
+#ifndef HAVE_MPI
         exit(1);
 #else
 		MPI_Abort(MPI_COMM_WORLD,1);
@@ -75,7 +75,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
             //					else
             if (nZone <= 0) {
               cout << "Error: Number of mesh zones is less than 1 !!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
               exit(1);
 #else
 			  MPI_Abort(MPI_COMM_WORLD,1);
@@ -124,7 +124,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   char cstr[200];
   string::size_type position;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size;
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   if (size != 1) {
@@ -157,7 +157,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       
     case CGNS:
       
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
       
       /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
       
@@ -231,7 +231,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   unsigned long iPoint; 
   int rank = MASTER_NODE;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -289,7 +289,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point before the multigrid algorithm ---*/
   MPI_Barrier(MPI_COMM_WORLD);
 #endif

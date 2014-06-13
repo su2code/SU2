@@ -44,7 +44,7 @@ from collections import OrderedDict
 
 # OUTPUT_WEIGHT
 # FINDIFF_STEP
-# GPC_FINDIFF_STEP
+# DOT_FINDIFF_STEP
 # GRADIENT_METHOD= FINITE_DIFFERENCING, CONTINUOUS_ADJOINT, DISCRETE_ADJOINT
 # ADAPTATION= DIRECT, ADJOINT
 
@@ -107,7 +107,7 @@ def level0():
         config.EXT_ITER = 9
         config.NUMBER_PART = 2
         
-        SU2.run.DDC(config)
+        SU2.run.PRT(config)
         
         SU2.run.CFD(config)
     
@@ -311,13 +311,13 @@ def mesh0():
         config.EXT_ITER = 9
         config.NUMBER_PART = 2
         
-        SU2.run.DDC(config)
+        SU2.run.PRT(config)
         
         SU2.run.CFD(config)    
         
         SU2.io.restart2solution(config)
         
-        SU2.run.MAC(config)
+        SU2.run.MSH(config)
         
         
 

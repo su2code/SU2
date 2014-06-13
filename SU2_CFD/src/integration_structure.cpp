@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -254,7 +254,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   unsigned short iCounter;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size, rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -325,7 +325,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   
   /*--- Apply the same convergence criteria to all the processors ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
   sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
@@ -356,7 +356,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
 	if (monitor != monitor) {
     
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
 		exit(1);
 #else
@@ -367,7 +367,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #endif  
 	}
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
@@ -396,7 +396,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     config->SetAeroelastic_n();
     
     /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
     unsigned short iMarker, iMarker_Monitoring;
     unsigned long iProcessor, owner, *owner_all = NULL;
