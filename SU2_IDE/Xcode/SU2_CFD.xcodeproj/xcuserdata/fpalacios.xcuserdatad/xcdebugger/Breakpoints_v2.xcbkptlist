@@ -15,7 +15,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "2969"
             endingLineNumber = "2969"
-            landmarkName = "CConfig::SetOutput(unsigned short val_software, unsigned short val_izone)"
+            landmarkName = "CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone)"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
