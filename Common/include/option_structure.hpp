@@ -2146,6 +2146,23 @@ public:
   }
 };
 
+class COptionPython : public COptionBase{
+  string name;
+public:
+  COptionPython(const string name){
+    this->name = name;
+  }
+  ~COptionPython(){};
+  // No checking happens with python options
+  string SetValue(vector<string> option_value){
+    return "";
+  }
+  // No defaults with python options
+  void SetDefault(){
+    return;
+  };
+};
+
 class COptionActuatorDisk : public COptionBase{
   string name; // identifier for the option
   unsigned short & inlet_size;
