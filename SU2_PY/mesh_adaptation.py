@@ -34,8 +34,10 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file", dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-p", "--partitions", dest="partitions", default=0,
+    parser.add_option("-n", "--partitions", dest="partitions", default=0,
                       help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-c", "--cycle", dest="cycle", default=1,
                       help="number of CYCLE adaptations", metavar="CYCLE")
     parser.add_option("-o", "--overwrite", dest="overwrite", default="False",
@@ -50,6 +52,10 @@ def main():
     options.overwrite  = options.overwrite == "True"    
     options.save_all   = options.save_all  == "True"
 
+    if options.oldpartitions != "oldpartitions":
+      print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+      sys.exit()
+    
     # Run Mesh Adaptation
     mesh_adaptation ( options.filename   ,
                       options.partitions ,

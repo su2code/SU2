@@ -35,8 +35,10 @@ def main():
     parser=OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-p", "--partitions", dest="partitions", default=1,
+    parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
@@ -49,6 +51,10 @@ def main():
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
     options.divide_grid = options.divide_grid.upper() == 'TRUE'
+    
+    if options.oldpartitions != "oldpartitions":
+    print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+      sys.exit()
     
     continuous_adjoint( options.filename    ,
                         options.partitions  ,
