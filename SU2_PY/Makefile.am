@@ -17,12 +17,8 @@ bin_SCRIPTS = \
     patient_designspace.py \
     shape_optimization.py \
     merge_solution.py \
-    2DChannel.py \
-    3DChannel.py \
-    config_gui.py \
-    filter_adjoint.py \
-    compute_polar.py \
-    mesh_adaptation.py
+    set_ffd_design_var.py \
+    compute_polar.py
 
 
 mypkgdir = $(prefix)/bin
