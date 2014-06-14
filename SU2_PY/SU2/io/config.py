@@ -369,6 +369,7 @@ def read_config(filename):
                 dv_Kind       = []
                 dv_Scale      = []
                 dv_Markers    = []
+                dv_FFDTag     = []
                 dv_Parameters = []
                 for this_General in info_Unitary:
                     if not this_General: continue
@@ -383,16 +384,24 @@ def read_config(filename):
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
                     else:
-                        this_dvParameters = [ float(x) for x in info_General[2].split(",") ]                    
+                        if this_dvKind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                          this_dvFFDTag = info_General[2].split(",")[0]
+                          this_dvParameters = info_General[2].split(",")
+                          this_dvParameters[0] = '0'
+                          [ float(x) for x in this_dvParameters ]
+                        else:
+                          this_dvParameters = [ float(x) for x in info_General[2].split(",") ]
                     # add to lists
                     dv_Kind       = dv_Kind       + [this_dvKind]
                     dv_Scale      = dv_Scale      + [this_dvScale]
                     dv_Markers    = dv_Markers    + [this_dvMarkers]
+                    dv_FFDTag     = dv_FFDTag     + [this_dvFFDTag]
                     dv_Parameters = dv_Parameters + [this_dvParameters]
                 # store in a dictionary
                 dv_Definitions = { 'KIND'   : dv_Kind       ,
                                    'SCALE'  : dv_Scale      ,
                                    'MARKER' : dv_Markers    ,
+                                   'FFDTAG' : dv_FFDTag     ,
                                    'PARAM'  : dv_Parameters }
                 # save to output dictionary
                 data_dict[this_param] = dv_Definitions
@@ -574,16 +583,30 @@ def write_config(filename,param_dict):
             
             # semicolon delimited lists of comma delimited lists
             if case("DV_PARAM") :
+              
+                new_value_ = param_dict["DEFINITION_DV"]
+                
                 assert isinstance(new_value,list) , 'incorrect specification of DV_PARAM'
                 if not isinstance(new_value[0],list): new_value = [ new_value ]
+                
                 for i_value in range(len(new_value)):
                     output_file.write("( ")
                     this_list = new_value[i_value]
                     n_lists = len(new_value[i_value])
-                    for j_value in range(n_lists):
+                    
+                    this_kind = new_value_['KIND'][i_value]
+                    if this_kind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        output_file.write("%s, " % new_value_['FFDTAG'][i_value])
+                        for j_value in range(1,n_lists):
+                          output_file.write("%s" % this_list[j_value])
+                          if j_value+1 < n_lists:
+                            output_file.write(", ")
+                    else:
+                      for j_value in range(n_lists):
                         output_file.write("%s" % this_list[j_value])
                         if j_value+1 < n_lists:
-                            output_file.write(", ")   
+                          output_file.write(", ")
+                
                     output_file.write(") ")
                     if i_value+1 < len(new_value):
                         output_file.write("; ")            
@@ -624,12 +647,21 @@ def write_config(filename,param_dict):
                     #: for each marker
                     if not this_kind in ['AOA','MACH_NUMBER']:
                         output_file.write(" | ")
-                        # params                 
-                        n_param = len(new_value['PARAM'][i_dv])
-                        for i_param in range(n_param):
-                            output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
-                            if i_param+1 < n_param:
-                                output_file.write(", ")
+                        # params
+                        if this_kind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                            n_param = len(new_value['PARAM'][i_dv])
+                            output_file.write("%s , " % new_value['FFDTAG'][i_dv])
+                            for i_param in range(1,n_param):
+                                output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
+                                if i_param+1 < n_param:
+                                    output_file.write(", ")
+                        else:
+                            n_param = len(new_value['PARAM'][i_dv])
+                            for i_param in range(n_param):
+                                output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
+                                if i_param+1 < n_param:
+                                    output_file.write(", ")
+                    
                         #: for each param                    
                     output_file.write(" )")
                     if i_dv+1 < n_dv:
