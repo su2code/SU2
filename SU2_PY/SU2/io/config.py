@@ -584,7 +584,8 @@ def write_config(filename,param_dict):
             # semicolon delimited lists of comma delimited lists
             if case("DV_PARAM") :
               
-                new_value_ = param_dict["DEFINITION_DV"]
+                if 'DEFINITION_DV' in param_dict:
+                    new_value_ = param_dict["DEFINITION_DV"]
                 
                 assert isinstance(new_value,list) , 'incorrect specification of DV_PARAM'
                 if not isinstance(new_value[0],list): new_value = [ new_value ]
@@ -594,22 +595,29 @@ def write_config(filename,param_dict):
                     this_list = new_value[i_value]
                     n_lists = len(new_value[i_value])
                     
-                    this_kind = new_value_['KIND'][i_value]
-                    if this_kind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
-                        output_file.write("%s, " % new_value_['FFDTAG'][i_value])
-                        for j_value in range(1,n_lists):
-                          output_file.write("%s" % this_list[j_value])
-                          if j_value+1 < n_lists:
-                            output_file.write(", ")
+                    if 'DEFINITION_DV' in param_dict:
+                       this_kind = new_value_['KIND'][i_value]
+                       if this_kind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                           output_file.write("%s, " % new_value_['FFDTAG'][i_value])
+                           for j_value in range(1,n_lists):
+                               output_file.write("%s" % this_list[j_value])
+                               if j_value+1 < n_lists:
+                                   output_file.write(", ")
+                       else:
+                           for j_value in range(n_lists):
+                               output_file.write("%s" % this_list[j_value])
+                               if j_value+1 < n_lists:
+                                  output_file.write(", ")
+                                
                     else:
-                      for j_value in range(n_lists):
-                        output_file.write("%s" % this_list[j_value])
-                        if j_value+1 < n_lists:
-                          output_file.write(", ")
-                
+                        for j_value in range(n_lists):
+                            output_file.write("%s" % this_list[j_value])
+                            if j_value+1 < n_lists:
+                                output_file.write(", ")
+      
                     output_file.write(") ")
                     if i_value+1 < len(new_value):
-                        output_file.write("; ")            
+                        output_file.write("; ")
                 break
             
             # int parameters
