@@ -428,11 +428,11 @@ int main(int argc, char *argv[]) {
           cout << "The finite difference steps is zero!!" << endl;
           cout << "Press any key to exit..." << endl;
           cin.get();
-#ifdef NO_MPI
-          exit(1);
+#ifdef HAVE_MPI
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
 #else
-		  MPI_Abort(MPI_COMM_WORLD,1);
-		  MPI_Finalize();
+          exit(1);
 #endif
         }
 
