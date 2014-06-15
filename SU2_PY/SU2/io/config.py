@@ -322,10 +322,12 @@ def read_config(filename):
                     this_dvParam = this_dvParam.strip('()')
                     this_dvParam = this_dvParam.split(",")
                     
+                    # if FFD change the first element to work with numbers and float(x)
                     if data_dict["DV_KIND"][0] in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                         this_dvParam[0] = '0'
                     
                     this_dvParam = [ float(x) for x in this_dvParam ]
+                    
                     dv_Parameters = dv_Parameters + [this_dvParam]
                 data_dict[this_param] = dv_Parameters
                 break     
@@ -390,13 +392,13 @@ def read_config(filename):
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
                     else:
+                        this_dvParameters = info_General[2].split(",")
+                        # if FFD change the first element to work with numbers and float(x), save also the tag
                         if this_dvKind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
-                          this_dvFFDTag = info_General[2].split(",")[0]
-                          this_dvParameters = info_General[2].split(",")
+                          this_dvFFDTag = this_dvParameters[0]
                           this_dvParameters[0] = '0'
-                          [ float(x) for x in this_dvParameters ]
-                        else:
-                          this_dvParameters = [ float(x) for x in info_General[2].split(",") ]
+                        this_dvParameters = [ float(x) for x in this_dvParameters ]
+
                     # add to lists
                     dv_Kind       = dv_Kind       + [this_dvKind]
                     dv_Scale      = dv_Scale      + [this_dvScale]
@@ -603,18 +605,19 @@ def write_config(filename,param_dict):
                     
                     if 'DEFINITION_DV' in param_dict:
                        this_kind = new_value_['KIND'][i_value]
+                       # Copy the FFD tag if there is information
                        if this_kind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                            output_file.write("%s, " % new_value_['FFDTAG'][i_value])
                            for j_value in range(1,n_lists):
                                output_file.write("%s" % this_list[j_value])
                                if j_value+1 < n_lists:
                                    output_file.write(", ")
+                       # No FFD design variable
                        else:
                            for j_value in range(n_lists):
                                output_file.write("%s" % this_list[j_value])
                                if j_value+1 < n_lists:
                                   output_file.write(", ")
-                                
                     else:
                         for j_value in range(n_lists):
                             output_file.write("%s" % this_list[j_value])
