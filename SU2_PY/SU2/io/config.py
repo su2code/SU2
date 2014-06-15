@@ -389,6 +389,7 @@ def read_config(filename):
                     this_dvKind       = get_dvKind( int( info_Kind[0] ) )     
                     this_dvScale      = float( info_Kind[1] )
                     this_dvMarkers    = info_General[1].split(",")
+                    
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
                     else:
@@ -396,6 +397,7 @@ def read_config(filename):
                         # if FFD change the first element to work with numbers and float(x), save also the tag
                         if this_dvKind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                           this_dvFFDTag = this_dvParameters[0]
+                          dv_FFDTag     = dv_FFDTag     + [this_dvFFDTag]
                           this_dvParameters[0] = '0'
                         this_dvParameters = [ float(x) for x in this_dvParameters ]
 
@@ -403,7 +405,6 @@ def read_config(filename):
                     dv_Kind       = dv_Kind       + [this_dvKind]
                     dv_Scale      = dv_Scale      + [this_dvScale]
                     dv_Markers    = dv_Markers    + [this_dvMarkers]
-                    dv_FFDTag     = dv_FFDTag     + [this_dvFFDTag]
                     dv_Parameters = dv_Parameters + [this_dvParameters]
                 # store in a dictionary
                 dv_Definitions = { 'KIND'   : dv_Kind       ,
