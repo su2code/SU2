@@ -317,9 +317,15 @@ def read_config(filename):
                 info_General = info_General.split(';')
                 # build list of dv params, convert string to float
                 dv_Parameters = []
+                
                 for this_dvParam in info_General:
                     this_dvParam = this_dvParam.strip('()')
-                    this_dvParam = [ float(x) for x in this_dvParam.split(",") ]   
+                    this_dvParam = this_dvParam.split(",")
+                    
+                    if data_dict["DV_KIND"][0] in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        this_dvParam[0] = '0'
+                    
+                    this_dvParam = [ float(x) for x in this_dvParam ]
                     dv_Parameters = dv_Parameters + [this_dvParam]
                 data_dict[this_param] = dv_Parameters
                 break     
@@ -384,7 +390,7 @@ def read_config(filename):
                     if this_dvKind=='MACH_NUMBER' or this_dvKind=='AOA':
                         this_dvParameters = []
                     else:
-                        if this_dvKind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        if this_dvKind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                           this_dvFFDTag = info_General[2].split(",")[0]
                           this_dvParameters = info_General[2].split(",")
                           this_dvParameters[0] = '0'
@@ -597,7 +603,7 @@ def write_config(filename,param_dict):
                     
                     if 'DEFINITION_DV' in param_dict:
                        this_kind = new_value_['KIND'][i_value]
-                       if this_kind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                       if this_kind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                            output_file.write("%s, " % new_value_['FFDTAG'][i_value])
                            for j_value in range(1,n_lists):
                                output_file.write("%s" % this_list[j_value])
@@ -656,7 +662,7 @@ def write_config(filename,param_dict):
                     if not this_kind in ['AOA','MACH_NUMBER']:
                         output_file.write(" | ")
                         # params
-                        if this_kind in ['FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        if this_kind in ['FFD_SETTING','FFD_CONTROL_POINT','FFD_DIHEDRAL_ANGLE','FFD_TWIST_ANGLE','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                             n_param = len(new_value['PARAM'][i_dv])
                             output_file.write("%s , " % new_value['FFDTAG'][i_dv])
                             for i_param in range(1,n_param):
