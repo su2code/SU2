@@ -73,11 +73,11 @@ int main(int argc, char *argv[]) {
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
-#ifdef NO_MPI
-  StartTime = double(clock())/double(CLOCKS_PER_SEC);
-#else
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
+#else
+  StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Computational grid preprocesing ---*/
@@ -209,11 +209,11 @@ int main(int argc, char *argv[]) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
-#ifdef NO_MPI
-  StopTime = double(clock())/double(CLOCKS_PER_SEC);
-#else
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
+#else
+  StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
