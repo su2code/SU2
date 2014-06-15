@@ -108,11 +108,11 @@ inline unsigned short CFreeFormDefBox::GetmOrder(void) { return mOrder; }
 
 inline unsigned short CFreeFormDefBox::GetnOrder(void) { return nOrder; }
 
-inline void CFreeFormDefBox::SetlOrder(double val_lOrder) { lOrder = val_lOrder; lDegree = lOrder-1; }
+inline void CFreeFormDefBox::SetlOrder(unsigned short val_lOrder) { lOrder = val_lOrder; lDegree = lOrder-1; }
 
-inline void CFreeFormDefBox::SetmOrder(double val_mOrder) { mOrder = val_mOrder; mDegree = mOrder-1; }
+inline void CFreeFormDefBox::SetmOrder(unsigned short val_mOrder) { mOrder = val_mOrder; mDegree = mOrder-1; }
 
-inline void CFreeFormDefBox::SetnOrder(double val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1;}
+inline void CFreeFormDefBox::SetnOrder(unsigned short val_nOrder) { nOrder = val_nOrder; nDegree = nOrder-1;}
 
 inline void  CFreeFormDefBox::SetCoordCornerPoints(double *val_coord, unsigned short val_icornerpoints) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 

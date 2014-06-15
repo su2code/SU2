@@ -486,19 +486,19 @@ public:
 	 * \brief Get the order in the l direction of the FFD FFDBox.
 	 * \return Order in the l direction of the FFD FFDBox.
 	 */
-	void SetlOrder(double val_lOrder);
+	void SetlOrder(unsigned short val_lOrder);
 	
 	/*!
 	 * \brief Get the order in the m direction of the FFD FFDBox.
 	 * \return Order in the m direction of the FFD FFDBox.
 	 */
-	void SetmOrder(double val_mOrder);
+	void SetmOrder(unsigned short val_mOrder);
 	
 	/*!
 	 * \brief Get the order in the n direction of the FFD FFDBox.
 	 * \return Order in the n direction of the FFD FFDBox.
 	 */
-	void SetnOrder(double val_nOrder);
+	void SetnOrder(unsigned short val_nOrder);
 	
 	/*! 
 	 * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
