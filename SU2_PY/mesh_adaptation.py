@@ -53,8 +53,8 @@ def main():
     options.save_all   = options.save_all  == "True"
 
     if options.oldpartitions != "oldpartitions":
-      print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
-      sys.exit()
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+        sys.exit()
     
     # Run Mesh Adaptation
     mesh_adaptation ( options.filename   ,
