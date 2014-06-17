@@ -111,7 +111,7 @@ enum SU2_COMPONENT {
   SU2_PRT = 4,	/*!< \brief Running the SU2_PRT software. */
   SU2_MSH = 5,	/*!< \brief Running the SU2_MSH software. */
   SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
-  SU2_SOL = 7,	/*!< \brief Running the SU2_SOL software. */
+  SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
 
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
@@ -404,7 +404,7 @@ static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM
  */
 enum ENUM_GUST_DIR {
   X_DIR = 0,        /*!< \brief _______. */
-  Y_DIR = 1, 		 /*!< \brief _______. */
+  Y_DIR = 1 		 /*!< \brief _______. */
 };
 static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_GUST_DIR>
 ("X_DIR", X_DIR)
@@ -787,7 +787,8 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
-  TWOPHASE = 16			/*!< \brief Do a grid refinement on the free surface interphase. */
+  TWOPHASE = 16,			/*!< \brief Do a grid refinement on the free surface interphase. */
+  PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("NONE", NO_ADAPT)
@@ -805,6 +806,7 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
+("PERIODIC", PERIODIC)
 ("TWOPHASE", TWOPHASE);
 
 /*!

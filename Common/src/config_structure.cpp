@@ -3934,6 +3934,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     
     switch (Kind_Adaptation) {
       case NONE: break;
+      case PERIODIC: cout << "Grid modification to run periodic bc problems." << endl; break;
       case FULL: cout << "Grid adaptation using a complete refinement." << endl; break;
       case WAKE: cout << "Grid adaptation of the wake." << endl; break;
       case TWOPHASE: cout << "Grid adaptation of the interphase of a free surface flow." << endl; break;

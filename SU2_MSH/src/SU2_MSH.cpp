@@ -20,99 +20,13 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-
-//#include "../include/SU2_MSH.hpp"
-//using namespace std;
-//
-//int main(int argc, char *argv[]) {
-//	
-//	char buffer_plt[100];
-//	string MeshFile;
-//	unsigned short nZone = 1;
-//  
-//#ifdef HAVE_MPI
-//	MPI_Init(&argc,&argv);
-//#endif
-//  
-//	/*--- Definition of the class for the definition of the problem ---*/
-//	CConfig *config;
-//	if (argc == 2) config = new CConfig(argv[1], SU2_MSH, ZONE_0, nZone, 0, VERB_HIGH);
-//	else {
-//		char grid_file[200];
-//		strcpy (grid_file, "default.cfg");
-//		config = new CConfig(grid_file, SU2_MSH, ZONE_0, nZone, 0, VERB_HIGH);
-//	}
-//  
-//	/*--- Definition of the class for the geometry ---*/
-//	CGeometry *geometry; geometry = new CGeometry;
-//	geometry = new CPhysicalGeometry(config, ZONE_0, nZone);
-//  
-//  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
-//  config->SetNondimensionalization(geometry->GetnDim(), ZONE_0);
-//  
-//	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-//	
-//	/*--- Compute elements surrounding points, points surrounding points, and elements surrounding elements ---*/
-//	cout << "Setting local point and element connectivity." <<endl;
-//	geometry->SetEsuP(); geometry->SetPsuP(); geometry->SetEsuE();
-//	
-//	/*--- Check the orientation before computing geometrical quantities ---*/
-//	cout << "Checking the numerical grid orientation." <<endl;
-//	geometry->SetBoundVolume(); geometry->Check_Orientation(config);
-//	
-//	/*--- Create the edge structure ---*/
-//	cout << "Identifying edges and vertices." <<endl;
-//	geometry->SetEdges(); geometry->SetVertex(config);
-//	
-//	/*--- Compute center of gravity ---*/
-//	cout << "Computing centers of gravity." << endl;
-//	geometry->SetCG();
-//  
-//	/*--- Create the control volume structures ---*/
-//	cout << "Setting the control volume structure." << endl;
-//	geometry->SetControlVolume(config, ALLOCATE);
-//	geometry->SetBoundControlVolume(config, ALLOCATE);
-//	
-//	cout << endl <<"-------------------- Setting the periodic boundaries --------------------" << endl;
-//  
-//	/*--- Set periodic boundary conditions ---*/
-//	geometry->SetPeriodicBoundary(config);
-//	
-//  /*--- Original grid for debugging purposes ---*/
-//  strcpy (buffer_plt, "periodic_original.plt"); geometry->SetTecPlot(buffer_plt);
-//  
-//	/*--- Create a new grid with the right periodic boundary ---*/
-//	CGeometry *periodic; periodic = new CPeriodicGeometry(geometry, config);
-//	periodic->SetPeriodicBoundary(geometry, config);
-//	periodic->SetMeshFile(geometry, config, config->GetMesh_Out_FileName());
-//	
-//	/*--- Output of the grid for debuging purposes ---*/
-//  strcpy (buffer_plt, "periodic_halo.plt"); periodic->SetTecPlot(buffer_plt);
-//	
-//#ifdef HAVE_MPI
-//	MPI_Finalize();
-//#endif
-//  
-//	/*--- End solver ---*/
-//	cout << endl <<"------------------------- Exit Success (SU2_MSH) ------------------------" << endl << endl;
-//	
-//	return EXIT_SUCCESS;
-//}
-
-
-
-
-
-
 #include "../include/SU2_MSH.hpp"
 using namespace std;
 
 int main(int argc, char *argv[]) {
 	
 	/*--- Variable definitions ---*/
-	char file_name[200];
+	char file_name[MAX_STRING_SIZE];
   unsigned short nZone = 1;
   
 #ifdef HAVE_MPI
@@ -148,11 +62,9 @@ int main(int argc, char *argv[]) {
 	/*--- Create the control volume structures ---*/
 	cout << "Set control volume structure." << endl;
 	geometry->SetControlVolume(config, ALLOCATE); geometry->SetBoundControlVolume(config, ALLOCATE);
+
 	
-	/*--- Set the near-field and interface boundary conditions  ---*/
-	geometry->MatchNearField(config);
-	
-	if (config->GetKind_Adaptation() != NONE) {
+	if ((config->GetKind_Adaptation() != NONE) && (config->GetKind_Adaptation() != PERIODIC)) {
 		
 		cout << endl <<"--------------------- Start numerical grid adaptation -------------------" << endl;
 		
@@ -162,7 +74,7 @@ int main(int argc, char *argv[]) {
 		
 		/*--- Read the flow solution and/or the adjoint solution
 		 and choose the elements to adapt ---*/
-		if ((config->GetKind_Adaptation() != NONE) && (config->GetKind_Adaptation() != FULL)
+		if ((config->GetKind_Adaptation() != FULL)
 				&& (config->GetKind_Adaptation() != WAKE) && (config->GetKind_Adaptation() != TWOPHASE)
 				&& (config->GetKind_Adaptation() != SMOOTHING) && (config->GetKind_Adaptation() != SUPERSONIC_SHOCK))
 			grid_adaptation->GetFlowSolution(geometry, config);
@@ -283,9 +195,33 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	else {
-    strcpy (file_name, "original_grid.plt");
-    geometry->SetTecPlot(file_name);
-		geometry->SetMeshFile (config, config->GetMesh_Out_FileName());
+    
+    if (config->GetKind_Adaptation() == PERIODIC) {
+      
+      cout << endl <<"-------------------- Setting the periodic boundaries --------------------" << endl;
+      
+      /*--- Set periodic boundary conditions ---*/
+      geometry->SetPeriodicBoundary(config);
+      
+      /*--- Original grid for debugging purposes ---*/
+      strcpy (file_name, "periodic_original.plt"); geometry->SetTecPlot(file_name);
+      
+      /*--- Create a new grid with the right periodic boundary ---*/
+      CGeometry *periodic; periodic = new CPeriodicGeometry(geometry, config);
+      periodic->SetPeriodicBoundary(geometry, config);
+      periodic->SetMeshFile(geometry, config, config->GetMesh_Out_FileName());
+      
+      /*--- Output of the grid for debuging purposes ---*/
+      strcpy (file_name, "periodic_halo.plt"); periodic->SetTecPlot(file_name);
+      
+    }
+    
+    if (config->GetKind_Adaptation() == NONE) {
+      strcpy (file_name, "original_grid.plt");
+      geometry->SetTecPlot(file_name);
+      geometry->SetMeshFile (config, config->GetMesh_Out_FileName());
+    }
+    
 	}
   
 #ifdef HAVE_MPI
