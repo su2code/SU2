@@ -50,8 +50,8 @@ def main():
     options.merge_grid  = options.merge_grid.upper()  == 'TRUE'
     
     if options.oldpartitions != "oldpartitions":
-    print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
-      sys.exit()
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+        sys.exit()
     
     # Run Parallel Comutation
     mesh_deformation ( options.filename    ,

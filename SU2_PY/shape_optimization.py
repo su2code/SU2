@@ -62,8 +62,8 @@ def main():
     options.gradient    = options.gradient.upper()
     
     if options.oldpartitions != "oldpartitions":
-    print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
-      sys.exit()
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+        sys.exit()
     
     shape_optimization( options.filename    ,
                         options.projectname ,
