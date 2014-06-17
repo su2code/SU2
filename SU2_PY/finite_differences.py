@@ -36,6 +36,8 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
+    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="finite difference STEP", metavar="STEP")
     parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
@@ -47,8 +49,8 @@ def main():
     options.quiet      = options.quiet.upper() == 'TRUE'
     
     if options.oldpartitions != "oldpartitions":
-    print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
-      sys.exit()
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+        sys.exit()
     
     finite_differences( options.filename   ,
                         options.partitions ,
