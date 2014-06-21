@@ -913,15 +913,17 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
         
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-          + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+            + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        }
         
       } else {
         
-        for(iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
