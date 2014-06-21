@@ -689,52 +689,43 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     
     /*--- Merge volumetric grid. ---*/
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
       cout <<"Merging volumetric triangle grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
-    }
+    MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
       cout <<"Merging volumetric rectangle grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
-    }
+    MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
       cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
-    }
+    MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
       cout <<"Merging volumetric hexahedron grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
-    }
+    MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
       cout <<"Merging volumetric wedge grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, WEDGE       );
-    }
+    MergeVolumetricConnectivity(config, geometry, WEDGE       );
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
       cout <<"Merging volumetric pyramid grid connectivity." << endl;
-      MergeVolumetricConnectivity(config, geometry, PYRAMID     );
-    }
+    MergeVolumetricConnectivity(config, geometry, PYRAMID     );
     
     /*--- Merge surface grid. ---*/
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
       cout <<"Merging surface line grid connectivity." << endl;
-      MergeSurfaceConnectivity(config, geometry, LINE);
-    }
+    MergeSurfaceConnectivity(config, geometry, LINE);
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
       cout <<"Merging surface triangle grid connectivity." << endl;
-      MergeSurfaceConnectivity(config, geometry, TRIANGLE);
-    }
+    MergeSurfaceConnectivity(config, geometry, TRIANGLE);
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0)) {
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
       cout <<"Merging surface rectangle grid connectivity." << endl;
-      MergeSurfaceConnectivity(config, geometry, RECTANGLE);
-    }
+    MergeSurfaceConnectivity(config, geometry, RECTANGLE);
     
     /*--- Update total number of volume elements after merge. ---*/
     
