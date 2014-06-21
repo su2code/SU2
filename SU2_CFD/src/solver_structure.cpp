@@ -780,7 +780,7 @@ void CSolver::SetSurface_Gradient(CGeometry *geometry, CConfig *config) {
   
 	/*--- Loop over boundary markers to select those for Euler or NS walls ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
+		Boundary = config->GetMarker_All_KindBC(iMarker);
 		switch (Boundary) {
       case EULER_WALL:
       case HEAT_FLUX:
@@ -910,7 +910,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
   
 	/*--- Loop over boundary markers to select those for Euler or NS walls ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
+		Boundary = config->GetMarker_All_KindBC(iMarker);
 		switch (Boundary) {
       case EULER_WALL:
       case HEAT_FLUX:
@@ -1362,7 +1362,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
       
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) {
           
           Cl = GetSurface_CLift(iMarker_Monitoring);
@@ -1768,7 +1768,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;

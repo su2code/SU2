@@ -244,9 +244,9 @@ public:
 
 	/*! 
 	 * \brief Set the number of dimensions of the problem.
-	 * \param[in] val_ndim - Number of dimensions.
+	 * \param[in] val_nDim - Number of dimensions.
 	 */
-	void SetnDim(unsigned short val_ndim);
+	void SetnDim(unsigned short val_nDim);
 
 	/*! 
 	 * \brief Get the index of a marker.

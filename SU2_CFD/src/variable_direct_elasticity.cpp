@@ -24,8 +24,8 @@
 
 CFEAVariable::CFEAVariable(void) : CVariable() { }
 
-CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+CFEAVariable::CFEAVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim;
   
 	/*--- Allocate residual structures ---*/

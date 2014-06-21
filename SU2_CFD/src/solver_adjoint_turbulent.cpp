@@ -207,7 +207,7 @@ void CAdjTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -282,7 +282,7 @@ void CAdjTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) 
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -361,7 +361,7 @@ void CAdjTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *con
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;

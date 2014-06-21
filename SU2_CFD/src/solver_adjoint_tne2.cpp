@@ -344,7 +344,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -468,7 +468,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -593,7 +593,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig 
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -721,7 +721,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -849,7 +849,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConf
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1027,7 +1027,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   z_origin = RefOriginMoment[2];
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1651,10 +1651,10 @@ void CAdjTNE2EulerSolver::SetUndivided_Laplacian(CGeometry *geometry,
 	 for a boundary node and make a linear approximation. ---*/
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
-				config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-				config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
-				config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY) {
+		if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+				config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+				config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+				config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
       
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1866,7 +1866,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   
   /*--- Loop over boundary markers to select those for Euler walls ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       
       /*--- Loop over points on the surface to store the auxiliary variable ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1911,7 +1911,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
     
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
@@ -1953,7 +1953,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   /*--- Farfield Sensitivity (Mach, AoA, Press, Temp) ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+    if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
       
       Sens_Mach[iMarker]  = 0.0;
       Sens_AoA[iMarker]   = 0.0;
@@ -2070,7 +2070,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   /*--- Explicit contribution from objective function quantity ---*/
 //  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 //    
-//    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+//    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
 //      
 //      Sens_Mach[iMarker]  = 0.0;
 //      Sens_AoA[iMarker]   = 0.0;
@@ -3104,12 +3104,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     Sens_Geo[iMarker] = 0.0;
     
     
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       
       /*--- Loop over all boundary nodes ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -3265,12 +3265,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
           
           /*--- B33: 2nd-viscous sensitivity, tr heat flux ---*/
           B33 = 0.0;
-          if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
             B33 = -ktr * dnPsiE * dnT;
           
           /*--- B34: 2nd-viscous sensitivity, ve heat flux ---*/
           B34 = 0.0;
-          if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
             B34 = -kve * (dnPsiE+dnPsiEve) * dnTve;
           
           /*--- Gather all sensitivities for dJ/dS ---*/
@@ -3302,7 +3302,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //    
 //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
 //      
-//      if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+//      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
 //        
 //        Sens_Mach[iMarker]  = 0.0;
 //        Sens_AoA[iMarker]   = 0.0;
@@ -3451,7 +3451,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //    
 //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
 //      
-//      if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+//      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
 //        
 //        Sens_Mach[iMarker]  = 0.0;
 //        Sens_AoA[iMarker]   = 0.0;

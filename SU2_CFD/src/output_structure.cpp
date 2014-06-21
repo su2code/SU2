@@ -689,43 +689,52 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     
     /*--- Merge volumetric grid. ---*/
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0)) {
       cout <<"Merging volumetric triangle grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
+      MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0)) {
       cout <<"Merging volumetric rectangle grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+      MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0)) {
       cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
+      MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0)) {
       cout <<"Merging volumetric hexahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
+      MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0)) {
       cout <<"Merging volumetric wedge grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, WEDGE       );
+      MergeVolumetricConnectivity(config, geometry, WEDGE       );
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0)) {
       cout <<"Merging volumetric pyramid grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, PYRAMID     );
+      MergeVolumetricConnectivity(config, geometry, PYRAMID     );
+    }
     
     /*--- Merge surface grid. ---*/
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0)) {
       cout <<"Merging surface line grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, LINE);
+      MergeSurfaceConnectivity(config, geometry, LINE);
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0)) {
       cout <<"Merging surface triangle grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, TRIANGLE);
+      MergeSurfaceConnectivity(config, geometry, TRIANGLE);
+    }
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0)) {
       cout <<"Merging surface rectangle grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+      MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+    }
     
     /*--- Update total number of volume elements after merge. ---*/
     
@@ -1097,7 +1106,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
    choose to keep only the halo cells from the lower rank processor. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
       RecvFrom = abs(SendRecv)-1;
       
@@ -1416,7 +1425,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
    choose to keep only the halo cells from the lower rank processor. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
       RecvFrom = abs(SendRecv)-1;
       if (SendRecv < 0 && RecvFrom < rank) {
@@ -3435,9 +3444,9 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   
   bool isothermal = false;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+    if ((config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
       isothermal = true;
   
   /*--- Write file name with extension ---*/
@@ -3639,9 +3648,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool isothermal = false;
     for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
-      if ((config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL) ||
-          (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC) ||
-          (config[val_iZone]->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC))
+      if ((config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+          (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC) ||
+          (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC))
         isothermal = true;
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == FLUID_STRUCTURE_RANS));
@@ -5412,7 +5421,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     PointInDomain[iPoint] = false;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     if ((Boundary == EULER_WALL             ) ||
@@ -5505,7 +5514,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   
   PressDiff = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     if ((Boundary == EULER_WALL             ) ||
@@ -5573,7 +5582,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     PointInDomain[iPoint] = false;
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     if ((Boundary == EULER_WALL             ) ||
@@ -5664,7 +5673,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   
   HeatFluxDiff = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     if ((Boundary == EULER_WALL             ) ||
@@ -5752,7 +5761,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   /*--- Compute the total number of points on the near-field ---*/
   nVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -5780,7 +5789,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   /*--- Copy the boundary information to an array ---*/
   nVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -5844,7 +5853,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
   nLocalVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -5892,7 +5901,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
   nLocalVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();

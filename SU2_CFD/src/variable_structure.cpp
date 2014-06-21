@@ -74,7 +74,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   
 }
 
-CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config) {
+CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
   
 	unsigned short iVar, iDim;
 	
@@ -94,7 +94,7 @@ CVariable::CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *
 	Residual_Sum = NULL;
   
 	/*--- Initializate the number of dimension and number of variables ---*/
-	nDim = val_ndim;
+	nDim = val_nDim;
 	nVar = val_nvar;
   
 	/*--- Allocate solution, solution old, residual and gradient 

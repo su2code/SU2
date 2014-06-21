@@ -66,7 +66,7 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -151,7 +151,7 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -229,7 +229,7 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -347,7 +347,7 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1501,7 +1501,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1734,7 +1734,7 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
   
   Normal = new double[nDim];
   
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2822,7 +2822,7 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3652,7 +3652,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   
   bool grid_movement  = config->GetGrid_Movement();
   
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
