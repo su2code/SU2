@@ -85,11 +85,11 @@ public:
   
 	/*!
 	 * \overload 
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */
-	CVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -1604,11 +1604,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_potential - Value of the potential solution (initialization value).		 
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CPotentialVariable(double val_potential, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CPotentialVariable(double val_potential, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
   /*!
 	 * \brief Destructor of the class.
@@ -1650,11 +1650,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_wave - Values of the wave solution (initialization value).		 
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CWaveVariable(double *val_wave, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -1696,11 +1696,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_Heat - Values of the Heat solution (initialization value).		 
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CHeatVariable(double *val_Heat, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CHeatVariable(double *val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -1744,11 +1744,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_fea - Values of the fea solution (initialization value).		 
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CFEAVariable(double *val_fea, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CFEAVariable(double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -1827,21 +1827,21 @@ public:
 	 * \param[in] val_density - Value of the flow density (initialization value).
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
 	 * \param[in] val_energy - Value of the flow energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.		 
 	 * \param[in] config - Definition of the particular problem.	 
 	 */		
-	CEulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_ndim, 
+	CEulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_nDim, 
 			unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the flow value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */		
-	CEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CEulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2192,21 +2192,21 @@ public:
 	 * \param[in] val_density - Value of the flow density (initialization value).
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
 	 * \param[in] val_energy - Value of the flow energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.		 
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CNSVariable(double val_density, double *val_velocity, 
-			double val_energy, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+			double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the flow value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	
 	 */
-	CNSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CNSVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2329,11 +2329,11 @@ public:
 
 	/*!
 	 * \overload
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -2372,11 +2372,11 @@ public:
 	 * \overload
 	 * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
 	 * \param[in] val_muT  - The eddy viscosity
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2419,11 +2419,11 @@ public:
 	 * \overload
 	 * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
 	 * \param[in] val_muT  - The eddy viscosity
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -2469,11 +2469,11 @@ public:
 	 * \overload
 	 * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
 	 * \param[in] val_muT  - The eddy viscosity
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2529,11 +2529,11 @@ public:
 	 * \overload
 	 * \param[in] val_rho_kine - Turbulent variable value (initialization value).
 	 * \param[in] val_rho_omega - Turbulent variable value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbSSTVariable(double val_rho_kine, double val_rho_omega, double val_muT, unsigned short val_ndim, unsigned short val_nvar,
+	CTurbSSTVariable(double val_rho_kine, double val_rho_omega, double val_muT, unsigned short val_nDim, unsigned short val_nvar,
 			double *constants, CConfig *config);
 
 	/*!
@@ -2587,11 +2587,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_psi - Potential adjoint variable value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CAdjPotentialVariable(double val_psi, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjPotentialVariable(double val_psi, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2627,20 +2627,20 @@ public:
 	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
 	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
 	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */		
-	CAdjEulerVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjEulerVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */		
-	CAdjEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjEulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2741,20 +2741,20 @@ public:
 	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
 	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
 	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CAdjNSVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjNSVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */
-	CAdjNSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjNSVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2817,11 +2817,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */		
-	CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjTurbVariable(double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2877,20 +2877,20 @@ public:
 	 * \param[in] val_deltarho - Value of the linearized density (initialization value).
 	 * \param[in] val_deltavel - Value of the linearized velocity (initialization value).
 	 * \param[in] val_deltae - Value of the linearized energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.	
 	 * \param[in] config - Definition of the particular problem.
 	 */		
-	CLinEulerVariable(double val_deltarho, double *val_deltavel, double val_deltae, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CLinEulerVariable(double val_deltarho, double *val_deltavel, double val_deltae, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the linearized value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */	
-	CLinEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CLinEulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
@@ -2956,20 +2956,20 @@ public:
 
 	/*!
 	 * \overload
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjLevelSetVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjLevelSetVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
 	 * \param[in] val_levelset - Level set variable value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CAdjLevelSetVariable(double val_levelset, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjLevelSetVariable(double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -3014,7 +3014,7 @@ public:
   /*!
 	 * \brief Constructor of the class.
 	 */
-  CTNE2EulerVariable(unsigned short val_ndim, unsigned short val_nVar,
+  CTNE2EulerVariable(unsigned short val_nDim, unsigned short val_nVar,
                      unsigned short val_nPrimVar,
                      unsigned short val_nPrimVarGrad,
                      CConfig *config);
@@ -3024,7 +3024,7 @@ public:
 	 * \param[in] val_density - Value of the flow density (initialization value).
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
 	 * \param[in] val_energy - Value of the flow energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of conserved variables.
    * \param[in] val_nvarprim - Number of primitive variables.
    * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
@@ -3032,18 +3032,18 @@ public:
 	 */
 	CTNE2EulerVariable(double val_pressure, double *val_massfrac,
                      double *val_mach, double val_temperature,
-                     double val_temperature_ve, unsigned short val_ndim,
+                     double val_temperature_ve, unsigned short val_nDim,
                      unsigned short val_nvar, unsigned short val_nvarprim,
                      unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the flow value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2EulerVariable(double *val_solution, unsigned short val_ndim,
+	CTNE2EulerVariable(double *val_solution, unsigned short val_nDim,
                      unsigned short val_nvar, unsigned short val_nvarprim,
                      unsigned short val_nvarprimgrad, CConfig *config);
   
@@ -3457,13 +3457,13 @@ public:
   
   /*!
 	 * \overload
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of conserved variables.
    * \param[in] val_nvarprim - Number of primitive variables.
    * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  CTNE2NSVariable(unsigned short val_ndim, unsigned short val_nvar,
+  CTNE2NSVariable(unsigned short val_nDim, unsigned short val_nvar,
                   unsigned short val_nprimvar, unsigned short val_nprimvargrad,
                   CConfig *config);
   
@@ -3472,27 +3472,27 @@ public:
 	 * \param[in] val_density - Value of the flow density (initialization value).
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
 	 * \param[in] val_energy - Value of the flow energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of conserved variables.
    * \param[in] val_nvarprim - Number of primitive variables.
    * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CTNE2NSVariable(double val_density, double *val_massfrac, double *val_velocity,
-                  double val_temperature, double val_temperature_ve, unsigned short val_ndim,
+                  double val_temperature, double val_temperature_ve, unsigned short val_nDim,
                   unsigned short val_nvar, unsigned short val_nvarprim,
                   unsigned short val_nvarprimgrad, CConfig *config);
   
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the flow value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of conserved variables.
    * \param[in] val_nvarprim - Number of primitive variables.
    * \param[in] val_nvarprimgrad - Number of primitive gradient variables.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar,
+	CTNE2NSVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar,
                   unsigned short val_nvarprim, unsigned short val_nvarprimgrad,
                   CConfig *config);
   
@@ -3596,23 +3596,23 @@ public:
 	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
 	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
    * \param[in] val_psieve - Value of the adjoint vibrational energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CAdjTNE2EulerVariable(double *val_psirho, double *val_phi,
                         double val_psie, double val_psieve,
-                        unsigned short val_ndim, unsigned short val_nvar,
+                        unsigned short val_nDim, unsigned short val_nvar,
                         CConfig *config);
   
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTNE2EulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjTNE2EulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -3685,23 +3685,23 @@ public:
 	 * \param[in] val_psirho - Value of the adjoint density (initialization value).
 	 * \param[in] val_phi - Value of the adjoint velocity (initialization value).
 	 * \param[in] val_psie - Value of the adjoint energy (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CAdjTNE2NSVariable(double *val_psirho, double *val_phi,
                      double val_psie, double val_psieve,
-                     unsigned short val_ndim, unsigned short val_nvar,
+                     unsigned short val_nDim, unsigned short val_nvar,
                      CConfig *config);
   
 	/*!
 	 * \overload
 	 * \param[in] val_solution - Pointer to the adjoint value (initialization value).
-	 * \param[in] val_ndim - Number of dimensions of the problem.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjTNE2NSVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.
@@ -3762,11 +3762,11 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_potential - Value of the potential solution (initialization value).		 
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CTemplateVariable(double val_potential, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CTemplateVariable(double val_potential, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 

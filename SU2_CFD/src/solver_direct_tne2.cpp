@@ -549,7 +549,7 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -671,7 +671,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -788,7 +788,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -908,7 +908,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry,
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1036,7 +1036,7 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry,
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1151,7 +1151,7 @@ void CTNE2EulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *confi
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1228,7 +1228,7 @@ void CTNE2EulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1301,7 +1301,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1430,7 +1430,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1567,7 +1567,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry,
   /*--- Loop over all send/receive boundaries ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -2325,7 +2325,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
   
   /*--- Loop over boundaries ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		switch (config->GetMarker_All_Boundary(iMarker)) {
+		switch (config->GetMarker_All_KindBC(iMarker)) {
       case EULER_WALL: case SYMMETRY_PLANE: case FAR_FIELD:
       case HEAT_FLUX: case ISOTHERMAL:
 
@@ -2481,7 +2481,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		Boundary   = config->GetMarker_All_Boundary(iMarker);
+		Boundary   = config->GetMarker_All_KindBC(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
 		if ((Boundary == EULER_WALL             ) ||
@@ -3826,7 +3826,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 	double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
 	double Gas_Constant       = config->GetGas_ConstantND();
 	unsigned short Kind_Inlet = config->GetKind_Inlet();
-	string Marker_Tag         = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 	bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   
@@ -4083,7 +4083,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 	bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   double Gas_Constant     = config->GetGas_ConstantND();
 	bool grid_movement      = config->GetGrid_Movement();
-	string Marker_Tag       = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
 	bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   
@@ -4251,7 +4251,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement  = config->GetGrid_Movement();
 	bool viscous              = config->GetViscous();
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   double *U_inlet = new double[nVar]; double *U_domain = new double[nVar];
   double *V_inlet = new double[nPrimVar]; double *V_domain = new double[nPrimVar];
@@ -5572,7 +5572,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		
     /*--- Identify boundary information ---*/
-    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
     /*--- Forces initialization at each Marker ---*/
@@ -5840,7 +5840,7 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   pcontrol = 1.0;
   
 	/*--- Identify the boundary by string name ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -6030,7 +6030,7 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   pcontrol = 0.6;
   
 	/*--- Identify the boundary by string name ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -6212,7 +6212,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   }
   
 	/*--- Identify the boundary ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
 	/*--- Retrieve the specified wall temperature ---*/
 	Twall = config->GetIsothermal_Temperature(Marker_Tag);

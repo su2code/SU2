@@ -33,7 +33,7 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
   
 }
 
-CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
+CAdjTurbVariable::CAdjTurbVariable(double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
   
   /*--- Array initialization ---*/
   

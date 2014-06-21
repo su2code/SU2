@@ -80,11 +80,11 @@ unsigned short CVertexMPI::VTK_Type = 1;
 
 unsigned short CVertexMPI::maxNodesFace = 0;
 
-CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_ndim) : CPrimalGrid() {
+CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrimalGrid() {
 	unsigned short iDim;
 	
 	/*--- Allocate CG coordinates ---*/
-	nDim = val_ndim;
+	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++) Coord_CG[iDim] = 0.0;
 	
@@ -127,11 +127,11 @@ unsigned short CLine::VTK_Type = 3;
 unsigned short CLine::maxNodesFace = 2;
 
 CLine::CLine(unsigned long val_iPoint, unsigned long val_jPoint,
-             unsigned short val_ndim) : CPrimalGrid() {
+             unsigned short val_nDim) : CPrimalGrid() {
 	unsigned short iDim, iFace;
 
 	/*--- Allocate CG coordinates ---*/
-	nDim = val_ndim;
+	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;

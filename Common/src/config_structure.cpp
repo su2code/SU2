@@ -76,8 +76,8 @@ void CConfig::SetPointersNull(void){
   Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
   Marker_NacelleExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
-  Marker_All_Tag=NULL;        Marker_Config_Tag=NULL;       Marker_All_Boundary=NULL;
-  Marker_Config_Boundary=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
+  Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
+  Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
   
   /*--- Boundary Condition settings ---*/
   
@@ -1159,7 +1159,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   case_file.close();
 }
 
-void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim) {
+void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
   unsigned short iZone;
   
@@ -1993,7 +1993,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     
     RefLengthMoment = RefLengthMoment*Mesh_Scale_Change;
-    if (val_ndim == 2) RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change;
+    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change;
     else RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change*Mesh_Scale_Change;
     
   }
@@ -2701,9 +2701,9 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
   
-  Marker_All_Tag        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
+  Marker_All_TagBound        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
   Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
-  Marker_All_Boundary   = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
+  Marker_All_KindBC   = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
   Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
   Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
   Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
@@ -2725,9 +2725,9 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
   
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_Tag[iMarker_All] = "NONE";
+    Marker_All_TagBound[iMarker_All] = "SEND_RECEIVE";
     Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_Boundary[iMarker_All]   = 0;
+    Marker_All_KindBC[iMarker_All]   = 0;
     Marker_All_Monitoring[iMarker_All] = 0;
     Marker_All_GeoEval[iMarker_All]    = 0;
     Marker_All_Designing[iMarker_All]  = 0;
@@ -2748,95 +2748,95 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
-  Marker_Config_Tag        = new string[nMarker_Config];
-  Marker_Config_Boundary   = new unsigned short[nMarker_Config];
-  Marker_Config_Monitoring = new unsigned short[nMarker_Config];
-  Marker_Config_GeoEval    = new unsigned short[nMarker_Config];
-  Marker_Config_Plotting   = new unsigned short[nMarker_Config];
-  Marker_Config_DV         = new unsigned short[nMarker_Config];
-  Marker_Config_Moving     = new unsigned short[nMarker_Config];
-  Marker_Config_Designing  = new unsigned short[nMarker_Config];
-  Marker_Config_PerBound   = new unsigned short[nMarker_Config];
-  Marker_Config_Out_1D   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_TagBound        = new string[nMarker_Config];
+  Marker_CfgFile_KindBC   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Monitoring = new unsigned short[nMarker_Config];
+  Marker_CfgFile_GeoEval    = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Plotting   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_DV         = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Moving     = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Designing  = new unsigned short[nMarker_Config];
+  Marker_CfgFile_PerBound   = new unsigned short[nMarker_Config];
+  Marker_CfgFile_Out_1D   = new unsigned short[nMarker_Config];
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_Tag[iMarker_Config] = "NONE";
-    Marker_Config_Boundary[iMarker_Config]   = 0;
-    Marker_Config_Monitoring[iMarker_Config] = 0;
-    Marker_Config_GeoEval[iMarker_Config]    = 0;
-    Marker_Config_Designing[iMarker_Config]  = 0;
-    Marker_Config_Plotting[iMarker_Config]   = 0;
-    Marker_Config_DV[iMarker_Config]         = 0;
-    Marker_Config_Moving[iMarker_Config]     = 0;
-    Marker_Config_PerBound[iMarker_Config]   = 0;
-    Marker_Config_Out_1D[iMarker_Config]   = 0;
+    Marker_CfgFile_TagBound[iMarker_Config] = "SEND_RECEIVE";
+    Marker_CfgFile_KindBC[iMarker_Config]   = 0;
+    Marker_CfgFile_Monitoring[iMarker_Config] = 0;
+    Marker_CfgFile_GeoEval[iMarker_Config]    = 0;
+    Marker_CfgFile_Designing[iMarker_Config]  = 0;
+    Marker_CfgFile_Plotting[iMarker_Config]   = 0;
+    Marker_CfgFile_DV[iMarker_Config]         = 0;
+    Marker_CfgFile_Moving[iMarker_Config]     = 0;
+    Marker_CfgFile_PerBound[iMarker_Config]   = 0;
+    Marker_CfgFile_Out_1D[iMarker_Config]   = 0;
   }
   
   iMarker_Config = 0;
   for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Euler[iMarker_Euler];
-    Marker_Config_Boundary[iMarker_Config] = EULER_WALL;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Euler[iMarker_Euler];
+    Marker_CfgFile_KindBC[iMarker_Config] = EULER_WALL;
     iMarker_Config++;
   }
   
   for (iMarker_FarField = 0; iMarker_FarField < nMarker_FarField; iMarker_FarField++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_FarField[iMarker_FarField];
-    Marker_Config_Boundary[iMarker_Config] = FAR_FIELD;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_FarField[iMarker_FarField];
+    Marker_CfgFile_KindBC[iMarker_Config] = FAR_FIELD;
     iMarker_Config++;
   }
   
   for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_SymWall[iMarker_SymWall];
-    Marker_Config_Boundary[iMarker_Config] = SYMMETRY_PLANE;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_SymWall[iMarker_SymWall];
+    Marker_CfgFile_KindBC[iMarker_Config] = SYMMETRY_PLANE;
     iMarker_Config++;
   }
   
   for (iMarker_Pressure = 0; iMarker_Pressure < nMarker_Pressure; iMarker_Pressure++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Pressure[iMarker_Pressure];
-    Marker_Config_Boundary[iMarker_Config] = PRESSURE_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Pressure[iMarker_Pressure];
+    Marker_CfgFile_KindBC[iMarker_Config] = PRESSURE_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_PerBound[iMarker_PerBound];
-    Marker_Config_Boundary[iMarker_Config] = PERIODIC_BOUNDARY;
-    Marker_Config_PerBound[iMarker_Config] = iMarker_PerBound + 1;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_PerBound[iMarker_PerBound];
+    Marker_CfgFile_KindBC[iMarker_Config] = PERIODIC_BOUNDARY;
+    Marker_CfgFile_PerBound[iMarker_Config] = iMarker_PerBound + 1;
     iMarker_Config++;
   }
   
   for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
-		Marker_Config_Boundary[iMarker_Config] = ACTDISK_INLET;
+		Marker_CfgFile_TagBound[iMarker_Config] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+		Marker_CfgFile_KindBC[iMarker_Config] = ACTDISK_INLET;
 		iMarker_Config++;
 	}
   
   for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-		Marker_Config_Tag[iMarker_Config] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
-		Marker_Config_Boundary[iMarker_Config] = ACTDISK_OUTLET;
+		Marker_CfgFile_TagBound[iMarker_Config] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+		Marker_CfgFile_KindBC[iMarker_Config] = ACTDISK_OUTLET;
 		iMarker_Config++;
 	}
   
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_NearFieldBound[iMarker_NearFieldBound];
-    Marker_Config_Boundary[iMarker_Config] = NEARFIELD_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NearFieldBound[iMarker_NearFieldBound];
+    Marker_CfgFile_KindBC[iMarker_Config] = NEARFIELD_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_InterfaceBound[iMarker_InterfaceBound];
-    Marker_Config_Boundary[iMarker_Config] = INTERFACE_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_InterfaceBound[iMarker_InterfaceBound];
+    Marker_CfgFile_KindBC[iMarker_Config] = INTERFACE_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Dirichlet[iMarker_Dirichlet];
-    Marker_Config_Boundary[iMarker_Config] = DIRICHLET;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Dirichlet[iMarker_Dirichlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = DIRICHLET;
     iMarker_Config++;
   }
   
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Inlet[iMarker_Inlet];
-    Marker_Config_Boundary[iMarker_Config] = INLET_FLOW;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Inlet[iMarker_Inlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = INLET_FLOW;
     iMarker_Config++;
   }
   
@@ -2844,144 +2844,144 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   FanFace_Pressure = new double[nMarker_NacelleInflow];
   
   for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_NacelleInflow[iMarker_NacelleInflow];
-    Marker_Config_Boundary[iMarker_Config] = NACELLE_INFLOW;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NacelleInflow[iMarker_NacelleInflow];
+    Marker_CfgFile_KindBC[iMarker_Config] = NACELLE_INFLOW;
     FanFace_Mach[iMarker_NacelleInflow] = 0.0;
     FanFace_Pressure[iMarker_NacelleInflow] = 0.0;
     iMarker_Config++;
   }
   
   for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_NacelleExhaust[iMarker_NacelleExhaust];
-    Marker_Config_Boundary[iMarker_Config] = NACELLE_EXHAUST;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_NacelleExhaust[iMarker_NacelleExhaust];
+    Marker_CfgFile_KindBC[iMarker_Config] = NACELLE_EXHAUST;
     iMarker_Config++;
   }
   
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
-    Marker_Config_Boundary[iMarker_Config] = SUPERSONIC_INLET;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = SUPERSONIC_INLET;
     iMarker_Config++;
   }
   
   for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Neumann[iMarker_Neumann];
-    Marker_Config_Boundary[iMarker_Config] = NEUMANN;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Neumann[iMarker_Neumann];
+    Marker_CfgFile_KindBC[iMarker_Config] = NEUMANN;
     iMarker_Config++;
   }
   
   for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Custom[iMarker_Custom];
-    Marker_Config_Boundary[iMarker_Config] = CUSTOM_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Custom[iMarker_Custom];
+    Marker_CfgFile_KindBC[iMarker_Config] = CUSTOM_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Outlet[iMarker_Outlet];
-    Marker_Config_Boundary[iMarker_Config] = OUTLET_FLOW;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Outlet[iMarker_Outlet];
+    Marker_CfgFile_KindBC[iMarker_Config] = OUTLET_FLOW;
     iMarker_Config++;
   }
   
   for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Isothermal[iMarker_Isothermal];
-    Marker_Config_Boundary[iMarker_Config] = ISOTHERMAL;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Isothermal[iMarker_Isothermal];
+    Marker_CfgFile_KindBC[iMarker_Config] = ISOTHERMAL;
     iMarker_Config++;
   }
   
   for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
-    Marker_Config_Boundary[iMarker_Config] = ISOTHERMAL_CATALYTIC;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
+    Marker_CfgFile_KindBC[iMarker_Config] = ISOTHERMAL_CATALYTIC;
     iMarker_Config++;
   }
   
   for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
-    Marker_Config_Boundary[iMarker_Config] = ISOTHERMAL_NONCATALYTIC;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
+    Marker_CfgFile_KindBC[iMarker_Config] = ISOTHERMAL_NONCATALYTIC;
     iMarker_Config++;
   }
   
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_HeatFlux[iMarker_HeatFlux];
-    Marker_Config_Boundary[iMarker_Config] = HEAT_FLUX;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_HeatFlux[iMarker_HeatFlux];
+    Marker_CfgFile_KindBC[iMarker_Config] = HEAT_FLUX;
     iMarker_Config++;
   }
   
   for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
-    Marker_Config_Boundary[iMarker_Config] = HEAT_FLUX_CATALYTIC;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
+    Marker_CfgFile_KindBC[iMarker_Config] = HEAT_FLUX_CATALYTIC;
     iMarker_Config++;
   }
   
   for (iMarker_HeatFluxNoncatalytic = 0; iMarker_HeatFluxNoncatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNoncatalytic++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNoncatalytic];
-    Marker_Config_Boundary[iMarker_Config] = HEAT_FLUX_NONCATALYTIC;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNoncatalytic];
+    Marker_CfgFile_KindBC[iMarker_Config] = HEAT_FLUX_NONCATALYTIC;
     iMarker_Config++;
   }
   
   for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Displacement[iMarker_Displacement];
-    Marker_Config_Boundary[iMarker_Config] = DISPLACEMENT_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Displacement[iMarker_Displacement];
+    Marker_CfgFile_KindBC[iMarker_Config] = DISPLACEMENT_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_Load[iMarker_Load];
-    Marker_Config_Boundary[iMarker_Config] = LOAD_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Load[iMarker_Load];
+    Marker_CfgFile_KindBC[iMarker_Config] = LOAD_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-    Marker_Config_Tag[iMarker_Config] = Marker_FlowLoad[iMarker_FlowLoad];
-    Marker_Config_Boundary[iMarker_Config] = FLOWLOAD_BOUNDARY;
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_FlowLoad[iMarker_FlowLoad];
+    Marker_CfgFile_KindBC[iMarker_Config] = FLOWLOAD_BOUNDARY;
     iMarker_Config++;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_Monitoring[iMarker_Config] = NO;
+    Marker_CfgFile_Monitoring[iMarker_Config] = NO;
     for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_Monitoring[iMarker_Monitoring])
-        Marker_Config_Monitoring[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_Monitoring[iMarker_Monitoring])
+        Marker_CfgFile_Monitoring[iMarker_Config] = YES;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_GeoEval[iMarker_Config] = NO;
+    Marker_CfgFile_GeoEval[iMarker_Config] = NO;
     for (iMarker_GeoEval = 0; iMarker_GeoEval < nMarker_GeoEval; iMarker_GeoEval++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_GeoEval[iMarker_GeoEval])
-        Marker_Config_GeoEval[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_GeoEval[iMarker_GeoEval])
+        Marker_CfgFile_GeoEval[iMarker_Config] = YES;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_Designing[iMarker_Config] = NO;
+    Marker_CfgFile_Designing[iMarker_Config] = NO;
     for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_Designing[iMarker_Designing])
-        Marker_Config_Designing[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_Designing[iMarker_Designing])
+        Marker_CfgFile_Designing[iMarker_Config] = YES;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_Plotting[iMarker_Config] = NO;
+    Marker_CfgFile_Plotting[iMarker_Config] = NO;
     for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_Plotting[iMarker_Plotting])
-        Marker_Config_Plotting[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_Plotting[iMarker_Plotting])
+        Marker_CfgFile_Plotting[iMarker_Config] = YES;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_DV[iMarker_Config] = NO;
+    Marker_CfgFile_DV[iMarker_Config] = NO;
     for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_DV[iMarker_DV])
-        Marker_Config_DV[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_DV[iMarker_DV])
+        Marker_CfgFile_DV[iMarker_Config] = YES;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_Moving[iMarker_Config] = NO;
+    Marker_CfgFile_Moving[iMarker_Config] = NO;
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_Moving[iMarker_Moving])
-        Marker_Config_Moving[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_Moving[iMarker_Moving])
+        Marker_CfgFile_Moving[iMarker_Config] = YES;
   }
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++) {
-    Marker_Config_Out_1D[iMarker_Config] = NO;
+    Marker_CfgFile_Out_1D[iMarker_Config] = NO;
     for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
-      if (Marker_Config_Tag[iMarker_Config] == Marker_Out_1D[iMarker_Out_1D])
-        Marker_Config_Out_1D[iMarker_Config] = YES;
+      if (Marker_CfgFile_TagBound[iMarker_Config] == Marker_Out_1D[iMarker_Out_1D])
+        Marker_CfgFile_Out_1D[iMarker_Config] = YES;
   }
   
   
@@ -4631,79 +4631,79 @@ bool CConfig::GetPython_Option(string & option_name) {
 }
  */
 
-unsigned short CConfig::GetMarker_Config_Tag(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
   
   unsigned short iMarker_Config;
   
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker)
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker)
       return iMarker_Config;
   
   cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
   exit(1);
 }
 
-unsigned short CConfig::GetMarker_Config_Boundary(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_Boundary[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_KindBC[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_Monitoring(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Monitoring(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_Monitoring[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_Monitoring[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_GeoEval(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_GeoEval(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_GeoEval[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_GeoEval[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_Designing(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Designing(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_Designing[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_Designing[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_Plotting(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_Plotting[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_Plotting[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_Out_1D(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_Out_1D[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_Out_1D[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_DV(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_DV(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_DV[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_DV[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_Moving(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_Moving[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_Moving[iMarker_Config];
 }
 
-unsigned short CConfig::GetMarker_Config_PerBound(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   unsigned short iMarker_Config;
   for (iMarker_Config = 0; iMarker_Config < nMarker_Config; iMarker_Config++)
-    if (Marker_Config_Tag[iMarker_Config] == val_marker) break;
-  return Marker_Config_PerBound[iMarker_Config];
+    if (Marker_CfgFile_TagBound[iMarker_Config] == val_marker) break;
+  return Marker_CfgFile_PerBound[iMarker_Config];
 }
 
 CConfig::~CConfig(void)
@@ -4822,31 +4822,31 @@ CConfig::~CConfig(void)
     delete [] RefOriginMoment_Z;
   
   /*Marker pointers*/
-  if (Marker_Config_Out_1D!=NULL)   delete[] Marker_Config_Out_1D;
+  if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
-  if (Marker_Config_GeoEval!=NULL)  delete[] Marker_Config_GeoEval;
+  if (Marker_CfgFile_GeoEval!=NULL)  delete[] Marker_CfgFile_GeoEval;
   if (Marker_All_GeoEval!=NULL)     delete[] Marker_All_GeoEval;
-  if (Marker_Config_Tag!=NULL)      delete[] Marker_Config_Tag;
-  if (Marker_All_Tag!=NULL)         delete[] Marker_All_Tag;
-  if (Marker_Config_Boundary!=NULL) delete[] Marker_Config_Boundary;
-  if (Marker_All_Boundary!=NULL)    delete[] Marker_All_Boundary;
-  if (Marker_Config_Monitoring!=NULL)    delete[] Marker_Config_Monitoring;
+  if (Marker_CfgFile_TagBound!=NULL)      delete[] Marker_CfgFile_TagBound;
+  if (Marker_All_TagBound!=NULL)         delete[] Marker_All_TagBound;
+  if (Marker_CfgFile_KindBC!=NULL) delete[] Marker_CfgFile_KindBC;
+  if (Marker_All_KindBC!=NULL)    delete[] Marker_All_KindBC;
+  if (Marker_CfgFile_Monitoring!=NULL)    delete[] Marker_CfgFile_Monitoring;
   if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
-  if (Marker_Config_Designing!=NULL) delete[] Marker_Config_Designing;
+  if (Marker_CfgFile_Designing!=NULL) delete[] Marker_CfgFile_Designing;
   if (Marker_All_Designing!=NULL)    delete[] Marker_All_Designing;
-  if (Marker_Config_Plotting!=NULL)  delete[] Marker_Config_Plotting;
+  if (Marker_CfgFile_Plotting!=NULL)  delete[] Marker_CfgFile_Plotting;
   if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
-  if (Marker_Config_DV!=NULL)        delete[] Marker_Config_DV;
+  if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
   if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving!=NULL)           delete[] Marker_Moving;
   if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
-  if (Marker_Config_Moving!=NULL)   delete[] Marker_Config_Moving;
+  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
   if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing!=NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_Config_PerBound!=NULL) delete[] Marker_Config_PerBound;
+  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
   if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
   
@@ -5413,7 +5413,7 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   
   /*--- Find and return global marker index for donor boundary. ---*/
   for (kMarker_All = 0; kMarker_All < nMarker_Config; kMarker_All++)
-    if (Marker_PerBound[jMarker_PerBound] == Marker_All_Tag[kMarker_All]) break;
+    if (Marker_PerBound[jMarker_PerBound] == Marker_All_TagBound[kMarker_All]) break;
   
   return kMarker_All;
 }
@@ -5469,7 +5469,7 @@ unsigned short CConfig::GetMarker_ActDisk_Outlet(string val_marker) {
   /*--- Find and return global marker index for the actuator disk outlet. ---*/
   
   for (kMarker_All = 0; kMarker_All < nMarker_Config; kMarker_All++)
-    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_Tag[kMarker_All]) break;
+    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_TagBound[kMarker_All]) break;
   
   return kMarker_All;
 }

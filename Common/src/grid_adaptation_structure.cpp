@@ -1735,7 +1735,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) 
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+		if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
 			for (unsigned long iBoundElem = 0; iBoundElem < geometry->GetnElem_Bound(iMarker); iBoundElem++) {			
 				
 				ip_0 = geometry->bound[iMarker][iBoundElem]->GetNode(0); 

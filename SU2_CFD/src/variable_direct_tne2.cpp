@@ -49,15 +49,15 @@ CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
 
 }
 
-CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_ndim,
+CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        unsigned short val_nprimvar,
                                        unsigned short val_nprimvargrad,
-                                       CConfig *config) : CVariable(val_ndim,
+                                       CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config) {
   
-  nDim         = val_ndim;
+  nDim         = val_nDim;
   nVar         = val_nvar;
   nPrimVar     = val_nprimvar;
   nPrimVarGrad = val_nprimvargrad;
@@ -95,11 +95,11 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
                                        double *val_mach,
                                        double val_temperature,
                                        double val_temperature_ve,
-                                       unsigned short val_ndim,
+                                       unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        unsigned short val_nvarprim,
                                        unsigned short val_nvarprimgrad,
-                                       CConfig *config) : CVariable(val_ndim,
+                                       CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config   ) {
   
@@ -111,7 +111,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   
   /*--- Get Mutation++ mixture ---*/
   nSpecies     = config->GetnSpecies();
-  nDim         = val_ndim;
+  nDim         = val_nDim;
   nPrimVar     = val_nvarprim;
   nPrimVarGrad = val_nvarprimgrad;
   nMGSmooth    = 0;
@@ -281,18 +281,18 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
 }
 
 CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
-                                       unsigned short val_ndim,
+                                       unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        unsigned short val_nvarprim,
                                        unsigned short val_nvarprimgrad,
-                                       CConfig *config) : CVariable(val_ndim,
+                                       CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config) {
 
 	unsigned short iVar, iDim, iMesh, nMGSmooth;
   
   nSpecies     = config->GetnSpecies();
-  nDim         = val_ndim;
+  nDim         = val_nDim;
   nPrimVar     = val_nvarprim;
   nPrimVarGrad = val_nvarprimgrad;
   nMGSmooth    = 0;
@@ -1493,11 +1493,11 @@ void CTNE2EulerVariable::Prim2ConsVar(CConfig *config, double *V, double *U) {
 CTNE2NSVariable::CTNE2NSVariable(void) : CTNE2EulerVariable() { }
 
 
-CTNE2NSVariable::CTNE2NSVariable(unsigned short val_ndim,
+CTNE2NSVariable::CTNE2NSVariable(unsigned short val_nDim,
                                  unsigned short val_nvar,
                                  unsigned short val_nprimvar,
                                  unsigned short val_nprimvargrad,
-                                 CConfig *config) : CTNE2EulerVariable(val_ndim,
+                                 CConfig *config) : CTNE2EulerVariable(val_nDim,
                                                                        val_nvar,
                                                                        val_nprimvar,
                                                                        val_nprimvargrad,
@@ -1514,7 +1514,7 @@ CTNE2NSVariable::CTNE2NSVariable(unsigned short val_ndim,
 CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
                                  double *val_mach, double val_temperature,
                                  double val_temperature_ve,
-                                 unsigned short val_ndim,
+                                 unsigned short val_nDim,
                                  unsigned short val_nvar,
                                  unsigned short val_nvarprim,
                                  unsigned short val_nvarprimgrad,
@@ -1523,7 +1523,7 @@ CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
                                                                        val_mach,
                                                                        val_temperature,
                                                                        val_temperature_ve,
-                                                                       val_ndim,
+                                                                       val_nDim,
                                                                        val_nvar,
                                                                        val_nvarprim,
                                                                        val_nvarprimgrad,
@@ -1536,12 +1536,12 @@ CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
   DiffusionCoeff  = new double[nSpecies];
 }
 
-CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
+CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_nDim,
                                  unsigned short val_nvar,
                                  unsigned short val_nprimvar,
                                  unsigned short val_nprimvargrad,
                                  CConfig *config) : CTNE2EulerVariable(val_solution,
-                                                                       val_ndim,
+                                                                       val_nDim,
                                                                        val_nvar,
                                                                        val_nprimvar,
                                                                        val_nprimvargrad,

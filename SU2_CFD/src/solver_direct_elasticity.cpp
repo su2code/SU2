@@ -530,7 +530,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
 	unsigned short iVar, iDim;
   double *Normal, Area, UnitaryNormal[3];
 	
-	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_Tag(val_marker));
+	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -588,7 +588,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 	double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
 	unsigned short iDim;
 	
-	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_Tag(val_marker));
+	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
 	
 	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
@@ -1374,7 +1374,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
       /*--- Compute the distance from the surface to the points in the .csv files ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_Boundary(iMarker) == PRESSURE_BOUNDARY) {
+        if (config->GetMarker_All_KindBC(iMarker) == PRESSURE_BOUNDARY) {
           for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             

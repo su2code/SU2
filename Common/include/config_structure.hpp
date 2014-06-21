@@ -188,7 +188,7 @@ private:
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
-	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
+	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
 	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
@@ -222,9 +222,9 @@ private:
 	double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
 	double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
 	double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
-	string *Marker_Config_Tag;			/*!< \brief Global index for markers using config file. */
-	unsigned short *Marker_All_Boundary,			/*!< \brief Global index for boundaries using grid information. */
-	*Marker_Config_Boundary;		/*!< \brief Global index for boundaries using config file. */
+	string *Marker_CfgFile_TagBound;			/*!< \brief Global index for markers using config file. */
+	unsigned short *Marker_All_KindBC,			/*!< \brief Global index for boundaries using grid information. */
+	*Marker_CfgFile_KindBC;		/*!< \brief Global index for boundaries using config file. */
 	short *Marker_All_SendRecv;		/*!< \brief Information about if the boundary is sended (+), received (-). */
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
@@ -452,14 +452,14 @@ private:
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
-  *Marker_Config_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_Designing,      /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_Plotting,     /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
-  *Marker_Config_DV,       /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_Config_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
+  *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
@@ -1898,7 +1898,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that 
 	 *         has the marker <i>val_marker</i>.
 	 */		
-	string GetMarker_All_Tag(unsigned short val_marker);
+	string GetMarker_All_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -1937,7 +1937,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \return Kind of boundary for the marker <i>val_marker</i>.
 	 */		
-	unsigned short GetMarker_All_Boundary(unsigned short val_marker);
+	unsigned short GetMarker_All_KindBC(unsigned short val_marker);
 
   /*!
    * \brief Get the kind of boundary for each marker.
@@ -1961,7 +1961,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_boundary - Kind of boundary read from config file.
 	 */		
-	void SetMarker_All_Boundary(unsigned short val_marker, unsigned short val_boundary);
+	void SetMarker_All_KindBC(unsigned short val_marker, unsigned short val_boundary);
 
 	/*! 
 	 * \brief Set the value of the index <i>val_index</i> (read from the geometry file) for 
@@ -1969,7 +1969,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_index - Index of the surface read from geometry file.
 	 */	
-	void SetMarker_All_Tag(unsigned short val_marker, string val_index);
+	void SetMarker_All_TagBound(unsigned short val_marker, string val_index);
 
 	/*! 
 	 * \brief Set if a marker <i>val_marker</i> is going to be monitored <i>val_monitoring</i> 
@@ -4052,61 +4052,61 @@ public:
 	 * \note When we read the config file, it stores the markers in a particular vector.
 	 * \return Index in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Tag(string val_marker);
+	unsigned short GetMarker_CfgFile_TagBound(string val_marker);
 
 	/*! 
 	 * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
 	 * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Boundary(string val_marker);
+	unsigned short GetMarker_CfgFile_KindBC(string val_marker);
 
 	/*! 
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Monitoring(string val_marker);
+	unsigned short GetMarker_CfgFile_Monitoring(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_GeoEval(string val_marker);
+	unsigned short GetMarker_CfgFile_GeoEval(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_Designing(string val_marker);
+	unsigned short GetMarker_CfgFile_Designing(string val_marker);
 
 	/*! 
 	 * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
 	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Plotting(string val_marker);
+	unsigned short GetMarker_CfgFile_Plotting(string val_marker);
 
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_Config_Out_1D(string val_marker);
+  unsigned short GetMarker_CfgFile_Out_1D(string val_marker);
 
 	/*! 
 	 * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
 	 * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_DV(string val_marker);
+	unsigned short GetMarker_CfgFile_DV(string val_marker);
 
   /*!
 	 * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
 	 * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_Moving(string val_marker);
+	unsigned short GetMarker_CfgFile_Moving(string val_marker);
   
 	/*! 
 	 * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_PerBound(string val_marker);
+	unsigned short GetMarker_CfgFile_PerBound(string val_marker);
 
 	/*! 
 	 * \brief Determines if problem is adjoint
@@ -4573,7 +4573,7 @@ public:
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
-	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim);
+	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim);
 
 	/*! 
 	 * \brief Config file markers processing.

@@ -527,7 +527,7 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -787,14 +787,14 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
   }
@@ -810,14 +810,14 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
     /*--- Define the basic linelets, starting from each vertex ---*/
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
-          (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)){
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)){
         iLinelet = 0;
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();

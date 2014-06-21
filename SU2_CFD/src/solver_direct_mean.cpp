@@ -598,7 +598,7 @@ void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -714,7 +714,7 @@ void CEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -829,7 +829,7 @@ void CEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *con
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -944,7 +944,7 @@ void CEulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1022,7 +1022,7 @@ void CEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *conf
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1096,7 +1096,7 @@ void CEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *confi
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1216,7 +1216,7 @@ void CEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1338,7 +1338,7 @@ void CEulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *conf
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1458,7 +1458,7 @@ void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *confi
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -2779,10 +2779,10 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
    for a boundary node and make a linear approximation. ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY) {
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2896,10 +2896,10 @@ void CEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) {
    for a boundary node and make a linear approximation. ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY) {
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3010,14 +3010,14 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary   = config->GetMarker_All_Boundary(iMarker);
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag)
           Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
@@ -3145,7 +3145,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         
         for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
           Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-          Marker_Tag = config->GetMarker_All_Tag(iMarker);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
             Surface_CLift_Inv[iMarker_Monitoring] += CLift_Inv[iMarker];
             Surface_CDrag_Inv[iMarker_Monitoring] += CDrag_Inv[iMarker];
@@ -4027,7 +4027,7 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
     Exhaust_MassFlow[iMarker] = 0.0;
     Exhaust_Area[iMarker] = 0.0;
     
-    if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
+    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -4062,7 +4062,7 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
       
     }
     
-    if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_EXHAUST) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -4133,13 +4133,13 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
+    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW) {
       
       /*--- Loop over all the boundaries with nacelle inflow bc ---*/
       for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
         
         /*--- Add the FanFace_MassFlow, FanFace_Mach, FanFace_Pressure and FanFace_Area to the particular boundary ---*/
-        if (config->GetMarker_All_Tag(iMarker) == config->GetMarker_NacelleInflow(iMarker_NacelleInflow)) {
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_NacelleInflow(iMarker_NacelleInflow)) {
           FanFace_MassFlow_Local[iMarker_NacelleInflow] += FanFace_MassFlow[iMarker];
           FanFace_Mach_Local[iMarker_NacelleInflow] += FanFace_Mach[iMarker];
           FanFace_Pressure_Local[iMarker_NacelleInflow] += FanFace_Pressure[iMarker];
@@ -4150,13 +4150,13 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
       
     }
     
-    if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_EXHAUST) {
       
       /*--- Loop over all the boundaries with nacelle inflow bc ---*/
       for (iMarker_NacelleExhaust= 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
         
         /*--- Add the Exhaust_MassFlow, and Exhaust_Area to the particular boundary ---*/
-        if (config->GetMarker_All_Tag(iMarker) == config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)) {
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)) {
           Exhaust_MassFlow_Local[iMarker_NacelleExhaust] += Exhaust_MassFlow[iMarker];
           Exhaust_Area_Local[iMarker_NacelleExhaust] += Exhaust_Area[iMarker];
         }
@@ -4234,7 +4234,7 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
   /*--- Check the flow orientation in the nacelle inflow ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) == NACELLE_INFLOW) {
+    if (config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW) {
       
       /*--- Loop over all the vertices on this boundary marker ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4864,7 +4864,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
   double Gas_Constant       = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
-  string Marker_Tag         = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
@@ -5172,7 +5172,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   double FreeSurface_Zero = config->GetFreeSurface_Zero();
   double epsilon          = config->GetFreeSurface_Thickness();
   double RatioDensity     = config->GetRatioDensity();
-  string Marker_Tag       = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   double PressFreeSurface = GetPressure_Inf();
@@ -5409,7 +5409,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous              = config->GetViscous();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   
   double *Normal = new double[nDim];
@@ -5538,7 +5538,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous              = config->GetViscous();
   double Gas_Constant = config->GetGas_ConstantND();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   
   double *Normal = new double[nDim];
@@ -5684,7 +5684,7 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
   double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   
   double *Normal = new double[nDim];
@@ -6089,8 +6089,8 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-      if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
-          (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
         
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           
@@ -6128,15 +6128,15 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-      if ((config->GetMarker_All_Boundary(iMarker) == ACTDISK_INLET) ||
-          (config->GetMarker_All_Boundary(iMarker) == ACTDISK_OUTLET)) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
         
-        unsigned short boundary = config->GetMarker_All_Boundary(iMarker);
-        double *origin = config->GetActDisk_Origin(config->GetMarker_All_Tag(iMarker));     // Center of the rotor
-        double R_root = config->GetActDisk_RootRadius(config->GetMarker_All_Tag(iMarker));
-        double R_tip = config->GetActDisk_TipRadius(config->GetMarker_All_Tag(iMarker));
-        double C_T = config->GetActDisk_CT(config->GetMarker_All_Tag(iMarker));             // Rotor thrust coefficient
-        double Omega = config->GetActDisk_Omega(config->GetMarker_All_Tag(iMarker));        // Revolution per minute
+        unsigned short boundary = config->GetMarker_All_KindBC(iMarker);
+        double *origin = config->GetActDisk_Origin(config->GetMarker_All_TagBound(iMarker));     // Center of the rotor
+        double R_root = config->GetActDisk_RootRadius(config->GetMarker_All_TagBound(iMarker));
+        double R_tip = config->GetActDisk_TipRadius(config->GetMarker_All_TagBound(iMarker));
+        double C_T = config->GetActDisk_CT(config->GetMarker_All_TagBound(iMarker));             // Rotor thrust coefficient
+        double Omega = config->GetActDisk_Omega(config->GetMarker_All_TagBound(iMarker));        // Revolution per minute
         
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           
@@ -6518,7 +6518,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
   //  /*--- Do the send process, by the moment we are sending each
   //   node individually, this must be changed ---*/
   //  for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
-  //    if (fea_config->GetMarker_All_Boundary(iMarker) == LOAD_BOUNDARY) {
+  //    if (fea_config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY) {
   //      for(iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
   //        iPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
   //
@@ -6543,7 +6543,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
   //
   //  /*--- Now the loop is over the fea points ---*/
   //  for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-  //    if ((flow_config->GetMarker_All_Boundary(iMarker) == EULER_WALL) &&
+  //    if ((flow_config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
   //        (flow_config->GetMarker_All_Moving(iMarker) == YES)) {
   //      for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
   //        iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
@@ -7863,14 +7863,14 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   /*--- Loop over the Navier-Stokes markers ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_Boundary(iMarker);
+    Boundary = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag)
           Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
@@ -8040,7 +8040,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         
         for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
           Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-          Marker_Tag = config->GetMarker_All_Tag(iMarker);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
             Surface_CLift_Visc[iMarker_Monitoring] += CLift_Visc[iMarker];
             Surface_CDrag_Visc[iMarker_Monitoring] += CDrag_Visc[iMarker];
@@ -8189,7 +8189,7 @@ void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container
   bool grid_movement  = config->GetGrid_Movement();
   
   /*--- Identify the boundary by string name ---*/
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Get the specified wall heat flux from config ---*/
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -8421,7 +8421,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Identify the boundary ---*/
   
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Retrieve the specified wall temperature ---*/
   

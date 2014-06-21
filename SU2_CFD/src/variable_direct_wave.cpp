@@ -29,8 +29,8 @@ CWaveVariable::CWaveVariable(void) : CVariable() {
   
 }
 
-CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+CWaveVariable::CWaveVariable(double *val_wave, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar;
   
   /*--- Array initialization ---*/

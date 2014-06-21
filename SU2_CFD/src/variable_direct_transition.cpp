@@ -24,8 +24,8 @@
 
 CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
-CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_ndim, val_nvar,config) {
+CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CTurbVariable(val_nDim, val_nvar,config) {
   
 	// Initialization of variables
 	Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
