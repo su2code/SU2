@@ -1076,7 +1076,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT, U[5];
+    double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
     double Temperature, Temperature_Dim, Pressure;
     double Temperature_Ref = config->GetTemperature_Ref();
     double Viscosity_Ref   = config->GetViscosity_Ref();
@@ -1222,7 +1222,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   
-  double rho, mu, nu, *nu_hat, muT, Ji, Ji_3, fv1;
+  double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
   double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
@@ -2361,7 +2361,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT, U[5];
+    double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
     double Temperature, Temperature_Dim, Pressure;
     double Temperature_Ref = config->GetTemperature_Ref();
     double Viscosity_Ref   = config->GetViscosity_Ref();
@@ -2504,7 +2504,7 @@ void CTurbMLSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbMLSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho, mu, nu, *nu_hat, muT, Ji, Ji_3, fv1;
+  double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
   double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
@@ -3350,7 +3350,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho, mu, dist, omega, kine, vorticity[3], vortMag, strMag, F2, muT, zeta;
+  double rho = 0.0, mu = 0.0, dist, omega, kine, vorticity[3], vortMag, strMag, F2, muT, zeta;
   double a1 = constants[7];
   unsigned long iPoint;
   
@@ -3468,7 +3468,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  double distance, density, laminar_viscosity, beta_1;
+  double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -3525,7 +3525,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  double distance, density, laminar_viscosity, beta_1;
+  double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);

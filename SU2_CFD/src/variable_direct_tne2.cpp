@@ -455,8 +455,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   double evs, eels;
-  double Ru, sqvel, rhoCvtr, rhoCvve;
-  double Cvvs, Cves, Tve, Tve2, Tve_o;
+  double Ru, sqvel, rhoCvtr, rhoCvve = 0.0;
+  double Cvvs, Cves, Tve, Tve2 = 0.0, Tve_o;
   double f, df, tol;
   double exptv, thsqr, thoTve;
   double num, denom, num2, num3;

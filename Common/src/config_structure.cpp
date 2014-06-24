@@ -5578,7 +5578,7 @@ double CConfig::GetOutlet_Pressure(string val_marker) {
 }
 
 double CConfig::GetIsothermal_Temperature(string val_marker) {
-  unsigned short iMarker_Isothermal;
+  unsigned short iMarker_Isothermal = 0;
   
   if ((nMarker_Isothermal*nMarker_IsothermalCatalytic             != 0) ||
       (nMarker_Isothermal*nMarker_IsothermalNonCatalytic          != 0) ||
@@ -5606,7 +5606,7 @@ double CConfig::GetIsothermal_Temperature(string val_marker) {
 }
 
 double CConfig::GetWall_HeatFlux(string val_marker) {
-  unsigned short iMarker_HeatFlux;
+  unsigned short iMarker_HeatFlux = 0;
   
   if ((nMarker_HeatFlux*nMarker_HeatFluxCatalytic             != 0) ||
       (nMarker_HeatFlux*nMarker_HeatFluxNonCatalytic          != 0) ||
