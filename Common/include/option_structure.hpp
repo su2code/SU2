@@ -26,6 +26,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -34,24 +37,7 @@
 #include <cstdlib>
 #include <algorithm>
 
-//#include "./su2mpi.hpp"
-
 using namespace std;
-
-/*
- aoseunhenum OptionKind {
- NoOption = 0,
- DoubleOption = 1,
- StringOption = 2,
- IntOption = 3,
- UnsignedLongOption = 4,
- UnsignedShortOption = 5,
- LongOption = 6,
- EnumOption = 7,
- };
- */
-
-
 
 /*!
  * \class CCreateMap

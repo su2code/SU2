@@ -25,17 +25,20 @@
 
 #pragma once
 
-#include "geometry_structure.hpp"
-#include "config_structure.hpp"
-#include "matrix_structure.hpp"
-#include "vector_structure.hpp"
-#include "linear_solvers_structure.hpp"
-
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
 #include <ctime>
+
+#include "geometry_structure.hpp"
+#include "config_structure.hpp"
+#include "matrix_structure.hpp"
+#include "vector_structure.hpp"
+#include "linear_solvers_structure.hpp"
 
 using namespace std;
 
