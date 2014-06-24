@@ -24,7 +24,7 @@
 #pragma once
 
 #ifdef HAVE_MPI
-#include <mpi.h>
+  #include "mpi.h"
 #endif
 #include <climits>
 #include <limits>

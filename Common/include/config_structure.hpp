@@ -24,10 +24,7 @@
 #pragma once
 
 #ifdef HAVE_MPI
-#include <mpi.h>
-#endif
-#ifdef HAVE_MUTATIONPP
-#include "mutation++.h"
+  #include "mpi.h"
 #endif
 #include <iostream>
 #include <cstdlib>
@@ -40,12 +37,9 @@
 #include <map>
 #include <assert.h>
 
-//#include "./su2mpi.hpp"
 #include "./option_structure.hpp"
 
-
 using namespace std;
-
 
 /*!
  * \class CConfig
