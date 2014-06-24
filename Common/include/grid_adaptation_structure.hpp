@@ -183,42 +183,42 @@ public:
 	 * \param[in] AdaptCode - Edge combination to stablish the right elemeent division.
 	 * \return Adaptation code for the element.
 	 */	
-	int CheckTriangleCode(bool *AdaptCode);
+	long CheckTriangleCode(bool *AdaptCode);
 	
 	/*! 
 	 * \brief Find the adaptation code for each element in the fine grid.
 	 * \param[in] AdaptCode - Edge combination to stablish the right elemeent division.
 	 * \return Adaptation code for the element.
 	 */	
-	int CheckRectCode(bool *AdaptCode);
+	long CheckRectCode(bool *AdaptCode);
 	
 	/*! 
 	 * \brief Find the adaptation code for each element in the fine grid.
 	 * \param[in] AdaptCode - Edge combination to stablish the right elemeent division.
 	 * \return Adaptation code for the element.
 	 */	
-	int CheckRectExtCode(bool *AdaptCode);
+	long CheckRectExtCode(bool *AdaptCode);
 	
 	/*! 
 	 * \brief Find the adaptation code for each element in the fine grid.
 	 * \param[in] AdaptCode - Edge combination to stablish the right elemeent division.
 	 * \return Adaptation code for the element.
 	 */	
-	int CheckTetraCode(bool *AdaptCode);
+	long CheckTetraCode(bool *AdaptCode);
 	
 	/*! 
 	 * \brief Find the adaptation code for each element in the fine grid.
 	 * \param[in] AdaptCode - Edge combination to stablish the right elemeent division.
 	 * \return Adaptation code for the element.
 	 */	
-	int CheckHexaCode(bool *AdaptCode);
+	long CheckHexaCode(bool *AdaptCode);
 	
 	/*! 
 	 * \brief Find the adaptation code for each element in the fine grid.
 	 * \param[in] AdaptCode - Edge combination to stablish the right elemeent division.
 	 * \return Adaptation code for the element.
 	 */	
-	int CheckPyramCode(bool *AdaptCode);
+	long CheckPyramCode(bool *AdaptCode);
 	
 	/*! 
 	 * \brief Division pattern of the element.
@@ -228,7 +228,7 @@ public:
 	 * \param[out] Division - Division pattern. 
 	 * \param[out] nPart - Number of new elements after the division. 
 	 */	
-	void TriangleDivision(int code, int *nodes, int *edges, int **Division, int *nPart);
+	void TriangleDivision(long code, long *nodes, long *edges, long **Division, long *nPart);
 	
 	/*! 
 	 * \brief Division pattern of the element.
@@ -238,7 +238,7 @@ public:
 	 * \param[out] Division - Division pattern. 
 	 * \param[out] nPart - Number of new elements after the division. 
 	 */	
-	void RectDivision(int code, int *nodes, int **Division, int *nPart);
+	void RectDivision(long code, long *nodes, long **Division, long *nPart);
 	
 	/*! 
 	 * \brief Division pattern of the element.
@@ -248,7 +248,7 @@ public:
 	 * \param[out] Division - Division pattern. 
 	 * \param[out] nPart - Number of new elements after the division. 
 	 */	
-	void RectExtDivision(int code, int *nodes, int **Division, int *nPart);
+	void RectExtDivision(long code, long *nodes, long **Division, long *nPart);
 	
 	/*! 
 	 * \brief Division pattern of the element.
@@ -258,7 +258,7 @@ public:
 	 * \param[out] Division - Division pattern. 
 	 * \param[out] nPart - Number of new elements after the division. 
 	 */	
-	void TetraDivision(int code, int *nodes, int *edges, int **Division, int *nPart);
+	void TetraDivision(long code, long *nodes, long *edges, long **Division, long *nPart);
 	
 	/*! 
 	 * \brief Division pattern of the element.
@@ -268,7 +268,7 @@ public:
 	 * \param[out] Division - Division pattern. 
 	 * \param[out] nPart - Number of new elements after the division. 
 	 */	
-	void HexaDivision(int code, int *nodes, int **Division, int *nPart);
+	void HexaDivision(long code, long *nodes, long **Division, long *nPart);
 	
 	/*! 
 	 * \brief Division pattern of the element.
@@ -278,7 +278,7 @@ public:
 	 * \param[out] Division - Division pattern. 
 	 * \param[out] nPart - Number of new elements after the division. 
 	 */	
-	void PyramDivision(int code, int *nodes, int **Division, int *nPart);
+	void PyramDivision(long code, long *nodes, long **Division, long *nPart);
 	
 	/*! 
 	 * \brief Do a complete adaptation of the computational grid.

@@ -858,6 +858,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
         
         add_point = false;
         counter = 0;
+        next_Point = geometry->node[iPoint]->GetPoint(0);
         for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
