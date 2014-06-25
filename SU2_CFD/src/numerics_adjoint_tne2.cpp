@@ -2216,100 +2216,158 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   }
   
   //////////////////// DEBUG ////////////////////
-//  double UnitNormal[3], tmp, tmp2;
-//  double *Fv_old, *Fv_new, d;
-//  UnitNormal[0] = 1.0;
-//  UnitNormal[1] = 0.0;
-//  UnitNormal[2] = 0.0;
-//  Fv_new = new double[nVar];
-//  Fv_old = new double[nVar];
-//  
-//  /*--- Contribution to viscous residual from Av1 ---*/
-//  double **Av1;
-//  Av1 = new double*[nVar];
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    Av1[iVar] = new double[nVar];
-//  
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    for (jVar = 0; jVar < nVar; jVar++)
-//      Av1[iVar][jVar] = 0.0;
-//  
-//  //
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//    for (jSpecies =0; jSpecies < nSpecies; jSpecies++) {
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Av1[iSpecies][jSpecies] +=
-//            -UnitNormal[iDim]*(dJdr[iSpecies][jSpecies][iDim]);
-//        Av1[nSpecies+nDim][iSpecies] +=
-//            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*hs[jSpecies] +
-//                               Js[jSpecies][iDim]*
-//                               ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iSpecies]+
-//                                Cvves[jSpecies]*dTvedU_i[iSpecies]));
-//        Av1[nSpecies+nDim+1][iSpecies] +=
-//            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*eves[jSpecies] +
-//                               Js[jSpecies][iDim]*
-//                               (Cvves[jSpecies]*dTvedU_i[iSpecies]));
-//      }
-//    }
-//  }
-//  // Remaining terms
-//  for (iVar = nSpecies; iVar < nVar; iVar++) {
-//    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Av1[nSpecies+nDim][iVar] +=
-//        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
-//                           ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iVar]+
-//                            Cvves[jSpecies]*dTvedU_i[iVar]));
-//        Av1[nSpecies+nDim+1][iVar] +=
-//        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
-//                           (Cvves[jSpecies]*dTvedU_i[iVar]));
-//      }
-//    }
-//  }
-//  
-//  cout << endl << "Av1: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++) {
-//      cout << Av1[jVar][iVar] << "\t";
-//    }
-//    cout << endl;
-//  }
-//  
-//  cout << endl << "FD: " << endl;
-//  // finite difference gradient
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    // set displacement value
-//    d = 0.0001*U_i[iVar];
-//    
-//    // calculate viscous flux
-//    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
-//    
-//    // copy solution
-//    for (jVar = 0; jVar < nVar; jVar++)
-//      Fv_old[jVar] = Proj_Flux_Tensor[jVar];
-//    
-//    // perturb solution
-//    U_i[iVar] += d;
-//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
-//    
-//    // calculate viscous flux
-//    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
-//    
-//    // copy solution
-//    for (jVar = 0; jVar < nVar; jVar++)
-//      Fv_new[jVar] = Proj_Flux_Tensor[jVar];
-//    
-//    // return solution to original value
-//    U_i[iVar] -= d;
-//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
-//    
-//    // display FD gradient
-//    for (jVar = 0; jVar < nVar; jVar++)
-//      cout << (Fv_new[jVar]-Fv_old[jVar])/d << "\t";
-//    cout << endl;
-//  }
-//  
-//  cin.get();
+  double UnitNormal[3], tmp, tmp2;
+  double *Fv_old, *Fv_new, d;
+  UnitNormal[0] = 1.0;
+  UnitNormal[1] = 0.0;
+  UnitNormal[2] = 0.0;
+  Fv_new = new double[nVar];
+  Fv_old = new double[nVar];
+  
+  cout << "U:" << endl;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    cout << U_i[iVar] << endl;
+  }
+  cout << endl << "V: " << endl;
+  for (iVar = 0; iVar < nPrimVar; iVar++){
+    cout << V_i[iVar] << endl;
+  }
+  cout << endl << "D: " << endl;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    cout << Ds[iSpecies] << endl;
+
+  cout << endl << "Grhos: " << endl;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    for (iDim = 0; iDim < nDim; iDim++) {
+      cout << GV[RHOS_INDEX+iSpecies][iDim] << "\t";
+    }
+    cout << endl;
+  }
+  cout << "Grho: " << endl;
+  cout << GV[RHO_INDEX][0] << "\t" << GV[RHO_INDEX][1] << "\t" << GV[RHO_INDEX][2] << endl;
+  cout << endl;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    cout << "Y[" << iSpecies << "]: " << Y[iSpecies] << endl;
+  cout << endl;
+  cout << "GY: " << endl;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      cout << GY[iSpecies][iDim] << "\t";
+    }
+    cout << endl;
+  }
+  cout << endl;
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      cout << "i: " << iSpecies << ", j: " << jSpecies << "  -  dIdr: ";
+      for (iDim = 0; iDim < nDim; iDim++) {
+        cout << dIdr[iSpecies][jSpecies][iDim] << "\t";
+      }
+      cout << endl;
+    }
+  }
+  cin.get();
+  
+  /*--- Contribution to viscous residual from Av1 ---*/
+  double **Av1;
+  Av1 = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Av1[iVar] = new double[nVar];
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      Av1[iVar][jVar] = 0.0;
+  
+  //
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies =0; jSpecies < nSpecies; jSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Av1[iSpecies][jSpecies] +=
+            -UnitNormal[iDim]*(dJdr[iSpecies][jSpecies][iDim]);
+        Av1[nSpecies+nDim][iSpecies] +=
+            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*hs[jSpecies] +
+                               Js[jSpecies][iDim]*
+                               ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iSpecies]+
+                                Cvves[jSpecies]*dTvedU_i[iSpecies]));
+        Av1[nSpecies+nDim+1][iSpecies] +=
+            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*eves[jSpecies] +
+                               Js[jSpecies][iDim]*
+                               (Cvves[jSpecies]*dTvedU_i[iSpecies]));
+      }
+    }
+  }
+  // Remaining terms
+  for (iVar = nSpecies; iVar < nVar; iVar++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Av1[nSpecies+nDim][iVar] +=
+        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
+                           ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iVar]+
+                            Cvves[jSpecies]*dTvedU_i[iVar]));
+        Av1[nSpecies+nDim+1][iVar] +=
+        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
+                           (Cvves[jSpecies]*dTvedU_i[iVar]));
+      }
+    }
+  }
+  
+  cout << endl << "Av1: " << endl;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      cout << Av1[jVar][iVar] << "\t";
+    }
+    cout << endl;
+  }
+  
+  // Convert to mass fraction for visc proj. flux function
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      GV[iSpecies][iDim] = GY[iSpecies][iDim];
+    }
+  }
+  cout << endl << "FD: " << endl;
+  // finite difference gradient
+  
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    V_i[RHOS_INDEX+iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
+  // calculate viscous flux
+  GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
+  
+  // copy solution
+  for (jVar = 0; jVar < nVar; jVar++)
+    Fv_old[jVar] = Proj_Flux_Tensor[jVar];
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    // set displacement value
+    d = 0.00001*U_i[iVar];
+    if (d == 0)
+      d = 1E-10;
+    
+    // perturb solution
+    U_i[iVar] += d;
+    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      V_i[RHOS_INDEX+iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
+    
+    // calculate viscous flux
+    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
+    
+    // copy solution
+    for (jVar = 0; jVar < nVar; jVar++)
+      Fv_new[jVar] = Proj_Flux_Tensor[jVar];
+    
+    // return solution to original value
+    U_i[iVar] -= d;
+    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
+    
+    // display FD gradient
+    for (jVar = 0; jVar < nVar; jVar++)
+      cout << (Fv_new[jVar]-Fv_old[jVar])/d << "\t";
+    cout << endl;
+  }
+  
+  cin.get();
   
   //////////////////// DEBUG ////////////////////
   
@@ -2625,100 +2683,100 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
 //  }
 //  
 //  //////////////////// DEBUG ////////////////////
-//  //  double UnitNormal[3], tmp, tmp2;
-//  //  double *Fv_old, *Fv_new, d;
-//  //  UnitNormal[0] = 1.0;
-//  //  UnitNormal[1] = 0.0;
-//  //  UnitNormal[2] = 0.0;
-//  //  Fv_new = new double[nVar];
-//  //  Fv_old = new double[nVar];
+//  double UnitNormal[3], tmp, tmp2;
+//  double *Fv_old, *Fv_new, d;
+//  UnitNormal[0] = 1.0;
+//  UnitNormal[1] = 0.0;
+//  UnitNormal[2] = 0.0;
+//  Fv_new = new double[nVar];
+//  Fv_old = new double[nVar];
+//
+//  /*--- Contribution to viscous residual from Av1 ---*/
+//  double **Av1;
+//  Av1 = new double*[nVar];
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    Av1[iVar] = new double[nVar];
+//
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      Av1[iVar][jVar] = 0.0;
+//
 //  //
-//  //  /*--- Contribution to viscous residual from Av1 ---*/
-//  //  double **Av1;
-//  //  Av1 = new double*[nVar];
-//  //  for (iVar = 0; iVar < nVar; iVar++)
-//  //    Av1[iVar] = new double[nVar];
-//  //
-//  //  for (iVar = 0; iVar < nVar; iVar++)
-//  //    for (jVar = 0; jVar < nVar; jVar++)
-//  //      Av1[iVar][jVar] = 0.0;
-//  //
-//  //  //
-//  //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-//  //    for (jSpecies =0; jSpecies < nSpecies; jSpecies++) {
-//  //      for (iDim = 0; iDim < nDim; iDim++) {
-//  //        Av1[iSpecies][jSpecies] +=
-//  //            -UnitNormal[iDim]*(dJdr[iSpecies][jSpecies][iDim]);
-//  //        Av1[nSpecies+nDim][iSpecies] +=
-//  //            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*hs[jSpecies] +
-//  //                               Js[jSpecies][iDim]*
-//  //                               ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iSpecies]+
-//  //                                Cvves[jSpecies]*dTvedU_i[iSpecies]));
-//  //        Av1[nSpecies+nDim+1][iSpecies] +=
-//  //            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*eves[jSpecies] +
-//  //                               Js[jSpecies][iDim]*
-//  //                               (Cvves[jSpecies]*dTvedU_i[iSpecies]));
-//  //      }
-//  //    }
-//  //  }
-//  //  // Remaining terms
-//  //  for (iVar = nSpecies; iVar < nVar; iVar++) {
-//  //    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-//  //      for (iDim = 0; iDim < nDim; iDim++) {
-//  //        Av1[nSpecies+nDim][iVar] +=
-//  //        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
-//  //                           ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iVar]+
-//  //                            Cvves[jSpecies]*dTvedU_i[iVar]));
-//  //        Av1[nSpecies+nDim+1][iVar] +=
-//  //        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
-//  //                           (Cvves[jSpecies]*dTvedU_i[iVar]));
-//  //      }
-//  //    }
-//  //  }
-//  //
-//  //  cout << endl << "Av1: " << endl;
-//  //  for (iVar = 0; iVar < nVar; iVar++) {
-//  //    for (jVar = 0; jVar < nVar; jVar++) {
-//  //      cout << Av1[jVar][iVar] << "\t";
-//  //    }
-//  //    cout << endl;
-//  //  }
-//  //
-//  //  cout << endl << "FD: " << endl;
-//  //  // finite difference gradient
-//  //  for (iVar = 0; iVar < nVar; iVar++) {
-//  //    // set displacement value
-//  //    d = 0.0001*U_i[iVar];
-//  //
-//  //    // calculate viscous flux
-//  //    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
-//  //
-//  //    // copy solution
-//  //    for (jVar = 0; jVar < nVar; jVar++)
-//  //      Fv_old[jVar] = Proj_Flux_Tensor[jVar];
-//  //
-//  //    // perturb solution
-//  //    U_i[iVar] += d;
-//  //    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
-//  //
-//  //    // calculate viscous flux
-//  //    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
-//  //
-//  //    // copy solution
-//  //    for (jVar = 0; jVar < nVar; jVar++)
-//  //      Fv_new[jVar] = Proj_Flux_Tensor[jVar];
-//  //
-//  //    // return solution to original value
-//  //    U_i[iVar] -= d;
-//  //    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
-//  //
-//  //    // display FD gradient
-//  //    for (jVar = 0; jVar < nVar; jVar++)
-//  //      cout << (Fv_new[jVar]-Fv_old[jVar])/d << "\t";
-//  //    cout << endl;
-//  //  }
-//  //
-//  //  cin.get();
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    for (jSpecies =0; jSpecies < nSpecies; jSpecies++) {
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Av1[iSpecies][jSpecies] +=
+//            -UnitNormal[iDim]*(dJdr[iSpecies][jSpecies][iDim]);
+//        Av1[nSpecies+nDim][iSpecies] +=
+//            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*hs[jSpecies] +
+//                               Js[jSpecies][iDim]*
+//                               ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iSpecies]+
+//                                Cvves[jSpecies]*dTvedU_i[iSpecies]));
+//        Av1[nSpecies+nDim+1][iSpecies] +=
+//            -UnitNormal[iDim]*(dJdr[jSpecies][iSpecies][iDim]*eves[jSpecies] +
+//                               Js[jSpecies][iDim]*
+//                               (Cvves[jSpecies]*dTvedU_i[iSpecies]));
+//      }
+//    }
+//  }
+//  // Remaining terms
+//  for (iVar = nSpecies; iVar < nVar; iVar++) {
+//    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Av1[nSpecies+nDim][iVar] +=
+//        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
+//                           ((Ru/Ms[jSpecies]+Cvtrs[jSpecies])*dTdU_i[iVar]+
+//                            Cvves[jSpecies]*dTvedU_i[iVar]));
+//        Av1[nSpecies+nDim+1][iVar] +=
+//        -UnitNormal[iDim]*(Js[jSpecies][iDim]*
+//                           (Cvves[jSpecies]*dTvedU_i[iVar]));
+//      }
+//    }
+//  }
+//
+//  cout << endl << "Av1: " << endl;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      cout << Av1[jVar][iVar] << "\t";
+//    }
+//    cout << endl;
+//  }
+//
+//  cout << endl << "FD: " << endl;
+//  // finite difference gradient
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    // set displacement value
+//    d = 0.0001*U_i[iVar];
+//
+//    // calculate viscous flux
+//    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
+//
+//    // copy solution
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      Fv_old[jVar] = Proj_Flux_Tensor[jVar];
+//
+//    // perturb solution
+//    U_i[iVar] += d;
+//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
+//
+//    // calculate viscous flux
+//    GetViscousProjFlux(V_i, GV, UnitNormal, Ds, mu2, mu3, mu4, config);
+//
+//    // copy solution
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      Fv_new[jVar] = Proj_Flux_Tensor[jVar];
+//
+//    // return solution to original value
+//    U_i[iVar] -= d;
+//    var->Cons2PrimVar(config, U_i, V_i, dPdU_i, dTdU_i, dTvedU_i);
+//
+//    // display FD gradient
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      cout << (Fv_new[jVar]-Fv_old[jVar])/d << "\t";
+//    cout << endl;
+//  }
+//
+//  cin.get();
 //  
 //  //////////////////// DEBUG ////////////////////
 //  

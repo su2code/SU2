@@ -2953,15 +2953,15 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
     
     /*--- Update adjoint viscous residual ---*/
-    LinSysRes.SubtractBlock(iPoint, Residual_i);
-    LinSysRes.AddBlock(jPoint, Residual_j);
-
-    if (implicit) {
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
-      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
-    }
+//    LinSysRes.SubtractBlock(iPoint, Residual_i);
+//    LinSysRes.AddBlock(jPoint, Residual_j);
+//
+//    if (implicit) {
+//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
+//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
+//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+//    }
   }
 }
 
@@ -3037,11 +3037,11 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
     numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                         solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
     second_numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
-                      solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
+                             solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
     second_numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
-                      solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
+                             solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
     second_numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
-                        solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
+                               solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
     
 		/*--- Gradient of primitive and adjoint variables ---*/
 		numerics->SetPrimVarGradient(solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive(),

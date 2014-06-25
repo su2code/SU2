@@ -195,7 +195,8 @@ public:
   double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
   
   // OLD
-  double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
+  double *Ys, **dFdVi, **dFdVj, **dFdYj, **dFdYi, **dVdUi, **dVdUj,
+  *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   CVariable *var;
