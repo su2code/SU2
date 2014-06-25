@@ -5507,13 +5507,17 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
                                node[jPoint]->GetThermalConductivity_ve()  );
     Mean_Density        = 0.5*(node[iPoint]->GetDensity() +
                                node[jPoint]->GetDensity()  );
-    cv = 0.5*(node[iPoint]->GetRhoCv_ve() + node[jPoint]->GetRhoCv_ve()) +
-         0.5*(node[iPoint]->GetRhoCv_tr() + node[jPoint]->GetRhoCv_tr());
+    cv = 0.5*(node[iPoint]->GetRhoCv_tr() + node[iPoint]->GetRhoCv_ve() +
+              node[jPoint]->GetRhoCv_tr() + node[jPoint]->GetRhoCv_ve()  )/ Mean_Density;
     
 		Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
-//		Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
-    Lambda_2 = 0.0;
+		Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
 		Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+    
+//    cout << "Lambda_1: " << Lambda_1 << endl;
+//    cout << "Lambda_2: " << Lambda_2 << endl;
+//    cout << "Lambda: " << Lambda << endl;
+//    cin.get();
     
 		if (geometry->node[iPoint]->GetDomain())
       node[iPoint]->AddMax_Lambda_Visc(Lambda);
@@ -5550,11 +5554,11 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
       Mean_ThermalCond_ve = node[iPoint]->GetThermalConductivity_ve();
       Mean_Density        = node[iPoint]->GetDensity();
       
-      cv = node[iPoint]->GetRhoCv_tr() + node[iPoint]->GetRhoCv_ve();
+      cv = (node[iPoint]->GetRhoCv_tr() +
+            node[iPoint]->GetRhoCv_ve()  ) / Mean_Density;
       
 			Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
-//			Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
-      Lambda_2 = 0.0;
+			Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
 			Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
       
 			if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
@@ -5568,6 +5572,10 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+    
+//    cout << "Local dt: " << Local_Delta_Time << endl;
+//    cout << "Local dtv: " << Local_Delta_Time_Visc << endl;
+//    cin.get();
     
 		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
