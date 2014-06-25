@@ -2176,7 +2176,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
     }
     dFdYi[iSpecies][iSpecies] += -rho*Ds[iSpecies]*theta/dij - 0.5*sumY;
     dFdYj[iSpecies][iSpecies] +=  rho*Ds[iSpecies]*theta/dij - 0.5*sumY;
-  }  
+  }
   
   /*--- Calculate transformation matrix ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
