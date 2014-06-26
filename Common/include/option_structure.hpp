@@ -26,6 +26,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -34,24 +37,7 @@
 #include <cstdlib>
 #include <algorithm>
 
-//#include "./su2mpi.hpp"
-
 using namespace std;
-
-/*
- aoseunhenum OptionKind {
- NoOption = 0,
- DoubleOption = 1,
- StringOption = 2,
- IntOption = 3,
- UnsignedLongOption = 4,
- UnsignedShortOption = 5,
- LongOption = 6,
- EnumOption = 7,
- };
- */
-
-
 
 /*!
  * \class CCreateMap
@@ -1446,8 +1432,7 @@ public:
   ~COptionDoubleList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
-    int option_size = option_value.size();
-    
+    unsigned long option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE")==0){
       // No options
       this->size = 0;
@@ -1489,7 +1474,7 @@ public:
   ~COptionUShortList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
-    int option_size = option_value.size();
+    unsigned long option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE")==0){
       // No options
       this->size = 0;
@@ -1530,7 +1515,7 @@ public:
   ~COptionStringList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
-    int option_size = option_value.size();
+    unsigned long option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE")==0){
       this->size = 0;
       return "";
@@ -1822,7 +1807,7 @@ public:
   ~COptionStringDoubleList(){};
   string SetValue(vector<string> option_value){
     // There must be an even number of entries (same number of strings and doubles
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals % 2) != 0){
       if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
         // It's okay to say its NONE
@@ -1834,7 +1819,7 @@ public:
       newstring.append(": must have an even number of entries");
       return newstring;
     }
-    int nVals = totalVals / 2;
+    unsigned long nVals = totalVals / 2;
     this->size = nVals;
     this->s_f = new string[nVals];
     this->d_f = new double[nVals];
@@ -1873,7 +1858,7 @@ public:
   ~COptionInlet(){};
   string SetValue(vector<string> option_value){
     
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker = NULL;
@@ -1895,7 +1880,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / 6;
+    unsigned long nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
@@ -1958,7 +1943,7 @@ public:
   ~COptionInletFixed(){};
   string SetValue(vector<string> option_value){
     
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker = NULL;
@@ -1978,7 +1963,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / 3;
+    unsigned long nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
@@ -2027,7 +2012,7 @@ public:
     
     const int mod_num = 11;
     
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker_bound = NULL;
@@ -2051,7 +2036,7 @@ public:
       return newstring;
     }
     
-    int nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
+    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];
@@ -2110,7 +2095,7 @@ public:
       this->rot_angles[i][2] *= deg2rad;
     }
     
-    for (int i = (nVals/2); i < nVals; i++){
+    for (unsigned long i = (nVals/2); i < nVals; i++){
       this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
       this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
       ss << option_value[mod_num*(i-nVals/2) + 2] << " ";
@@ -2212,7 +2197,7 @@ public:
   ~COptionActuatorDisk(){};
   string SetValue(vector<string> option_value){
     const int mod_num = 9;
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->SetDefault();
       return "";
@@ -2226,7 +2211,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / mod_num;
+    unsigned long nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];

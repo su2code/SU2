@@ -23,12 +23,16 @@
 
 #pragma once
 
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/grid_adaptation_structure.hpp"
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+
+#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/grid_adaptation_structure.hpp"
 
 using namespace std;

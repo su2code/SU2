@@ -357,7 +357,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   
   /*--- Identify the boundary ---*/
   
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
 	/*--- Retrieve the specified wall temperature ---*/
   

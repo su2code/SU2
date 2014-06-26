@@ -25,6 +25,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <cmath>
 #include <iostream>
 #include <limits>

@@ -92,7 +92,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
 	/*--- Weak boundary conditions ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		switch (config->GetMarker_All_Boundary(iMarker)) {
+		switch (config->GetMarker_All_KindBC(iMarker)) {
 			case EULER_WALL:
 				solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
@@ -149,7 +149,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
 	/*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		switch (config->GetMarker_All_Boundary(iMarker)) {
+		switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
@@ -420,7 +420,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
         } else {
           owner = 0;

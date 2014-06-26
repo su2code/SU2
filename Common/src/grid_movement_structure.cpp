@@ -226,9 +226,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   
 	unsigned long iElem, ElemCounter = 0, PointCorners[8];
-  double Area, Volume, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22, CoordCorners[8][3];
-  unsigned short nNodes, iNodes, iDim;
-  bool RightVol;
+  double Area = 0.0, Volume = 0.0, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22, CoordCorners[8][3];
+  unsigned short nNodes = 0, iNodes, iDim;
+  bool RightVol = true;
   
   int rank = MASTER_NODE;
   
@@ -467,9 +467,9 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
 
 double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
   
-	unsigned short iVar, iDim, nNodes, iNodes;
+	unsigned short iVar, iDim, nNodes = 0, iNodes;
 	unsigned long Point_0, Point_1, iElem, iEdge, ElemCounter = 0, PointCorners[8];
-  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem, Scale, CoordCorners[8][3];
+  double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem = NULL, Scale, CoordCorners[8][3];
   double *Edge_Vector = new double [nDim];
   
   /*--- Allocate maximum size (rectangle and hexahedron) ---*/
@@ -1285,8 +1285,8 @@ double CVolumetricMovement::GetHexa_Volume(double CoordCorners[8][3]) {
 void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  double Xi = 0.0, Eta = 0.0, Det, E, Lambda, Nu, Mu, Avg_Wall_Dist;
-  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss;
+  double Xi = 0.0, Eta = 0.0, Det = 0.0, E, Lambda = 0.0, Nu, Mu = 0.0, Avg_Wall_Dist;
+  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   double Location[4][3], Weight[4];
@@ -1409,8 +1409,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
 void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale) {
   
   double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det, E, Lambda, Nu, Avg_Wall_Dist;
-  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss;
+  double Xi = 0.0, Eta = 0.0, Mu = 0.0, Det = 0.0, E, Lambda = 0.0, Nu, Avg_Wall_Dist;
+  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   double Location[8][3], Weight[8];
@@ -1628,8 +1628,8 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
 	 plane and the receive boundaries. ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Boundary(iMarker) != SYMMETRY_PLANE)
-        && (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE)) {
+		if ((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE)
+        && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++) {
@@ -1645,7 +1645,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_Boundary(iMarker) == SYMMETRY_PLANE) && (nDim == 3)) {
+		if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) && (nDim == 3)) {
       
 			for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1692,7 +1692,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   /*--- Don't move the nearfield plane ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY) {
+		if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 				for (iDim = 0; iDim < nDim; iDim++) {
@@ -4035,7 +4035,7 @@ void CSurfaceMovement::Moving_Walls(CGeometry *geometry, CConfig *config,
       
       /*--- Identify iMarker from the list of those under MARKER_MOVING ---*/
       
-      Marker_Tag = config->GetMarker_All_Tag(iMarker);
+      Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       jMarker    = config->GetMarker_Moving(Marker_Tag);
       
       /*--- Get prescribed wall speed from config for this marker ---*/
@@ -4131,7 +4131,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
         Moving_Tag = config->GetMarker_Moving(jMarker);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
 
@@ -4247,7 +4247,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
         Moving_Tag = config->GetMarker_Moving(jMarker);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
           
@@ -4372,7 +4372,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
         Moving_Tag = config->GetMarker_Moving(jMarker);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
           
@@ -4527,7 +4527,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
         Moving_Tag = config->GetMarker_Moving(jMarker);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
           
@@ -4883,7 +4883,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   /*--- Local variables ---*/
   
 	unsigned short iDim, nDim; 
-	unsigned long iPoint, flowIter = 0;
+	unsigned long iPoint = 0, flowIter = 0;
   unsigned long jPoint, GlobalIndex;
 	double VarCoord[3], *Coord_Old = NULL, *Coord_New = NULL, Center[3];
   double Lref   = config->GetLength_Ref();
@@ -5799,7 +5799,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, string
         iVertex = FFDBox[iFFDBox]->Get_VertexIndex(iSurfacePoints);
         iPoint = FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints);
         parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-        mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << iPoint << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
+        mesh_file << scientific << config->GetMarker_All_TagBound(iMarker) << "\t" << iPoint << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
       }
 		}
 	}
@@ -5892,7 +5892,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config, CFreeF
           if (iPoint <= geometry->GetMax_GlobalPoint()) {
             if (geometry->GetGlobal_to_Local_Point(iPoint) != -1) {
               parcoord = FFDBox[iFFDBox]->Get_ParametricCoord(iSurfacePoints);
-              mesh_file << scientific << config->GetMarker_All_Tag(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
+              mesh_file << scientific << config->GetMarker_All_TagBound(iMarker) << "\t" << geometry->GetGlobal_to_Local_Point(iPoint) << "\t" << parcoord[0] << "\t" << parcoord[1] << "\t" << parcoord[2] << endl;
             }
           }
         }
@@ -6474,7 +6474,7 @@ unsigned long CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
 bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
 	double Coord[3] = {0.0, 0.0, 0.0};
 	unsigned short iVar, jVar, iDim;
-	bool Inside;
+	bool Inside = false;
 	
 	unsigned short Index[5][7] = {
 		{0, 1, 2, 5, 0, 1, 2},
@@ -6518,7 +6518,7 @@ void CFreeFormDefBox::SetDeformationZone(CGeometry *geometry, CConfig *config, u
 	double *Coord;
 	unsigned short iMarker, iVar, jVar;
 	unsigned long iVertex, iPoint;
-	bool Inside;
+	bool Inside = false;
 	
 	unsigned short Index[5][7] = {
 		{0, 1, 2, 5, 0, 1, 2},

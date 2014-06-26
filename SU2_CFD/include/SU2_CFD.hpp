@@ -24,10 +24,7 @@
 #pragma once
 
 #ifdef HAVE_MPI
-#include <mpi.h>
-#endif
-#ifdef HAVE_MUTATIONPP
-#include "mutation++.h"
+  #include "mpi.h"
 #endif
 #include <ctime>
 

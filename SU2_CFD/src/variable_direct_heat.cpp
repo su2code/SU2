@@ -29,8 +29,8 @@ CHeatVariable::CHeatVariable(void) : CVariable() {
   
 }
 
-CHeatVariable::CHeatVariable(double *val_heat, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+CHeatVariable::CHeatVariable(double *val_heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar;
   
   /*--- Array initialization ---*/

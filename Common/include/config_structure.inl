@@ -708,7 +708,7 @@ inline bool CConfig::GetInvDesign_HeatFlux(void) { return InvDesign_HeatFlux; }
 
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
 
-inline string CConfig::GetMarker_All_Tag(unsigned short val_marker) { return Marker_All_Tag[val_marker]; }
+inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
 inline string CConfig::GetMarker_NacelleInflow(unsigned short val_marker) { return Marker_NacelleInflow[val_marker]; }
 
@@ -720,17 +720,17 @@ inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Mark
 
 inline unsigned short CConfig::GetTag_Marker_All(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
-		if (val_tag == Marker_All_Tag[iMarker])
+		if (val_tag == Marker_All_TagBound[iMarker])
 		return iMarker; 
 	}
 	cout <<"Ups, I don't find the boundary: "<< val_tag << endl; return 0;
 }
 
-inline unsigned short CConfig::GetMarker_All_Boundary(unsigned short val_marker) { return Marker_All_Boundary[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_KindBC(unsigned short val_marker) { return Marker_All_KindBC[val_marker]; }
 
-inline void CConfig::SetMarker_All_Boundary(unsigned short val_marker, unsigned short val_boundary) { Marker_All_Boundary[val_marker] = val_boundary; }
+inline void CConfig::SetMarker_All_KindBC(unsigned short val_marker, unsigned short val_boundary) { Marker_All_KindBC[val_marker] = val_boundary; }
 
-inline void CConfig::SetMarker_All_Tag(unsigned short val_marker, string val_index) { Marker_All_Tag[val_marker] = val_index; }
+inline void CConfig::SetMarker_All_TagBound(unsigned short val_marker, string val_index) { Marker_All_TagBound[val_marker] = val_index; }
 
 inline void CConfig::SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring) { Marker_All_Monitoring[val_marker] = val_monitoring; }
 

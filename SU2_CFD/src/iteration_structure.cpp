@@ -820,10 +820,10 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
   // Vortex variables
-  unsigned int nVortex;
+  unsigned long nVortex = 0;
   std::vector<double> x0,y0,vort_strenth,r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
-    InitializeVortexDistribution(nVortex,x0,y0,vort_strenth,r_core);
+    InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
@@ -912,7 +912,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
 
              /*--- Use vortex distribution ---*/
              // Algebraic vortex equation.
-             for (unsigned int i=0; i<nVortex; i++) {
+             for (unsigned long i=0; i<nVortex; i++) {
                double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
                double r = sqrt(r2);
                double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
@@ -954,7 +954,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   }
 }
 
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core) {
+void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core) {
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;

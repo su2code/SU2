@@ -5,7 +5,7 @@
 #include <iostream>
 
 #ifdef HAVE_MPI
-#include <mpi.h>
+  #include "mpi.h"
 #endif
 
 namespace SU2MPI{

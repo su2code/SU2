@@ -30,8 +30,8 @@ CLinEulerVariable::CLinEulerVariable(void) : CVariable() {
   
 }
 
-CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
 	
   /*--- Array initialization ---*/
 	DeltaU = NULL;
@@ -64,8 +64,8 @@ CLinEulerVariable::CLinEulerVariable(double *val_solution, unsigned short val_nd
 }
 
 CLinEulerVariable::CLinEulerVariable(double val_deltarho, double *val_deltavel,
-                                     double val_deltae, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+                                     double val_deltae, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
 	
   /*--- Array initialization ---*/
 	DeltaU = NULL;

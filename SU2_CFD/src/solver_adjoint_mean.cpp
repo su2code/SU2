@@ -324,7 +324,7 @@ void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -440,7 +440,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config)
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -555,7 +555,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *con
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -674,7 +674,7 @@ void CAdjEulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *co
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -792,7 +792,7 @@ void CAdjEulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -906,7 +906,7 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1019,7 +1019,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   /*--- Evaluate the boundary condition coefficients. ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
-    if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
       for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -1223,7 +1223,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     
-    if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
       
       for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -1534,7 +1534,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   unsigned long iPoint, ErrorCounter = 0;
   double SharpEdge_Distance;
-  bool RightSol;
+  bool RightSol = true;
   int rank;
   
 #ifndef HAVE_MPI
@@ -1959,10 +1959,10 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
    for a boundary node and make a linear approximation. ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY) {
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -2245,7 +2245,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   unsigned long iVertex, iPoint, Neigh;
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
-  double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi, Mach_Inf,
+  double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi = 0.0, Mach_Inf,
   Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
   ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
   LevelSet, Target_LevelSet, eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
@@ -2271,7 +2271,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL)
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)
       
     /*--- Loop over points on the surface to store the auxiliary variable ---*/
       
@@ -2321,7 +2321,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
     
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
@@ -2400,7 +2400,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -2549,7 +2549,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -2645,7 +2645,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
   double **A, *b, Sens, *ArchLength, *Coord_begin, *Coord_end, dist;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       nVertex = geometry->nVertex[iMarker];
       
       /*--- Allocate the linear system ---*/
@@ -2773,7 +2773,7 @@ void CAdjEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config
     /*--- Check the flow orientation in the nacelle inflow ---*/
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-      if (config->GetMarker_All_Boundary(iMarker) == NACELLE_EXHAUST) {
+      if (config->GetMarker_All_KindBC(iMarker) == NACELLE_EXHAUST) {
         
         /*--- Loop over all the vertices on this boundary marker ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -3790,7 +3790,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iVar, iDim, Kind_Inlet = config->GetKind_Inlet();
   unsigned long iVertex, iPoint, Point_Normal;
-  double P_Total, T_Total, Velocity[3], Density_Inlet, Velocity2, H_Total,
+  double P_Total, T_Total, Velocity[3], Density_Inlet = 0.0, Velocity2, H_Total,
   Temperature, Riemann, Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2,
   SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd, bcn, phin, Area, UnitNormal[3],
   ProjGridVel, *GridVel;
@@ -3802,7 +3802,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   double *Normal = new double[nDim];
   double *U_domain   = new double[nVar]; double *U_inlet   = new double[nVar];
@@ -4125,7 +4125,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
   double Pressure, P_Exit, Velocity[3], Velocity2, Entropy;
   double Density, Energy, Riemann, Height;
-  double Vn, SoundSpeed, Mach_Exit, Vn_Exit, Ubn, a1, LevelSet, Density_Outlet;
+  double Vn, SoundSpeed, Mach_Exit, Vn_Exit, Ubn, a1, LevelSet, Density_Outlet = 0.0;
   double *U_domain = new double[nVar]; double *U_outlet = new double[nVar];
   double *Psi_domain = new double [nVar]; double *Psi_outlet = new double [nVar];
   double *Normal = new double[nDim];
@@ -4143,7 +4143,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   double Froude           = config->GetFroude();
   
   
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -4389,7 +4389,7 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
   unsigned long iVertex, iPoint;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   Normal = new double[nDim];
   U_domain = new double[nVar]; U_inflow = new double[nVar];
@@ -4514,7 +4514,7 @@ void CAdjEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_c
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   double Gas_Constant = config->GetGas_ConstantND();
   
   Normal = new double[nDim];
@@ -4982,7 +4982,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, ErrorCounter = 0;
   double SharpEdge_Distance;
-  bool RightSol;
+  bool RightSol = true;
   int rank;
   
 #ifndef HAVE_MPI
@@ -5286,8 +5286,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
-  psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel,
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
+  psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel,
   Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr,
   dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf, eps;
   
@@ -5341,12 +5341,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     Sens_Geo[iMarker] = 0.0;
     
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
@@ -5377,9 +5377,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             temp_sens = 0.0;
-            if((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX             ) ||
-               (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC   ) ||
-               (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC)){
+            if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX             ) ||
+               (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC   ) ||
+               (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)){
               
               /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
               
@@ -5390,9 +5390,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               for (iDim = 0; iDim < nDim; iDim++)
                 temp_sens += heat_flux_factor * tang_deriv_psi5[iDim] * tang_deriv_T[iDim];
               
-            } else if ((config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-                       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-                       (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+            } else if ((config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+                       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+                       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
               
               /*--- Isothermal Term: temp_sens = - k * \partial_n(\psi_5) * \partial_n(T) ---*/
               
@@ -5598,7 +5598,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -5747,7 +5747,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -5868,9 +5868,9 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned long iVertex, iPoint, total_index, Point_Normal;
   
   double *d, l1psi, vartheta, Sigma_5, **PsiVar_Grad, phi[3];
-  double sq_vel, ProjGridVel, Enthalpy, *GridVel;
-  double ViscDens, XiDens, Density, Pressure, dPhiE_dn;
-  double Laminar_Viscosity, Eddy_Viscosity;
+  double sq_vel, ProjGridVel, Enthalpy = 0.0, *GridVel;
+  double ViscDens, XiDens, Density, Pressure = 0.0, dPhiE_dn;
+  double Laminar_Viscosity = 0.0, Eddy_Viscosity = 0.0;
   double Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz;
   double Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5;
   double Sigma_yz5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;

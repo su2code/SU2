@@ -23,11 +23,10 @@
 
 #pragma once
 
-#include <ctime>
-
 #ifdef HAVE_MPI
-#include <mpi.h>
+  #include "mpi.h"
 #endif
+#include <ctime>
 
 #include "../../SU2_CFD/include/solver_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"

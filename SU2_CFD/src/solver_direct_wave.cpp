@@ -451,7 +451,7 @@ void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
   
   /*--- Loop over the wave far-field markers ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary   = config->GetMarker_All_Boundary(iMarker);
+		Boundary   = config->GetMarker_All_KindBC(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     if (Boundary == FAR_FIELD) {
