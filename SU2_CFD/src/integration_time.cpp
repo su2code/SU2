@@ -241,7 +241,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   
   /*--- Remove any contributions from no-slip walls. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Boundary = config->GetMarker_All_Boundary(iMarker);
+    Boundary = config->GetMarker_All_KindBC(iMarker);
     if ((Boundary == HEAT_FLUX             ) ||
         (Boundary == HEAT_FLUX_CATALYTIC   ) ||
         (Boundary == HEAT_FLUX_NONCATALYTIC) ||
@@ -459,12 +459,12 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   }
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       for(iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -510,12 +510,12 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
   }
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       for(iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -560,12 +560,12 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   
   /*--- Update the solution at the no-slip walls ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         
@@ -834,12 +834,12 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
         for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
           Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
           sol_coarse[SolContainer_Position]->node[Point_Coarse]->SetSolutionZero(0);

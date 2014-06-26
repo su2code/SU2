@@ -417,7 +417,7 @@ void CGridAdaptation::SetSupShock_Refinement(CGeometry *geometry, CConfig *confi
 		}
 }
 
-int CGridAdaptation::CheckRectCode(bool *AdaptCode) {
+long CGridAdaptation::CheckRectCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
@@ -439,7 +439,7 @@ int CGridAdaptation::CheckRectCode(bool *AdaptCode) {
 	
 }
 
-int CGridAdaptation::CheckRectExtCode(bool *AdaptCode) {
+long CGridAdaptation::CheckRectExtCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
@@ -479,7 +479,7 @@ int CGridAdaptation::CheckRectExtCode(bool *AdaptCode) {
 	
 }
 
-int CGridAdaptation::CheckTriangleCode(bool *AdaptCode) {
+long CGridAdaptation::CheckTriangleCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
@@ -509,7 +509,7 @@ int CGridAdaptation::CheckTriangleCode(bool *AdaptCode) {
 	
 }
 
-int CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
+long CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	unsigned short nDivEdges, iVar;
@@ -550,7 +550,7 @@ int CGridAdaptation::CheckTetraCode(bool *AdaptCode) {
 
 }
 
-int CGridAdaptation::CheckHexaCode(bool *AdaptCode) {
+long CGridAdaptation::CheckHexaCode(bool *AdaptCode) {
 
 	int Code = -1;
 	
@@ -598,7 +598,7 @@ int CGridAdaptation::CheckHexaCode(bool *AdaptCode) {
 
 }
 
-int CGridAdaptation::CheckPyramCode(bool *AdaptCode) {
+long CGridAdaptation::CheckPyramCode(bool *AdaptCode) {
 	
 	int Code = -1;
 	
@@ -653,7 +653,7 @@ int CGridAdaptation::CheckPyramCode(bool *AdaptCode) {
 
 }
 
-void CGridAdaptation::RectDivision(int code , int *nodes, int **Division, int *nPart) {
+void CGridAdaptation::RectDivision(long code , long *nodes, long **Division, long *nPart) {
 	
 	if (code == 1) {
 		
@@ -698,7 +698,7 @@ void CGridAdaptation::RectDivision(int code , int *nodes, int **Division, int *n
 	
 }
 
-void CGridAdaptation::RectExtDivision(int code , int *nodes, int **Division, int *nPart) {
+void CGridAdaptation::RectExtDivision(long code , long *nodes, long **Division, long *nPart) {
 	
 	if (code == 2) {
 		// number of nodes at each new element
@@ -886,7 +886,7 @@ void CGridAdaptation::RectExtDivision(int code , int *nodes, int **Division, int
 
 }
 
-void CGridAdaptation::TriangleDivision(int code , int *nodes, int *edges, int **Division, int *nPart) {
+void CGridAdaptation::TriangleDivision(long code , long *nodes, long *edges, long **Division, long *nPart) {
 	
 	if (code == 1) {
 		// number of nodes at each new element
@@ -989,7 +989,7 @@ void CGridAdaptation::TriangleDivision(int code , int *nodes, int *edges, int **
 		
 		unsigned short iDiv, nDiv, edge_div[6][3], max_iVar, iVar, nElem, iElem, iNode, iTriangle;
 		bool set_0, set_1, new_div, new_triangle[8][10];
-		int max_edge;
+		long max_edge;
 				
 		nDiv = 0;
 		do { new_div = false;
@@ -1060,7 +1060,7 @@ void CGridAdaptation::TriangleDivision(int code , int *nodes, int *edges, int **
 	}
 }
 
-void CGridAdaptation::TetraDivision(int code , int *nodes, int *edges, int **Division, int *nPart) {
+void CGridAdaptation::TetraDivision(long code , long *nodes, long *edges, long **Division, long *nPart) {
 
 	
 	if (code == 1) {
@@ -1138,11 +1138,7 @@ void CGridAdaptation::TetraDivision(int code , int *nodes, int *edges, int **Div
 		
 		unsigned short iDiv, nDiv, edge_div[6][3], max_iVar, iVar, nElem, iElem, iNode, iTetra;
 		bool set_0, set_1, new_div, new_tetra[8][10];
-		int max_edge;
-		
-//		cout <<"edges "<< edges[0] <<" "<< edges[1] <<" "<< edges[2] <<" "<< edges[3] <<" "<< edges[4] 
-//		<<" "<< edges[5]  <<endl;
-
+		long max_edge;
 		
 		nDiv = 0;
 		do { new_div = false;
@@ -1233,7 +1229,7 @@ void CGridAdaptation::TetraDivision(int code , int *nodes, int *edges, int **Div
 
 }
 
-void CGridAdaptation::HexaDivision(int code , int *nodes, int **Division, int *nPart) {
+void CGridAdaptation::HexaDivision(long code , long *nodes, long **Division, long *nPart) {
 
 	if (code == 1) {
 		
@@ -1373,7 +1369,7 @@ void CGridAdaptation::HexaDivision(int code , int *nodes, int **Division, int *n
 
 }
 
-void CGridAdaptation::PyramDivision(int code , int *nodes, int **Division, int *nPart) {
+void CGridAdaptation::PyramDivision(long code , long *nodes, long **Division, long *nPart) {
 
 	if (code == 1) {
 		
@@ -1617,14 +1613,14 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	
 	unsigned long iPoint, iElem, iEdge, ip_0, ip_1, ip_2, ip_3, iVertex;
 	unsigned short iDim, iMarker, iVar;
-	int no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0;
+	long no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0;
 
-	int *TriangleAdaptCode; 
-	int **TriangleEdgeIndex; bool **TriangleEdgeCode; int **TriangleEdgeNode;
+	long *TriangleAdaptCode;
+	long **TriangleEdgeIndex; bool **TriangleEdgeCode; long **TriangleEdgeNode;
 	
-	int *RectAdaptCode; 
-	int **RectEdgeIndex; bool **RectEdgeCode; int **RectEdgeNode;
-	int **RectElemIndex; bool **RectElemCode; int **RectElemNode;
+	long *RectAdaptCode;
+	long **RectEdgeIndex; bool **RectEdgeCode; long **RectEdgeNode;
+	long **RectElemIndex; bool **RectElemCode; long **RectElemNode;
 	
 	bool Restart_Flow = false;
 	bool Restart_Adjoint = false;
@@ -1652,31 +1648,31 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	if ((config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == FULL_LINEAR)) Restart_Linear = true;
 	
-	TriangleAdaptCode = new int[geometry->GetnElem()];
-	TriangleEdgeIndex = new int*[geometry->GetnElem()];
+	TriangleAdaptCode = new long[geometry->GetnElem()];
+	TriangleEdgeIndex = new long*[geometry->GetnElem()];
 	TriangleEdgeCode = new bool*[geometry->GetnElem()];
-	TriangleEdgeNode = new int*[geometry->GetnElem()];
+	TriangleEdgeNode = new long*[geometry->GetnElem()];
 	
-	RectAdaptCode = new int[geometry->GetnElem()];
-	RectEdgeIndex = new int*[geometry->GetnElem()];
+	RectAdaptCode = new long[geometry->GetnElem()];
+	RectEdgeIndex = new long*[geometry->GetnElem()];
 	RectEdgeCode = new bool*[geometry->GetnElem()];
-	RectEdgeNode = new int*[geometry->GetnElem()];
-	RectElemIndex = new int*[geometry->GetnElem()];
+	RectEdgeNode = new long*[geometry->GetnElem()];
+	RectElemIndex = new long*[geometry->GetnElem()];
 	RectElemCode = new bool*[geometry->GetnElem()];
-	RectElemNode = new int*[geometry->GetnElem()];
+	RectElemNode = new long*[geometry->GetnElem()];
 	
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		TriangleEdgeIndex[iElem] = new int [3];
+		TriangleEdgeIndex[iElem] = new long [3];
 		TriangleEdgeCode[iElem] = new bool [3];
-		TriangleEdgeNode[iElem] = new int [3];
+		TriangleEdgeNode[iElem] = new long [3];
 		
-		RectEdgeIndex[iElem] = new int [4];
+		RectEdgeIndex[iElem] = new long [4];
 		RectEdgeCode[iElem] = new bool [4];
-		RectEdgeNode[iElem] = new int [4];
-		RectElemIndex[iElem] = new int [1];
+		RectEdgeNode[iElem] = new long [4];
+		RectElemIndex[iElem] = new long [1];
 		RectElemCode[iElem] = new bool [1];
-		RectElemNode[iElem] = new int [1];		
+		RectElemNode[iElem] = new long [1];
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1735,7 +1731,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) 
-		if (config->GetMarker_All_Boundary(iMarker) == NEARFIELD_BOUNDARY)
+		if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
 			for (unsigned long iBoundElem = 0; iBoundElem < geometry->GetnElem_Bound(iMarker); iBoundElem++) {			
 				
 				ip_0 = geometry->bound[iMarker][iBoundElem]->GetNode(0); 
@@ -1793,8 +1789,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	// Create the new nodes on the edges, on the faces, and in the element.
-	int *NodeAtEdges = new int[geometry->GetnEdge()]; 
-	int *NodeAtElem = new int[geometry->GetnElem()];
+	long *NodeAtEdges = new long[geometry->GetnEdge()];
+	long *NodeAtElem = new long[geometry->GetnElem()];
 	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) NodeAtEdges[iEdge] = -1;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) NodeAtElem[iElem] = -1;
@@ -1941,7 +1937,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 
 	
 	// if Hexa adapt code equals 0, then a semidivision is applied
-	int nSemiDivided = 0;
+	long nSemiDivided = 0;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
 			if (RectAdaptCode[iElem] == 0)
@@ -1951,35 +1947,35 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	
 	// If semidivision, then divide add a new point (hexa), divide the rectangle into triangles, 
 	// and find the right combination, it also create the new node (hexa).
-	int nRectExt = nSemiDivided;	
+	long nRectExt = nSemiDivided;
 	
-	int *RectExtAdaptCode;
-	int **RectExtNode;	
-	int **RectRectExtIndex;
-	int *RectExtRectIndex;
+	long *RectExtAdaptCode;
+	long **RectExtNode;
+	long **RectRectExtIndex;
+	long *RectExtRectIndex;
 	
-	int **RectExtEdgeIndex; 
+	long **RectExtEdgeIndex;
 	bool **RectExtEdgeCode;
-	int **RectExtEdgeNode; 
+	long **RectExtEdgeNode;
 	
-	RectExtAdaptCode = new int [nRectExt];
-	RectExtNode = new int *[nRectExt];	
-	RectRectExtIndex = new int *[geometry->GetnElem()];	
-	RectExtRectIndex = new int [nRectExt];	
-	RectExtEdgeIndex = new int *[nRectExt]; 
+	RectExtAdaptCode = new long [nRectExt];
+	RectExtNode = new long *[nRectExt];
+	RectRectExtIndex = new long *[geometry->GetnElem()];
+	RectExtRectIndex = new long [nRectExt];
+	RectExtEdgeIndex = new long *[nRectExt];
 	RectExtEdgeCode = new bool *[nRectExt];
-	RectExtEdgeNode = new int *[nRectExt]; 
+	RectExtEdgeNode = new long *[nRectExt];
 	
-	for (int iRectExt = 0; iRectExt < nRectExt; iRectExt++) {
-		RectExtNode[iRectExt] = new int [4];
-		RectExtEdgeIndex[iRectExt] = new int [4];
+	for (long iRectExt = 0; iRectExt < nRectExt; iRectExt++) {
+		RectExtNode[iRectExt] = new long [4];
+		RectExtEdgeIndex[iRectExt] = new long [4];
 		RectExtEdgeCode[iRectExt] = new bool [4];
-		RectExtEdgeNode[iRectExt] = new int [4];
+		RectExtEdgeNode[iRectExt] = new long [4];
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-			RectRectExtIndex[iElem] = new int [1];
+			RectRectExtIndex[iElem] = new long [1];
 		}
 	}
 	
@@ -2038,7 +2034,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			if (RectAdaptCode[iElem] == 2) nElem_new = nElem_new + 1;
 			if (RectAdaptCode[iElem] == 3) nElem_new = nElem_new + 1;
 			if (RectAdaptCode[iElem] == 0) {
-				int iRectExt = RectRectExtIndex[iElem][0];
+				long iRectExt = RectRectExtIndex[iElem][0];
 				if (RectExtAdaptCode[iRectExt] == 2) nElem_new = nElem_new + 2;
 				if (RectExtAdaptCode[iRectExt] == 3) nElem_new = nElem_new + 2;
 				if (RectExtAdaptCode[iRectExt] == 4) nElem_new = nElem_new + 2;
@@ -2088,11 +2084,11 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		}
 	}
 			
-	int nodes[27]; int **Division; int nPart;
+	long nodes[27]; long **Division; long nPart;
 	
-	Division = new int*[100];
-	for (int iVar = 0; iVar < 100; iVar++)
-		Division[iVar] = new int[100];
+	Division = new long*[100];
+	for (long iVar = 0; iVar < 100; iVar++)
+		Division[iVar] = new long[100];
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
@@ -2111,7 +2107,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				nodes[5] = TriangleEdgeNode[iElem][2];
 				
 				TriangleDivision(TriangleAdaptCode[iElem], nodes, NULL, Division, &nPart);
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					
 					// Triangle case
 					if (Division[iPart][0] == 4) {
@@ -2148,7 +2144,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				nodes[8] = RectElemNode[iElem][0];
 				
 				RectDivision(RectAdaptCode[iElem], nodes, Division, &nPart);
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					geo_adapt->elem[iElemNew] = new CRectangle(Division[iPart][1], 
 																										 Division[iPart][2], 
 																										 Division[iPart][3], 
@@ -2159,7 +2155,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			
 			// RectExt elements...
 			if (RectAdaptCode[iElem] == 0) {
-				int iRectExt = RectRectExtIndex[iElem][0];
+				long iRectExt = RectRectExtIndex[iElem][0];
 				
 				// First the corners
 				nodes[0] = RectExtNode[iRectExt][0];	
@@ -2174,7 +2170,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				nodes[7] = RectExtEdgeNode[iRectExt][3];
 				
 				RectExtDivision(RectExtAdaptCode[iRectExt], nodes, Division, &nPart);
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					
 					// Triangle case
 					if (Division[iPart][0] == 4) {
@@ -2208,7 +2204,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	geo_adapt->Tag_to_Marker = new string [MAX_NUMBER_MARKER];		
 	geo_adapt->bound = new CPrimalGrid**[geometry->GetnMarker()];
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-		int nNewBCcv = 0;
+		long nNewBCcv = 0;
 		for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {			
 			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0);
 			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1);
@@ -2221,7 +2217,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 	
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-		int nNewBCcv = 0;
+		long nNewBCcv = 0;
 		for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {			
 			
 			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->node[ip_0]->SetBoundary(geometry->GetnMarker());
@@ -2254,16 +2250,16 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 
 	unsigned long iPoint, iElem, iEdge, ip_0, ip_1, ip_2, ip_3, ip_4, ip_5, ip_6, ip_7, iVertex;
 	unsigned short iDim, iMarker, iVar;
-	int no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0, no_4 = 0, no_5 = 0, no_6 = 0, no_7 = 0;
+	long no_0 = 0, no_1 = 0, no_2 = 0, no_3 = 0, no_4 = 0, no_5 = 0, no_6 = 0, no_7 = 0;
 	unsigned short counter;
 
-	int *TetraAdaptCode; 
-	int **TetraEdgeIndex; bool **TetraEdgeCode; int **TetraEdgeNode;
+	long *TetraAdaptCode; 
+	long **TetraEdgeIndex; bool **TetraEdgeCode; long **TetraEdgeNode;
 	
-	int *HexaAdaptCode; 
-	int **HexaEdgeIndex; bool **HexaEdgeCode; int **HexaEdgeNode;
-	int **HexaFaceIndex; bool **HexaFaceCode; int **HexaFaceNode;
-	int **HexaElemIndex; bool **HexaElemCode; int **HexaElemNode;
+	long *HexaAdaptCode; 
+	long **HexaEdgeIndex; bool **HexaEdgeCode; long **HexaEdgeNode;
+	long **HexaFaceIndex; bool **HexaFaceCode; long **HexaFaceNode;
+	long **HexaElemIndex; bool **HexaElemCode; long **HexaElemNode;
 	
 	bool Restart_Flow = false;
 	bool Restart_Adjoint = false;
@@ -2291,36 +2287,36 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	if ((config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == FULL_LINEAR)) Restart_Linear = true;
 	
-	TetraAdaptCode = new int[geometry->GetnElem()];
-	TetraEdgeIndex = new int*[geometry->GetnElem()];
+	TetraAdaptCode = new long[geometry->GetnElem()];
+	TetraEdgeIndex = new long*[geometry->GetnElem()];
 	TetraEdgeCode = new bool*[geometry->GetnElem()];
-	TetraEdgeNode = new int*[geometry->GetnElem()];
+	TetraEdgeNode = new long*[geometry->GetnElem()];
 	
-	HexaAdaptCode = new int[geometry->GetnElem()];
-	HexaEdgeIndex = new int*[geometry->GetnElem()];
+	HexaAdaptCode = new long[geometry->GetnElem()];
+	HexaEdgeIndex = new long*[geometry->GetnElem()];
 	HexaEdgeCode = new bool*[geometry->GetnElem()];
-	HexaEdgeNode = new int*[geometry->GetnElem()];
-	HexaFaceIndex = new int*[geometry->GetnElem()];
+	HexaEdgeNode = new long*[geometry->GetnElem()];
+	HexaFaceIndex = new long*[geometry->GetnElem()];
 	HexaFaceCode = new bool*[geometry->GetnElem()];
-	HexaFaceNode = new int*[geometry->GetnElem()];
-	HexaElemIndex = new int*[geometry->GetnElem()];
+	HexaFaceNode = new long*[geometry->GetnElem()];
+	HexaElemIndex = new long*[geometry->GetnElem()];
 	HexaElemCode = new bool*[geometry->GetnElem()];
-	HexaElemNode = new int*[geometry->GetnElem()];
+	HexaElemNode = new long*[geometry->GetnElem()];
 		
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		TetraEdgeIndex[iElem] = new int [6];
+		TetraEdgeIndex[iElem] = new long [6];
 		TetraEdgeCode[iElem] = new bool [6];
-		TetraEdgeNode[iElem] = new int [6];
+		TetraEdgeNode[iElem] = new long [6];
 		
-		HexaEdgeIndex[iElem] = new int [12];
+		HexaEdgeIndex[iElem] = new long [12];
 		HexaEdgeCode[iElem] = new bool [12];
-		HexaEdgeNode[iElem] = new int [12];
-		HexaFaceIndex[iElem] = new int [6];
+		HexaEdgeNode[iElem] = new long [12];
+		HexaFaceIndex[iElem] = new long [6];
 		HexaFaceCode[iElem] = new bool [6];
-		HexaFaceNode[iElem] = new int [6];
-		HexaElemIndex[iElem] = new int [1];
+		HexaFaceNode[iElem] = new long [6];
+		HexaElemIndex[iElem] = new long [1];
 		HexaElemCode[iElem] = new bool [1];
-		HexaElemNode[iElem] = new int [1];		
+		HexaElemNode[iElem] = new long [1];		
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -2421,13 +2417,13 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		if (DivElem[iElem] == true) {
 			if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-				for (int iIndex = 0; iIndex < 6; iIndex++) {
+				for (long iIndex = 0; iIndex < 6; iIndex++) {
 					DivEdge[TetraEdgeIndex[iElem][iIndex]] = true;
 					TetraEdgeCode[iElem][iIndex] = true;
 				}
 			}
 			if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-				for (int iIndex = 0; iIndex < 12; iIndex++) {
+				for (long iIndex = 0; iIndex < 12; iIndex++) {
 					DivEdge[HexaEdgeIndex[iElem][iIndex]] = true;
 					HexaEdgeCode[iElem][iIndex] = true;
 				}
@@ -2472,14 +2468,14 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	 with tets 4 and 5 edges are not allowed ---*/
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-			for (int iIndex = 0; iIndex < 6; iIndex++) {
+			for (long iIndex = 0; iIndex < 6; iIndex++) {
 				if (DivEdge[TetraEdgeIndex[iElem][iIndex]] == true) {
 					TetraEdgeCode[iElem][iIndex] = true;
 				}
 			}
 		}
 		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-			for (int iIndex = 0; iIndex < 12; iIndex++) {
+			for (long iIndex = 0; iIndex < 12; iIndex++) {
 				if (DivEdge[HexaEdgeIndex[iElem][iIndex]] == true) {
 					HexaEdgeCode[iElem][iIndex] = true;
 				}
@@ -2520,9 +2516,9 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	}
 		
 	// Create the new nodes on the edges, on the faces, and in the element.
-	int *NodeAtEdges = new int[geometry->GetnEdge()]; 
-//	int *NodeAtElem = new int[geometry->GetnFace()]; 
-	int *NodeAtElem = new int[geometry->GetnElem()];
+	long *NodeAtEdges = new long[geometry->GetnEdge()];
+//	long *NodeAtElem = new long[geometry->GetnFace()];
+	long *NodeAtElem = new long[geometry->GetnElem()];
 	
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) NodeAtEdges[iEdge] = -1;
 //	for (iFace = 0; iFace < geometry->GetnFace(); iFace++) NodeAtFaces[iEdge] = -1;
@@ -2571,7 +2567,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			ip_2 = geometry->elem[iElem]->GetNode(2);
 			ip_3 = geometry->elem[iElem]->GetNode(3);
 			
-			for (int iIndex = 0; iIndex < 6; iIndex++) {
+			for (long iIndex = 0; iIndex < 6; iIndex++) {
 				
 				if (TetraEdgeCode[iElem][iIndex] == true) {
 					if (NodeAtEdges[TetraEdgeIndex[iElem][iIndex]] != -1)
@@ -2616,7 +2612,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			ip_6 = geometry->elem[iElem]->GetNode(6);
 			ip_7 = geometry->elem[iElem]->GetNode(7);
 			
-			for (int iIndex = 0; iIndex < 12; iIndex++) {
+			for (long iIndex = 0; iIndex < 12; iIndex++) {
 				
 				if (HexaEdgeCode[iElem][iIndex] == true) {
 					if (NodeAtEdges[HexaEdgeIndex[iElem][iIndex]] != -1)
@@ -2655,7 +2651,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				}
 			}
 			
-/*			for (int iIndex = 0; iIndex < 6; iIndex++) {
+/*			for (long iIndex = 0; iIndex < 6; iIndex++) {
 				if (HexaFaceCode[iElem][iIndex] == true) {
 					
 					if (NodeAtFaces[HexaFaceIndex[iElem][iIndex]] != -1)
@@ -2688,7 +2684,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
  
 			} */
 			
-			for (int iIndex = 0; iIndex < 1; iIndex++) {
+			for (long iIndex = 0; iIndex < 1; iIndex++) {
 				
 				if (HexaElemCode[iElem][iIndex] == true) {
 					
@@ -2730,7 +2726,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	
 	
 	// if Hexa adapt code equals 0, then a semidivision is applied
-	int nSemiDivided = 0;
+	long nSemiDivided = 0;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
 			if (HexaAdaptCode[iElem] == 0)
@@ -2740,43 +2736,43 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	
 	// If semidivision, then divide add a new point (hexa), divide the hexahedron into Tetras, 
 	// and find the right combination, it also create the new node (hexa).
-	int nPyram = nSemiDivided*6;	
+	long nPyram = nSemiDivided*6;	
 	
-	int *PyramAdaptCode;
-	int **PyramNode;	
-	int **HexaPyramIndex;
-	int *PyramHexaIndex;
+	long *PyramAdaptCode;
+	long **PyramNode;	
+	long **HexaPyramIndex;
+	long *PyramHexaIndex;
 	
-	int **PyramEdgeIndex; 
+	long **PyramEdgeIndex; 
 	bool **PyramEdgeCode;
-	int **PyramEdgeNode; 
+	long **PyramEdgeNode; 
 	
-	int **PyramFaceNode;
+	long **PyramFaceNode;
 	
-	int **PyramElemNode;
+	long **PyramElemNode;
 	
-	PyramAdaptCode = new int [nPyram];
-	PyramNode = new int *[nPyram];	
-	HexaPyramIndex = new int *[geometry->GetnElem()];	
-	PyramHexaIndex = new int [nPyram];	
-	PyramEdgeIndex = new int *[nPyram]; 
+	PyramAdaptCode = new long [nPyram];
+	PyramNode = new long *[nPyram];	
+	HexaPyramIndex = new long *[geometry->GetnElem()];	
+	PyramHexaIndex = new long [nPyram];	
+	PyramEdgeIndex = new long *[nPyram]; 
 	PyramEdgeCode = new bool *[nPyram];
-	PyramEdgeNode = new int *[nPyram]; 
-	PyramFaceNode = new int *[nPyram];
-	PyramElemNode = new int *[nPyram];
+	PyramEdgeNode = new long *[nPyram]; 
+	PyramFaceNode = new long *[nPyram];
+	PyramElemNode = new long *[nPyram];
 	
-	for (int iPyram = 0; iPyram < nPyram; iPyram++) {
-		PyramNode[iPyram] = new int [4];
-		PyramEdgeIndex[iPyram] = new int [4];
+	for (long iPyram = 0; iPyram < nPyram; iPyram++) {
+		PyramNode[iPyram] = new long [4];
+		PyramEdgeIndex[iPyram] = new long [4];
 		PyramEdgeCode[iPyram] = new bool [4];
-		PyramEdgeNode[iPyram] = new int [4];
-		PyramFaceNode[iPyram] = new int [1];
-		PyramElemNode[iPyram] = new int [1];
+		PyramEdgeNode[iPyram] = new long [4];
+		PyramFaceNode[iPyram] = new long [1];
+		PyramElemNode[iPyram] = new long [1];
 	}
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-			HexaPyramIndex[iElem] = new int [6];
+			HexaPyramIndex[iElem] = new long [6];
 		}
 	}
 	
@@ -2808,7 +2804,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				PyramEdgeNode[nPyram][2] = HexaEdgeNode[iElem][2]; PyramEdgeNode[nPyram][3] = HexaEdgeNode[iElem][3];
 				
 				
-				for (int iIndex = 0; iIndex < 4; iIndex++)
+				for (long iIndex = 0; iIndex < 4; iIndex++)
 					if (DivEdge[PyramEdgeIndex[nPyram][iIndex]] == true) PyramEdgeCode[nPyram][iIndex] = true; 
 				nPyram++;
 				
@@ -2824,7 +2820,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				PyramEdgeNode[nPyram][0] = HexaEdgeNode[iElem][7]; PyramEdgeNode[nPyram][1] = HexaEdgeNode[iElem][6];
 				PyramEdgeNode[nPyram][2] = HexaEdgeNode[iElem][5]; PyramEdgeNode[nPyram][3] = HexaEdgeNode[iElem][4];
 				
-				for (int iIndex = 0; iIndex < 4; iIndex++)
+				for (long iIndex = 0; iIndex < 4; iIndex++)
 					if (DivEdge[PyramEdgeIndex[nPyram][iIndex]] == true) PyramEdgeCode[nPyram][iIndex] = true; 
 				nPyram++;
 				
@@ -2840,7 +2836,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				PyramEdgeNode[nPyram][0] = HexaEdgeNode[iElem][8]; PyramEdgeNode[nPyram][1] = HexaEdgeNode[iElem][4];
 				PyramEdgeNode[nPyram][2] = HexaEdgeNode[iElem][9]; PyramEdgeNode[nPyram][3] = HexaEdgeNode[iElem][0];
 				
-				for (int iIndex = 0; iIndex < 4; iIndex++)
+				for (long iIndex = 0; iIndex < 4; iIndex++)
 					if (DivEdge[PyramEdgeIndex[nPyram][iIndex]] == true) PyramEdgeCode[nPyram][iIndex] = true; 
 				nPyram++;
 				
@@ -2856,7 +2852,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				PyramEdgeNode[nPyram][0] = HexaEdgeNode[iElem][2]; PyramEdgeNode[nPyram][1] = HexaEdgeNode[iElem][10];
 				PyramEdgeNode[nPyram][2] = HexaEdgeNode[iElem][6]; PyramEdgeNode[nPyram][3] = HexaEdgeNode[iElem][11];
 				
-				for (int iIndex = 0; iIndex < 4; iIndex++)
+				for (long iIndex = 0; iIndex < 4; iIndex++)
 					if (DivEdge[PyramEdgeIndex[nPyram][iIndex]] == true) PyramEdgeCode[nPyram][iIndex] = true; 
 				nPyram++;
 				
@@ -2872,7 +2868,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				PyramEdgeNode[nPyram][0] = HexaEdgeNode[iElem][9]; PyramEdgeNode[nPyram][1] = HexaEdgeNode[iElem][5];
 				PyramEdgeNode[nPyram][2] = HexaEdgeNode[iElem][10]; PyramEdgeNode[nPyram][3] = HexaEdgeNode[iElem][1];
 				
-				for (int iIndex = 0; iIndex < 4; iIndex++)
+				for (long iIndex = 0; iIndex < 4; iIndex++)
 					if (DivEdge[PyramEdgeIndex[nPyram][iIndex]] == true) PyramEdgeCode[nPyram][iIndex] = true; 
 				nPyram++;
 				
@@ -2888,7 +2884,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				PyramEdgeNode[nPyram][0] = HexaEdgeNode[iElem][3]; PyramEdgeNode[nPyram][1] = HexaEdgeNode[iElem][11];
 				PyramEdgeNode[nPyram][2] = HexaEdgeNode[iElem][7]; PyramEdgeNode[nPyram][3] = HexaEdgeNode[iElem][8];
 				
-				for (int iIndex = 0; iIndex < 4; iIndex++)
+				for (long iIndex = 0; iIndex < 4; iIndex++)
 					if (DivEdge[PyramEdgeIndex[nPyram][iIndex]] == true) PyramEdgeCode[nPyram][iIndex] = true; 
 				nPyram++;
 				
@@ -2900,7 +2896,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	}
 	
 	//	Check the kind of Pyram partitioning that should be applied
-	for (int iPyram = 0; iPyram < nPyram; iPyram ++) {
+	for (long iPyram = 0; iPyram < nPyram; iPyram ++) {
 		PyramAdaptCode[iPyram] = CheckPyramCode(PyramEdgeCode[iPyram]);
 		if (PyramAdaptCode[iPyram] == 0) cout << "There is a problem with one Pyram" << endl;
 	}
@@ -2925,8 +2921,8 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			if (HexaAdaptCode[iElem] == 6) nElem_new = nElem_new + 1;
 			if (HexaAdaptCode[iElem] == 7) nElem_new = nElem_new + 1;
 			if (HexaAdaptCode[iElem] == 0) {
-				int iPyram;
-				for (int iIndex = 0; iIndex < 6; iIndex++) {
+				long iPyram;
+				for (long iIndex = 0; iIndex < 6; iIndex++) {
 					iPyram = HexaPyramIndex[iElem][0];
 					if (PyramAdaptCode[iPyram] == 1) nElem_new = nElem_new + 0;
 					if (PyramAdaptCode[iPyram] == 2) nElem_new = nElem_new + 2;
@@ -3004,11 +3000,11 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 		}		
 	}
 		
-	int nodes[27]; int **Division; int nPart;
+	long nodes[27]; long **Division; long nPart;
 	
-	Division = new int*[100];
-	for (int iVar = 0; iVar < 100; iVar++)
-		Division[iVar] = new int[100];
+	Division = new long*[100];
+	for (long iVar = 0; iVar < 100; iVar++)
+		Division[iVar] = new long[100];
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
@@ -3035,7 +3031,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				ip_2 = geometry->elem[iElem]->GetNode(2);
 				ip_3 = geometry->elem[iElem]->GetNode(3);
 				
-				int edges[6] = {-1, -1, -1, -1, -1 , -1};
+				long edges[6] = {-1, -1, -1, -1, -1 , -1};
 				if (DivEdge[geometry->FindEdge(ip_0,ip_1)]) {edges[0] = geometry->FindEdge(ip_0,ip_1);}
 				if (DivEdge[geometry->FindEdge(ip_0,ip_2)]) {edges[1] = geometry->FindEdge(ip_0,ip_2);}
 				if (DivEdge[geometry->FindEdge(ip_0,ip_3)]) {edges[2] = geometry->FindEdge(ip_0,ip_3);}
@@ -3046,7 +3042,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				
 				TetraDivision(TetraAdaptCode[iElem], nodes, edges, Division, &nPart);
 				
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					
 					// Tetra case
 					geo_adapt->elem[iElemNew] = new CTetrahedron(Division[iPart][1], 
@@ -3088,7 +3084,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				nodes[8] = HexaElemNode[iElem][0];
 				
 				HexaDivision(HexaAdaptCode[iElem], nodes, Division, &nPart);
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					geo_adapt->elem[iElemNew] = new CHexahedron(Division[iPart][1], 
 																											Division[iPart][2], 
 																											Division[iPart][3], 
@@ -3103,7 +3099,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			
 			// Pyram elements...
 			if (HexaAdaptCode[iElem] == 0) {
-				int iPyram = HexaPyramIndex[iElem][0];
+				long iPyram = HexaPyramIndex[iElem][0];
 				
 				// First the corners
 				nodes[0] = PyramNode[iPyram][0];	
@@ -3122,7 +3118,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				nodes[9] = PyramFaceNode[iPyram][0];
 				
 				PyramDivision(PyramAdaptCode[iPyram], nodes, Division, &nPart);
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					
 					// Tetra case
 					if (Division[iPart][0] == 5) {
@@ -3160,7 +3156,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 
 	// Conservative estimation of the number of boundary elements.
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-		int nNewBCcv = 0;
+		long nNewBCcv = 0;
 		for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {			
 			nNewBCcv = nNewBCcv + 4;
 		}
@@ -3170,12 +3166,12 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 
 	
 	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-		int nNewBCcv = 0;
+		long nNewBCcv = 0;
 		for (iVertex = 0; iVertex < geometry->GetnElem_Bound(iMarker); iVertex++) {			
 			
 			bool TriangleEdgeCode[3] = { false, false, false };
-			int TriangleAdaptCode, nodes[6];
-			int nNodesBound = geometry->bound[iMarker][iVertex]->GetnNodes();
+			long TriangleAdaptCode, nodes[6];
+			long nNodesBound = geometry->bound[iMarker][iVertex]->GetnNodes();
 			
 			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->node[ip_0]->SetBoundary(geometry->GetnMarker());
 			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1); geo_adapt->node[ip_1]->SetBoundary(geometry->GetnMarker());
@@ -3197,7 +3193,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				nodes[4] = NodeAtEdges[geometry->FindEdge(ip_1,ip_2)]; if (nodes[4] != -1) geo_adapt->node[nodes[4]]->SetBoundary(geometry->GetnMarker());
 				nodes[5] = NodeAtEdges[geometry->FindEdge(ip_0,ip_2)]; if (nodes[5] != -1) geo_adapt->node[nodes[5]]->SetBoundary(geometry->GetnMarker());
 				
-				int edges[3] = {-1, -1, -1};
+				long edges[3] = {-1, -1, -1};
 				if (DivEdge[geometry->FindEdge(ip_0,ip_1)]) { edges[0] = geometry->FindEdge(ip_0,ip_1); TriangleEdgeCode[0] = true;}
 				if (DivEdge[geometry->FindEdge(ip_1,ip_2)]) { edges[1] = geometry->FindEdge(ip_1,ip_2); TriangleEdgeCode[1] = true;}
 				if (DivEdge[geometry->FindEdge(ip_2,ip_0)]) { edges[2] = geometry->FindEdge(ip_2,ip_0); TriangleEdgeCode[2] = true;}
@@ -3205,7 +3201,7 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 				TriangleAdaptCode = CheckTriangleCode(TriangleEdgeCode);
 				TriangleDivision(TriangleAdaptCode, nodes, edges, Division, &nPart);
 				
-				for (int iPart = 0; iPart < nPart; iPart++) {
+				for (long iPart = 0; iPart < nPart; iPart++) {
 					geo_adapt->bound[iMarker][nNewBCcv] = new CTriangle(Division[iPart][1], Division[iPart][2], Division[iPart][3], 3);
 					nNewBCcv++;
 				}

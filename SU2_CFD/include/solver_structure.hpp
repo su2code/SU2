@@ -26,13 +26,8 @@
 #pragma once
 
 #ifdef HAVE_MPI
-#include <mpi.h>
+  #include "mpi.h"
 #endif
-
-#ifdef HAVE_MUTATIONPP
-#include "mutation++.h"
-#endif
-
 #include <cmath>
 #include <string>
 #include <fstream>
@@ -51,7 +46,6 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "numerics_machine_learning.hpp"
-
 
 using namespace std;
 

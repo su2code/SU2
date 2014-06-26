@@ -23,6 +23,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
@@ -74,7 +77,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG, CConfig *config) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \overload
@@ -82,7 +85,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
@@ -633,13 +636,13 @@ public:
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
 
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
@@ -696,9 +699,9 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] val_iPoint - First node of the edge.		 
 	 * \param[in] val_jPoint - Second node of the edge.
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 */
-	CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_ndim);
+	CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -759,7 +762,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
 	
 	/*!
 	 * \overload
@@ -769,7 +772,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.
@@ -839,9 +842,9 @@ public:
 	/*! 
 	 * \brief Constructor of the class.
 	 * \param[in] val_point - Node of the vertex.
-	 * \param[in] val_ndim - Number of dimensions of the problem.		
+	 * \param[in] val_nDim - Number of dimensions of the problem.		
 	 */
-	CVertex(unsigned long val_point, unsigned short val_ndim);
+	CVertex(unsigned long val_point, unsigned short val_nDim);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -868,7 +871,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \overload
@@ -877,7 +880,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.

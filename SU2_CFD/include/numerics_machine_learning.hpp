@@ -1,5 +1,11 @@
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
+#ifdef HAVE_JSONCPP
+  #include <json/json.h>
+#endif
 #include <cstdlib>
 #include <string>
 #include <iostream>
@@ -8,10 +14,6 @@
 #include <cmath>
 #include <math.h>
 #include <sstream>
-
-#ifdef HAVE_JSONCPP
-#include <json/json.h>
-#endif
 
 #include "../include/numerics_machine_learning_turbulent.hpp"
 

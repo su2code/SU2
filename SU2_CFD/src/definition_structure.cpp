@@ -268,7 +268,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     geometry[iZone][MESH_0]->SetControlVolume(config[iZone], ALLOCATE);
     geometry[iZone][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
     
-    /*--- Visualize a control volume if requested ---*/
+    /*--- Visualize a dual control volume if requested ---*/
     
     if ((config[iZone]->GetVisualize_CV() >= 0) &&
         (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))

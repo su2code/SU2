@@ -30,9 +30,9 @@ CPotentialVariable::CPotentialVariable(void) : CVariable() {
 }
 
 CPotentialVariable::CPotentialVariable(double val_potential,
-                                       unsigned short val_ndim,
+                                       unsigned short val_nDim,
                                        unsigned short val_nvar,
-                                       CConfig *config) : CVariable(val_ndim,
+                                       CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config) {
 	unsigned short iVar;

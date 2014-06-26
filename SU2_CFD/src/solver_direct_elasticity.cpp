@@ -27,7 +27,7 @@ CFEASolver::CFEASolver(void) : CSolver() { }
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	unsigned long iPoint;
-	unsigned short nMarker, iVar, NodesElement, nLineLets;
+	unsigned short nMarker, iVar, NodesElement = 0, nLineLets;
   double dull_val;
   
   int rank = MASTER_NODE;
@@ -169,7 +169,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 CFEASolver::~CFEASolver(void) {
   
-	unsigned short iVar, iDim, NodesElement;
+	unsigned short iVar, iDim, NodesElement = 0;
   
 	if (nDim == 2) NodesElement = 3;	// Triangles in 2D
 	if (nDim == 3) NodesElement = 4;	// Tets in 3D
@@ -425,7 +425,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh) {
   
-  unsigned short iVar, jVar, nNodes, iNodes, iDim, jDim;
+  unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim;
 	unsigned long iElem, PointCorners[8], iPoint, total_index;
 	double CoordCorners[8][3];
   
@@ -530,7 +530,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
 	unsigned short iVar, iDim;
   double *Normal, Area, UnitaryNormal[3];
 	
-	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_Tag(val_marker));
+	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -588,7 +588,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 	double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
 	unsigned short iDim;
 	
-	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_Tag(val_marker));
+	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
 	
 	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
@@ -951,7 +951,7 @@ void CFEASolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, C
 
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  double Strain_xx, Strain_yy, Strain_xy, Strain_zz, Strain_xz, Strain_yz, **Stress, VonMises_Stress, MaxVonMises_Stress = 0.0, Strain_Trace;
+  double Strain_xx, Strain_yy, Strain_xy, Strain_zz = 0.0, Strain_xz = 0.0, Strain_yz = 0.0, **Stress, VonMises_Stress, MaxVonMises_Stress = 0.0, Strain_Trace;
   
   double E = config->GetElasticyMod();
   double Nu = config->GetPoissonRatio();
@@ -1300,7 +1300,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   
   unsigned short iMarker, icommas, iDim;
   unsigned long iVertex, iPoint, iExtIter;
-  double Pressure, Dist, Coord[3];
+  double Pressure = 0.0, Dist, Coord[3];
   string text_line;
   string::size_type position;
   ifstream Surface_file;
@@ -1374,7 +1374,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
       /*--- Compute the distance from the surface to the points in the .csv files ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_Boundary(iMarker) == PRESSURE_BOUNDARY) {
+        if (config->GetMarker_All_KindBC(iMarker) == PRESSURE_BOUNDARY) {
           for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             

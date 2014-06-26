@@ -23,6 +23,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <iostream>
 #include <vector>
 #include <cstdlib>

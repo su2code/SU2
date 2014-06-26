@@ -24,9 +24,14 @@
 #pragma once
 
 #ifdef HAVE_MPI
-#include <mpi.h>
+  #include "mpi.h"
 #endif
-
+#ifdef HAVE_METIS
+  #include "metis.h"
+#endif
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -35,18 +40,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef HAVE_METIS
-extern "C" {
-#include "metis.h"
-}
-#endif
-
-#ifdef HAVE_CGNS
-#include "cgnslib.h"
-#endif
-
-
 
 #include "primal_grid_structure.hpp"
 #include "dual_grid_structure.hpp"
@@ -244,9 +237,9 @@ public:
 
 	/*! 
 	 * \brief Set the number of dimensions of the problem.
-	 * \param[in] val_ndim - Number of dimensions.
+	 * \param[in] val_nDim - Number of dimensions.
 	 */
-	void SetnDim(unsigned short val_ndim);
+	void SetnDim(unsigned short val_nDim);
 
 	/*! 
 	 * \brief Get the index of a marker.

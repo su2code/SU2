@@ -330,7 +330,7 @@ void CLinEulerSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver
 
 	/*--- Loop over the Euler markers ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary = config->GetMarker_All_Boundary(iMarker);
+		Boundary = config->GetMarker_All_KindBC(iMarker);
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
 		if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
 			for (iDim = 0; iDim < nDim; iDim++) DeltaForceInviscid[iDim] = 0.0;

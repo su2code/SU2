@@ -130,7 +130,7 @@ inline void CGeometry::SetnPointDomain(unsigned long val_npoint) { nPointDomain 
 
 inline void CGeometry::SetnElem(unsigned long val_nelem) { nElem = val_nelem; }
 
-inline void CGeometry::SetnDim(unsigned short val_ndim) { nDim = val_ndim; }
+inline void CGeometry::SetnDim(unsigned short val_nDim) { nDim = val_nDim; }
 
 inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return nVertex[val_marker]; }
 

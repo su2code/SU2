@@ -23,6 +23,15 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
+#ifdef HAVE_TECIO
+  #include "TECIO.h"
+#endif
 #include <fstream>
 #include <cmath>
 #include <time.h>
@@ -32,14 +41,6 @@
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-
-#ifdef HAVE_CGNS
-#include "cgnslib.h"
-#endif
-
-#ifdef HAVE_TECIO
-#include "TECIO.h"
-#endif
 
 using namespace std;
 

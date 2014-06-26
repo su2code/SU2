@@ -34,9 +34,9 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_psirho,
                                              double *val_phi,
                                              double val_psie,
                                              double val_psieve,
-                                             unsigned short val_ndim,
+                                             unsigned short val_nDim,
                                              unsigned short val_nvar,
-                                             CConfig *config) : CVariable(val_ndim,
+                                             CConfig *config) : CVariable(val_nDim,
                                                                           val_nvar,
                                                                           config) {
 
@@ -44,7 +44,7 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_psirho,
   
   /*--- Get properties ---*/
   nSpecies = config->GetnSpecies();
-  nDim     = val_ndim;
+  nDim     = val_nDim;
   
   /*--- Array initialization ---*/
 	Psi              = NULL;
@@ -106,9 +106,9 @@ CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_psirho,
 }
 
 CAdjTNE2EulerVariable::CAdjTNE2EulerVariable(double *val_solution,
-                                             unsigned short val_ndim,
+                                             unsigned short val_nDim,
                                              unsigned short val_nvar,
-                                             CConfig *config) : CVariable(val_ndim, val_nvar, config) {
+                                             CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -214,23 +214,23 @@ CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_psirho,
                                        double *val_phi,
                                        double val_psie,
                                        double val_psieve,
-                                       unsigned short val_ndim,
+                                       unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        CConfig *config) : CAdjTNE2EulerVariable(val_psirho,
                                                                                 val_phi,
                                                                                 val_psie,
                                                                                 val_psieve,
-                                                                                val_ndim,
+                                                                                val_nDim,
                                                                                 val_nvar,
                                                                                 config) {
 
 }
 
 CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_solution,
-                                       unsigned short val_ndim,
+                                       unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        CConfig *config) : CAdjTNE2EulerVariable(val_solution,
-                                                                                val_ndim,
+                                                                                val_nDim,
                                                                                 val_nvar,
                                                                                 config) {
   

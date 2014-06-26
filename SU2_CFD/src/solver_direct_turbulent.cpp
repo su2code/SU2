@@ -66,7 +66,7 @@ void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -151,7 +151,7 @@ void CTurbSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -229,7 +229,7 @@ void CTurbSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -347,7 +347,7 @@ void CTurbSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config)
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -913,15 +913,17 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
         
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
-        if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-          Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-          + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+            + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
+        }
         
       } else {
         
-        for(iVar = 0; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
@@ -1074,7 +1076,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT, U[5];
+    double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
     double Temperature, Temperature_Dim, Pressure;
     double Temperature_Ref = config->GetTemperature_Ref();
     double Viscosity_Ref   = config->GetViscosity_Ref();
@@ -1220,7 +1222,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   
-  double rho, mu, nu, *nu_hat, muT, Ji, Ji_3, fv1;
+  double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
   double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
@@ -1501,7 +1503,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -1734,7 +1736,7 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
   
   Normal = new double[nDim];
   
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2359,7 +2361,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT, U[5];
+    double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
     double Temperature, Temperature_Dim, Pressure;
     double Temperature_Ref = config->GetTemperature_Ref();
     double Viscosity_Ref   = config->GetViscosity_Ref();
@@ -2502,7 +2504,7 @@ void CTurbMLSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbMLSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho, mu, nu, *nu_hat, muT, Ji, Ji_3, fv1;
+  double rho = 0.0, mu = 0.0, nu, *nu_hat, muT, Ji, Ji_3, fv1;
   double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
@@ -2822,7 +2824,7 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3348,7 +3350,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  double rho, mu, dist, omega, kine, vorticity[3], vortMag, strMag, F2, muT, zeta;
+  double rho = 0.0, mu = 0.0, dist, omega, kine, vorticity[3], vortMag, strMag, F2, muT, zeta;
   double a1 = constants[7];
   unsigned long iPoint;
   
@@ -3466,7 +3468,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  double distance, density, laminar_viscosity, beta_1;
+  double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -3523,7 +3525,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   
   unsigned long iPoint, jPoint, iVertex, total_index;
   unsigned short iDim, iVar;
-  double distance, density, laminar_viscosity, beta_1;
+  double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -3652,7 +3654,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   
   bool grid_movement  = config->GetGrid_Movement();
   
-  string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

@@ -24,7 +24,7 @@
 #pragma once
 
 #ifdef HAVE_MPI
-#include <mpi.h>
+  #include "mpi.h"
 #endif
 #include <ctime>
 
@@ -214,7 +214,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] vort_strength - Vector of vortex strengths.
  * \param[in] r_core - Vector of vortex core size.
  */
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core);
+void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
