@@ -1133,6 +1133,14 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   SANondimInputs->NondimensionalizeSource(nResidual, SANondimResidual);
   
+  // Need the individual terms of the NuHat Norm
+  double dNuHatDXBar = DNuhatDXj[0] / sqrt(SANondimInputs->SourceNondim);
+  double dNuHatDYBar = DNuhatDXj[1] / sqrt(SANondimInputs->SourceNondim);
+  double dUDXBar = DUiDXj[0][0] / SANondimInputs->OmegaNondim;
+  double dVDXBar = DUiDXj[1][0] / SANondimInputs->OmegaNondim;
+  double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
+  double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
+  
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;
   double* netInput = NULL;
@@ -1381,6 +1389,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     netInput[2] = SANondimInputs->OmegaBar;
     netInput[3] = SANondimInputs->NuHatGradNormBar;
     
+    
     // Predict using Nnet
     MLModel->Predict(netInput, netOutput);
     
@@ -1394,6 +1403,35 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       NondimResidual[i] = Residual[i];
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("source_all")==0){
+    nInputMLVariables = 8;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = dNuHatDXBar;
+    netInput[3] = dNuHatDYBar;
+    netInput[4] = dUDXBar;
+    netInput[5] = dUDYBar;
+    netInput[6] = dVDXBar;
+    netInput[7] = dVDYBar;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
   }else if (featureset.compare("fw_les_2")==0){
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
