@@ -321,18 +321,13 @@ public:
 
 	/*! 
 	 * \brief A virtual member.
-	 */
-	virtual void SetEsuP(void);
-
-	/*! 
-	 * \brief A virtual member.
 	 */	
-	virtual void SetPsuP(void);
+	virtual void SetPoint_Connectivity(void);
   
 	/*! 
 	 * \brief A virtual member.
 	 */		
-	virtual void SetEsuE(void);
+	virtual void SetElement_Connectivity(void);
 
 	/*! 
 	 * \brief A virtual member.
@@ -483,7 +478,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */	
-	virtual void SetPsuP(CGeometry *geometry);
+	virtual void SetPoint_Connectivity(CGeometry *geometry);
 
 	/*! 
 	 * \brief A virtual member.
@@ -908,25 +903,20 @@ public:
 	void SetPositive_ZArea(CConfig *config);
 
 	/*! 
-	 * \brief Set elements which surround a point.
-	 */
-	void SetEsuP(void);
-
-	/*! 
 	 * \brief Set points which surround a point.
 	 */
-	void SetPsuP(void);
+	void SetPoint_Connectivity(void);
 
 	/*!
 	 * \brief Function declaration to avoid partially overridden classes.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void SetPsuP(CGeometry *geometry);
+	void SetPoint_Connectivity(CGeometry *geometry);
 
 	/*! 
 	 * \brief Set elements which surround an element.
 	 */
-	void SetEsuE(void);
+	void SetElement_Connectivity(void);
 
 	/*! 
 	 * \brief Set the volume element associated to each boundary element.
@@ -1298,12 +1288,12 @@ public:
 	 * \brief Set points which surround a point.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */	
-	void SetPsuP(CGeometry *geometry);
+	void SetPoint_Connectivity(CGeometry *geometry);
 
 	/*! 
 	 * \brief Function declaration to avoid partially overridden classes.
 	 */	
-	void SetPsuP(void);
+	void SetPoint_Connectivity(void);
 
 	/*! 
 	 * \brief Set the edge structure of the agglomerated control volume.
@@ -1434,15 +1424,10 @@ public:
 	 */
 	void SetVertex(void);
   
-	/*!
-	 * \brief Store boundary elements that surround a point.
-	 */
-	void SetEsuP(void);
-  
   /*!
 	 * \brief Store boundary points which surround a point.
 	 */
-	void SetPsuP(void);
+	void SetPoint_Connectivity(void);
   
 	/*! 
 	 * \brief Compute the boundary geometrical structure.

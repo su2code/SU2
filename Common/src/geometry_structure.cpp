@@ -3696,20 +3696,6 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
 }
 
-void CPhysicalGeometry::SetEsuP(void) {
-  unsigned long iPoint, iElem;
-  unsigned short iNode;
-  
-  /*--- Loop over all the elements ---*/
-  for(iElem = 0; iElem < nElem; iElem++)
-  /*--- Loop over all the nodes of an element ---*/
-    for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
-      iPoint = elem[iElem]->GetNode(iNode);
-      /*--- Store the element into the point ---*/
-      node[iPoint]->SetElem(iElem);
-    }
-}
-
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   double *coord, dist2, dist;
@@ -3970,11 +3956,20 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::SetPsuP(void) {
+void CPhysicalGeometry::SetPoint_Connectivity(void) {
   
   unsigned short Node_Neighbor, iNode, iNeighbor;
   unsigned long jElem, Point_Neighbor, iPoint, iElem;
   
+  /*--- Loop over all the elements ---*/
+  for(iElem = 0; iElem < nElem; iElem++)
+  /*--- Loop over all the nodes of an element ---*/
+    for(iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      iPoint = elem[iElem]->GetNode(iNode);
+      /*--- Store the element into the point ---*/
+      node[iPoint]->SetElem(iElem);
+    }
+
   /*--- Loop over all the points ---*/
   
   for(iPoint = 0; iPoint < nPoint; iPoint++)
@@ -4011,7 +4006,7 @@ void CPhysicalGeometry::SetPsuP(void) {
   
 }
 
-void CPhysicalGeometry::SetEsuE(void) {
+void CPhysicalGeometry::SetElement_Connectivity(void) {
   unsigned short first_elem_face, second_elem_face, iFace, iNode, jElem;
   unsigned long face_point, Test_Elem, iElem;
   
@@ -7851,7 +7846,7 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
 
 
 
-void CMultiGridGeometry::SetPsuP(CGeometry *fine_grid) {
+void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
   unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint;
   unsigned short iChildren, iNode;
   
@@ -8881,9 +8876,10 @@ void CBoundaryGeometry::SetVertex(void) {
   }
 }
 
-void CBoundaryGeometry::SetEsuP(void) {
-  unsigned long iPoint, iElem;
-  unsigned short iNode, iMarker;
+void CBoundaryGeometry::SetPoint_Connectivity(void) {
+  
+  unsigned short Node_Neighbor, iNode, iNeighbor, iMarker, jMarker;
+  unsigned long jElem, Point_Neighbor, iPoint, iElem, iVertex, kElem;
   
   /*--- Loop over all of the markers ---*/
   
@@ -8904,13 +8900,7 @@ void CBoundaryGeometry::SetEsuP(void) {
       }
     }
   }
-}
 
-void CBoundaryGeometry::SetPsuP(void) {
-  
-  unsigned short Node_Neighbor, iNode, iNeighbor, iMarker, jMarker;
-  unsigned long jElem, Point_Neighbor, iPoint, iElem, iVertex, kElem;
-  
   /*--- Loop over all of the markers ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
