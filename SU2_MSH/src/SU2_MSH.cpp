@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 	
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
 	cout << "Setting local point and element connectivity." <<endl;
-	geometry->SetEsuP(); geometry->SetPsuP(); geometry->SetEsuE();
+	geometry->SetPoint_Connectivity(); geometry->SetElement_Connectivity();
 	
 	/*--- Check the orientation before computing geometrical quantities ---*/
 	cout << "Check numerical grid orientation." <<endl;
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
 		/*--- Smooth the numerical grid coordinates ---*/
 		if (config->GetSmoothNumGrid()) {
 			cout << "Preprocessing for doing the implicit smoothing." << endl;
-			geo_adapt->SetEsuP(); geo_adapt->SetPsuP(); geo_adapt->SetEsuE();
+			geo_adapt->SetPoint_Connectivity(); geo_adapt->SetElement_Connectivity();
 			geo_adapt->SetBoundVolume(); geo_adapt->Check_Orientation(config);
 			geo_adapt->SetEdges(); geo_adapt->SetVertex(config);
 			cout << "Implicit smoothing of the numerical grid coordinates." << endl;
