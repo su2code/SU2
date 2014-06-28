@@ -1836,8 +1836,8 @@ void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
     DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
                              / denom;
   }
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    DiffusionCoeff[iSpecies] = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    DiffusionCoeff[iSpecies] = 0.0;
 }
 
 
