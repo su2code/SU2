@@ -26,90 +26,47 @@
 unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  short nZone = 1;
-  bool isFound = false;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 5;
   char cstr[200];
   string::size_type position;
-  int rank = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  if (size != 1) {
-    unsigned short lastindex = val_mesh_filename.find_last_of(".");
-    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
-    val_mesh_filename = val_mesh_filename + "_1.su2";
-  }
-#endif
   
   /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+  
   switch (val_format) {
     case SU2:
       
       /*--- Open grid file ---*/
+      
       strcpy (cstr, val_mesh_filename.c_str());
       mesh_file.open(cstr, ios::in);
       if (mesh_file.fail()) {
         cout << "cstr=" << cstr << endl;
         cout << "There is no geometry file (GetnZone))!" << endl;
-
+        
 #ifndef HAVE_MPI
         exit(1);
 #else
-		MPI_Abort(MPI_COMM_WORLD,1);
-		MPI_Finalize();
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
 #endif
       }
       
-      /*--- Open the SU2 mesh file ---*/
-      while (getline (mesh_file,text_line)) {
+      /*--- Read the SU2 mesh file ---*/
+      
+      for (iLine = 0; iLine < nLine ; iLine++) {
+        
+        getline (mesh_file,text_line);
         
         /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
         position = text_line.find ("NZONE=",0);
         if (position != string::npos) {
-          text_line.erase (0,6); nZone = atoi(text_line.c_str()); isFound = true;
-          if (rank == MASTER_NODE) {
-            //					if (nZone == 1) cout << "SU2 mesh file format with a single zone." << endl;
-            //					else if (nZone >  1) cout << "SU2 mesh file format with " << nZone << " zones." << endl;
-            //					else
-            if (nZone <= 0) {
-              cout << "Error: Number of mesh zones is less than 1 !!!" << endl;
-#ifndef HAVE_MPI
-              exit(1);
-#else
-			  MPI_Abort(MPI_COMM_WORLD,1);
-			  MPI_Finalize();
-#endif
-            }
-          }
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
         }
       }
-      /*--- If the "NZONE" keyword was not found, assume this is an ordinary
-       simulation on a single Zone ---*/
-      if (!isFound) {
-        nZone = 1;
-        //			if (rank == MASTER_NODE) cout << "SU2 mesh file format with a single zone." << endl;
-      }
+      
       break;
       
-    case CGNS:
-      
-      nZone = 1;
-      //		if (rank == MASTER_NODE) cout << "CGNS mesh file format with a single zone." << endl;
-      break;
-      
-    case NETCDF_ASCII:
-      
-      nZone = 1;
-      //		if (rank == MASTER_NODE) cout << "NETCDF mesh file format with a single zone." << endl;
-      break;
-      
-  }
-  
-  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    nZone = config->GetnTimeInstances();
   }
   
   return (unsigned short) nZone;
@@ -120,37 +77,29 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
   short nDim = 3;
-  bool isFound = false;
+  unsigned short iLine, nLine = 5;
   char cstr[200];
   string::size_type position;
-  
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  if (size != 1) {
-    unsigned short lastindex = val_mesh_filename.find_last_of(".");
-    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
-    val_mesh_filename = val_mesh_filename + "_1.su2";
-  }
-#endif
   
   /*--- Open grid file ---*/
   
   strcpy (cstr, val_mesh_filename.c_str());
   mesh_file.open(cstr, ios::in);
-
+  
   switch (val_format) {
     case SU2:
       
       /*--- Read SU2 mesh file ---*/
       
-      while (getline (mesh_file,text_line)) {
+      for (iLine = 0; iLine < nLine ; iLine++) {
+        
+        getline (mesh_file,text_line);
         
         /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
         
         position = text_line.find ("NDIME=",0);
         if (position != string::npos) {
-          text_line.erase (0,6); nDim = atoi(text_line.c_str()); isFound = true;
+          text_line.erase (0,6); nDim = atoi(text_line.c_str());
         }
       }
       break;
@@ -204,24 +153,19 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
         /*--- Get the number of zones for this base. ---*/
         
         if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
-      
+        
       }
       
       nDim = cell_dim;
-
+      
 #endif
       
-      break;
-      
-    case NETCDF_ASCII:
-      nDim = 3;
-      printf("NETCDF_ASCII runder development, by default nDim = 3.");
       break;
       
   }
   
   mesh_file.close();
-
+  
   return (unsigned short) nDim;
 }
 
