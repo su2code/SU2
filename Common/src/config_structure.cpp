@@ -155,9 +155,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Adjoint type */
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
   
-  /* DESCRIPTION: Write extra output */
-  addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
-  
   /* DESCRIPTION: Physical governing equations */
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /* DESCRIPTION: Mathematical problem */
@@ -178,6 +175,92 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("RESTART_SOL", Restart, false);
   /* DESCRIPTION: Write a tecplot file for each partition */
   addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
+  
+  /* CONFIG_CATEGORY: Freestream Conditions */
+  /*--- Options related to freestream specification ---*/
+  
+  /* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
+  addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.87);
+  /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
+  addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
+  /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
+  addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
+  /* DESCRIPTION: Reynolds length (1 m by default) */
+  addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
+  /* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
+  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
+  /* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
+  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
+  /* DESCRIPTION: Value of the Bulk Modulus  */
+  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
+  /* DESCRIPTION: Artifical compressibility factor  */
+  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
+  /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
+  addDoubleOption("MACH_NUMBER", Mach, 0.0);
+  //	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
+  /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
+  addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
+  /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
+  addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
+  /* DESCRIPTION: Free-stream temperature (273.15 K by default) */
+  addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
+  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
+  default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  /* DESCRIPTION: Free-stream velocity (m/s) */
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+  /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
+  addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  /* DESCRIPTION:  */
+  addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
+  /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
+  addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
+  /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
+  addDoubleOption("AOA", AoA, 0.0);
+  /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
+  addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
+  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
+  addDoubleOption("TARGET_CL", Target_CL, 0.0);
+  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.1);
+  
+  
+  /* CONFIG_CATEGORY: Reference Conditions */
+  /*--- Options related to reference values for nondimensionalization ---*/
+  
+  Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
+  
+  /* DESCRIPTION: X Reference origin for moment computation */
+  addDoubleListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
+  /* DESCRIPTION: Y Reference origin for moment computation */
+  addDoubleListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
+  /* DESCRIPTION: Z Reference origin for moment computation */
+  addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
+  /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
+  addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
+  /* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
+  addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
+  /* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
+  addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
+  /* DESCRIPTION: Reference coefficient for detecting sharp edges */
+  addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
+	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
+  addDoubleOption("REF_PRESSURE", Pressure_Ref, 1.0);
+	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
+  addDoubleOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
+	/* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
+  addDoubleOption("REF_DENSITY", Density_Ref, 1.0);
+	/* DESCRIPTION: Reference velocity (incompressible only) */
+  addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
+	/* DESCRIPTION: Reference viscosity (incompressible only) */
+  addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
+  
   
   /* CONFIG_CATEGORY: Boundary Markers */
   /*--- Options related to various boundary markers ---*/
@@ -285,24 +368,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
   
   
-  /* CONFIG_CATEGORY: Grid adaptation */
-  /*--- Options related to grid adaptation ---*/
-  
-  /* DESCRIPTION: Kind of grid adaptation */
-  addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
-  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
-  /* DESCRIPTION: Scale factor for the dual volume */
-  addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
-  /* DESCRIPTION: Use analytical definition for surfaces */
-  addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
-  /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
-  addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
-  /* DESCRIPTION: Adapt the boundary elements */
-  addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
-  /* DESCRIPTION: Divide rectangles into triangles */
-  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
-  
   /* CONFIG_CATEGORY: Time-marching */
   /*--- Options related to time-marching ---*/
   
@@ -392,96 +457,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
-  
-  
-  /* CONFIG_CATEGORY: Dynamic mesh definition */
-  /*--- Options related to dynamic meshes ---*/
-  
-  /* DESCRIPTION: Mesh motion for unsteady simulations */
-  addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
-  /* DESCRIPTION: Type of mesh motion */
-  addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
-  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
-  addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
-  /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
-  addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
-  /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
-  /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
-  /* DESCRIPTION: Coordinates of the rigid motion origin */
-  addDoubleListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
-  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
-  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
-  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
-  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
-  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
-  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
-  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
-  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
-  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
-  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
-  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
-  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
-  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
-  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
-  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
-  addDoubleListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
-  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
-  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
-  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
-  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
-  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
-  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
-  addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
-  /* DESCRIPTION: Value to move motion origins (1 or 0) */
-  addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
-  /* DESCRIPTION:  */
-  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
-  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
-  addDoubleOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
-  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
-  addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
-  
-
-  /* CONFIG_CATEGORY: Wind Gust */
-  /*--- Options related to wind gust simulations ---*/
-  
-  /* DESCRIPTION: Apply a wind gust */
-  addBoolOption("WIND_GUST", Wind_Gust, false);
-  /* DESCRIPTION: Type of gust */
-  addEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, NO_GUST);
-  /* DESCRIPTION: Gust wavelenght (meters) */
-  addDoubleOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
-  /* DESCRIPTION: Number of gust periods */
-  addDoubleOption("GUST_PERIODS", Gust_Periods, 1.0);
-  /* DESCRIPTION: Gust amplitude (m/s) */
-  addDoubleOption("GUST_AMPL", Gust_Ampl, 0.0);
-  /* DESCRIPTION: Time at which to begin the gust (sec) */
-  addDoubleOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
-  /* DESCRIPTION: Location at which the gust begins (meters) */
-  addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
-  /* DESCRIPTION: Direction of the gust X or Y dir */
-  addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
   
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
@@ -796,6 +771,113 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
   addBoolOption("WRT_1D_OUTPUT", Wrt_1D_Output, false);
   
+  /* CONFIG_CATEGORY: Dynamic mesh definition */
+  /*--- Options related to dynamic meshes ---*/
+  
+  /* DESCRIPTION: Mesh motion for unsteady simulations */
+  addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
+  /* DESCRIPTION: Type of mesh motion */
+  addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
+  /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
+  addStringListOption("MARKER_MOVING", nMarker_Moving, Marker_Moving);
+  /* DESCRIPTION: Mach number (non-dimensional, based on the mesh velocity and freestream vals.) */
+  addDoubleOption("MACH_MOTION", Mach_Motion, 0.0);
+  /* DESCRIPTION: Coordinates of the rigid motion origin */
+  addDoubleListOption("MOTION_ORIGIN_X", nMotion_Origin_X, Motion_Origin_X);
+  /* DESCRIPTION: Coordinates of the rigid motion origin */
+  addDoubleListOption("MOTION_ORIGIN_Y", nMotion_Origin_Y, Motion_Origin_Y);
+  /* DESCRIPTION: Coordinates of the rigid motion origin */
+  addDoubleListOption("MOTION_ORIGIN_Z", nMotion_Origin_Z, Motion_Origin_Z);
+  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("TRANSLATION_RATE_X", nTranslation_Rate_X, Translation_Rate_X);
+  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("TRANSLATION_RATE_Y", nTranslation_Rate_Y, Translation_Rate_Y);
+  /* DESCRIPTION: Translational velocity vector (m/s) in the x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("TRANSLATION_RATE_Z", nTranslation_Rate_Z, Translation_Rate_Z);
+  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("ROTATION_RATE_X", nRotation_Rate_X, Rotation_Rate_X);
+  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("ROTATION_RATE_Y", nRotation_Rate_Y, Rotation_Rate_Y);
+  /* DESCRIPTION: Angular velocity vector (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("ROTATION_RATE_Z", nRotation_Rate_Z, Rotation_Rate_Z);
+  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_OMEGA_X", nPitching_Omega_X, Pitching_Omega_X);
+  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_OMEGA_Y", nPitching_Omega_Y, Pitching_Omega_Y);
+  /* DESCRIPTION: Pitching angular freq. (rad/s) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_OMEGA_Z", nPitching_Omega_Z, Pitching_Omega_Z);
+  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_AMPL_X", nPitching_Ampl_X, Pitching_Ampl_X);
+  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_AMPL_Y", nPitching_Ampl_Y, Pitching_Ampl_Y);
+  /* DESCRIPTION: Pitching amplitude (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_AMPL_Z", nPitching_Ampl_Z, Pitching_Ampl_Z);
+  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_PHASE_X", nPitching_Phase_X, Pitching_Phase_X);
+  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_PHASE_Y", nPitching_Phase_Y, Pitching_Phase_Y);
+  /* DESCRIPTION: Pitching phase offset (degrees) about x, y, & z axes (RIGID_MOTION only) */
+  addDoubleListOption("PITCHING_PHASE_Z", nPitching_Phase_Z, Pitching_Phase_Z);
+  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("PLUNGING_OMEGA_X", nPlunging_Omega_X, Plunging_Omega_X);
+  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("PLUNGING_OMEGA_Y", nPlunging_Omega_Y, Plunging_Omega_Y);
+  /* DESCRIPTION: Plunging angular freq. (rad/s) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("PLUNGING_OMEGA_Z", nPlunging_Omega_Z, Plunging_Omega_Z);
+  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("PLUNGING_AMPL_X", nPlunging_Ampl_X, Plunging_Ampl_X);
+  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
+  /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
+  addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  /* DESCRIPTION: Value to move motion origins (1 or 0) */
+  addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
+  /* DESCRIPTION:  */
+  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
+  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Plunge. */
+  addDoubleOption("FREQ_PLUNGE_AEROELASTIC", FreqPlungeAeroelastic, 100);
+  /* DESCRIPTION: Uncoupled Aeroelastic Frequency Pitch. */
+  addDoubleOption("FREQ_PITCH_AEROELASTIC", FreqPitchAeroelastic, 100);
+  
+  /* CONFIG_CATEGORY: Grid adaptation */
+  /*--- Options related to grid adaptation ---*/
+  
+  /* DESCRIPTION: Kind of grid adaptation */
+  addEnumOption("KIND_ADAPT", Kind_Adaptation, Adapt_Map, NO_ADAPT);
+  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
+  addDoubleOption("NEW_ELEMS", New_Elem_Adapt, -1.0);
+  /* DESCRIPTION: Scale factor for the dual volume */
+  addDoubleOption("DUALVOL_POWER", DualVol_Power, 0.5);
+  /* DESCRIPTION: Use analytical definition for surfaces */
+  addEnumOption("ANALYTICAL_SURFDEF", Analytical_Surface, Geo_Analytic_Map, NO_GEO_ANALYTIC);
+  /* DESCRIPTION: Before each computation, implicitly smooth the nodal coordinates */
+  addBoolOption("SMOOTH_GEOMETRY", SmoothNumGrid, false);
+  /* DESCRIPTION: Adapt the boundary elements */
+  addBoolOption("ADAPT_BOUNDARY", AdaptBoundary, true);
+  /* DESCRIPTION: Divide rectangles into triangles */
+  addBoolOption("DIVIDE_ELEMENTS", Divide_Element, false);
+  
+  /* CONFIG_CATEGORY: Wind Gust */
+  /*--- Options related to wind gust simulations ---*/
+  
+  /* DESCRIPTION: Apply a wind gust */
+  addBoolOption("WIND_GUST", Wind_Gust, false);
+  /* DESCRIPTION: Type of gust */
+  addEnumOption("GUST_TYPE", Gust_Type, Gust_Type_Map, NO_GUST);
+  /* DESCRIPTION: Gust wavelenght (meters) */
+  addDoubleOption("GUST_WAVELENGTH", Gust_WaveLength, 0.0);
+  /* DESCRIPTION: Number of gust periods */
+  addDoubleOption("GUST_PERIODS", Gust_Periods, 1.0);
+  /* DESCRIPTION: Gust amplitude (m/s) */
+  addDoubleOption("GUST_AMPL", Gust_Ampl, 0.0);
+  /* DESCRIPTION: Time at which to begin the gust (sec) */
+  addDoubleOption("GUST_BEGIN_TIME", Gust_Begin_Time, 0.0);
+  /* DESCRIPTION: Location at which the gust begins (meters) */
+  addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
+  /* DESCRIPTION: Direction of the gust X or Y dir */
+  addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
+  
+  
   /* CONFIG_CATEGORY: Equivalent Area */
   /*--- Options related to the equivalent area ---*/
   
@@ -804,90 +886,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
-  
-  /* CONFIG_CATEGORY: Freestream Conditions */
-  /*--- Options related to freestream specification ---*/
-  
-  /* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
-  addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.87);
-  /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
-  addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
-  /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
-  addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
-  /* DESCRIPTION: Reynolds length (1 m by default) */
-  addDoubleOption("REYNOLDS_LENGTH", Length_Reynolds, 1.0);
-  /* DESCRIPTION: Laminar Prandtl number (0.72 (air), only for compressible flows) */
-  addDoubleOption("PRANDTL_LAM", Prandtl_Lam, 0.72);
-  /* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
-  addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
-  /* DESCRIPTION: Value of the Bulk Modulus  */
-  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
-  /* DESCRIPTION: Artifical compressibility factor  */
-  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
-  /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
-  addDoubleOption("MACH_NUMBER", Mach, 0.0);
-  //	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
-  /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
-  addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
-  /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
-  addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
-  /* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-  addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
-  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
-  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
-  default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-  /* DESCRIPTION: Free-stream velocity (m/s) */
-  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
-  /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
-  addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
-  /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
-  /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
-  /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
-  /* DESCRIPTION:  */
-  addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
-  /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
-  addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
-  /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
-  addDoubleOption("AOA", AoA, 0.0);
-  /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
-  addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
-  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
-  addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Damping factor for fixed CL mode. */
-  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.1);
-  
-  /* CONFIG_CATEGORY: Reference Conditions */
-  /*--- Options related to reference values for nondimensionalization ---*/
-  
-  Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
-  
-  /* DESCRIPTION: X Reference origin for moment computation */
-  addDoubleListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
-  /* DESCRIPTION: Y Reference origin for moment computation */
-  addDoubleListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
-  /* DESCRIPTION: Z Reference origin for moment computation */
-  addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
-  /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
-  addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
-  /* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
-  addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
-  /* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
-  addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
-  /* DESCRIPTION: Reference coefficient for detecting sharp edges */
-  addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
-  addDoubleOption("REF_PRESSURE", Pressure_Ref, 1.0);
-	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
-  addDoubleOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
-	/* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
-  addDoubleOption("REF_DENSITY", Density_Ref, 1.0);
-	/* DESCRIPTION: Reference velocity (incompressible only) */
-  addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
-	/* DESCRIPTION: Reference viscosity (incompressible only) */
-  addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   
 	/* CONFIG_CATEGORY: Reacting Flow */
   /*--- Options related to the reacting gas mixtures ---*/
@@ -1020,6 +1018,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* CONFIG_CATEGORY: Unsupported options */
   /*--- Options that are experimental and not intended for general use ---*/
+  
+  /* DESCRIPTION: Write extra output */
+  addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
   
   /* DESCRIPTION: Location of the turb model itself */
   addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
@@ -2684,7 +2685,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nDomain = SINGLE_NODE;
 #else
   /*--- Identify the solvers that work in serial ---*/
-  if ((val_software != SU2_PRT) && (val_software != SU2_MSH))
+  if (val_software != SU2_MSH)
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
   else
     nDomain = SINGLE_NODE;
@@ -2701,9 +2702,9 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
   
-  Marker_All_TagBound        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
+  Marker_All_TagBound   = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
   Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
-  Marker_All_KindBC   = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
+  Marker_All_KindBC     = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
   Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
   Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
   Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
@@ -2711,7 +2712,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
   Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D   = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_Out_1D     = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
   
   unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,

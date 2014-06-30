@@ -181,13 +181,15 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
-    /*--- Compute elements surrounding points, points surrounding points,
-     and elements surrounding elements ---*/
+    /*--- Compute elements surrounding points, points surrounding points ---*/
     
-    if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
-    geometry[iZone][MESH_0]->SetEsuP();
-    geometry[iZone][MESH_0]->SetPsuP();
-    geometry[iZone][MESH_0]->SetEsuE();
+    if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
+    geometry[iZone][MESH_0]->SetPoint_Connectivity();
+    
+    /*--- Compute elements surrounding elements ---*/
+    
+    if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+    geometry[iZone][MESH_0]->SetElement_Connectivity();
     
     /*--- Check the orientation before computing geometrical quantities ---*/
     
@@ -252,7 +254,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
       
       /*--- Compute points surrounding points. ---*/
       
-      geometry[iZone][iMGlevel]->SetPsuP(geometry[iZone][iMGlevel-1]);
+      geometry[iZone][iMGlevel]->SetPoint_Connectivity(geometry[iZone][iMGlevel-1]);
       
       /*--- Create the edge structure ---*/
       

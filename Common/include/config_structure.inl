@@ -718,12 +718,12 @@ inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return 
 
 inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline unsigned short CConfig::GetTag_Marker_All(string val_tag) {
+inline short CConfig::GetTagBound_Marker_All(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
 		if (val_tag == Marker_All_TagBound[iMarker])
 		return iMarker; 
 	}
-	cout <<"Ups, I don't find the boundary: "<< val_tag << endl; return 0;
+	return -1;
 }
 
 inline unsigned short CConfig::GetMarker_All_KindBC(unsigned short val_marker) { return Marker_All_KindBC[val_marker]; }

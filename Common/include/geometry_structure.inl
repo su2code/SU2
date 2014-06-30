@@ -86,17 +86,15 @@ inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
 inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 
-inline void CGeometry::SetEsuP(void) { }
-
-inline void CGeometry::SetPsuP(void) { }
+inline void CGeometry::SetPoint_Connectivity(void) { }
 
 inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
 
-inline void CGeometry::SetPsuP(CGeometry *fine_grid) { }
+inline void CGeometry::SetPoint_Connectivity(CGeometry *fine_grid) { }
 
-inline void CGeometry::SetEsuE(void) { }
+inline void CGeometry::SetElement_Connectivity(void) { }
 
 inline unsigned long CGeometry::GetnPoint(void) { return nPoint; }
 
@@ -194,13 +192,13 @@ inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
 
-inline void CPhysicalGeometry::SetPsuP(CGeometry *geometry) { CGeometry::SetPsuP(geometry); } 
+inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
-inline void CMultiGridGeometry::SetPsuP(void) { CGeometry::SetPsuP(); }
+inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }
 
-inline long CDomainGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return Global_to_Local_Point[val_ipoint]; }
+inline long CPhysicalGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return Global_to_Local_Point[val_ipoint]; }
 
-inline unsigned short CDomainGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }
+inline unsigned short CPhysicalGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nPoint(void) { return Global_nPoint; }
 
