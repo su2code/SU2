@@ -112,8 +112,7 @@ int main(int argc, char *argv[]) {
   /*--- Compute elements surrounding points & points surrounding points ---*/
   
   if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
-  boundary->SetEsuP();
-	boundary->SetPsuP();
+	boundary->SetPoint_Connectivity();
   boundary->SetEdges();
 
 	/*--- Create the control volume structures ---*/
