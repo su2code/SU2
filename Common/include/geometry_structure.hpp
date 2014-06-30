@@ -822,6 +822,11 @@ public:
  */
 class CPhysicalGeometry : public CGeometry {
 
+  long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
+	unsigned long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
+	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
+
 public:
 
 	/*! 
@@ -840,11 +845,53 @@ public:
 	 * \param[in] val_nZone - Total number of domains in the grid file.
 	 */
 	CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone);
-
-	/*! 
+  
+  /*!
+	 * \overload
+	 * \brief Reads the geometry of the grid and adjust the boundary
+	 *        conditions with the configuration file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_mesh_filename - Name of the file with the grid information.
+	 * \param[in] val_format - Format of the file with the grid information.
+	 * \param[in] val_iZone - Domain to be read from the grid file.
+	 * \param[in] val_nZone - Total number of domains in the grid file.
+	 */
+  CPhysicalGeometry(CGeometry *geometry, CConfig *config);
+  
+	/*!
 	 * \brief Destructor of the class.
 	 */
 	~CPhysicalGeometry(void);
+  
+  /*!
+	 * \brief Set the send receive boundaries of the grid.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_domain - Number of domains for parallelization purposes.
+	 */
+	void SetSendReceive(CConfig *config);
+  
+  /*!
+	 * \brief Set the send receive boundaries of the grid.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_domain - Number of domains for parallelization purposes.
+	 */
+	void SetBoundaries(CConfig *config);
+  
+	/*!
+	 * \brief Get the local index that correspond with the global numbering index.
+	 * \param[in] val_ipoint - Global point.
+	 * \returns Local index that correspond with the global index.
+	 */
+	long GetGlobal_to_Local_Point(long val_ipoint);
+  
+	/*!
+	 * \brief Get the local marker that correspond with the global marker.
+	 * \param[in] val_ipoint - Global marker.
+	 * \returns Local marker that correspond with the global index.
+	 */
+	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
   
   /*!
 	 * \brief Reads the geometry of the grid and adjust the boundary
@@ -1493,78 +1540,6 @@ public:
 	 */
 	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
   
-};
-
-/*! 
- * \class CDomainGeometry
- * \brief Class for defining an especial kind of grid used in the partioning stage.
- * \author F. Palacios.
- * \version 3.2.0 "eagle"
- */
-class CDomainGeometry : public CGeometry {
-	long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
-	unsigned long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
-	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
-	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-
-public:
-
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_domain - Number of domains for parallelization purposes.	 
-	 */
-	CDomainGeometry(CGeometry *geometry, CConfig *config);
-
-	/*! 
-	 * \brief Destructor of the class.
-	 */
-	~CDomainGeometry(void);
-  
-	/*! 
-	 * \brief Set the send receive boundaries of the grid.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_domain - Number of domains for parallelization purposes.	 
-	 */
-	void SetSendReceive(CConfig *config);
-
-	/*! 
-	 * \brief Set the Tecplot file.
-	 * \param[in] config_filename - Name of the file where the Tecplot
-	 *            information is going to be stored.
-	 */
-	void SetTecPlot(char config_filename[MAX_STRING_SIZE]);
-
-	/*! 
-	 * \brief Write the .su2 file.
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetMeshFile(CConfig *config, string val_mesh_out_filename);
-
-  /*!
-	 * \brief Write the .su2 file.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_mesh_out_filename - Name of the output file.
-	 */
-	void SetBoundaries(CConfig *config);
-  
-	/*!
-	 * \brief Get the local index that correspond with the global numbering index.
-	 * \param[in] val_ipoint - Global point.
-	 * \returns Local index that correspond with the global index.
-	 */
-	long GetGlobal_to_Local_Point(long val_ipoint);
-
-	/*!
-	 * \brief Get the local marker that correspond with the global marker.
-	 * \param[in] val_ipoint - Global marker.
-	 * \returns Local marker that correspond with the global index.
-	 */
-	unsigned short GetGlobal_to_Local_Marker(unsigned short val_imarker);
-
 };
 
 /*! 
