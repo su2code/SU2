@@ -31,6 +31,16 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   char cstr[200];
   string::size_type position;
   
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  if (size != 1) {
+    unsigned short lastindex = val_mesh_filename.find_last_of(".");
+    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
+    val_mesh_filename = val_mesh_filename + "_1.su2";
+  }
+#endif
+  
   /*--- Search the mesh file for the 'NZONE' keyword. ---*/
   
   switch (val_format) {
@@ -80,6 +90,16 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   unsigned short iLine, nLine = 5;
   char cstr[200];
   string::size_type position;
+  
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  if (size != 1) {
+    unsigned short lastindex = val_mesh_filename.find_last_of(".");
+    val_mesh_filename = val_mesh_filename.substr(0, lastindex);
+    val_mesh_filename = val_mesh_filename + "_1.su2";
+  }
+#endif
   
   /*--- Open grid file ---*/
   
