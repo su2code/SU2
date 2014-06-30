@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    
+
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     surface_mov = new CSurfaceMovement();
     surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);
