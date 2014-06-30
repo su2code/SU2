@@ -1677,6 +1677,9 @@ CTNE2NSVariable::CTNE2NSVariable(unsigned short val_ndim,
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff  = new double[nSpecies];
+  Dij = new double*[nSpecies];
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Dij[iSpecies] = new double[nSpecies];
 }
 
 
@@ -1703,6 +1706,9 @@ CTNE2NSVariable::CTNE2NSVariable(double val_pressure, double *val_massfrac,
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff  = new double[nSpecies];
+  Dij = new double*[nSpecies];
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Dij[iSpecies] = new double[nSpecies];
 }
 
 CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
@@ -1720,124 +1726,200 @@ CTNE2NSVariable::CTNE2NSVariable(double *val_solution, unsigned short val_ndim,
 	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
 	Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff  = new double[nSpecies];
+  Dij = new double*[nSpecies];
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Dij[iSpecies] = new double[nSpecies];
 }
 
 CTNE2NSVariable::~CTNE2NSVariable(void) {
   delete [] DiffusionCoeff;
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    delete [] Dij[iSpecies];
+  delete [] Dij;
 }
 
 void CTNE2NSVariable::SetDiffusionCoeff(CConfig *config) {
-  unsigned short iSpecies, jSpecies, nHeavy, nEl;
-  double rho, T, Tve, P;
-  double *Ms, Mi, Mj, pi, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
-  double denom, d1_ij, D_ij;
+  
+  
+  unsigned short iSpecies, jSpecies;
+  double *Ms, Mi, Mj, M;
+  double rho, T;
+  double Xs[nSpecies], conc;
+  double denom;
   double ***Omega00, Omega_ij;
   
-  /*--- Acquire gas parameters from CConfig ---*/
-  Omega00 = config->GetCollisionIntegral00();
-  Ms      = config->GetMolar_Mass();
-  if (ionization) {nHeavy = nSpecies-1;  nEl = 1;}
-  else            {nHeavy = nSpecies;    nEl = 0;}
-  
   /*--- Rename for convenience ---*/
-  rho  = Primitive[RHO_INDEX];
-  T    = Primitive[T_INDEX];
-  Tve  = Primitive[TVE_INDEX];
-  P    = Primitive[P_INDEX];
-  pi   = PI_NUMBER;
-  Ru   = UNIVERSAL_GAS_CONSTANT;
-  kb   = BOLTZMANN_CONSTANT;
+  rho = Primitive[RHO_INDEX];
+  T   = Primitive[T_INDEX];
+  Ms  = config->GetMolar_Mass();
   
-  /*--- Calculate mixture gas constant ---*/
-  gam_t = 0.0;
+  /*--- Acquire collision integral information ---*/
+  Omega00 = config->GetCollisionIntegral00();
+  
+  /*--- Calculate species mole fraction ---*/
+  conc = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    gam_t += Primitive[RHOS_INDEX+iSpecies] / (rho*Ms[iSpecies]);
+    Xs[iSpecies] = Primitive[RHOS_INDEX+iSpecies]/Ms[iSpecies];
+    conc        += Xs[iSpecies];
   }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    Xs[iSpecies] = Xs[iSpecies]/conc;
   
-  /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
-  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-    
-    /*--- Initialize the species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = 0.0;
-    
-    /*--- Calculate molar concentration ---*/
-    Mi      = Ms[iSpecies];
-    gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
-    Theta_v = config->GetCharVibTemp(iSpecies);
-    
-    denom = 0.0;
-    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      if (jSpecies != iSpecies) {
-        Mj    = Ms[jSpecies];
-        gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
-        
-        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-        * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
-              + Omega00[iSpecies][jSpecies][1]*log(T)
-              + Omega00[iSpecies][jSpecies][2]);
-        
-        /*--- Calculate "delta1_ij" ---*/
-        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
-        
-        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-        D_ij = kb*T/(P*d1_ij);
-        denom += gam_j/D_ij;
-      }
-    }
-    
-    if (ionization) {
-      jSpecies = nSpecies-1;
-      Mj       = config->GetMolar_Mass(jSpecies);
-      gam_j    = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+  /*--- Calculate mixture molar mass (kg/mol) ---*/
+  // Note: Species molar masses stored as kg/kmol, need 1E-3 conversion
+  M = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    M += Ms[iSpecies]*Xs[iSpecies];
+  M = M*1E-3;
+  
+  /*--- Solve for binary diffusion coefficients ---*/
+  // Note: Dij = Dji, so only loop through req'd indices
+  // Note: Correlation requires kg/mol, hence 1E-3 conversion from kg/kmol
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Mi = Ms[iSpecies]*1E-3;
+    for (jSpecies = iSpecies; jSpecies < nSpecies; jSpecies++) {
+      Mj = Ms[jSpecies]*1E-3;
       
       /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-      Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-      * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
-            + Omega00[iSpecies][jSpecies][1]*log(Tve)
-            + Omega00[iSpecies][jSpecies][2]);
+      Omega_ij = 1E-20/PI_NUMBER * Omega00[iSpecies][jSpecies][3]
+               * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
+                     +  Omega00[iSpecies][jSpecies][1]*log(T)
+                     +  Omega00[iSpecies][jSpecies][2]);
       
-      /*--- Calculate "delta1_ij" ---*/
-      d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+      Dij[iSpecies][jSpecies] = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(rho*Omega_ij);
+      Dij[jSpecies][iSpecies] = 7.1613E-25*M*sqrt(T*(1/Mi+1/Mj))/(rho*Omega_ij);
     }
-    
-    /*--- Assign species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
   }
-  if (ionization) {
-    iSpecies = nSpecies-1;
-    /*--- Initialize the species diffusion coefficient ---*/
-    DiffusionCoeff[iSpecies] = 0.0;
-    
-    /*--- Calculate molar concentration ---*/
-    Mi      = Ms[iSpecies];
-    gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
-    
+  
+  /*--- Calculate species-mixture diffusion coefficient --*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     denom = 0.0;
-    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
-      if (iSpecies != jSpecies) {
-        Mj    = config->GetMolar_Mass(jSpecies);
-        gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
-        
-        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
-        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
-        * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
-              + Omega00[iSpecies][jSpecies][1]*log(Tve)
-              + Omega00[iSpecies][jSpecies][2]);
-        
-        /*--- Calculate "delta1_ij" ---*/
-        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
-        
-        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
-        D_ij = kb*Tve/(P*d1_ij);
-        denom += gam_j/D_ij;
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      if (jSpecies != iSpecies) {
+        denom += Xs[jSpecies]/Dij[iSpecies][jSpecies];
       }
     }
-    DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
-                             / denom;
+    DiffusionCoeff[iSpecies] = (1-Xs[iSpecies])/denom;
   }
+  
+  
 //  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    cout << "D[" << iSpecies << "]: " << DiffusionCoeff[iSpecies] << endl;
+//  cin.get();
+  
+  
+//  unsigned short iSpecies, jSpecies, nHeavy, nEl;
+//  double rho, T, Tve, P;
+//  double *Ms, Mi, Mj, pi, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
+//  double denom, d1_ij, D_ij;
+//  double ***Omega00, Omega_ij;
+//  
+//  /*--- Acquire gas parameters from CConfig ---*/
+//  Omega00 = config->GetCollisionIntegral00();
+//  Ms      = config->GetMolar_Mass();
+//  if (ionization) {nHeavy = nSpecies-1;  nEl = 1;}
+//  else            {nHeavy = nSpecies;    nEl = 0;}
+//  
+//  /*--- Rename for convenience ---*/
+//  rho  = Primitive[RHO_INDEX];
+//  T    = Primitive[T_INDEX];
+//  Tve  = Primitive[TVE_INDEX];
+//  P    = Primitive[P_INDEX];
+//  pi   = PI_NUMBER;
+//  Ru   = UNIVERSAL_GAS_CONSTANT;
+//  kb   = BOLTZMANN_CONSTANT;
+//  
+//  /*--- Calculate mixture gas constant ---*/
+//  gam_t = 0.0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//    gam_t += Primitive[RHOS_INDEX+iSpecies] / (rho*Ms[iSpecies]);
+//  }
+//  
+//  /*--- Mixture thermal conductivity via Gupta-Yos approximation ---*/
+//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+//    
+//    /*--- Initialize the species diffusion coefficient ---*/
 //    DiffusionCoeff[iSpecies] = 0.0;
+//    
+//    /*--- Calculate molar concentration ---*/
+//    Mi      = Ms[iSpecies];
+//    gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
+//    Theta_v = config->GetCharVibTemp(iSpecies);
+//    
+//    denom = 0.0;
+//    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+//      if (jSpecies != iSpecies) {
+//        Mj    = Ms[jSpecies];
+//        gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+//        
+//        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+//        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
+//        * pow(T, Omega00[iSpecies][jSpecies][0]*log(T)*log(T)
+//              + Omega00[iSpecies][jSpecies][1]*log(T)
+//              + Omega00[iSpecies][jSpecies][2]);
+//        
+//        /*--- Calculate "delta1_ij" ---*/
+//        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*T*(Mi+Mj))) * Omega_ij;
+//        
+//        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+//        D_ij = kb*T/(P*d1_ij);
+//        denom += gam_j/D_ij;
+//      }
+//    }
+//    
+//    if (ionization) {
+//      jSpecies = nSpecies-1;
+//      Mj       = config->GetMolar_Mass(jSpecies);
+//      gam_j    = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+//      
+//      /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+//      Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
+//      * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
+//            + Omega00[iSpecies][jSpecies][1]*log(Tve)
+//            + Omega00[iSpecies][jSpecies][2]);
+//      
+//      /*--- Calculate "delta1_ij" ---*/
+//      d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+//    }
+//    
+//    /*--- Assign species diffusion coefficient ---*/
+//    DiffusionCoeff[iSpecies] = gam_t*gam_t*Mi*(1-Mi*gam_i) / denom;
+//  }
+//  if (ionization) {
+//    iSpecies = nSpecies-1;
+//    /*--- Initialize the species diffusion coefficient ---*/
+//    DiffusionCoeff[iSpecies] = 0.0;
+//    
+//    /*--- Calculate molar concentration ---*/
+//    Mi      = Ms[iSpecies];
+//    gam_i   = Primitive[RHOS_INDEX+iSpecies] / (rho*Mi);
+//    
+//    denom = 0.0;
+//    for (jSpecies = 0; jSpecies < nHeavy; jSpecies++) {
+//      if (iSpecies != jSpecies) {
+//        Mj    = config->GetMolar_Mass(jSpecies);
+//        gam_j = Primitive[RHOS_INDEX+iSpecies] / (rho*Mj);
+//        
+//        /*--- Calculate the Omega^(0,0)_ij collision cross section ---*/
+//        Omega_ij = 1E-20 * Omega00[iSpecies][jSpecies][3]
+//        * pow(Tve, Omega00[iSpecies][jSpecies][0]*log(Tve)*log(Tve)
+//              + Omega00[iSpecies][jSpecies][1]*log(Tve)
+//              + Omega00[iSpecies][jSpecies][2]);
+//        
+//        /*--- Calculate "delta1_ij" ---*/
+//        d1_ij = 8.0/3.0 * sqrt((2.0*Mi*Mj) / (pi*Ru*Tve*(Mi+Mj))) * Omega_ij;
+//        
+//        /*--- Calculate heavy-particle binary diffusion coefficient ---*/
+//        D_ij = kb*Tve/(P*d1_ij);
+//        denom += gam_j/D_ij;
+//      }
+//    }
+//    DiffusionCoeff[iSpecies] = gam_t*gam_t*Ms[iSpecies]*(1-Ms[iSpecies]*gam_i)
+//                             / denom;
+//  }
+////  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+////    DiffusionCoeff[iSpecies] = 0.0;
+  
 }
 
 

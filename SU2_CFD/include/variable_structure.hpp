@@ -3487,6 +3487,7 @@ private:
 	double Viscosity_Ref;     /*!< \brief Reference viscosity of the fluid. */
 	double Viscosity_Inf;     /*!< \brief Viscosity of the fluid at the infinity. */
   double *DiffusionCoeff;    /*!< \brief Diffusion coefficient of the mixture. */
+  double **Dij;             /*!< \brief Binary diffusion coefficients. */
 	double LaminarViscosity;	/*!< \brief Viscosity of the fluid. */
   double ThermalCond;       /*!< \brief T-R thermal conductivity of the gas mixture. */
   double ThermalCond_ve;    /*!< \brief V-E thermal conductivity of the gas mixture. */
