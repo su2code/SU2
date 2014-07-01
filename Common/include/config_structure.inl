@@ -136,7 +136,7 @@ inline double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 
 inline double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
-inline double CConfig::GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff) { return Blottner[val_Species][val_Coeff]; }
+inline double **CConfig::GetBlottnerCoeff() { return Blottner; }
 
 inline double CConfig::GetPnormHeat(void) { return pnorm_heat; }
 
@@ -307,6 +307,8 @@ inline bool CConfig::GetIonization(void) { return ionization; }
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
+
+inline unsigned short CConfig::GetKind_TransCoeffModel(void) { return Kind_TransCoeffModel; }
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 

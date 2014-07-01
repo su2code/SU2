@@ -249,6 +249,7 @@ private:
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
 	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
+  Kind_TransCoeffModel, /*!< \brief Transport coefficient Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
@@ -1215,11 +1216,9 @@ public:
 
 	/*!
 	 * \brief Get the coefficients of the Blottner viscosity model
-	 * \param[in] val_Species - Index of the species
-	 * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
 	 * \return Value of the Blottner coefficient
 	 */
-	double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+	double **GetBlottnerCoeff(void);
   
   /*!
 	 * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
@@ -2129,6 +2128,12 @@ public:
 	 * \return Gas model that we are using.
 	 */		
 	unsigned short GetKind_GasModel(void);
+
+  /*!
+	 * \brief Get the transport coefficient model.
+	 * \return Index of transport coefficient model.
+	 */
+	unsigned short GetKind_TransCoeffModel(void);
   
   /*!
 	 * \brief Gas model that we are using.

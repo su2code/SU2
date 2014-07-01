@@ -300,7 +300,7 @@ static const map<string, ENUM_SPACE> Space_Map = CCreateMap<string, ENUM_SPACE>
 ("SPACE_UPWIND", SPACE_UPWIND);
 
 /*!
- * \brief types of spatial discretizations
+ * \brief types of gas models
  */
 enum ENUM_GASMODEL {
 	NO_MODEL = 0, /*!< \brief _____. */
@@ -324,6 +324,17 @@ static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_G
 ("AIR-5", AIR5)
 ("ARGON-SID",ARGON_SID)
 ("ONESPECIES", ONESPECIES);
+
+/*!
+ * \brief types of gas models
+ */
+enum ENUM_TRANSCOEFFMODEL {
+  WBE      = 0,
+	GUPTAYOS = 1
+};
+static const map<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = CCreateMap<string, ENUM_TRANSCOEFFMODEL>
+("WBE", WBE)
+("GUPTA-YOS", GUPTAYOS);
 
 /*!
  * \brief types of spatial discretizations

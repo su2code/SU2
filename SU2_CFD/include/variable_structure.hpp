@@ -3550,23 +3550,28 @@ public:
   /*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetDiffusionCoeff(CConfig *config);
+	void SetDiffusionCoeff_GuptaYos(CConfig *config);
   
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity(CConfig *config);
+	void SetLaminarViscosity_GuptaYos(CConfig *config);
   
   /*!
 	 * \brief Get the laminar viscosity of the flow.
 	 * \return Value of the laminar viscosity of the flow.
 	 */
-	void SetThermalConductivity(CConfig *config);
+	void SetThermalConductivity_GuptaYos(CConfig *config);
   
 	/*!
 	 * \brief Set the vorticity value.
 	 */
 	void SetVorticity(void);
+  
+  /*!
+   * \brief Set the transport coefficients for the Wilke/Blottner/Eucken model
+   */
+  void SetTransportCoefficients_WBE(CConfig *config);
   
   /*!
 	 * \brief Get the species diffusion coefficient.

@@ -894,8 +894,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* CONFIG_CATEGORY: Reacting Flow */
   
 	/* DESCRIPTION: Specify chemical model for multi-species simulations */
-	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "ARGON");
-	/* DESCRIPTION:  */
+	AddEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, "N2");
+  /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
+  AddEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, "WBE");
+	/* DESCRIPTION: Specify mass fraction of each species */
 	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
   
 	/*--- Options related to free surface simulation ---*/
@@ -1993,6 +1995,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             Reactions[iRxn][ii] = new int[6];
         }
         
+        Blottner  = new double*[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          Blottner[iSpecies] = new double[3];
+        
         // Omega[iSpecies][jSpecies][iCoeff]
         Omega00 = new double**[nSpecies];
         Omega11 = new double**[nSpecies];
@@ -2031,11 +2037,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         // J/kg - from Scalabrin
         Enthalpy_Formation[0] = 0.0;					//N2
         Enthalpy_Formation[1] = 3.36E7;		//N
-//        Enthalpy_Formation[1] = 472.683E3;		//N
         
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
         Ref_Temperature[1] = 0.0;
+        
+        // Blottner viscosity coefficients
+        // A                        // B                        // C
+        Blottner[0][0] = 2.68E-2;   Blottner[0][1] = 3.18E-1;   Blottner[0][2] = -1.13E1;  // N2
+        Blottner[1][0] = 1.16E-2;   Blottner[1][1] = 6.03E-1;   Blottner[1][2] = -1.24E1;  // N
         
         // Number of electron states
         nElStates[0] = 15;                    // N2
@@ -4663,6 +4673,8 @@ unsigned short CConfig::GetMarker_Config_PerBound(string val_marker) {
 
 CConfig::~CConfig(void)
 {
+  unsigned short ii, iReaction, iSpecies;
+  
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
@@ -4677,17 +4689,16 @@ CConfig::~CConfig(void)
   if (ArrheniusTheta       != NULL) delete [] ArrheniusTheta;
   if (CharVibTemp          != NULL) delete [] CharVibTemp;
   if (CharElTemp           != NULL) {
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete[] CharElTemp[iSpecies];
     delete [] CharElTemp;
   }
-  if (degen                != NULL) {
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+  if (degen != NULL) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete[] degen[iSpecies];
     delete [] degen;
   }
-  unsigned short ii, iReaction;
-  if (Reactions            != NULL) {
+  if (Reactions != NULL) {
     for (iReaction = 0; iReaction < nReactions; iReaction++) {
       for (ii = 0; ii < 2; ii++) {
         delete [] Reactions[iReaction][ii];
@@ -4695,6 +4706,11 @@ CConfig::~CConfig(void)
       delete[] Reactions[iReaction];
     }
     delete [] Reactions;
+  }
+  if (Blottner != NULL) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      delete [] Blottner[iSpecies];
+    delete [] Blottner;
   }
   
   /*--- Free memory for Aeroelastic problems. ---*/
