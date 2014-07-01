@@ -2140,21 +2140,21 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       GradV_j = node[jPoint]->GetGradient_Primitive();
       if (limiter) {
         
-        lim_ij = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          lim_ij += (0.5*(GradV_i[P_INDEX][iDim]+GradV_j[P_INDEX][iDim]))*
-                    (0.5*(GradV_i[P_INDEX][iDim]+GradV_j[P_INDEX][iDim]));
-        lim_ij = sqrt(lim_ij);
-        lim_ij = exp(-lim_ij/1E3);
-//        Limiter_i = node[iPoint]->GetLimiter();
-//        Limiter_j = node[jPoint]->GetLimiter();
-//        lim_i = 1.0;
-//        lim_j = 1.0;
-//        for (iVar = 0; iVar < nVar; iVar++) {
-//          if (lim_i > Limiter_i[iVar]) lim_i = Limiter_i[iVar];
-//          if (lim_j > Limiter_j[iVar]) lim_j = Limiter_j[iVar];
-//        }
-//        lim_ij = min(lim_i, lim_j);
+//        lim_ij = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          lim_ij += (0.5*(GradV_i[P_INDEX][iDim]+GradV_j[P_INDEX][iDim]))*
+//                    (0.5*(GradV_i[P_INDEX][iDim]+GradV_j[P_INDEX][iDim]));
+//        lim_ij = sqrt(lim_ij);
+//        lim_ij = exp(-lim_ij/1E3);
+        Limiter_i = node[iPoint]->GetLimiter();
+        Limiter_j = node[jPoint]->GetLimiter();
+        lim_i = 1.0;
+        lim_j = 1.0;
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (lim_i > Limiter_i[iVar]) lim_i = Limiter_i[iVar];
+          if (lim_j > Limiter_j[iVar]) lim_j = Limiter_j[iVar];
+        }
+        lim_ij = min(lim_i, lim_j);
       }
       
       /*--- Reconstruct conserved variables at the edge interface ---*/
