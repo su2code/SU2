@@ -141,6 +141,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
             HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
             SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
+            break;
         }
       }
     }
@@ -402,7 +403,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             break;
           case TNE2_NAVIER_STOKES:
             SkinFrictionCoeff = Buffer_Recv_SkinFriction[Total_Index];
-            SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+            SurfFlow_file << scientific << SkinFrictionCoeff << ", ";
             HeatFlux = Buffer_Recv_HeatTransfer[Total_Index];
             SurfFlow_file << scientific << HeatFlux << endl;
             break;

@@ -2167,6 +2167,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         if (limiter) {
           Conserved_i[iVar] = U_i[iVar] + lim_ij*ProjGradU_i;
           Conserved_j[iVar] = U_j[iVar] + lim_ij*ProjGradU_j;
+//          Conserved_i[iVar] = U_i[iVar] + Limiter_i[iVar]*ProjGradU_i;
+//          Conserved_j[iVar] = U_j[iVar] + Limiter_j[iVar]*ProjGradU_i;
         }
         else {
           Conserved_i[iVar] = U_i[iVar] + ProjGradU_i;
