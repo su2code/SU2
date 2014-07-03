@@ -1933,7 +1933,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Upwind second order reconstruction ---*/
   
-  if ((second_order) && ((iMesh == MESH_0) || low_fidelity)) {
+  if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity)) {
     
     /*--- Gradient computation ---*/
     
