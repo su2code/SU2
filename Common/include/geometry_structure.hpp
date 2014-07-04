@@ -314,7 +314,13 @@ public:
 	 */	
 	virtual void SetPoint_Connectivity(void);
   
-	/*! 
+  /*!
+	 * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetRCM_Ordering(CConfig *config);
+  
+	/*!
 	 * \brief A virtual member.
 	 */		
 	virtual void SetElement_Connectivity(void);
@@ -943,7 +949,13 @@ public:
 	 * \brief Set points which surround a point.
 	 */
 	void SetPoint_Connectivity(void);
-
+  
+  /*!
+	 * \brief Set a renumbering using a Reverse Cuthill-McKee Algorithm
+   * \param[in] config - Definition of the particular problem.
+	 */
+	void SetRCM_Ordering(CConfig *config);
+  
 	/*!
 	 * \brief Function declaration to avoid partially overridden classes.
 	 * \param[in] geometry - Geometrical definition of the problem.

@@ -5586,6 +5586,183 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
   
 }
 
+void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
+  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem;
+  vector<unsigned long> Queue, AuxQueue, Result;
+  unsigned short Degree, MinDegree, iNode, jNode, iDim, iMarker;
+  bool *inQueue;
+  
+  inQueue = new bool [nPoint];
+  
+  for(iPoint = 0; iPoint < nPoint; iPoint++)
+    inQueue[iPoint] = false;
+  
+  /*--- Select the node with the lowest degree in the grid. ---*/
+  
+  MinDegree = node[0]->GetnNeighbor(); AddPoint = 0;
+  for(iPoint = 1; iPoint < nPointDomain; iPoint++) {
+    Degree = node[iPoint]->GetnPoint();
+    if (Degree < MinDegree) { MinDegree = Degree; AddPoint = iPoint; }
+  }
+  
+  /*--- Add the node in the first free position. ---*/
+  
+  Result.push_back(AddPoint); inQueue[AddPoint] = true;
+  
+  /*--- Loop until reorganize all the nodes ---*/
+  
+  do {
+    
+    /*--- Add to the queue all the nodes adjacent in the increasing
+     order of their degree, checking if the element is already
+     in the Queue. ---*/
+    
+    AuxQueue.clear();
+    for (iNode = 0; iNode < node[AddPoint]->GetnPoint(); iNode++) {
+      AdjPoint = node[AddPoint]->GetPoint(iNode);
+      if ((!inQueue[AdjPoint]) && (AdjPoint < nPointDomain)) {
+        AuxQueue.push_back(AdjPoint);
+      }
+    }
+    
+    /*--- Sort the auxiliar queue based on the number of neighbors ---*/
+    
+    for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
+      for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
+        if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
+          AuxPoint = AuxQueue[jNode];
+          AuxQueue[jNode] = AuxQueue[jNode+1];
+          AuxQueue[jNode+1] = AuxPoint;
+        }
+      }
+    }
+    
+    Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
+    for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
+      inQueue[AuxQueue[iNode]] = true;
+    }
+    
+    /*--- Extract the first node from the queue and add it in the first free
+     position. ---*/
+    
+    AddPoint = Queue[0];
+    Result.push_back(Queue[0]);
+    Queue.erase (Queue.begin(), Queue.begin()+1);
+    
+    /*--- Add to the queue all the nodes adjacent in the increasing
+     order of their degree, checking if the element is already
+     in the Queue. ---*/
+    
+  } while (Queue.size() != 0);
+  
+  /*--- Check that all the points have been added ---*/
+  
+  for(iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    if (inQueue[iPoint] == false) Result.push_back(iPoint);
+  }
+  
+  delete[] inQueue;
+  
+  reverse(Result.begin(), Result.end());
+  
+  /*--- Add the MPI points ---*/
+  
+  for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    Result.push_back(iPoint);
+  }
+  
+  /*--- Reset old data structures ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->ResetElem();
+    node[iPoint]->ResetPoint();
+    node[iPoint]->ResetBoundary();
+    node[iPoint]->SetPhysicalBoundary(false);
+    node[iPoint]->SetSolidBoundary(false);
+    node[iPoint]->SetDomain(true);
+  }
+  
+  /*--- Set the new coordinates ---*/
+  
+  double **AuxCoord;
+  unsigned long *AuxGlobalIndex;
+  
+  AuxGlobalIndex = new unsigned long [nPoint];
+  AuxCoord = new double* [nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    AuxCoord[iPoint] = new double [nDim];
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    AuxGlobalIndex[iPoint] = node[iPoint]->GetGlobalIndex();
+    for (iDim = 0; iDim < nDim; iDim++) {
+      AuxCoord[iPoint][iDim] = node[iPoint]->GetCoord(iDim);
+    }
+  }
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->SetGlobalIndex(AuxGlobalIndex[Result[iPoint]]);
+    for (iDim = 0; iDim < nDim; iDim++)
+      node[iPoint]->SetCoord(iDim, AuxCoord[Result[iPoint]][iDim]);
+  }
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    delete[] AuxCoord[iPoint];
+  delete[] AuxCoord;
+  delete[] AuxGlobalIndex;
+  
+  /*--- Set the new conectivities ---*/
+  
+  unsigned long *InvResult;
+  InvResult = new unsigned long [nPoint];
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    InvResult[Result[iPoint]] = iPoint;
+  
+  for(iElem = 0; iElem < nElem; iElem++) {
+    for (iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
+      iPoint = elem[iElem]->GetNode(iNode);
+      elem[iElem]->SetNode(iNode, InvResult[iPoint]);
+    }
+  }
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
+      
+      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+      if (Marker_Tag == "SEND_RECEIVE") {
+        for (unsigned long iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+          if (config->GetMarker_All_SendRecv(iMarker) < 0)
+            node[bound[iMarker][iElem_Bound]->GetNode(0)]->SetDomain(false);
+        }
+      }
+      
+      for (iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+        iPoint = bound[iMarker][iElem]->GetNode(iNode);
+        bound[iMarker][iElem]->SetNode(iNode, InvResult[iPoint]);
+        node[InvResult[iPoint]]->SetBoundary(nMarker);
+        if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+            config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+          node[InvResult[iPoint]]->SetPhysicalBoundary(true);
+        
+        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
+            config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
+            config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
+          node[InvResult[iPoint]]->SetSolidBoundary(true);
+      }
+    }
+  }
+  
+  
+  delete[] InvResult;
+  
+  /*--- MPI Synchronization point ---*/
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
+}
+
 void CPhysicalGeometry::SetElement_Connectivity(void) {
   unsigned short first_elem_face, second_elem_face, iFace, iNode, jElem;
   unsigned long face_point, Test_Elem, iElem;

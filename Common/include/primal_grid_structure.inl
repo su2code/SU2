@@ -44,9 +44,13 @@ inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
 inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
+inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline void CVertexMPI::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
 inline unsigned short CVertexMPI::GetVTK_Type(void) { return VTK_Type; }
 
@@ -78,6 +82,8 @@ inline unsigned short CLine::GetnNeighbor_Nodes(unsigned short val_node) { retur
 
 inline unsigned long CLine::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
+inline void CLine::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+
 inline unsigned short CLine::GetnNodes(void) { return nNodes; }
 
 inline unsigned short CLine::GetnFaces(void) { return nFaces; }
@@ -101,6 +107,8 @@ inline unsigned short CTriangle::GetnNodesFace(unsigned short val_face) { return
 inline unsigned short CTriangle::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
 
 inline unsigned long CTriangle::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline void CTriangle::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
 inline unsigned short CTriangle::GetnNodes(void) { return nNodes; }
 
@@ -126,6 +134,8 @@ inline unsigned short CRectangle::GetnNeighbor_Nodes(unsigned short val_node) { 
 
 inline unsigned long CRectangle::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
+inline void CRectangle::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+
 inline unsigned short CRectangle::GetnNodes(void) { return nNodes; }
 
 inline unsigned short CRectangle::GetnFaces(void) { return nFaces; }
@@ -150,6 +160,8 @@ inline unsigned short CTetrahedron::GetnNeighbor_Nodes(unsigned short val_node) 
 
 inline unsigned long CTetrahedron::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
+inline void CTetrahedron::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+
 inline unsigned short CTetrahedron::GetnNodes(void) { return nNodes; }
 
 inline unsigned short CTetrahedron::GetnFaces(void) { return nFaces; }
@@ -169,6 +181,8 @@ inline unsigned short CHexahedron::GetnNodesFace(unsigned short val_face) { retu
 inline unsigned short CHexahedron::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
 
 inline unsigned long CHexahedron::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline void CHexahedron::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
 inline unsigned short CHexahedron::GetnNodes(void) { return nNodes; }
 
@@ -190,6 +204,8 @@ inline unsigned short CWedge::GetnNeighbor_Nodes(unsigned short val_node) { retu
 
 inline unsigned long CWedge::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
+inline void CWedge::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+
 inline unsigned short CWedge::GetnNodes(void) { return nNodes; }
 
 inline unsigned short CWedge::GetnFaces(void) { return nFaces; }
@@ -209,6 +225,8 @@ inline unsigned short CPyramid::GetnNodesFace(unsigned short val_face) { return 
 inline unsigned short CPyramid::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
 
 inline unsigned long CPyramid::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline void CPyramid::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
 inline unsigned short CPyramid::GetnNodes(void) { return nNodes; }
 
