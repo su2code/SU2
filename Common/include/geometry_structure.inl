@@ -88,6 +88,8 @@ inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 
 inline void CGeometry::SetPoint_Connectivity(void) { }
 
+inline void CGeometry::SetRCM_Ordering(CConfig *config) { }
+
 inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
