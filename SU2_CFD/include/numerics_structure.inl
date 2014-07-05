@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -415,8 +415,6 @@ inline double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction
 inline double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
 
 inline double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
-
-inline double* CSource_Magnet::GetMagneticField() { return Current_Density; }
 
 inline double CNumerics::GetElec_CondIntegral() {return 0;}
 

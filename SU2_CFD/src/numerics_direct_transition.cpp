@@ -2,7 +2,7 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -351,10 +351,10 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	double rey_tc, flen, re_v, strain, f_onset1,f_onset2,f_onset3,f_onset,f_turb,tu;
   
 	double prod, des;
-	double f_lambda, re_theta, rey, re_theta_lim, r_t, mach;
+	double f_lambda, re_theta = 0.0, rey, re_theta_lim, r_t, mach;
 	double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale, var1, f_theta;
 	double f_reattach;
-	double dU_dx, dU_dy, dU_dz;
+	double dU_dx, dU_dy, dU_dz = 0.0;
   
 	//SU2_CPP2C COMMENT START
   double val_residuald[2], TransVar_id[2];
@@ -544,11 +544,11 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
   double rey_tcd, f_onset1d, f_onset2d, f_onsetd;
   double prod, des;
   double prodd, desd;
-  double f_lambda, re_theta, rey, re_theta_lim, r_t, mach;
+  double f_lambda, re_theta = 0.0, rey, re_theta_lim, r_t, mach;
   double Velocity_Mag = 0.0, du_ds, theta, lambda, time_scale,
   var1, f_theta;
   double var1d, f_thetad;
-  double dU_dx, dU_dy, dU_dz;
+  double dU_dx, dU_dy, dU_dz = 0.0;
   double result1;
   double result1d;
   double arg1;

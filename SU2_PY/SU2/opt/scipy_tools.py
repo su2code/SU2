@@ -3,7 +3,7 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.1 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -97,7 +97,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           bounds         = xb             ,
                           iter           = its            ,
                           iprint         = 1              ,
-                          full_output    = 1              ,
+                          full_output    = 2              ,
                           acc            = 1e-10          ,
                           epsilon        = 1.0e-06         )
     

@@ -2,7 +2,7 @@
  * \file variable_direct_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -29,8 +29,8 @@ CTurbVariable::CTurbVariable(void) : CVariable() {
   
 }
 
-CTurbVariable::CTurbVariable(unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_ndim, val_nvar, config) {
+CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
   
   unsigned short iVar;
 
@@ -70,8 +70,8 @@ void CTurbVariable::SetmuT(double val_muT){ muT = val_muT; }
 
 CTurbSAVariable::CTurbSAVariable(void) : CTurbVariable() { }
 
-CTurbSAVariable::CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_ndim, val_nvar, config) {
+CTurbSAVariable::CTurbSAVariable(double val_nu_tilde, double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CTurbVariable(val_nDim, val_nvar, config) {
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -98,8 +98,8 @@ CTurbSAVariable::~CTurbSAVariable(void) {
 
 CTurbMLVariable::CTurbMLVariable(void) : CTurbVariable() { }
 
-CTurbMLVariable::CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_ndim, val_nvar, config) {
+CTurbMLVariable::CTurbMLVariable(double val_nu_tilde, double val_muT, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CTurbVariable(val_nDim, val_nvar, config) {
   
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -126,9 +126,9 @@ CTurbMLVariable::~CTurbMLVariable(void) {
 
 CTurbSSTVariable::CTurbSSTVariable(void) : CTurbVariable() { }
 
-CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val_muT, unsigned short val_ndim, unsigned short val_nvar,
+CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val_muT, unsigned short val_nDim, unsigned short val_nvar,
                                    double *constants, CConfig *config)
-: CTurbVariable(val_ndim, val_nvar,config) {
+: CTurbVariable(val_nDim, val_nvar,config) {
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));

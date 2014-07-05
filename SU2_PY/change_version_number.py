@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Aniket Aranake
-#  \version 3.0.1 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #

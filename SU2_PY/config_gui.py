@@ -3,7 +3,7 @@
 ## \file config_gui.py
 #  \brief _____________.
 #  \author Aniket Aranake
-#  \version 3.0.1 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #

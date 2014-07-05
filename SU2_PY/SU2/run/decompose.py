@@ -1,7 +1,7 @@
 ## \file decompose.py
 #  \brief python package for decomposing meshes
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.1 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -25,7 +25,7 @@
 
 import os, sys, shutil, copy
 from .. import io  as su2io
-from interface import DDC as SU2_DDC
+from interface import PRT as SU2_PRT
 
 # ----------------------------------------------------------------------
 #  Decompose Mesh
@@ -35,7 +35,7 @@ def decompose( config ):
     """ info = SU2.run.decompose(config)
         
         Decomposes mesh with:
-            SU2.run.DDC()
+            SU2.run.PRT()
             
         Assumptions:
             config.NUMBER_PART is set
@@ -63,7 +63,7 @@ def decompose( config ):
         return su2io.State()
     
     # Run Decomposition
-    SU2_DDC(konfig)
+    SU2_PRT(konfig)
     
     # update config super copy
     config['DECOMPOSED'] = True

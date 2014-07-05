@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -300,6 +300,22 @@ inline double CSolver::GetOneD_T(void){return 0;}
 
 inline void CSolver::SetOneD_T(double AverageTemperature){ }
 
+inline double CSolver::GetOneD_fluxavgP(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgP(double PressureRef){ }
+
+inline double CSolver::GetOneD_fluxavgRho(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgRho(double DensityRef){ }
+
+inline double CSolver::GetOneD_fluxavgU(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgU(double VelocityRef){ }
+
+inline double CSolver::GetOneD_fluxavgH(void){return 0;}
+
+inline void CSolver::SetOneD_fluxavgH(double EnthalpyRef){ }
+
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 
@@ -335,6 +351,9 @@ inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver
                   
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                               CConfig *config) { }
 										
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 								    CConfig *config, unsigned short val_marker) { }
@@ -371,7 +390,10 @@ inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_containe
 									CConfig *config, unsigned short val_marker) { }
             
 inline void CSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
-                         
+
+inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                     CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 							        unsigned short iMesh, unsigned long Iteration) { }	
 							        
@@ -598,6 +620,22 @@ inline void CEulerSolver::SetOneD_M(double AverageMach) { OneD_M=AverageMach; }
 inline double CEulerSolver::GetOneD_T(void){return OneD_T;}
 
 inline void CEulerSolver::SetOneD_T(double AverageTemperature) { OneD_T=AverageTemperature; }
+
+inline double CEulerSolver::GetOneD_fluxavgP(void){return OneD_PressureRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgP(double PressureRef){OneD_PressureRef=PressureRef; }
+
+inline double CEulerSolver::GetOneD_fluxavgRho(void){return OneD_DensityRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgRho(double DensityRef){OneD_DensityRef=DensityRef; }
+
+inline double CEulerSolver::GetOneD_fluxavgU(void){return OneD_VelocityRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgU(double VelocityRef){OneD_VelocityRef=VelocityRef; }
+
+inline double CEulerSolver::GetOneD_fluxavgH(void){return OneD_EnthalpyRef;}
+
+inline void CEulerSolver::SetOneD_fluxavgH(double EnthalpyRef){OneD_EnthalpyRef = EnthalpyRef; }
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

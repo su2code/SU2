@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# SU^2 Makefile.am for Python scripts
+# SU2 Makefile.am for Python scripts
 # Stanford University Aerospace Design Lab
 #
 # Created: 	4/4/2013
@@ -250,12 +250,8 @@ bin_SCRIPTS = \
     patient_designspace.py \
     shape_optimization.py \
     merge_solution.py \
-    2DChannel.py \
-    3DChannel.py \
-    config_gui.py \
-    filter_adjoint.py \
-    compute_polar.py \
-    mesh_adaptation.py
+    set_ffd_design_var.py \
+    compute_polar.py
 
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA = \
@@ -315,9 +311,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu SU2_PY/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign SU2_PY/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu SU2_PY/Makefile
+	  $(AUTOMAKE) --foreign SU2_PY/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

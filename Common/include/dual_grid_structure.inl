@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -22,10 +22,13 @@
 
 #pragma once
 
-inline void CPoint::SetElem(unsigned long val_elem) { 
-	Elem.push_back(val_elem); 
-	nElem = Elem.size();
-}
+inline void CPoint::SetElem(unsigned long val_elem) { Elem.push_back(val_elem); nElem = Elem.size(); }
+
+inline void CPoint::ResetBoundary(void) { if (vertex != NULL) delete [] vertex; Boundary = false; }
+
+inline void CPoint::ResetElem(void) { Elem.clear(); nElem = 0; }
+
+inline void CPoint::ResetPoint(void) { Point.clear(); Edge.clear(); nPoint = 0; }
 
 inline double CPoint::GetCoord(unsigned short val_dim) { return coord[val_dim]; }
 
@@ -181,6 +184,8 @@ inline unsigned short CPoint::GetColor(void) { return color; }
 
 inline unsigned long CPoint::GetGlobalIndex(void) { return GlobalIndex; }
 
+inline void CPoint::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
+
 inline void CPoint::SetDomain(bool val_domain) { Domain = val_domain; }
 
 inline bool CPoint::GetDomain(void) { return Domain; }
@@ -197,9 +202,9 @@ inline double CPoint::GetCurvature(void) { return Curvature; }
 
 inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 
-inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) { }
+inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) { }
 
-inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) { }
+inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) { }
 
 inline void  CPoint::GetNormal(double *val_normal) { }
 
@@ -302,6 +307,8 @@ inline void CVertex::SetDonorElem(long val_donorelem) { Donor_Elem = val_donorel
 inline long CVertex::GetDonorElem(void) { return Donor_Elem; }
 
 inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
+
+inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
 
 inline void CVertex::SetBasisFunction(unsigned short val_node, double val_basis) { Basis_Function[val_node] = val_basis; }
 

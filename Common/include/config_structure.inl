@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -184,6 +184,8 @@ inline double CConfig::GetDensity_FreeStreamND(void) { return Density_FreeStream
 
 inline double* CConfig::GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
 
+inline void CConfig::SetVelocity_FreeStreamND(unsigned short val_dim, double val_velocity) { Velocity_FreeStreamND[val_dim] = val_velocity; }
+
 inline double* CConfig::GetVelocity_FreeStream(void) { return Velocity_FreeStream; }
 
 inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND; }
@@ -239,6 +241,8 @@ inline double CConfig::GetFroude(void) { return Froude; }
 
 inline double CConfig::GetAoA(void) { return AoA; }
 
+inline void CConfig::SetAoA(double val_AoA) { AoA = val_AoA; }
+
 inline unsigned short CConfig::GetnDomain(void) { return nDomain; }
 
 inline void CConfig::SetnDomain(unsigned short val_ndomain) { nDomain = val_ndomain; }
@@ -268,6 +272,8 @@ inline double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 inline double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
 
 inline double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
+
+inline string CConfig::GetFFDTag(unsigned short val_dv) {	return FFDTag[val_dv]; }
 
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
@@ -434,6 +440,8 @@ inline double CConfig::GetLinear_Solver_Error(void) { return Linear_Solver_Error
 
 inline unsigned long CConfig::GetLinear_Solver_Iter(void) { return Linear_Solver_Iter; }
 
+inline unsigned long CConfig::GetLinear_Solver_Restart_Frequency(void) { return Linear_Solver_Restart_Frequency; }
+
 inline double CConfig::GetLinear_Solver_Relax(void) { return Linear_Solver_Relax; }
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind_AdjTurb_Linear_Solver; }
@@ -455,6 +463,10 @@ inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_N
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
+
+inline double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
+
+inline double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRatio; }
 
 inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
 
@@ -664,6 +676,8 @@ inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
+inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
+
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
 inline void CConfig::SetKind_ViscNumScheme(unsigned short val_kind_viscnumscheme) { Kind_ViscNumScheme = val_kind_viscnumscheme; }
@@ -694,7 +708,7 @@ inline bool CConfig::GetInvDesign_HeatFlux(void) { return InvDesign_HeatFlux; }
 
 inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = val_nmarker; }
 
-inline string CConfig::GetMarker_All_Tag(unsigned short val_marker) { return Marker_All_Tag[val_marker]; }
+inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
 inline string CConfig::GetMarker_NacelleInflow(unsigned short val_marker) { return Marker_NacelleInflow[val_marker]; }
 
@@ -704,19 +718,19 @@ inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return 
 
 inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline unsigned short CConfig::GetTag_Marker_All(string val_tag) {
+inline short CConfig::GetTagBound_Marker_All(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
-		if (val_tag == Marker_All_Tag[iMarker])
+		if (val_tag == Marker_All_TagBound[iMarker])
 		return iMarker; 
 	}
-	cout <<"Ups, I don't find the boundary: "<< val_tag << endl; return 0;
+	return -1;
 }
 
-inline unsigned short CConfig::GetMarker_All_Boundary(unsigned short val_marker) { return Marker_All_Boundary[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_KindBC(unsigned short val_marker) { return Marker_All_KindBC[val_marker]; }
 
-inline void CConfig::SetMarker_All_Boundary(unsigned short val_marker, unsigned short val_boundary) { Marker_All_Boundary[val_marker] = val_boundary; }
+inline void CConfig::SetMarker_All_KindBC(unsigned short val_marker, unsigned short val_boundary) { Marker_All_KindBC[val_marker] = val_boundary; }
 
-inline void CConfig::SetMarker_All_Tag(unsigned short val_marker, string val_index) { Marker_All_Tag[val_marker] = val_index; }
+inline void CConfig::SetMarker_All_TagBound(unsigned short val_marker, string val_index) { Marker_All_TagBound[val_marker] = val_index; }
 
 inline void CConfig::SetMarker_All_Monitoring(unsigned short val_marker, unsigned short val_monitoring) { Marker_All_Monitoring[val_marker] = val_monitoring; }
 
@@ -769,6 +783,10 @@ inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
+
+inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
+
+inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
@@ -902,9 +920,11 @@ inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model
 
 inline string CConfig::GetML_Turb_Model_File(void) { return ML_Turb_Model_File; }
 
-inline string CConfig::GetML_Turb_Model_Check_File(void) { return ML_Turb_Model_Check_File; }
-
 inline string CConfig::GetML_Turb_Model_FeatureSet(void) { return ML_Turb_Model_FeatureSet; }
+
+inline string* CConfig::GetML_Turb_Model_Extra(void) { return ML_Turb_Model_Extra; }
+
+inline unsigned short CConfig::GetNumML_Turb_Model_Extra(void) { return nML_Turb_Model_Extra; }
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
@@ -1000,4 +1020,18 @@ inline double CConfig::GetGust_Begin_Time(void) {return Gust_Begin_Time; }
 
 inline double CConfig::GetGust_Begin_Loc(void) {return Gust_Begin_Loc; }
 
+inline unsigned short CConfig::GetnFFD_Iter(void) {return nFFD_Iter; }
+
+inline double CConfig::GetFFD_Tol(void) {return FFD_Tol; }
+
 inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }
+
+inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
+
+inline double CConfig::GetTarget_CL(void) {return Target_CL; }
+
+inline double CConfig::GetDamp_Fixed_CL(void) {return Damp_Fixed_CL; }
+
+inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
+
+inline void CConfig::SetUpdate_AoA(bool val_update) { Update_AoA = val_update; }

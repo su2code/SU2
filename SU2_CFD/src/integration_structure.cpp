@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -51,6 +51,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Compute inviscid residuals ---*/
+  
 	switch (config->GetKind_ConvNumScheme()) {
 		case SPACE_CENTERED:
 			solver_container[MainSolver]->Centered_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
@@ -62,6 +63,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   
 	/*--- Compute viscous residuals ---*/
+  
 	switch (config->GetKind_ViscNumScheme()) {
     case AVG_GRAD: case AVG_GRAD_CORRECTED:
       solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
@@ -72,6 +74,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 	}
   
 	/*--- Compute source term residuals ---*/
+  
 	switch (config->GetKind_SourNumScheme()) {
     case PIECEWISE_CONSTANT:
       solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
@@ -79,12 +82,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 	}
   
 	/*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
+  
 	if (dual_time)
 		solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
   
+  /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
+  solver_container[MainSolver]->BC_ActDisk_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
+  
 	/*--- Weak boundary conditions ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		switch (config->GetMarker_All_Boundary(iMarker)) {
+		switch (config->GetMarker_All_KindBC(iMarker)) {
 			case EULER_WALL:
 				solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
 				break;
@@ -141,7 +149,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
 	/*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		switch (config->GetMarker_All_Boundary(iMarker)) {
+		switch (config->GetMarker_All_KindBC(iMarker)) {
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
@@ -246,15 +254,10 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   unsigned short iCounter;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size, rank;
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
 	bool Already_Converged = Convergence;
@@ -322,7 +325,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   
   /*--- Apply the same convergence criteria to all the processors ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
   sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
@@ -330,13 +333,8 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   /*--- Convergence criteria ---*/
   sbuf_conv[0] = Convergence;
-#ifdef WINDOWS
   MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
-#else  
-  MPI::COMM_WORLD.Reduce(sbuf_conv, rbuf_conv, 1, MPI::UNSIGNED_SHORT, MPI::SUM, MASTER_NODE);
-  MPI::COMM_WORLD.Barrier();
-#endif
 
   /*-- Compute global convergence criteria in the master node --*/
   sbuf_conv[0] = 0;
@@ -345,11 +343,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     else sbuf_conv[0] = 0;
   }
 
-#ifdef WINDOWS
   MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Bcast(sbuf_conv, 1, MPI::UNSIGNED_SHORT, MASTER_NODE);
-#endif
   
   if (sbuf_conv[0] == 1) Convergence = true;
   else Convergence = false;
@@ -362,28 +356,19 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
 	if (monitor != monitor) {
     
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
 		exit(1);
 #else
     if (rank == MASTER_NODE)
       cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Abort(MPI_COMM_WORLD,1);
-#else
-    MPI::COMM_WORLD.Barrier();
-    MPI::COMM_WORLD.Abort(1);
-#endif
 #endif  
 	}
   
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif 
 #endif
   
 }
@@ -411,7 +396,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     config->SetAeroelastic_n();
     
     /*--- Also communicate plunge and pitch to the master node. Needed for output in case of parallel run ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     double plunge, pitch, *plunge_all = NULL, *pitch_all = NULL;
     unsigned short iMarker, iMarker_Monitoring;
     unsigned long iProcessor, owner, *owner_all = NULL;
@@ -419,13 +404,9 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     string Marker_Tag, Monitoring_Tag;
 	int rank, nProcessor;
     
-#ifdef WINDOWS
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#else
-    rank = MPI::COMM_WORLD.Get_rank();
-    nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+
     /*--- Only if mater node allocate memory ---*/
     if (rank == MASTER_NODE) {
       plunge_all = new double[nProcessor];
@@ -439,7 +420,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         
         Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_Tag(iMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
         } else {
           owner = 0;
@@ -450,17 +431,10 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       pitch  = config->GetAeroelastic_pitch(iMarker_Monitoring);
       
       /*--- Gather the data on the master node. ---*/
-#ifdef WINDOWS
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Gather(&plunge, 1, MPI_DOUBLE, plunge_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(&pitch, 1, MPI_DOUBLE, pitch_all, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       MPI_Gather(&owner, 1, MPI_UNSIGNED_LONG, owner_all, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      MPI::COMM_WORLD.Barrier();
-      MPI::COMM_WORLD.Gather(&plunge, 1, MPI::DOUBLE, plunge_all, 1, MPI::DOUBLE, MASTER_NODE);
-      MPI::COMM_WORLD.Gather(&pitch, 1, MPI::DOUBLE, pitch_all, 1, MPI::DOUBLE, MASTER_NODE);
-      MPI::COMM_WORLD.Gather(&owner, 1, MPI::UNSIGNED_LONG, owner_all, 1, MPI::UNSIGNED_LONG, MASTER_NODE);
-#endif
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {
