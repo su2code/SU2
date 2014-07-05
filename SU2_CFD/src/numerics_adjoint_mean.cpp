@@ -2,7 +2,7 @@
  * \file numerics_adjoint_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -2238,20 +2238,30 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 	double Gas_Constant = config->GetGas_ConstantND();
   
 	/*--- Required gradients of the flow variables, point j ---*/
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
+    
 		/*--- grad density ---*/
+    
 		GradDensity[iDim] = PrimVar_Grad_i[nDim+2][iDim];
+    
 		/*--- grad (1/rho) ---*/
+    
 		GradInvDensity[iDim] = -GradDensity[iDim]*invDensitysq;
+    
 		/*--- Computation of the derivatives of P/(Density^2) ---*/
+    
 		dPoDensity2[iDim] = (PrimVar_Grad_i[nVar-1][iDim]*Density - 2.0*GradDensity[iDim]*Pressure)*invDensitycube;
+    
 		/*--- Abbreviations: alpha, beta, sigma_5_vec ---*/
+    
 		alpha[iDim] = Gamma*mu_tot_2*GradInvDensity[iDim];
 		beta[iDim] = Gamma/Gamma_Minus_One*mu_tot_2*dPoDensity2[iDim];
 		Sigma_5_vec[iDim] = Gamma*mu_tot_2*PsiVar_Grad_i[nVar-1][iDim];
 	}
   
 	/*--- Definition of tensors and derivatives of velocity over density ---*/
+  
 	double div_vel = 0, div_phi = 0, vel_gradpsi5 = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		div_vel += PrimVar_Grad_i[iDim+1][iDim];
@@ -2264,16 +2274,19 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 			GradVel_o_Rho[iDim][jDim] = (PrimVar_Grad_i[iDim+1][jDim]*Density - Velocity[iDim]*GradDensity[jDim])*invDensitysq;
 		}
 	}
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		sigma[iDim][iDim] -= TWO3*mu_tot_1*div_vel;
 		Sigma_phi[iDim][iDim] -= TWO3*mu_tot_1*div_phi;
 		Sigma_5_Tensor[iDim][iDim] -= TWO3*mu_tot_1*vel_gradpsi5;
 	}
+  
 	for (iDim = 0; iDim < nDim; iDim++)
 		for (jDim = 0; jDim < nDim; jDim++)
 			Sigma[iDim][jDim] = Sigma_phi[iDim][jDim] + Sigma_5_Tensor[iDim][jDim];
   
 	/*--- Vector-Tensors products ---*/
+  
 	double gradT_gradpsi5 = 0, sigma_gradpsi = 0, vel_sigma_gradpsi5 = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		gradT_gradpsi5 += PrimVar_Grad_i[0][iDim]*PsiVar_Grad_i[nVar-1][iDim];
@@ -2284,6 +2297,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 	}
   
 	/*--- Residuals ---*/
+  
 	double alpha_gradpsi5 = 0, beta_gradpsi5 = 0, Sigma_gradvel_o_rho = 0, Sigma5_vel_gradvel = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		alpha_gradpsi5 += alpha[iDim]*PsiVar_Grad_i[nVar-1][iDim];
@@ -2293,6 +2307,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 			Sigma5_vel_gradvel += Sigma_5_vec[iDim]*(Velocity[jDim]*PrimVar_Grad_i[jDim+1][iDim]);
 		}
 	}
+  
 	val_residual[0] = (-vel_sigma_gradpsi5/Density - Sigma_gradvel_o_rho + 0.5*sq_vel*alpha_gradpsi5 -
                      beta_gradpsi5 + Sigma5_vel_gradvel/Density) * Volume;
 	for (iDim = 0; iDim < nDim; iDim++)

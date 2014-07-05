@@ -2,7 +2,7 @@
  * \file numerics_machine_learning_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -21,6 +21,11 @@
  */
 
 #include "../include/numerics_machine_learning_turbulent.hpp"
+
+
+SpalartAllmarasOtherOutputs::SpalartAllmarasOtherOutputs(){}
+
+SpalartAllmarasOtherOutputs::~SpalartAllmarasOtherOutputs(){}
 
 SpalartAllmarasConstants::SpalartAllmarasConstants(){
   /*--- Spalart-Allmaras closure constants ---*/
@@ -104,7 +109,7 @@ void SpalartAllmarasInputs::Set(double** DUiDXj, double* DTurb_Kin_Visc_DXj, boo
  
  Does not include the volume term
  */
-void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian){
+void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasConstants* constants, double* output_residual, double* output_jacobian, SpalartAllmarasOtherOutputs* otherOutput){
   double dist = inputs->dist; // Wall distance
   int nDim = inputs->GetNumDim();
   // Limit if too close to the wall
@@ -186,6 +191,8 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   double cw3_6 = constants->cw3_6;
   glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
   fw = g*glim;
+  
+  otherOutput->fw = fw;
   
   Destruction = constants->cw1*fw*Turbulent_Kinematic_Viscosity*Turbulent_Kinematic_Viscosity/dist_2;
   if (transition){

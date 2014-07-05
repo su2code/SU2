@@ -2,7 +2,7 @@
  * \file variable_direct_transition.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -24,8 +24,8 @@
 
 CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
-CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_ndim, unsigned short val_nvar, CConfig *config)
-: CTurbVariable(val_ndim, val_nvar,config) {
+CTransLMVariable::CTransLMVariable(double val_nu_tilde, double val_intermittency, double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CTurbVariable(val_nDim, val_nvar,config) {
   
 	// Initialization of variables
 	Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;

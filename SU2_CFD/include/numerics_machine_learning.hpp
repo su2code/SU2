@@ -1,16 +1,19 @@
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
+#ifdef HAVE_JSONCPP
+  #include <json/json.h>
+#endif
 #include <cstdlib>
 #include <string>
 #include <iostream>
 #include <iomanip> 
 #include <fstream>
 #include <cmath>
+#include <math.h>
 #include <sstream>
-
-#ifndef NO_JSONCPP
-#include <json/json.h>
-#endif
 
 #include "../include/numerics_machine_learning_turbulent.hpp"
 
@@ -33,12 +36,38 @@ private:
 public:
 	CNormalScaler();
 	CNormalScaler(int,double*,double*);
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CNormalScaler(Json::Value);
 #endif
 	~CNormalScaler();
 	void Scale(double *);
 	void Unscale(double *);
+};
+
+class CMulInputScaler : public CScaler{
+public:
+  double MulScale;
+  CScaler* InnerScaler;
+  CMulInputScaler();
+#ifdef HAVE_JSONCPP
+  CMulInputScaler(Json::Value);
+#endif
+  ~CMulInputScaler();
+  void Scale(double *);
+	void Unscale(double *);
+};
+
+class CMulOutputScaler : public CScaler{
+public:
+  double MulScale;
+  CMulOutputScaler();
+#ifdef HAVE_JSONCPP
+  CMulOutputScaler(Json::Value);
+#endif
+  ~CMulOutputScaler();
+  void Scale(double *);
+	void Unscale(double *);
+  
 };
 
 class CActivator{
@@ -51,7 +80,7 @@ public:
 class CTanhActivator : public CActivator{
 public:
 	CTanhActivator();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CTanhActivator(Json::Value);
 #endif
 	~CTanhActivator();
@@ -61,7 +90,7 @@ public:
 class CLinearActivator : public CActivator{
 public:
 	CLinearActivator();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CLinearActivator(Json::Value);
 #endif
 	~CLinearActivator();
@@ -82,7 +111,7 @@ private:
 public:
 	CSumNeuron();
 	CSumNeuron(CActivator*); // activator, parameterStart, nParameters
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CSumNeuron(Json::Value);
 #endif
 	~CSumNeuron();
@@ -98,7 +127,7 @@ protected:
   int outputDim;
 public:
   CPredictor();
-  ~CPredictor();
+  virtual  ~CPredictor();
   virtual void Predict(double *, double *){cout << "In base Predict, this is bad";};
   int InputDim();
   int OutputDim();
@@ -117,7 +146,19 @@ public:
   // Need to add predict method
 };
 
-class CNeurNet : public CPredictor{
+class CMulPredictor : public CPredictor{
+public:
+  CMulPredictor();
+#ifdef HAVE_JSONCPP
+  CMulPredictor(Json::Value);
+#endif
+  ~CMulPredictor();
+  CPredictor* Inner;
+  void Predict(double *, double *);
+  
+};
+
+class CNeurNet : public CPredictor {
 private:
   int maxNeurons; // Number of neurons in the largest layer
   int nLayers;
@@ -133,7 +174,7 @@ private:
 	int totalNumParameters;
 public:
 	CNeurNet();
-#ifndef NO_JSONCPP
+#ifdef HAVE_JSONCPP
   CNeurNet(Json::Value);
 #endif
 	~CNeurNet();

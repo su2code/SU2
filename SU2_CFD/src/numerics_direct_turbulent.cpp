@@ -2,7 +2,7 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1025,6 +1025,7 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
   /* Create values for interfacing with the functions */
   SAInputs = new SpalartAllmarasInputs(nDim);
   SAConstants = new SpalartAllmarasConstants;
+  SAOtherOutputs = new SpalartAllmarasOtherOutputs;
   
   SANondimInputs = new CSANondimInputs(val_nDim);
   
@@ -1124,13 +1125,21 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   /* Call Spalart-Allmaras (for comparison) */
   SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
   
-  SpalartAllmarasSourceTerm(SAInputs, SAConstants,SAResidual, SAJacobian);
+  SpalartAllmarasSourceTerm(SAInputs, SAConstants,SAResidual, SAJacobian, SAOtherOutputs);
   this->SANondimInputs -> Set(SAInputs);
 
   for (int i=0; i < nResidual; i++){
     SANondimResidual[i] = SAResidual[i];
   }
   SANondimInputs->NondimensionalizeSource(nResidual, SANondimResidual);
+  
+  // Need the individual terms of the NuHat Norm
+  double dNuHatDXBar = DNuhatDXj[0] / sqrt(SANondimInputs->SourceNondim);
+  double dNuHatDYBar = DNuhatDXj[1] / sqrt(SANondimInputs->SourceNondim);
+  double dUDXBar = DUiDXj[0][0] / SANondimInputs->OmegaNondim;
+  double dVDXBar = DUiDXj[1][0] / SANondimInputs->OmegaNondim;
+  double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
+  double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
   
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;
@@ -1223,14 +1232,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
   }else if(featureset.compare("production")==0){
+//    cout <<"In production" << endl;
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
     
-    netInput[0] = SANondimInputs->Chi;
-    netInput[1] = SANondimInputs->OmegaBar;
-    netInput[2] = SANondimInputs->SourceNondim;
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = SANondimInputs->OmegaBar;
     
 //    cout << "Net inputs ";
 //    for (int i = 0; i < 3; i++){
@@ -1281,17 +1291,17 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       nOutputMLVariables = 1;
       netInput = new double[nInputMLVariables];
       netOutput = new double[nOutputMLVariables];
-      
-      netInput[0] = SANondimInputs->Chi;
-      netInput[1] = SANondimInputs->OmegaBar;
-      netInput[2] = SANondimInputs->SourceNondim;
+    
+      netInput[0] = SANondimInputs->SourceNondim;
+      netInput[1] = SANondimInputs->Chi;
+      netInput[2] = SANondimInputs->OmegaBar;
       
       // Predict using Nnet
       MLModel->Predict(netInput, netOutput);
       
       // Gather the appropriate values
       Residual[0] = SAResidual[0];
-      Residual[1] = netOutput[1];
+      Residual[1] = netOutput[0];
       Residual[2] = SAResidual[2];
       Residual[3] = Residual[0] - Residual[1] + Residual[2];
       
@@ -1323,6 +1333,29 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = NondimResidual[i];
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("cross_production")==0){
+    nInputMLVariables = 3;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = SANondimInputs->NuHatGradNormBar;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = SAResidual[0];
+    Residual[1] = SAResidual[1];
+    Residual[2] = netOutput[0];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
   }else if (featureset.compare("nondim_source")==0){
     nInputMLVariables = 3;
     nOutputMLVariables = 1;
@@ -1345,6 +1378,99 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       Residual[i] = NondimResidual[i];
     }
     SANondimInputs->DimensionalizeSource(nResidual, Residual);
+  }else if(featureset.compare("source")==0){
+    nInputMLVariables =4;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = SANondimInputs->OmegaBar;
+    netInput[3] = SANondimInputs->NuHatGradNormBar;
+    
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("source_all")==0){
+    nInputMLVariables = 8;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    netInput[0] = SANondimInputs->SourceNondim;
+    netInput[1] = SANondimInputs->Chi;
+    netInput[2] = dNuHatDXBar;
+    netInput[3] = dNuHatDYBar;
+    netInput[4] = dUDXBar;
+    netInput[5] = dUDYBar;
+    netInput[6] = dVDXBar;
+    netInput[7] = dVDYBar;
+    
+    // Predict using Nnet
+    MLModel->Predict(netInput, netOutput);
+    
+    // Gather the appropriate values
+    Residual[0] = 0;
+    Residual[1] = 0;
+    Residual[2] = 0;
+    Residual[3] = netOutput[0];
+    
+    for (int i=0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
+  }else if (featureset.compare("fw_les_2")==0){
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    // Karthik nondimensionalizes by d / vhat whereas I do by /(v + vhat)
+    omegaBar *= 1 + 1/chi;
+    
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    
+    MLModel->Predict(netInput, netOutput);
+    
+    double safw = SAOtherOutputs->fw;
+    double newfw = netOutput[0];
+    if (newfw < -1){
+      newfw = 1;
+    }
+    if (newfw > 6){
+      newfw = 6;
+    }
+    // The output is the value of fw. Need to replace the destruction term with the new computation
+    double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
+    double dist2 = SAInputs->dist * SAInputs->dist;
+    double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
+    
+    for (int i= 0; i < nResidual; i++){
+      Residual[i] = SAResidual[i];
+    }
+    Residual[1] = newdestruction;
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
   }else{
     cout << "None of the conditions met" << endl;
     cout << "featureset is " << featureset << endl;
@@ -1358,6 +1484,26 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     for (int i= 0; i < nResidual; i++){
       Residual[i] = 0;
       NondimResidual[i] = 0;
+    }
+  }
+  
+  
+  // Now that we have found the ML Residual and the SA residual, see if there are
+  // any special hacks that we should use
+  
+  unsigned short nStrings = config->GetNumML_Turb_Model_Extra();
+  string *extraString = config->GetML_Turb_Model_Extra();
+  
+  if (nStrings > 0){
+    if (extraString[0].compare("FlatplateBlOnlyCutoff") == 0){
+        // Only use ML in the boundary layer and have a sharp cutoff
+      if ((Coord_i[0] < 0) || (Coord_i[1]) > 0.06 ){
+        // Not in the BL, so just use the SA residual
+        for (int i = 0; i < nResidual; i++){
+          Residual[i] = SAResidual[i];
+          NondimResidual[i] = SANondimResidual[i];
+        }
+      }
     }
   }
   
@@ -1377,6 +1523,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   val_residual[0] = Residual[3] * Volume;
   val_Jacobian_i[0][0] = SAJacobian[0] * Volume;
   
+  
   /*
   cout << "Sa resid ";
   for (int i = 0; i < nResidual; i++){
@@ -1389,6 +1536,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   cout << endl;
    */
+  
 }
 
 int CSourcePieceWise_TurbML::NumResidual(){

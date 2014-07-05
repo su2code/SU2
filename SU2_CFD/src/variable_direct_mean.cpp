@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -26,7 +26,6 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
@@ -35,8 +34,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
 }
 
-CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
+CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double val_energy, unsigned short val_nDim,
+                               unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -49,7 +48,6 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive = NULL;
@@ -175,7 +173,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   
 }
 
-CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
+CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -188,7 +186,6 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
-  B_Field = NULL;
 	Primitive = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
@@ -294,7 +291,6 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_ndim, un
 CEulerVariable::~CEulerVariable(void) {
 	unsigned short iVar;
   
-	if (B_Field           != NULL) delete [] B_Field;
 	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
@@ -441,8 +437,8 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
 CNSVariable::CNSVariable(void) : CEulerVariable() { }
 
 CNSVariable::CNSVariable(double val_density, double *val_velocity, double val_energy,
-                         unsigned short val_ndim, unsigned short val_nvar,
-                         CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_ndim, val_nvar, config) {
+                         unsigned short val_nDim, unsigned short val_nvar,
+                         CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
   
 	Temperature_Ref = config->GetTemperature_Ref();
 	Viscosity_Ref   = config->GetViscosity_Ref();
@@ -452,8 +448,8 @@ CNSVariable::CNSVariable(double val_density, double *val_velocity, double val_en
   
 }
 
-CNSVariable::CNSVariable(double *val_solution, unsigned short val_ndim,
-                         unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_ndim, val_nvar, config) {
+CNSVariable::CNSVariable(double *val_solution, unsigned short val_nDim,
+                         unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
 	Temperature_Ref = config->GetTemperature_Ref();
 	Viscosity_Ref   = config->GetViscosity_Ref();

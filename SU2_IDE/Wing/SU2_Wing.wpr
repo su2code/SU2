@@ -988,7 +988,7 @@ guimgr.visual-state = {loc('../../../../.cache/wingide4/pi-cache/2.7/usr/local/l
         'sel-line-start': 0,
         'selection_end': 0,
         'selection_start': 0},
-                       loc('../trunk/SU2Py/SU2_MAC'): {'attrib-starts': [],
+                       loc('../trunk/SU2Py/SU2_MSH'): {'attrib-starts': [],
         'first-line': 0,
         'folded-linenos': [],
         'sel-line': 0,

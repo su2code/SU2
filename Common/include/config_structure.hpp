@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,11 +23,8 @@
 
 #pragma once
 
-#ifndef NO_MPI
-#include <mpi.h>
-#endif
-#ifndef NO_MUTATIONPP
-#include "mutation++.h"
+#ifdef HAVE_MPI
+  #include "mpi.h"
 #endif
 #include <iostream>
 #include <cstdlib>
@@ -38,17 +35,18 @@
 #include <stdlib.h> 
 #include <cmath>
 #include <map>
+#include <assert.h>
 
 #include "./option_structure.hpp"
 
 using namespace std;
 
-/*! 
+/*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CConfig {
 private:
@@ -60,6 +58,8 @@ private:
   double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
+  unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
+  double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
     Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
 	EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
@@ -98,7 +98,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
-	unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
+  unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
@@ -127,6 +127,7 @@ private:
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
+  nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet_Elec,				/*!< \brief Number of interface boundary markers. */
@@ -160,6 +161,8 @@ private:
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+  *Marker_ActDisk_Inlet,
+  *Marker_ActDisk_Outlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
@@ -179,7 +182,7 @@ private:
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
-	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
+	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
 	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
@@ -201,16 +204,21 @@ private:
 	double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	double *Load_Value;    /*!< \brief Specified force for load boundaries. */
 	double *FlowLoad_Value;    /*!< \brief Specified force for flow load boundaries. */
-	double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
+  double **ActDisk_Origin;
+  double *ActDisk_RootRadius;
+  double *ActDisk_TipRadius;
+  double *ActDisk_CT;
+  double *ActDisk_Omega;
+  double **Periodic_RotCenter;  /*!< \brief Rotational center for each periodic boundary. */
 	double **Periodic_RotAngles;      /*!< \brief Rotation angles for each periodic boundary. */
 	double **Periodic_Translation;      /*!< \brief Translation vector for each periodic boundary. */
 	unsigned short nPeriodic_Index;     /*!< \brief Number of SEND_RECEIVE periodic transformations. */
 	double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
 	double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
 	double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
-	string *Marker_Config_Tag;			/*!< \brief Global index for markers using config file. */
-	unsigned short *Marker_All_Boundary,			/*!< \brief Global index for boundaries using grid information. */
-	*Marker_Config_Boundary;		/*!< \brief Global index for boundaries using config file. */
+	string *Marker_CfgFile_TagBound;			/*!< \brief Global index for markers using config file. */
+	unsigned short *Marker_All_KindBC,			/*!< \brief Global index for boundaries using grid information. */
+	*Marker_CfgFile_KindBC;		/*!< \brief Global index for boundaries using config file. */
 	short *Marker_All_SendRecv;		/*!< \brief Information about if the boundary is sended (+), received (-). */
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
@@ -237,6 +245,7 @@ private:
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
+  string *FFDTag;				/*!< \brief Parameters of the design variable. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
@@ -346,18 +355,21 @@ private:
 
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
-  string ML_Turb_Model_Check_File; /*!< \brief File containing turbulence model check (to confirm it was loaded properly) */
-  string ML_Turb_Model_FeatureSet;
+  string ML_Turb_Model_FeatureSet; /*! <\brief What are the input and ouput features > */
+  string *ML_Turb_Model_Extra; /*! <\brief Store for extra variables coming from ML turb model */
+  unsigned short nML_Turb_Model_Extra; /*!<\brief number of strings there */
   
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet;           /*!< \brief Kind of inlet boundary treatment. */
 	double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
-	unsigned long Linear_Solver_Iter;		/*!< \brief Min error of the linear solver for the implicit formulation. */
+	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
+	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	double *Section_Location;                  /*!< \brief Airfoil section limit. */
-  unsigned short nSections;               /*!< \brief Number of sections. */
+  unsigned short nSections,      /*!< \brief Number of section cuts to make when calculating internal volume. */
+  nVolSections;               /*!< \brief Number of sections. */
 	double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
   *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
@@ -385,6 +397,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
@@ -392,6 +405,10 @@ private:
 	double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
 	double AoA,			/*!< \brief Angle of attack (just external flow). */
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
+  bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
+  double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
+  bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
@@ -429,14 +446,14 @@ private:
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
-  *Marker_Config_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_Designing,      /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_Plotting,     /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
-  *Marker_Config_DV,       /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_Config_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
+  *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
@@ -643,296 +660,248 @@ private:
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
 
-	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
+  /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
+//	map<string, CAnyOptionRef*> param;
+  
+  /*!<brief all_options is a map containing all of the options. This is used during config file parsing
+  to track the options which have not been set (so the default values can be used). Without this map
+   there would be no list of all the config file options. > */
+  map<string, bool> all_options;
+  
+  /*<brief param is a map from the option name (config file string) to its decoder (the specific child
+   class of COptionBase that turns the string into a value) */
+  map<string, COptionBase*> option_map;
+  
+  
+  // All of the addXxxOptions take in the name of the option, and a refernce to the field of that option
+  // in the option structure. Depending on the specific type, it may take in a default value, and may
+  // take in extra options. The addXxxOptions mostly follow the same pattern, so please see addDoubleOption
+  // for detailed comments.
+  //
+  // List options are those that can be an unknown number of elements, and also take in a reference to
+  // an integer. This integer will be populated with the number of elements of that type unmarshaled.
+  //
+  // Array options are those with a fixed number of elements.
+  //
+  // List and Array options should also be able to be specified with the string "NONE" indicating that there
+  // are no elements. This allows the option to be present in a config file but left blank.
+  
+  /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
+   value can be represented by a double.*/
+  void addDoubleOption(const string name, double & option_field, double default_value){
+    // Check if the key is already in the map. If this fails, it is coder error
+    // and not user error, so throw.
+    assert(option_map.find(name) == option_map.end());
 
+    // Add this option to the list of all the options
+    all_options.insert(pair<string,bool>(name,true));
+
+    // Create the parser for a double option with a reference to the option_field and the desired
+    // default value. This will take the string in the config file, convert it to a double, and
+    // place that double in the memory location specified by the reference.
+    COptionBase* val = new COptionDouble(name, option_field, default_value);
+
+    // Create an association between the option name ("CFL") and the parser generated above.
+    // During configuration, the parsing script will get the option name, and use this map
+    // to find how to parse that option.
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addStringOption(const string name, string & option_field, string default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionString(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addIntegerOption(const string name, int & option_field, int default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInt(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionULong(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionUShort(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addLongOption(const string name, long & option_field, long default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionLong(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addBoolOption(const string name, bool & option_field, bool default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionBool(name, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  // enum types work differently than all of the others because there are a small number of valid
+  // string entries for the type. One must also provide a list of all the valid strings of that type.
+  template <class Tenum>
+  void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionEnum<Tenum>(name, enum_map, option_field, default_value);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+    return;
+  }
+  
+  
+  // input_size is the number of options read in from the config file
+  template <class Tenum>
+	void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
+    input_size = 0;
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+		COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
+    option_map.insert( pair<string, COptionBase*>(name, val) );
+	}
+  
+  void addDoubleArrayOption(const string name, const int size, double * & option_field, double * default_value){
+    
+    double * def = new double [size];
+    for (int i = 0; i < size; i++){
+      def[i] = default_value[i];
+    }
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDoubleArray(name, size, option_field, def);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addDoubleListOption(const string name, unsigned short & size, double * & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDoubleList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionUShortList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addStringListOption(const string name, unsigned short & num_marker, string* & option_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionStringList(name, num_marker, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
+                      bool & OneShot, const bool & OneShot_default,
+                      bool & Linearized, const bool & Linearized_default,
+                            bool & Restart_Flow, const bool & Restart_Flow_default){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, OneShot, OneShot_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV, string* & FFDTag,
+                        unsigned short* & design_variable){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
+                        double* & double_field){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+                                 double* & Ttotal, double* & Ptotal, double** & FlowDir){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addInletFixedOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+                      double* & Ttotal, double* & Ptotal){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionInletFixed(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
+                    string* & Marker_PerBound, string* & Marker_PerDonor,
+                         double** & RotCenter, double** & RotAngles, double** & Translation){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
+                                      string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+                                      double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
+                                      double* & ActDisk_CT, double* & ActDisk_Omega) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_CT, ActDisk_Omega);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addPythonOption(const string name){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string,bool>(name,true));
+    COptionBase* val = new COptionPython(name);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
 public:
+
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200]);
+	CConfig(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
 	~CConfig(void);
 
-
   /*!
    * \brief Initializes pointers to null
    */
 	void SetPointersNull(void);
-
-	/*!
-	 * \brief add a scalar option to the param map and set its default value
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] default_value - option is set to default_value
-	 * \tparam T - an arbitary type (int, double, enum, etc)
-	 */
-	template <class T, class T_default>
-	void AddScalarOption(const string & name, T & option, const T_default & default_value) {
-		//cout << "Adding Scalar option " << name << endl;
-		option = static_cast<T>(default_value);
-		CAnyOptionRef* option_ref = new COptionRef<T>(option);
-		param.insert( pair<string, CAnyOptionRef*>(string(name), option_ref) );
-	}
-
-	/*!
-	 * \brief add an enum-based option to the param map and set its default value
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] Tmap - a map from strings to type Tenum
-	 * \tparam T - the option type (usually unsigned short)
-	 * \tparam Tenum - an enumeration assocaited with T
-	 * \param[in] default_value - option is set to default_value
-	 */
-	template <class T, class Tenum>
-	void AddEnumOption(const string & name, T & option, const map<string, Tenum> & Tmap,
-			const string & default_value) {
-		//cout << "Adding Enum option " << name << endl;
-		typename map<string,Tenum>::const_iterator it;
-		it = Tmap.find(default_value);
-		if (it == Tmap.end()) {
-			cerr << "Error in CConfig::AddEnumOption(string, T&, const map<string, Tenum> &, const string): "
-					<< "cannot find " << default_value << " in given map."
-					<< endl;
-			throw(-1);
-		}
-		option = it->second;
-		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(option, Tmap);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-
-	/*!
-	 * \brief add an enum-based array option to the param map
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in,out] size - a reference to the size of option
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] Tmap - a map from strings to type Tenum
-	 * \param[in] update - set to true if the option has already been initialized
-	 * \tparam T - the option type (usually unsigned short)
-	 * \tparam Tenum - an enumeration assocaited with T
-	 */
-	template <class T, class Tenum>
-	void AddEnumListOption(const string & name, unsigned short & size, T* & option,
-			const map<string, Tenum> & Tmap,
-			const bool & update = false) {
-		//cout << "Adding Enum-List option " << name << endl;
-		size = 0;
-		if (update && option != NULL) delete [] option;
-		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(size, option, Tmap);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-
-	/*!
-	 * \brief add an array option to the param map and set its default value
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in] size - length of option and default_value arrays
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] default_value - option is set to default_value
-	 * \param[in] update - set to true if the option has already been initialized
-	 * \tparam T - an arbitary type (int, double, enum, etc)
-	 *
-	 * The option array is allocated in this function.  If memory for
-	 * the option array is already allocated, this memory is first released.
-	 */
-	template <class T>
-	void AddArrayOption(const string & name, const int & size, T* & option,
-			const T* default_value, const bool & update = false) {
-		//cout << "Adding Array option " << name << endl;
-		if (update && option != NULL) delete [] option;
-		option = new T[size];
-		for (int i = 0; i < size; i++)
-			option[i] = default_value[i];
-		CAnyOptionRef* option_ref = new COptionRef<T>(option, size);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-
-	/*!
-	 * \brief add a list option to the param map
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in] size - length of option (will be set by data in .cfg file)
-	 * \param[in] option - the option to associate with name
-	 * \param[in] update - set to true if the option has already been initialized
-	 * \tparam T - an arbitary type (int, double, enum, etc)
-	 *
-	 * This is similar to AddArrayOption, but is useful for options of
-	 * variable size.  Also, this routine does not allow the default
-	 * value to be set.
-	 */
-	template <class T>
-	void AddListOption(const string & name, unsigned short & size, T* & option,
-			const bool & update = false) {
-		//cout << "Adding List option " << name << endl;
-		if (update && option != NULL) delete [] option;
-		CAnyOptionRef* option_ref = new CListOptionRef<T>(size, option);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-
-	/*!
-	 * \brief add a special option to the param map and set its default value
-	 * \param[in] name - string name of the option as it appears in the .cfg file
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] set_value - function to parse string vectors and set option
-	 * \param[in] default_value - option is set to default_value
-	 * \tparam T - an arbitrary type (int, double, bool, enum, etc)
-	 */
-	template <class T>
-	void AddSpecialOption(const string & name, T & option,
-			void (*set_value)(T*, const vector<string>&),
-			const T & default_value) {
-		//cout << "Adding Special option " << name << endl;
-		option = default_value;
-		CAnyOptionRef* option_ref = new COptionRef<T>(option, set_value);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-
-	/*!
-	 * \brief add a marker-type option to the param map
-	 * \param[in] name - name of the marker option as it appears in the .cfg file
-	 * \param[in,out] num_marker - number of boundary markers
-	 * \param[in,out] marker - an array of boundary marker names
-	 */
-	void AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker);
-
-	/*!
-	 * \brief add a convection-discretization type option to the param map
-	 * \param[in] name - name of the convection option as it appears in the .cfg file
-	 * \param[in] space - the spatial discretization type associataed with name
-	 * \param[in] centered - the centered spatial discretization type of name
-	 * \param[in] upwind - the upwind spatial discretization type of name
-	 */
-	void AddConvectOption(const string & name, unsigned short & space, unsigned short & centered,
-			unsigned short & upwind);
-
-	/*!
-	 * \brief adds the math problem option to the param map
-	 * \param[in] name - name of the math problem as it appears in the .cfg file
-	 * \param[in] Adjoint - is the continuous adjoint solved?
-	 * \param[in] Adjoint_default - the default value for Adjoint
-	 * \param[in] OneShot - is a one-shot problem solved?
-	 * \param[in] OneShot_default - the default value for OneShot
-	 * \param[in] Linearized - is a linearized problem solved?
-	 * \param[in] Linearized_default - the default value for Linearized
-	 * \param[in] Restart_Flow - is the flow restarted for adjoint and linearized problems?
-	 * \param[in] Restart_Flow_default - the default value for Restart_Flow
-	 */
-	void AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
-			bool & OneShot, const bool & OneShot_default,
-			bool & Linearized, const bool & Linearized_default,
-			bool & Restart_Flow, const bool & Restart_Flow_default);
-
-	/*!
-	 * \brief adds the design variable parameters option to the param map
-	 * \param[in] name - name of the design-variable parameters option in the config file
-	 * \param[in] nDV - the number of design variables
-	 * \param[in] ParamDV - the parameter values of each design variable
-	 * \param[in] Design_Variable - the type of each design variable
-	 */
-	void AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV,
-			unsigned short* & Design_Variable);
-
-	/*!
-	 * \brief adds a periodic marker option to the param map
-	 * \param[in] name - name of the periodic marker option in the config file
-	 * \param[in] nMarker_PerBound - the number of periodic marker boundaries
-	 * \param[in] Marker_PerBound - string names of periodic boundaries
-	 * \param[in] Marker_PerDonor - names of boundaries that supply data to periodic boundaries
-	 * \param[in] RotCenter - rotational center for each periodic boundary
-	 * \param[in] RotAngles - rotation angles for each periodic boundary
-	 * \param[in] Translation - translation vector for each periodic boundary.
-	 */
-	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
-			string* & Marker_PerBound, string* & Marker_PerDonor,
-			double** & RotCenter, double** & RotAngles, double** & Translation);
-
-	/*!
-	 * \brief adds an inlet marker option to the param map
-	 * \param[in] name - name of the inlet marker option in the config file
-	 * \param[in] nMarker_Inlet - the number of inlet marker boundaries
-	 * \param[in] Marker_Inlet - string names of inlet boundaries
-	 * \param[in] Ttotal - specified total temperatures for inlet boundaries
-	 * \param[in] Ptotal - specified total pressures for inlet boundaries
-	 * \param[in] FlowDir - specified flow direction vector (unit vector) for inlet boundaries
-	 */
-	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
-			double** & FlowDir);
-
-	/*!
-	 * \brief adds an inlet marker without flow direction option to the param map
-	 * \param[in] name - name of the inlet marker option in the config file
-	 * \param[in] nMarker_Inlet - the number of inlet marker boundaries
-	 * \param[in] Marker_Inlet - string names of inlet boundaries
-	 * \param[in] Ttotal - specified total temperatures for inlet boundaries
-	 * \param[in] Ptotal - specified total pressures for inlet boundaries
-	 */
-	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
-
-	/*!
-	 * \brief adds an Dirichlet marker option to the param map
-	 * \param[in] name - name of the inlet marker option in the config file
-	 * \param[in] nMarker_Dirichlet_Elec - the number of Dirichlet marker boundaries
-	 * \param[in] Marker_Dirichlet_Elec - string names of Dirichlet boundaries
-	 * \param[in] Dirichlet_Value - specified value of the variable at the boundaries
-	 */
-	void AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec,
-			string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value);
-
-	/*!
-	 * \brief adds an outlet marker option to the param map
-	 * \param[in] name - name of the outlet marker option in the config file
-	 * \param[in] nMarker_Outlet - the number of outlet marker boundaries
-	 * \param[in] Marker_Outlet - string names of outlet boundaries
-	 * \param[in] Pressure - Specified back pressures (static) for outlet boundaries
-	 */
-	void AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet,
-			string* & Marker_Outlet, double* & Pressure);
-
-	/*!
-	 * \brief adds an displacement marker option to the param map
-	 * \param[in] name - name of the displacement marker option in the config file
-	 * \param[in] nMarker_Outlet - the number of displacement marker boundaries
-	 * \param[in] Marker_Outlet - string names of displacement boundaries
-	 * \param[in] Displ_Value - Specified displacement for displacement boundaries
-	 */
-	void AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement,
-			string* & Marker_Displacement, double* & Displ_Value);
-
-	/*!
-	 * \brief adds an load marker option to the param map
-	 * \param[in] name - name of the outlet marker option in the config file
-	 * \param[in] nMarker_Load - the number of load marker boundaries
-	 * \param[in] Marker_Load - string names of load boundaries
-	 * \param[in] Load_Value - Specified force for load boundaries
-	 */
-	void AddMarkerLoad(const string & name, unsigned short & nMarker_Load,
-			string* & Marker_Load, double* & Load_Value);
-
-	/*!
-	 * \brief adds an load marker option to the param map
-	 * \param[in] name - name of the outlet marker option in the config file
-	 * \param[in] nMarker_FlowLoad - the number of load marker boundaries
-	 * \param[in] Marker_FlowLoad - string names of load boundaries
-	 * \param[in] FlowLoad_Value - Specified force for load boundaries
-	 */
-	void AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad,
-			string* & Marker_FlowLoad, double* & FlowLoad_Value);
-
-	/*!
-	 * \brief used to set Boolean values based on strings "YES" and "NO"
-	 * \param[in] ref - a pointer to the boolean value being assigned
-	 * \param[in] value - value[0] is "YES" or "NO" and determines the value of ref
-	 */
-	static void SetBoolOption(bool* ref, const vector<string> & value);
 
 	/*!
 	 * \brief breaks an input line from the config file into a set of tokens
@@ -948,7 +917,7 @@ public:
 	 * \brief Get information about whether this is a Python config option for design.
 	 * \return <code>TRUE</code> if this is a Python config option for design; otherwise <code>FALSE</code>.
 	 */
-	bool GetPython_Option(string & option_name);
+//	bool GetPython_Option(string & option_name);
 
 	/*! 
 	 * \brief Get reference origin for moment computation.
@@ -1353,6 +1322,13 @@ public:
 	 */
 	double* GetVelocity_FreeStreamND(void);
 
+  /*!
+	 * \brief Set a value in the vector of the non-dimensionalized freestream velocity.
+	 * \param[in] val_dim - Index of the dimension
+	 * \param[in] val_velocity - Value of the freestream velocity
+   */
+  void SetVelocity_FreeStreamND(unsigned short val_dim, double val_velocity);
+  
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
 	 * \return Non-dimensionalized freestream energy.
@@ -1585,6 +1561,12 @@ public:
 	 */		
 	double GetAoA(void);
 
+	/*!
+	 * \brief Set the angle of attack.
+	 * \param[in] val_AoA - Value of the angle of attack.
+	 */
+	void SetAoA(double val_AoA);
+  
 	/*! 
 	 * \brief Get the angle of sideslip of the body. It relates to the rotation of the aircraft centerline from 
 	 *        the relative wind.
@@ -1658,6 +1640,13 @@ public:
 	 * \return Design variable parameter.
 	 */		
 	double GetParamDV(unsigned short val_dv, unsigned short val_param);
+  
+  /*!
+	 * \brief Get the FFD Tag of a particular design variable.
+	 * \param[in] val_dv - Number of the design variable that we want to read.
+	 * \return Design variable parameter.
+	 */
+	string GetFFDTag(unsigned short val_dv);
 
 	/*! 
 	 * \brief Get the number of design variables.
@@ -1700,7 +1689,19 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
-
+  
+  /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_ActDisk_Inlet(void);
+  
+  /*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_ActDisk_Outlet(void);
+  
   /*!
    * \brief Get the total number of 1D output markers.
    * \return Total number of monitoring markers.
@@ -1891,7 +1892,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that 
 	 *         has the marker <i>val_marker</i>.
 	 */		
-	string GetMarker_All_Tag(unsigned short val_marker);
+	string GetMarker_All_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -1923,14 +1924,14 @@ public:
 	 * \return Value of the marker <i>val_marker</i> that is in the geometry file 
 	 *         for the surface that has the tag.
 	 */		
-	unsigned short GetTag_Marker_All(string val_tag);
+  short GetTagBound_Marker_All(string val_tag);
 
 	/*! 
 	 * \brief Get the kind of boundary for each marker.
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \return Kind of boundary for the marker <i>val_marker</i>.
 	 */		
-	unsigned short GetMarker_All_Boundary(unsigned short val_marker);
+	unsigned short GetMarker_All_KindBC(unsigned short val_marker);
 
   /*!
    * \brief Get the kind of boundary for each marker.
@@ -1954,7 +1955,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_boundary - Kind of boundary read from config file.
 	 */		
-	void SetMarker_All_Boundary(unsigned short val_marker, unsigned short val_boundary);
+	void SetMarker_All_KindBC(unsigned short val_marker, unsigned short val_boundary);
 
 	/*! 
 	 * \brief Set the value of the index <i>val_index</i> (read from the geometry file) for 
@@ -1962,7 +1963,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_index - Index of the surface read from geometry file.
 	 */	
-	void SetMarker_All_Tag(unsigned short val_marker, string val_index);
+	void SetMarker_All_TagBound(unsigned short val_marker, string val_index);
 
 	/*! 
 	 * \brief Set if a marker <i>val_marker</i> is going to be monitored <i>val_monitoring</i> 
@@ -2165,6 +2166,12 @@ public:
 	 */
 	unsigned long GetLinear_Solver_Iter(void);
 
+  /*!
+   * \brief Get restart frequency of the linear solver for the implicit formulation.
+   * \return Restart frequency of the linear solver for the implicit formulation.
+   */
+  unsigned long GetLinear_Solver_Restart_Frequency(void);
+
 	/*!
 	 * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
 	 * \return relaxation coefficient of the linear solver for the implicit formulation.
@@ -2230,7 +2237,18 @@ public:
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
 	double GetDeform_Tol_Factor(void);
+
+  /*!
+   * \brief Get Young's modulus for deformation (constant stiffness deformation)
+   */
+  double GetDeform_ElasticityMod(void);
   
+  /*!
+   * \brief Get Poisson's ratio for deformation (constant stiffness deformation)
+   * \
+   */
+  double GetDeform_PoissonRatio(void);
+
   /*!
 	 * \brief Get the type of stiffness to impose for FEA mesh deformation.
 	 * \return type of stiffness to impose for FEA mesh deformation.
@@ -2259,11 +2277,6 @@ public:
 	 * \brief Get the file containing the ML model
 	 */
 	string GetML_Turb_Model_File(void);
-  /*!
-	 * \brief File containing a check for the proper creation of the turb model
-	 * \return Temporary ml->SU2 file name.
-	 */
-	string GetML_Turb_Model_Check_File(void);
 
   /*!
 	 * \brief File containing a check for the proper creation of the turb model
@@ -2271,6 +2284,17 @@ public:
 	 */
   string GetML_Turb_Model_FeatureSet(void);
   
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  string* GetML_Turb_Model_Extra(void);
+  
+  /*!
+	 * \brief File containing a check for the proper creation of the turb model
+	 * \return Temporary ml->SU2 file name.
+	 */
+  unsigned short GetNumML_Turb_Model_Extra(void);
   
 	/*! 
 	 * \brief Get the kind of the transition model.
@@ -3132,6 +3156,12 @@ public:
 	 * \return Number of sections
 	 */
 	unsigned short GetnSections(void);
+  
+  /*!
+	 * \brief Get the number of sections for computing internal volume.
+	 * \return Number of sections for computing internal volume.
+	 */
+	unsigned short GetnVolSections(void);
   
 	/*! 
 	 * \brief Provides information about the the nodes that are going to be moved on a deformation 
@@ -4016,61 +4046,61 @@ public:
 	 * \note When we read the config file, it stores the markers in a particular vector.
 	 * \return Index in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Tag(string val_marker);
+	unsigned short GetMarker_CfgFile_TagBound(string val_marker);
 
 	/*! 
 	 * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
 	 * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Boundary(string val_marker);
+	unsigned short GetMarker_CfgFile_KindBC(string val_marker);
 
 	/*! 
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Monitoring(string val_marker);
+	unsigned short GetMarker_CfgFile_Monitoring(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_GeoEval(string val_marker);
+	unsigned short GetMarker_CfgFile_GeoEval(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_Designing(string val_marker);
+	unsigned short GetMarker_CfgFile_Designing(string val_marker);
 
 	/*! 
 	 * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
 	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Plotting(string val_marker);
+	unsigned short GetMarker_CfgFile_Plotting(string val_marker);
 
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_Config_Out_1D(string val_marker);
+  unsigned short GetMarker_CfgFile_Out_1D(string val_marker);
 
 	/*! 
 	 * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
 	 * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_DV(string val_marker);
+	unsigned short GetMarker_CfgFile_DV(string val_marker);
 
   /*!
 	 * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
 	 * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_Moving(string val_marker);
+	unsigned short GetMarker_CfgFile_Moving(string val_marker);
   
 	/*! 
 	 * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_PerBound(string val_marker);
+	unsigned short GetMarker_CfgFile_PerBound(string val_marker);
 
 	/*! 
 	 * \brief Determines if problem is adjoint
@@ -4178,6 +4208,37 @@ public:
 	 * \return Periodic donor marker from the config information for the marker <i>val_marker</i>.
 	 */	
 	unsigned short GetMarker_Periodic_Donor(string val_marker);
+  
+  /*!
+	 * \brief Get the origin of the actuator disk.
+	 */
+  double* GetActDisk_Origin(string val_marker);
+  
+  /*!
+	 * \brief Get the root radius of the actuator disk.
+	 */
+  double GetActDisk_RootRadius(string val_marker);
+  
+  /*!
+	 * \brief Get the tip radius of th actuator disk.
+	 */
+  double GetActDisk_TipRadius(string val_marker);
+  
+  /*!
+	 * \brief Get the thurst corffient of the actuator disk.
+	 */
+  double GetActDisk_CT(string val_marker);
+  
+  /*!
+	 * \brief Get the rev / min of the actuator disk.
+	 */
+  double GetActDisk_Omega(string val_marker);
+  
+  /*!
+	 * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
+	 * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_ActDisk_Outlet(string val_marker);
   
   /*!
 	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
@@ -4501,12 +4562,12 @@ public:
   /*!
 	 * \brief Set the config file parsing.
 	 */
-  void SetParsing(char case_filename[200]);
+  void SetParsing(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
-	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim);
+	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim);
 
 	/*! 
 	 * \brief Config file markers processing.
@@ -4636,11 +4697,51 @@ public:
 	double GetGust_Begin_Loc(void);
 
   /*!
+	 * \brief Value of the time at which to begin the gust.
+	 */
+	unsigned short GetnFFD_Iter(void);
+  
+  /*!
+	 * \brief Value of the location ath which the gust begins.
+	 */
+	double GetFFD_Tol(void);
+  
+  /*!
 	 * \brief Get the node number of the CV to visualize.
 	 * \return Node number of the CV to visualize.
 	 */
 	long GetVisualize_CV(void);
+  
+  /*!
+	 * \brief Get information about whether to use fixed CL mode.
+	 * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+	 */
+	bool GetFixed_CL_Mode(void);
 
+  /*!
+	 * \brief Get the value specified for the target CL.
+	 * \return Value of the target CL.
+	 */
+	double GetTarget_CL(void);
+  
+  /*!
+	 * \brief Get the value of the damping coefficient for fixed CL mode.
+	 * \return Damping coefficient for fixed CL mode.
+	 */
+	double GetDamp_Fixed_CL(void);
+  
+  /*!
+	 * \brief Set the value of the boolean for updating AoA in fixed lift mode.
+   * \param[in] val_update - the bool for whether to update the AoA.
+	 */
+	void SetUpdate_AoA(bool val_update);
+  
+  /*!
+	 * \brief Get information about whether to update the AoA for fixed lift mode.
+	 * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
+	 */
+	bool GetUpdate_AoA(void);
+  
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with
 	          x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating

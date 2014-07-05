@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.0.1 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -30,7 +30,7 @@ import shutil, glob
 from SU2.util import ordered_bunch
 
 # -------------------------------------------------------------------
-#  Read SU2_GPC Gradient Values
+#  Read SU2_DOT Gradient Values
 # -------------------------------------------------------------------
 
 def read_gradients( Grad_filename , scale = 1.0):
@@ -289,7 +289,8 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "CHORD_SEC2"         ,
                  "CHORD_SEC3"         ,
                  "CHORD_SEC4"         ,
-                 "CHORD_SEC5"          ]
+                 "CHORD_SEC5"         ,
+                 "VOLUME"              ]
 #: optnames_geo
 
 # -------------------------------------------------------------------

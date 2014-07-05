@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -37,13 +37,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int rank;
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
@@ -231,12 +227,8 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
@@ -402,13 +394,9 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();  
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int rank;
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -454,12 +442,8 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
   ExtIter = config_container[ZONE_0]->GetExtIter();
   rank    = MASTER_NODE;
 
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -806,12 +790,8 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Gust Parameters from config ---*/
@@ -840,25 +820,20 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
   // Vortex variables
-  unsigned int nVortex;
+  unsigned long nVortex = 0;
   std::vector<double> x0,y0,vort_strenth,r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
-    InitializeVortexDistribution(nVortex,x0,y0,vort_strenth,r_core);
+    InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
     cout << "ERROR: The gust length needs to be positive" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
-#ifdef WINDOWS
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
   }
   
@@ -884,7 +859,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
       dgust_dt = 0;
       
       // Begin applying the gust
-      if (Physical_t > tbegin) {
+      if (Physical_t >= tbegin) {
         
         x = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[0]; // x-location of the node.
         y = geometry_container[iMGlevel]->node[iPoint]->GetCoord()[1]; // y-location of the node.
@@ -915,37 +890,44 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
             break;
 
           case ONE_M_COSINE:
-                     // Check if we are in the region where the gust is active
-                     if (x_gust > 0 && x_gust < n) {
-                       gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
+             // Check if we are in the region where the gust is active
+             if (x_gust > 0 && x_gust < n) {
+               gust[GustDir] = 0.5*gust_amp*(1-cos(2*PI_NUMBER*x_gust));
 
-                       // Gust derivatives
-                       dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
-                       dgust_dy = 0;
-                       dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
-                     }
-                     break;
+               // Gust derivatives
+               dgust_dx = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))/L;
+               dgust_dy = 0;
+               dgust_dt = 0.5*gust_amp*2*PI_NUMBER*(sin(2*PI_NUMBER*x_gust))*(-Uinf)/L;
+             }
+             break;
 
-                   case VORTEX:
+          case EOG:
+            // Check if we are in the region where the gust is active
+            if (x_gust > 0 && x_gust < n) {
+              gust[GustDir] = -0.37*gust_amp*sin(3*PI_NUMBER*x_gust)*(1-cos(2*PI_NUMBER*x_gust));
+            }
+            break;
+            
+          case VORTEX:
 
-                     /*--- Use vortex distribution ---*/
-                     // Algebraic vortex equation.
-                     for (unsigned int i=0; i<nVortex; i++) {
-                       double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
-                       double r = sqrt(r2);
-                       double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
-                       gust[0] = gust[0] + v_theta*(y-y0[i])/r;
-                       gust[1] = gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
-                     }
-                     break;
+             /*--- Use vortex distribution ---*/
+             // Algebraic vortex equation.
+             for (unsigned long i=0; i<nVortex; i++) {
+               double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
+               double r = sqrt(r2);
+               double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
+               gust[0] = gust[0] + v_theta*(y-y0[i])/r;
+               gust[1] = gust[1] - v_theta*(x-(x0[i]+Uinf*(Physical_t-tbegin)))/r;
+             }
+             break;
 
-                   case NONE: default:
+           case NONE: default:
 
-                     /*--- There is no wind gust specified. ---*/
-                     if (rank == MASTER_NODE) {
-                       cout << "No wind gust specified." << endl;
-                     }
-                     break;
+             /*--- There is no wind gust specified. ---*/
+             if (rank == MASTER_NODE) {
+               cout << "No wind gust specified." << endl;
+             }
+             break;
 
         }
       }
@@ -972,7 +954,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   }
 }
 
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core) {
+void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core) {
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
@@ -1027,12 +1009,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	}
   
 	int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	/*--- Perform mesh movement depending on specified type ---*/
@@ -1319,202 +1297,122 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_container,
                      CConfig **config_container, unsigned short nZone, unsigned short iZone) {
   
-	int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-	/*--- Local variables and initialization ---*/
-	unsigned short iVar, kZone, jZone, iMGlevel;
-	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
-	unsigned long iPoint;
-	bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-	bool adjoint = (config_container[ZONE_0]->GetAdjoint());
-	if (adjoint) {
-		implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-	}
+  /*--- Local variables and initialization ---*/
+  //unsigned short iVar, kZone, jZone, iMGlevel;
+  unsigned short iVar, jZone, kZone, iMGlevel;
+  unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned long iPoint;
+  bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool adjoint = (config_container[ZONE_0]->GetAdjoint());
+  if (adjoint) {
+    implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  }
   
-	/*--- Retrieve values from the config file ---*/
-	double *U      	= new double[nVar];
-	double *U_old  	= new double[nVar];
-	double *Psi	   	= new double[nVar];
-	double *Psi_old	= new double[nVar];
-	double *Source = new double[nVar];
-	double deltaU, deltaPsi;
-	//	double Omega[3], Center[3], Ampl[3];
-	//	double Lref   = config_container[ZONE_0]->GetLength_Ref();
-	//	double current_time;
-	//	double alpha_dot[3];
-	//  double DEG2RAD = PI_NUMBER/180.0;
-	//	double GridVel[3];
+  /*--- Retrieve values from the config file ---*/
+  double *U = new double[nVar];
+  double *U_old = new double[nVar];
+  double *Psi = new double[nVar];
+  double *Psi_old = new double[nVar];
+  double *Source = new double[nVar];
+  double deltaU, deltaPsi;
   
-  //	/*--- rotational velocity ---*/
-  //	Omega[0]  = config_container[ZONE_0]->GetPitching_Omega_X(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
-  //	Omega[1]  = config_container[ZONE_0]->GetPitching_Omega_Y(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
-  //	Omega[2]  = config_container[ZONE_0]->GetPitching_Omega_Z(ZONE_0)/config_container[ZONE_0]->GetOmega_Ref();
-  //	double Omega_mag = sqrt(pow(Omega[0],2)+pow(Omega[1],2)+pow(Omega[2],2));
-  //
-  //	/*--- amplitude of motion ---*/
-  //	Ampl[0]   = config_container[ZONE_0]->GetPitching_Ampl_X(ZONE_0)*DEG2RAD;
-  //	Ampl[1]   = config_container[ZONE_0]->GetPitching_Ampl_Y(ZONE_0)*DEG2RAD;
-  //	Ampl[2]   = config_container[ZONE_0]->GetPitching_Ampl_Z(ZONE_0)*DEG2RAD;
+  /*--- Compute period of oscillation ---*/
+  double period = config_container[ZONE_0]->GetTimeSpectral_Period();
   
-	/*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-	double period = config_container[ZONE_0]->GetTimeSpectral_Period();
-	//	double deltaT = period/(double)(config_container[ZONE_0]->GetnTimeInstances());
+  /*--- allocate dynamic memory for D ---*/
+  double **D = new double*[nZone];
+  for (kZone = 0; kZone < nZone; kZone++) {
+    D[kZone] = new double[nZone];
+  }
   
-  //	/*--- For now, hard code the origin for the pitching airfoil. ---*/
-  //	Center[0] = config_container[ZONE_0]->GetMotion_Origin_X(ZONE_0);
-  //	Center[1] = config_container[ZONE_0]->GetMotion_Origin_Y(ZONE_0);
-  //	Center[2] = config_container[ZONE_0]->GetMotion_Origin_Z(ZONE_0);
+  /*--- Build the time-spectral operator matrix ---*/
+  ComputeTimeSpectral_Operator(D, period, nZone);
+//  for (kZone = 0; kZone < nZone; kZone++) {
+//    for (jZone = 0; jZone < nZone; jZone++) {
+//      
+//      if (nZone%2 == 0) {
+//        
+//        /*--- For an even number of time instances ---*/
+//        if (kZone == jZone) {
+//          D[kZone][jZone] = 0.0;
+//        } 
+//        else {
+//          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
+//        }
+//      }
+//      else {
+//        
+//        /*--- For an odd number of time instances ---*/
+//        if (kZone == jZone) {
+//          D[kZone][jZone] = 0.0;
+//        } 
+//        else {
+//          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
+//        }
+//      }
+//
+//    }
+//  }
   
-	//	/*--- Compute the Mesh Velocities ---*/
-	//	if (config_container[ZONE_0]->GetExtIter() == 0) {
-	//
-	////
-	////		/*--- Loop over all grid levels ---*/
-	////		for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
-	////
-	////			/*--- Loop over each zone ---*/
-	////			for (iZone = 0; iZone < nZone; iZone++) {
-	////
-	////				/*--- Time at current instance, i.e. at the current zone ---*/
-	////				current_time = (static_cast<double>(iZone))*deltaT;
-	////
-	////				/*--- Angular velocity at the given time instance ---*/
-	////				alpha_dot[0] = -Omega[0]*Ampl[0]*cos(Omega[0]*current_time);
-	////				alpha_dot[1] = -Omega[1]*Ampl[1]*cos(Omega[1]*current_time);
-	////				alpha_dot[2] = -Omega[2]*Ampl[2]*cos(Omega[2]*current_time);
-	////
-	////				/*--- Loop over each node in the volume mesh ---*/
-	////				for (iPoint = 0; iPoint < geometry_container[iZone][iMGlevel]->GetnPoint(); iPoint++) {
-	////
-	////					/*--- Coordinates of the current point ---*/
-	////					Coord = geometry_container[iZone][iMGlevel]->node[iPoint]->GetCoord();
-	////
-	////					/*--- Calculate non-dim. position from rotation center ---*/
-	////					double r[3] = {0,0,0};
-	////					for (iDim = 0; iDim < nDim; iDim++)
-	////						r[iDim] = (Coord[iDim]-Center[iDim])/Lref;
-	////					if (nDim == 2) r[nDim] = 0.0;
-	////
-	////					/*--- Cross Product of angular velocity and distance from center ---*/
-	////					GridVel[0] = alpha_dot[1]*r[2] - alpha_dot[2]*r[1];
-	////					GridVel[1] = alpha_dot[2]*r[0] - alpha_dot[0]*r[2];
-	////					GridVel[2] = alpha_dot[0]*r[1] - alpha_dot[1]*r[0];
-	////
-	////					// PRINT STATEMENTS FOR DEBUGGING!
-	////					if (rank == MASTER_NODE && iMGlevel == 0 && iZone == 0) {
-	////						if (iPoint == 440) {
-	////							cout << "Analytical Mesh Velocity = (" <<  GridVel[0] << ", " << GridVel[1] << ", " << GridVel[2] << ")" << endl;
-	////						}
-	////					}
-	////					/*--- Set Grid Velocity for the point in the given zone ---*/
-	////					for(iDim = 0; iDim < nDim; iDim++) {
-	////
-	////						/*--- Store grid velocity for this point ---*/
-	////						geometry_container[iZone][iMGlevel]->node[iPoint]->SetGridVel(iDim, GridVel[iDim]);
-	////
-	////					}
-	////				}
-	////			}
-	////		}
-	//
-	//		/*--- by fourier interpolation ---*/
-	//
-	//	}
-  
-  
-  
-  
-	/*--- allocate dynamic memory for D ---*/
-	double **D = new double*[nZone];
-	for (kZone = 0; kZone < nZone; kZone++) {
-		D[kZone] = new double[nZone];
-	}
-  
-	/*--- Build the time-spectral operator matrix ---*/
-	for (kZone = 0; kZone < nZone; kZone++) {
-		for (jZone = 0; jZone < nZone; jZone++) {
-      
-			/*--- For an even number of time instances ---*/
-			if (nZone%2 == 0) {
-				if (kZone == jZone) {
-					D[kZone][jZone] = 0.0;
-				} else {
-					D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
-				}
-			} else {
-				/*--- For an odd number of time instances ---*/
-				if (kZone == jZone) {
-					D[kZone][jZone] = 0.0;
-				} else {
-					D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
-				}
-			}
-		}
-	}
-  
-	/*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
-	/*--- Loop over all grid levels ---*/
-	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
+  /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
+  /*--- Loop over all grid levels ---*/
+  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
     
-		/*--- Loop over each node in the volume mesh ---*/
-		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+    /*--- Loop over each node in the volume mesh ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
       
-			for (iVar = 0; iVar < nVar; iVar++) {
-				Source[iVar] = 0.0;
-			}
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Source[iVar] = 0.0;
+      }
       
-			/*--- Step across the columns ---*/
-			for (jZone = 0; jZone < nZone; jZone++) {
+      /*--- Step across the columns ---*/
+      for (jZone = 0; jZone < nZone; jZone++) {
         
-				/*--- Retrieve solution at this node in current zone ---*/
-				for (iVar = 0; iVar < nVar; iVar++) {
+        /*--- Retrieve solution at this node in current zone ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
           
-					if (!adjoint) {
+          if (!adjoint) {
+            U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            Source[iVar] += U[iVar]*D[iZone][jZone];
             
-						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-						Source[iVar] += U[iVar]*D[iZone][jZone];
+            if (implicit) {
+              U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              deltaU = U[iVar] - U_old[iVar];
+              Source[iVar] += deltaU*D[iZone][jZone];
+            }
             
-						if (implicit) {
-							U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-							deltaU = U[iVar] - U_old[iVar];
-							Source[iVar] += deltaU*D[iZone][jZone];
-						}
+          } 
+          
+          else {
+            Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            Source[iVar] += Psi[iVar]*D[jZone][iZone];
             
-					} else {
-            
-						Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
-						Source[iVar] += Psi[iVar]*D[jZone][iZone];
-            
-						if (implicit) {
-							Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-							deltaPsi = Psi[iVar] - Psi_old[iVar];
-							Source[iVar] += deltaPsi*D[jZone][iZone];
-						}
-					}
-				}
+            if (implicit) {
+              Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              deltaPsi = Psi[iVar] - Psi_old[iVar];
+              Source[iVar] += deltaPsi*D[jZone][iZone];
+            }
+          }
+        }
         
+        /*--- Store sources for current row ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          if (!adjoint) {
+            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+          } 
+          else {
+            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
+          }
+        }
         
-				/*--- Store sources for current row ---*/
-				for (iVar = 0; iVar < nVar; iVar++) {
-					if (!adjoint) {
-						solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
-					} else {
-						solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source[iVar]);
-					}
-				}
-        
-			}
-		}
-	}
-  
-  
+      }
+    }
+  }
   
 	//	/*--- Loop over all grid levels ---*/
 	//	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++) {
@@ -1539,35 +1437,34 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
 	//		}
 	//	}
   
-	/*--- Source term for a turbulence model ---*/
-	if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+  /*--- Source term for a turbulence model ---*/
+  if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
     
-		/*--- Extra variables needed if we have a turbulence model. ---*/
-		unsigned short nVar_Turb = solver_container[ZONE_0][MESH_0][TURB_SOL]->GetnVar();
-		double *U_Turb      = new double[nVar_Turb];
-		double *Source_Turb = new double[nVar_Turb];
+    /*--- Extra variables needed if we have a turbulence model. ---*/
+    unsigned short nVar_Turb = solver_container[ZONE_0][MESH_0][TURB_SOL]->GetnVar();
+    double *U_Turb = new double[nVar_Turb];
+    double *Source_Turb = new double[nVar_Turb];
     
-		/*--- Loop over only the finest mesh level (turbulence is always solved
-     on the original grid only). ---*/
-		for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
-			//for (iZone = 0; iZone < nZone; iZone++) {
-			for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
-			for (jZone = 0; jZone < nZone; jZone++) {
+    /*--- Loop over only the finest mesh level (turbulence is always solved
+          on the original grid only). ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
+        for (jZone = 0; jZone < nZone; jZone++) {
+          
+          /*--- Retrieve solution at this node in current zone ---*/
+          for (iVar = 0; iVar < nVar_Turb; iVar++) {
+            U_Turb[iVar] = solver_container[jZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
+            Source_Turb[iVar] += U_Turb[iVar]*D[iZone][jZone];
+          }
+        }
         
-				/*--- Retrieve solution at this node in current zone ---*/
-				for (iVar = 0; iVar < nVar_Turb; iVar++) {
-					U_Turb[iVar] = solver_container[jZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
-					Source_Turb[iVar] += U_Turb[iVar]*D[iZone][jZone];
-				}
-			}
-			/*--- Store sources for current iZone ---*/
-			for (iVar = 0; iVar < nVar_Turb; iVar++)
-				solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source_Turb[iVar]);
-			//}
-		}
+        /*--- Store sources for current iZone ---*/
+        for (iVar = 0; iVar < nVar_Turb; iVar++)
+          solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar,Source_Turb[iVar]);
+    }
     
-		delete [] U_Turb;
-		delete [] Source_Turb;
+    delete [] U_Turb;
+    delete [] Source_Turb;
   }
   
   /*--- delete dynamic memory for D ---*/
@@ -1582,7 +1479,7 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   delete [] Source;
   
   /*--- Write file with force coefficients ---*/
-	ofstream TS_Flow_file;
+  ofstream TS_Flow_file;
   ofstream mean_TS_Flow_file;
   
   /*--- MPI Send/Recv buffers ---*/
@@ -1597,25 +1494,25 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   double *averages = new double[nVar_Force];
   for (iVar = 0; iVar < nVar_Force; iVar++)
-	  averages[iVar] = 0;
+    averages[iVar] = 0;
   
   /*--- Allocate memory for receive buffer ---*/
   if (rank == MASTER_NODE) {
-	  rbuf_force = new double[nVar_Force];
+    rbuf_force = new double[nVar_Force];
     
-	  TS_Flow_file.precision(15);
-	  TS_Flow_file.open("TS_force_coefficients.csv", ios::out);
-	  TS_Flow_file <<  "\"time_instance\",\"lift_coeff\",\"drag_coeff\",\"moment_coeff_x\",\"moment_coeff_y\",\"moment_coeff_z\"" << endl;
+    TS_Flow_file.precision(15);
+    TS_Flow_file.open("TS_force_coefficients.csv", ios::out);
+    TS_Flow_file <<  "\"time_instance\",\"lift_coeff\",\"drag_coeff\",\"moment_coeff_x\",\"moment_coeff_y\",\"moment_coeff_z\"" << endl;
     
-	  mean_TS_Flow_file.precision(15);
-	  if (current_iter == 0 && iZone == 1) {
-		  mean_TS_Flow_file.open("history_TS_forces.plt", ios::trunc);
-		  mean_TS_Flow_file << "TITLE = \"SU2 TIME-SPECTRAL SIMULATION\"" << endl;
-		  mean_TS_Flow_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
-		  mean_TS_Flow_file << "ZONE T= \"Average Convergence History\"" << endl;
-	  }
-	  else
-		  mean_TS_Flow_file.open("history_TS_forces.plt", ios::out | ios::app);
+    mean_TS_Flow_file.precision(15);
+    if (current_iter == 0 && iZone == 1) {
+      mean_TS_Flow_file.open("history_TS_forces.plt", ios::trunc);
+      mean_TS_Flow_file << "TITLE = \"SU2 TIME-SPECTRAL SIMULATION\"" << endl;
+      mean_TS_Flow_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
+      mean_TS_Flow_file << "ZONE T= \"Average Convergence History\"" << endl;
+    }
+    else
+      mean_TS_Flow_file.open("history_TS_forces.plt", ios::out | ios::app);
   }
  
   if (rank == MASTER_NODE) { 
@@ -1653,24 +1550,58 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
   
   if (rank == MASTER_NODE && iZone == ZONE_0) {
     
-	  mean_TS_Flow_file << current_iter << ", ";
-	  for (iVar = 0; iVar < nVar_Force; iVar++) {
-		  mean_TS_Flow_file << averages[iVar];
-		  if (iVar < nVar_Force-1)
-			  mean_TS_Flow_file << ", ";
-	  }
-	  mean_TS_Flow_file << endl;
+    mean_TS_Flow_file << current_iter << ", ";
+    for (iVar = 0; iVar < nVar_Force; iVar++) {
+      mean_TS_Flow_file << averages[iVar];
+      if (iVar < nVar_Force-1)
+        mean_TS_Flow_file << ", ";
+      }
+      mean_TS_Flow_file << endl;
   }
   
   if (rank == MASTER_NODE) {
-	  TS_Flow_file.close();
-	  mean_TS_Flow_file.close();
-	  delete [] rbuf_force;
+    TS_Flow_file.close();
+    mean_TS_Flow_file.close();
+    delete [] rbuf_force;
   }
   
   delete [] sbuf_force;
   delete [] averages;
   
+}
+
+void ComputeTimeSpectral_Operator(double **D, double period, unsigned short nZone) {
+  
+  unsigned short kZone, jZone;
+
+  /*--- Build the time-spectral operator matrix ---*/
+  for (kZone = 0; kZone < nZone; kZone++) {
+    for (jZone = 0; jZone < nZone; jZone++) {
+      
+      if (nZone%2 == 0) {
+        
+        /*--- For an even number of time instances ---*/
+        if (kZone == jZone) {
+          D[kZone][jZone] = 0.0;
+        } 
+        else {
+          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
+        }
+      }
+      else {
+        
+        /*--- For an odd number of time instances ---*/
+        if (kZone == jZone) {
+          D[kZone][jZone] = 0.0;
+        } 
+        else {
+          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
+        }
+      }
+
+    }
+  }
+
 }
 
 void SetTimeSpectral_Velocities(CGeometry ***geometry_container,

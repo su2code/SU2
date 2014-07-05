@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.0.1 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -453,11 +453,11 @@ double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double 
 void CGalerkin_FEA::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) {
   
   double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  double Xi = 0.0, Eta = 0.0, Det;
+  double Xi = 0.0, Eta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, jGauss;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  double iWeight, jWeight;
+  double iWeight = 0.0, jWeight = 0.0;
   unsigned short nVar = 2;
   
   for (iVar = 0; iVar < nNodes*nVar; iVar++) {
@@ -533,11 +533,11 @@ void CGalerkin_FEA::SetFEA_StiffMatrix2D(double **StiffMatrix_Elem, double Coord
 void CGalerkin_FEA::SetFEA_StiffMatrix3D(double **StiffMatrix_Elem, double CoordCorners[8][3], unsigned short nNodes) {
   
   double B_Matrix[6][24], D_Matrix[6][6], Aux_Matrix[24][6];
-  double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det;
+  double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0;
   unsigned short iNode, iVar, jVar, kVar, iGauss, jGauss, kGauss;
   double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  double iWeight, jWeight, kWeight;
+  double iWeight = 0.0, jWeight = 0.0, kWeight = 0.0;
   unsigned short nVar = 3;
   
   for (iVar = 0; iVar < nNodes*nVar; iVar++) {
