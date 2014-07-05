@@ -5672,33 +5672,38 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++) {
 					getline(mesh_file,text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iTag; FFDBox_line >> iPoint;
-					iMarker = config->GetTag_Marker_All(iTag);
-					FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
           
-          if (val_fullmesh) {  // With vertices information (mesh deformation).
-            for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-              jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
-              if (iPoint == jPoint) {
-                FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
-                FFDBox[iFFDBox]->Set_VertexIndex(iVertex);
-                FFDBox[iFFDBox]->Set_PointIndex(iPoint);
-                FFDBox[iFFDBox]->Set_ParametricCoord(coord);
-                FFDBox[iFFDBox]->Set_CartesianCoord(geometry->node[iPoint]->GetCoord());
-                my_nSurfPoints++;
+          if (config->GetTagBound_Marker_All(iTag) != -1) {
+
+            iMarker = config->GetTagBound_Marker_All(iTag);
+            FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
+            
+            if (val_fullmesh) {  // With vertices information (mesh deformation).
+              for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
+                if (iPoint == jPoint) {
+                  FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
+                  FFDBox[iFFDBox]->Set_VertexIndex(iVertex);
+                  FFDBox[iFFDBox]->Set_PointIndex(iPoint);
+                  FFDBox[iFFDBox]->Set_ParametricCoord(coord);
+                  FFDBox[iFFDBox]->Set_CartesianCoord(geometry->node[iPoint]->GetCoord());
+                  my_nSurfPoints++;
+                }
               }
+              
+              /*--- It is possible to remove some points in the FFD that are
+               not associated with surface vertices, this is the case of send receive
+               points that are on the surface, but the surface is not in the domain ---*/
+              
             }
-            
-            /*--- It is possible to remove some points in the FFD that are
-             not associated with surface vertices, this is the case of send receive
-             points that are on the surface, but the surface is not in the domain ---*/
-            
-					}
-          else {  // Without vertices information (partitioning).
-            FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
-            FFDBox[iFFDBox]->Set_PointIndex(iPoint);
-            FFDBox[iFFDBox]->Set_ParametricCoord(coord);
-            my_nSurfPoints = nSurfacePoints[iFFDBox];
+            else {  // Without vertices information (partitioning).
+              FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
+              FFDBox[iFFDBox]->Set_PointIndex(iPoint);
+              FFDBox[iFFDBox]->Set_ParametricCoord(coord);
+              my_nSurfPoints = nSurfacePoints[iFFDBox];
+            }
           }
+          
 				}
         
         nSurfacePoints[iFFDBox] = my_nSurfPoints;

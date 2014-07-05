@@ -2685,7 +2685,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nDomain = SINGLE_NODE;
 #else
   /*--- Identify the solvers that work in serial ---*/
-  if ((val_software != SU2_PRT) && (val_software != SU2_MSH))
+  if (val_software != SU2_MSH)
     MPI_Comm_size(MPI_COMM_WORLD, (int*)&nDomain);   // any issue with type conversion here? MC
   else
     nDomain = SINGLE_NODE;
@@ -2702,9 +2702,9 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   nMarker_FlowLoad + nMarker_Pressure + nMarker_Custom +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + 2*nDomain;
   
-  Marker_All_TagBound        = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
+  Marker_All_TagBound   = new string[nMarker_All+2];			    // Store the tag that correspond with each marker.
   Marker_All_SendRecv   = new short[nMarker_All+2];						// +#domain (send), -#domain (receive) or 0 (neither send nor receive).
-  Marker_All_KindBC   = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
+  Marker_All_KindBC     = new unsigned short[nMarker_All+2];	// Store the kind of boundary condition.
   Marker_All_Monitoring = new unsigned short[nMarker_All+2];	// Store whether the boundary should be monitored.
   Marker_All_Designing  = new unsigned short[nMarker_All+2];  // Store whether the boundary should be designed.
   Marker_All_Plotting   = new unsigned short[nMarker_All+2];	// Store whether the boundary should be plotted.
@@ -2712,7 +2712,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   Marker_All_DV         = new unsigned short[nMarker_All+2];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     = new unsigned short[nMarker_All+2];	// Store whether the boundary should be in motion.
   Marker_All_PerBound   = new short[nMarker_All+2];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D   = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_Out_1D     = new unsigned short[nMarker_All+2];           // Store whether the boundary belongs to a 1-d output boundary.
   
   unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
