@@ -87,14 +87,14 @@ int main(int argc, char *argv[]) {
     
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
-    CDomainGeometry *domain = new CDomainGeometry(geometry, config);
+    CPhysicalGeometry *domain = new CPhysicalGeometry(geometry, config);
 
     /*--- Add the Send/Receive boundaries ---*/
     domain->SetSendReceive(config);
     
     /*--- Setting the right order for the MPI boundaries ---*/
     domain->SetBoundaries(config);
-    
+
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -111,9 +111,9 @@ int main(int argc, char *argv[]) {
       sprintf (buffer_plt, "_%d.dat", int(rank+1));
       string MeshFile_plt = MeshFile + buffer_plt;
       char *cstr_plt = strdup(MeshFile_plt.c_str());
-      domain->SetTecPlot(cstr_plt);
+      domain->SetTecPlot(cstr_plt, true);
     }
-    
+
     /*--- Write .su2 file ---*/
     sprintf (buffer_su2, "_%d.su2", int(rank+1));
     string MeshFile_su2 = MeshFile + buffer_su2;
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    
+
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
     surface_mov = new CSurfaceMovement();
     surface_mov->ReadFFDInfo(domain, config, FFDBox, config->GetMesh_FileName(), false);

@@ -1924,7 +1924,7 @@ public:
 	 * \return Value of the marker <i>val_marker</i> that is in the geometry file 
 	 *         for the surface that has the tag.
 	 */		
-	unsigned short GetTag_Marker_All(string val_tag);
+  short GetTagBound_Marker_All(string val_tag);
 
 	/*! 
 	 * \brief Get the kind of boundary for each marker.
