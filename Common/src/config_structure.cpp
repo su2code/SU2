@@ -4731,7 +4731,7 @@ CConfig::~CConfig(void)
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
-  
+
   /*--- If allocated, delete arrays for Plasma solver ---*/
   if (Molar_Mass           != NULL) delete [] Molar_Mass;
   if (Gas_Composition      != NULL) delete [] Gas_Composition;
@@ -4769,7 +4769,7 @@ CConfig::~CConfig(void)
   }
   
   /*--- Free memory for unspecified grid motion parameters ---*/
-  
+
   if (Kind_GridMovement != NULL)
     delete [] Kind_GridMovement;
   
@@ -4940,7 +4940,7 @@ CConfig::~CConfig(void)
   if (Marker_HeatFlux!=NULL )               delete[] Marker_HeatFlux;
   if (Marker_HeatFluxNonCatalytic!=NULL )   delete[] Marker_HeatFluxNonCatalytic;
   if (Marker_HeatFluxCatalytic!=NULL )      delete[] Marker_HeatFluxCatalytic;
-  
+
 }
 
 void CConfig::SetFileNameDomain(unsigned short val_domain) {
