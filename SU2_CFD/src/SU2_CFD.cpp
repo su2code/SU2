@@ -534,9 +534,9 @@ MPI_Barrier(MPI_COMM_WORLD);
   for (iZone = 0; iZone < nZone; iZone++) {
     //if (geometry_container[iZone]!=NULL){
       //if (geometry_container[iZone][MESH_0]!=NULL)
-   //  delete geometry_container[iZone][MESH_0];
-      //for (int iMGlevel = 1; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++)
-        //delete geometry_container[iZone][iMGlevel];
+       // delete geometry_container[iZone][MESH_0];
+      for (int iMGlevel = 1; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++)
+        delete geometry_container[iZone][iMGlevel];
      delete geometry_container[iZone];
     //}
   }
