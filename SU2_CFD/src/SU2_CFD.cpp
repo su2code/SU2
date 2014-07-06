@@ -531,7 +531,7 @@ MPI_Barrier(MPI_COMM_WORLD);
 
   /*--- Geometry class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-      for (int iMGlevel = 1; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++)
+      for (int iMGlevel = 1; iMGlevel < config_container[ZONE_0]->GetMGLevels()+1; iMGlevel++)
         delete geometry_container[iZone][iMGlevel];
      delete geometry_container[iZone];
   }

@@ -62,11 +62,12 @@ CSolver::~CSolver(void) {
   if( OutputHeadingNames != NULL){
     delete []OutputHeadingNames;
   }
-  //  delete [] OutputHeadingNames;
-  /*  unsigned short iVar, iDim;
-   unsigned long iPoint;
+  delete [] OutputHeadingNames;
+  /*
+  unsigned short iVar, iDim;
+  unsigned long iPoint;
    
-   if (Residual_RMS != NULL) delete [] Residual_RMS;
+   if (Residual_RMS != NULL) { delete [] Residual_RMS; Residual_RMS=NULL; }
    if (Residual_Max != NULL) delete [] Residual_Max;
    if (Residual != NULL) delete [] Residual;
    if (Residual_i != NULL) delete [] Residual_i;

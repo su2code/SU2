@@ -664,9 +664,14 @@ CEulerSolver::~CEulerSolver(void) {
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
 
-   for (iPoint = 0; iPoint < nPoint; iPoint++)
-     delete node[iPoint];
+  if (node!=NULL){
+   for (iPoint = 0; iPoint < nPoint; iPoint++){
+     if (node[iPoint]!=NULL) delete node[iPoint];
+     node[iPoint]=NULL;
+   }
    delete node;
+   node = NULL;
+  }
 
 }
 

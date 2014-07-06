@@ -1281,7 +1281,7 @@ public:
  * \version 3.2.0 "eagle"
  */
 class CMultiGridGeometry : public CGeometry {
-
+  unsigned long Fine_nPoint; /*!< \brief Number of points of the finest mesh. (for deallocation)*/
 public:
 
 	/*! 
