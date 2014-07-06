@@ -79,13 +79,17 @@ CGeometry::~CGeometry(void) {
       if (face[iFace] != NULL) delete face[iFace];
     delete[] face;
   }
+  /*conficts with node in solver_direct_mean*/
 /*
   if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+    for (iPoint = 0; iPoint < GetnPoint(); iPoint ++) {
       if (node[iPoint] != NULL) delete node[iPoint];
-    }delete[] node;
+      node[iPoint]=NULL;
+    }
+    delete node;
+    node = NULL;
   }
-  */
+*/
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
       if (edge[iEdge] != NULL) delete edge[iEdge];
@@ -8869,7 +8873,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
    4th) No marker ---> Internal Volume (always agglomarate) ---*/
   
   /*--- Set a marker to indicate indirect agglomeration ---*/
-  
+  Fine_nPoint=fine_grid->GetnPoint();
+
   if (iMesh == MESH_1) {
     for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++)
       fine_grid->node[iPoint]->SetAgglomerate_Indirect(false);
@@ -9363,7 +9368,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 
 
 CMultiGridGeometry::~CMultiGridGeometry(void) {
-  for (int iPoint = 0; iPoint < nPoint; iPoint ++)
+  for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++)
       delete node[iPoint];
 
   delete node;
