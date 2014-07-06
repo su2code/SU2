@@ -530,17 +530,11 @@ MPI_Barrier(MPI_COMM_WORLD);
     if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
 
   /*--- Geometry class deallocation ---*/
-  //delete geometry_container[ZONE_0][MESH_0];
   for (iZone = 0; iZone < nZone; iZone++) {
-    //if (geometry_container[iZone]!=NULL){
-      //if (geometry_container[iZone][MESH_0]!=NULL)
-       // delete geometry_container[iZone][MESH_0];
       for (int iMGlevel = 1; iMGlevel <= config_container[ZONE_0]->GetMGLevels(); iMGlevel++)
         delete geometry_container[iZone][iMGlevel];
      delete geometry_container[iZone];
-    //}
   }
-
   delete [] geometry_container;
   cout <<"Geometry container deallocated." << endl;
   
@@ -567,9 +561,9 @@ MPI_Barrier(MPI_COMM_WORLD);
 
     /*Deallocate config container*/
   for (iZone = 0; iZone < nZone; iZone++) {
-//    if (config_container[iZone]!=NULL){
- //     delete config_container[iZone];
-  //  }
+    if (config_container[iZone]!=NULL){
+      delete config_container[iZone];
+    }
   }
   if (config_container!=NULL) delete [] config_container;
   cout <<"Config container deallocated." << endl;
