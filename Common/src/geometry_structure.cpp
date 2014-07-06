@@ -58,7 +58,7 @@ CGeometry::CGeometry(void) {
 CGeometry::~CGeometry(void) {
   unsigned long iElem, iElem_Bound, iPoint, iFace, iVertex, iEdge;
   unsigned short iMarker;
-  
+
   if (elem != NULL) {
     for (iElem = 0; iElem < nElem; iElem++)
       if (elem[iElem] != NULL) delete elem[iElem];
@@ -73,25 +73,25 @@ CGeometry::~CGeometry(void) {
     }
     delete[] bound;
   }
-  
+
   if (face != NULL) {
     for (iFace = 0; iFace < nFace; iFace ++)
       if (face[iFace] != NULL) delete face[iFace];
     delete[] face;
   }
-  
+/*
   if (node != NULL) {
     for (iPoint = 0; iPoint < nPoint; iPoint ++) {
       if (node[iPoint] != NULL) delete node[iPoint];
     }delete[] node;
   }
-  
+  */
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
       if (edge[iEdge] != NULL) delete edge[iEdge];
     delete[] edge;
   }
-  
+
   if (vertex != NULL)  {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -109,12 +109,13 @@ CGeometry::~CGeometry(void) {
     }
     delete[] newBound;
   }
+
   if (nElem_Bound != NULL) delete[] nElem_Bound;
   if (nVertex != NULL) delete[] nVertex;
   if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
   if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
-  
+
   // the below were commented out in master
 	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
 	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
