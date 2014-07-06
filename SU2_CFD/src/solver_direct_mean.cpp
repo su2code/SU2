@@ -71,6 +71,9 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 	New_Func = 0;
 	Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  node_infty=NULL;
+  PrimVar_i=NULL;
+  PrimVar_j=NULL;
   
 }
 
@@ -495,11 +498,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CEulerSolver::~CEulerSolver(void) {
+
   unsigned short iVar, iMarker, iPoint, iVertex, iDim;
 
   /*--- Pointers from CEuler ---*/
   if (node_infty!=NULL)       delete [] node_infty;
-  //if (Velocity_Inf!=NULL)     delete [] Velocity_Inf;
+  if (Velocity_Inf!=NULL)     delete [] Velocity_Inf;
   if (iPoint_UndLapl!=NULL)   delete [] iPoint_UndLapl;
   if (jPoint_UndLapl!=NULL)   delete [] jPoint_UndLapl;
   if (PrimVar_i!=NULL)        delete [] PrimVar_i;
@@ -544,7 +548,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
-  
+
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete LowMach_Precontioner[iVar];
@@ -577,7 +581,7 @@ CEulerSolver::~CEulerSolver(void) {
   //    }
   //    delete [] CharacPrimVar;
   //  }
-  
+
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete HeatFlux[iMarker];
@@ -663,6 +667,7 @@ CEulerSolver::~CEulerSolver(void) {
    for (iPoint = 0; iPoint < nPoint; iPoint++)
      delete node[iPoint];
    delete node;
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -7528,7 +7533,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker;
-  
+
+  /*--- Array initialization ---*/
   if (CDrag_Visc != NULL)      delete [] CDrag_Visc;
   if (CLift_Visc != NULL)      delete [] CLift_Visc;
   if (CSideForce_Visc != NULL) delete [] CSideForce_Visc;
@@ -7546,7 +7552,7 @@ CNSSolver::~CNSSolver(void) {
   if (MaxHeatFlux_Visc != NULL)       delete [] MaxHeatFlux_Visc;
   if (ForceViscous != NULL)    delete [] ForceViscous;
   if (MomentViscous != NULL)   delete [] MomentViscous;
-  
+
   if (Surface_CLift_Visc != NULL) delete [] Surface_CLift_Visc;
   if (Surface_CDrag_Visc != NULL) delete [] Surface_CDrag_Visc;
   if (Surface_CMx_Visc != NULL)   delete [] Surface_CMx_Visc;
@@ -7559,7 +7565,7 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] CSkinFriction;
   }
-  
+
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
