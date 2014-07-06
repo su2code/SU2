@@ -604,75 +604,9 @@ CEulerSolver::~CEulerSolver(void) {
   }
 
   /*---Pointers from Solver parent Class---*/
-  if(Residual_RMS!=NULL)    delete [] Residual_RMS;
-  if(Residual_Max!=NULL)    delete [] Residual_Max;
-  if(Residual!=NULL)    delete [] Residual;
-  if(Residual_i!=NULL)    delete [] Residual_i;
-  if(Residual_j!=NULL)    delete []Residual_j ;
-  if(Point_Max!=NULL)    delete [] Point_Max;
-  if(Solution!=NULL)    delete [] Solution;
-  if(Solution_i!=NULL)    delete [] Solution_i;
-  if(Solution_j!=NULL)    delete [] Solution_j;
-  if(Vector!=NULL)    delete [] Vector;
-  if(Vector_i!=NULL)    delete [] Vector_i;
-  if(Vector_j!=NULL)    delete [] Vector_j;
-  if(Res_Conv!=NULL)    delete [] Res_Conv;
-  if(Res_Visc!=NULL)    delete [] Res_Visc;
-  if(Res_Sour!=NULL)    delete [] Res_Sour;
-  if(Res_Conv_i!=NULL)    delete [] Res_Conv_i;
-  if(Res_Visc_i!=NULL)    delete [] Res_Visc_i;
-  if(Res_Conv_j!=NULL)    delete [] Res_Conv_j;
-  if(Res_Visc_j!=NULL)    delete [] Res_Visc_j;
-
-  if(Jacobian_i!=NULL){
-    for  (iDim = 0; iDim < nDim; iDim++) {
-      delete [] Jacobian_i[iDim];
-    }
-    delete [] Jacobian_i;
-  }
-  if(Jacobian_j!=NULL){
-    for  (iDim = 0; iDim < nDim; iDim++) {
-      delete [] Jacobian_j[iDim];
-    }
-    delete [] Jacobian_j;
-  }
-  if(Jacobian_ii!=NULL and Jacobian_ij!=NULL and Jacobian_ji!=NULL and Jacobian_jj!=NULL ){
-    for  (iDim = 0; iDim < nDim; iDim++) {
-      delete [] Jacobian_ii[iDim];
-      delete [] Jacobian_ij[iDim];
-      delete [] Jacobian_ji[iDim];
-      delete [] Jacobian_jj[iDim];
-    }
-    delete [] Jacobian_ii;
-    delete [] Jacobian_ij;
-    delete [] Jacobian_ji;
-    delete [] Jacobian_jj;
-  }
-  if (Smatrix!=NULL){
-    for (iDim=0; iDim<nDim; iDim++){
-      delete [] Smatrix[iDim];
-    }
-    delete [] Smatrix;
-  }
-  if (cvector!=NULL){
-    for (iVar=0; iVar<nPrimVarGrad; iVar++){
-      delete [] cvector[iVar];
-    }
-    delete [] cvector;
-  }
 
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
-
-  if (node!=NULL){
-   for (iPoint = 0; iPoint < nPoint; iPoint++){
-     if (node[iPoint]!=NULL) delete node[iPoint];
-     node[iPoint]=NULL;
-   }
-   delete node;
-   node = NULL;
-  }
-
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
