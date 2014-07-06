@@ -54,6 +54,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE]) {
+
   /*--- Initialize pointers to Null---*/
   SetPointersNull();
   
@@ -146,8 +147,33 @@ void CConfig::SetPointersNull(void){
   Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
   Diss=NULL;
 
+  Heat_FluxNonCatalytic=NULL;
+  Heat_FluxCatalytic=NULL;
+  Marker_All_Moving=NULL;
+  /*Marker_CfgFile and Marker_ALL*/
+  Marker_All_Monitoring=NULL;
+  Marker_All_GeoEval=NULL;
+  Marker_All_Plotting=NULL;
+  Marker_All_DV=NULL;
+  Marker_All_Moving=NULL;
+  Marker_All_Designing=NULL;
+  Marker_All_Out_1D=NULL;
+  Marker_CfgFile_Monitoring=NULL;
+  Marker_CfgFile_Designing=NULL;
+  Marker_CfgFile_GeoEval=NULL;
+  Marker_CfgFile_Plotting=NULL;
+  Marker_CfgFile_Out_1D=NULL;
+  Marker_CfgFile_Moving=NULL;
+  Marker_CfgFile_DV=NULL;
+  Marker_CfgFile_PerBound=NULL;
 
-
+  PlaneTag=NULL;
+  Marker_Monitoring=NULL;
+  Marker_Designing=NULL;
+  Marker_GeoEval=NULL;
+  Marker_Plotting=NULL;
+  Marker_Moving=NULL;
+  Marker_DV=NULL;
 }
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
@@ -4841,6 +4867,7 @@ CConfig::~CConfig(void)
     delete [] RefOriginMoment_Z;
   
   /*Marker pointers*/
+
   if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval!=NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -4848,6 +4875,7 @@ CConfig::~CConfig(void)
   if (Marker_CfgFile_TagBound!=NULL)      delete[] Marker_CfgFile_TagBound;
   if (Marker_All_TagBound!=NULL)         delete[] Marker_All_TagBound;
   if (Marker_CfgFile_KindBC!=NULL) delete[] Marker_CfgFile_KindBC;
+
   if (Marker_All_KindBC!=NULL)    delete[] Marker_All_KindBC;
   if (Marker_CfgFile_Monitoring!=NULL)    delete[] Marker_CfgFile_Monitoring;
   if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
@@ -4866,9 +4894,10 @@ CConfig::~CConfig(void)
   if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
   if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
+
   if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
   if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
-  
+
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
   if (DV_Value!=NULL)    delete[] DV_Value;
@@ -4890,6 +4919,7 @@ CConfig::~CConfig(void)
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
   if (Heat_FluxNonCatalytic!=NULL)    delete[] Heat_FluxNonCatalytic;
   if (Heat_FluxCatalytic!=NULL)    delete[] Heat_FluxCatalytic;
+
   if (Displ_Value!=NULL)    delete[] Displ_Value;
   if (Load_Value!=NULL)    delete[] Load_Value;
   if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
@@ -4899,7 +4929,6 @@ CConfig::~CConfig(void)
   if (Periodic_Center!=NULL)    delete[] Periodic_Center;
   if (Periodic_Rotation!=NULL)    delete[] Periodic_Rotation;
   if (Periodic_Translate!=NULL)    delete[] Periodic_Translate;
-  
   if (ParamDV!=NULL  )    delete[] ParamDV;
   if (MG_CorrecSmooth!=NULL    )    delete[] MG_CorrecSmooth;
   if (Section_Location!=NULL)    delete[] Section_Location;
