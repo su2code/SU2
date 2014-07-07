@@ -98,6 +98,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
@@ -2123,6 +2124,13 @@ public:
 	 * \return Governing equation that we are solving.
 	 */
 	unsigned short GetKind_Regime(void);
+  
+  /*!
+	 * \brief Governing equations of the flow (it can be different from the run time equation).
+	 * \param[in] val_zone - Zone where the soler is applied.
+	 * \return Governing equation that we are solving.
+	 */
+	unsigned short GetSystemMeasurements(void);
   
 	/*! 
 	 * \brief Gas model that we are using.

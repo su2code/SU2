@@ -175,6 +175,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("RESTART_SOL", Restart, false);
   /* DESCRIPTION: Write a tecplot file for each partition */
   addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
+  /* DESCRIPTION: System of measurements */
+  addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
   
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/

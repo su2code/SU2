@@ -314,6 +314,8 @@ inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
 inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 
+inline unsigned short CConfig::GetSystemMeasurements(void) { return SystemMeasurements; }
+
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
