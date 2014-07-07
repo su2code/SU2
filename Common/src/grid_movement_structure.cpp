@@ -1366,8 +1366,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
         break;
         
       case CONSTANT_STIFFNESS:
-        E=config->GetYoung_modulus();
-        Nu=config->GetPoisson_ratio();
+        E=config->GetDeform_ElasticityMod();
+        Nu=config->GetDeform_PoissonRatio();
         //E = 2E11; Nu = 0.30;
         Mu = E / (2.0*(1.0 + Nu));
         Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
@@ -1526,8 +1526,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
         break;
         
       case CONSTANT_STIFFNESS:
-        E=config->GetYoung_modulus();
-        Nu=config->GetPoisson_ratio();
+        E=config->GetDeform_ElasticityMod();
+        Nu=config->GetDeform_PoissonRatio();
         //E = 2E11; Nu = 0.30;
         Mu = E / (2.0*(1.0 + Nu));
         Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));

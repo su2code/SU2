@@ -967,9 +967,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
   addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, INVERSE_VOLUME);
   /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
-  addDoubleOption("YOUNGS_MODULUS", Young_modulus, 2E11);
+  addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
-  addDoubleOption("POISSONS_RATIO", Poisson_ratio, 0.3);
+  addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
   
   /* CONFIG_CATEGORY: Rotorcraft problem */
   /*--- option related to rotorcraft problems ---*/

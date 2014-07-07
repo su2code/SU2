@@ -3603,7 +3603,20 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
 #else
   rank = MASTER_NODE;
 #endif
-  
+
+  /* If 1-D outputs requested, calculated them. Requires info from all nodes*/
+  bool output_1d  = ((*config)->GetWrt_1D_Output());
+  if (output_1d) {
+    switch (config[val_iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
+      case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
+        unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+        /* Get area-averaged and flux-averaged values at the specified surface*/
+        OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+    }
+  }
+
   /*--- Output using only the master node ---*/
   if (rank == MASTER_NODE) {
     
@@ -3656,7 +3669,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Regime() == RANS) || (config[val_iZone]->GetKind_Regime() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Regime() == ADJ_RANS);
     
-    bool output_1d  = ((*config)->GetWrt_1D_Output());
+    //bool output_1d  = ((*config)->GetWrt_1D_Output());
     bool output_per_surface = false;
     if(config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
     
@@ -3759,7 +3772,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
-        
+
         /*--- Flow solution coefficients ---*/
         Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
         Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
@@ -3823,12 +3836,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         }
         
         if (fluid_structure) {
-          Total_CFEA  = solver_container[ZONE_1][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+          Total_CFEA  = solver_container[ZONE_0][FinestMesh][FEA_SOL]->GetTotal_CFEA();
         }
         
         if (output_1d) {
           /* Get area-averaged and flux-averaged values at the specified surface*/
-          OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+          //OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
           OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Pt();
           OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_M();
           OneD_Temp=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_T();
@@ -3865,10 +3878,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         }
         
         /*--- FEA residual ---*/
-        
         if (fluid_structure) {
           for (iVar = 0; iVar < nVar_FEA; iVar++)
-            residual_fea[iVar] = solver_container[ZONE_1][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
+            residual_fea[iVar] = solver_container[ZONE_0][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
         }
         
         /*--- Iterations of the linear solver ---*/
@@ -5129,7 +5141,8 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Density = solver_container->node[iPoint]->GetDensityInc();
         }
         /*-- Find velocity normal to the marked surface/opening --*/
-        U=0.0;
+        U=0.0; Enthalpy=0; Mach=0; Velocity2=0; Stag_Pressure=0;
+        Area=0; Temperature=0; RhoU=0;
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
           U+=Normal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
         }
@@ -5155,30 +5168,29 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
       }
     }
     
-    if (Out1D==YES){
+    if (Out1D==YES && SumRhoU !=0){
       double OverArea = 1.0/SumArea;
-      AveragePressure += SumStagPressure*OverArea;
-      AverageMach += SumMach*OverArea;
-      AverageTemperature += SumTemperature*OverArea;
-      PressureRef += SumPressure*OverArea;
-      VelocityRef+=sqrt(SumForUref/SumRhoU);
-      EnthalpyRef+=SumEnthalpy/SumRhoU;
-      DensityRef+=PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef);
+      AveragePressure += abs(SumStagPressure*OverArea);
+      AverageMach += abs(SumMach*OverArea);
+      AverageTemperature += abs(SumTemperature*OverArea);
+      PressureRef += abs(SumPressure*OverArea);
+      VelocityRef+= abs(sqrt(abs(SumForUref/SumRhoU)));
+      EnthalpyRef+=abs(SumEnthalpy/SumRhoU);
+      DensityRef+=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
     }
   }
   
 #ifdef HAVE_MPI
-  
   /*--- Add AllBound information using all the nodes ---*/
   
   double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
   double My_AverageMach            = AverageMach;            AverageMach = 0.0;
   double My_AverageTemperature     = AverageTemperature;     AverageTemperature = 0.0;
-  double My_PressureRef            = PressureRef;     PressureRef = 0.0;
-  double My_VelocityRef            = VelocityRef;     VelocityRef = 0.0;
-  double My_EnthalpyRef            = EnthalpyRef;     EnthalpyRef = 0.0;
-  double My_DensityRef            = DensityRef;     DensityRef = 0.0;
-  
+  double My_PressureRef            = PressureRef;            PressureRef = 0.0;
+  double My_VelocityRef            = VelocityRef;            VelocityRef = 0.0;
+  double My_EnthalpyRef            = EnthalpyRef;            EnthalpyRef = 0.0;
+  double My_DensityRef             = DensityRef;             DensityRef = 0.0;
+
   MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
