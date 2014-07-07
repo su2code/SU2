@@ -227,12 +227,22 @@ enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
   FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
-  
 };
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE)
 ("FREESURFACE", FREESURFACE);
+
+/*!
+ * \brief different system of measurements
+ */
+enum ENUM_MEASUREMENTS {
+  SI = 0,			/*!< \brief Definition of compressible solver. */
+  US = 1,				/*!< \brief Definition of incompressible solver. */
+};
+static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string, ENUM_MEASUREMENTS>
+("SI", SI)
+("US", US);
 
 /*!
  * \brief different types of systems
