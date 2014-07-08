@@ -701,6 +701,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
   /* DESCRIPTION: Write a new mesh converted to meters */
   addBoolOption("MESH_OUTPUT", Mesh_Output, false);
+  /* DESCRIPTION: Cuthill–McKee ordering algorithm */
+  addBoolOption("CUTHILL_MCKEE_ORDERING", CuthillMckee_Ordering, false);
   /* DESCRIPTION: Mesh output file */
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
   

@@ -938,6 +938,8 @@ inline bool CConfig::GetHold_GridFixed(void) { return Hold_GridFixed; }
 
 inline bool CConfig::GetCGNS_To_SU2(void) {return CGNS_To_SU2; }
 
+inline bool CConfig::GetCuthillMckee_Ordering(void) { return CuthillMckee_Ordering; }
+
 inline bool CConfig::GetMesh_Output(void) { return Mesh_Output; }
 
 inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index; }
