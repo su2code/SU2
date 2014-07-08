@@ -206,15 +206,19 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
     geometry[iZone][MESH_0]->SetPoint_Connectivity();
     
-    /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
-    
-    if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-    geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
-    
-    /*--- recompute elements surrounding points, points surrounding points ---*/
-    
-    if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-    geometry[iZone][MESH_0]->SetPoint_Connectivity();
+    if (config[iZone]->GetCuthillMckee_Ordering()) {
+      
+      /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+      
+      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
+      
+      /*--- recompute elements surrounding points, points surrounding points ---*/
+      
+      if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+      geometry[iZone][MESH_0]->SetPoint_Connectivity();
+      
+    }
     
     /*--- Compute elements surrounding elements ---*/
     

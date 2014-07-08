@@ -584,6 +584,7 @@ private:
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+  bool CuthillMckee_Ordering; /*!< \brief Cuthill–McKee ordering algorithm. */
 	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
@@ -4268,6 +4269,12 @@ public:
 	 */
 	bool GetCGNS_To_SU2(void);
 
+  /*!
+	 * \brief Get Cuthill–McKee ordering algorithm.
+	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
+	 */
+	bool GetCuthillMckee_Ordering(void);
+  
 	/*! 
 	 * \brief Get information about whether a converted mesh should be written.
 	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
