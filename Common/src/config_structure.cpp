@@ -181,8 +181,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
   
-  /* DESCRIPTION: Specific gas constant (287.87 J/kg*K (air), only for compressible flows) */
-  addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.87);
+  /* DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) */
+  addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
   /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
@@ -199,15 +199,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
-  //	AddScalarOption("MIXTURE_MOLAR_MASS", Mixture_Molar_mass, 28.97);
   /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
   addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
   /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
-  /* DESCRIPTION: Free-stream temperature (273.15 K by default) */
-  addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 273.15);
-  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
-  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
+  /* DESCRIPTION: Free-stream temperature (288.15 K by default) */
+  addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+  /* DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) */
+  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
   /* DESCRIPTION: Free-stream velocity (m/s) */
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
