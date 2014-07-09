@@ -576,7 +576,7 @@ private:
 	Pressure_FreeStreamND,     /*!< \brief Farfield pressure value (external flow). */
 	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
-  *Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
+  Velocity_FreeStreamND[3],    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
@@ -1082,7 +1082,7 @@ public:
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
 	 * \return Value of the Mach number.
 	 */
-	double GetMach_FreeStreamND(void);
+	double GetMach(void);
 
 	/*! 
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats).
@@ -1342,6 +1342,12 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetViscosity_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetViscosity_FreeStream(void);
   
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -4560,14 +4566,6 @@ public:
 	 * \return File name of the arbitrary mesh motion input file.
 	 */
 	string GetMotion_FileName(void);
-
-	/*!
-	 * \brief Set the non-dimensionalization for SU2_CFD.
-	 * \param[in] val_nDim - Number of dimensions for this particular problem.
-	 * \param[in] val_rank - Processor rank.
-	 * \param[in] val_iZone - Current grid domain number.
-	 */	
-	void SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone);
 
   /*!
 	 * \brief Set the config options.

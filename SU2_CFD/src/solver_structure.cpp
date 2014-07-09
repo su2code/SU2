@@ -1518,7 +1518,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
   double b = Lref/2.0;  // airfoil semichord
   double Density_Inf  = config->GetDensity_FreeStreamND();
   double P_Inf = config->GetPressure_FreeStreamND();
-  double Mach_Inf     = config->GetMach_FreeStreamND();
+  double Mach_Inf     = config->GetMach();
   double gamma = config->GetGamma();
   
   /*--- airfoil mass ratio ---*/

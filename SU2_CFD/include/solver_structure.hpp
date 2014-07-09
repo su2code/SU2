@@ -167,6 +167,13 @@ public:
 	 */
   virtual void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
+  /*!
+	 * \brief Set the fluid solver nondimensionalization.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Get number of linear solver iterations.
 	 * \return Number of linear solver iterations.
@@ -2051,7 +2058,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
-    
+  
+  /*!
+	 * \brief Set the fluid solver nondimensionalization.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetNondimensionalization(CGeometry *geometry, CConfig *config);
+  
 	/*!
 	 * \brief Compute the density at the infinity.
 	 * \return Value of the density at the infinity.
@@ -2899,7 +2913,6 @@ public:
 	 * \param[in] ExtIter - External iteration.
 	 */
 	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
   
 	/*!
 	 * \brief Recompute distance to the level set 0.

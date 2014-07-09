@@ -402,8 +402,8 @@ void CGridAdaptation::SetSupShock_Refinement(CGeometry *geometry, CConfig *confi
 	unsigned long iElem, iPoint;
 	unsigned short iNode;
 	double Coordx, Coordy;
-	double mu_1 = asin(1/config->GetMach_FreeStreamND()-0.1);
-	double mu_2 = asin(1/(config->GetMach_FreeStreamND()-0.7));
+	double mu_1 = asin(1/config->GetMach()-0.1);
+	double mu_2 = asin(1/(config->GetMach()-0.7));
 	
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 		for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {

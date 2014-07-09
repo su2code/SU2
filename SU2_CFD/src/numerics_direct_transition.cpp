@@ -381,7 +381,7 @@ void CSourcePieceWise_TransLM::ComputeResidual_TransLM(double *val_residual, dou
 	//SU2_CPP2C COMMENT START
   /* -- These lines must be manually reinserted into the differentiated routine! --*/
   rey  = config->GetReynolds();
-  mach = config->GetMach_FreeStreamND();
+  mach = config->GetMach();
 	tu   = config->GetTurbulenceIntensity_FreeStream();
 	//SU2_CPP2C COMMENT END
   
@@ -568,7 +568,7 @@ void CSourcePieceWise_TransLM::CSourcePieceWise_TransLM__ComputeResidual_TransLM
   mach = 0.0;
   tu = 0.0;
   rey  = config->GetReynolds();
-  mach = config->GetMach_FreeStreamND();
+  mach = config->GetMach();
   tu   = config->GetTurbulenceIntensity_FreeStream();
   /*--- Compute vorticity and strain (TODO: Update for 3D) ---*/
   Vorticity = fabs(PrimVar_Grad_i[1][1] - PrimVar_Grad_i[2][0]);
