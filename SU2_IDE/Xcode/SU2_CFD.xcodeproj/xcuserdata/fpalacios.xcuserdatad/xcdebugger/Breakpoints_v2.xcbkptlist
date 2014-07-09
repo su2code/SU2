@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../Common/src/config_structure.cpp"
-            timestampString = "426490002.067264"
+            timestampString = "426612246.065719"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2973"
-            endingLineNumber = "2973"
+            startingLineNumber = "2972"
+            endingLineNumber = "2972"
             landmarkName = "CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone)"
             landmarkType = "5">
          </BreakpointContent>
