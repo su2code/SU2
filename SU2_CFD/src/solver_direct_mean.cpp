@@ -95,6 +95,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Perform the non-dimensionalization for the flow equations using the
+   specified reference values. ---*/
+  
+  SetNondimensionalization(geometry, config);
+
   /*--- Array initialization ---*/
   
   CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL;  CEff_Inv = NULL;
@@ -331,7 +336,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Pressure_Inf = config->GetPressure_FreeStreamND();
   Velocity_Inf = config->GetVelocity_FreeStreamND();
   Energy_Inf   = config->GetEnergy_FreeStreamND();
-  Mach_Inf     = config->GetMach_FreeStreamND();
+  Mach_Inf     = config->GetMach();
   
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
@@ -1560,6 +1565,293 @@ void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *confi
   }
   
   delete [] Limiter;
+  
+}
+
+void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config) {
+  
+  double Mach2Vel_FreeStream, ModVel_FreeStream, Energy_FreeStream = 0.0, ModVel_FreeStreamND;
+  double Velocity_Reynolds, Omega_FreeStream, Omega_FreeStreamND;
+  unsigned short iDim;
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Local variables and memory allocation ---*/
+  
+  double Alpha = config->GetAoA()*PI_NUMBER/180.0;
+  double Beta  = config->GetAoS()*PI_NUMBER/180.0;
+  double Gamma_Minus_One = Gamma - 1.0;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool Unsteady = (config->GetUnsteady_Simulation() != NO);
+  bool turbulent = (config->GetKind_Solver() == RANS);
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  
+  if (compressible) {
+    
+    Mach2Vel_FreeStream = sqrt(Gamma*config->GetGas_Constant()*config->GetTemperature_FreeStream());
+    
+    /*--- Compute the Free Stream velocity, using the Mach number ---*/
+    
+    if (nDim == 2) {
+      config->GetVelocity_FreeStream()[0] = cos(Alpha)*config->GetMach()*Mach2Vel_FreeStream;
+      config->GetVelocity_FreeStream()[1] = sin(Alpha)*config->GetMach()*Mach2Vel_FreeStream;
+    }
+    if (nDim == 3) {
+      config->GetVelocity_FreeStream()[0] = cos(Alpha)*cos(Beta)*config->GetMach()*Mach2Vel_FreeStream;
+      config->GetVelocity_FreeStream()[1] = sin(Beta)*config->GetMach()*Mach2Vel_FreeStream;
+      config->GetVelocity_FreeStream()[2] = sin(Alpha)*cos(Beta)*config->GetMach()*Mach2Vel_FreeStream;
+    }
+    
+    /*--- Compute the modulus of the free stream velocity ---*/
+    
+    ModVel_FreeStream = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+    ModVel_FreeStream = sqrt(ModVel_FreeStream);
+    
+    if (config->GetViscous()) {
+      
+      /*--- First, check if there is mesh motion. If yes, use the Mach
+       number relative to the body to initialize the flow. ---*/
+      
+      if (config->GetGrid_Movement()) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
+      else Velocity_Reynolds = ModVel_FreeStream;
+      
+      /*--- For viscous flows, pressure will be computed from a density
+       that is found from the Reynolds number. The viscosity is computed
+       from the dimensional version of Sutherland's law ---*/
+      
+      config->GetViscosity_FreeStream() = 1.853E-5*(pow(config->GetTemperature_FreeStream()/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+      Density_FreeStream   = config->GetReynolds()*config->GetViscosity_FreeStream()/(Velocity_Reynolds*Length_Reynolds);
+      Pressure_FreeStream  = config->GetDensity_FreeStream()*config->GetGas_Constant()*config->GetTemperature_FreeStream();
+      
+      Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*TurbulenceIntensity_FreeStream);
+      Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*Turb2LamViscRatio_FreeStream);
+      
+    } else {
+      /*--- For inviscid flow, density is calculated from the specified
+       total temperature and pressure using the gas law. ---*/
+      Density_FreeStream  = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
+    }
+    
+    /*-- Compute the freestream energy. ---*/
+    Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream*ModVel_FreeStream;
+    if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; };
+    
+    /*--- Additional reference values defined by Pref, Tref, RHOref. By definition,
+     Lref is one because we have converted the grid to meters.---*/
+    Length_Ref         = 1.0;
+    Velocity_Ref      = sqrt(Pressure_Ref/Density_Ref);
+    Time_Ref          = Length_Ref/Velocity_Ref;
+    Omega_Ref         = Velocity_Ref/Length_Ref;
+    Force_Ref         = Velocity_Ref*Velocity_Ref/Length_Ref;
+    Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/Temperature_Ref;
+    Viscosity_Ref     = Density_Ref*Velocity_Ref*Length_Ref;
+    Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
+    
+  }
+  
+  else {
+    
+    /*--- Reference length = 1 (by default)
+     Reference density = liquid density or freestream
+     Reference viscosity = liquid viscosity or freestream
+     Reference velocity = liquid velocity or freestream
+     Reference pressure = Reference density * Reference velocity * Reference velocity
+     Reynolds number based on the liquid or reference viscosity ---*/
+    
+    Pressure_FreeStream = 0.0;
+    Length_Ref = 1.0;
+    Density_Ref = Density_FreeStream;
+    ModVel_FreeStream = 0;
+    for (iDim = 0; iDim < val_nDim; iDim++)
+      ModVel_FreeStream += Velocity_FreeStream[iDim]*Velocity_FreeStream[iDim];
+    ModVel_FreeStream = sqrt(ModVel_FreeStream);
+    Velocity_Ref = ModVel_FreeStream;
+    Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);
+    
+    if (config->GetViscous()) {
+      Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream;
+      Viscosity_Ref = Viscosity_FreeStream * Reynolds;
+    }
+    
+    /*--- Compute mach number ---*/
+    Mach = ModVel_FreeStream / sqrt(Bulk_Modulus/Density_FreeStream);
+    if (val_nDim == 2) AoA = atan(Velocity_FreeStream[1]/Velocity_FreeStream[0])*180.0/PI_NUMBER;
+    else AoA = atan(Velocity_FreeStream[2]/Velocity_FreeStream[0])*180.0/PI_NUMBER;
+    if (val_nDim == 2) AoS = 0.0;
+    else AoS = asin(Velocity_FreeStream[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
+    
+    Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);
+    
+    Time_Ref = Length_Ref/Velocity_Ref;
+    
+  }
+  
+  /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
+  Pressure_FreeStreamND = Pressure_FreeStream/Pressure_Ref;
+  Density_FreeStreamND  = Density_FreeStream/Density_Ref;
+  
+  for (iDim = 0; iDim < val_nDim; iDim++)
+    Velocity_FreeStreamND[iDim] = Velocity_FreeStream[iDim]/Velocity_Ref;
+  Temperature_FreeStreamND = Temperature_FreeStream/Temperature_Ref;
+  
+  Gas_ConstantND = Gas_Constant/Gas_Constant_Ref;
+  
+  ModVel_FreeStreamND = 0;
+  for (iDim = 0; iDim < val_nDim; iDim++)
+    ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
+  ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND);
+  
+  Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;
+  
+  Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*TurbulenceIntensity_FreeStream*TurbulenceIntensity_FreeStream);
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*Turb2LamViscRatio_FreeStream);
+  
+  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
+  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };
+  
+  Total_UnstTimeND = Total_UnstTime / Time_Ref;
+  Delta_UnstTimeND = Delta_UnstTime / Time_Ref;
+  
+  /*--- Write output to the console if this is the master node and first domain ---*/
+  if ((rank == MASTER_NODE) && (val_iZone == 0) && (Kind_Solver != LINEAR_ELASTICITY) &&
+      (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    
+    cout << endl <<"---------------- Flow & Non-dimensionalization information ---------------" << endl;
+    
+    cout.precision(6);
+    
+    if (compressible) {
+      if (config->GetViscous()) {
+        cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
+        cout << "based on the freestream temperature and a density computed" << endl;
+        cout << "from the Reynolds number." << endl;
+      } else {
+        cout << "Inviscid flow: Computing density based on freestream" << endl;
+        cout << "temperature and pressure using the ideal gas law." << endl;
+      }
+    }
+    if (incompressible || freesurface) {
+      cout << "Viscous and Inviscid flow: rho_ref, and vel_ref" << endl;
+      cout << "are based on the freestream values, p_ref = rho_ref*vel_ref^2." << endl;
+      cout << "The freestream value of the pressure is 0." << endl;
+      cout << "Mach number: "<< Mach << ", computed using the Bulk modulus." << endl;
+      cout << "Angle of attack (deg): "<< AoA << ", computed using the the free-stream velocity." << endl;
+      cout << "Side slip angle (deg): "<< AoS << ", computed using the the free-stream velocity." << endl;
+      if (config->GetViscous()) cout << "Reynolds number: " << Reynolds << ", computed using free-stream values."<<endl;
+      cout << "Only dimensional computation, the grid should be dimensional." << endl;
+    }
+    
+    cout <<"--Input conditions:"<< endl;
+    
+    if (compressible) {
+      cout << "Ratio of specific heats: " << Gamma           << endl;
+      cout << "Specific gas constant (J/(kg.K)): "   << Gas_Constant  << endl;
+    }
+    if (incompressible || freesurface) {
+      cout << "Bulk modulus (N/m^2): "						<< Bulk_Modulus    << endl;
+      cout << "Artificial compressibility factor (N/m^2): "						<< ArtComp_Factor    << endl;
+    }
+    
+    cout << "Freestream pressure (N/m^2): "          << Pressure_FreeStream    << endl;
+    if (compressible)
+      cout << "Freestream temperature (K): "       << Temperature_FreeStream << endl;
+    cout << "Freestream density (kg/m^3): "					 << Density_FreeStream << endl;
+    if (val_nDim == 2) {
+      cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
+      cout << Velocity_FreeStream[1] << ")" << endl;
+    } else if (val_nDim == 3) {
+      cout << "Freestream velocity (m/s): (" << Velocity_FreeStream[0] << ",";
+      cout << Velocity_FreeStream[1] << "," << Velocity_FreeStream[2] << ")" << endl;
+    }
+    
+    cout << "Freestream velocity magnitude (m/s): "	<< ModVel_FreeStream << endl;
+    
+    if (compressible)
+      cout << "Freestream energy (kg.m/s^2): "					 << Energy_FreeStream << endl;
+    
+    if (config->GetViscous())
+      cout << "Freestream viscosity (N.s/m^2): "				 << Viscosity_FreeStream << endl;
+    
+    if (Unsteady) {
+      cout << "Total time (s): " << Total_UnstTime << ". Time step (s): " << Delta_UnstTime << endl;
+    }
+    
+    /*--- Print out reference values. ---*/
+    cout <<"--Reference values:"<< endl;
+    cout << "Reference pressure (N/m^2): "      << Pressure_Ref    << endl;
+    
+    if (compressible) {
+      cout << "Reference temperature (K): "   << Temperature_Ref << endl;
+      cout << "Reference energy (kg.m/s^2): "       << Energy_FreeStream/Energy_FreeStreamND     << endl;
+    }
+    if (incompressible || freesurface) {
+      cout << "Reference length (m): 1.0" << endl;
+    }
+    cout << "Reference density (kg/m^3): "       << Density_Ref     << endl;
+    cout << "Reference velocity (m/s): "       << Velocity_Ref     << endl;
+    
+    if (config->GetViscous())
+      cout << "Reference viscosity (N.s/m^2): "       << Viscosity_Ref     << endl;
+    
+    if (Unsteady)
+      cout << "Reference time (s): "        << Time_Ref      << endl;
+    
+    /*--- Print out resulting non-dim values here. ---*/
+    cout << "--Resulting non-dimensional state:" << endl;
+    cout << "Mach number (non-dimensional): " << Mach << endl;
+    if (config->GetViscous()) {
+      cout << "Reynolds number (non-dimensional): " << Reynolds << endl;
+      cout << "Reynolds length (m): "       << Length_Reynolds     << endl;
+    }
+    if (GravityForce) {
+      cout << "Froude number (non-dimensional): " << Froude << endl;
+      cout << "Lenght of the baseline wave (non-dimensional): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    }
+    
+    if (compressible) {
+      cout << "Specific gas constant (non-dimensional): "   << Gas_Constant << endl;
+      cout << "Freestream temperature (non-dimensional): "  << Temperature_FreeStreamND << endl;
+    }
+    cout << "Freestream pressure (non-dimensional): "     << Pressure_FreeStreamND    << endl;
+    cout << "Freestream density (non-dimensional): "      << Density_FreeStreamND     << endl;
+    if (val_nDim == 2) {
+      cout << "Freestream velocity (non-dimensional): (" << Velocity_FreeStreamND[0] << ",";
+      cout << Velocity_FreeStreamND[1] << ")" << endl;
+    } else if (val_nDim == 3) {
+      cout << "Freestream velocity (non-dimensional): (" << Velocity_FreeStreamND[0] << ",";
+      cout << Velocity_FreeStreamND[1] << "," << Velocity_FreeStreamND[2] << ")" << endl;
+    }
+    cout << "Freestream velocity magnitude (non-dimensional): "	 << ModVel_FreeStreamND << endl;
+    
+    if (turbulent){
+      cout << "Free-stream turb. kinetic energy (non-dimensional): " << Tke_FreeStreamND << endl;
+      cout << "Free-stream specific dissipation (non-dimensional): " << Omega_FreeStreamND << endl;
+    }
+    
+    if (compressible)
+      cout << "Freestream energy (non-dimensional): "					 << Energy_FreeStreamND << endl;
+    
+    if (config->GetViscous())
+      cout << "Freestream viscosity (non-dimensional): " << Viscosity_FreeStreamND << endl;
+    
+    if (Unsteady) {
+      cout << "Total time (non-dimensional): "				 << Total_UnstTimeND << endl;
+      cout << "Time step (non-dimensional): "				 << Delta_UnstTimeND << endl;
+    }
+    if (config->GetGrid_Movement()) cout << "Force coefficients computed using MACH_MOTION." << endl;
+    else cout << "Force coefficients computed using freestream values." << endl;
+    
+    if (compressible) {
+      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
+    }
+  }
   
 }
 
@@ -7032,6 +7324,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Perform the non-dimensionalization for the flow equations using the
+   specified reference values. ---*/
+  
+  SetNondimensionalization(geometry, config);
+
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -7281,7 +7578,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Velocity_Inf  = config->GetVelocity_FreeStreamND();
   Energy_Inf    = config->GetEnergy_FreeStreamND();
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
-  Mach_Inf      = config->GetMach_FreeStreamND();
+  Mach_Inf      = config->GetMach();
   Prandtl_Lam   = config->GetPrandtl_Lam();
   Prandtl_Turb  = config->GetPrandtl_Turb();
   Tke_Inf       = config->GetTke_FreeStreamND();

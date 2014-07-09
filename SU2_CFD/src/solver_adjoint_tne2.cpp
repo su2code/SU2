@@ -1969,7 +1969,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
           V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
           dPdU     = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
           Normal   = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Mach_Inf = config->GetMach_FreeStreamND();
+          Mach_Inf = config->GetMach();
           
           rho = V[RHO_INDEX];
           rhou = U[nSpecies];
@@ -2086,7 +2086,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
 //          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 //          
-//          Mach_Inf   = config->GetMach_FreeStreamND();
+//          Mach_Inf   = config->GetMach();
 //          if (grid_movement) Mach_Inf = config->GetMach_Motion();
 //          
 //          d = node[iPoint]->GetForceProj_Vector();
@@ -3317,7 +3317,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //            U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
 //            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //            
-//            Mach_Inf   = config->GetMach_FreeStreamND();
+//            Mach_Inf   = config->GetMach();
 //            if (grid_movement) Mach_Inf = config->GetMach_Motion();
 //            
 //            r = U[0]; ru = U[1]; rv = U[2];
@@ -3467,7 +3467,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 //            
-//            Mach_Inf   = config->GetMach_FreeStreamND();
+//            Mach_Inf   = config->GetMach();
 //            if (grid_movement) Mach_Inf = config->GetMach_Motion();
 //            
 //            d = node[iPoint]->GetForceProj_Vector();

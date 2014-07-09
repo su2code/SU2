@@ -116,7 +116,7 @@ inline void CConfig::SetDomainVolume(double val_volume) { DomainVolume = val_vol
 
 inline void CConfig::SetnExtIter(unsigned long val_niter) { nExtIter = val_niter; }
 
-inline double CConfig::GetMach_FreeStreamND(void) { return Mach; }
+inline double CConfig::GetMach(void) { return Mach; }
 
 inline double CConfig::GetGamma(void) { return Gamma; }
 
@@ -191,6 +191,8 @@ inline double* CConfig::GetVelocity_FreeStream(void) { return Velocity_FreeStrea
 inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND; }
 
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
+
+inline double CConfig::GetViscosity_FreeStream(void) { return Viscosity_FreeStream; }
 
 inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
 

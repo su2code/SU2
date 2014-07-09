@@ -115,7 +115,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     REth_Inf = 331.5*pow(tu_Inf-0.5658,-0.671);
   }
   rey = config->GetReynolds();
-  mach = config->GetMach_FreeStreamND();
+  mach = config->GetMach();
 
 //  REth_Inf *= mach/rey;
   cout << "REth_Inf = " << REth_Inf << ", rey: "<< rey << " -AA" << endl;

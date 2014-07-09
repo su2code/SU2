@@ -240,7 +240,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
-  Mach_Inf           = config->GetMach_FreeStreamND();
+  Mach_Inf           = config->GetMach();
   
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new double[nDim];
@@ -4886,11 +4886,11 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
-  Mach_Inf           = config->GetMach_FreeStreamND();
+  Mach_Inf           = config->GetMach();
   
   // Note: May need to investigate these more carefully...
 	Viscosity_Inf = config->GetViscosity_FreeStreamND();
-	Mach_Inf      = config->GetMach_FreeStreamND();
+	Mach_Inf      = config->GetMach();
 	Prandtl_Lam   = config->GetPrandtl_Lam();
 	Prandtl_Turb  = config->GetPrandtl_Turb();
   
