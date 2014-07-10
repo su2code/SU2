@@ -150,6 +150,16 @@ inline double CConfig::GetGas_Constant_Ref(void) { return Gas_Constant_Ref; }
 
 inline double CConfig::GetTemperature_FreeStream(void) { return Temperature_FreeStream; }
 
+inline double CConfig::GetEnergy_FreeStream(void) { return Energy_FreeStream; }
+
+inline double CConfig::GetViscosity_FreeStream(void) { return Viscosity_FreeStream; }
+
+inline double CConfig::GetDensity_FreeStream(void) { return Density_FreeStream; }
+
+inline double CConfig::GetModVel_FreeStream(void) { return ModVel_FreeStream; }
+
+inline double CConfig::GetModVel_FreeStreamND(void) { return ModVel_FreeStreamND; }
+
 inline double CConfig::GetPressure_FreeStream(void) { return Pressure_FreeStream; }
 
 inline double CConfig::GetTemperature_ve_FreeStream(void) { return Temperature_ve_FreeStream; }
@@ -167,6 +177,8 @@ inline double CConfig::GetTemperature_Ref(void) { return Temperature_Ref; }
 inline double CConfig::GetDensity_Ref(void) { return Density_Ref; }
 
 inline double CConfig::GetVelocity_Ref(void) { return Velocity_Ref; }
+
+inline double CConfig::GetEnergy_Ref(void) { return Energy_Ref; }
 
 inline double CConfig::GetTime_Ref(void) { return Time_Ref; }
 
@@ -191,6 +203,8 @@ inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
 
 inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
+
+inline double CConfig::GetOmega_FreeStreamND(void) { return Omega_FreeStreamND; }
 
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
@@ -241,6 +255,12 @@ inline void CConfig::SetPressure_FreeStreamND(double val_pressure_freestreamnd) 
 
 inline void CConfig::SetDensity_FreeStreamND(double val_density_freestreamnd) { Density_FreeStreamND = val_density_freestreamnd; }
 
+inline void CConfig::SetDensity_FreeStream(double val_density_freestream) { Density_FreeStream = val_density_freestream; }
+
+inline void CConfig::SetModVel_FreeStream(double val_modvel_freestream) { ModVel_FreeStream = val_modvel_freestream; }
+
+inline void CConfig::SetModVel_FreeStreamND(double val_modvel_freestreamnd) { ModVel_FreeStreamND = val_modvel_freestreamnd; }
+
 inline void CConfig::SetTemperature_FreeStreamND(double val_temperature_freestreamnd) { Temperature_FreeStreamND = val_temperature_freestreamnd; }
 
 inline void CConfig::SetGas_ConstantND(double val_gas_constantnd) { Gas_ConstantND = val_gas_constantnd; }
@@ -254,6 +274,8 @@ inline void CConfig::SetTke_FreeStreamND(double val_tke_freestreamnd) { Tke_Free
 inline void CConfig::SetOmega_FreeStreamND(double val_omega_freestreamnd) { Omega_FreeStreamND = val_omega_freestreamnd; }
 
 inline void CConfig::SetEnergy_FreeStreamND(double val_energy_freestreamnd) { Energy_FreeStreamND = val_energy_freestreamnd; }
+
+inline void CConfig::SetEnergy_FreeStream(double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
 
 inline void CConfig::SetTotal_UnstTimeND(double val_total_unsttimend) { Total_UnstTimeND = val_total_unsttimend; }
 
@@ -282,6 +304,8 @@ inline void CConfig::SetGas_Constant_Ref(double val_gas_constant_ref) { Gas_Cons
 inline void CConfig::SetGas_Constant(double val_gas_constant) { Gas_Constant = val_gas_constant; }
 
 inline void CConfig::SetViscosity_Ref(double val_viscosity_ref) { Viscosity_Ref = val_viscosity_ref; }
+
+inline void CConfig::SetEnergy_Ref(double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
 inline double CConfig::GetAoA(void) { return AoA; }
 
@@ -909,6 +933,8 @@ inline double CConfig::GetCauchy_Eps_OneShot(void) { return Cauchy_Eps_OneShot; 
 inline double CConfig::GetCauchy_Eps_FullMG(void) { return Cauchy_Eps_FullMG; }
 
 inline double CConfig::GetDelta_UnstTimeND(void) { return Delta_UnstTimeND; }
+
+inline double CConfig::GetTotal_UnstTimeND(void) { return Total_UnstTimeND; }
 
 inline double CConfig::GetDelta_UnstTime(void) { return Delta_UnstTime; }
 

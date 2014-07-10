@@ -549,6 +549,9 @@ private:
 	FreeSurface_Zero,	/*!< \brief Coordinate of the level set zero. */
 	FreeSurface_Depth,	/*!< \brief Coordinate of the level set zero. */
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
+	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
+	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
+	ModVel_FreeStreamND,     /*!< \brief Total density of the fluid.  */
 	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
@@ -570,6 +573,7 @@ private:
 	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization. */
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
+	Energy_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
 	Wall_Temperature,    /*!< \brief Temperature at an isotropic wall in Kelvin. */
 	Omega_Ref,        /*!< \brief Reference angular velocity for non-dimensionalization. */
 	Force_Ref,        /*!< \brief Reference body force for non-dimensionalization. */
@@ -1217,6 +1221,36 @@ public:
 	double GetTemperature_FreeStream(void);
   
   /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetEnergy_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetViscosity_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetDensity_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetModVel_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetModVel_FreeStreamND(void);
+  
+  /*!
 	 * \brief Get the value of the frestream vibrational-electronic temperature.
 	 * \return Freestream temperature.
 	 */
@@ -1246,6 +1280,12 @@ public:
 	 * \return Reference pressure for non-dimensionalization.
 	 */
 	double GetPressure_Ref(void);
+  
+  /*!
+	 * \brief Get the value of the reference pressure for non-dimensionalization.
+	 * \return Reference pressure for non-dimensionalization.
+	 */
+	double GetEnergy_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference temperature for non-dimensionalization.
@@ -1342,6 +1382,12 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetTke_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetOmega_FreeStreamND(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.
@@ -1601,6 +1647,12 @@ public:
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
+	void SetEnergy_Ref(double val_energy_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
 	void SetOmega_Ref(double val_omega_ref);
   
   /*!
@@ -1643,6 +1695,24 @@ public:
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
+	void SetDensity_FreeStream(double val_density_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetModVel_FreeStream(double val_modvel_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetModVel_FreeStreamND(double val_modvel_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
 	void SetTemperature_FreeStreamND(double val_temperature_freestreamnd);
   
   /*!
@@ -1680,6 +1750,12 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	void SetEnergy_FreeStreamND(double val_energy_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetEnergy_FreeStream(double val_energy_freestream);
   
   /*!
 	 * \brief Set the Froude number for free surface problems.
@@ -3816,6 +3892,13 @@ public:
 	 * \return Value of the time step in an unsteady simulation (non dimensional). 
 	 */
 	double GetDelta_UnstTimeND(void);
+  
+  /*!
+	 * \brief If we are prforming an unsteady simulation, there is only
+	 *        one value of the time step for the complete simulation.
+	 * \return Value of the time step in an unsteady simulation (non dimensional).
+	 */
+	double GetTotal_UnstTimeND(void);
 
 	/*! 
 	 * \brief If we are prforming an unsteady simulation, there is only 
