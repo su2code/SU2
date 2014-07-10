@@ -580,6 +580,7 @@ private:
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
+  Omega_FreeStreamND, /*!< \brief Specific dissipation (external flow). */
   pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
@@ -1288,17 +1289,17 @@ public:
 	 */
 	double GetForce_Ref(void);
 
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream pressure.
+	 * \return Non-dimensionalized freestream pressure.
+	 */
+	double GetPressure_FreeStream(void);
+  
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream pressure.
 	 * \return Non-dimensionalized freestream pressure.
 	 */
 	double GetPressure_FreeStreamND(void);
-
-	/*!
-	 * \brief Get the value of the non-dimensionalized freestream pressure.
-	 * \return Non-dimensionalized freestream pressure.
-	 */
-	double GetPressure_FreeStream(void);
 
 	/*!
 	 * \brief Get the vector of the dimensionalized freestream velocity.
@@ -1323,13 +1324,6 @@ public:
 	 * \return Non-dimensionalized freestream velocity vector.
 	 */
 	double* GetVelocity_FreeStreamND(void);
-
-  /*!
-	 * \brief Set a value in the vector of the non-dimensionalized freestream velocity.
-	 * \param[in] val_dim - Index of the dimension
-	 * \param[in] val_velocity - Value of the freestream velocity
-   */
-  void SetVelocity_FreeStreamND(unsigned short val_dim, double val_velocity);
   
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
@@ -1342,12 +1336,6 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetViscosity_FreeStreamND(void);
-  
-  /*!
-	 * \brief Get the value of the non-dimensionalized freestream viscosity.
-	 * \return Non-dimensionalized freestream viscosity.
-	 */
-	double GetViscosity_FreeStream(void);
   
   /*!
 	 * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -1560,8 +1548,140 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	double GetFroude(void);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetFroude(double val_froude);
 
-	/*! 
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetMach(double val_mach);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetReynolds(double val_reynolds);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetLength_Ref(double val_length_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetVelocity_Ref(double val_velocity_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetPressure_Ref(double val_pressure_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetDensity_Ref(double val_density_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTime_Ref(double val_time_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetOmega_Ref(double val_omega_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetForce_Ref(double val_force_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetGas_Constant_Ref(double val_gas_constant_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetViscosity_Ref(double val_viscosity_ref);
+
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetPressure_FreeStreamND(double val_pressure_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetDensity_FreeStreamND(double val_density_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTemperature_FreeStreamND(double val_temperature_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetGas_ConstantND(double val_gas_constantnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetVelocity_FreeStreamND(double val_velocity_freestreamnd, unsigned short val_dim);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetViscosity_FreeStreamND(double val_viscosity_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTke_FreeStreamND(double val_tke_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetOmega_FreeStreamND(double val_omega_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetEnergy_FreeStreamND(double val_energy_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTotal_UnstTimeND(double val_total_unsttimend);
+  
+	/*!
 	 * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body 
 	 *        (often the chord line of an airfoil) and the vector representing the relative motion between the 
 	 *        lifting body and the fluid through which it is moving.
@@ -1574,6 +1694,12 @@ public:
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
 	void SetAoA(double val_AoA);
+  
+  /*!
+	 * \brief Set the angle of attack.
+	 * \param[in] val_AoA - Value of the angle of attack.
+	 */
+	void SetAoS(double val_AoS);
   
 	/*! 
 	 * \brief Get the angle of sideslip of the body. It relates to the rotation of the aircraft centerline from 
