@@ -116,7 +116,7 @@ inline void CConfig::SetDomainVolume(double val_volume) { DomainVolume = val_vol
 
 inline void CConfig::SetnExtIter(unsigned long val_niter) { nExtIter = val_niter; }
 
-inline double CConfig::GetMach_FreeStreamND(void) { return Mach; }
+inline double CConfig::GetMach(void) { return Mach; }
 
 inline double CConfig::GetGamma(void) { return Gamma; }
 
@@ -150,6 +150,18 @@ inline double CConfig::GetGas_Constant_Ref(void) { return Gas_Constant_Ref; }
 
 inline double CConfig::GetTemperature_FreeStream(void) { return Temperature_FreeStream; }
 
+inline double CConfig::GetEnergy_FreeStream(void) { return Energy_FreeStream; }
+
+inline double CConfig::GetViscosity_FreeStream(void) { return Viscosity_FreeStream; }
+
+inline double CConfig::GetDensity_FreeStream(void) { return Density_FreeStream; }
+
+inline double CConfig::GetModVel_FreeStream(void) { return ModVel_FreeStream; }
+
+inline double CConfig::GetModVel_FreeStreamND(void) { return ModVel_FreeStreamND; }
+
+inline double CConfig::GetPressure_FreeStream(void) { return Pressure_FreeStream; }
+
 inline double CConfig::GetTemperature_ve_FreeStream(void) { return Temperature_ve_FreeStream; }
 
 inline double CConfig::GetPrandtl_Lam(void) { return Prandtl_Lam; }
@@ -166,6 +178,8 @@ inline double CConfig::GetDensity_Ref(void) { return Density_Ref; }
 
 inline double CConfig::GetVelocity_Ref(void) { return Velocity_Ref; }
 
+inline double CConfig::GetEnergy_Ref(void) { return Energy_Ref; }
+
 inline double CConfig::GetTime_Ref(void) { return Time_Ref; }
 
 inline double CConfig::GetViscosity_Ref(void) { return Viscosity_Ref; }
@@ -176,15 +190,11 @@ inline double CConfig::GetForce_Ref(void) { return Force_Ref; }
 
 inline double CConfig::GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
 
-inline double CConfig::GetPressure_FreeStream(void) { return Pressure_FreeStream; }
-
 inline double CConfig::GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
 inline double CConfig::GetDensity_FreeStreamND(void) { return Density_FreeStreamND; }
 
 inline double* CConfig::GetVelocity_FreeStreamND(void) { return Velocity_FreeStreamND; }
-
-inline void CConfig::SetVelocity_FreeStreamND(unsigned short val_dim, double val_velocity) { Velocity_FreeStreamND[val_dim] = val_velocity; }
 
 inline double* CConfig::GetVelocity_FreeStream(void) { return Velocity_FreeStream; }
 
@@ -193,6 +203,8 @@ inline double CConfig::GetEnergy_FreeStreamND(void) { return Energy_FreeStreamND
 inline double CConfig::GetViscosity_FreeStreamND(void) { return Viscosity_FreeStreamND; }
 
 inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
+
+inline double CConfig::GetOmega_FreeStreamND(void) { return Omega_FreeStreamND; }
 
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
@@ -239,9 +251,67 @@ inline double CConfig::GetReynolds(void) { return Reynolds; }
 
 inline double CConfig::GetFroude(void) { return Froude; }
 
+inline void CConfig::SetPressure_FreeStreamND(double val_pressure_freestreamnd) { Pressure_FreeStreamND = val_pressure_freestreamnd; }
+
+inline void CConfig::SetDensity_FreeStreamND(double val_density_freestreamnd) { Density_FreeStreamND = val_density_freestreamnd; }
+
+inline void CConfig::SetDensity_FreeStream(double val_density_freestream) { Density_FreeStream = val_density_freestream; }
+
+inline void CConfig::SetModVel_FreeStream(double val_modvel_freestream) { ModVel_FreeStream = val_modvel_freestream; }
+
+inline void CConfig::SetModVel_FreeStreamND(double val_modvel_freestreamnd) { ModVel_FreeStreamND = val_modvel_freestreamnd; }
+
+inline void CConfig::SetTemperature_FreeStreamND(double val_temperature_freestreamnd) { Temperature_FreeStreamND = val_temperature_freestreamnd; }
+
+inline void CConfig::SetGas_ConstantND(double val_gas_constantnd) { Gas_ConstantND = val_gas_constantnd; }
+
+inline void CConfig::SetVelocity_FreeStreamND(double val_velocity_freestreamnd, unsigned short val_dim) { Velocity_FreeStreamND[val_dim] = val_velocity_freestreamnd; }
+
+inline void CConfig::SetViscosity_FreeStreamND(double val_viscosity_freestreamnd) { Viscosity_FreeStreamND = val_viscosity_freestreamnd; }
+
+inline void CConfig::SetTke_FreeStreamND(double val_tke_freestreamnd) { Tke_FreeStreamND = val_tke_freestreamnd; }
+
+inline void CConfig::SetOmega_FreeStreamND(double val_omega_freestreamnd) { Omega_FreeStreamND = val_omega_freestreamnd; }
+
+inline void CConfig::SetEnergy_FreeStreamND(double val_energy_freestreamnd) { Energy_FreeStreamND = val_energy_freestreamnd; }
+
+inline void CConfig::SetEnergy_FreeStream(double val_energy_freestream) { Energy_FreeStream = val_energy_freestream; }
+
+inline void CConfig::SetTotal_UnstTimeND(double val_total_unsttimend) { Total_UnstTimeND = val_total_unsttimend; }
+
+inline void CConfig::SetFroude(double val_froude) { Froude = val_froude; }
+
+inline void CConfig::SetReynolds(double val_reynolds) { Reynolds = val_reynolds; }
+
+inline void CConfig::SetMach(double val_mach) { Mach = val_mach; }
+
+inline void CConfig::SetLength_Ref(double val_length_ref) { Length_Ref = val_length_ref; }
+
+inline void CConfig::SetVelocity_Ref(double val_velocity_ref) { Velocity_Ref = val_velocity_ref; }
+
+inline void CConfig::SetPressure_Ref(double val_pressure_ref) { Pressure_Ref = val_pressure_ref; }
+
+inline void CConfig::SetDensity_Ref(double val_density_ref) { Density_Ref = val_density_ref; }
+
+inline void CConfig::SetTime_Ref(double val_time_ref) { Time_Ref = val_time_ref; }
+
+inline void CConfig::SetOmega_Ref(double val_omega_ref) { Omega_Ref = val_omega_ref; }
+
+inline void CConfig::SetForce_Ref(double val_force_ref) { Force_Ref = val_force_ref; }
+
+inline void CConfig::SetGas_Constant_Ref(double val_gas_constant_ref) { Gas_Constant_Ref = val_gas_constant_ref; }
+
+inline void CConfig::SetGas_Constant(double val_gas_constant) { Gas_Constant = val_gas_constant; }
+
+inline void CConfig::SetViscosity_Ref(double val_viscosity_ref) { Viscosity_Ref = val_viscosity_ref; }
+
+inline void CConfig::SetEnergy_Ref(double val_energy_ref) { Energy_Ref = val_energy_ref; }
+
 inline double CConfig::GetAoA(void) { return AoA; }
 
 inline void CConfig::SetAoA(double val_AoA) { AoA = val_AoA; }
+
+inline void CConfig::SetAoS(double val_AoS) { AoS = val_AoS; }
 
 inline unsigned short CConfig::GetnDomain(void) { return nDomain; }
 
@@ -863,6 +933,8 @@ inline double CConfig::GetCauchy_Eps_OneShot(void) { return Cauchy_Eps_OneShot; 
 inline double CConfig::GetCauchy_Eps_FullMG(void) { return Cauchy_Eps_FullMG; }
 
 inline double CConfig::GetDelta_UnstTimeND(void) { return Delta_UnstTimeND; }
+
+inline double CConfig::GetTotal_UnstTimeND(void) { return Total_UnstTimeND; }
 
 inline double CConfig::GetDelta_UnstTime(void) { return Delta_UnstTime; }
 

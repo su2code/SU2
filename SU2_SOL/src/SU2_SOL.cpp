@@ -71,11 +71,6 @@ int main(int argc, char *argv[]) {
     /*--- Create the vertex structure (required for MPI) ---*/
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry[iZone]->SetVertex(config[iZone]);
-   
-    /*--- Perform the non-dimensionalization for the flow equations using the
-     specified reference values. ---*/
-    
-		config[iZone]->SetNondimensionalization(geometry[iZone]->GetnDim(), iZone);
     
   }
   
