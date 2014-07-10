@@ -236,7 +236,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   Total_MaxHeat  = 0.0;
   
 	/*--- Read farfield conditions from the config file ---*/
-	Pressure_Inf       = config->GetPressure_FreeStream();
+	Pressure_Inf       = config->GetPressure_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
@@ -4882,7 +4882,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   MaxHeatFlux_Visc     = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
-	Pressure_Inf       = config->GetPressure_FreeStream();
+	Pressure_Inf       = config->GetPressure_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();

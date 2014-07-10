@@ -373,7 +373,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
   /*--- Initialize Tve to the free stream for Newton-Raphson method ---*/
   Primitive[TVE_INDEX] = config->GetTemperature_FreeStream();
   Primitive[T_INDEX]   = config->GetTemperature_FreeStream();
-  Primitive[P_INDEX]   = config->GetPressure_FreeStream();
+  Primitive[P_INDEX]   = config->GetPressure_FreeStreamND();
 }
 
 CTNE2EulerVariable::~CTNE2EulerVariable(void) {
