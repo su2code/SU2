@@ -143,7 +143,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  if (iMesh == MESH_0) SetNondimensionalization(geometry, config);
+  SetNondimensionalization(geometry, config, iMesh);
 
   /*--- Allocate the node variables ---*/
   
@@ -1568,7 +1568,7 @@ void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *confi
   
 }
 
-void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
   
   double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0, Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0,
   Velocity_Reynolds = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -1763,7 +1763,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   /*--- Write output to the console if this is the master node and first domain ---*/
   
-  if (rank == MASTER_NODE) {
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
     
     cout.precision(6);
     
@@ -7441,7 +7441,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  if (iMesh == MESH_0) SetNondimensionalization(geometry, config);
+  SetNondimensionalization(geometry, config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
