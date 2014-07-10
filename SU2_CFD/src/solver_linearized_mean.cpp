@@ -460,7 +460,7 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 	double *W_wall = new double[nVar];
 	double *W_infty = new double[nVar];
 	double *W_update = new double[nVar];
-	double Mach = config->GetMach_FreeStreamND();
+	double Mach = config->GetMach();
 	double DeltaMach = 1.0;
 
 	/*--- Loop over all the vertices ---*/

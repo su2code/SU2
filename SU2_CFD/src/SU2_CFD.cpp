@@ -132,12 +132,7 @@ int main(int argc, char *argv[]) {
     /*--- Change the name of the input-output files for a parallel computation ---*/
     config_container[iZone]->SetFileNameDomain(rank+1);
 #endif
-    
-    /*--- Perform the non-dimensionalization for the flow equations using the
-     specified reference values. ---*/
-    
-    config_container[iZone]->SetNondimensionalization(nDim, iZone);
-    
+        
     /*--- Definition of the geometry class. Within this constructor, the
      mesh file is read and the primal grid is stored (node coords, connectivity,
      & boundary markers. MESH_0 is the index of the finest mesh. ---*/

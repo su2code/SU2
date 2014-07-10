@@ -69,11 +69,7 @@ int main(int argc, char *argv[]) {
    note that the orientation of the elements is not checked ---*/
   
 	boundary = new CBoundaryGeometry(config, config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
-  /*--- Perform the non-dimensionalization, in case any values are needed ---*/
-  
-  config->SetNondimensionalization(boundary->GetnDim(), ZONE_0);
-  
+    
 	if (rank == MASTER_NODE)
 		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	

@@ -2415,7 +2415,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             
-            Mach_Inf   = config->GetMach_FreeStreamND();
+            Mach_Inf   = config->GetMach();
             if (grid_movement) Mach_Inf = config->GetMach_Motion();
             
             r = U[0]; ru = U[1]; rv = U[2];
@@ -2565,7 +2565,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
             
-            Mach_Inf   = config->GetMach_FreeStreamND();
+            Mach_Inf   = config->GetMach();
             if (grid_movement) Mach_Inf = config->GetMach_Motion();
             
             d = node[iPoint]->GetForceProj_Vector();
@@ -5613,7 +5613,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             
-            Mach_Inf   = config->GetMach_FreeStreamND();
+            Mach_Inf   = config->GetMach();
             if (grid_movement) Mach_Inf = config->GetMach_Motion();
             
             r = U[0]; ru = U[1]; rv = U[2];
@@ -5763,7 +5763,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
             p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
             
-            Mach_Inf   = config->GetMach_FreeStreamND();
+            Mach_Inf   = config->GetMach();
             if (grid_movement) Mach_Inf = config->GetMach_Motion();
             
             d = node[iPoint]->GetForceProj_Vector();

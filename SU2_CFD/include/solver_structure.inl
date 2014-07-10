@@ -38,6 +38,8 @@ inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
+
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
 inline double CSolver::GetCSensitivity(unsigned short val_marker, unsigned short val_vertex) { return 0; }
