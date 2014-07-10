@@ -172,7 +172,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config);
+  virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
 	 * \brief Get number of linear solver iterations.
@@ -2064,7 +2064,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config);
+  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
 	 * \brief Compute the density at the infinity.
