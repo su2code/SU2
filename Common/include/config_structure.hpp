@@ -1619,6 +1619,12 @@ public:
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
+	void SetGas_Constant(double val_gas_constant);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
 	void SetViscosity_Ref(double val_viscosity_ref);
 
   /*!

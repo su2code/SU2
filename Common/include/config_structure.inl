@@ -279,6 +279,8 @@ inline void CConfig::SetForce_Ref(double val_force_ref) { Force_Ref = val_force_
 
 inline void CConfig::SetGas_Constant_Ref(double val_gas_constant_ref) { Gas_Constant_Ref = val_gas_constant_ref; }
 
+inline void CConfig::SetGas_Constant(double val_gas_constant) { Gas_Constant = val_gas_constant; }
+
 inline void CConfig::SetViscosity_Ref(double val_viscosity_ref) { Viscosity_Ref = val_viscosity_ref; }
 
 inline double CConfig::GetAoA(void) { return AoA; }
