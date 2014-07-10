@@ -1702,7 +1702,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 	delete [] b_coeffs;
 	delete [] fitted_coords;
 	delete [] fitted_velocities;
-	for (iZone = 0; iZone < nDim; iZone++) {
+	for (iZone = 0; iZone < nZone; iZone++) {
 		delete [] coords[iZone];
 	}
 	delete [] coords;
