@@ -585,6 +585,7 @@ private:
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND, /*!< \brief Specific dissipation (external flow). */
+  Omega_FreeStream, /*!< \brief Specific dissipation (external flow). */
   pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
@@ -1388,6 +1389,18 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetOmega_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetTke_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetOmega_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.
@@ -1689,6 +1702,12 @@ public:
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
+	void SetPressure_FreeStream(double val_pressure_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
 	void SetDensity_FreeStreamND(double val_density_freestreamnd);
   
   /*!
@@ -1744,6 +1763,18 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	void SetOmega_FreeStreamND(double val_omega_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTke_FreeStream(double val_tke_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetOmega_FreeStream(double val_omega_freestream);
   
   /*!
 	 * \brief Set the Froude number for free surface problems.

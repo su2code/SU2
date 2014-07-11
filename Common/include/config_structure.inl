@@ -206,6 +206,10 @@ inline double CConfig::GetTke_FreeStreamND(void) { return Tke_FreeStreamND; }
 
 inline double CConfig::GetOmega_FreeStreamND(void) { return Omega_FreeStreamND; }
 
+inline double CConfig::GetTke_FreeStream(void) { return Tke_FreeStream; }
+
+inline double CConfig::GetOmega_FreeStream(void) { return Omega_FreeStream; }
+
 inline double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
 inline double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
@@ -253,6 +257,8 @@ inline double CConfig::GetFroude(void) { return Froude; }
 
 inline void CConfig::SetPressure_FreeStreamND(double val_pressure_freestreamnd) { Pressure_FreeStreamND = val_pressure_freestreamnd; }
 
+inline void CConfig::SetPressure_FreeStream(double val_pressure_freestream) { Pressure_FreeStream = val_pressure_freestream; }
+
 inline void CConfig::SetDensity_FreeStreamND(double val_density_freestreamnd) { Density_FreeStreamND = val_density_freestreamnd; }
 
 inline void CConfig::SetDensity_FreeStream(double val_density_freestream) { Density_FreeStream = val_density_freestream; }
@@ -272,6 +278,10 @@ inline void CConfig::SetViscosity_FreeStreamND(double val_viscosity_freestreamnd
 inline void CConfig::SetTke_FreeStreamND(double val_tke_freestreamnd) { Tke_FreeStreamND = val_tke_freestreamnd; }
 
 inline void CConfig::SetOmega_FreeStreamND(double val_omega_freestreamnd) { Omega_FreeStreamND = val_omega_freestreamnd; }
+
+inline void CConfig::SetTke_FreeStream(double val_tke_freestream) { Tke_FreeStream = val_tke_freestream; }
+
+inline void CConfig::SetOmega_FreeStream(double val_omega_freestream) { Omega_FreeStream = val_omega_freestream; }
 
 inline void CConfig::SetEnergy_FreeStreamND(double val_energy_freestreamnd) { Energy_FreeStreamND = val_energy_freestreamnd; }
 
