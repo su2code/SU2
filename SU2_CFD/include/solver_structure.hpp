@@ -5847,6 +5847,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
+  
+  /*!
+	 * \brief Set the fluid solver nondimensionalization.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
   /*!
 	 * \brief Set the maximum value of the eigenvalue.
