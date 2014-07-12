@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/incomp_rans/naca0012"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/spectral_method"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "naca0012.cfg"
+            argument = "spectral.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
