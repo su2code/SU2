@@ -1720,6 +1720,12 @@ public:
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
+	void SetViscosity_FreeStream(double val_viscosity_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
 	void SetModVel_FreeStream(double val_modvel_freestream);
   
   /*!

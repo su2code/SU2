@@ -585,8 +585,13 @@ inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vortici
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
 inline void CNSVariable::SetLaminarViscosity(CConfig *config) {
+  double T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
 	double Temperature_Dim = Primitive[0]*Temperature_Ref;
-	Primitive[nDim+5] = (1.853E-5*(pow(Temperature_Dim/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_Dim+110.3)))/Viscosity_Ref;
+
+  if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
+  if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
+
+	Primitive[nDim+5] = (Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S)))/Viscosity_Ref;
 }
 
 inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }

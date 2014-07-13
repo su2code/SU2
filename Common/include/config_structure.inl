@@ -263,6 +263,8 @@ inline void CConfig::SetDensity_FreeStreamND(double val_density_freestreamnd) { 
 
 inline void CConfig::SetDensity_FreeStream(double val_density_freestream) { Density_FreeStream = val_density_freestream; }
 
+inline void CConfig::SetViscosity_FreeStream(double val_viscosity_freestream) { Viscosity_FreeStream = val_viscosity_freestream; }
+
 inline void CConfig::SetModVel_FreeStream(double val_modvel_freestream) { ModVel_FreeStream = val_modvel_freestream; }
 
 inline void CConfig::SetModVel_FreeStreamND(double val_modvel_freestreamnd) { ModVel_FreeStreamND = val_modvel_freestreamnd; }

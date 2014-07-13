@@ -2322,7 +2322,11 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
     
 		double Temperature_Ref = config->GetTemperature_Ref();
 		double Temperature_Dim = Temp_i*Temperature_Ref;
-		double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + 110.3)))*(Temperature_Dim + 3.0*110.3)*Temperature_Ref;
+    
+    double S = 0.0;
+    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+		double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
     
 		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
 		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
@@ -2360,7 +2364,11 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		/*--- Contributions due to variation of viscosities ---*/
     double Temperature_Ref = config->GetTemperature_Ref();
     double Temperature_Dim = Temp_i*Temperature_Ref;
-    double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + 110.3)))*(Temperature_Dim + 3.0*110.3)*Temperature_Ref;
+    
+    double S = 0.0;
+    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+    double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
     
 		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
 		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/PRANDTL_TURB*gradT_gradpsi5;
