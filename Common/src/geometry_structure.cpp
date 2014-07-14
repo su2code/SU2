@@ -7760,8 +7760,10 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron, kPoint, jPoint, iVertex;
   unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
-  idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
+  idx_t ne = 0, nn, etype, numflag, nparts, edgecut;
+  idx_t *elmnts = NULL, *epart = NULL, *npart = NULL, *eptr = NULL, *vsize = NULL, *vwgt = NULL;
   int rank, size;
+  int interior_weight = 1, periodic_weight = 1000000000, periodic_nodes = 0;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -7795,6 +7797,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   nparts = nDomain;
   epart = new idx_t [ne];
   npart = new idx_t [nn];
+  vsize = new idx_t [nn];
   eptr  = new idx_t[ne+1];
   if (nparts < 2) {
     cout << "The number of domains must be greater than 1!" << endl;
@@ -7901,33 +7904,50 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   if (GetnDim() == 2) eptr[ne] = 3*ne;
   else eptr[ne] = 4*ne;
   
-#ifdef METIS_5
-  /*--- Calling METIS 5.0.2 ---*/
+  /*--- Force periodic boundaries to remain on a single partition
+   by setting very large values for the communication weights at
+   periodic nodes. This could result in poor load balance if periodic
+   nodes make up a large portion of the mesh, and this will be
+   replaced in the near future. ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    vsize[iPoint] = interior_weight;
+//    if (node[iPoint]->GetDomain()) {
+//      vsize[iPoint] = interior_weight;
+//    } else {
+//      cout << "periodic " << iPoint << endl;
+//      vsize[iPoint] = periodic_weight;
+//      periodic_nodes++;
+//    }
+  }
+  
+  /*--- Set some options for METIS ---*/
+  
   int options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
-  options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
-  METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS 5.0.2. ("  << edgecut << " edge cuts)." << endl;
-#else
-  /*--- Calling METIS 4.0.3 ---*/
-  METIS_PartMeshNodal(&ne, &nn, elmnts, &etype, &numflag, &nparts, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS 4.0.3. ("  << edgecut << " edge cuts)." << endl;
-#endif
+  if (periodic_nodes == 0)
+    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+  else
+    options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
+  
+  /*--- Call METIS to partition the mesh ---*/
+  
+  METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, vsize, &nparts, NULL, NULL, &edgecut, epart, npart);
+  cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
+
+  /*--- Store the partitioning information for each node ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetColor(npart[iPoint]);
   
-  //  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  //    if (node[iPoint]->GetCoord(0) < -5.0)
-  //    node[iPoint]->SetColor(2);
-  //  }
-  
+  /*--- Free memory and exit ---*/
   
   delete[] epart;
   delete[] npart;
   delete[] elmnts;
   delete[] eptr;
-  
+  delete[] vsize;
+
 #endif
 #endif
   
