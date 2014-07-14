@@ -2311,8 +2311,8 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim == 2){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
-      else if (nDim == 3){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
+      if (nDim == 2){ nOutputVariables = 36 + 2*nDim + 1*nDim*nDim; }
+      else if (nDim == 3){ nOutputVariables = 36 + 2*nDim + 1*nDim*nDim; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
     }
@@ -2621,6 +2621,12 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       idx++;
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->OmegaBar;
       OutputHeadingNames[idx] = "OmegaBar";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->fw;
+      OutputHeadingNames[idx] = "Fw";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->isInBL;
+      OutputHeadingNames[idx] = "IsInBL";
       idx++;
       for (iDim = 0; iDim<nDim;iDim++){
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->DNuHatDXBar[iDim];
