@@ -1139,6 +1139,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   SANondimInputs->NondimensionalizeSource(nResidual, SANondimResidual);
   
+  
+  fw = SAOtherOutputs->fw;
+  
   // Need the individual terms of the NuHat Norm
   double dNuHatDXBar = DNuhatDXj[0] / sqrt(SANondimInputs->SourceNondim);
   double dNuHatDYBar = DNuhatDXj[1] / sqrt(SANondimInputs->SourceNondim);
@@ -1495,6 +1498,28 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
   }
   
+  // Compute Shivaji Medida's BL vs. Wake equation
+  double strainRateMag = 0;
+  for (int i= 0; i < nDim; i++){
+    for (int j = 0; j < nDim; j++){
+      strainRateMag += DUiDXj[i][j] + DUiDXj[j][i];
+    }
+  }
+  strainRateMag /= 2;
+  strainRateMag = sqrt(strainRateMag);
+  
+  double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
+  
+  double fWake = exp(- (1e-10 * ReS * ReS));
+  
+  double magU;
+  for (unsigned short i = 0; i < nDim; i++){
+    magU += V_i[1+i] * V_i[1+i];
+  }
+  magU = sqrt(magU);
+  
+  
+  isInBL = fWake > 1 && (magU > uInfinity * 0.99);
   
   // Now that we have found the ML Residual and the SA residual, see if there are
   // any special hacks that we should use

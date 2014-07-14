@@ -4000,7 +4000,7 @@ private:
 	double DivVelocity, Vorticity;
 	unsigned short iDim;
 	double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-	double r, g, g_6, glim, fw;
+	double r, g, g_6, glim;
 	double norm2_Grad;
 	double dfv1, dfv2, dShat;
 	double dr, dg, dfw;;
@@ -4017,7 +4017,6 @@ private:
   CScalePredictor* MLModel;
   
   double uInfinity;
-  
 
   
   SpalartAllmarasInputs* SAInputs;
@@ -4033,6 +4032,9 @@ private:
   double** DUiDXj;
   double* DNuhatDXj;
 public:
+  bool isInBL;
+  double fw;
+  
   double *SAResidual;
   double * SANondimResidual;
   double* Residual;
