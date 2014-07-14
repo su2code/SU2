@@ -4016,6 +4016,8 @@ private:
   double Production, Destruction, CrossProduction;
   CScalePredictor* MLModel;
   
+  double uInfinity;
+  
 
   
   SpalartAllmarasInputs* SAInputs;

@@ -1017,6 +1017,12 @@ void CAvgGradCorrected_TurbML::ComputeResidual(double *val_residual, double **Ja
 CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
+  double *uinf = config->GetVelocity_FreeStreamND();
+  for (unsigned short i = 0; i < nDim; i++){
+    uInfinity += uinf[i] * uinf[i];
+  }
+  uInfinity = sqrt(uInfinity);
+  
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   //transition     = (config->GetKind_Trans_Model() == LM);
   transition = false; // Debugging, -AA
@@ -1480,10 +1486,12 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   delete [] netOutput;
   
   // Hack if the wall distance is too low
-  if (dist_i < 1e-10){
+  if (dist_i < 1e-6){
     for (int i= 0; i < nResidual; i++){
       Residual[i] = 0;
       NondimResidual[i] = 0;
+      SAResidual[i] = 0;
+      SANondimResidual[i] = 0;
     }
   }
   
@@ -1503,6 +1511,25 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
           Residual[i] = SAResidual[i];
           NondimResidual[i] = SANondimResidual[i];
         }
+      }
+    }
+    if (extraString[0].compare("BlOnly") == 0){
+      // Only use ML in the boundary layer (where U < 0.99 U inf)
+      double magU;
+      for (unsigned short i = 0; i < nDim; i++){
+        magU += V_i[1+i] * V_i[1+i];
+      }
+      magU = sqrt(magU);
+//      cout << "MagU = " << magU << " UInf = " << uInfinity << endl;
+      if (magU > uInfinity * 0.99){
+        // Then use SA
+        for (int i = 0; i < nResidual; i++){
+          Residual[i] = SAResidual[i];
+          NondimResidual[i] = SANondimResidual[i];
+        }
+//        cout << "Using SA" <<endl;
+//      }else{
+//        cout << "Using ML" << endl;
       }
     }
   }
