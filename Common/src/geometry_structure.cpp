@@ -2491,9 +2491,10 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   unsigned long iElem_Bound, TotalElem, *nElem_Bound_Copy, iVertex_;
   string Grid_Marker;
-  unsigned short iDomain, nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, iMarker, iMarker_;
+  unsigned short nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, jMarker, iMarker, iMarker_;
   CPrimalGrid*** bound_Copy;
-  short *Marker_All_SendRecv_Copy;
+  short *Marker_All_SendRecv_Copy, jDomain, iDomain, iNewDomain, nNewDomain;
+  vector<short> NewDomain;
   bool CheckStart;
   
   int rank = MASTER_NODE;
@@ -2516,6 +2517,34 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       nMarker_Physical++;
     }
   }
+  
+  /*--- Check that all the send received markers have a partner ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+      
+      CheckStart = true;
+      iDomain = Marker_All_SendRecv[iMarker];
+      
+      for (jMarker = 0; jMarker < nMarker; jMarker++) {
+        if (bound[jMarker][0]->GetVTK_Type() == VERTEX) {
+          jDomain = Marker_All_SendRecv[jMarker];
+          if (iDomain == -jDomain) { CheckStart = false; break; }
+        }
+      }
+      
+      if (CheckStart) NewDomain.push_back(-iDomain);
+      
+    }
+  }
+  
+  nNewDomain = NewDomain.size();
+
+#ifdef HAVE_MPI
+  /*--- Finalize MPI parallelization ---*/
+	MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
   
   /*--- Identify if there are markers that send/received with the same domain,
    they should be together---*/
@@ -2579,7 +2608,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   /*--- Create an structure to store the Send/Receive
    boundaries, because they require some reorganization ---*/
   
-  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive;
+  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive + nNewDomain;
   bound_Copy = new CPrimalGrid**[nMarker_Physical + nMarker_SendRecv];
   nElem_Bound_Copy = new unsigned long [nMarker_Physical + nMarker_SendRecv];
   Marker_All_SendRecv_Copy = new short [nMarker_Physical + nMarker_SendRecv];
@@ -2644,6 +2673,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       
     }
     
+    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
+      if (NewDomain[iNewDomain] == iDomain) {
+        iMarker_++;
+        nElem_Bound_Copy[iMarker_] = 0;
+        bound_Copy[iMarker_] = new CPrimalGrid*[1];
+        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
+        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
+      }
+    }
+    
     /*--- Compute the total number of elements (adding all the
      boundaries with the same Send/Receive ---*/
     
@@ -2658,7 +2697,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       iVertex_ = 0;
       nElem_Bound_Copy[iMarker_] = TotalElem;
       bound_Copy[iMarker_] = new CPrimalGrid*[TotalElem];
-      
     }
     
     for (iMarkersDomain = 0; iMarkersDomain < DomainReceiveCount[iDomain]; iMarkersDomain++) {
@@ -2671,6 +2709,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         iVertex_++;
       }
       
+    }
+    
+    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
+      if (NewDomain[iNewDomain] == -iDomain) {
+        iMarker_++;
+        nElem_Bound_Copy[iMarker_] = 0;
+        bound_Copy[iMarker_] = new CPrimalGrid*[1];
+        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
+        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
+      }
     }
     
   }
