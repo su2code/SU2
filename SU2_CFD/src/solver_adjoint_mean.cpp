@@ -5145,49 +5145,63 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Loop over all the points, note that we are supposing that primitive and
    adjoint gradients have been computed previously ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Conservative variables w/o reconstruction ---*/
+    
     numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
     
     /*--- Gradient of primitive and adjoint variables ---*/
+    
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
     
     /*--- Laminar viscosity, and eddy viscosity (adjoint with frozen viscosity) ---*/
+    
     numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
     numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(), 0.0);
     
     /*--- Set temperature of the fluid ---*/
+    
     numerics->SetTemperature(solver_container[FLOW_SOL]->node[iPoint]->GetTemperature(), 0.0);
     
     /*--- Set volume ---*/
+    
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     
     /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
+    
     if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
       
       /*--- Turbulent variables w/o reconstruction ---*/
+      
       numerics->SetTurbVar(solver_container[TURB_SOL]->node[iPoint]->GetSolution(), NULL);
       
       /*--- Gradient of Turbulent Variables w/o reconstruction ---*/
+      
       numerics->SetTurbVarGradient(solver_container[TURB_SOL]->node[iPoint]->GetGradient(), NULL);
       
       /*--- Turbulent adjoint variables w/o reconstruction ---*/
+      
       numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->node[iPoint]->GetSolution(), NULL);
       
       /*--- Gradient of Adjoint turbulent variables w/o reconstruction ---*/
+      
       numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->node[iPoint]->GetGradient(), NULL);
       
       /*--- Set distance to the surface ---*/
+      
       numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
       
     }
     
     /*--- Compute residual ---*/
+    
     numerics->ComputeResidual(Residual, config);
     
     /*--- Add and substract to the residual ---*/
+    
     LinSysRes.AddBlock(iPoint, Residual);
   }
   
@@ -5286,10 +5300,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
-  psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel,
-  Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr,
-  dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf, eps;
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf, eps;
   
   USens = new double[nVar];
   
@@ -5319,7 +5330,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   bool grid_movement  = config->GetGrid_Movement();
   
   double Gas_Constant = config->GetGas_ConstantND();
-  double cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   
   /*--- Compute gradient of adjoint variables on the surface ---*/
@@ -5341,16 +5352,13 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     Sens_Geo[iMarker] = 0.0;
     
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
         if (geometry->node[iPoint]->GetDomain()) {
           
           PsiVar_Grad = node[iPoint]->GetGradient();
@@ -5359,7 +5367,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           if (compressible) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
           if (incompressible || freesurface) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
           
-          heat_flux_factor = cp * Laminar_Viscosity / Prandtl_Lam;
+          heat_flux_factor = Cp * Laminar_Viscosity / Prandtl_Lam;
           
           /*--- Compute face area and the unit normal to the surface ---*/
           
@@ -5370,6 +5378,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           /*--- Compute the sensitivity related to the temperature ---*/
           
           if (compressible) {
+            
             normal_grad_psi5 = 0.0; normal_grad_T = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               normal_grad_psi5 += PsiVar_Grad[nVar-1][iDim]*UnitNormal[iDim];
@@ -5377,9 +5386,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             }
             
             temp_sens = 0.0;
-            if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX             ) ||
-               (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC   ) ||
-               (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)){
+            if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX){
               
               /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
               
@@ -5390,9 +5397,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               for (iDim = 0; iDim < nDim; iDim++)
                 temp_sens += heat_flux_factor * tang_deriv_psi5[iDim] * tang_deriv_T[iDim];
               
-            } else if ((config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-                       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-                       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+            } else if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
               
               /*--- Isothermal Term: temp_sens = - k * \partial_n(\psi_5) * \partial_n(T) ---*/
               
@@ -5405,6 +5410,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             /*--- Incompressible case ---*/
             
             temp_sens = 0.0;
+            
           }
           
           /*--- Term: sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
@@ -5741,6 +5747,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
         Total_Sens_Press -= Sens_Press[iMarker];
         Total_Sens_Temp -= Sens_Temp[iMarker];
       }
+      
     }
     
     /*--- Explicit contribution from objective function quantity ---*/
@@ -5777,8 +5784,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
             
             /*--- AoA sensitivity ---*/
-            /* Coefficients with an explicit AoA dependence - NOTE: Still need to implement right dependency for EFFICIENCY */
-            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT || config->GetKind_ObjFunc() == LIFT_COEFFICIENT || config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT || config->GetKind_ObjFunc() == EQUIVALENT_AREA || config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+
+            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
+                config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
+                config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
+                config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
+                config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
               if (nDim == 2) {
                 D[0][0] = 0.0; D[0][1] = -1.0;
                 D[1][0] = 1.0; D[1][1] = 0.0;
@@ -5794,7 +5805,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
                   Dd[iPos] += D[iPos][jPos]*d[jPos];
               }
             }
-            /* Coefficients with no explicit AoA dependece */
+            
+            /*--- Coefficients with no explicit AoA dependece ---*/
+            
             else {
               for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
             }
@@ -5863,7 +5876,6 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 
 void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  /*--- Local variables ---*/
   unsigned short iDim, iVar, jVar, jDim;
   unsigned long iVertex, iPoint, total_index, Point_Normal;
   
@@ -5902,41 +5914,43 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   double *GradPsiE = new double [nDim];
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
       /*--- Initialize the convective & viscous residuals to zero ---*/
+      
       for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv_i[iVar] = 0.0;
-        Res_Visc_i[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar ++)
-            Jacobian_ii[iVar][jVar] = 0.0;
-        }
+        Res_Conv_i[iVar] = 0.0; Res_Visc_i[iVar] = 0.0;
+        if (implicit) { for (jVar = 0; jVar < nVar; jVar ++) Jacobian_ii[iVar][jVar] = 0.0; }
       }
       
       /*--- Retrieve adjoint solution at the wall boundary node ---*/
+      
       for (iVar = 0; iVar < nVar; iVar++)
         Psi[iVar] = node[iPoint]->GetSolution(iVar);
       
       /*--- Get the force projection vector (based on the objective function) ---*/
+      
       d = node[iPoint]->GetForceProj_Vector();
       
       /*--- Set the adjoint velocity BC ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        phi[iDim] = d[iDim];
-      }
+      
+      for (iDim = 0; iDim < nDim; iDim++) { phi[iDim] = d[iDim]; }
       
       /*--- Correct the adjoint velocity BC for dynamic meshes ---*/
+      
       if (grid_movement) {
         GridVel = geometry->node[iPoint]->GetGridVel();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -5946,6 +5960,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Impose the value of the adjoint velocity as a strong boundary
        condition (Dirichlet). Fix the adjoint velocity and remove any addtional
        contribution to the residual at this node. ---*/
+      
       for (iDim = 0; iDim < nDim; iDim++)
         node[iPoint]->SetSolution_Old(iDim+1, phi[iDim]);
       
@@ -5955,9 +5970,11 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Compute additional contributions to the adjoint density and energy
        equations which will be added to the residual (weak imposition) ---*/
+      
       if (compressible) {
         
         /*--- Energy residual due to the convective term ---*/
+        
         l1psi = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           l1psi += Normal[iDim]*d[iDim];
@@ -5970,10 +5987,12 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         if (grid_movement) {
           
           /*--- Get the grid velocity at this node and impose v = u_wall ---*/
+          
           GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = GridVel[iDim];
           
           /*--- Get some additional quantities from the flow solution ---*/
+          
           Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           if (compressible) {
             Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
@@ -5993,6 +6012,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           /*--- Compute projections, velocity squared divided by two, and
            other inner products. Note that we are imposing v = u_wall from
            the direct problem and that phi = d - \psi_5 * v ---*/
+          
           ProjGridVel = 0.0; sq_vel = 0.0;
           vartheta = Psi[0] + Psi[nDim+1]*Enthalpy;
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -6002,20 +6022,23 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           }
           
           /*--- Convective flux at the wall node (adjoint density) ---*/
+          
           Res_Conv_i[0] = -vartheta*ProjGridVel + l1psi*Gamma_Minus_One*sq_vel;
           
           /*--- Implicit contributions from convective part ---*/
+          
           if (implicit) {
-            /*--- Adjoint density ---*/
             Jacobian_ii[0][0] += -ProjGridVel;
             Jacobian_ii[0][nVar-1] += -ProjGridVel * Enthalpy;
           }
           
           /*--- Viscous flux contributions at the wall node. Impose dPhiE_dn = 0 
            (adiabatic walls with frozen viscosity). ---*/
+          
           dPhiE_dn = 0.0;
           
           /*--- Store the adjoint velocity and energy gradients for clarity ---*/
+          
           PsiVar_Grad = node[iPoint]->GetGradient();
           for (iDim = 0; iDim < nDim; iDim++) {
             GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
@@ -6023,9 +6046,10 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
               GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
           }
           
-          if (nDim ==2) {
+          if (nDim == 2) {
             
             /*--- Compute the adjoint stress tensor ---*/
+            
             Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
             Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
             Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
@@ -6038,18 +6062,22 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
             eta_xy    = Sigma_xy + Sigma_xy5;
             
             /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+            
             Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
                                + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
                                - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
             Res_Visc_i[nDim+1] = Sigma_5;
             
             /*--- Computation of the Jacobians at Point i---*/
+            
             if (implicit) {
               
               /*--- Compute closest normal neighbor ---*/
+              
               Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
               
               /*--- Get coordinates of i & nearest normal and compute distance ---*/
+              
               Coord_i = geometry->node[iPoint]->GetCoord();
               Coord_j = geometry->node[Point_Normal]->GetCoord();
               dist_ij_2 = 0.0;
@@ -6105,6 +6133,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
             eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
             
             /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+            
             Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
                                + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
                                + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
@@ -6117,9 +6146,11 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
             if (implicit) {
               
               /*--- Compute closest normal neighbor ---*/
+              
               Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
               
               /*--- Get coordinates of i & nearest normal and compute distance ---*/
+              
               Coord_i = geometry->node[iPoint]->GetCoord();
               Coord_j = geometry->node[Point_Normal]->GetCoord();
               dist_ij_2 = 0.0;
@@ -6182,7 +6213,9 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       }
       
       if (incompressible || freesurface) {
+        
         /*--- Pressure residual due to the convective term ---*/
+        
         l1psi = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           l1psi += Normal[iDim]*d[iDim];
@@ -6190,13 +6223,16 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       }
       
       /*--- Convective contribution to the residual at the wall ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
       
       /*--- Viscous contribution to the residual at the wall ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
       
       /*--- Enforce the no-slip boundary condition in a strong way by
        modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+      
       if (implicit) {
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
         for (iVar = 1; iVar <= nDim; iVar++) {
@@ -6225,6 +6261,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
 
 void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
   unsigned long iVertex, iPoint, total_index, Point_Normal;
   unsigned short iDim, iVar, jVar, jDim;
   double *d, q, *U, l1psi, mu_dyn, Temp, dVisc_T, rho, pressure, div_phi,
