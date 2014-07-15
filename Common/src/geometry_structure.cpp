@@ -7910,8 +7910,8 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
    nodes make up a large portion of the mesh, and this will be
    replaced in the near future. ---*/
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    vsize[iPoint] = interior_weight;
+//  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+//    vsize[iPoint] = interior_weight;
 //    if (node[iPoint]->GetDomain()) {
 //      vsize[iPoint] = interior_weight;
 //    } else {
@@ -7919,7 +7919,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
 //      vsize[iPoint] = periodic_weight;
 //      periodic_nodes++;
 //    }
-  }
+//  }
   
   /*--- Set some options for METIS ---*/
   
@@ -7932,7 +7932,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   
   /*--- Call METIS to partition the mesh ---*/
   
-  METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, vsize, &nparts, NULL, NULL, &edgecut, epart, npart);
+  METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
   cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
 
   /*--- Store the partitioning information for each node ---*/
