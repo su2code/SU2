@@ -1502,24 +1502,39 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double strainRateMag = 0;
   for (int i= 0; i < nDim; i++){
     for (int j = 0; j < nDim; j++){
-      strainRateMag += DUiDXj[i][j] + DUiDXj[j][i];
+      double sij = 0.5 * (DUiDXj[i][j] + DUiDXj[j][i]);
+      strainRateMag += 2 * (sij * sij);
     }
   }
-  strainRateMag /= 2;
+  
+  //cout << "strain rate mag = " << strainRateMag << endl;
   strainRateMag = sqrt(strainRateMag);
+//  cout << "after sqrt = " << strainRateMag << endl;
   
   double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
   
-  double fWake = exp(- (1e-10 * ReS * ReS));
+  fWake = exp(- (1e-10 * ReS * ReS));
+//  cout << "ReS = " << ReS << endl;
+//  cout << "fWake = " << fWake << endl;
   
-  double magU;
+  double magU = 0;
   for (unsigned short i = 0; i < nDim; i++){
     magU += V_i[1+i] * V_i[1+i];
   }
   magU = sqrt(magU);
   
+//  cout << "x loc " << Coord_i[0] << endl;
+//  cout << "y loc " << Coord_i[1] << endl;
+//  cout <<  "u infinity = " << uInfinity << endl;
+//  cout << "magU = " << magU << endl;
+//  cout << "gt? " << (magU > uInfinity * 0.99) << endl;
+  isInBL = fWake > 0.5 && (magU < uInfinity * 0.99);
+//  cout << "Is in BL " << isInBL << endl;
   
-  isInBL = fWake > 1 && (magU > uInfinity * 0.99);
+//  if (Coord_i[0] < -200 && Coord_i[1] > 200){
+//    throw "ahh";
+//  }
+  
   
   // Now that we have found the ML Residual and the SA residual, see if there are
   // any special hacks that we should use

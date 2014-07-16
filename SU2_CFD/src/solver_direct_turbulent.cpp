@@ -2311,8 +2311,8 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim == 2){ nOutputVariables = 36 + 2*nDim + 1*nDim*nDim; }
-      else if (nDim == 3){ nOutputVariables = 36 + 2*nDim + 1*nDim*nDim; }
+      if (nDim == 2){ nOutputVariables = 40 + 2*nDim + 1*nDim*nDim; }
+      else if (nDim == 3){ nOutputVariables = 40 + 2*nDim + 1*nDim*nDim; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
     }
@@ -2628,6 +2628,20 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->isInBL;
       OutputHeadingNames[idx] = "IsInBL";
       idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->fWake;
+      OutputHeadingNames[idx] = "FWake";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAOtherOutputs->mul_production;
+      OutputHeadingNames[idx] = "Mul_Production";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAOtherOutputs->mul_destruction;
+      OutputHeadingNames[idx] = "Mul_Destruction";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAOtherOutputs->mul_crossproduction;
+      OutputHeadingNames[idx] = "Mul_CrossProduction";
+      idx++;
+      
+      
       for (iDim = 0; iDim<nDim;iDim++){
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->DNuHatDXBar[iDim];
         stringstream intstr;
