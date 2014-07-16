@@ -2471,6 +2471,7 @@ CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim
 }
 
 CSourceConservative_AdjFlow::~CSourceConservative_AdjFlow(void) {
+  
 	delete [] Mean_Residual;
 	delete [] Residual_j;
 	delete [] Residual_i;
@@ -2479,9 +2480,11 @@ CSourceConservative_AdjFlow::~CSourceConservative_AdjFlow(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		delete [] Mean_PrimVar_Grad[iVar];
 	delete [] Mean_PrimVar_Grad;
+  
 }
 
 void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig *config) {
+  
 	unsigned short iDim, jDim, iVar;
 	double rho, nu, Ji, fv1, fv2, Omega, Shat, dist_sq, Ji_2, Ji_3, one_o_oneplusJifv1;
 	double r, g, g_6, glim, dfw_g, dg_r, dr_nuhat, dr_Shat, Ms_coeff, invOmega;
@@ -2504,11 +2507,13 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	/*--- iPoint ---*/
   
 	/*--- Density and velocities ---*/
+  
 	rho = U_i[0];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Velocity[iDim] = U_i[iDim+1]/rho;
   
 	/*--- Vorticity ---*/
+  
 	Omega = (PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0])*(PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0]);
 	if (nDim == 3) Omega += (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) +
     (PrimVar_Grad_i[2][2]-PrimVar_Grad_i[3][1])*(PrimVar_Grad_i[2][2]-PrimVar_Grad_i[3][1]);
@@ -2517,6 +2522,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	//	invOmega = min(1.0/Omega, max_invOmega);
   
 	/*--- Compute Ms_coeff -> coming from partial derivatives ---*/
+  
 	Ms_coeff = 0.0;
 	if (dist_i > 0) {
 		dist_sq = dist_i*dist_i;
@@ -2544,6 +2550,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	Ms_coeff *= TurbPsi_i[0]*invOmega/rho;
   
 	/*--- Compute residual of iPoint ---*/
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		for (jDim = 0; jDim < nDim; jDim++) {
 			Residual_i[0] -= Ms_coeff*(Velocity[jDim]*PrimVar_Grad_i[jDim+1][iDim]*Normal[iDim] -
@@ -2556,11 +2563,13 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	/*--- jPoint ---*/
   
 	/*--- Density and velocities ---*/
+  
 	rho = U_j[0];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Velocity[iDim] = U_j[iDim+1]/rho;
   
 	/*--- Vorticity ---*/
+  
 	Omega = (PrimVar_Grad_j[1][1]-PrimVar_Grad_j[2][0])*(PrimVar_Grad_j[1][1]-PrimVar_Grad_j[2][0]);
 	if (nDim == 3) Omega += (PrimVar_Grad_j[1][2]-PrimVar_Grad_j[3][0])*(PrimVar_Grad_j[1][2]-PrimVar_Grad_j[3][0]) +
     (PrimVar_Grad_j[2][2]-PrimVar_Grad_j[3][1])*(PrimVar_Grad_j[2][2]-PrimVar_Grad_j[3][1]);
@@ -2569,6 +2578,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	//	invOmega = min(1.0/Omega, max_invOmega);
   
 	/*--- Compute Ms_coeff -> coming from partial derivatives ---*/
+  
 	Ms_coeff = 0.0;
 	if (dist_j > 0) {
 		dist_sq = dist_j*dist_j;
@@ -2596,6 +2606,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	Ms_coeff *= TurbPsi_j[0]*invOmega/rho;
   
 	/*--- Compute residual of jPoint ---*/
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		for (jDim = 0; jDim < nDim; jDim++) {
 			Residual_j[0] -= Ms_coeff*(Velocity[jDim]*PrimVar_Grad_j[jDim+1][iDim]*Normal[iDim] -
@@ -2606,6 +2617,7 @@ void CSourceConservative_AdjFlow::ComputeResidual (double *val_residual, CConfig
 	}
   
 	/*--- MEAN RESIDUAL ---*/
+  
 	for (iVar = 0; iVar < nVar; iVar++)
 		val_residual[iVar] = 0.5*(Residual_i[iVar] + Residual_j[iVar]);
   
