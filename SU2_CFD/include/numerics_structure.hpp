@@ -4021,7 +4021,7 @@ private:
   
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
-  SpalartAllmarasOtherOutputs* SAOtherOutputs;
+
   int nResidual;
   int nJacobian;
   
@@ -4034,6 +4034,8 @@ private:
 public:
   bool isInBL;
   double fw;
+  double fWake;
+  SpalartAllmarasOtherOutputs* SAOtherOutputs;
   
   double *SAResidual;
   double * SANondimResidual;
