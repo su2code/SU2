@@ -374,11 +374,11 @@ public:
   
 	/*!
 	 * \brief Constructor using the nodes and index.
-	 * \param[in] val_iPoint - Index of the 1st triangle point read from the grid file.
-	 * \param[in] val_jPoint - Index of the 2nd triangle point read from the grid file.
+	 * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
+	 * \param[in] val_point_1 - Index of the 2nd triangle point read from the grid file.
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
 	 */
-	CLine(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim);
+	CLine(unsigned long val_point_0, unsigned long val_point_1, unsigned short val_nDim);
   
   /*!
 	 * \brief Destructor of the class.
@@ -500,12 +500,12 @@ public:
 	
 	/*!
 	 * \brief Constructor using the nodes and index.
-	 * \param[in] val_iPoint - Index of the 1st triangle point read from the grid file.
-	 * \param[in] val_jPoint - Index of the 2nd triangle point read from the grid file.
+	 * \param[in] val_point_0 - Index of the 1st triangle point read from the grid file.
+	 * \param[in] val_point_1 - Index of the 2nd triangle point read from the grid file.
 	 * \param[in] val_point_2 - Index of the 3th triangle point read from the grid file.
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D), be careful a triangle could be 2D or 3D.
 	 */
-	CTriangle(unsigned long val_iPoint, unsigned long val_jPoint,
+	CTriangle(unsigned long val_point_0, unsigned long val_point_1,
             unsigned long val_point_2, unsigned short val_nDim);
   
   /*!
@@ -628,13 +628,13 @@ public:
   
 	/*!
 	 * \brief Constructor using the nodes and index.
-	 * \param[in] val_iPoint - Index of the 1st point read from the grid file.
-	 * \param[in] val_jPoint - Index of the 2nd point read from the grid file.
+	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
+	 * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
 	 * \param[in] val_point_2 - Index of the 3th point read from the grid file.
 	 * \param[in] val_point_3 - Index of the 4th point read from the grid file.
 	 * \param[in] val_nDim - Number of dimension of the problem (2D or 3D).
 	 */
-	CRectangle(unsigned long val_iPoint, unsigned long val_jPoint,
+	CRectangle(unsigned long val_point_0, unsigned long val_point_1,
              unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim);
   
   /*!
@@ -756,12 +756,12 @@ public:
   
 	/*!
 	 * \brief Constructor using the nodes and index.
-	 * \param[in] val_iPoint - Index of the 1st point read from the grid file.
-	 * \param[in] val_jPoint - Index of the 2nd point read from the grid file.
+	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
+	 * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
 	 * \param[in] val_point_2 - Index of the 3th point read from the grid file.
 	 * \param[in] val_point_3 - Index of the 4th point read from the grid file.
 	 */
-	CTetrahedron(unsigned long val_iPoint, unsigned long val_jPoint,
+	CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
                unsigned long val_point_2, unsigned long val_point_3);
   
   /*!
@@ -871,8 +871,8 @@ public:
 	
 	/*!
 	 * \brief Constructor using the nodes and index.
-	 * \param[in] val_iPoint - Index of the 1st point read from the grid file.
-	 * \param[in] val_jPoint - Index of the 2nd point read from the grid file.
+	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
+	 * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
 	 * \param[in] val_point_2 - Index of the 3th point read from the grid file.
 	 * \param[in] val_point_3 - Index of the 4th point read from the grid file.
 	 * \param[in] val_point_4 - Index of the 5td point read from the grid file.
@@ -880,7 +880,7 @@ public:
 	 * \param[in] val_point_6 - Index of the 7th point read from the grid file.
 	 * \param[in] val_point_7 - Index of the 8th point read from the grid file.
 	 */
-	CHexahedron(unsigned long val_iPoint, unsigned long val_jPoint,
+	CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
               unsigned long val_point_2, unsigned long val_point_3,
               unsigned long val_point_4, unsigned long val_point_5,
               unsigned long val_point_6, unsigned long val_point_7);
@@ -1111,13 +1111,13 @@ public:
 	
 	/*!
 	 * \brief Constructor using the nodes and index.
-	 * \param[in] val_iPoint - Index of the 1st point read from the grid file.
-	 * \param[in] val_jPoint - Index of the 2nd point read from the grid file.
+	 * \param[in] val_point_0 - Index of the 1st point read from the grid file.
+	 * \param[in] val_point_1 - Index of the 2nd point read from the grid file.
 	 * \param[in] val_point_2 - Index of the 3th point read from the grid file.
 	 * \param[in] val_point_3 - Index of the 4th point read from the grid file.
 	 * \param[in] val_point_4 - Index of the 5th point read from the grid file.
 	 */
-	CPyramid(unsigned long val_iPoint, unsigned long val_jPoint,
+	CPyramid(unsigned long val_point_0, unsigned long val_point_1,
            unsigned long val_point_2, unsigned long val_point_3,
            unsigned long val_point_4);
   

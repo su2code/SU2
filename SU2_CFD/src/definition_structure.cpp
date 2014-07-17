@@ -27,7 +27,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   string text_line, Marker_Tag;
   ifstream mesh_file;
   short nZone = 1; // Default value
-  unsigned short iLine, nLine = 5;
+  unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
   
@@ -87,7 +87,7 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
   short nDim = 3;
-  unsigned short iLine, nLine = 5;
+  unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
   
