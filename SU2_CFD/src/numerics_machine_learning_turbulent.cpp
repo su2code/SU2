@@ -129,6 +129,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   double **DUiDXj = inputs->GetMeanFlowGradient();
   double Vorticity = ComputeVorticity(nDim,DUiDXj);
   double Omega = sqrt(Vorticity);
+  otherOutput->Omega = Omega;
   
   double StrainMag;
   double Laminar_Viscosity = inputs->Laminar_Viscosity;
