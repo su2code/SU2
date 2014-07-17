@@ -1281,8 +1281,8 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 		/*--- Pass conservative & primitive variables w/o reconstruction ---*/
 		numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[jPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());    
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimitive());    
 
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -1391,8 +1391,8 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
     U_i = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
     U_j = solver_container[TNE2_SOL]->node[jPoint]->GetSolution();
-    V_i = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
-    V_j = solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar();
+    V_i = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
+    V_j = solver_container[TNE2_SOL]->node[jPoint]->GetPrimitive();
     numerics->SetPrimitive(V_i, V_j);
     numerics->SetConservative(U_i, U_j);
     
@@ -1507,8 +1507,8 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Set conserved & primitive variables at point i ---*/
     numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[iPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive());
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -1966,7 +1966,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
         if (geometry->node[iPoint]->GetDomain()) {
           Psi      = node[iPoint]->GetSolution();
           U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
           dPdU     = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
           Normal   = geometry->vertex[iMarker][iVertex]->GetNormal();
           Mach_Inf = config->GetMach();
@@ -2200,7 +2200,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       
 			/*--- Set the direct solution ---*/
 			U    = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-      V    = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      V    = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
       /*--- Get the force projection vector, d ---*/
@@ -2299,7 +2299,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       
 			/*--- Set the direct solution ---*/
 			U = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
       /*--- Compute projections ---*/
@@ -2390,8 +2390,8 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
 			/*--- Retrieve solution from boundary & free stream ---*/
       U_domain = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
       U_infty  = solver_container[TNE2_SOL]->node_infty->GetSolution();
-      V_domain = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
-      V_infty  = solver_container[TNE2_SOL]->node_infty->GetPrimVar();
+      V_domain = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
+      V_infty  = solver_container[TNE2_SOL]->node_infty->GetPrimitive();
     
       /*--- Pass conserved & primitive variables to CNumerics ---*/
 			conv_numerics->SetConservative(U_domain, U_infty);
@@ -2833,8 +2833,8 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Pass conservative & primitive variables w/o reconstruction ---*/
     numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[jPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimitive());
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -2926,12 +2926,12 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
 		/*--- Set conserved & primitive variables at point i ---*/
 		numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[iPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive());
     second_numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                                      solver_container[TNE2_SOL]->node[iPoint]->GetSolution());
-    second_numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                                  solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
+    second_numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                                  solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive());
     
     /*--- Pass the adjoint variables to CNumerics ---*/
     second_numerics->SetAdjointVar(node[iPoint]->GetSolution(),
@@ -3823,7 +3823,7 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
 				Psi[iVar] = node[iPoint]->GetSolution(iVar);
       
       /*--- Retrieve primitive variables at the boundary node ---*/
-      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
 			/*--- Normal vector for this vertex ---*/
