@@ -7879,6 +7879,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ForceViscous = NULL;
   MomentViscous = NULL;
   CSkinFriction = NULL;
+  Cauchy_Serie = NULL;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -8157,6 +8158,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     FanFace_Mach[iMarker] = Mach_Inf;
   }
   
+  /*--- Initialize the cauchy critera array for fixed CL mode ---*/
+  
+  if (config->GetFixed_CL_Mode())
+    Cauchy_Serie = new double [config->GetCauchy_Elems()+1];
+  
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
@@ -8343,6 +8349,9 @@ CNSSolver::~CNSSolver(void) {
     delete [] CSkinFriction;
   }
   
+  if (Cauchy_Serie != NULL)
+    delete [] Cauchy_Serie;
+  
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -8368,11 +8377,16 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool tkeNeeded = (turb_model == SST);
+  bool fixed_cl = config->GetFixed_CL_Mode();
   double eddy_visc = 0.0, turb_ke = 0.0;
   bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
+  
+  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  
+  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Compute distance function to zero level set ---*/
   if (freesurface) SetFreeSurface_Distance(geometry, config);
