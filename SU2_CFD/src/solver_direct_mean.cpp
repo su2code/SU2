@@ -1695,10 +1695,9 @@ void CEulerSolver::Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *conf
 }
 
 void CEulerSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-  *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
+  double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
   int send_to, receive_from;
   
   double *Limiter = new double [nSecondaryVarGrad];

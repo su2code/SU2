@@ -2375,6 +2375,11 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area;
           
+          /*--- Change the sign of the sensitivity if the normal has been flipped --*/
+          
+          if (geometry->node[iPoint]->GetFlip_Orientation())
+            CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
+
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
@@ -5578,7 +5583,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           /*--- Compute sensitivity for each surface point ---*/
           
-          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens)*Area;
+          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area;
+          
+          /*--- Change the sign of the sensitivity if the normal has been flipped --*/
+
+          if (geometry->node[iPoint]->GetFlip_Orientation())
+            CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
           
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
