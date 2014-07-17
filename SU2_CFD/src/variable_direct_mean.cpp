@@ -44,7 +44,8 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool windgust = config->GetWind_Gust();
+  bool viscous = config->GetViscous();
+  bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -57,7 +58,10 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
+    else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
+  }
 
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -85,6 +89,10 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   Limiter_Primitive = new double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
+  
+  Limiter_Secondary = new double [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Limiter_Secondary[iVar] = 0.0;
   
   Limiter = new double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -160,6 +168,9 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
+  Secondary = new double [nSecondaryVar];
+  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P,vx,vy,vz,rho),
         FreeSurface Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,dist),
         Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
@@ -169,6 +180,13 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
     Gradient_Primitive[iVar] = new double [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
+  }
+  
+  Gradient_Secondary = new double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+    Gradient_Secondary[iVar] = new double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Secondary[iVar][iDim] = 0.0;
   }
   
 }
@@ -182,7 +200,8 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool windgust = config->GetWind_Gust();
+  bool viscous = config->GetViscous();
+  bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -195,7 +214,10 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
+    else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
+  }
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -223,6 +245,10 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
   
+  Limiter_Secondary = new double [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Limiter_Secondary[iVar] = 0.0;
+
   Limiter = new double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
@@ -272,6 +298,9 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
+  Secondary = new double [nSecondaryVar];
+  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P,vx,vy,vz,rho),
         FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
         Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
@@ -283,8 +312,12 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
-  /*--- Allocate the limiter for the primitive variables ---*/
-  Limiter_Primitive = new double [nPrimVarGrad];
+  Gradient_Secondary = new double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+    Gradient_Secondary[iVar] = new double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Secondary[iVar][iDim] = 0.0;
+  }
   
 }
 
@@ -311,6 +344,14 @@ void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 	for (iVar = 0; iVar < val_primvar; iVar++)
 		for (iDim = 0; iDim < nDim; iDim++)
 			Gradient_Primitive[iVar][iDim] = 0.0;
+}
+
+void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
+	unsigned short iVar, iDim;
+  
+	for (iVar = 0; iVar < val_secondaryvar; iVar++)
+		for (iDim = 0; iDim < nDim; iDim++)
+			Gradient_Secondary[iVar][iDim] = 0.0;
 }
 
 double CEulerVariable::GetProjVel(double *val_vector) {
