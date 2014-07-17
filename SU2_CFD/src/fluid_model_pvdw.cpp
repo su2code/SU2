@@ -37,10 +37,7 @@ CVanDerWaalsGas::CVanDerWaalsGas(double gamma, double R, double Pstar, double Ts
 }
 
 
-CVanDerWaalsGas::~CVanDerWaalsGas(void) {
-
-}
-
+CVanDerWaalsGas::~CVanDerWaalsGas(void) { }
 
 
 void CVanDerWaalsGas::SetTDState_rhoe (double rho, double e ) {
