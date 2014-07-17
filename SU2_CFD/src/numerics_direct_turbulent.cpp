@@ -1149,6 +1149,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double dVDXBar = DUiDXj[1][0] / SANondimInputs->OmegaNondim;
   double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
   double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
+  double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
+  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;
@@ -1442,6 +1444,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
   }else if (featureset.compare("fw_les_2")==0){
+    nInputMLVariables = 8;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
@@ -1475,6 +1478,46 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     Residual[1] = newdestruction;
     Residual[3] = Residual[0] - Residual[1] + Residual[2];
     
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
+  }else if(featureset.compare("mul_destruction") == 0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    MLModel->Predict(netInput, netOutput);
+    
+    // The output is a multiplier to the destruction term. Replicate the
+    // destruction term
+    double mul_dest = netOutput[0];
+    Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("mul_production")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    MLModel->Predict(netInput, netOutput);
+    // The output is a multiplier to the destruction term. Replicate the
+    // production term
+    double mul_prod = netOutput[0];
+    Residual[0] = mul_prod * Turbulent_Kinematic_Viscosity * SAOtherOutputs->Omega;
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
     for (int i= 0; i < nResidual; i++){
       NondimResidual[i] = Residual[i];
     }
@@ -1542,6 +1585,14 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   unsigned short nStrings = config->GetNumML_Turb_Model_Extra();
   string *extraString = config->GetML_Turb_Model_Extra();
   
+  bool hasBlOnly = false;
+  for (int i= 0; i < nStrings; i++){
+    if (extraString[i].compare("BlOnly") == 0){
+      hasBlOnly = true;
+      break;
+    }
+  }
+  
   if (nStrings > 0){
     if (extraString[0].compare("FlatplateBlOnlyCutoff") == 0){
         // Only use ML in the boundary layer and have a sharp cutoff
@@ -1553,23 +1604,14 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
         }
       }
     }
-    if (extraString[0].compare("BlOnly") == 0){
-      // Only use ML in the boundary layer (where U < 0.99 U inf)
-      double magU;
-      for (unsigned short i = 0; i < nDim; i++){
-        magU += V_i[1+i] * V_i[1+i];
-      }
-      magU = sqrt(magU);
-//      cout << "MagU = " << magU << " UInf = " << uInfinity << endl;
-      if (magU > uInfinity * 0.99){
+    if (hasBlOnly){
+      // Only use ML in the boundary layer (where isInBL == true)
+      if (isInBL){
         // Then use SA
         for (int i = 0; i < nResidual; i++){
           Residual[i] = SAResidual[i];
           NondimResidual[i] = SANondimResidual[i];
         }
-//        cout << "Using SA" <<endl;
-//      }else{
-//        cout << "Using ML" << endl;
       }
     }
   }
