@@ -1,9 +1,8 @@
-
 /*!
- * fluid_model_pvdw.cpp
- * \brief Source of the Polytropic Van der Waals model.
- * \author TUDelft P&P group - PoliMi CREA
- * \version 1.0.0 "eagle"
+ * fluid_model_ppr.cpp
+ * \brief Source of the Peng-Robinson model.
+ * \author: S.Vitale, G.Gori, M.Pini, A.Guardone, P.Colonna
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -33,7 +32,6 @@ CPengRobinson::CPengRobinson() : CIdealGas() {
 
 CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar, double w) : CIdealGas(gamma, R) {
 
-    /// w, acentric factor è passato come param[4]
 	a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
 	b = 0.0778*Gas_Constant*Tstar/Pstar;
 	TstarCrit = Tstar;
@@ -46,13 +44,9 @@ CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar,
 //	a= 0.0;
 //	b =0.0;
 
-
 }
 
-
-CPengRobinson::~CPengRobinson(void) {
-
-}
+CPengRobinson::~CPengRobinson(void) { }
 
 
 double CPengRobinson::alpha2(double T){
@@ -62,17 +56,11 @@ double CPengRobinson::alpha2(double T){
 
 void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
-    /// Temperarure is T/Tc, pressure is P/Pc
-
     double DpDd_T, DpDT_d,DeDd_T, Cv;
     double A, B, C, sqrt2=sqrt(2), fv, g, g1;
 
     Density = rho;
     StaticEnergy = e;
-
-
-    /// Temperature computation
-    // It is a quadratic equation for Tr, A,B,C are the coefficient of the polynomial Ax^2 + Bx + C = 0
 
     fv = atanh( rho * b * sqrt2/(1 + rho*b));
     A = Gas_Constant / Gamma_Minus_One;
@@ -84,17 +72,7 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
     Temperature = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
     Temperature *= Temperature;
 
-
-    /// Pressure computation
-    // Alpha is the Tr dependent Peng-Robinson function for evaluate the attractive force
-    // Pressure is computed by mean of Peng-Robinson EoS
-
     Pressure = rho*Temperature*Gas_Constant / (1 - rho*b) - a*alpha2(Temperature) / ( 1/rho/rho + 2*b/rho - b*b );
-
-
-
-    /// Sound speed computation
-    // Relation obtained by taking Dp/Drho of the Peng-Robinson Eos
 
     A = (1/rho/rho + 2*b/rho - b*b);
     B = - 0.5*k/sqrt(Temperature*TstarCrit); //(D alpha / DT)
@@ -168,7 +146,6 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 
 void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 
-    /// T all'interno di questa funzione non è adimensionalizzata rispetto alla T_c perchè è ricavate dalla p(T,v)
     SetEnergy_Prho(P,rho);
 
 	SetTDState_rhoe(rho, StaticEnergy);
@@ -203,17 +180,8 @@ void CPengRobinson::SetEnergy_Prho (double P, double rho ) {
 
     ad = a*sqrt(alpha2(T)/2)/b*(sqrt(alpha2(T)) + k*sqrt(T/TstarCrit))*atanh( rho * b * sqrt(2)/(1 + rho*b) ) ;
     StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
-//    cout << atanh( rho * b * sqrt(2)/(1 + rho*b) ) << endl;
-//    cout << StaticEnergy << endl;
-//    cout << StaticEnergy << endl;
-//    getchar();
 
 }
-
-//void CPengRobinson::SetEntropy_Prho (double P, double rho ) {
-//
-//
-//}
 
 
 

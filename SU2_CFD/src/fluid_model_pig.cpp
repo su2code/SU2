@@ -1,8 +1,8 @@
 /*!
- * gas_model.cpp
- * \brief Source of the main thermodynamic subroutines of the SU2 solvers.
- * \author TUDelft Polimi
- * \version 1.0.0 "eagle"
+ * fluid_model_pig.cpp
+ * \brief Source of the ideal gas model.
+ * \author: S.Vitale, G.Gori, M.Pini, A.Guardone, P.Colonna
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
