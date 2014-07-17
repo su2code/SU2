@@ -34,7 +34,11 @@ inline double CPoint::GetCoord(unsigned short val_dim) { return coord[val_dim]; 
 
 inline double *CPoint::GetCoord(void) { return coord; }
 
+inline bool CPoint::GetFlip_Orientation(void) { return Flip_Orientation; }
+
 inline void CPoint::SetCoord(unsigned short val_dim, double val_coord) { coord[val_dim] = val_coord; }
+
+inline void CPoint::SetFlip_Orientation(void) { Flip_Orientation = true; }
 
 inline void CPoint::AddCoord(unsigned short val_dim, double val_coord) { coord[val_dim] += val_coord; }
 

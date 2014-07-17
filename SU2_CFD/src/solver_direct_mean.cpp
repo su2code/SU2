@@ -135,7 +135,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nDim = geometry->GetnDim();
   if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nVar = nDim+2;
+    nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    nSecondaryVar = 2; nSecondaryVarGrad = 2;
+  }
+  
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -1568,6 +1572,212 @@ void CEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *confi
   
 }
 
+void CEulerSolver::Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
+  int send_to, receive_from;
+  
+  double **Gradient = new double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Gradient[iVar] = new double[nDim];
+  
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nSecondaryVarGrad*nDim;        nBufferR_Vector = nVertexR*nSecondaryVarGrad*nDim;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_Gradient = new double [nBufferR_Vector];
+      Buffer_Send_Gradient = new double[nBufferS_Vector];
+      
+      /*--- Copy the solution old that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Gradient[iDim*nSecondaryVarGrad*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient_Secondary(iVar, iDim);
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Receive_Gradient[iDim*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_Gradient;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
+        
+        /*--- Retrieve the supplied periodic information. ---*/
+        angles = config->GetPeriodicRotation(iPeriodic_Index);
+        
+        /*--- Store angles separately for clarity. ---*/
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+        
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis,
+         then z-axis. Note that this is the transpose of the matrix
+         used during the preprocessing stage. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+        
+        /*--- Copy conserved variables before performing transformation. ---*/
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+        
+        /*--- Need to rotate the gradients for all conserved variables. ---*/
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+          if (nDim == 2) {
+            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+          }
+          else {
+            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
+          }
+        }
+        
+        /*--- Store the received information ---*/
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            node[iPoint]->SetGradient_Secondary(iVar, iDim, Gradient[iVar][iDim]);
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_Gradient;
+      
+    }
+    
+  }
+  
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    delete [] Gradient[iVar];
+  delete [] Gradient;
+  
+}
+
+void CEulerSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) {
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
+  *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
+  int send_to, receive_from;
+  
+  double *Limiter = new double [nSecondaryVarGrad];
+  
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+      
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nSecondaryVarGrad;        nBufferR_Vector = nVertexR*nSecondaryVarGrad;
+      
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_Limit = new double [nBufferR_Vector];
+      Buffer_Send_Limit = new double[nBufferS_Vector];
+      
+      /*--- Copy the solution old that should be sended ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter_Secondary(iVar);
+      }
+      
+#ifdef HAVE_MPI
+      
+      /*--- Send/Receive information using Sendrecv ---*/
+      MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                   Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      
+#else
+      
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          Buffer_Receive_Limit[iVar*nVertexR+iVertex] = Buffer_Send_Limit[iVar*nVertexR+iVertex];
+      }
+      
+#endif
+      
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_Limit;
+      
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        
+        /*--- Copy conserved variables before performing transformation. ---*/
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          Limiter[iVar] = Buffer_Receive_Limit[iVar*nVertexR+iVertex];
+        
+        /*--- Copy transformed conserved variables back into buffer. ---*/
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          node[iPoint]->SetLimiter_Secondary(iVar, Limiter[iVar]);
+        
+      }
+      
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_Limit;
+      
+    }
+    
+  }
+  
+  delete [] Limiter;
+  
+}
+
 void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
   
   double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0, Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0,
@@ -2352,12 +2562,12 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Gradient computation ---*/
     
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimVar_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimVar_Gradient_LS(geometry, config);
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
     
     /*--- Limiter computation ---*/
     
-    if ((limiter) && (iMesh == MESH_0)) SetPrimVar_Limiter(geometry, config);
+    if ((limiter) && (iMesh == MESH_0)) SetPrimitive_Limiter(geometry, config);
     
   }
   
@@ -2605,7 +2815,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Set primitive variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     
     /*--- Set the largest convective eigenvalue ---*/
     
@@ -2682,7 +2892,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Get primitive variables ---*/
     
-    V_i = node[iPoint]->GetPrimVar(); V_j = node[jPoint]->GetPrimVar();
+    V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
     
     /*--- High order reconstruction using MUSCL strategy ---*/
     
@@ -2994,7 +3204,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetWindGustDer(node[iPoint]->GetWindGustDer(), node[iPoint]->GetWindGustDer());
       
       /*--- Load the primitive variables ---*/
-      numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[iPoint]->GetPrimVar());
+      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[iPoint]->GetPrimitive());
       
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -3883,7 +4093,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
 }
 
-void CEulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, jPoint, iEdge, iVertex;
   unsigned short iDim, iVar, iMarker;
   double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
@@ -3905,8 +4115,8 @@ void CEulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) 
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
-      PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+      PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+      PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
     }
     
     Normal = geometry->edge[iEdge]->GetNormal();
@@ -3929,7 +4139,7 @@ void CEulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) 
       if (geometry->node[iPoint]->GetDomain()) {
         
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          PrimVar_Vertex[iVar] = node[iPoint]->GetPrimVar(iVar);
+          PrimVar_Vertex[iVar] = node[iPoint]->GetPrimitive(iVar);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -3959,7 +4169,7 @@ void CEulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) 
   
 }
 
-void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   unsigned short iVar, iDim, jDim, iNeigh;
   unsigned long iPoint, jPoint;
@@ -3980,7 +4190,7 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
     
     /*--- Get primitives from CVariable ---*/
     
-    PrimVar_i = node[iPoint]->GetPrimVar();
+    PrimVar_i = node[iPoint]->GetPrimitive();
     
     /*--- Inizialization of variables ---*/
     
@@ -3995,7 +4205,7 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
-      PrimVar_j = node[jPoint]->GetPrimVar();
+      PrimVar_j = node[jPoint]->GetPrimitive();
       
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4094,136 +4304,7 @@ void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) 
   
 }
 
-void CEulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config,
-                                          unsigned long val_Point) {
-  
-  unsigned short iVar, iDim, jDim, iNeigh;
-  unsigned long iPoint, jPoint;
-  double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j;
-  double r11, r12, r13, r22, r23, r23_a,
-  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
-  bool singular;
-  
-  iPoint = val_Point;
-  
-  /*--- Set the value of the singular ---*/
-  singular = false;
-  
-  /*--- Get coordinates ---*/
-  
-  Coord_i = geometry->node[iPoint]->GetCoord();
-  
-  /*--- Get primitives from CVariable ---*/
-  
-  PrimVar_i = node[iPoint]->GetPrimVar();
-  
-  /*--- Inizialization of variables ---*/
-  
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      cvector[iVar][iDim] = 0.0;
-  
-  r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
-  r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0; detR2 = 0.0;
-  
-  for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
-    jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-    Coord_j = geometry->node[jPoint]->GetCoord();
-    
-    PrimVar_j = node[jPoint]->GetPrimVar();
-    
-    weight = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-    
-    /*--- Sumations for entries of upper triangular matrix R ---*/
-    
-    if (weight != 0.0) {
-      
-      r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-      r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-      r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
-      
-      if (nDim == 3) {
-        r13   += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-        r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-        r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-        r33   += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
-      }
-      
-      /*--- Entries of c:= transpose(A)*b ---*/
-      
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
-          cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
-      
-    }
-  }
-  
-  /*--- Entries of upper triangular matrix R ---*/
-  
-  if (r11 >= 0.0)         r11 = sqrt(r11);         else r11 = 0.0;
-  if (r11 != 0.0)         r12 = r12/r11;           else r12 = 0.0;
-  if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
-  
-  if (nDim == 3) {
-    if (r11 != 0.0)                       r13 = r13/r11;                         else r13 = 0.0;
-    if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
-    if (r33-r23*r23-r13*r13 >= 0.0)       r33 = sqrt(r33-r23*r23-r13*r13);       else r33 = 0.0;
-  }
-  
-  /*--- Compute determinant ---*/
-  if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
-  else detR2 = (r11*r22*r33)*(r11*r22*r33);
-  
-  /*--- Detect singular matrices ---*/
-  
-  if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
-  
-  /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-  
-  if (singular) {
-    for (iDim = 0; iDim < nDim; iDim++)
-      for (jDim = 0; jDim < nDim; jDim++)
-        Smatrix[iDim][jDim] = 0.0;
-  }
-  else {
-    if (nDim == 2) {
-      Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
-      Smatrix[0][1] = -r11*r12/detR2;
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = r11*r11/detR2;
-    }
-    else {
-      z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
-      z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
-      Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
-      Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
-      Smatrix[0][2] = (z13*z33)/detR2;
-      Smatrix[1][0] = Smatrix[0][1];
-      Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
-      Smatrix[1][2] = (z23*z33)/detR2;
-      Smatrix[2][0] = Smatrix[0][2];
-      Smatrix[2][1] = Smatrix[1][2];
-      Smatrix[2][2] = (z33*z33)/detR2;
-    }
-  }
-  
-  /*--- Computation of the gradient: S*c ---*/
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      product = 0.0;
-      for (jDim = 0; jDim < nDim; jDim++) {
-        product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
-      }
-      
-      node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
-    }
-  }
-}
-
-
-void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
+void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
@@ -4246,8 +4327,8 @@ void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     /*--- Get the conserved variables ---*/
-    Primitive_i = node[iPoint]->GetPrimVar();
-    Primitive_j = node[jPoint]->GetPrimVar();
+    Primitive_i = node[iPoint]->GetPrimitive();
+    Primitive_j = node[jPoint]->GetPrimitive();
     
     /*--- Compute the maximum, and minimum values for nodes i & j ---*/
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -4324,8 +4405,8 @@ void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
         
         iPoint     = geometry->edge[iEdge]->GetNode(0);
         jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Primitive_i = node[iPoint]->GetPrimVar();
-        Primitive_j = node[jPoint]->GetPrimVar();
+        Primitive_i = node[iPoint]->GetPrimitive();
+        Primitive_j = node[jPoint]->GetPrimitive();
         Gradient_i = node[iPoint]->GetGradient_Primitive();
         Gradient_j = node[jPoint]->GetGradient_Primitive();
         Coord_i    = geometry->node[iPoint]->GetCoord();
@@ -4367,6 +4448,364 @@ void CEulerSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Limiter MPI ---*/
   Set_MPI_Primitive_Limiter(geometry, config);
+  
+}
+
+void CEulerSolver::SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config) {
+  unsigned long iPoint, jPoint, iEdge, iVertex;
+  unsigned short iDim, iVar, iMarker;
+  double *SecondaryVar_Vertex, *SecondaryVar_i, *SecondaryVar_j, SecondaryVar_Average,
+  Partial_Gradient, Partial_Res, *Normal;
+  
+  /*--- Gradient Secondary variables compressible (temp, vx, vy, vz, P, rho)
+   Gradient Secondary variables incompressible (rho, vx, vy, vz, beta) ---*/
+  SecondaryVar_Vertex = new double [nSecondaryVarGrad];
+  SecondaryVar_i = new double [nSecondaryVarGrad];
+  SecondaryVar_j = new double [nSecondaryVarGrad];
+  
+  /*--- Set Gradient_Secondary to zero ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    node[iPoint]->SetGradient_SecondaryZero(nSecondaryVarGrad);
+  
+  /*--- Loop interior edges ---*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      SecondaryVar_i[iVar] = node[iPoint]->GetSecondary(iVar);
+      SecondaryVar_j[iVar] = node[jPoint]->GetSecondary(iVar);
+    }
+    
+    Normal = geometry->edge[iEdge]->GetNormal();
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      SecondaryVar_Average =  0.5 * ( SecondaryVar_i[iVar] + SecondaryVar_j[iVar] );
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Partial_Res = SecondaryVar_Average*Normal[iDim];
+        if (geometry->node[iPoint]->GetDomain())
+          node[iPoint]->AddGradient_Secondary(iVar, iDim, Partial_Res);
+        if (geometry->node[jPoint]->GetDomain())
+          node[jPoint]->SubtractGradient_Secondary(iVar, iDim, Partial_Res);
+      }
+    }
+  }
+  
+  /*--- Loop boundary edges ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+        
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          SecondaryVar_Vertex[iVar] = node[iPoint]->GetSecondary(iVar);
+        
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Partial_Res = SecondaryVar_Vertex[iVar]*Normal[iDim];
+            node[iPoint]->SubtractGradient_Secondary(iVar, iDim, Partial_Res);
+          }
+      }
+    }
+  }
+  
+  /*--- Update gradient value ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Partial_Gradient = node[iPoint]->GetGradient_Secondary(iVar,iDim) / (geometry->node[iPoint]->GetVolume());
+        node[iPoint]->SetGradient_Secondary(iVar, iDim, Partial_Gradient);
+      }
+    }
+  }
+  
+  delete [] SecondaryVar_Vertex;
+  delete [] SecondaryVar_i;
+  delete [] SecondaryVar_j;
+  
+  Set_MPI_Secondary_Gradient(geometry, config);
+  
+}
+
+void CEulerSolver::SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iVar, iDim, jDim, iNeigh;
+  unsigned long iPoint, jPoint;
+  double *SecondaryVar_i, *SecondaryVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
+  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
+  bool singular;
+  
+  /*--- Loop over points of the grid ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Set the value of the singular ---*/
+    singular = false;
+    
+    /*--- Get coordinates ---*/
+    
+    Coord_i = geometry->node[iPoint]->GetCoord();
+    
+    /*--- Get Secondarys from CVariable ---*/
+    
+    SecondaryVar_i = node[iPoint]->GetSecondary();
+    
+    /*--- Inizialization of variables ---*/
+    
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+      for (iDim = 0; iDim < nDim; iDim++)
+        cvector[iVar][iDim] = 0.0;
+    
+    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0; detR2 = 0.0;
+    
+    for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
+      jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+      Coord_j = geometry->node[jPoint]->GetCoord();
+      
+      SecondaryVar_j = node[jPoint]->GetSecondary();
+      
+      weight = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      
+      /*--- Sumations for entries of upper triangular matrix R ---*/
+      
+      if (weight != 0.0) {
+        
+        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
+        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
+        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+        
+        if (nDim == 3) {
+          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
+          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+        }
+        
+        /*--- Entries of c:= transpose(A)*b ---*/
+        
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(SecondaryVar_j[iVar]-SecondaryVar_i[iVar])/weight;
+        
+      }
+      
+    }
+    
+    /*--- Entries of upper triangular matrix R ---*/
+    
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+    
+    if (nDim == 3) {
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
+    }
+    
+    /*--- Compute determinant ---*/
+    
+    if (nDim == 2) detR2 = (r11*r22)*(r11*r22);
+    else detR2 = (r11*r22*r33)*(r11*r22*r33);
+    
+    /*--- Detect singular matrices ---*/
+    
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
+    
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    
+    if (singular) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          Smatrix[iDim][jDim] = 0.0;
+    }
+    else {
+      if (nDim == 2) {
+        Smatrix[0][0] = (r12*r12+r22*r22)/detR2;
+        Smatrix[0][1] = -r11*r12/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = r11*r11/detR2;
+      }
+      else {
+        z11 = r22*r33; z12 = -r12*r33; z13 = r12*r23-r13*r22;
+        z22 = r11*r33; z23 = -r11*r23; z33 = r11*r22;
+        Smatrix[0][0] = (z11*z11+z12*z12+z13*z13)/detR2;
+        Smatrix[0][1] = (z12*z22+z13*z23)/detR2;
+        Smatrix[0][2] = (z13*z33)/detR2;
+        Smatrix[1][0] = Smatrix[0][1];
+        Smatrix[1][1] = (z22*z22+z23*z23)/detR2;
+        Smatrix[1][2] = (z23*z33)/detR2;
+        Smatrix[2][0] = Smatrix[0][2];
+        Smatrix[2][1] = Smatrix[1][2];
+        Smatrix[2][2] = (z33*z33)/detR2;
+      }
+    }
+    
+    /*--- Computation of the gradient: S*c ---*/
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        product = 0.0;
+        for (jDim = 0; jDim < nDim; jDim++) {
+          product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+        }
+        
+        node[iPoint]->SetGradient_Secondary(iVar, iDim, product);
+      }
+    }
+    
+  }
+  
+  Set_MPI_Secondary_Gradient(geometry, config);
+  
+}
+
+void CEulerSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iEdge, iPoint, jPoint;
+  unsigned short iVar, iDim;
+  double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Secondary_i, *Secondary_j,
+  dave, LimK, eps2, dm, dp, du, limiter;
+  
+  /*--- Initialize solution max and solution min in the entire domain --*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      node[iPoint]->SetSolution_Max(iVar, -EPS);
+      node[iPoint]->SetSolution_Min(iVar, EPS);
+    }
+  }
+  
+  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+    /*--- Point identification, Normal vector and area ---*/
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+    /*--- Get the conserved variables ---*/
+    Secondary_i = node[iPoint]->GetSecondary();
+    Secondary_j = node[jPoint]->GetSecondary();
+    
+    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      du = (Secondary_j[iVar] - Secondary_i[iVar]);
+      node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+      node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+      node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+      node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+    }
+  }
+  
+  /*--- Initialize the limiter --*/
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+      node[iPoint]->SetLimiter_Secondary(iVar, 2.0);
+    }
+  }
+  
+  switch (config->GetKind_SlopeLimit()) {
+      
+      /*--- Minmod (Roe 1984) limiter ---*/
+    case MINMOD:
+      
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        
+        iPoint     = geometry->edge[iEdge]->GetNode(0);
+        jPoint     = geometry->edge[iEdge]->GetNode(1);
+        Gradient_i = node[iPoint]->GetGradient();
+        Gradient_j = node[jPoint]->GetGradient();
+        Coord_i    = geometry->node[iPoint]->GetCoord();
+        Coord_j    = geometry->node[jPoint]->GetCoord();
+        
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+          
+          /*--- Calculate the interface left gradient, delta- (dm) ---*/
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+          
+          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          
+          limiter = max(0.0, min(1.0,dp/dm));
+          
+          if (limiter < node[iPoint]->GetLimiter_Secondary(iVar))
+            if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter_Secondary(iVar, limiter);
+          
+          /*-- Repeat for point j on the edge ---*/
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+          
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          
+          limiter = max(0.0, min(1.0,dp/dm));
+          
+          if (limiter < node[jPoint]->GetLimiter_Secondary(iVar))
+            if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter_Secondary(iVar, limiter);
+        }
+      }
+      break;
+      
+      /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
+    case VENKATAKRISHNAN:
+      
+      /*-- Get limiter parameters from the configuration file ---*/
+      dave = config->GetRefElemLength();
+      LimK = config->GetLimiterCoeff();
+      eps2 = pow((LimK*dave), 3.0);
+      
+      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+        
+        iPoint     = geometry->edge[iEdge]->GetNode(0);
+        jPoint     = geometry->edge[iEdge]->GetNode(1);
+        Secondary_i = node[iPoint]->GetSecondary();
+        Secondary_j = node[jPoint]->GetSecondary();
+        Gradient_i = node[iPoint]->GetGradient_Secondary();
+        Gradient_j = node[jPoint]->GetGradient_Secondary();
+        Coord_i    = geometry->node[iPoint]->GetCoord();
+        Coord_j    = geometry->node[jPoint]->GetCoord();
+        
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+          
+          /*--- Calculate the interface left gradient, delta- (dm) ---*/
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+          
+          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+          else dp = node[iPoint]->GetSolution_Min(iVar);
+          
+          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+          
+          if (limiter < node[iPoint]->GetLimiter_Secondary(iVar))
+            if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter_Secondary(iVar, limiter);
+          
+          /*-- Repeat for point j on the edge ---*/
+          dm = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+          
+          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+          else dp = node[jPoint]->GetSolution_Min(iVar);
+          
+          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+          
+          if (limiter < node[jPoint]->GetLimiter_Secondary(iVar))
+            if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter_Secondary(iVar, limiter);
+        }
+      }
+      break;
+      
+  }
+  
+  /*--- Limiter MPI ---*/
+  Set_MPI_Secondary_Limiter(geometry, config);
   
 }
 
@@ -5035,7 +5474,7 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       conv_numerics->SetNormal(Normal);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Construct solution state at infinity (far-field) ---*/
       
@@ -5316,7 +5755,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Retrieve solution at this boundary node ---*/
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Build the fictitious intlet state based on characteristics ---*/
       if (compressible) {
@@ -5502,7 +5941,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- The y/z velocity is interpolated due to the
          free surface effect on the pressure ---*/
-        V_inlet[nDim] = node[iPoint]->GetPrimVar(nDim);
+        V_inlet[nDim] = node[iPoint]->GetPrimitive(nDim);
         
         /*--- Neumann condition for artifical compresibility factor ---*/
         V_inlet[nDim+2] = config->GetArtComp_Factor();
@@ -5626,7 +6065,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Current solution at this boundary node ---*/
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Build the fictitious intlet state based on characteristics ---*/
       if (compressible) {
@@ -5710,7 +6149,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Neumann condition for the velocity ---*/
         for (iDim = 0; iDim < nDim; iDim++) {
-          V_outlet[iDim+1] = node[Point_Normal]->GetPrimVar(iDim+1);
+          V_outlet[iDim+1] = node[Point_Normal]->GetPrimitive(iDim+1);
         }
         
         /*--- Constant value of density ---*/
@@ -5742,7 +6181,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Neumann condition for the velocity ---*/
         for (iDim = 0; iDim < nDim; iDim++) {
-          V_outlet[iDim+1] = node[Point_Normal]->GetPrimVar(iDim+1);
+          V_outlet[iDim+1] = node[Point_Normal]->GetPrimitive(iDim+1);
         }
         
         /*--- Neumann condition for artifical compresibility factor ---*/
@@ -5879,7 +6318,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Current solution at this boundary node ---*/
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -6001,7 +6440,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Current solution at this boundary node ---*/
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Subsonic nacelle inflow: there is one incoming characteristic,
        therefore one variable can be specified (back pressure) and is used
@@ -6134,7 +6573,7 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Current solution at this boundary node ---*/
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
        therefore we can specify all but one state variable at the inlet.
@@ -6312,8 +6751,8 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         /*--- Store the solution for both points ---*/
         
         for (iVar = 0; iVar < nPrimVar; iVar++) {
-          PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
-          PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+          PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+          PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
         }
         
         /*--- Set primitive variables ---*/
@@ -6378,7 +6817,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           /*--- Copy the primitive variable ---*/
           
           for (iVar = 0; iVar < nPrimVar; iVar++)
-            Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
+            Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
           MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
           MPI_Wait(&send_req,&status);
         }
@@ -6412,13 +6851,13 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         }
         else {
           for (iVar = 0; iVar < nPrimVar; iVar++)
-            Buffer_Receive_V[iVar] = node[jPoint]->GetPrimVar(iVar);
+            Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
         }
         
         /*--- Store the solution for both points ---*/
         
         for (iVar = 0; iVar < nPrimVar; iVar++) {
-          PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+          PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
           PrimVar_j[iVar] = Buffer_Receive_V[iVar];
         }
         
@@ -6528,7 +6967,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               /*--- Copy the primitive variables ---*/
               
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                Buffer_Send_V[iVar] = node[iPoint]->GetPrimVar(iVar);
+                Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
               
               MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
               MPI_Wait(&send_req,&status);
@@ -6580,7 +7019,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               /*--- The point is in the same processor... no MPI required ---*/
               
               for (iVar = 0; iVar < nPrimVar; iVar++)
-                Buffer_Receive_V[iVar] = node[jPoint]->GetPrimVar(iVar);
+                Buffer_Receive_V[iVar] = node[jPoint]->GetPrimitive(iVar);
               
             }
             
@@ -6592,7 +7031,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               
               for (iVar = 0; iVar < nPrimVar; iVar++) {
                 PrimVar_out[iVar] = Buffer_Receive_V[iVar];
-                PrimVar_in[iVar] = node[Pin]->GetPrimVar(iVar);
+                PrimVar_in[iVar] = node[Pin]->GetPrimitive(iVar);
                 MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
               }
               
@@ -6602,7 +7041,7 @@ void CEulerSolver::BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_con
               Pout = iPoint; Pin = jPoint;
               
               for (iVar = 0; iVar < nPrimVar; iVar++) {
-                PrimVar_out[iVar] = node[Pout]->GetPrimVar(iVar);
+                PrimVar_out[iVar] = node[Pout]->GetPrimitive(iVar);
                 PrimVar_in[iVar] = Buffer_Receive_V[iVar];
                 MeanPrimVar[iVar] = 0.5*(PrimVar_out[iVar] + PrimVar_in[iVar]);
               }
@@ -7291,8 +7730,8 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
       NumberSign = node[iPoint]->GetSolution(nDim+1)/fabs(node[iPoint]->GetSolution(nDim+1));
     
     /*--- Store the value of the Level Set and the Distance (primitive variables) ---*/
-    node[iPoint]->SetPrimVar(nDim+5, node[iPoint]->GetSolution(nDim+1));
-    node[iPoint]->SetPrimVar(nDim+6, Min_dist*NumberSign);
+    node[iPoint]->SetPrimitive(nDim+5, node[iPoint]->GetSolution(nDim+1));
+    node[iPoint]->SetPrimitive(nDim+6, Min_dist*NumberSign);
     
   }
   
@@ -7458,7 +7897,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nDim = geometry->GetnDim();
   if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nVar = nDim+2;
+    nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    nSecondaryVar = 8; nSecondaryVarGrad = 2;
+  }
+  
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -7965,12 +8408,12 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   }
   
   /*--- Compute gradient of the primitive variables ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimVar_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimVar_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
   
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb)) { SetPrimVar_Limiter(geometry, config); }
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb)) { SetPrimitive_Limiter(geometry, config); }
   
   /*--- Initialize the jacobian matrices ---*/
   if (implicit) Jacobian.SetValZero();
@@ -8203,7 +8646,7 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Primitive variables, and gradient ---*/
-    numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
     
     /*--- Turbulent kinetic energy ---*/
@@ -8913,7 +9356,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Compute the normal gradient in temperature using Twall ---*/
       
-      dTdn = -(node[Point_Normal]->GetPrimVar(0) - Twall)/dist_ij;
+      dTdn = -(node[Point_Normal]->GetPrimitive(0) - Twall)/dist_ij;
       
       /*--- Get transport coefficients ---*/
       
@@ -8936,12 +9379,12 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Calculate useful quantities ---*/
         
-        Density = node[iPoint]->GetPrimVar(nDim+2);
+        Density = node[iPoint]->GetPrimitive(nDim+2);
         Energy  = node[iPoint]->GetSolution(nDim+1);
-        Temperature = node[iPoint]->GetPrimVar(0);
+        Temperature = node[iPoint]->GetPrimitive(0);
         Vel2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          Vel2 += node[iPoint]->GetPrimVar(iDim+1) * node[iPoint]->GetPrimVar(iDim+1);
+          Vel2 += node[iPoint]->GetPrimitive(iDim+1) * node[iPoint]->GetPrimitive(iDim+1);
         dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
         
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
