@@ -1856,15 +1856,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
 			Density_FreeStream = FluidModel->GetDensity();
 		} else {
-//			cout.precision(6);
+
 			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
 			Temperature_FreeStream = FluidModel->GetTemperature();
-//			cout << "Freestream temperature: " << Temperature_FreeStream << endl;
-//			cout << "Freestream Pressure: " << FluidModel->GetPressure() << endl;
-//			cout << "Freestream Density: " << FluidModel->GetDensity() << endl;
-//			cout << "Freestream SoundSpeed: " << FluidModel->GetSoundSpeed() << endl;
-//			cout << "Freestream StaticEnergy: " << FluidModel->GetStaticEnergy() << endl;
-//			getchar();
 
 		}
 		break;
@@ -1877,20 +1871,13 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
 			Density_FreeStream = FluidModel->GetDensity();
 		} else {
-//			cout.precision(6);
 			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
 			Temperature_FreeStream = FluidModel->GetTemperature();
-//			cout << "Freestream temperature: " << Temperature_FreeStream << endl;
-//			cout << "Freestream Pressure: " << FluidModel->GetPressure() << endl;
-//			cout << "Freestream Density: " << FluidModel->GetDensity() << endl;
-//			cout << "Freestream SoundSpeed: " << FluidModel->GetSoundSpeed() << endl;
-//			cout << "Freestream StaticEnergy: " << FluidModel->GetStaticEnergy() << endl;
-//			getchar();
+
 		}
 		break;
 	}
 
-//	Mach2Vel_FreeStream = sqrt(Gamma*config->GetGas_Constant()*Temperature_FreeStream);
 	Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
 
 	/*--- Compute the Free Stream velocity, using the Mach number ---*/
@@ -1965,8 +1952,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-//      Pressure_FreeStream = config->GetPressure_FreeStream();
-//      Density_FreeStream  = Pressure_FreeStream/(config->GetGas_Constant()*Temperature_FreeStream); config->SetDensity_FreeStream(Density_FreeStream);
 
     }
     
@@ -2112,7 +2097,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   }
 
 
-//  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
   

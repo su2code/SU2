@@ -369,8 +369,6 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
-//  double Gas_Constant = config->GetGas_ConstantND();
-//	double Gamma = config->GetGamma();
 
   SetVelocity();   // Computes velocity and velocity^2
   double density = GetDensity();
@@ -577,6 +575,7 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   SetVelocity();   // Computes velocity and velocity^2
   double density = GetDensity();
   double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+
   /* check will be moved inside fluid model plus error description strings*/
   FluidModel->SetTDState_rhoe(density, staticEnergy);
 

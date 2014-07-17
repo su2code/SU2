@@ -644,14 +644,6 @@ inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vortici
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
 inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
-//  double T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
-//  double T_ref = 273.15, S = 110.4, Mu_ref = 1.716E-5;
-//	double Temperature_Dim = Primitive[0]*Temperature_Ref;
-
- // if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
-//  if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
-
-//	Primitive[nDim+5] = (Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S)))/Viscosity_Ref;
     Primitive[nDim+5] = laminarViscosity;
 }
 
@@ -662,12 +654,6 @@ inline void CNSVariable::SetEddyViscosity(double eddy_visc) { Primitive[nDim+6] 
 inline void CNSVariable::SetEddyViscosityInc(double eddy_visc) { Primitive[nDim+4] = eddy_visc; }
 
 inline void CNSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
-
-//inline bool CNSVariable::SetPressure(double Gamma, double turb_ke) {
-//   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2 - turb_ke);
-//   if (Primitive[nDim+1] > 0.0) return false;
-//   else return true;
-//}
 
 inline double CTransLMVariable::GetIntermittency() { return Solution[0]; }
 
