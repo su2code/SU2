@@ -1585,6 +1585,14 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   unsigned short nStrings = config->GetNumML_Turb_Model_Extra();
   string *extraString = config->GetML_Turb_Model_Extra();
   
+  bool hasBlOnly = false;
+  for (int i= 0; i < nStrings; i++){
+    if (extraString[i].compare("BlOnly") == 0){
+      hasBlOnly = true;
+      break;
+    }
+  }
+  
   if (nStrings > 0){
     if (extraString[0].compare("FlatplateBlOnlyCutoff") == 0){
         // Only use ML in the boundary layer and have a sharp cutoff
@@ -1596,23 +1604,14 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
         }
       }
     }
-    if (extraString[0].compare("BlOnly") == 0){
-      // Only use ML in the boundary layer (where U < 0.99 U inf)
-      double magU;
-      for (unsigned short i = 0; i < nDim; i++){
-        magU += V_i[1+i] * V_i[1+i];
-      }
-      magU = sqrt(magU);
-//      cout << "MagU = " << magU << " UInf = " << uInfinity << endl;
-      if (magU > uInfinity * 0.99){
+    if (hasBlOnly){
+      // Only use ML in the boundary layer (where isInBL == true)
+      if (isInBL){
         // Then use SA
         for (int i = 0; i < nResidual; i++){
           Residual[i] = SAResidual[i];
           NondimResidual[i] = SANondimResidual[i];
         }
-//        cout << "Using SA" <<endl;
-//      }else{
-//        cout << "Using ML" << endl;
       }
     }
   }
