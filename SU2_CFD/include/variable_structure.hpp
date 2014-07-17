@@ -32,6 +32,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "fluid_model.hpp"
+
 
 using namespace std;
 
@@ -1008,6 +1010,11 @@ public:
 	 * \brief A virtual member.
 	 */		
 	virtual bool SetPrimVar_Compressible(CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	 virtual bool SetPrimVar_Compressible(CFluidModel *FluidModel);
   
   /*!
 	 * \brief A virtual member.
@@ -1043,6 +1050,11 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
+	virtual bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel);
+
+	/*!
+	 * \brief A virtual member.
+	 */
 	virtual bool SetPrimVar_Incompressible(double Density_Inf, CConfig *config);
   
   /*!
@@ -1310,6 +1322,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
+//	virtual void SetLaminarViscosity(void);
+	virtual void SetLaminarViscosity(double laminarViscosity);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
 	virtual void SetLaminarViscosity(CConfig *config);
 
 	/*!
@@ -1932,11 +1951,16 @@ public:
 	 */
 	void SetEnthalpy(void);
 	
+//	/*!
+//	 * \brief Set all the primitive variables for compressible flows.
+//	 */
+//	bool SetPrimVar_Compressible(CConfig *config);
+
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Compressible(CConfig *config);
-	
+	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
+
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
@@ -2219,7 +2243,7 @@ public:
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity(CConfig *config);
+	void SetLaminarViscosity(double laminarViscosity);
 
 	/*!
 	 * \overload
@@ -2291,16 +2315,21 @@ public:
 	 */
 	double GetStrainMag(void);
 
-	/*!
-	 * \brief Set the value of pressure.
-	 */
-	bool SetPressure(double Gamma, double turb_ke);
+//	/*!
+//	 * \brief Set the value of pressure.
+//	 */
+//	bool SetPressure(double Gamma, double turb_ke);
 	
+//	/*!
+//	 * \brief Set all the primitive variables for compressible flows
+//	 */
+//	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
+
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
-	
+	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel);
+
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */

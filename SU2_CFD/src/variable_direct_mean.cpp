@@ -324,18 +324,23 @@ double CEulerVariable::GetProjVel(double *val_vector) {
 	return ProjVel;
 }
 
-bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
+bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
-  double Gas_Constant = config->GetGas_ConstantND();
-	double Gamma = config->GetGamma();
+//  double Gas_Constant = config->GetGas_ConstantND();
+//	double Gamma = config->GetGamma();
+
+  SetVelocity();   // Computes velocity and velocity^2
+  double density = GetDensity();
+  double staticEnergy = GetEnergy()-0.5*Velocity2;
+  /* check will be moved inside fluid model plus error description strings*/
+  FluidModel->SetTDState_rhoe(density, staticEnergy);
   
-  SetVelocity();                                // Computes velocity and velocity^2
-  check_dens = SetDensity();                    // Check the density
-	check_press = SetPressure(Gamma);							// Requires velocity2 computation.
-	check_sos = SetSoundSpeed(Gamma);             // Requires pressure computation.
-	check_temp = SetTemperature(Gas_Constant);		// Requires pressure computation.
+  check_dens = SetDensity();
+  check_press = SetPressure(FluidModel->GetPressure());
+  check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+  check_temp = SetTemperature(FluidModel->GetTemperature());
   
   /*--- Check that the solution has a physical meaning ---*/
   
@@ -348,11 +353,16 @@ bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
     
     /*--- Recompute the primitive variables ---*/
     
-    SetVelocity();
+    SetVelocity();   // Computes velocity and velocity^2
+    double density = GetDensity();
+    double staticEnergy = GetEnergy()-0.5*Velocity2;
+    /* check will be moved inside fluid model plus error description strings*/
+    FluidModel->SetTDState_rhoe(density, staticEnergy);
+
     check_dens = SetDensity();
-    check_press = SetPressure(Gamma);
-    check_sos = SetSoundSpeed(Gamma);
-    check_temp = SetTemperature(Gas_Constant);
+    check_press = SetPressure(FluidModel->GetPressure());
+    check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+    check_temp = SetTemperature(FluidModel->GetTemperature());
     
     RightVol = false;
     
@@ -518,18 +528,21 @@ void CNSVariable::SetStrainMag(void) {
   
 }
 
-bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) {
+bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
-  double Gas_Constant = config->GetGas_ConstantND();
-	double Gamma = config->GetGamma();
   
-  SetVelocity();                                  // Computes velocity and velocity^2
-  check_dens = SetDensity();                      // Check the density
-	check_press = SetPressure(Gamma, turb_ke);      // Requires velocity2 computation.
-	check_sos = SetSoundSpeed(Gamma);               // Requires pressure computation.
-	check_temp = SetTemperature(Gas_Constant);      // Requires pressure computation.
+  SetVelocity();   // Computes velocity and velocity^2
+  double density = GetDensity();
+  double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+  /* check will be moved inside fluid model plus error description strings*/
+  FluidModel->SetTDState_rhoe(density, staticEnergy);
+
+  check_dens = SetDensity();
+  check_press = SetPressure(FluidModel->GetPressure());
+  check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+  check_temp = SetTemperature(FluidModel->GetTemperature());
   
   /*--- Check that the solution has a physical meaning ---*/
   
@@ -542,11 +555,16 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CCon
     
     /*--- Recompute the primitive variables ---*/
     
-    SetVelocity();
-    check_dens = SetDensity();
-    check_press = SetPressure(Gamma, turb_ke);
-    check_sos = SetSoundSpeed(Gamma);
-    check_temp = SetTemperature(Gas_Constant);
+    SetVelocity();   // Computes velocity and velocity^2
+	double density = GetDensity();
+	double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+	/* check will be moved inside fluid model plus error description strings*/
+	FluidModel->SetTDState_rhoe(density, staticEnergy);
+
+	check_dens = SetDensity();
+	check_press = SetPressure(FluidModel->GetPressure());
+	check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+	check_temp = SetTemperature(FluidModel->GetTemperature());
     
     RightVol = false;
     
@@ -558,7 +576,7 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CCon
   
   /*--- Set laminar viscosity ---*/
   
-	SetLaminarViscosity(config);                    // Requires temperature computation.
+	SetLaminarViscosity(FluidModel->GetLaminarViscosity(FluidModel->GetTemperature(), GetDensity()));
   
   /*--- Set eddy viscosity ---*/
   

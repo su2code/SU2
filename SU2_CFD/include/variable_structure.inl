@@ -270,7 +270,11 @@ inline bool CVariable::SetPrimVar_FreeSurface(double SharpEdge_Distance, bool ch
 
 inline bool CVariable::SetPrimVar_Compressible(CConfig *config) { return true; }
 
+inline bool CVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) { return true; }
+
 inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) { return true; }
+
+inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) { return true; }
 
 inline bool CVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) { return true; }
 
@@ -365,6 +369,8 @@ inline void CVariable::SetVelocity_Old(double *val_velocity) { }
 inline void CVariable::SetVelocityInc_Old(double *val_velocity) { }
 
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
+
+inline void CVariable::SetLaminarViscosity(double laminarViscosity) { }
 
 inline void CVariable::SetLaminarViscosity(CConfig *config) { }
 
@@ -472,8 +478,8 @@ inline bool CEulerVariable::SetDensity(void) {
 
 inline void CEulerVariable::SetDensityInc(double val_density) { Primitive[nDim+1] = val_density; }
 
-inline bool CEulerVariable::SetPressure(double Gamma) {
-   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2);
+inline bool CEulerVariable::SetPressure(double pressure) {
+   Primitive[nDim+1] = pressure;
    if (Primitive[nDim+1] > 0.0) return false;
    else return true;
 }
@@ -500,8 +506,8 @@ inline void CEulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nV
 
 inline void CEulerVariable::SetBetaInc2(double val_betainc2) { Primitive[nDim+2] = val_betainc2; }
 
-inline bool CEulerVariable::SetSoundSpeed(double Gamma) {
-   double radical = Gamma*Primitive[nDim+1]/Solution[0];
+inline bool CEulerVariable::SetSoundSpeed(double soundspeed2) {
+   double radical = soundspeed2;
    if (radical < 0.0) return true;
    else {
       Primitive[nDim+4] = sqrt(radical);
@@ -509,8 +515,8 @@ inline bool CEulerVariable::SetSoundSpeed(double Gamma) {
    }
 }
 
-inline bool CEulerVariable::SetTemperature(double Gas_Constant) {
-   Primitive[0] = Primitive[nDim+1] / ( Gas_Constant * Solution[0]);
+inline bool CEulerVariable::SetTemperature(double temperature) {
+   Primitive[0] = temperature;
    if (Primitive[0] > 0.0) return false;
    else return true;
 }
@@ -584,14 +590,16 @@ inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vortici
 
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
-inline void CNSVariable::SetLaminarViscosity(CConfig *config) {
-  double T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
-	double Temperature_Dim = Primitive[0]*Temperature_Ref;
+inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
+//  double T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
+//  double T_ref = 273.15, S = 110.4, Mu_ref = 1.716E-5;
+//	double Temperature_Dim = Primitive[0]*Temperature_Ref;
 
-  if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
-  if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
+ // if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
+//  if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
 
-	Primitive[nDim+5] = (Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S)))/Viscosity_Ref;
+//	Primitive[nDim+5] = (Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S)))/Viscosity_Ref;
+    Primitive[nDim+5] = laminarViscosity;
 }
 
 inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }
@@ -602,11 +610,11 @@ inline void CNSVariable::SetEddyViscosityInc(double eddy_visc) { Primitive[nDim+
 
 inline void CNSVariable::SetWallTemperature(double Temperature_Wall ) { Primitive[0] = Temperature_Wall; }
 
-inline bool CNSVariable::SetPressure(double Gamma, double turb_ke) {
-   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2 - turb_ke);
-   if (Primitive[nDim+1] > 0.0) return false;
-   else return true;
-}
+//inline bool CNSVariable::SetPressure(double Gamma, double turb_ke) {
+//   Primitive[nDim+1] = (Gamma-1.0)*Solution[0]*(Solution[nVar-1]/Solution[0]-0.5*Velocity2 - turb_ke);
+//   if (Primitive[nDim+1] > 0.0) return false;
+//   else return true;
+//}
 
 inline double CTransLMVariable::GetIntermittency() { return Solution[0]; }
 
