@@ -1,7 +1,7 @@
 /*!
  * gas_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
- * \author TUDelft Polimi
+ * \author: S.Vitale, G.Gori, M.Pini, A.Guardone, P.Colonna
  * \version 1.0.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
@@ -22,7 +22,6 @@
 #pragma once
 #include <stdio.h>
 #include <string.h>
-//#include <fluidprop.h>
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -39,11 +38,11 @@ using namespace std;
 
 
 /*!
- * \class CGModel
+ * \class CFluidModel
  * \brief Main class for defining the Thermo-Physical Model
  * a child class for each particular Model (Ideal-Gas, Van der Waals, etc.)
- * \author
- * \version 1.0
+ * \author: S.Vitale, G.Gori, M.Pini
+ * \version 3.2.0 "eagle"
  */
 class CFluidModel {
 protected:
@@ -74,7 +73,7 @@ public:
 		virtual ~CFluidModel(void);
 
 		/*!
-		 * \brief Get fluid all sat props (p,T,d,h,s,c,..).
+		 * \brief Get fluid pressure.
 		 */
 		double GetPressure ();
 
@@ -89,12 +88,12 @@ public:
 		double GetEntropy ();
 
 		/*!
-		 * \brief Get fluid entropy.
+		 * \brief Get fluid internal energy.
 		 */
 		double GetStaticEnergy ();
 
 		/*!
-		 * \brief Get fluid entropy.
+		 * \brief Get fluid density.
 		 */
 		double GetDensity ();
 
@@ -104,46 +103,45 @@ public:
 		double GetSoundSpeed ();
 
 		/*!
-		 * \brief Get fluid speed of sound.
+		 * \brief Get fluid speed of sound squared.
 		 */
 		double GetSoundSpeed2 ();
 
 		/*!
-		 * \brief Get fluid speed of sound.
+		 * \brief Get fluid dynamic viscosity
 		 */
 
 		double GetLaminarViscosity (double T, double rho);
 
 		/*!
-		 * \brief Get fluid speed of sound.
+		 * \brief Get fluid pressure partial derivative.
 		 */
 		double GetDpDd_e ();
 
 		/*!
-		 * \brief Get fluid speed of sound.
+		 * \brief Get fluid pressure partial derivative.
 		 */
 		double GetDpDe_d ();
 
 		/*!
-		 * \brief Get fluid speed of sound.
+		 * \brief Set viscosity model.
 		 */
 		void SetViscosityModel (CConfig *config);
 
-
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (v).
+		 * \param[in] InputSpec - Input pair for FLP calls ("e,rho").
+		 * \param[in] rho - first thermodynamic variable.
+		 * \param[in] e - second thermodynamic variable.
 		 */
 
 		virtual void SetTDState_rhoe (double rho, double e );
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+		 * \param[in] InputSpec - Input pair for FLP calls ("PT").
 		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (v).
+		 * \param[in] th2 - second thermodynamic variable (T).
 		 */
 
 		virtual void SetTDState_PT (double P, double T );
@@ -158,13 +156,6 @@ public:
 		virtual void SetTDState_Prho (double P, double rho );
 
 		/*!
-		 *brief virtual member that would be different for each gas model implemented
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (s).
-		 */
-//		virtual void SetTDState_Ps (double P, double s );
-
-		/*!
 		 * \brief virtual member that would be different for each gas model implemented
 		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
 		 * \param[in] th1 - first thermodynamic variable (P).
@@ -172,27 +163,23 @@ public:
 		 *
 		 */
 
-
 		virtual void SetEnergy_Prho (double P, double rho );
-
-
 
 };
 
 
 /*!
- * \class CEulerSolver
- * \brief Main class for defining the Euler's flow solver.
- * \ingroup Euler_Equations
- * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \class CIdealGas
+ * \brief Child class for defining ideal gas model.
+ * \author: S.Vitale, M.Pini.
+ * \version 3.2.0 "eagle"
  */
 class CIdealGas : public CFluidModel {
 
 protected:
 	double Gamma, 						/*!< \brief Heat Capacity Ratio. */
 	        Gamma_Minus_One, 			/*!< \brief Heat Capacity Ratio Minus One. */
-	        Gas_Constant;				/*!< \brief Enthalphy. */
+	        Gas_Constant;				/*!< \brief Gas Constant. */
 
 
 public:
@@ -215,36 +202,36 @@ public:
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (v).
+		 * \param[in] InputSpec - Input pair for FLP calls ("e,rho").
+		 * \param[in] rho - first thermodynamic variable.
+		 * \param[in] e - second thermodynamic variable.
 		 */
 
 		void SetTDState_rhoe (double rho, double e );
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (v).
+		 * \param[in] InputSpec - Input pair for FLP calls ("PT").
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] T - second thermodynamic variable.
 		 */
 
 		void SetTDState_PT (double P, double T );
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (v).
+		 * \param[in] InputSpec - Input pair for FLP calls ("Prho").
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] rho - second thermodynamic variable.
 		 */
 
 		void SetTDState_Prho (double P, double rho );
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
-		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (v).
+		 * \param[in] InputSpec - Input pair for FLP calls ("Prho").
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] rho - second thermodynamic variable.
 		 */
 
 		void SetEnergy_Prho (double P, double rho );
@@ -254,10 +241,9 @@ public:
 
 /*!
  * \derived class CVanDerWaalsGas
- * \brief Main class for defining the Euler's flow solver.
- * \ingroup Euler_Equations
- * \author M. Pini
- * \version 3.1.0 "eagle"
+ * \brief Child class for defining the Van der Waals model.
+ * \author: S.Vitale, M.Pini
+ * \version 3.2.0 "eagle"
  */
 class CVanDerWaalsGas : public CIdealGas {
 
@@ -285,87 +271,64 @@ public:
 
 		/*!
 		 * \brief Set the Dimensionless State using Density and Internal Energy
-		 * \param[in] th1 - first thermodynamic variable (rho).
-		 * \param[in] th2 - second thermodynamic variable (e).
+		 * \param[in] rho - first thermodynamic variable.
+		 * \param[in] e - second thermodynamic variable.
 		 */
 		void SetTDState_rhoe (double rho, double e );
 
 		/*!
 		 * \brief Set the Dimensionless State using Pressure and Temperature
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (T).
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] T - second thermodynamic variable.
 		 */
 		void SetTDState_PT (double P, double T );
 
 		/*!
 		 * \brief Set the Dimensionless State using Pressure and Density
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (rho).
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] rho - second thermodynamic variable.
 		 */
+
 		void SetTDState_Prho (double P, double rho );
 
 		/*!
-		 * \brief Set the Dimensionless State using Pressure and Entropy
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (s).
-		 */
-//		void SetTDState_Ps (double P, double s );
-
-		/*!
 		 * \brief Set the Dimensionless Energy using Pressure and Density
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (rho).
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] rho - second thermodynamic variable.
 		 */
-		void SetEnergy_Prho (double P, double rho );
 
-		/*!
-		 * \brief Set the Dimensionless Entropy using Pressure and Density
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (rho).
-//		 */
-//		void SetEntropy_Pd (double P, double rho );
-//
-//		/*!
-//		 * \brief Set the Dimensional State using Pressure and Temperature
-//		 * \param[in] th1 - first thermodynamic variable (P).
-//		 * \param[in] th2 - second thermodynamic variable (T).
-//		 */
-//		void SetDimensionTDState_PT (double P, double T, double *params);
-//
-//		/*!
-//		 * \brief Set the Dimensional State using Pressure and Density
-//		 * \param[in] th1 - first thermodynamic variable (P).
-//		 * \param[in] th2 - second thermodynamic variable (rho).
-//		 */
-//		void SetDimensionTDState_Pd (double P, double rho, double *params);
+		void SetEnergy_Prho (double P, double rho );
 
 };
 
 
 /*!
  * \derived class CPengRobinson
- * \brief Main class for defining the Euler's flow solver.
- * \ingroup Euler_Equations
- * \author G. Gori
- * \version 3.1.0 "eagle"
+ * \brief Child class for defining the Peng-Robinson model.
+ * \author: S.Vitale, G. Gori
+ * \version 3.2.0 "eagle"
  */
 class CPengRobinson : public CIdealGas {
 
 protected:
-	double  a, 						/*!< \brief Heat Capacity Ratio. */
-    		b, 						/*!< \brief Heat Capacity Ratio Minus One. */
-	        k, 						/*!< \brief Critical Temperature. */
-			TstarCrit;					/*!< \brief Critical Temperature. */
+	double  a, 						/*!< \brief model parameter. */
+    		b, 						/*!< \brief model parameter. */
+	        k, 						/*!< \brief model parameter (computed with acentric factor). */
+			TstarCrit;				/*!< \brief Critical temperature. */
 
+private:
 
+       /*!
+	    * \brief Internal model parameter.
+	    */
+	    double  alpha2 (double T);
 
 public:
 
-	   /*!
+	    /*!
 		 * \brief Constructor of the class.
 		 */
 		CPengRobinson(void);
-
 
 		/*!
 		 * \brief Constructor of the class.
@@ -377,45 +340,31 @@ public:
 		 */
 		virtual ~CPengRobinson(void);
 
-
 		/*!
 		 * \brief Set the Dimensionless State using Density and Internal Energy
-		 * \param[in] th1 - first thermodynamic variable (rho).
-		 * \param[in] th2 - second thermodynamic variable (e).
-		 */
-		double alpha2(double T);
-		/*!
-		 * \brief Set the Dimensionless State using Density and Internal Energy
-		 * \param[in] th1 - first thermodynamic variable (rho).
-		 * \param[in] th2 - second thermodynamic variable (e).
+		 * \param[in] rho - first thermodynamic variable.
+		 * \param[in] e - second thermodynamic variable.
 		 */
 		void SetTDState_rhoe (double rho, double e );
 
 		/*!
 		 * \brief Set the Dimensionless State using Pressure and Temperature
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (T).
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] T - second thermodynamic variable.
 		 */
 		void SetTDState_PT (double P, double T );
 
 		/*!
 		 * \brief Set the Dimensionless State using Pressure and Density
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (rho).
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] rho - second thermodynamic variable.
 		 */
 		void SetTDState_Prho (double P, double rho );
 
 		/*!
-		 * \brief Set the Dimensionless State using Pressure and Entropy
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (s).
-		 */
-//		void SetTDState_Ps (double P, double s );
-
-		/*!
 		 * \brief Set the Dimensionless Energy using Pressure and Density
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (rho).
+		 * \param[in] P - first thermodynamic variable.
+		 * \param[in] rho - second thermodynamic variable.
 		 */
 		void SetEnergy_Prho (double P, double rho );
 };

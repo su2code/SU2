@@ -1993,11 +1993,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 	/*--- Incompressible_case */
     
 	/*--- Reference length = 1 (by default)
-     Reference density = liquid density or freestream
-     Reference viscosity = liquid viscosity or freestream
-     Reference velocity = liquid velocity or freestream
-     Reference pressure = Reference density * Reference velocity * Reference velocity
-     Reynolds number based on the liquid or reference viscosity ---*/
+    Reference density = liquid density or freestream
+    Reference viscosity = liquid viscosity or freestream
+    Reference velocity = liquid velocity or freestream
+    Reference pressure = Reference density * Reference velocity * Reference velocity
+    Reynolds number based on the liquid or reference viscosity ---*/
     
     Pressure_FreeStream = 0.0; config->SetPressure_FreeStream(Pressure_FreeStream);
     Density_FreeStream  = config->GetDensity_FreeStream();
