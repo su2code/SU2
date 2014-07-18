@@ -1497,7 +1497,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     // The output is a multiplier to the destruction term. Replicate the
     // destruction term
     double mul_dest = netOutput[0];
+    Residual[0] = SAResidual[0];
     Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
+    Residual[2] = SAResidual[2];
     Residual[3] = Residual[0] - Residual[1] + Residual[2];
     for (int i= 0; i < nResidual; i++){
       NondimResidual[i] = Residual[i];
@@ -1517,6 +1519,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     // production term
     double mul_prod = netOutput[0];
     Residual[0] = mul_prod * Turbulent_Kinematic_Viscosity * SAOtherOutputs->Omega;
+    Residual[1] = SAResidual[1];
+    Residual[2] = SAResidual[2];
     Residual[3] = Residual[0] - Residual[1] + Residual[2];
     for (int i= 0; i < nResidual; i++){
       NondimResidual[i] = Residual[i];
