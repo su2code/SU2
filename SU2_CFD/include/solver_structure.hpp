@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "fluid_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
@@ -2070,7 +2071,9 @@ protected:
 	double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
   double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
-  
+
+  CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
+
 public:
     
 	/*!

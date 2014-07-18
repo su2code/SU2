@@ -4998,74 +4998,69 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
+  
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order   = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER));
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
-  bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
+  
   GetNacelle_Properties(geometry, config, iMesh, Output);
   
   /*--- Residual initialization ---*/
+  
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Get the distance form a sharp edge ---*/
+    
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
+    
     if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
     if (!RightSol) ErrorCounter++;
     
     /*--- Initialize the convective residual vector ---*/
+    
     LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
-  /*--- Compute gradients for upwind second-order reconstruction ---*/
-  if ((second_order) && (iMesh == MESH_0)) {
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-    
-    /*--- Limiter computation ---*/
-    if (limiter) SetSolution_Limiter(geometry, config);
+  /*--- Compute gradients adj for solution reconstruction and viscous term ---*/
+  
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  
+  /*--- Limiter computation (upwind reconstruction) ---*/
+  
+  if (limiter) SetSolution_Limiter(geometry, config);
+
+  /*--- Compute gradients adj for viscous term coupling ---*/
+
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
   }
   
   /*--- Artificial dissipation for centered schemes ---*/
-  if (center) {
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-    }
-  }
   
-  /*--- Compute gradients for solution reconstruction and viscous term
-   (be careful, if an upwind strategy is used, then we compute the gradient twice) ---*/
-  switch (config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS :
-      SetSolution_Gradient_GG(geometry, config);
-      if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()))
-        solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
-      break;
-    case WEIGHTED_LEAST_SQUARES :
-      SetSolution_Gradient_LS(geometry, config);
-      if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()))
-        solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
-      break;
+  if (center_jst && (iMesh == MESH_0)) {
+    SetDissipation_Switch(geometry, config);
+    SetUndivided_Laplacian(geometry, config);
   }
   
   /*--- Initialize the Jacobian for implicit integration ---*/
+  
   if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
+  
 #ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -5089,20 +5084,24 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
       /*--- Points in edge, coordinates and normal vector---*/
+      
       iPoint = geometry->edge[iEdge]->GetNode(0);
       jPoint = geometry->edge[iEdge]->GetNode(1);
       numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
       numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
       
       /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+      
       numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
                                 solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
       numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
       
       /*--- Gradient of Adjoint Variables ---*/
+      
       numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
       
       /*--- Viscosity and eddy viscosity---*/
+      
       if (compressible) {
         numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
                                       solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
@@ -5119,9 +5118,11 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
       }
       
       /*--- Compute residual in a non-conservative way, and update ---*/
+      
       numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
       
       /*--- Update adjoint viscous residual ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Residual_i);
       LinSysRes.AddBlock(jPoint, Residual_j);
       
@@ -5139,12 +5140,13 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
 void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
-  unsigned long iPoint;
+  
+  unsigned long iPoint, jPoint, iEdge;
   unsigned short iVar;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
-  //	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
@@ -5207,7 +5209,59 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Add and substract to the residual ---*/
     
-    LinSysRes.AddBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    
+  }
+  
+  /*--- If turbulence computation we must add some coupling terms to the NS adjoint eq. ---*/
+  
+  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+      /*--- Points in edge, and normal vector ---*/
+
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      second_numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
+                                     solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
+
+      /*--- Gradient of primitive variables w/o reconstruction ---*/
+      
+      second_numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(),
+                                        solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive());
+
+      /*--- Viscosity ---*/
+
+      second_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
+                                         solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+
+      /*--- Turbulent variables w/o reconstruction ---*/
+
+      second_numerics->SetTurbVar(solver_container[TURB_SOL]->node[iPoint]->GetSolution(),
+                                solver_container[TURB_SOL]->node[jPoint]->GetSolution());
+
+      /*--- Turbulent adjoint variables w/o reconstruction ---*/
+
+      second_numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->node[iPoint]->GetSolution(),
+                                       solver_container[ADJTURB_SOL]->node[jPoint]->GetSolution());
+
+      /*--- Set distance to the surface ---*/
+
+      second_numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), geometry->node[jPoint]->GetWall_Distance());
+      
+      /*--- Update adjoint viscous residual ---*/
+      
+      second_numerics->ComputeResidual(Residual, config);
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      LinSysRes.SubtractBlock(jPoint, Residual);
+    }
+
   }
   
   // WARNING: The rotating frame source term has been placed in the second
@@ -5238,65 +5292,22 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
   }
   
-  //	if (freesurface) {
-  //    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //
-  //      double Volume = geometry->node[iPoint]->GetVolume();
-  //      double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-  //      double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-  //
-  //      Residual[0] = 0.0;
-  //      for (iDim = 0; iDim < nDim; iDim++) {
-  //        Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
-  //      }
-  //
-  //      LinSysRes.AddBlock(iPoint, Residual);
-  //
-  //		}
-  //	}
-  
-  //  if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()) && (config->GetKind_Adjoint() == CONTINUOUS)) {
-  //    unsigned long jPoint, iEdge;
-  //
-  //    /*--- Gradient of primitive variables already computed in the previous step ---*/
-  //    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-  //
-  //      /*--- Points in edge, and normal vector ---*/
-  //      iPoint = geometry->edge[iEdge]->GetNode(0);
-  //      jPoint = geometry->edge[iEdge]->GetNode(1);
-  //      second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-  //
-  //      /*--- Conservative variables w/o reconstruction ---*/
-  //      second_numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
-  //                                     solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
-  //
-  //      /*--- Gradient of primitive variables w/o reconstruction ---*/
-  //      second_numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(),
-  //                                        solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive());
-  //
-  //      /*--- Viscosity ---*/
-  //      second_numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-  //                                         solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
-  //
-  //      /*--- Turbulent variables w/o reconstruction ---*/
-  //      second_numerics->SetTurbVar(solver_container[TURB_SOL]->node[iPoint]->GetSolution(),
-  //                                solver_container[TURB_SOL]->node[jPoint]->GetSolution());
-  //
-  //      /*--- Turbulent adjoint variables w/o reconstruction ---*/
-  //      second_numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->node[iPoint]->GetSolution(),
-  //                                       solver_container[ADJTURB_SOL]->node[jPoint]->GetSolution());
-  //
-  //      /*--- Set distance to the surface ---*/
-  //      second_numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), geometry->node[jPoint]->GetWall_Distance());
-  //
-  //      /*--- Add and Subtract Residual ---*/
-  //      for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-  //      second_numerics->ComputeResidual(Residual, config);
-  //      LinSysRes.AddBlock(iPoint, Residual);
-  //      LinSysRes.SubtractBlock(jPoint, Residual);
-  //    }
-  //
-  //  }
+  if (freesurface) {
+//    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+//
+//      double Volume = geometry->node[iPoint]->GetVolume();
+//      double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
+//      double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+//
+//      Residual[0] = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
+//      }
+//
+//      LinSysRes.AddBlock(iPoint, Residual);
+//
+//		}
+  }
   
 }
 
