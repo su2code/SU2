@@ -272,6 +272,8 @@ inline bool CVariable::SetPrimVar_Compressible(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) { return true; }
 
+inline void CVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) { }
+
 inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) { return true; }
@@ -317,6 +319,10 @@ inline void CVariable::SetVelocityInc(void) { }
 inline void CVariable::SetPhi_Old(double *val_phi) { }
 
 inline void CVariable::SetDiffLevelSet(double val_difflevelset) { }
+
+inline void CVariable::SetdPdrho_e(double dPdrho_e) { }
+
+inline void CVariable::SetdPde_rho(double dPde_rho) { }
 
 inline bool CVariable::SetPressure(double Gamma) { return false; }
 
@@ -545,6 +551,14 @@ inline bool CEulerVariable::SetTemperature(double temperature) {
    Primitive[0] = temperature;
    if (Primitive[0] > 0.0) return false;
    else return true;
+}
+
+inline void CEulerVariable::SetdPdrho_e(double dPdrho_e) {  
+   Secondary[0] = dPdrho_e; 
+}
+
+inline void CEulerVariable::SetdPde_rho(double dPde_rho) { 
+   Secondary[1] = dPde_rho; 
 }
 
 inline double CEulerVariable::GetPrimitive(unsigned short val_var) { return Primitive[val_var]; }

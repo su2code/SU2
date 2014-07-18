@@ -415,6 +415,16 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   
 }
 
+void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+	unsigned short iVar;
+
+   /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+   SetdPdrho_e(FluidModel->GetdPdrho_e());
+   SetdPde_rho(FluidModel->GetdPde_rho());
+
+}
+
 bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) {
   
   double ArtComp_Factor = config->GetArtComp_Factor();

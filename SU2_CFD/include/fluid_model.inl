@@ -28,8 +28,8 @@ inline double CFluidModel::GetSoundSpeed2 () { return SoundSpeed2; }
 inline double CFluidModel::GetDensity () { return Density; }
 inline double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
 inline double CFluidModel::GetTemperature () { return Temperature; }
-inline double CFluidModel::GetDpDd_e () { return DpDd_e; }
-inline double CFluidModel::GetDpDe_d () { return DpDe_d; }
+inline double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
+inline double CFluidModel::GetdPde_rho () { return dPde_rho; }
 inline double CFluidModel::GetLaminarViscosity (double T, double rho) {
         DynamicViscosity->SetViscosity(T, rho);
         return DynamicViscosity->GetViscosity();

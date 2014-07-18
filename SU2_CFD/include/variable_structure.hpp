@@ -1018,7 +1018,12 @@ public:
 	 * \brief A virtual member.
 	 */
 	 virtual bool SetPrimVar_Compressible(CFluidModel *FluidModel);
-  
+
+	/*!
+     * \brief A virtual member.
+	 */
+     virtual void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
+
   /*!
 	 * \brief A virtual member.
 	 */
@@ -1105,11 +1110,21 @@ public:
 	 */
   virtual void SetSecondary(unsigned short val_var, double val_secondary);
   
-  /*!
+    /*!
 	 * \brief A virtual member.
 	 */
-  virtual void SetSecondary(double *val_secondary);
-  
+    virtual void SetSecondary(double *val_secondary);
+
+    /*!
+ 	 * \brief A virtual member.
+ 	 */
+     virtual void SetdPdrho_e(double dPdrho_e);
+
+     /*!
+   	 * \brief A virtual member.
+   	 */
+     virtual void SetdPde_rho(double dPde_rho);
+
 	/*!
 	 * \brief A virtual member.
 	 */
@@ -2094,6 +2109,16 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	double *GetLimiter_Secondary(void);
+
+    /*!
+ 	 * \brief A virtual member.
+ 	 */
+    void SetdPdrho_e(double dPdrho_e);
+
+     /*!
+   	 * \brief A virtual member.
+   	 */
+    void SetdPde_rho(double dPde_rho);
   
 	/*!
 	 * \brief Set the value of the pressure.
@@ -2120,6 +2145,11 @@ public:
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
 
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.

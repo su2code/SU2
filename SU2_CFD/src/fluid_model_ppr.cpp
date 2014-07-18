@@ -83,15 +83,15 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
     Cv = Gas_Constant/Gamma_Minus_One - a/b/sqrt2 * ( 2*sqrt(alpha2(Temperature)) * B +k*B*sqrt(Temperature/TstarCrit) + 0.5*k*sqrt(alpha2(Temperature)/Temperature/TstarCrit)) * fv;
 
-    DpDe_d = DpDT_d/Cv;
+    dPde_rho = DpDT_d/Cv;
 
     DeDd_T = g1/((1-g)*(1-g));
 
-    DpDd_e = DpDd_T - DpDe_d*DeDd_T;
+    dPdrho_e = DpDd_T - dPde_rho*DeDd_T;
 
-    SoundSpeed2 = DpDd_e + Pressure/(Density*Density)*DpDe_d;
+    SoundSpeed2 = dPdrho_e + Pressure/(Density*Density)*dPde_rho;
 
-    DTDe_d = 1/Cv;
+    dTde_rho = 1/Cv;
     //DTDd_e = Gamma_Minus_One/Gas_Constant*a;
 
     //DvDT_p = - DpDT_v / DpDv_T;
