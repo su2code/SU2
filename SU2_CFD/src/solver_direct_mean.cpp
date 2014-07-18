@@ -2666,7 +2666,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
      FreeSurface Incompressible flow, primitive variables nDim+5, (P,vx,vy,vz,rho,beta,LevelSet,Dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
     
-    if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel); }
+//    if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel); }
+    if (compressible) {
+    	RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
+    	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
+    }
     if (incompressible) { RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config); }
     if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
     if (!RightSol) ErrorCounter++;

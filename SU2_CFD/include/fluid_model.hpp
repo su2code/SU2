@@ -53,10 +53,10 @@ double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 SoundSpeed2, 			/*!< \brief SpeedSound. */
 			 Temperature,			/*!< \brief Temperature. */
 			 ThermalConductivity, 	/*!< \brief ThermalConductivity. */
-			 DpDd_e, 				/*!< \brief DpDd_e. */
-			 DpDe_d, 				/*!< \brief DpDe_d. */
-			 DTDd_e, 				/*!< \brief DTDd_e. */
-			 DTDe_d; 				/*!< \brief DTDe_d. */
+			 dPdrho_e, 				/*!< \brief DpDd_e. */
+			 dPde_rho, 				/*!< \brief DpDe_d. */
+			 dTdrho_e, 				/*!< \brief DTDd_e. */
+			 dTde_rho; 				/*!< \brief DTDe_d. */
 
 CViscosityModel *DynamicViscosity;	        /*!< \brief Viscosity */
 
@@ -116,12 +116,12 @@ public:
 		/*!
 		 * \brief Get fluid pressure partial derivative.
 		 */
-		double GetDpDd_e ();
+		double GetdPdrho_e ();
 
 		/*!
 		 * \brief Get fluid pressure partial derivative.
 		 */
-		double GetDpDe_d ();
+		double GetdPde_rho ();
 
 		/*!
 		 * \brief Set viscosity model.

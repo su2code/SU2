@@ -34,10 +34,10 @@ CFluidModel::CFluidModel(void) {
 	SoundSpeed2 = 0.0;
 	Temperature = 0.0;
 	ThermalConductivity = 0.0;
-	DpDd_e = 0.0;
-	DpDe_d = 0.0;
-	DTDd_e = 0.0;
-	DTDe_d = 0.0;
+	dPdrho_e = 0.0;
+	dPde_rho = 0.0;
+	dTdrho_e = 0.0;
+	dTde_rho = 0.0;
 
 	DynamicViscosity = NULL;
 
