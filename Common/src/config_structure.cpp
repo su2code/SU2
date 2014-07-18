@@ -178,13 +178,52 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: System of measurements */
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
   
+  /* CONFIG_CATEGORY: FluidModel */
+
+  addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
+
+
+
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
-  
+
   /* DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) */
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
   /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
+
+
+  /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
+
+  /* DESCRIPTION: Critical Temperature, default value for AIR */
+  addDoubleOption("CRITICAL_TEMPERATURE", Temperature_Critical, 131.00);
+  /* DESCRIPTION: Critical Pressure, default value for MDM */
+  addDoubleOption("CRITICAL_PRESSURE", Pressure_Critical, 3588550);
+  /* DESCRIPTION: Critical Density, default value for MDM */
+  addDoubleOption("CRITICAL_DENSITY", Density_Critical, 263);
+
+  /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
+  /* DESCRIPTION: Critical Density, default value for MDM */
+   addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
+
+   /*--- Options related to Viscosity Model ---*/
+
+  addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
+
+  /*--- Options related to Costant Viscosity Model ---*/
+
+  /* DESCRIPTION: Critical Temperature, default value for AIR */
+  addDoubleOption("MU_CONSTANT", Mu_ConstantND , 1.716E-5);
+
+  /*--- Options related to Sutherland Viscosity Model ---*/
+
+  /* DESCRIPTION: Sutherland Viscosity Ref default value for AIR SI */
+  addDoubleOption("MU_REF", Mu_RefND, 1.716E-5);
+  /* DESCRIPTION: Sutherland Temperature Ref, default value for AIR SI */
+  addDoubleOption("MU_T_REF", Mu_Temperature_RefND, 273.15);
+  /* DESCRIPTION: Sutherland constant, default value for AIR SI */
+  addDoubleOption("SUTHERLAND_CONSTANT", Mu_SND, 110.4);
+
   /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
   /* DESCRIPTION: Reynolds length (1 m by default) */
@@ -199,6 +238,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
+  /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
+  addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
   /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
   addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
   /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */

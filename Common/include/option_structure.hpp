@@ -320,6 +320,49 @@ static const map<string, ENUM_SPACE> Space_Map = CCreateMap<string, ENUM_SPACE>
 ("SPACE_UPWIND", SPACE_UPWIND);
 
 /*!
+ * \brief types of fluid model
+ */
+enum ENUM_FLUIDMODEL {
+	STANDARD_AIR = 0,
+	IDEAL_GAS = 1, /*!< \brief _____. */
+	VW_GAS = 2,
+	PR_GAS = 3
+};
+
+static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
+("STANDARD_AIR", STANDARD_AIR)
+("IDEAL_GAS", IDEAL_GAS)
+("VW_GAS", VW_GAS)
+("PR_GAS", PR_GAS);
+
+/*!
+ * \brief types of initialization option
+ */
+
+enum ENUM_FREESTREAM_OPTION {
+	TEMPERATURE_FS = 0, /*!< \brief _____. */
+	DENSITY_FS = 1
+
+};
+
+static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateMap<string, ENUM_FREESTREAM_OPTION>
+("TEMPERATURE_FS", TEMPERATURE_FS)
+("DENSITY_FS", DENSITY_FS);
+
+
+/*!
+ * \brief types of fluid model
+ */
+enum ENUM_VISCOSITYMODEL {
+	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
+	SUTHERLAND = 1
+};
+
+static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
+("COSTANT_VISCOSITY", CONSTANT_VISCOSITY)
+("SUTHERLAND", SUTHERLAND);
+
+/*!
  * \brief types of spatial discretizations
  */
 enum ENUM_GASMODEL {
