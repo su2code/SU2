@@ -58,8 +58,8 @@ void CVanDerWaalsGas::SetTDState_rhoe (double rho, double e ) {
 }
 
 void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
-	double a1 = -(P*b+T)/P;
-	double a2 =  a/P;
+//	double a1 = -(P*b+T)/P;
+//	double a2 =  a/P;
 //	double a3 = -a*b/P;
 //	double* root  = new double [3];
 //	poly_solve_cubic(a1,a2,a3,root);
@@ -78,6 +78,12 @@ void CVanDerWaalsGas::SetTDState_Prho (double P, double rho ) {
 	SetEnergy_Prho(P, rho);
 
 	SetTDState_rhoe(rho, StaticEnergy);
+
+}
+
+void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
+
+/// WARNING TODO
 
 }
 

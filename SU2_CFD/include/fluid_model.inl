@@ -26,6 +26,7 @@ inline double CFluidModel::GetPressure () { return Pressure; }
 inline double CFluidModel::GetSoundSpeed () { return sqrt(SoundSpeed2); }
 inline double CFluidModel::GetSoundSpeed2 () { return SoundSpeed2; }
 inline double CFluidModel::GetDensity () { return Density; }
+inline double CFluidModel::GetEntropy () { return Entropy; }
 inline double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
 inline double CFluidModel::GetTemperature () { return Temperature; }
 inline double CFluidModel::GetDpDd_e () { return DpDd_e; }
@@ -37,5 +38,6 @@ inline double CFluidModel::GetLaminarViscosity (double T, double rho) {
 inline void CFluidModel::SetTDState_rhoe (double rho, double e ) { }
 inline void CFluidModel::SetTDState_PT (double P, double T ) { }
 inline void CFluidModel::SetTDState_Prho (double P, double rho ) { }
+inline void CFluidModel::SetTDState_hs (double h, double s ) { }
 //inline void CFluidModel::SetTDState_Ps (double P, double s ) { }
 inline void CFluidModel::SetEnergy_Prho (double P, double rho ) { }

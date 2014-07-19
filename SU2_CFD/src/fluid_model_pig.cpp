@@ -74,6 +74,15 @@ void CIdealGas::SetEnergy_Prho (double P, double rho ){
 
 }
 
+void CIdealGas::SetTDState_hs (double h, double s ){
+
+	double T = h*Gamma_Minus_One/Gamma/Gas_Constant;
+	double P = exp(Gamma/Gamma_Minus_One*log(T) - s/Gas_Constant);
+
+	SetTDState_PT(P, T);
+
+}
+
 //void CIdealGas::SetDimensionTDState_pT (double p, double T, double R){
 //	Gas_Constant = R;
 //	Pressure = p;

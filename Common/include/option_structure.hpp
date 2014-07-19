@@ -375,7 +375,7 @@ enum ENUM_GASMODEL {
   AIR5 = 6,
   ARGON_SID = 7,
   ONESPECIES = 8
-  
+
 };
 static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
 ("NONE", NO_MODEL)
@@ -403,7 +403,7 @@ enum ENUM_GRIDMOVEMENT {
   ROTATING_FRAME = 8,    /*!< \brief Simulation in a rotating frame. */
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
   AEROELASTIC_RIGID_MOTION = 10 /*!< \brief Simulation with rotation and aeroelastic motion. */
-  
+
 };
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
 ("NONE", NO_MOVEMENT)
@@ -669,6 +669,19 @@ enum BC_TYPE {
   ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
   SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
 };
+
+/*!
+ * \brief types inlet boundary treatments
+ */
+enum RIEMANN_TYPE {
+  TOTAL_CONDITIONS_PT = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
+  DENSITY_VELOCITY = 2,         /*!< \brief User specifies density and velocity, and flow direction. */
+  STATIC_PRESSURE = 3           /*!< \brief User specifies static pressure. */
+};
+static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
+("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("DENSITY_VELOCITY", DENSITY_VELOCITY)
+("STATIC_PRESSURE", STATIC_PRESSURE);
 
 /*!
  * \brief types inlet boundary treatments
@@ -1046,7 +1059,7 @@ enum ENUM_UNSTEADY {
   DT_STEPPING_2ND = 3,	/*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
   ROTATIONAL_FRAME = 4,   /*!< \brief Use a rotational source term. */
   TIME_SPECTRAL = 5       	/*!< \brief Use a time spectral source term. */
-  
+
 };
 static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
 ("NO", STEADY)
@@ -1101,7 +1114,7 @@ public:
   //  virtual string SetValue(string){SU2MPI::PrintAndFinalize("shouldn't be here"); return "";};
   virtual string SetValue(vector<string>) = 0;
   virtual void SetDefault() = 0;
-  
+
   string optionCheckMultipleValues(vector<string> & option_value, string type_id, string option_name){
     if (option_value.size() != 1){
       string newString;
@@ -1112,7 +1125,7 @@ public:
     }
     return "";
   }
-  
+
   string badValue(vector<string> & option_value, string type_id, string option_name){
     string newString;
     newString.append(option_name);
@@ -1127,19 +1140,19 @@ inline COptionBase::~COptionBase(){}
 
 template <class Tenum>
 class COptionEnum : public COptionBase{
-  
+
   map<string, Tenum> m;
   unsigned short & field; // Reference to the feildname
   Tenum def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionEnum(string option_field_name, const map<string, Tenum> m, unsigned short & option_field, Tenum default_value) : field(option_field){
     this->m = m;
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionEnum(){};
   string SetValue(vector<string> option_value){
     // Check if there is more than one string
@@ -1147,7 +1160,7 @@ public:
     if (out.compare("") != 0){
       return out;
     }
-    
+
     // Check to see if the enum value is in the map
     if (this->m.find(option_value[0]) == m.end()){
       string str;
@@ -1161,7 +1174,7 @@ public:
     this->field = val;
     return "";
   }
-  
+
   void SetDefault(){
     this->field = this->def;
   }
@@ -1171,13 +1184,13 @@ class COptionDouble : public COptionBase{
   double & field; // Reference to the fieldname
   double def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionDouble(string option_field_name, double & option_field, double default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionDouble(){};
   string SetValue(vector<string> option_value){
     // check if there is more than one value
@@ -1202,13 +1215,13 @@ class COptionString : public COptionBase{
   string & field; // Reference to the fieldname
   string def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionString(string option_field_name, string & option_field, string default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionString(){};
   string SetValue(vector<string> option_value){
     // check if there is more than one value
@@ -1228,13 +1241,13 @@ class COptionInt : public COptionBase{
   int & field; // Reference to the feildname
   int def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionInt(string option_field_name, int & option_field, int default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionInt(){};
   string SetValue(vector<string> option_value){
     string out = optionCheckMultipleValues(option_value, "int", this->name);
@@ -1258,13 +1271,13 @@ class COptionULong : public COptionBase{
   unsigned long & field; // Reference to the feildname
   unsigned long def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionULong(string option_field_name, unsigned long & option_field, unsigned long default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionULong(){};
   string SetValue(vector<string> option_value){
     string out = optionCheckMultipleValues(option_value, "unsigned long", this->name);
@@ -1288,13 +1301,13 @@ class COptionUShort : public COptionBase{
   unsigned short & field; // Reference to the feildname
   unsigned short def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionUShort(string option_field_name, unsigned short & option_field, unsigned short default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionUShort(){};
   string SetValue(vector<string> option_value){
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -1318,13 +1331,13 @@ class COptionLong : public COptionBase{
   long & field; // Reference to the feildname
   long def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionLong(string option_field_name, long & option_field, long default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionLong(){};
   string SetValue(vector<string> option_value){
     string out = optionCheckMultipleValues(option_value, "long", this->name);
@@ -1349,13 +1362,13 @@ class COptionBool : public COptionBase{
   bool & field; // Reference to the feildname
   bool def; // Default value
   string name; // identifier for the option
-  
+
 public:
   COptionBool(string option_field_name, bool & option_field, bool default_value) : field(option_field){
     this->def = default_value;
     this->name = option_field_name;
   }
-  
+
   ~COptionBool(){};
   string SetValue(vector<string> option_value){
     // check if there is more than one value
@@ -1380,18 +1393,18 @@ public:
 
 template <class Tenum>
 class COptionEnumList : public COptionBase{
-  
+
   map<string, Tenum> m;
   unsigned short * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
-  
+
 public:
   COptionEnumList(string option_field_name, const map<string, Tenum> m, unsigned short * & option_field, unsigned short & list_size) : field(option_field) , size(list_size){
     this->m = m;
     this->name = option_field_name;
   }
-  
+
   ~COptionEnumList(){};
   string SetValue(vector<string> option_value){
     if (option_value.size() == 1 && option_value[0].compare("NONE")==0){
@@ -1416,7 +1429,7 @@ public:
     this->field = enums;
     return "";
   }
-  
+
   void SetDefault(){
     // No default to set
     size = 0;
@@ -1428,13 +1441,13 @@ class COptionDoubleArray : public COptionBase{
   string name; // identifier for the option
   const int size;
   double * default_value;
-  
+
 public:
   COptionDoubleArray(string option_field_name, const int list_size, double * & option_field, double * default_value) : field(option_field), size(list_size){
     this->name = option_field_name;
     this->default_value = default_value;
   }
-  
+
   ~COptionDoubleArray(){};
   string SetValue(vector<string> option_value){
     // Check that the size is correct
@@ -1465,7 +1478,7 @@ public:
     this->field = vals;
     return "";
   }
-  
+
   void SetDefault(){
     this->field = this->default_value;
   }
@@ -1475,12 +1488,12 @@ class COptionDoubleList : public COptionBase{
   double * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
-  
+
 public:
   COptionDoubleList(string option_field_name, unsigned short & list_size, double * & option_field) : field(option_field), size(list_size){
     this->name = option_field_name;
   }
-  
+
   ~COptionDoubleList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
@@ -1490,9 +1503,9 @@ public:
       this->size = 0;
       return "";
     }
-    
+
     this->size = option_size;
-    
+
     // Parse all of the options
     double * vals = new double[option_size];
     for(int i  = 0; i < option_size; i++){
@@ -1507,7 +1520,7 @@ public:
     this->field = vals;
     return "";
   }
-  
+
   void SetDefault(){
     this->size = 0; // There is no default value for list
   }
@@ -1517,12 +1530,12 @@ class COptionUShortList : public COptionBase{
   unsigned short * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
-  
+
 public:
   COptionUShortList(string option_field_name, unsigned short & list_size, unsigned short * & option_field) : field(option_field), size(list_size){
     this->name = option_field_name;
   }
-  
+
   ~COptionUShortList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
@@ -1533,7 +1546,7 @@ public:
       return "";
     }
     this->size = option_size;
-    
+
     // Parse all of the options
     unsigned short * vals = new unsigned short[option_size];
     for(int i  = 0; i < option_size; i++){
@@ -1548,7 +1561,7 @@ public:
     this->field = vals;
     return "";
   }
-  
+
   void SetDefault(){
     this->size = 0; // There is no default value for list
   }
@@ -1558,12 +1571,12 @@ class COptionStringList : public COptionBase{
   string * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
-  
+
 public:
   COptionStringList(string option_field_name, unsigned short & list_size, string * & option_field) : field(option_field), size(list_size){
     this->name = option_field_name;
   }
-  
+
   ~COptionStringList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
@@ -1573,7 +1586,7 @@ public:
       return "";
     }
     this->size = option_size;
-    
+
     // Parse all of the options
     string * vals = new string[option_size];
     for(int i  = 0; i < option_size; i++){
@@ -1582,7 +1595,7 @@ public:
     this->field = vals;
     return "";
   }
-  
+
   void SetDefault(){
     this->size = 0; // There is no default value for list
   }
@@ -1593,20 +1606,20 @@ class COptionConvect : public COptionBase{
   unsigned short & space;
   unsigned short & centered;
   unsigned short & upwind;
-  
+
 public:
   COptionConvect(string option_field_name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) : space(space_field), centered(centered_field), upwind(upwind_field){
     this->name = option_field_name;
   }
-  
+
   ~COptionConvect(){};
   string SetValue(vector<string> option_value){
-    
+
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0){
       return out;
     }
-    
+
     if (Centered_Map.count(option_value[0])) {
       this->space = Space_Map.find("SPACE_CENTERED")->second;
       this->centered = Centered_Map.find(option_value[0])->second;
@@ -1624,9 +1637,9 @@ public:
     this->upwind = NO_UPWIND;
     this->space = SPACE_CENTERED;
     return badValue(option_value, "convect", this->name);
-    
+
   }
-  
+
   void SetDefault(){
     this->centered = NO_CENTERED;
     this->upwind = NO_UPWIND;
@@ -1644,7 +1657,7 @@ class COptionMathProblem : public COptionBase{
   bool oneshot_def;
   bool linearized_def;
   bool restart_def;
-  
+
 public:
   COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & oneshot_field, bool oneshot_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default) : adjoint(adjoint_field), oneshot(oneshot_field), linearized(linearized_field), restart(restart_field) {
     this->name = option_field_name;
@@ -1653,7 +1666,7 @@ public:
     this->linearized_def = linearized_default;
     this->restart_def = restart_default;
   }
-  
+
   ~COptionMathProblem(){};
   string SetValue(vector<string> option_value){
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
@@ -1686,7 +1699,7 @@ public:
     }
     return "option in math problem map not considered in constructor";
   }
-  
+
   void SetDefault(){
     this->adjoint = this->adjoint_def;
     this->oneshot = this->oneshot_def;
@@ -1701,19 +1714,19 @@ class COptionDVParam : public COptionBase{
   double ** & paramDV;
   string * & FFDTag;
   unsigned short* & design_variable;
-  
+
 public:
   COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field){
     this->name = option_field_name;
   }
-  
+
   ~COptionDVParam(){};
   string SetValue(vector<string> option_value){
     if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)){
       this->nDV = 0;
       return "";
     }
-    
+
     // Cannot have ; at the beginning or the end
     if (option_value[0].compare(";") == 0){
       string newstring;
@@ -1727,8 +1740,8 @@ public:
       newstring.append(": may not have ending semicolon");
       return newstring;
     }
-    
-    
+
+
     // use the ";" token to determine the number of design variables
     // This works because semicolon is not one of the delimiters in tokenize string
     this->nDV = 0;
@@ -1739,24 +1752,24 @@ public:
         //        num_semi++;
       }
     }
-    
+
     // One more design variable than semicolon
     this->nDV++;
-    
+
     if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
       return newstring;
     }
-    
+
     this->paramDV = new double*[this->nDV];
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++){
       this->paramDV[iDV] = new double[MAX_PARAMETERS];
     }
-    
+
     this->FFDTag = new string[this->nDV];
-    
+
     unsigned short nParamDV = 0;
     stringstream ss;
     unsigned int i = 0;
@@ -1792,12 +1805,12 @@ public:
           return newstring;
         }
       }
-      
+
       // ?? Not sure what's going on. Didn't touch it.
       for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
-        
+
         ss << option_value[i] << " ";
-        
+
         if ((iParamDV == 0) &&
             ((this->design_variable[iDV] == FFD_SETTING) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
@@ -1816,7 +1829,7 @@ public:
             }
         else
           ss >> this->paramDV[iDV][iParamDV];
-        
+
         i++;
       }
       if (iDV < (this->nDV-1)) {
@@ -1829,11 +1842,11 @@ public:
         i++;
       }
     }
-    
+
     // Need to return something...
     return "";
   }
-  
+
   void SetDefault(){
     this->nDV = 0;
     this->paramDV = NULL;
@@ -1847,15 +1860,15 @@ public:
 class COptionStringDoubleList : public COptionBase{
   string name; // identifier for the option
   unsigned short & size; // how many strings are there (same as number of doubles)
-  
+
   string * & s_f; // Reference to the string fields
   double* & d_f; // reference to the double fields
-  
+
 public:
   COptionStringDoubleList(string option_field_name, unsigned short & list_size, string * & string_field, double* & double_field) : size(list_size), s_f(string_field), d_f(double_field){
     this->name = option_field_name;
   }
-  
+
   ~COptionStringDoubleList(){};
   string SetValue(vector<string> option_value){
     // There must be an even number of entries (same number of strings and doubles
@@ -1875,7 +1888,7 @@ public:
     this->size = nVals;
     this->s_f = new string[nVals];
     this->d_f = new double[nVals];
-    
+
     for (int i = 0; i < nVals; i++){
       this->s_f[i].assign(option_value[2*i]); // 2 because have double and string
       istringstream is(option_value[2*i + 1]);
@@ -1888,7 +1901,7 @@ public:
     // Need to return something...
     return "";
   }
-  
+
   void SetDefault(){
     this->size = 0; // There is no default value for list
   }
@@ -1901,15 +1914,15 @@ class COptionInlet : public COptionBase{
   double * & ttotal;
   double * & ptotal;
   double ** & flowdir;
-  
+
 public:
   COptionInlet(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal, double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal), flowdir(FlowDir){
     this->name = option_field_name;
   }
-  
+
   ~COptionInlet(){};
   string SetValue(vector<string> option_value){
-    
+
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
@@ -1919,7 +1932,7 @@ public:
       this->flowdir = NULL;
       return "";
     }
-    
+
     if (totalVals % 6 != 0){
       string newstring;
       newstring.append(this->name);
@@ -1931,7 +1944,7 @@ public:
       this->flowdir = NULL;
       return newstring;
     }
-    
+
     unsigned long nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
@@ -1941,7 +1954,7 @@ public:
     for (int i = 0; i < nVals; i++){
       this->flowdir[i] = new double[3];
     }
-    
+
     stringstream ss;
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[6*i]);
@@ -1966,14 +1979,119 @@ public:
         return badValue(option_value, "inlet", this->name);
       }
     }
-    
+
     return "";
   }
-  
+
   void SetDefault(){
     this->marker = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
+    this->flowdir = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionRiemann : public COptionBase{
+
+  map<string, Tenum> enum_map;
+  unsigned short & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  double * & var1;
+  double * & ptotal;
+  double ** & flowdir;
+
+public:
+  COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short & option_field, const map<string, Tenum> enum_map, double* & Ttotal, double* & Ptotal, double** & FlowDir) : size(nMarker_Riemann), marker(Marker_Riemann), field(option_field), var1(Ttotal), var2(Ptotal), flowdir(FlowDir){
+    this->name = option_field_name;
+    this->enum_map = enum_map;
+  }
+  ~COptionInlet(){};
+  string SetValue(vector<string> option_value){
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
+      this->size = 0;
+      this->marker = NULL;
+      this->field = 0;
+      this->enum_map = 0;
+      this->var1 = NULL;
+      this->var2 = NULL;
+      this->flowdir = NULL;
+      return "";
+    }
+
+    if (totalVals % 7 != 0){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 7");
+      this->size = 0;
+      this->marker = NULL;
+      this->var1 = NULL;
+      this->var2 = NULL;
+      this->flowdir = NULL;
+      this->field = 1;
+      this->enum_map = TOTAL_CONDITIONS_PT;
+      return newstring;
+    }
+
+    unsigned long nVals = totalVals / 7;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->var1 = new double[nVals];
+    this->var2 = new double[nVals];
+    this->flowdir = new double*[nVals];
+    this->field = new unsigned short[nVals];
+
+    for (int i = 0; i < nVals; i++){
+      this->flowdir[i] = new double[3];
+    }
+
+    stringstream ss;
+    for (int i = 0; i < nVals; i++){
+      this->marker[i].assign(option_value[7*i]);
+        // Check to see if the enum value is in the map
+    if (this->enum_map.find(option_value[7*i + 1]) == enum_map.end()){
+      string str;
+      str.append(this->name);
+      str.append(": invalid option value ");
+      str.append(option_value[0]);
+      return str;
+    }
+      Tenum val = this->m[option_value[7*i + 1]];
+      this->field[i] = val;
+
+      ss << option_value[7*i + 2] << " ";
+      if(!(ss >> this->var1[i])){
+        return badValue(option_value, "Riemann", this->name);
+      }
+      ss << option_value[7*i + 3] << " ";
+      if(!(ss >> this->var2[i])){
+        return badValue(option_value, "Riemann", this->name);
+      }
+      ss << option_value[7*i + 4] << " ";
+      if (!(ss >> this->flowdir[i][0])){
+        return badValue(option_value, "Riemann", this->name);
+      }
+      ss << option_value[7*i + 5] << " ";
+      if (!(ss >> this->flowdir[i][1])){
+        return badValue(option_value, "Riemann", this->name);
+      }
+      ss << option_value[7*i + 6] << " ";
+      if (!(ss >> this->flowdir[i][2])){
+        return badValue(option_value, "Riemann", this->name);
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault(){
+    this->marker = NULL;
+    this->var1 = NULL;
+    this->var2 = NULL;
     this->flowdir = NULL;
     this->size = 0; // There is no default value for list
   }
@@ -1986,15 +2104,15 @@ class COptionInletFixed : public COptionBase{
   string * & marker;
   double * & ttotal;
   double * & ptotal;
-  
+
 public:
   COptionInletFixed(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal){
     this->name = option_field_name;
   }
-  
+
   ~COptionInletFixed(){};
   string SetValue(vector<string> option_value){
-    
+
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
@@ -2003,7 +2121,7 @@ public:
       this->ptotal = NULL;
       return "";
     }
-    
+
     if (totalVals % 3 != 0){
       string newstring;
       newstring.append(this->name);
@@ -2014,7 +2132,7 @@ public:
       this->ptotal = NULL;
       return newstring;
     }
-    
+
     unsigned long nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
@@ -2034,7 +2152,7 @@ public:
     }
     return "";
   }
-  
+
   void SetDefault(){
     this->marker = NULL;
     this->ttotal = NULL;
@@ -2051,19 +2169,19 @@ class COptionPeriodic : public COptionBase{
   double ** & rot_center;
   double ** & rot_angles;
   double ** & translation;
-  
+
 public:
   COptionPeriodic(const string option_field_name, unsigned short & nMarker_PerBound,
                   string* & Marker_PerBound, string* & Marker_PerDonor,
                   double** & RotCenter, double** & RotAngles, double** & Translation) : size(nMarker_PerBound), marker_bound(Marker_PerBound), marker_donor(Marker_PerDonor), rot_center(RotCenter), rot_angles(RotAngles), translation(Translation){
     this->name = option_field_name;
   }
-  
+
   ~COptionPeriodic(){};
   string SetValue(vector<string> option_value){
-    
+
     const int mod_num = 11;
-    
+
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
@@ -2074,7 +2192,7 @@ public:
       this->translation = NULL;
       return "";
     }
-    
+
     if (totalVals % mod_num != 0){
       string newstring;
       newstring.append(this->name);
@@ -2087,7 +2205,7 @@ public:
       this->translation = NULL;
       return newstring;
     }
-    
+
     unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
     this->size = nVals;
     this->marker_bound = new string[nVals];
@@ -2100,7 +2218,7 @@ public:
       this->rot_angles[i] = new double[3];
       this->translation[i] = new double[3];
     }
-    
+
     double deg2rad = PI_NUMBER/180.0;
     stringstream ss;
     for (int i = 0; i < (nVals/2); i++){
@@ -2146,7 +2264,7 @@ public:
       this->rot_angles[i][1] *= deg2rad;
       this->rot_angles[i][2] *= deg2rad;
     }
-    
+
     for (unsigned long i = (nVals/2); i < nVals; i++){
       this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
       this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
@@ -2186,7 +2304,7 @@ public:
       if (!(ss >> this->translation[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      /*--- Mirror the rotational angles and translation vector (rotational 
+      /*--- Mirror the rotational angles and translation vector (rotational
        center does not need to move) ---*/
       this->rot_center[i][0] *= 1.0;
       this->rot_center[i][1] *= 1.0;
@@ -2198,10 +2316,10 @@ public:
       this->translation[i][1] *= -1.0;
       this->translation[i][2] *= -1.0;
     }
-    
+
     return "";
   }
-  
+
   void SetDefault(){
     this->size = 0;
     this->marker_bound = NULL;
@@ -2240,12 +2358,12 @@ class COptionActuatorDisk : public COptionBase{
   double * & tip_radius;
   double * & ct;
   double * & omega;
-  
+
 public:
   COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, double ** & ActDisk_Origin, double * & ActDisk_RootRadius, double * & ActDisk_TipRadius, double * & ActDisk_CT, double * & ActDisk_Omega) : inlet_size(nMarker_ActDisk_Inlet),outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), ct(ActDisk_CT), omega(ActDisk_Omega) {
     this->name = name;
   }
-  
+
   ~COptionActuatorDisk(){};
   string SetValue(vector<string> option_value){
     const int mod_num = 9;
@@ -2254,7 +2372,7 @@ public:
       this->SetDefault();
       return "";
     }
-    
+
     if (totalVals % mod_num != 0){
       string newstring;
       newstring.append(this->name);
@@ -2262,7 +2380,7 @@ public:
       this->SetDefault();
       return newstring;
     }
-    
+
     unsigned long nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
@@ -2272,12 +2390,12 @@ public:
     this->tip_radius = new double[this->inlet_size];
     this->ct = new double[this->outlet_size];
     this->omega = new double[this->inlet_size];
-    
+
     this->origin = new double*[this->inlet_size];
     for (int i = 0; i < this->inlet_size; i++){
       this->origin[i] = new double[3];
     }
-    
+
     string tname = "actuator disk";
     stringstream ss;
     for (int i = 0; i < this->inlet_size; i++){

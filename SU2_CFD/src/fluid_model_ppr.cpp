@@ -152,6 +152,12 @@ void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 
 }
 
+void CPengRobinson::SetTDState_hs (double h, double s ){
+
+/// WARNING TODO
+
+}
+
 //void CPengRobinson::SetTDState_Ps (double P, double s ) {
 //	/// Working
 //
