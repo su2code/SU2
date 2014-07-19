@@ -1978,6 +1978,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     CFL[iCFL] = CFL[iCFL-1]*MG_CFLRedCoeff;
   
   if (nRKStep == 0) {
+    cout << endl << "WARNING: No R-K alpha coefficients specified. Defaulting to Euler Explicit integration!" << endl;
+    nRKStep = 1;
     RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
