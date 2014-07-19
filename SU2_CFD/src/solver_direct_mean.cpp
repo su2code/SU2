@@ -480,6 +480,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #else
     counter_global = counter_local;
 #endif
+    config->SetNonphysical_Points(counter_global);
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
@@ -2711,8 +2712,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+  
   
 }
 
@@ -2992,11 +2993,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
@@ -3185,8 +3181,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 #else
   counter_global = counter_local;
 #endif
-  if ((rank == MASTER_NODE) && (counter_global != 0))
-    cout << counter_global << " reconstructed states for upwinding are non-physical." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   
 }
 
@@ -8598,8 +8593,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   
 }
 
