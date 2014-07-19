@@ -678,7 +678,9 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
-
+  unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
+  Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
   
@@ -5099,6 +5101,30 @@ public:
 	 * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
 	 */
 	bool GetUpdate_AoA(void);
+  
+  /*!
+	 * \brief Set the current number of non-physical nodes in the solution.
+   * \param[in] val_nonphys_points - current number of non-physical points.
+	 */
+	void SetNonphysical_Points(unsigned long val_nonphys_points);
+  
+  /*!
+	 * \brief Get the current number of non-physical nodes in the solution.
+	 * \return Current number of non-physical points.
+	 */
+	unsigned long GetNonphysical_Points(void);
+  
+  /*!
+	 * \brief Set the current number of non-physical reconstructions for 2nd-order upwinding.
+   * \param[in] val_nonphys_reconstr - current number of non-physical reconstructions for 2nd-order upwinding.
+	 */
+	void SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr);
+  
+  /*!
+	 * \brief Get the current number of non-physical reconstructions for 2nd-order upwinding.
+	 * \return Current number of non-physical reconstructions for 2nd-order upwinding.
+	 */
+	unsigned long GetNonphysical_Reconstr(void);
   
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with

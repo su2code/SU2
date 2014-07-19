@@ -1151,3 +1151,11 @@ inline double CConfig::GetDamp_Fixed_CL(void) {return Damp_Fixed_CL; }
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 
 inline void CConfig::SetUpdate_AoA(bool val_update) { Update_AoA = val_update; }
+
+inline void CConfig::SetNonphysical_Points(unsigned long val_nonphys_points) { Nonphys_Points = val_nonphys_points; }
+
+inline unsigned long CConfig::GetNonphysical_Points(void) { return Nonphys_Points; }
+
+inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr) { Nonphys_Reconstr = val_nonphys_reconstr; }
+
+inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }

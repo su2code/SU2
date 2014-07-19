@@ -1235,6 +1235,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- Initialize non-physical points/reconstructions to zero ---*/
+  Nonphys_Points   = 0;
+  Nonphys_Reconstr = 0;
+  
   /*--- Don't do any deformation if there is no Design variable information ---*/
   
   if (Design_Variable == NULL) {
