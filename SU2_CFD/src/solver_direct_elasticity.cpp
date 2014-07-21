@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -27,16 +27,12 @@ CFEASolver::CFEASolver(void) : CSolver() { }
 CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	unsigned long iPoint;
-	unsigned short nMarker, iVar, NodesElement, nLineLets;
+	unsigned short nMarker, iVar, NodesElement = 0, nLineLets;
   double dull_val;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   nPoint =        geometry->GetnPoint();
@@ -173,7 +169,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 CFEASolver::~CFEASolver(void) {
   
-	unsigned short iVar, iDim, NodesElement;
+	unsigned short iVar, iDim, NodesElement = 0;
   
 	if (nDim == 2) NodesElement = 3;	// Triangles in 2D
 	if (nDim == 3) NodesElement = 4;	// Tets in 3D
@@ -429,7 +425,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
 void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh) {
   
-  unsigned short iVar, jVar, nNodes, iNodes, iDim, jDim;
+  unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim;
 	unsigned long iElem, PointCorners[8], iPoint, total_index;
 	double CoordCorners[8][3];
   
@@ -534,7 +530,7 @@ void CFEASolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_co
 	unsigned short iVar, iDim;
   double *Normal, Area, UnitaryNormal[3];
 	
-	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_Tag(val_marker));
+	double TotalDispl = config->GetDispl_Value(config->GetMarker_All_TagBound(val_marker));
 	
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -592,7 +588,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
 	double Length_Elem = 0.0, Area_Elem = 0.0, Normal_Elem[3] = {0.0, 0.0, 0.0};
 	unsigned short iDim;
 	
-	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_Tag(val_marker));
+	double TotalLoad = 100*config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
 	
 	for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 		Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);                   Coord_0 = geometry->node[Point_0]->GetCoord();
@@ -955,7 +951,7 @@ void CFEASolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, C
 
 void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-  double Strain_xx, Strain_yy, Strain_xy, Strain_zz, Strain_xz, Strain_yz, **Stress, VonMises_Stress, MaxVonMises_Stress = 0.0, Strain_Trace;
+  double Strain_xx, Strain_yy, Strain_xy, Strain_zz = 0.0, Strain_xz = 0.0, Strain_yz = 0.0, **Stress, VonMises_Stress, MaxVonMises_Stress = 0.0, Strain_Trace;
   
   double E = config->GetElasticyMod();
   double Nu = config->GetPoissonRatio();
@@ -1019,15 +1015,11 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   /*--- Compute MaxVonMises_Stress using all the nodes ---*/
   double MyMaxVonMises_Stress = MaxVonMises_Stress; MaxVonMises_Stress = 0.0;
-#ifdef WINDOWS
   MPI_Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&MyMaxVonMises_Stress, &MaxVonMises_Stress, 1, MPI::DOUBLE, MPI::MAX);
-#endif
   
 #endif
   
@@ -1308,7 +1300,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   
   unsigned short iMarker, icommas, iDim;
   unsigned long iVertex, iPoint, iExtIter;
-  double Pressure, Dist, Coord[3];
+  double Pressure = 0.0, Dist, Coord[3];
   string text_line;
   string::size_type position;
   ifstream Surface_file;
@@ -1317,14 +1309,9 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
   
   /*--- Reset the value of the Flow_Pressure ---*/
@@ -1387,7 +1374,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
       /*--- Compute the distance from the surface to the points in the .csv files ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-        if (config->GetMarker_All_Boundary(iMarker) == PRESSURE_BOUNDARY) {
+        if (config->GetMarker_All_KindBC(iMarker) == PRESSURE_BOUNDARY) {
           for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             

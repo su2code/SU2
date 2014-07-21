@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -73,14 +73,10 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   if (Kind_Solver == POISSON_EQUATION)
   filename = config->GetStructure_FileName().c_str();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Remove the domain number from the surface csv filename ---*/
   int nProcessor;
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-  nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
 #endif
   
@@ -431,7 +427,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
 
 void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -466,14 +462,10 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
     file.str(string());
     buffer = config->GetFlow_FileName();
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
-#ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-    nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
 
@@ -735,7 +727,7 @@ void COutput::SetTecplot_Mesh(CConfig *config, CGeometry *geometry, unsigned sho
 
 void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -756,14 +748,10 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
     file.str(string());
     buffer = config->GetSurfFlowCoeff_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
-#ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-    nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
     
@@ -1047,7 +1035,7 @@ void COutput::SetTecplot_SurfaceMesh(CConfig *config, CGeometry *geometry, unsig
 
 void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -1082,14 +1070,10 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
   file.str(string());
   buffer = config->GetFlow_FileName();
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
-#ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-    nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
   
@@ -1406,7 +1390,7 @@ void COutput::SetTecplot_Solution(CConfig *config, CGeometry *geometry, unsigned
 
 void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
-#ifndef NO_TECIO
+#ifdef HAVE_TECIO
   
   double   t;
   INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
@@ -1425,14 +1409,10 @@ void COutput::SetTecplot_SurfaceSolution(CConfig *config, CGeometry *geometry, u
   file.str(string());
   buffer = config->GetSurfFlowCoeff_FileName();
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- Remove the domain number from the filename ---*/
     int nProcessor;
-#ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-    nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
     if (nProcessor > 1) buffer.erase(buffer.end()-2, buffer.end());
 #endif
   

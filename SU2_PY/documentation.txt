@@ -14,13 +14,12 @@ no upstream pointer communication
 
 partitions set once in config initial read
 
-SU2.run.DDC(config)
+SU2.run.PRT(config)
 SU2.run.CFD(config)
-SU2.run.MAC(config)
-SU2.run.MDC(config)
-SU2.run.GPC(config)
+SU2.run.MSH(config)
+SU2.run.DEF(config)
+SU2.run.DOT(config)
 SU2.run.SMC(config)
-SU2.run.PBC(config)
 	interpret partitions
 	dump config
 	prepare os command
@@ -37,7 +36,7 @@ all tools assume config['NUMBER_PART'] already set
 
 SU2.run.decomp(config)
 	check for decomposition in config['DECOMPOSED'] = True/False
-	run DDC
+	run PRT
 	pointer updated config
 		'DECOMPOSED' = True
 
@@ -48,7 +47,7 @@ SU2.run.deform(config,dv_new=[])
 		'DV_MARKER','DV_KIND','DV_PARAM' based on 'DEFINITION_DV'
 	checks decomp
 	adds 'deform' suffix to mesh_out
-	run MDC
+	run DEF
 	pointer updated config
 		'MESH_FILENAME' = 'MESH_FILENAME'+'_deform'
 		'DV_VALUE_OLD' = 'DV_VALUE_NEW'
@@ -84,7 +83,7 @@ SU2.run.projection(config,step=1e-4)
 	checks decomp
 	optional step float or vector
 	update config
-	run GPC
+	run DOT
 	read raw gradient file, remove file
 	write plotable gradient file
 	returns dictionary 'info' with keys:

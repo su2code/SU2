@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,8 +23,8 @@
 
 #pragma once
 
-#ifndef NO_MPI
-#include <mpi.h>
+#ifdef HAVE_MPI
+  #include "mpi.h"
 #endif
 #include <ctime>
 
@@ -214,7 +214,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
  * \param[in] vort_strength - Vector of vortex strengths.
  * \param[in] r_core - Vector of vortex core size.
  */
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core);
+void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core);
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.

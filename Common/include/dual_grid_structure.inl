@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -22,16 +22,23 @@
 
 #pragma once
 
-inline void CPoint::SetElem(unsigned long val_elem) { 
-	Elem.push_back(val_elem); 
-	nElem = Elem.size();
-}
+inline void CPoint::SetElem(unsigned long val_elem) { Elem.push_back(val_elem); nElem = Elem.size(); }
+
+inline void CPoint::ResetBoundary(void) { if (vertex != NULL) delete [] vertex; Boundary = false; }
+
+inline void CPoint::ResetElem(void) { Elem.clear(); nElem = 0; }
+
+inline void CPoint::ResetPoint(void) { Point.clear(); Edge.clear(); nPoint = 0; }
 
 inline double CPoint::GetCoord(unsigned short val_dim) { return coord[val_dim]; }
 
 inline double *CPoint::GetCoord(void) { return coord; }
 
+inline bool CPoint::GetFlip_Orientation(void) { return Flip_Orientation; }
+
 inline void CPoint::SetCoord(unsigned short val_dim, double val_coord) { coord[val_dim] = val_coord; }
+
+inline void CPoint::SetFlip_Orientation(void) { Flip_Orientation = true; }
 
 inline void CPoint::AddCoord(unsigned short val_dim, double val_coord) { coord[val_dim] += val_coord; }
 
@@ -181,6 +188,8 @@ inline unsigned short CPoint::GetColor(void) { return color; }
 
 inline unsigned long CPoint::GetGlobalIndex(void) { return GlobalIndex; }
 
+inline void CPoint::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
+
 inline void CPoint::SetDomain(bool val_domain) { Domain = val_domain; }
 
 inline bool CPoint::GetDomain(void) { return Domain; }
@@ -197,9 +206,9 @@ inline double CPoint::GetCurvature(void) { return Curvature; }
 
 inline double CPoint::GetSharpEdge_Distance(void) { return SharpEdge_Distance; }
 
-inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) { }
+inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) { }
 
-inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) { }
+inline void CPoint::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) { }
 
 inline void  CPoint::GetNormal(double *val_normal) { }
 

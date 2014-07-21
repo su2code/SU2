@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -32,11 +32,17 @@ inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
@@ -73,15 +79,25 @@ inline double* CSolver::GetPsiRhos_Inf(void) { return NULL; }
 
 inline double CSolver::GetPsiE_Inf(void) { return 0; }
 
-inline void CSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPrimVar_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetPrimVar_Limiter(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetSecondary_Limiter_MPI(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPreconditioner(CConfig *config, unsigned short iPoint) { }
 
@@ -477,6 +493,10 @@ inline unsigned short CSolver::GetnPrimVar(void) { return nPrimVar; }
 
 inline unsigned short CSolver::GetnPrimVarGrad(void) { return nPrimVarGrad; }
 
+inline unsigned short CSolver::GetnSecondaryVar(void) { return nSecondaryVar; }
+
+inline unsigned short CSolver::GetnSecondaryVarGrad(void) { return nSecondaryVarGrad; }
+
 inline double CSolver::GetMax_Delta_Time(void) { return Max_Delta_Time; }
 
 inline double CSolver::GetMin_Delta_Time(void) { return Min_Delta_Time; }
@@ -640,7 +660,6 @@ inline void CEulerSolver::SetOneD_fluxavgU(double VelocityRef){OneD_VelocityRef=
 inline double CEulerSolver::GetOneD_fluxavgH(void){return OneD_EnthalpyRef;}
 
 inline void CEulerSolver::SetOneD_fluxavgH(double EnthalpyRef){OneD_EnthalpyRef = EnthalpyRef; }
-
 
 inline double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

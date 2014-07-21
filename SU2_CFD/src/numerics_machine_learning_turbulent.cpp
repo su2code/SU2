@@ -2,7 +2,7 @@
  * \file numerics_machine_learning_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -119,7 +119,6 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   if (dist < limiter){
     for (int i = 0; i < nResidOutputs; i++){
       output_residual[i] = 0;
-      
     }
     for (int i = 0; i < nJacOutputs; i++){
       output_jacobian[i] = 0;
@@ -130,6 +129,7 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   double **DUiDXj = inputs->GetMeanFlowGradient();
   double Vorticity = ComputeVorticity(nDim,DUiDXj);
   double Omega = sqrt(Vorticity);
+  otherOutput->Omega = Omega;
   
   double StrainMag;
   double Laminar_Viscosity = inputs->Laminar_Viscosity;
@@ -182,6 +182,24 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
     Production *= intermittency;
   }
   
+  double limitOmega = max(Omega, 1.0e-10);
+  otherOutput->mul_production = constants->cb1 * (1 + Turbulent_Kinematic_Viscosity * inv_k2_d2 * fv2 / limitOmega);
+//  cout << "mul prod = " << otherOutput->mul_production << endl;
+//  cout << "omega = " << Omega << endl;
+//  cout << "production = " << Production << endl;
+//  cout << "mul = " << otherOutput->mul_production * Omega * Turbulent_Kinematic_Viscosity << endl;
+//  cout << "turb kin visc = " << Turbulent_Kinematic_Viscosity << endl;
+//  cout << "wall dist = " << dist << endl;
+//  cout << "fv2 = " << fv2 << endl;
+//  cout << "inv k2 d2 = " << inv_k2_d2 << endl;
+//  if (otherOutput->mul_production < -1e+5){
+//    cout << endl;
+//    for (int i = 0; i < 1; i++){
+//  throw "rah";
+//      cout << "rah" << endl;
+//    }
+//  }
+  
   /*--- Destruction term ---*/
   
   r = min(Turbulent_Kinematic_Viscosity*inv_Shat*inv_k2_d2,10.0);
@@ -194,6 +212,8 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
   
   otherOutput->fw = fw;
   
+  otherOutput->mul_destruction = constants->cw1 * fw;
+  
   Destruction = constants->cw1*fw*Turbulent_Kinematic_Viscosity*Turbulent_Kinematic_Viscosity/dist_2;
   if (transition){
     Destruction *= min(max(intermittency,0.1),1.0);
@@ -205,6 +225,8 @@ void SpalartAllmarasSourceTerm(SpalartAllmarasInputs* inputs, SpalartAllmarasCon
     norm2_Grad += DTurb_Kin_Visc_DXj[iDim]*DTurb_Kin_Visc_DXj[iDim];
   }
   CrossProduction = constants->cb2_sigma*norm2_Grad;
+  
+  otherOutput->mul_crossproduction = constants->cb2_sigma;
   
   output_residual[0] = Production;
   output_residual[1] = Destruction;

@@ -1,7 +1,7 @@
 ## \file deform.py
 #  \brief python package for deforming meshes
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -27,7 +27,7 @@ import os, sys, shutil, copy
 
 from .. import io  as su2io
 from decompose import decompose as su2decomp
-from interface import MDC as SU2_MDC
+from interface import DEF as SU2_DEF
 
 
 # ----------------------------------------------------------------------
@@ -39,7 +39,7 @@ def deform ( config, dv_new=None, dv_old=None ):
         
         Deforms mesh with:
             SU2.run.decomp()
-            SU2.run.MDC()
+            SU2.run.DEF()
             
         Assumptions:
             Redundant decomposition if config.DECOMPOSED == True
@@ -90,7 +90,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     konfig['MESH_OUT_FILENAME'] = meshname_suffixed
     
     # Run Deformation
-    SU2_MDC(konfig)
+    SU2_DEF(konfig)
     
     # update super config
     config.update({ 'DECOMPOSED'    : konfig['DECOMPOSED']        ,

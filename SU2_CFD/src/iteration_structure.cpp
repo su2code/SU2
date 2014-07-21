@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -37,13 +37,9 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int rank;
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
@@ -231,12 +227,8 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
@@ -289,9 +281,9 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			 note that in the direct Euler problem we are not computing the gradients of the primitive variables ---*/
       
 			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0], config_container[iZone]);
+				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_GG(geometry_container[iZone][MESH_0], config_container[iZone]);
 			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
+				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
       
@@ -402,13 +394,9 @@ void TNE2Iteration(COutput *output, CIntegration ***integration_container, CGeom
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();  
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int rank;
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -454,12 +442,8 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
   ExtIter = config_container[ZONE_0]->GetExtIter();
   rank    = MASTER_NODE;
 
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -499,10 +483,10 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
        sensitivity computation, note that in the direct Euler problem we
        are not computing the gradients of the primitive variables ---*/
 			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0],
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_GG(geometry_container[iZone][MESH_0],
                                                                           config_container[iZone]);
 			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0],
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_LS(geometry_container[iZone][MESH_0],
                                                                           config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
@@ -806,12 +790,8 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   // In this routine the gust derivatives needed for the source term are calculated when applicable. The source term itself is implemented in the class CSourceWindGust
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Gust Parameters from config ---*/
@@ -840,25 +820,20 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   double Uinf = solver_container[MESH_0][FLOW_SOL]->GetVelocity_Inf(0); // Assumption gust moves at infinity velocity
   
   // Vortex variables
-  unsigned int nVortex;
+  unsigned long nVortex = 0;
   std::vector<double> x0,y0,vort_strenth,r_core; //vortex is positive in clockwise direction.
   if (Gust_Type == VORTEX) {
-    InitializeVortexDistribution(nVortex,x0,y0,vort_strenth,r_core);
+    InitializeVortexDistribution(nVortex, x0, y0, vort_strenth, r_core);
   }
   
   /*--- Check to make sure gust lenght is not zero or negative (vortex gust doesn't use this). ---*/
   if (L <= 0.0 && Gust_Type != VORTEX) {
     cout << "ERROR: The gust length needs to be positive" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
-#ifdef WINDOWS
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
   }
   
@@ -937,7 +912,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
 
              /*--- Use vortex distribution ---*/
              // Algebraic vortex equation.
-             for (unsigned int i=0; i<nVortex; i++) {
+             for (unsigned long i=0; i<nVortex; i++) {
                double r2 = pow(x-(x0[i]+Uinf*(Physical_t-tbegin)), 2) + pow(y-y0[i], 2);
                double r = sqrt(r2);
                double v_theta = vort_strenth[i]/(2*PI_NUMBER) * r/(r2+pow(r_core[i],2));
@@ -979,7 +954,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   }
 }
 
-void InitializeVortexDistribution(unsigned int &nVortex, vector<double>& x0,vector<double>& y0,vector<double>& vort_strength,vector<double>& r_core) {
+void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, vector<double>& y0, vector<double>& vort_strength, vector<double>& r_core) {
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
@@ -1034,12 +1009,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 	}
   
 	int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
 	/*--- Perform mesh movement depending on specified type ---*/
@@ -1327,12 +1298,8 @@ void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_contain
                      CConfig **config_container, unsigned short nZone, unsigned short iZone) {
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
   
   /*--- Local variables and initialization ---*/
@@ -1735,7 +1702,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 	delete [] b_coeffs;
 	delete [] fitted_coords;
 	delete [] fitted_velocities;
-	for (iZone = 0; iZone < nDim; iZone++) {
+	for (iZone = 0; iZone < nZone; iZone++) {
 		delete [] coords[iZone];
 	}
 	delete [] coords;

@@ -4,16 +4,11 @@ namespace SU2MPI {
   const int MASTER_NODE = 0;
   // Safetly exits with MPI
   void FinalizeAndExit1(){
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
-#ifdef WINDOWS
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
   }
   
@@ -31,12 +26,8 @@ namespace SU2MPI {
 
   int Rank(){
     int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
+#ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = MPI::COMM_WORLD.Get_rank();
-#endif
 #endif
     return rank;
   }

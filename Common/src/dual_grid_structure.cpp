@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid (points, vertex, and edges).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -49,6 +49,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
 	
+  /*--- Flip the normal orientation ---*/
+  Flip_Orientation = false;
+  
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
 	Move = true;
 
@@ -121,6 +124,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
 	
+  /*--- Flip the normal orientation ---*/
+  Flip_Orientation = false;
+  
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
 	Move = true;
 	
@@ -201,6 +207,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
 	Move = true;
 	
+  /*--- Flip the normal orientation ---*/
+  Flip_Orientation = false;
+
 	/*--- Identify boundaries, physical boundaries (not send-receive 
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
@@ -311,7 +320,7 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 	Boundary = true;
 }
 
-CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short val_ndim) : CDualGrid(val_ndim) {
+CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint,unsigned short val_nDim) : CDualGrid(val_nDim) {
 	unsigned short iDim;
 	
   /*--- Pointers initialization ---*/
@@ -386,7 +395,7 @@ double CEdge::GetVolume(double *val_coord_Edge_CG, double *val_coord_Elem_CG, do
 	return Local_Volume;
 }
 
-void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) {
+void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
 	unsigned short iDim;
 	double vec_a[3], vec_b[3], Dim_Normal[3];
 
@@ -405,7 +414,7 @@ void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem
   
 }
 
-void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) {
+void CEdge::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) {
 	double Dim_Normal[2];
 
 	Dim_Normal[0] = val_coord_Elem_CG[1]-val_coord_Edge_CG[1];
@@ -443,7 +452,7 @@ CVertex::~CVertex() {
   
 }
 
-void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config) {
+void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG) {
 	double vec_a[3], vec_b[3], Dim_Normal[3];
 	unsigned short iDim;
 
@@ -462,7 +471,7 @@ void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceEl
   
 }
 
-void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) {
+void CVertex::SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) {
 	double Dim_Normal[2];
 
 	Dim_Normal[0] = val_coord_Elem_CG[1]-val_coord_Edge_CG[1];

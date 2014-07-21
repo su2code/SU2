@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -814,16 +814,11 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
   
 	if(nDim == 2) {
 		cout << "P matrix not implemented for 2-D Flows!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
-#ifdef WINDOWS
 	MPI_Abort(MPI_COMM_WORLD,1);
 	MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
 	}
 	else {
@@ -1023,16 +1018,11 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
   }
 	if(nDim == 2) {
 		cout << "InvP matrix not implemented for 2D flows!!!!" << endl;
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     exit(1);
 #else
-#ifdef WINDOWS
 	MPI_Abort(MPI_COMM_WORLD,1);
 	MPI_Finalize();
-#else
-    MPI::COMM_WORLD.Abort(1);
-    MPI::Finalize();
-#endif
 #endif
 	}
 }
@@ -1520,8 +1510,8 @@ void CNumerics::GetViscousFlux(double *val_primvar, double **val_gradprimvar,
 		double val_laminar_viscosity, double val_eddy_viscosity, double val_mach_inf) {
 
 	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-	double cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-	double heat_flux_factor = cp * (val_laminar_viscosity/PRANDTL + val_eddy_viscosity/PRANDTL_TURB);
+	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+	double heat_flux_factor = Cp * (val_laminar_viscosity/PRANDTL + val_eddy_viscosity/PRANDTL_TURB);
 
 	double div_vel = 0.0;
 	for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
@@ -1581,12 +1571,12 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    double val_tau_wall) {
 
 	unsigned short iVar, iDim, jDim;
-	double total_viscosity, heat_flux_factor, div_vel, cp, Density;
+	double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
 	Density = val_primvar[nDim+2];
 
 	total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-	cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-	heat_flux_factor = cp * (val_laminar_viscosity/PRANDTL + val_eddy_viscosity/PRANDTL_TURB);
+	Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+	heat_flux_factor = Cp * (val_laminar_viscosity/PRANDTL + val_eddy_viscosity/PRANDTL_TURB);
 
 	div_vel = 0.0;
 	for (iDim = 0 ; iDim < nDim; iDim++)

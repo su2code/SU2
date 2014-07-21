@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,11 +23,8 @@
 
 #pragma once
 
-#ifndef NO_MPI
-#include <mpi.h>
-#endif
-#ifndef NO_MUTATIONPP
-#include "mutation++.h"
+#ifdef HAVE_MPI
+  #include "mpi.h"
 #endif
 #include <iostream>
 #include <cstdlib>
@@ -40,19 +37,16 @@
 #include <map>
 #include <assert.h>
 
-//#include "./su2mpi.hpp"
 #include "./option_structure.hpp"
 
-
 using namespace std;
-
 
 /*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CConfig {
 private:
@@ -104,6 +98,7 @@ private:
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */ 
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
+  unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
@@ -188,7 +183,7 @@ private:
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
 	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
-	*Marker_All_Tag;				/*!< \brief Global index for markers using grid information. */
+	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
 	double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
 	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
@@ -222,9 +217,9 @@ private:
 	double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
 	double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
 	double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
-	string *Marker_Config_Tag;			/*!< \brief Global index for markers using config file. */
-	unsigned short *Marker_All_Boundary,			/*!< \brief Global index for boundaries using grid information. */
-	*Marker_Config_Boundary;		/*!< \brief Global index for boundaries using config file. */
+	string *Marker_CfgFile_TagBound;			/*!< \brief Global index for markers using config file. */
+	unsigned short *Marker_All_KindBC,			/*!< \brief Global index for boundaries using grid information. */
+	*Marker_CfgFile_KindBC;		/*!< \brief Global index for boundaries using config file. */
 	short *Marker_All_SendRecv;		/*!< \brief Information about if the boundary is sended (+), received (-). */
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
@@ -251,6 +246,7 @@ private:
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	double **ParamDV;				/*!< \brief Parameters of the design variable. */
+  string *FFDTag;				/*!< \brief Parameters of the design variable. */
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
@@ -261,6 +257,9 @@ private:
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
 	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
+	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
+	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
+	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
@@ -402,7 +401,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
-  double Young_modulus, Poisson_ratio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
+  double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
 	double Mach;		/*!< \brief Mach number. */
 	double Reynolds;	/*!< \brief Reynolds number. */
@@ -451,14 +450,14 @@ private:
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
-  *Marker_Config_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_Designing,      /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
-  *Marker_Config_Plotting,     /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Out_1D,      /*!< \brief Global index for plotting using the config information. */
-  *Marker_Config_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
-  *Marker_Config_DV,       /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_Config_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
+  *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
+  *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
+  *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	unsigned short nDomain;			/*!< \brief Number of domains in the MPI parallelization. */
 	double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
@@ -550,9 +549,20 @@ private:
 	Gas_Constant,     /*!< \brief Specific gas constant. */
 	Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
 	Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
+	Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
+	Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
+	Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
+	Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
+	Mu_ConstantND,   /*!< \brief Constant Viscosity for CostantViscosity model.  */
+	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
+	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
+	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
 	FreeSurface_Zero,	/*!< \brief Coordinate of the level set zero. */
 	FreeSurface_Depth,	/*!< \brief Coordinate of the level set zero. */
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
+	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
+	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
+	ModVel_FreeStreamND,     /*!< \brief Total density of the fluid.  */
 	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
@@ -574,20 +584,24 @@ private:
 	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization. */
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
+	Energy_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
 	Wall_Temperature,    /*!< \brief Temperature at an isotropic wall in Kelvin. */
 	Omega_Ref,        /*!< \brief Reference angular velocity for non-dimensionalization. */
 	Force_Ref,        /*!< \brief Reference body force for non-dimensionalization. */
 	Pressure_FreeStreamND,     /*!< \brief Farfield pressure value (external flow). */
 	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
 	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
-  *Velocity_FreeStreamND,    /*!< \brief Farfield velocity values (external flow). */
+  Velocity_FreeStreamND[3],    /*!< \brief Farfield velocity values (external flow). */
 	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
+  Omega_FreeStreamND, /*!< \brief Specific dissipation (external flow). */
+  Omega_FreeStream, /*!< \brief Specific dissipation (external flow). */
   pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+  bool CuthillMckee_Ordering; /*!< \brief Cuthill–McKee ordering algorithm. */
 	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
@@ -665,57 +679,56 @@ private:
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
   bool Wall_Functions; /*!< \brief Use wall functions with the turbulence model */
+  unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
+  Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   
-	map<string, CAnyOptionRef*> param; /*!< \brief associates option names (strings) with options */
+  /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
+//	map<string, CAnyOptionRef*> param;
   
-  /*!<brief param_to_kind associates the config file name with the type of variable>*/
-  //map<string, OptionKind> param_to_kind;
-  
-  /*!<brief list of all of the options. This is used to keep track of the 
-   options not set so the default values can be used>*/
+  /*!<brief all_options is a map containing all of the options. This is used during config file parsing
+  to track the options which have not been set (so the default values can be used). Without this map
+   there would be no list of all the config file options. > */
   map<string, bool> all_options;
   
-  /*<brief associative array for types who need an implicit setting rather than an explicit one.
-   This map is a catch-all for types who don't hava a very specific type. One case of this is the
-   enum types, where rather than define a pain of maps for all possible enum types, we instead 
-   implicitly deference the enum value in CEnumLookup.*/
+  /*<brief param is a map from the option name (config file string) to its decoder (the specific child
+   class of COptionBase that turns the string into a value) */
   map<string, COptionBase*> option_map;
   
   
-  /*
-  // List of maps for referencing
-  map<string, double&> double_fields;  !<\brief option list associated with config parameters which are doubles
-  map<string, double> double_defaults;    !<\brief option list associated with config parameters which are doubles
-  map<string, string&> string_fields;   !<\brief option list associated with config parameters which are strings
-  map<string, string> string_defaults;  !<\brief double_defaults associates string parameters with their default values
-  map<string, int&> int_fields;
-  map<string, int> int_defaults;
-  map<string, unsigned long&> ulong_fields;
-  map<string, unsigned long> ulong_defaults;
-  map<string, unsigned short&> ushort_fields;
-  map<string, unsigned short> ushort_defaults;
-  map<string, long&> long_fields;
-  map<string, long> long_defaults;
-   */
+  // All of the addXxxOptions take in the name of the option, and a refernce to the field of that option
+  // in the option structure. Depending on the specific type, it may take in a default value, and may
+  // take in extra options. The addXxxOptions mostly follow the same pattern, so please see addDoubleOption
+  // for detailed comments.
+  //
+  // List options are those that can be an unknown number of elements, and also take in a reference to
+  // an integer. This integer will be populated with the number of elements of that type unmarshaled.
+  //
+  // Array options are those with a fixed number of elements.
+  //
+  // List and Array options should also be able to be specified with the string "NONE" indicating that there
+  // are no elements. This allows the option to be present in a config file but left blank.
   
-  
-  /*!<\brief addDoubleOption adds a option represented by a double so that it will be parsed during
-   config parsing. name is the variable name in the config file (e.g. PHYSICAL_PROBLEM), option is a
-   pointer to the location in the Config struct, and default_value is the value the option will take 
-   if it is not present in the config file
-   */
+  /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
+   value can be represented by a double.*/
   void addDoubleOption(const string name, double & option_field, double default_value){
     // Check if the key is already in the map. If this fails, it is coder error
-    // and not user error, so throw
-        // second copy for deletion
-    
+    // and not user error, so throw.
     assert(option_map.find(name) == option_map.end());
+
+    // Add this option to the list of all the options
     all_options.insert(pair<string,bool>(name,true));
+
+    // Create the parser for a double option with a reference to the option_field and the desired
+    // default value. This will take the string in the config file, convert it to a double, and
+    // place that double in the memory location specified by the reference.
     COptionBase* val = new COptionDouble(name, option_field, default_value);
+
+    // Create an association between the option name ("CFL") and the parser generated above.
+    // During configuration, the parsing script will get the option name, and use this map
+    // to find how to parse that option.
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  /*<\brief addStringOption: see addDoubleOption, but with type change */
   void addStringOption(const string name, string & option_field, string default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
@@ -723,14 +736,13 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-    /*<\brief addStringOption: see addIntegerOption, but with type change */
   void addIntegerOption(const string name, int & option_field, int default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionInt(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
+
   void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
@@ -759,7 +771,8 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  // Using templates for enum options because there are a ton of them
+  // enum types work differently than all of the others because there are a small number of valid
+  // string entries for the type. One must also provide a list of all the valid strings of that type.
   template <class Tenum>
   void addEnumOption(const string name, unsigned short & option_field, const map<string, Tenum> & enum_map, Tenum default_value){
     assert(option_map.find(name) == option_map.end());
@@ -830,11 +843,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV,
+  void addDVParamOption(const string name, unsigned short & nDV_field, double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, design_variable);
+    COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -880,20 +893,14 @@ private:
     COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_CT, ActDisk_Omega);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  
-  /*
-  void addPythonOption(const string & name){
+
+  void addPythonOption(const string name){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
     COptionBase* val = new COptionPython(name);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-   */
   
-  
- // double parseDoubleOption(string);
- // int parseIntOption(string);
-
 public:
 
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
@@ -901,316 +908,22 @@ public:
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
 	/*! 
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[200]);
+	CConfig(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
 	~CConfig(void);
 
-
   /*!
    * \brief Initializes pointers to null
    */
 	void SetPointersNull(void);
-
-	/*!
-	 * \brief add a scalar option to the param map and set its default value
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] default_value - option is set to default_value
-	 * \tparam T - an arbitary type (int, double, enum, etc)
-	 */
-  /*
-	template <class T, class T_default>
-	void AddScalarOption(const string & name, T & option, const T_default & default_value) {
-		//cout << "Adding Scalar option " << name << endl;
-		option = static_cast<T>(default_value);
-		CAnyOptionRef* option_ref = new COptionRef<T>(option);
-		param.insert( pair<string, CAnyOptionRef*>(string(name), option_ref) );
-	}
-   */
-
-	/*!
-	 * \brief add an enum-based option to the param map and set its default value
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] Tmap - a map from strings to type Tenum
-	 * \tparam T - the option type (usually unsigned short)
-	 * \tparam Tenum - an enumeration assocaited with T
-	 * \param[in] default_value - option is set to default_value
-	 */
-  /*
-	template <class T, class Tenum>
-	void AddEnumOption(const string & name, T & option, const map<string, Tenum> & Tmap,
-			const string & default_value) {
-		//cout << "Adding Enum option " << name << endl;
-		typename map<string,Tenum>::const_iterator it;
-		it = Tmap.find(default_value);
-		if (it == Tmap.end()) {
-			cerr << "Error in CConfig::AddEnumOption(string, T&, const map<string, Tenum> &, const string): "
-					<< "cannot find " << default_value << " in given map."
-					<< endl;
-			throw(-1);
-		}
-		option = it->second;
-		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(option, Tmap);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-   */
-
-	/*!
-	 * \brief add an enum-based array option to the param map
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in,out] size - a reference to the size of option
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] Tmap - a map from strings to type Tenum
-	 * \param[in] update - set to true if the option has already been initialized
-	 * \tparam T - the option type (usually unsigned short)
-	 * \tparam Tenum - an enumeration assocaited with T
-	 */
-  
-  /*
-	template <class T, class Tenum>
-	void AddEnumListOption(const string & name, unsigned short & size, T* & option,
-			const map<string, Tenum> & Tmap,
-			const bool & update = false) {
-		//cout << "Adding Enum-List option " << name << endl;
-		size = 0;
-		if (update && option != NULL) delete [] option;
-		CAnyOptionRef* option_ref = new CEnumOptionRef<T,Tenum>(size, option, Tmap);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-   */
-  
-
-	/*!
-	 * \brief add an array option to the param map and set its default value
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in] size - length of option and default_value arrays
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] default_value - option is set to default_value
-	 * \param[in] update - set to true if the option has already been initialized
-	 * \tparam T - an arbitary type (int, double, enum, etc)
-	 *
-	 * The option array is allocated in this function.  If memory for
-	 * the option array is already allocated, this memory is first released.
-	 */
-  
-  /*
-	template <class T>
-	void AddArrayOption(const string & name, const int & size, T* & option,
-			const T* default_value, const bool & update = false) {
-		//cout << "Adding Array option " << name << endl;
-		if (update && option != NULL) delete [] option;
-		option = new T[size];
-		for (int i = 0; i < size; i++)
-			option[i] = default_value[i];
-		CAnyOptionRef* option_ref = new COptionRef<T>(option, size);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-   */
-
-	/*!
-	 * \brief add a list option to the param map
-	 * \param[in] name - name of the option as it appears in the .cfg file
-	 * \param[in] size - length of option (will be set by data in .cfg file)
-	 * \param[in] option - the option to associate with name
-	 * \param[in] update - set to true if the option has already been initialized
-	 * \tparam T - an arbitary type (int, double, enum, etc)
-	 *
-	 * This is similar to AddArrayOption, but is useful for options of
-	 * variable size.  Also, this routine does not allow the default
-	 * value to be set.
-	 */
-  /*
-	template <class T>
-	void AddListOption(const string & name, unsigned short & size, T* & option,
-			const bool & update = false) {
-		//cout << "Adding List option " << name << endl;
-		if (update && option != NULL) delete [] option;
-		CAnyOptionRef* option_ref = new CListOptionRef<T>(size, option);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-   */
-   
-
-	/*!
-	 * \brief add a special option to the param map and set its default value
-	 * \param[in] name - string name of the option as it appears in the .cfg file
-	 * \param[in,out] option - the option to associate with name
-	 * \param[in] set_value - function to parse string vectors and set option
-	 * \param[in] default_value - option is set to default_value
-	 * \tparam T - an arbitrary type (int, double, bool, enum, etc)
-	 */
-  /*
-	template <class T>
-	void AddSpecialOption(const string & name, T & option,
-			void (*set_value)(T*, const vector<string>&),
-			const T & default_value) {
-		//cout << "Adding Special option " << name << endl;
-		option = default_value;
-		CAnyOptionRef* option_ref = new COptionRef<T>(option, set_value);
-		param.insert( pair<string, CAnyOptionRef*>(name, option_ref) );
-	}
-   */
-
-	/*!
-	 * \brief add a marker-type option to the param map
-	 * \param[in] name - name of the marker option as it appears in the .cfg file
-	 * \param[in,out] num_marker - number of boundary markers
-	 * \param[in,out] marker - an array of boundary marker names
-	 */
-//	void AddMarkerOption(const string & name, unsigned short & num_marker, string* & marker);
-
-	/*!
-	 * \brief add a convection-discretization type option to the param map
-	 * \param[in] name - name of the convection option as it appears in the .cfg file
-	 * \param[in] space - the spatial discretization type associataed with name
-	 * \param[in] centered - the centered spatial discretization type of name
-	 * \param[in] upwind - the upwind spatial discretization type of name
-	 */
-//	void AddConvectOption(const string & name, unsigned short & space, unsigned short & centered, unsigned short & upwind);
-
-	/*!
-	 * \brief adds the math problem option to the param map
-	 * \param[in] name - name of the math problem as it appears in the .cfg file
-	 * \param[in] Adjoint - is the continuous adjoint solved?
-	 * \param[in] Adjoint_default - the default value for Adjoint
-	 * \param[in] OneShot - is a one-shot problem solved?
-	 * \param[in] OneShot_default - the default value for OneShot
-	 * \param[in] Linearized - is a linearized problem solved?
-	 * \param[in] Linearized_default - the default value for Linearized
-	 * \param[in] Restart_Flow - is the flow restarted for adjoint and linearized problems?
-	 * \param[in] Restart_Flow_default - the default value for Restart_Flow
-	 */
-//	void AddMathProblem(const string & name, bool & Adjoint, const bool & Adjoint_default,
-//			bool & OneShot, const bool & OneShot_default,
-//			bool & Linearized, const bool & Linearized_default,
-//			bool & Restart_Flow, const bool & Restart_Flow_default);
-
-	/*!
-	 * \brief adds the design variable parameters option to the param map
-	 * \param[in] name - name of the design-variable parameters option in the config file
-	 * \param[in] nDV - the number of design variables
-	 * \param[in] ParamDV - the parameter values of each design variable
-	 * \param[in] Design_Variable - the type of each design variable
-	 */
-//	void AddDVParamOption(const string & name, unsigned short & nDV, double** & ParamDV, unsigned short* & Design_Variable);
-
-	/*!
-	 * \brief adds a periodic marker option to the param map
-	 * \param[in] name - name of the periodic marker option in the config file
-	 * \param[in] nMarker_PerBound - the number of periodic marker boundaries
-	 * \param[in] Marker_PerBound - string names of periodic boundaries
-	 * \param[in] Marker_PerDonor - names of boundaries that supply data to periodic boundaries
-	 * \param[in] RotCenter - rotational center for each periodic boundary
-	 * \param[in] RotAngles - rotation angles for each periodic boundary
-	 * \param[in] Translation - translation vector for each periodic boundary.
-	 */
-//	void AddMarkerPeriodic(const string & name, unsigned short & nMarker_PerBound,
-//			string* & Marker_PerBound, string* & Marker_PerDonor,
-//			double** & RotCenter, double** & RotAngles, double** & Translation);
-  
-  /*!
-	 * \brief adds a periodic marker option to the param map
-	 * \param[in] name - name of the periodic marker option in the config file
-	 * \param[in] nMarker_ActDisk_Inlet - _______________________
-	 * \param[in] nMarker_ActDisk_Outlet - _______________________
-	 * \param[in] Marker_ActDisk_Inlet - _______________________
-	 * \param[in] Marker_ActDisk_Outlet - _______________________
-	 * \param[in] ActDisk_Origin - _______________________
-	 * \param[in] ActDisk_RootRadius - _______________________
-   * \param[in] ActDisk_TipRadius - _______________________
-	 * \param[in] ActDisk_CT - _______________________
-   * \param[in] ActDisk_Omega - _______________________
-	 */
-  /*
-  void AddMarkerActuatorDisk(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
-                        string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
-                        double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                             double* & ActDisk_CT, double* & ActDisk_Omega);
-   */
-
-	/*!
-	 * \brief adds an inlet marker option to the param map
-	 * \param[in] name - name of the inlet marker option in the config file
-	 * \param[in] nMarker_Inlet - the number of inlet marker boundaries
-	 * \param[in] Marker_Inlet - string names of inlet boundaries
-	 * \param[in] Ttotal - specified total temperatures for inlet boundaries
-	 * \param[in] Ptotal - specified total pressures for inlet boundaries
-	 * \param[in] FlowDir - specified flow direction vector (unit vector) for inlet boundaries
-	 */
-//	void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet,
-//			string* & Marker_Inlet, double* & Ttotal, double* & Ptotal,
-//			double** & FlowDir);
-
-	/*!
-	 * \brief adds an inlet marker without flow direction option to the param map
-	 * \param[in] name - name of the inlet marker option in the config file
-	 * \param[in] nMarker_Inlet - the number of inlet marker boundaries
-	 * \param[in] Marker_Inlet - string names of inlet boundaries
-	 * \param[in] Ttotal - specified total temperatures for inlet boundaries
-	 * \param[in] Ptotal - specified total pressures for inlet boundaries
-	 */
-	//void AddMarkerInlet(const string & name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal);
-
-	/*!
-	 * \brief adds an Dirichlet marker option to the param map
-	 * \param[in] name - name of the inlet marker option in the config file
-	 * \param[in] nMarker_Dirichlet_Elec - the number of Dirichlet marker boundaries
-	 * \param[in] Marker_Dirichlet_Elec - string names of Dirichlet boundaries
-	 * \param[in] Dirichlet_Value - specified value of the variable at the boundaries
-	 */
-	//void AddMarkerDirichlet(const string & name, unsigned short & nMarker_Dirichlet_Elec, string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value);
-
-	/*!
-	 * \brief adds an outlet marker option to the param map
-	 * \param[in] name - name of the outlet marker option in the config file
-	 * \param[in] nMarker_Outlet - the number of outlet marker boundaries
-	 * \param[in] Marker_Outlet - string names of outlet boundaries
-	 * \param[in] Pressure - Specified back pressures (static) for outlet boundaries
-	 */
-	//void AddMarkerOutlet(const string & name, unsigned short & nMarker_Outlet, string* & Marker_Outlet, double* & Pressure);
-
-	/*!
-	 * \brief adds an displacement marker option to the param map
-	 * \param[in] name - name of the displacement marker option in the config file
-	 * \param[in] nMarker_Outlet - the number of displacement marker boundaries
-	 * \param[in] Marker_Outlet - string names of displacement boundaries
-	 * \param[in] Displ_Value - Specified displacement for displacement boundaries
-	 */
-//	void AddMarkerDisplacement(const string & name, unsigned short & nMarker_Displacement, string* & Marker_Displacement, double* & Displ_Value);
-
-	/*!
-	 * \brief adds an load marker option to the param map
-	 * \param[in] name - name of the outlet marker option in the config file
-	 * \param[in] nMarker_Load - the number of load marker boundaries
-	 * \param[in] Marker_Load - string names of load boundaries
-	 * \param[in] Load_Value - Specified force for load boundaries
-	 */
-	//void AddMarkerLoad(const string & name, unsigned short & nMarker_Load, string* & Marker_Load, double* & Load_Value);
-
-	/*!
-	 * \brief adds an load marker option to the param map
-	 * \param[in] name - name of the outlet marker option in the config file
-	 * \param[in] nMarker_FlowLoad - the number of load marker boundaries
-	 * \param[in] Marker_FlowLoad - string names of load boundaries
-	 * \param[in] FlowLoad_Value - Specified force for load boundaries
-	 */
-//	void AddMarkerFlowLoad(const string & name, unsigned short & nMarker_FlowLoad, string* & Marker_FlowLoad, double* & FlowLoad_Value);
-
-	/*!
-	 * \brief used to set Boolean values based on strings "YES" and "NO"
-	 * \param[in] ref - a pointer to the boolean value being assigned
-	 * \param[in] value - value[0] is "YES" or "NO" and determines the value of ref
-	 */
-//	static void SetBoolOption(bool* ref, const vector<string> & value);
 
 	/*!
 	 * \brief breaks an input line from the config file into a set of tokens
@@ -1226,7 +939,7 @@ public:
 	 * \brief Get information about whether this is a Python config option for design.
 	 * \return <code>TRUE</code> if this is a Python config option for design; otherwise <code>FALSE</code>.
 	 */
-	bool GetPython_Option(string & option_name);
+//	bool GetPython_Option(string & option_name);
 
 	/*! 
 	 * \brief Get reference origin for moment computation.
@@ -1389,7 +1102,7 @@ public:
 	 * \brief Get the value of the Mach number (velocity divided by speed of sound).
 	 * \return Value of the Mach number.
 	 */
-	double GetMach_FreeStreamND(void);
+	double GetMach(void);
 
 	/*! 
 	 * \brief Get the value of the Gamma of fluid (ratio of specific heats).
@@ -1523,6 +1236,36 @@ public:
 	double GetTemperature_FreeStream(void);
   
   /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetEnergy_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetViscosity_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetDensity_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetModVel_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the frestream temperature.
+	 * \return Freestream temperature.
+	 */
+	double GetModVel_FreeStreamND(void);
+  
+  /*!
 	 * \brief Get the value of the frestream vibrational-electronic temperature.
 	 * \return Freestream temperature.
 	 */
@@ -1552,6 +1295,12 @@ public:
 	 * \return Reference pressure for non-dimensionalization.
 	 */
 	double GetPressure_Ref(void);
+  
+  /*!
+	 * \brief Get the value of the reference pressure for non-dimensionalization.
+	 * \return Reference pressure for non-dimensionalization.
+	 */
+	double GetEnergy_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference temperature for non-dimensionalization.
@@ -1595,17 +1344,17 @@ public:
 	 */
 	double GetForce_Ref(void);
 
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream pressure.
+	 * \return Non-dimensionalized freestream pressure.
+	 */
+	double GetPressure_FreeStream(void);
+  
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream pressure.
 	 * \return Non-dimensionalized freestream pressure.
 	 */
 	double GetPressure_FreeStreamND(void);
-
-	/*!
-	 * \brief Get the value of the non-dimensionalized freestream pressure.
-	 * \return Non-dimensionalized freestream pressure.
-	 */
-	double GetPressure_FreeStream(void);
 
 	/*!
 	 * \brief Get the vector of the dimensionalized freestream velocity.
@@ -1630,13 +1379,6 @@ public:
 	 * \return Non-dimensionalized freestream velocity vector.
 	 */
 	double* GetVelocity_FreeStreamND(void);
-
-  /*!
-	 * \brief Set a value in the vector of the non-dimensionalized freestream velocity.
-	 * \param[in] val_dim - Index of the dimension
-	 * \param[in] val_velocity - Value of the freestream velocity
-   */
-  void SetVelocity_FreeStreamND(unsigned short val_dim, double val_velocity);
   
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream energy.
@@ -1655,6 +1397,24 @@ public:
 	 * \return Non-dimensionalized freestream viscosity.
 	 */
 	double GetTke_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetOmega_FreeStreamND(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetTke_FreeStream(void);
+  
+  /*!
+	 * \brief Get the value of the non-dimensionalized freestream viscosity.
+	 * \return Non-dimensionalized freestream viscosity.
+	 */
+	double GetOmega_FreeStream(void);
 
 	/*!
 	 * \brief Get the value of the non-dimensionalized freestream intermittency.
@@ -1861,8 +1621,200 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	double GetFroude(void);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetFroude(double val_froude);
 
-	/*! 
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetMach(double val_mach);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetReynolds(double val_reynolds);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetLength_Ref(double val_length_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetVelocity_Ref(double val_velocity_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetPressure_Ref(double val_pressure_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetDensity_Ref(double val_density_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTime_Ref(double val_time_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetEnergy_Ref(double val_energy_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetOmega_Ref(double val_omega_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetForce_Ref(double val_force_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetGas_Constant_Ref(double val_gas_constant_ref);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetGas_Constant(double val_gas_constant);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetViscosity_Ref(double val_viscosity_ref);
+
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetPressure_FreeStreamND(double val_pressure_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetPressure_FreeStream(double val_pressure_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetDensity_FreeStreamND(double val_density_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetDensity_FreeStream(double val_density_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetViscosity_FreeStream(double val_viscosity_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetModVel_FreeStream(double val_modvel_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetModVel_FreeStreamND(double val_modvel_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTemperature_FreeStreamND(double val_temperature_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetGas_ConstantND(double val_gas_constantnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetVelocity_FreeStreamND(double val_velocity_freestreamnd, unsigned short val_dim);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetViscosity_FreeStreamND(double val_viscosity_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTke_FreeStreamND(double val_tke_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetOmega_FreeStreamND(double val_omega_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTke_FreeStream(double val_tke_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetOmega_FreeStream(double val_omega_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetEnergy_FreeStreamND(double val_energy_freestreamnd);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetEnergy_FreeStream(double val_energy_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
+	void SetTotal_UnstTimeND(double val_total_unsttimend);
+  
+	/*!
 	 * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body 
 	 *        (often the chord line of an airfoil) and the vector representing the relative motion between the 
 	 *        lifting body and the fluid through which it is moving.
@@ -1875,6 +1827,12 @@ public:
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
 	void SetAoA(double val_AoA);
+  
+  /*!
+	 * \brief Set the angle of attack.
+	 * \param[in] val_AoA - Value of the angle of attack.
+	 */
+	void SetAoS(double val_AoS);
   
 	/*! 
 	 * \brief Get the angle of sideslip of the body. It relates to the rotation of the aircraft centerline from 
@@ -1949,6 +1907,13 @@ public:
 	 * \return Design variable parameter.
 	 */		
 	double GetParamDV(unsigned short val_dv, unsigned short val_param);
+  
+  /*!
+	 * \brief Get the FFD Tag of a particular design variable.
+	 * \param[in] val_dv - Number of the design variable that we want to read.
+	 * \return Design variable parameter.
+	 */
+	string GetFFDTag(unsigned short val_dv);
 
 	/*! 
 	 * \brief Get the number of design variables.
@@ -2194,7 +2159,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that 
 	 *         has the marker <i>val_marker</i>.
 	 */		
-	string GetMarker_All_Tag(unsigned short val_marker);
+	string GetMarker_All_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2226,14 +2191,14 @@ public:
 	 * \return Value of the marker <i>val_marker</i> that is in the geometry file 
 	 *         for the surface that has the tag.
 	 */		
-	unsigned short GetTag_Marker_All(string val_tag);
+  short GetTagBound_Marker_All(string val_tag);
 
 	/*! 
 	 * \brief Get the kind of boundary for each marker.
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \return Kind of boundary for the marker <i>val_marker</i>.
 	 */		
-	unsigned short GetMarker_All_Boundary(unsigned short val_marker);
+	unsigned short GetMarker_All_KindBC(unsigned short val_marker);
 
   /*!
    * \brief Get the kind of boundary for each marker.
@@ -2257,7 +2222,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_boundary - Kind of boundary read from config file.
 	 */		
-	void SetMarker_All_Boundary(unsigned short val_marker, unsigned short val_boundary);
+	void SetMarker_All_KindBC(unsigned short val_marker, unsigned short val_boundary);
 
 	/*! 
 	 * \brief Set the value of the index <i>val_index</i> (read from the geometry file) for 
@@ -2265,7 +2230,7 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_index - Index of the surface read from geometry file.
 	 */	
-	void SetMarker_All_Tag(unsigned short val_marker, string val_index);
+	void SetMarker_All_TagBound(unsigned short val_marker, string val_index);
 
 	/*! 
 	 * \brief Set if a marker <i>val_marker</i> is going to be monitored <i>val_monitoring</i> 
@@ -2426,11 +2391,100 @@ public:
 	 */
 	unsigned short GetKind_Regime(void);
   
+  /*!
+	 * \brief Governing equations of the flow (it can be different from the run time equation).
+	 * \param[in] val_zone - Zone where the soler is applied.
+	 * \return Governing equation that we are solving.
+	 */
+	unsigned short GetSystemMeasurements(void);
+  
 	/*! 
 	 * \brief Gas model that we are using.
 	 * \return Gas model that we are using.
 	 */		
 	unsigned short GetKind_GasModel(void);
+
+	/*!
+	 * \brief Fluid model that we are using.
+	 * \return Fluid model that we are using.
+	 */
+	unsigned short GetKind_FluidModel(void);
+
+	/*!
+	 * \brief free stream option to initialize the solution
+	 * \return free stream option
+	 */
+	unsigned short GetKind_FreeStreamOption(void);
+
+	/*!
+	 * \brief Get the value of the critical pressure.
+	 * \return Critical pressure.
+	 */
+	double GetPressure_Critical(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetTemperature_Critical(void);
+
+	/*!
+	 * \brief Get the value of the critical pressure.
+	 * \return Critical pressure.
+	 */
+	double GetAcentric_Factor(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	unsigned short GetKind_ViscosityModel(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_ConstantND(void);
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_RefND(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_Temperature_RefND(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_SND(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_ConstantND(double mu_const);
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_RefND(double mu_ref);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_Temperature_RefND(double mu_Tref);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_SND(double mu_s);
 
 	/*! 
 	 * \brief Get the kind of method for computation of spatial gradients.
@@ -2543,13 +2597,13 @@ public:
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
    */
-  double GetYoung_modulus(void);
+  double GetDeform_ElasticityMod(void);
   
   /*!
    * \brief Get Poisson's ratio for deformation (constant stiffness deformation)
    * \
    */
-  double GetPoisson_ratio(void);
+  double GetDeform_PoissonRatio(void);
 
   /*!
 	 * \brief Get the type of stiffness to impose for FEA mesh deformation.
@@ -3971,6 +4025,13 @@ public:
 	 * \return Value of the time step in an unsteady simulation (non dimensional). 
 	 */
 	double GetDelta_UnstTimeND(void);
+  
+  /*!
+	 * \brief If we are prforming an unsteady simulation, there is only
+	 *        one value of the time step for the complete simulation.
+	 * \return Value of the time step in an unsteady simulation (non dimensional).
+	 */
+	double GetTotal_UnstTimeND(void);
 
 	/*! 
 	 * \brief If we are prforming an unsteady simulation, there is only 
@@ -4348,61 +4409,61 @@ public:
 	 * \note When we read the config file, it stores the markers in a particular vector.
 	 * \return Index in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Tag(string val_marker);
+	unsigned short GetMarker_CfgFile_TagBound(string val_marker);
 
 	/*! 
 	 * \brief Get the boundary information (kind of boundary) in the config information of the marker <i>val_marker</i>.
 	 * \return Kind of boundary in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Boundary(string val_marker);
+	unsigned short GetMarker_CfgFile_KindBC(string val_marker);
 
 	/*! 
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Monitoring(string val_marker);
+	unsigned short GetMarker_CfgFile_Monitoring(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_GeoEval(string val_marker);
+	unsigned short GetMarker_CfgFile_GeoEval(string val_marker);
   
   /*!
 	 * \brief Get the monitoring information from the config definition for the marker <i>val_marker</i>.
 	 * \return Monitoring information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_Designing(string val_marker);
+	unsigned short GetMarker_CfgFile_Designing(string val_marker);
 
 	/*! 
 	 * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
 	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_Plotting(string val_marker);
+	unsigned short GetMarker_CfgFile_Plotting(string val_marker);
 
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_Config_Out_1D(string val_marker);
+  unsigned short GetMarker_CfgFile_Out_1D(string val_marker);
 
 	/*! 
 	 * \brief Get the DV information from the config definition for the marker <i>val_marker</i>.
 	 * \return DV information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_DV(string val_marker);
+	unsigned short GetMarker_CfgFile_DV(string val_marker);
 
   /*!
 	 * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
 	 * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_Config_Moving(string val_marker);
+	unsigned short GetMarker_CfgFile_Moving(string val_marker);
   
 	/*! 
 	 * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */	
-	unsigned short GetMarker_Config_PerBound(string val_marker);
+	unsigned short GetMarker_CfgFile_PerBound(string val_marker);
 
 	/*! 
 	 * \brief Determines if problem is adjoint
@@ -4562,6 +4623,12 @@ public:
 	 */
 	bool GetCGNS_To_SU2(void);
 
+  /*!
+	 * \brief Get Cuthill–McKee ordering algorithm.
+	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
+	 */
+	bool GetCuthillMckee_Ordering(void);
+  
 	/*! 
 	 * \brief Get information about whether a converted mesh should be written.
 	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
@@ -4848,14 +4915,6 @@ public:
 	 */
 	string GetMotion_FileName(void);
 
-	/*!
-	 * \brief Set the non-dimensionalization for SU2_CFD.
-	 * \param[in] val_nDim - Number of dimensions for this particular problem.
-	 * \param[in] val_rank - Processor rank.
-	 * \param[in] val_iZone - Current grid domain number.
-	 */	
-	void SetNondimensionalization(unsigned short val_nDim, unsigned short val_iZone);
-
   /*!
 	 * \brief Set the config options.
 	 */
@@ -4864,12 +4923,12 @@ public:
   /*!
 	 * \brief Set the config file parsing.
 	 */
-  void SetParsing(char case_filename[200]);
+  void SetParsing(char case_filename[MAX_STRING_SIZE]);
 
 	/*! 
 	 * \brief Config file postprocessing.
 	 */	
-	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_ndim);
+	void SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim);
 
 	/*! 
 	 * \brief Config file markers processing.
@@ -5049,6 +5108,30 @@ public:
 	 * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
 	 */
 	bool GetUpdate_AoA(void);
+  
+  /*!
+	 * \brief Set the current number of non-physical nodes in the solution.
+   * \param[in] val_nonphys_points - current number of non-physical points.
+	 */
+	void SetNonphysical_Points(unsigned long val_nonphys_points);
+  
+  /*!
+	 * \brief Get the current number of non-physical nodes in the solution.
+	 * \return Current number of non-physical points.
+	 */
+	unsigned long GetNonphysical_Points(void);
+  
+  /*!
+	 * \brief Set the current number of non-physical reconstructions for 2nd-order upwinding.
+   * \param[in] val_nonphys_reconstr - current number of non-physical reconstructions for 2nd-order upwinding.
+	 */
+	void SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr);
+  
+  /*!
+	 * \brief Get the current number of non-physical reconstructions for 2nd-order upwinding.
+	 * \return Current number of non-physical reconstructions for 2nd-order upwinding.
+	 */
+	unsigned long GetNonphysical_Reconstr(void);
   
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with

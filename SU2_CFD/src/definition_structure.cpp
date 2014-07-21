@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -26,21 +26,14 @@
 unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  short nZone = 1;
-  bool isFound = false;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
-  int rank = MASTER_NODE;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size;
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
   if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
@@ -49,82 +42,41 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 #endif
   
   /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+  
   switch (val_format) {
     case SU2:
       
       /*--- Open grid file ---*/
+      
       strcpy (cstr, val_mesh_filename.c_str());
       mesh_file.open(cstr, ios::in);
       if (mesh_file.fail()) {
         cout << "cstr=" << cstr << endl;
         cout << "There is no geometry file (GetnZone))!" << endl;
-
-#ifdef NO_MPI
+        
+#ifndef HAVE_MPI
         exit(1);
 #else
-#ifdef WINDOWS
-		MPI_Abort(MPI_COMM_WORLD,1);
-		MPI_Finalize();
-#else
-        MPI::COMM_WORLD.Abort(1);
-        MPI::Finalize();
-#endif
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
 #endif
       }
       
-      /*--- Open the SU2 mesh file ---*/
-      while (getline (mesh_file,text_line)) {
+      /*--- Read the SU2 mesh file ---*/
+      
+      for (iLine = 0; iLine < nLine ; iLine++) {
+        
+        getline (mesh_file,text_line);
         
         /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
         position = text_line.find ("NZONE=",0);
         if (position != string::npos) {
-          text_line.erase (0,6); nZone = atoi(text_line.c_str()); isFound = true;
-          if (rank == MASTER_NODE) {
-            //					if (nZone == 1) cout << "SU2 mesh file format with a single zone." << endl;
-            //					else if (nZone >  1) cout << "SU2 mesh file format with " << nZone << " zones." << endl;
-            //					else
-            if (nZone <= 0) {
-              cout << "Error: Number of mesh zones is less than 1 !!!" << endl;
-#ifdef NO_MPI
-              exit(1);
-#else
-#ifdef WINDOWS
-			  MPI_Abort(MPI_COMM_WORLD,1);
-			  MPI_Finalize();
-#else
-              MPI::COMM_WORLD.Abort(1);
-              MPI::Finalize();
-#endif
-#endif
-            }
-          }
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
         }
       }
-      /*--- If the "NZONE" keyword was not found, assume this is an ordinary
-       simulation on a single Zone ---*/
-      if (!isFound) {
-        nZone = 1;
-        //			if (rank == MASTER_NODE) cout << "SU2 mesh file format with a single zone." << endl;
-      }
+      
       break;
       
-    case CGNS:
-      
-      nZone = 1;
-      //		if (rank == MASTER_NODE) cout << "CGNS mesh file format with a single zone." << endl;
-      break;
-      
-    case NETCDF_ASCII:
-      
-      nZone = 1;
-      //		if (rank == MASTER_NODE) cout << "NETCDF mesh file format with a single zone." << endl;
-      break;
-      
-  }
-  
-  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    nZone = config->GetnTimeInstances();
   }
   
   return (unsigned short) nZone;
@@ -135,17 +87,13 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
   short nDim = 3;
-  bool isFound = false;
+  unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int size;
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-  size = MPI::COMM_WORLD.Get_size();
-#endif
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
   if (size != 1) {
     unsigned short lastindex = val_mesh_filename.find_last_of(".");
     val_mesh_filename = val_mesh_filename.substr(0, lastindex);
@@ -153,31 +101,91 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
   }
 #endif
   
+  /*--- Open grid file ---*/
+  
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
+  
   switch (val_format) {
     case SU2:
       
-      /*--- Open grid file ---*/
-      strcpy (cstr, val_mesh_filename.c_str());
-      mesh_file.open(cstr, ios::in);
-      
       /*--- Read SU2 mesh file ---*/
-      while (getline (mesh_file,text_line)) {
+      
+      for (iLine = 0; iLine < nLine ; iLine++) {
+        
+        getline (mesh_file,text_line);
+        
         /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+        
         position = text_line.find ("NDIME=",0);
         if (position != string::npos) {
-          text_line.erase (0,6); nDim = atoi(text_line.c_str()); isFound = true;
+          text_line.erase (0,6); nDim = atoi(text_line.c_str());
         }
       }
       break;
       
     case CGNS:
-      nDim = 3;
+      
+#ifdef HAVE_CGNS
+      
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      
+      int fn, nbases, nzones, file_type;
+      int cell_dim, phys_dim;
+      char basename[CGNS_STRING_SIZE];
+      
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      
+      if ( cg_is_cgns(val_mesh_filename.c_str(),&file_type) != CG_OK ) {
+        printf( "\n\n   !!! Error !!!\n" );
+        printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+        printf( " Now exiting...\n\n");
+        exit(0);
+      }
+      
+      /*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+      
+      if ( cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn) ) cg_error_exit();
+      
+      /*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+      
+      if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+      
+      /*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+      
+      if ( nbases > 1 ) {
+        printf("\n\n   !!! Error !!!\n" );
+        printf("CGNS reader currently incapable of handling more than 1 database.");
+        printf("Now exiting...\n\n");
+        exit(0);
+      }
+      
+      /*--- Read the databases. Note that the indexing starts at 1. ---*/
+      for ( int i = 1; i <= nbases; i++ ) {
+        
+        if ( cg_base_read(fn, i, basename, &cell_dim, &phys_dim) ) cg_error_exit();
+        
+        /*--- Get the number of zones for this base. ---*/
+        
+        if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
+        
+      }
+      
+      nDim = cell_dim;
+      
+#endif
+      
       break;
       
-    case NETCDF_ASCII:
-      nDim = 3;
-      break;
   }
+  
+  mesh_file.close();
+  
   return (unsigned short) nDim;
 }
 
@@ -187,23 +195,35 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   unsigned long iPoint; 
   int rank = MASTER_NODE;
 
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
-    /*--- Compute elements surrounding points, points surrounding points,
-     and elements surrounding elements ---*/
+    /*--- Compute elements surrounding points, points surrounding points ---*/
     
-    if (rank == MASTER_NODE) cout << "Setting local point and element connectivity." << endl;
-    geometry[iZone][MESH_0]->SetEsuP();
-    geometry[iZone][MESH_0]->SetPsuP();
-    geometry[iZone][MESH_0]->SetEsuE();
+    if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
+    geometry[iZone][MESH_0]->SetPoint_Connectivity();
+    
+    if (config[iZone]->GetCuthillMckee_Ordering()) {
+      
+      /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+      
+      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      geometry[iZone][MESH_0]->SetRCM_Ordering(config[iZone]);
+      
+      /*--- recompute elements surrounding points, points surrounding points ---*/
+      
+      if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+      geometry[iZone][MESH_0]->SetPoint_Connectivity();
+      
+    }
+    
+    /*--- Compute elements surrounding elements ---*/
+    
+    if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+    geometry[iZone][MESH_0]->SetElement_Connectivity();
     
     /*--- Check the orientation before computing geometrical quantities ---*/
     
@@ -228,7 +248,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     geometry[iZone][MESH_0]->SetControlVolume(config[iZone], ALLOCATE);
     geometry[iZone][MESH_0]->SetBoundControlVolume(config[iZone], ALLOCATE);
     
-    /*--- Visualize a control volume if requested ---*/
+    /*--- Visualize a dual control volume if requested ---*/
     
     if ((config[iZone]->GetVisualize_CV() >= 0) &&
         (config[iZone]->GetVisualize_CV() < geometry[iZone][MESH_0]->GetnPointDomain()))
@@ -249,13 +269,9 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point before the multigrid algorithm ---*/
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
   /*--- Loop over all the new grid ---*/
@@ -272,7 +288,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
       
       /*--- Compute points surrounding points. ---*/
       
-      geometry[iZone][iMGlevel]->SetPsuP(geometry[iZone][iMGlevel-1]);
+      geometry[iZone][iMGlevel]->SetPoint_Connectivity(geometry[iZone][iMGlevel-1]);
       
       /*--- Create the edge structure ---*/
       

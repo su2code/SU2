@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -68,14 +68,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int nProcessor;
 	/*--- Remove the domain number from the surface csv filename ---*/
-#ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-	nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 	if (nProcessor > 1) filename.erase (filename.end()-2, filename.end());
 #endif
     

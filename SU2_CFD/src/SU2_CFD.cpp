@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -54,23 +54,11 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- MPI initialization, and buffer setting ---*/
-  static char buffer[MAX_MPI_BUFFER]; // buffer size in bytes
-  
-  void *ptr;
-  
-#ifdef WINDOWS
   MPI_Init(&argc,&argv);
-  MPI_Buffer_attach(buffer,MAX_MPI_BUFFER);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-  MPI::Init(argc, argv);
-  MPI::Attach_buffer(buffer, MAX_MPI_BUFFER);
-  rank = MPI::COMM_WORLD.Get_rank();
-  size = MPI::COMM_WORLD.Get_size();
-#endif
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   /*--- Create pointers to all of the classes that may be used throughout
@@ -140,16 +128,11 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
     config_container[iZone]->SetFileNameDomain(rank+1);
 #endif
-    
-    /*--- Perform the non-dimensionalization for the flow equations using the
-     specified reference values. ---*/
-    
-    config_container[iZone]->SetNondimensionalization(nDim, iZone);
-    
+        
     /*--- Definition of the geometry class. Within this constructor, the
      mesh file is read and the primal grid is stored (node coords, connectivity,
      & boundary markers. MESH_0 is the index of the finest mesh. ---*/
@@ -169,13 +152,9 @@ int main(int argc, char *argv[]) {
   
   Geometrical_Preprocessing(geometry_container, config_container, nZone);
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point after the geometrical definition subroutine ---*/
-#ifdef WINDOWS
-  MPI_Barrier(MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Barrier();
-#endif
+MPI_Barrier(MPI_COMM_WORLD);
 #endif
   
   if (rank == MASTER_NODE)
@@ -221,13 +200,9 @@ int main(int argc, char *argv[]) {
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone], iZone);
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Synchronization point after the solution preprocessing subroutine ---*/
-#ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     if (rank == MASTER_NODE)
@@ -245,13 +220,9 @@ int main(int argc, char *argv[]) {
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Synchronization point after the integration definition subroutine ---*/
-#ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     /*--- Definition of the numerical method class:
@@ -267,13 +238,9 @@ int main(int argc, char *argv[]) {
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Synchronization point after the solver definition subroutine ---*/
-#ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
-#else
-    MPI::COMM_WORLD.Barrier();
-#endif
 #endif
     
     /*--- Instantiate the geometry movement classes for the solution of unsteady
@@ -333,16 +300,11 @@ int main(int argc, char *argv[]) {
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   StartTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
   StartTime = MPI_Wtime();
-#else
-  MPI::COMM_WORLD.Barrier();
-  StartTime = MPI::Wtime();
-#endif
 #endif
   
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
@@ -432,16 +394,11 @@ int main(int argc, char *argv[]) {
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
     
-#ifdef NO_MPI
+#ifndef HAVE_MPI
     StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-#ifdef WINDOWS
     MPI_Barrier(MPI_COMM_WORLD);
     StopTime = MPI_Wtime();
-#else
-    MPI::COMM_WORLD.Barrier();
-    StopTime = MPI::Wtime();
-#endif
 #endif
     
     UsedTime = (StopTime - StartTime);
@@ -528,11 +485,19 @@ int main(int argc, char *argv[]) {
     
   }
   
-  /*--- Close the convergence history file. ---*/
-  
+  /*--- Output some information to the console. ---*/
   if (rank == MASTER_NODE) {
+    cout << endl;
+    
+  /*--- Print out the number of non-physical points and reconstructions ---*/
+  if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+    cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+  if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+    cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
+  
+  /*--- Close the convergence history file. ---*/
     ConvHist_file.close();
-    cout << endl <<"History file, closed." << endl;
+    cout << "History file, closed." << endl;
   }
   
 //  /*--- Deallocate config container ---*/
@@ -548,16 +513,11 @@ int main(int argc, char *argv[]) {
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   StopTime = double(clock())/double(CLOCKS_PER_SEC);
 #else
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
   StopTime = MPI_Wtime();
-#else
-  MPI::COMM_WORLD.Barrier();
-  StopTime = MPI::Wtime();
-#endif
 #endif
   
   /*--- Compute/print the total time for performance benchmarking. ---*/
@@ -573,17 +533,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-#ifdef WINDOWS
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Buffer_detach(buffer,NULL);
   MPI_Finalize();
-#else
-  MPI::COMM_WORLD.Barrier();
-  MPI::Detach_buffer(ptr);
-  MPI::Finalize();
-#endif
 #endif
   
   return EXIT_SUCCESS;

@@ -3,7 +3,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -31,12 +31,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   unsigned long iPoint;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   nPoint =        geometry->GetnPoint();
@@ -361,7 +357,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
   
   /*--- Identify the boundary ---*/
   
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
 	/*--- Retrieve the specified wall temperature ---*/
   
