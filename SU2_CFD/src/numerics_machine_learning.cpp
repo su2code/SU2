@@ -555,6 +555,7 @@ CSANondimInputs::CSANondimInputs(int nDim){
 CSANondimInputs::~CSANondimInputs(){
   delete [] this->DNuHatDXBar;
 };
+
 void CSANondimInputs::Set(SpalartAllmarasInputs* sainputs){
   double kin_visc = sainputs->Laminar_Viscosity / sainputs->Density;
   this->Chi = sainputs->Turbulent_Kinematic_Viscosity / kin_visc;

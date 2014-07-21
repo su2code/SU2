@@ -432,8 +432,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
-    V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimVar();
+    V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+    V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
     numerics->SetPrimitive(V_i, V_j);
     
     /*--- Turbulent variables w/o reconstruction ---*/
@@ -537,8 +537,8 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[FLOW_SOL]->node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive());
     
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
     
@@ -1277,7 +1277,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     
@@ -1463,7 +1463,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Grid Movement ---*/
       if (grid_movement)
@@ -1527,7 +1527,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -1602,7 +1602,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -1683,7 +1683,7 @@ void CTurbSASolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_cont
       V_inflow = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_inflow);
@@ -1760,7 +1760,7 @@ void CTurbSASolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_con
       V_exhaust = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_exhaust);
@@ -2311,8 +2311,8 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
     if (config->GetExtraOutput()) {
-      if (nDim == 2){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
-      else if (nDim == 3){ nOutputVariables = 34 + 2*nDim + 1*nDim*nDim; }
+      if (nDim == 2){ nOutputVariables = 40 + 2*nDim + 1*nDim*nDim; }
+      else if (nDim == 3){ nOutputVariables = 40 + 2*nDim + 1*nDim*nDim; }
       OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
       OutputHeadingNames = new string[nOutputVariables];
     }
@@ -2560,7 +2560,7 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Conservative variables w/o reconstruction ---*/
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
@@ -2622,6 +2622,26 @@ void CTurbMLSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->OmegaBar;
       OutputHeadingNames[idx] = "OmegaBar";
       idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->fw;
+      OutputHeadingNames[idx] = "Fw";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->isInBL;
+      OutputHeadingNames[idx] = "IsInBL";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->fWake;
+      OutputHeadingNames[idx] = "FWake";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAOtherOutputs->mul_production;
+      OutputHeadingNames[idx] = "Mul_Production";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAOtherOutputs->mul_destruction;
+      OutputHeadingNames[idx] = "Mul_Destruction";
+      idx++;
+      OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SAOtherOutputs->mul_crossproduction;
+      OutputHeadingNames[idx] = "Mul_CrossProduction";
+      idx++;
+      
+      
       for (iDim = 0; iDim<nDim;iDim++){
         OutputVariables[iPoint* (unsigned long) nOutputVariables + idx] = mynum->SANondimInputs->DNuHatDXBar[iDim];
         stringstream intstr;
@@ -2787,7 +2807,7 @@ void CTurbMLSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Grid Movement ---*/
       if (grid_movement)
@@ -2851,7 +2871,7 @@ void CTurbMLSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2926,7 +2946,7 @@ void CTurbMLSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -3366,11 +3386,11 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Compute mean flow and turbulence gradients ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    solver_container[FLOW_SOL]->SetPrimVar_Gradient_GG(geometry, config);
+    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
     SetSolution_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    solver_container[FLOW_SOL]->SetPrimVar_Gradient_LS(geometry, config);
+    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
     SetSolution_Gradient_LS(geometry, config);
   }
   
@@ -3417,7 +3437,7 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     
     /*--- Conservative variables w/o reconstruction ---*/
     
-    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar(), NULL);
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
     
     /*--- Gradient of the primitive and conservative variables ---*/
     
@@ -3607,7 +3627,7 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Retrieve solution at the farfield boundary node ---*/
       
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       conv_numerics->SetPrimitive(V_domain, V_infty);
       
@@ -3681,7 +3701,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -3763,7 +3783,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
       /*--- Retrieve solution at the farfield boundary node ---*/
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimVar();
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);

@@ -4996,6 +4996,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
 }
 
 void CPhysicalGeometry::Check_Orientation(CConfig *config) {
+  
   unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6,
   iElem, Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
   iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface;
@@ -5005,9 +5006,11 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
   bool find;
   
   /*--- Loop over all the elements ---*/
+  
   for (iElem = 0; iElem < nElem; iElem++) {
     
     /*--- 2D grid, triangle case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5023,6 +5026,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
     /*--- 2D grid, rectangle case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5055,6 +5059,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
     /*--- 3D grid, tetrahedron case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5076,6 +5081,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
     /*--- 3D grid, wedge case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == WEDGE) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5093,6 +5099,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         (Coord_6[iDim]-Coord_3[iDim]); }
       
       /*--- The normal vector should point to the interior of the element ---*/
+      
       n[0] = a[1]*b[2]-b[1]*a[2];
       n[1] = -(a[0]*b[2]-b[0]*a[2]);
       n[2] = a[0]*b[1]-b[0]*a[1];
@@ -5107,6 +5114,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         (Coord_3[iDim]-Coord_6[iDim]); }
       
       /*--- The normal vector should point to the interior of the element ---*/
+      
       n[0] = a[1]*b[2]-b[1]*a[2];
       n[1] = -(a[0]*b[2]-b[0]*a[2]);
       n[2] = a[0]*b[1]-b[0]*a[1];
@@ -5225,6 +5233,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
   }
   
   /*--- Surface elements ---*/
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
       
@@ -5240,6 +5249,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
       }
       
       /*--- 2D grid, line case ---*/
+      
       if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
         
         Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
@@ -5251,7 +5261,12 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
           b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
         test = a[0]*b[1]-b[0]*a[1];
         
-        if (test < 0.0) bound[iMarker][iElem_Surface]->Change_Orientation();
+        if (test < 0.0) {
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          node[Point_1_Surface]->SetFlip_Orientation();
+          node[Point_2_Surface]->SetFlip_Orientation();
+        }
+        
       }
       
       /*--- 3D grid, triangle case ---*/
@@ -5271,7 +5286,13 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         n[2] = a[0]*b[1]-b[0]*a[1];
         
         test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        if (test < 0.0) bound[iMarker][iElem_Surface]->Change_Orientation();
+        if (test < 0.0) {
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          node[Point_1_Surface]->SetFlip_Orientation();
+          node[Point_2_Surface]->SetFlip_Orientation();
+          node[Point_3_Surface]->SetFlip_Orientation();
+        }
+        
       }
       
       if (bound[iMarker][iElem_Surface]->GetVTK_Type() == RECTANGLE) {
@@ -5318,8 +5339,14 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         n[2] = a[0]*b[1]-b[0]*a[1];
         test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
         
-        if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0))
+        if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
           bound[iMarker][iElem_Surface]->Change_Orientation();
+          node[Point_1_Surface]->SetFlip_Orientation();
+          node[Point_2_Surface]->SetFlip_Orientation();
+          node[Point_3_Surface]->SetFlip_Orientation();
+          node[Point_4_Surface]->SetFlip_Orientation();
+        }
+        
       }
     }
 }

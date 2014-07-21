@@ -160,6 +160,7 @@ private:
   double Curvature;	/*!< \brief Value of the surface curvature (SU2_GEO). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
+  bool Flip_Orientation;	/*!< \brief Flip the orientation of the normal. */
 
 public:
 	
@@ -274,6 +275,19 @@ public:
 	 * \param[in] val_coord - Coordinate for val_dim.			 
 	 */
 	void SetCoord(unsigned short val_dim, double val_coord);
+  
+  /*!
+	 * \brief Get the coordinates of the control volume.
+	 * \return pointer to the coordinate of the point.
+	 */
+	bool GetFlip_Orientation(void);
+	
+	/*!
+	 * \brief Set the coordinates for the control volume.
+	 * \param[in] val_dim - Position to store the coordinate.
+	 * \param[in] val_coord - Coordinate for val_dim.
+	 */
+	void SetFlip_Orientation(void);
   
   /*!
 	 * \brief Set the coordinates for the control volume.

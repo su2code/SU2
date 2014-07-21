@@ -281,9 +281,9 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			 note that in the direct Euler problem we are not computing the gradients of the primitive variables ---*/
       
 			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0], config_container[iZone]);
+				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_GG(geometry_container[iZone][MESH_0], config_container[iZone]);
 			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
+				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
       
@@ -483,10 +483,10 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
        sensitivity computation, note that in the direct Euler problem we
        are not computing the gradients of the primitive variables ---*/
 			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0],
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_GG(geometry_container[iZone][MESH_0],
                                                                           config_container[iZone]);
 			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0],
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_LS(geometry_container[iZone][MESH_0],
                                                                           config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/

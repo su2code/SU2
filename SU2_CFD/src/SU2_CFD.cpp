@@ -485,11 +485,19 @@ MPI_Barrier(MPI_COMM_WORLD);
     
   }
   
-  /*--- Close the convergence history file. ---*/
-  
+  /*--- Output some information to the console. ---*/
   if (rank == MASTER_NODE) {
+    cout << endl;
+    
+  /*--- Print out the number of non-physical points and reconstructions ---*/
+  if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+    cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+  if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+    cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
+  
+  /*--- Close the convergence history file. ---*/
     ConvHist_file.close();
-    cout << endl <<"History file, closed." << endl;
+    cout << "History file, closed." << endl;
   }
   
 //  /*--- Deallocate config container ---*/
