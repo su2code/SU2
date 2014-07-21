@@ -2224,21 +2224,21 @@ CSourceViscous_AdjFlow::~CSourceViscous_AdjFlow(void) {
 
 void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *config) {
   
-	unsigned short iDim, jDim, iVar;
-	double Density = U_i[0];
-	double sq_vel = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity[iDim] = U_i[iDim+1]/Density;
-		sq_vel += Velocity[iDim]*Velocity[iDim];
-	}
-	double Energy = U_i[nDim+1]/Density;
-	double SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-0.5*sq_vel));
-	double Pressure = (SoundSpeed*SoundSpeed*Density)/Gamma;
+	unsigned short iDim, jDim;
+  
+  double Temperature = V_i[0];
+  double Pressure = V_i[nDim+1];
+	double Density = V_i[nDim+2];
+  double Enthalpy = V_i[nDim+3];
+  double Laminar_Viscosity = V_i[nDim+5];
+  double Eddy_Viscosity = V_i[nDim+6];
+  
+  double Energy = Enthalpy - Pressure/Density;
 	double invDensity     = 1.0/Density;
 	double invDensitysq   = invDensity*invDensity;
 	double invDensitycube = invDensitysq*invDensity;
-	double mu_tot_1 = Laminar_Viscosity_i + Eddy_Viscosity_i;
-	double mu_tot_2 = Laminar_Viscosity_i/PRANDTL + Eddy_Viscosity_i/PRANDTL_TURB;
+	double mu_tot_1 = Laminar_Viscosity + Eddy_Viscosity;
+	double mu_tot_2 = Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB;
 	double Gas_Constant = config->GetGas_ConstantND();
   
 	/*--- Required gradients of the flow variables, point j ---*/
@@ -2271,12 +2271,12 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 	for (iDim = 0; iDim < nDim; iDim++) {
 		div_vel += PrimVar_Grad_i[iDim+1][iDim];
 		div_phi += PsiVar_Grad_i[iDim+1][iDim];
-		vel_gradpsi5 += Velocity[iDim]*PsiVar_Grad_i[nVar-1][iDim];
+		vel_gradpsi5 += V_i[iDim+1]*PsiVar_Grad_i[nVar-1][iDim];
 		for (jDim = 0; jDim < nDim; jDim++) {
 			sigma[iDim][jDim] = mu_tot_1*(PrimVar_Grad_i[iDim+1][jDim]+PrimVar_Grad_i[jDim+1][iDim]);
 			Sigma_phi[iDim][jDim] = mu_tot_1*(PsiVar_Grad_i[iDim+1][jDim]+PsiVar_Grad_i[jDim+1][iDim]);
-			Sigma_5_Tensor[iDim][jDim] = mu_tot_1*(Velocity[jDim]*PsiVar_Grad_i[nVar-1][iDim]+Velocity[iDim]*PsiVar_Grad_i[nVar-1][jDim]);
-			GradVel_o_Rho[iDim][jDim] = (PrimVar_Grad_i[iDim+1][jDim]*Density - Velocity[iDim]*GradDensity[jDim])*invDensitysq;
+			Sigma_5_Tensor[iDim][jDim] = mu_tot_1*(V_i[jDim+1]*PsiVar_Grad_i[nVar-1][iDim]+V_i[iDim+1]*PsiVar_Grad_i[nVar-1][jDim]);
+			GradVel_o_Rho[iDim][jDim] = (PrimVar_Grad_i[iDim+1][jDim]*Density - V_i[iDim+1]*GradDensity[jDim])*invDensitysq;
 		}
 	}
   
@@ -2299,20 +2299,21 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		gradT_gradpsi5 += PrimVar_Grad_i[0][iDim]*PsiVar_Grad_i[nVar-1][iDim];
 		for (jDim = 0; jDim < nDim; jDim++) {
 			sigma_gradpsi += sigma[iDim][jDim]*PsiVar_Grad_i[jDim+1][iDim];
-			vel_sigma_gradpsi5 += Velocity[iDim]*sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim];
+			vel_sigma_gradpsi5 += V_i[iDim+1]*sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim];
 		}
 	}
   
 	/*--- Residuals ---*/
   
-	double alpha_gradpsi5 = 0.0, beta_gradpsi5 = 0.0, Sigma_gradvel_o_rho = 0.0, Sigma5_vel_gradvel = 0.0;
+	double alpha_gradpsi5 = 0.0, beta_gradpsi5 = 0.0, Sigma_gradvel_o_rho = 0.0, Sigma5_vel_gradvel = 0.0, sq_vel = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		alpha_gradpsi5 += alpha[iDim]*PsiVar_Grad_i[nVar-1][iDim];
 		beta_gradpsi5 += beta[iDim]*PsiVar_Grad_i[nVar-1][iDim];
 		for (jDim = 0; jDim < nDim; jDim++) {
 			Sigma_gradvel_o_rho += Sigma[iDim][jDim]*GradVel_o_Rho[iDim][jDim];
-			Sigma5_vel_gradvel += Sigma_5_vec[iDim]*(Velocity[jDim]*PrimVar_Grad_i[jDim+1][iDim]);
+			Sigma5_vel_gradvel += Sigma_5_vec[iDim]*(V_i[jDim+1]*PrimVar_Grad_i[jDim+1][iDim]);
 		}
+    sq_vel += V_i[iDim+1]*V_i[iDim+1];
 	}
   
 	val_residual[0] = (-vel_sigma_gradpsi5*invDensity - Sigma_gradvel_o_rho + 0.5*sq_vel*alpha_gradpsi5 -
@@ -2320,7 +2321,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 	for (iDim = 0; iDim < nDim; iDim++) {
 		for (jDim = 0; jDim < nDim; jDim++) {
 			val_residual[iDim+1] = (sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim]*invDensity +
-                              Sigma[iDim][jDim]*GradInvDensity[jDim] - Velocity[iDim]*alpha_gradpsi5 -
+                              Sigma[iDim][jDim]*GradInvDensity[jDim] - V_i[iDim+1]*alpha_gradpsi5 -
                               Sigma_5_vec[jDim]*PrimVar_Grad_i[iDim+1][jDim]*invDensity) * Volume;
     }
   }
@@ -2331,12 +2332,12 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 	if (config->GetKind_Solver() != ADJ_RANS) {
     
 		double Temperature_Ref = config->GetTemperature_Ref();
-		double Temperature_Dim = Temp_i*Temperature_Ref;
+		double Temperature_Dim = Temperature*Temperature_Ref;
     
     double S = 0.0;
     if (config->GetSystemMeasurements() == SI) { S = 110.4; }
     if (config->GetSystemMeasurements() == US) { S = 198.72; }
-		double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
     
 		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
 		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
@@ -2344,7 +2345,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
     
     val_residual[0] += (theta*(sq_vel-Energy))*Volume;
     for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[iDim+1] -= theta*Velocity[iDim]*Volume;
+      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
     val_residual[nVar-1] += theta*Volume;
     
 	}
@@ -2365,7 +2366,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		double cw1 = cb1/k2+(1+cb2)/sigma;
     
 		double nu, Ji, Ji_2, Ji_3, fv1;
-		nu = Laminar_Viscosity_i/U_i[0];
+		nu = Laminar_Viscosity/Density;
 		Ji = TurbVar_i[0]/nu;
 		Ji_2 = Ji*Ji;
 		Ji_3 = Ji_2*Ji;
@@ -2374,23 +2375,23 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		/*--- Contributions due to variation of viscosities ---*/
     
     double Temperature_Ref = config->GetTemperature_Ref();
-    double Temperature_Dim = Temp_i*Temperature_Ref;
+    double Temperature_Dim = Temperature*Temperature_Ref;
     
     double S = 0.0;
     if (config->GetSystemMeasurements() == SI) { S = 110.4; }
     if (config->GetSystemMeasurements() == US) { S = 198.72; }
-    double dVisc_T = ((Laminar_Viscosity_i)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+    double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
     
 		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
 		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/PRANDTL_TURB*gradT_gradpsi5;
 		double cv1_const = 3.0*cv1_3/(Ji_3+cv1_3);
-		double theta = (kappa_psi*(1.0-Eddy_Viscosity_i/Laminar_Viscosity_i*cv1_const) -
+		double theta = (kappa_psi*(1.0-Eddy_Viscosity/Laminar_Viscosity*cv1_const) -
                     Cp/PRANDTL_TURB*gradT_gradpsi5*(1.0-PRANDTL_TURB/PRANDTL))*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-		double xi = kappa_psi*(1.0+cv1_const)*Eddy_Viscosity_i/Density;
+		double xi = kappa_psi*(1.0+cv1_const)*Eddy_Viscosity/Density;
     
 		val_residual[0] += (theta*(sq_vel-Energy) + xi)*Volume;
 		for (iDim = 0; iDim < nDim; iDim++)
-			val_residual[iDim+1] -= theta*Velocity[iDim]*Volume;
+			val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
 		val_residual[nVar-1] += theta*Volume;
     
 		/*--- Coupling residuals ---*/
@@ -2435,7 +2436,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 			double gradTurbVar_gradTurbPsi = 0, vel_gradTurbPsi = 0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				gradTurbVar_gradTurbPsi += TurbVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
-				vel_gradTurbPsi += Velocity[iDim]*TurbPsi_Grad_i[0][iDim];
+				vel_gradTurbPsi += V_i[iDim+1]*TurbPsi_Grad_i[0][iDim];
 			}
       
 			double alpha_coeff = Gamma_Minus_One/(Gas_Constant*Density)*dVisc_T;
@@ -2446,7 +2447,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
       
 			val_residual[0] -= (Gamma*beta_coeff - TurbVar_i[0]*vel_gradTurbPsi)/Density*Volume;
 			for (iDim = 0; iDim < nDim; iDim++)
-				val_residual[iDim+1] += (Gamma*alpha_coeff*Velocity[iDim] - TurbVar_i[0]*TurbPsi_Grad_i[0][iDim])/Density*Volume;
+				val_residual[iDim+1] += (Gamma*alpha_coeff*V_i[iDim+1] - TurbVar_i[0]*TurbPsi_Grad_i[0][iDim])/Density*Volume;
 			val_residual[nVar-1] -= (Gamma*alpha_coeff)/Density*Volume;
       
       // this should improve stability (when commented):
