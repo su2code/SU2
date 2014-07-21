@@ -5142,37 +5142,26 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   
   unsigned long iPoint, jPoint, iEdge;
-  unsigned short iVar;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  
-  for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
   
   /*--- Loop over all the points, note that we are supposing that primitive and
    adjoint gradients have been computed previously ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    /*--- Conservative variables w/o reconstruction ---*/
+    /*--- Primitive variables w/o reconstruction, and its gradient ---*/
     
-    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
-    
-    /*--- Gradient of primitive and adjoint variables ---*/
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
     
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
+
+    /*--- Gradient of adjoint variables ---*/
+    
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
-    
-    /*--- Laminar viscosity, and eddy viscosity (adjoint with frozen viscosity) ---*/
-    
-    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
-    numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(), 0.0);
-    
-    /*--- Set temperature of the fluid ---*/
-    
-    numerics->SetTemperature(solver_container[FLOW_SOL]->node[iPoint]->GetTemperature(), 0.0);
-    
+
     /*--- Set volume ---*/
     
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -5181,19 +5170,15 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
     if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
       
-      /*--- Turbulent variables w/o reconstruction ---*/
+      /*--- Turbulent variables w/o reconstruction and its gradient ---*/
       
       numerics->SetTurbVar(solver_container[TURB_SOL]->node[iPoint]->GetSolution(), NULL);
       
-      /*--- Gradient of Turbulent Variables w/o reconstruction ---*/
-      
       numerics->SetTurbVarGradient(solver_container[TURB_SOL]->node[iPoint]->GetGradient(), NULL);
       
-      /*--- Turbulent adjoint variables w/o reconstruction ---*/
+      /*--- Turbulent adjoint variables w/o reconstruction and its gradient ---*/
       
       numerics->SetTurbAdjointVar(solver_container[ADJTURB_SOL]->node[iPoint]->GetSolution(), NULL);
-      
-      /*--- Gradient of Adjoint turbulent variables w/o reconstruction ---*/
       
       numerics->SetTurbAdjointGradient(solver_container[ADJTURB_SOL]->node[iPoint]->GetGradient(), NULL);
       
@@ -5208,6 +5193,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     numerics->ComputeResidual(Residual, config);
     
     /*--- Add and substract to the residual ---*/
+    
+//    if (config->GetKind_Solver() == ADJ_RANS) LinSysRes.AddBlock(iPoint, Residual);
+//    else LinSysRes.SubtractBlock(iPoint, Residual);
     
     LinSysRes.SubtractBlock(iPoint, Residual);
     
@@ -5316,10 +5304,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], Mach_Inf, eps;
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps;
   
-  USens = new double[nVar];
-  
+  double *USens = new double[nVar];
   double *UnitNormal = new double[nDim];
   double *normal_grad_vel = new double[nDim];
   double *tang_deriv_psi5 = new double[nDim];
@@ -5348,10 +5335,6 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   double Gas_Constant = config->GetGas_ConstantND();
   double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   double Prandtl_Lam  = config->GetPrandtl_Lam();
-  
-  /*--- Compute gradient of adjoint variables on the surface ---*/
-  
-  SetSurface_Gradient(geometry, config);
   
   /*--- Compute gradient of the grid velocity, if applicable ---*/
   
