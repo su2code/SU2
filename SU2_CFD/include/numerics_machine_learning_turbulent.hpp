@@ -3,7 +3,7 @@
  * \brief Header for caller functions of the turbulence models.
  *
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,6 +23,10 @@
 
 
 #pragma once
+
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <cmath>
 #include <iostream>
 
@@ -33,6 +37,10 @@ public:
   SpalartAllmarasOtherOutputs();
   ~SpalartAllmarasOtherOutputs();
   double fw;
+  double mul_production; // multiplier of OmegaNu
+  double mul_destruction; // multiplier of (Nu/ d)^2
+  double mul_crossproduction; // multiplier of dnuhat_i / dx_i
+  double Omega; // Sqrt vorticity
 };
 
 class SpalartAllmarasConstants{

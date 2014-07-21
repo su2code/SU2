@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -28,21 +28,15 @@ int main(int argc, char *argv[]) {
 	/*--- Variable definitions ---*/
 	unsigned short iZone, nZone;
 	ofstream ConvHist_file;
-	char file_name[200];
+	char file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	/*--- MPI initialization, and buffer setting ---*/
-#ifdef WINDOWS
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&size);
-#else
-	MPI::Init(argc, argv);
-	rank = MPI::COMM_WORLD.Get_rank();
-	size = MPI::COMM_WORLD.Get_size();
-#endif
 #endif
   
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -66,7 +60,7 @@ int main(int argc, char *argv[]) {
 		else { strcpy (file_name, "default.cfg"); config[iZone] = new CConfig(file_name, SU2_SOL,
                                                                           iZone, nZone, 0, VERB_HIGH); }
 		
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 		/*--- Change the name of the input-output files for a parallel computation ---*/
 		config[iZone]->SetFileNameDomain(rank+1);
 #endif
@@ -77,33 +71,20 @@ int main(int argc, char *argv[]) {
     /*--- Create the vertex structure (required for MPI) ---*/
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry[iZone]->SetVertex(config[iZone]);
-   
-    /*--- Perform the non-dimensionalization for the flow equations using the
-     specified reference values. ---*/
-    
-		config[iZone]->SetNondimensionalization(geometry[iZone]->GetnDim(), iZone);
     
   }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point after the geometrical definition subroutine ---*/
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Synchronization point after the solution subroutine ---*/
-#ifdef WINDOWS
 	MPI_Barrier(MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Barrier();
-#endif
 #endif
   
 	/*--- Definition of the output class (one for all the zones) ---*/
@@ -212,13 +193,9 @@ int main(int argc, char *argv[]) {
   }
   
 
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-#ifdef WINDOWS
   MPI_Finalize();
-#else
-  MPI::Finalize();
-#endif
 #endif
   
   /*--- End solver ---*/

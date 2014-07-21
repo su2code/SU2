@@ -2,7 +2,7 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements (triangle, tetrahedra, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -80,11 +80,11 @@ unsigned short CVertexMPI::VTK_Type = 1;
 
 unsigned short CVertexMPI::maxNodesFace = 0;
 
-CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_ndim) : CPrimalGrid() {
+CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrimalGrid() {
 	unsigned short iDim;
 	
 	/*--- Allocate CG coordinates ---*/
-	nDim = val_ndim;
+	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++) Coord_CG[iDim] = 0.0;
 	
@@ -126,12 +126,12 @@ unsigned short CLine::VTK_Type = 3;
 
 unsigned short CLine::maxNodesFace = 2;
 
-CLine::CLine(unsigned long val_iPoint, unsigned long val_jPoint,
-             unsigned short val_ndim) : CPrimalGrid() {
+CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
+             unsigned short val_nDim) : CPrimalGrid() {
 	unsigned short iDim, iFace;
 
 	/*--- Allocate CG coordinates ---*/
-	nDim = val_ndim;
+	nDim = val_nDim;
 	Coord_CG = new double[nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		Coord_CG[iDim] = 0.0;
@@ -144,8 +144,8 @@ CLine::CLine(unsigned long val_iPoint, unsigned long val_jPoint,
 	
 	/*--- Allocate and define face structure of the element ---*/
 	Nodes = new unsigned long[nNodes];
-	Nodes[0] = val_iPoint;
-	Nodes[1] = val_jPoint;
+	Nodes[0] = val_point_0;
+	Nodes[1] = val_point_1;
   
 }
 
@@ -185,7 +185,7 @@ unsigned short CTriangle::VTK_Type = 5;
 
 unsigned short CTriangle::maxNodesFace = 2;
 
-CTriangle::CTriangle(unsigned long val_iPoint, unsigned long val_jPoint, 
+CTriangle::CTriangle(unsigned long val_point_0, unsigned long val_point_1,
 					 unsigned long val_point_2, unsigned short val_nDim) : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
 
@@ -202,8 +202,8 @@ CTriangle::CTriangle(unsigned long val_iPoint, unsigned long val_jPoint,
 	}
 	/*--- Allocate and define face structure of the element ---*/
 	Nodes = new unsigned long[nNodes];
-	Nodes[0] = val_iPoint;
-	Nodes[1] = val_jPoint;
+	Nodes[0] = val_point_0;
+	Nodes[1] = val_point_1;
 	Nodes[2] = val_point_2;
 	
 	/*--- Allocate and define neighbor elements to a element ---*/
@@ -251,7 +251,7 @@ unsigned short CRectangle::VTK_Type = 9;
 
 unsigned short CRectangle::maxNodesFace = 2;
 
-CRectangle::CRectangle(unsigned long val_iPoint, unsigned long val_jPoint, 
+CRectangle::CRectangle(unsigned long val_point_0, unsigned long val_point_1,
 					   unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim) 
 : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
@@ -270,8 +270,8 @@ CRectangle::CRectangle(unsigned long val_iPoint, unsigned long val_jPoint,
 	
 	/*--- Allocate and define face structure of the element ---*/
 	Nodes = new unsigned long[nNodes];
-	Nodes[0] = val_iPoint;
-	Nodes[1] = val_jPoint;
+	Nodes[0] = val_point_0;
+	Nodes[1] = val_point_1;
 	Nodes[2] = val_point_2;
 	Nodes[3] = val_point_3;
 	
@@ -320,7 +320,7 @@ unsigned short CTetrahedron::VTK_Type = 10;
 
 unsigned short CTetrahedron::maxNodesFace = 3;
 
-CTetrahedron::CTetrahedron(unsigned long val_iPoint, unsigned long val_jPoint, 
+CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
 						   unsigned long val_point_2, unsigned long val_point_3) : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
 
@@ -338,8 +338,8 @@ CTetrahedron::CTetrahedron(unsigned long val_iPoint, unsigned long val_jPoint,
 	
 	/*--- Allocate and define face structure of the element ---*/
 	Nodes = new unsigned long[nNodes];
-	Nodes[0] = val_iPoint;
-	Nodes[1] = val_jPoint;
+	Nodes[0] = val_point_0;
+	Nodes[1] = val_point_1;
 	Nodes[2] = val_point_2;
 	Nodes[3] = val_point_3;
 	
@@ -388,7 +388,7 @@ unsigned short CHexahedron::VTK_Type = 12;
 
 unsigned short CHexahedron::maxNodesFace = 4;
 
-CHexahedron::CHexahedron(unsigned long val_iPoint, unsigned long val_jPoint, 
+CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
 						 unsigned long val_point_2, unsigned long val_point_3, 
 						 unsigned long val_point_4, unsigned long val_point_5, 
 						 unsigned long val_point_6, unsigned long val_point_7) : CPrimalGrid() {
@@ -408,7 +408,7 @@ CHexahedron::CHexahedron(unsigned long val_iPoint, unsigned long val_jPoint,
 	
 	/*--- Allocate and define face structure of the element ---*/
 	Nodes = new unsigned long[nNodes];
-	Nodes[0] = val_iPoint;	Nodes[1] = val_jPoint;
+	Nodes[0] = val_point_0;	Nodes[1] = val_point_1;
 	Nodes[2] = val_point_2;	Nodes[3] = val_point_3;
 	Nodes[4] = val_point_4;	Nodes[5] = val_point_5;
 	Nodes[6] = val_point_6;	Nodes[7] = val_point_7;
@@ -547,7 +547,7 @@ unsigned short CPyramid::VTK_Type = 14;
 
 unsigned short CPyramid::maxNodesFace = 4;
 
-CPyramid::CPyramid(unsigned long val_iPoint, unsigned long val_jPoint, 
+CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 				   unsigned long val_point_2, unsigned long val_point_3, 
 				   unsigned long val_point_4) : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
@@ -566,8 +566,8 @@ CPyramid::CPyramid(unsigned long val_iPoint, unsigned long val_jPoint,
 	
 	/*--- Allocate and define face structure of the element ---*/
 	Nodes = new unsigned long[nNodes];
-	Nodes[0] = val_iPoint;
-	Nodes[1] = val_jPoint;
+	Nodes[0] = val_point_0;
+	Nodes[1] = val_point_1;
 	Nodes[2] = val_point_2;
 	Nodes[3] = val_point_3;
 	Nodes[4] = val_point_4;

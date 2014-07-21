@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * Copyright (C) 2012 Aerospace Design Laboratory
  *
@@ -50,12 +50,8 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
 	ifstream restart_file;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Array initialization ---*/
@@ -342,9 +338,13 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -366,22 +366,11 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config)
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
       
-#ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
-	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+      MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -473,9 +462,13 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -497,22 +490,11 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
       }
       
-#ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -605,9 +587,13 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig 
   double phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
   double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
   
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -629,22 +615,11 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig 
           Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter(iVar);
       }
       
-#ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+                               Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -740,9 +715,13 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new double[nDim];
   
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -765,22 +744,11 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig
             Buffer_Send_Gradient[iDim*nVar*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient(iVar, iDim);
       }
       
-#ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -875,9 +843,13 @@ void CAdjTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConf
   double *Buffer_Receive_Undivided_Laplacian = NULL;
   double *Buffer_Send_Undivided_Laplacian = NULL;
   
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 			
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -899,22 +871,11 @@ void CAdjTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConf
           Buffer_Send_Undivided_Laplacian[iVar*nVertexS+iVertex] = node[iPoint]->GetUndivided_Laplacian(iVar);
       }
       
-#ifndef NO_MPI
-      
-      //      /*--- Send/Receive using non-blocking communications ---*/
-      //      send_request = MPI::COMM_WORLD.Isend(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI::DOUBLE, 0, send_to);
-      //      recv_request = MPI::COMM_WORLD.Irecv(Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI::DOUBLE, 0, receive_from);
-      //      send_request.Wait(status);
-      //      recv_request.Wait(status);
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+                               Buffer_Receive_Undivided_Laplacian, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -1008,16 +969,12 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	double RefLengthMoment  = config->GetRefLengthMoment();
 	double *RefOriginMoment = config->GetRefOriginMoment(0);
   double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, C_d, C_l, C_t, C_q;
-	double x_origin, y_origin, z_origin, WDrag, Area;
+	double x_origin, y_origin, z_origin, Area;
 	double RefVel2, RefDensity;
   int rank = MASTER_NODE;
   
-#ifndef NO_MPI
-#ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-  rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
 	ForceProj_Vector = new double[nDim];
@@ -1035,7 +992,7 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
   RefDensity = solver_container[TNE2_SOL]->node_infty->GetDensity();
   
 	/*--- In parallel computations the Cd, and Cl must be recomputed using all the processors ---*/
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	C_d = solver_container[TNE2_SOL]->GetTotal_CDrag();
 	C_l = solver_container[TNE2_SOL]->GetTotal_CLift();
 	C_t = solver_container[TNE2_SOL]->GetTotal_CT();
@@ -1047,13 +1004,10 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	sbuf_force[1] = solver_container[TNE2_SOL]->GetTotal_CLift();
 	sbuf_force[2] = solver_container[TNE2_SOL]->GetTotal_CT();
 	sbuf_force[3] = solver_container[TNE2_SOL]->GetTotal_CQ();
-#ifdef WINDOWS
+
 	MPI_Reduce(sbuf_force, rbuf_force, 4, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 	MPI_Bcast(rbuf_force, 4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-	MPI::COMM_WORLD.Reduce(sbuf_force, rbuf_force, 4, MPI::DOUBLE, MPI::SUM, MASTER_NODE);
-	MPI::COMM_WORLD.Bcast(rbuf_force, 4, MPI::DOUBLE, MASTER_NODE);
-#endif
+
 	C_d = rbuf_force[0];
 	C_l = rbuf_force[1];
 	C_t = rbuf_force[2];
@@ -1067,15 +1021,13 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 	double invCD  = 1.0 / C_d;
 	double CLCD2  = C_l / (C_d*C_d);
-	double invCQ  = 1.0/C_q;
-	double CTRCQ2 = C_t/(RefLengthMoment*C_q*C_q);
   
 	x_origin = RefOriginMoment[0];
   y_origin = RefOriginMoment[1];
   z_origin = RefOriginMoment[2];
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
-		if ((config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
         (config->GetMarker_All_Monitoring(iMarker) == YES))
 			for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1221,14 +1173,10 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   double SharpEdge_Distance;
   int rank;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	rank = MASTER_NODE;
 #else
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -1282,13 +1230,9 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-#ifdef WINDOWS
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -1337,8 +1281,8 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 		/*--- Pass conservative & primitive variables w/o reconstruction ---*/
 		numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[jPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());    
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimitive());    
 
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -1447,8 +1391,8 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     /*--- Pass conserved and primitive variables from CVariable to CNumerics class ---*/
     U_i = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
     U_j = solver_container[TNE2_SOL]->node[jPoint]->GetSolution();
-    V_i = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
-    V_j = solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar();
+    V_i = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
+    V_j = solver_container[TNE2_SOL]->node[jPoint]->GetPrimitive();
     numerics->SetPrimitive(V_i, V_j);
     numerics->SetConservative(U_i, U_j);
     
@@ -1563,8 +1507,8 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Set conserved & primitive variables at point i ---*/
     numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[iPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive());
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -1707,10 +1651,10 @@ void CAdjTNE2EulerSolver::SetUndivided_Laplacian(CGeometry *geometry,
 	 for a boundary node and make a linear approximation. ---*/
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-		if (config->GetMarker_All_Boundary(iMarker) != SEND_RECEIVE &&
-				config->GetMarker_All_Boundary(iMarker) != INTERFACE_BOUNDARY &&
-				config->GetMarker_All_Boundary(iMarker) != NEARFIELD_BOUNDARY &&
-				config->GetMarker_All_Boundary(iMarker) != PERIODIC_BOUNDARY) {
+		if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+				config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
+				config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+				config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
       
 			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1922,7 +1866,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   
   /*--- Loop over boundary markers to select those for Euler walls ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       
       /*--- Loop over points on the surface to store the auxiliary variable ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1967,7 +1911,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
     
-    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) {
@@ -2009,7 +1953,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   /*--- Farfield Sensitivity (Mach, AoA, Press, Temp) ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+    if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
       
       Sens_Mach[iMarker]  = 0.0;
       Sens_AoA[iMarker]   = 0.0;
@@ -2022,10 +1966,10 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
         if (geometry->node[iPoint]->GetDomain()) {
           Psi      = node[iPoint]->GetSolution();
           U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
           dPdU     = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
           Normal   = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Mach_Inf = config->GetMach_FreeStreamND();
+          Mach_Inf = config->GetMach();
           
           rho = V[RHO_INDEX];
           rhou = U[nSpecies];
@@ -2126,7 +2070,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   /*--- Explicit contribution from objective function quantity ---*/
 //  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 //    
-//    if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+//    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
 //      
 //      Sens_Mach[iMarker]  = 0.0;
 //      Sens_AoA[iMarker]   = 0.0;
@@ -2142,7 +2086,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
 //          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 //          
-//          Mach_Inf   = config->GetMach_FreeStreamND();
+//          Mach_Inf   = config->GetMach();
 //          if (grid_movement) Mach_Inf = config->GetMach_Motion();
 //          
 //          d = node[iPoint]->GetForceProj_Vector();
@@ -2256,7 +2200,7 @@ void CAdjTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry,
       
 			/*--- Set the direct solution ---*/
 			U    = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-      V    = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      V    = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
       /*--- Get the force projection vector, d ---*/
@@ -2355,7 +2299,7 @@ void CAdjTNE2EulerSolver::BC_Sym_Plane(CGeometry *geometry,
       
 			/*--- Set the direct solution ---*/
 			U = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
       /*--- Compute projections ---*/
@@ -2446,8 +2390,8 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
 			/*--- Retrieve solution from boundary & free stream ---*/
       U_domain = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
       U_infty  = solver_container[TNE2_SOL]->node_infty->GetSolution();
-      V_domain = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
-      V_infty  = solver_container[TNE2_SOL]->node_infty->GetPrimVar();
+      V_domain = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
+      V_infty  = solver_container[TNE2_SOL]->node_infty->GetPrimitive();
     
       /*--- Pass conserved & primitive variables to CNumerics ---*/
 			conv_numerics->SetConservative(U_domain, U_infty);
@@ -2495,12 +2439,8 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 	ifstream restart_file;
   
   int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Set booleans for solver settings ---*/
@@ -2773,14 +2713,10 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
   double SharpEdge_Distance;
   int rank;
   
-#ifdef NO_MPI
+#ifndef HAVE_MPI
 	rank = MASTER_NODE;
 #else
-#ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-#else
-	rank = MPI::COMM_WORLD.Get_rank();
-#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Retrieve information about the spatial and temporal integration for the
@@ -2849,13 +2785,9 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-#ifdef WINDOWS
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
@@ -2901,8 +2833,8 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Pass conservative & primitive variables w/o reconstruction ---*/
     numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[jPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimitive());
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -2994,12 +2926,12 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
 		/*--- Set conserved & primitive variables at point i ---*/
 		numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[iPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
+    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                           solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive());
     second_numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                                      solver_container[TNE2_SOL]->node[iPoint]->GetSolution());
-    second_numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                                  solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
+    second_numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive(),
+                                  solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive());
     
     /*--- Pass the adjoint variables to CNumerics ---*/
     second_numerics->SetAdjointVar(node[iPoint]->GetSolution(),
@@ -3156,9 +3088,6 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     SigmaPsiE[iDim] = new double[nDim];
   }
   
-  /*--- Compute gradient of adjoint variables on the surface ---*/
-  SetSurface_Gradient(geometry, config);
-  
   /*--- Initialize total sensitivites ---*/
   Total_Sens_Geo   = 0.0;
   Total_Sens_Mach  = 0.0;
@@ -3172,12 +3101,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     Sens_Geo[iMarker] = 0.0;
     
     
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
       
       /*--- Loop over all boundary nodes ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -3333,12 +3262,12 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
           
           /*--- B33: 2nd-viscous sensitivity, tr heat flux ---*/
           B33 = 0.0;
-          if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
             B33 = -ktr * dnPsiE * dnT;
           
           /*--- B34: 2nd-viscous sensitivity, ve heat flux ---*/
           B34 = 0.0;
-          if (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL)
+          if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
             B34 = -kve * (dnPsiE+dnPsiEve) * dnTve;
           
           /*--- Gather all sensitivities for dJ/dS ---*/
@@ -3370,7 +3299,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //    
 //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
 //      
-//      if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+//      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
 //        
 //        Sens_Mach[iMarker]  = 0.0;
 //        Sens_AoA[iMarker]   = 0.0;
@@ -3385,7 +3314,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //            U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
 //            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //            
-//            Mach_Inf   = config->GetMach_FreeStreamND();
+//            Mach_Inf   = config->GetMach();
 //            if (grid_movement) Mach_Inf = config->GetMach_Motion();
 //            
 //            r = U[0]; ru = U[1]; rv = U[2];
@@ -3519,7 +3448,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //    
 //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
 //      
-//      if (config->GetMarker_All_Boundary(iMarker) == EULER_WALL) {
+//      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
 //        
 //        Sens_Mach[iMarker]  = 0.0;
 //        Sens_AoA[iMarker]   = 0.0;
@@ -3535,7 +3464,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 //            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 //            
-//            Mach_Inf   = config->GetMach_FreeStreamND();
+//            Mach_Inf   = config->GetMach();
 //            if (grid_movement) Mach_Inf = config->GetMach_Motion();
 //            
 //            d = node[iPoint]->GetForceProj_Vector();
@@ -3598,7 +3527,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //    }
 //  }
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   
   double MyTotal_Sens_Geo   = Total_Sens_Geo;     Total_Sens_Geo = 0.0;
 //  double MyTotal_Sens_Mach  = Total_Sens_Mach;    Total_Sens_Mach = 0.0;
@@ -3606,19 +3535,11 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
 //  double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
 //  double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
   
-#ifdef WINDOWS
   MPI_Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 //  MPI_Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 //  MPI_Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 //  MPI_Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 //  MPI_Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI::DOUBLE, MPI::SUM);
-//  MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI::DOUBLE, MPI::SUM);
-//  MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI::DOUBLE, MPI::SUM);
-//  MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI::DOUBLE, MPI::SUM);
-//  MPI::COMM_WORLD.Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI::DOUBLE, MPI::SUM);
-#endif
   
 #endif
   
@@ -3899,7 +3820,7 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
 				Psi[iVar] = node[iPoint]->GetSolution(iVar);
       
       /*--- Retrieve primitive variables at the boundary node ---*/
-      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimitive();
       dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
 			/*--- Normal vector for this vertex ---*/

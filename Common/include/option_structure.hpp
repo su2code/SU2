@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -26,6 +26,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -34,24 +37,7 @@
 #include <cstdlib>
 #include <algorithm>
 
-//#include "./su2mpi.hpp"
-
 using namespace std;
-
-/*
- aoseunhenum OptionKind {
- NoOption = 0,
- DoubleOption = 1,
- StringOption = 2,
- IntOption = 3,
- UnsignedLongOption = 4,
- UnsignedShortOption = 5,
- LongOption = 6,
- EnumOption = 7,
- };
- */
-
-
 
 /*!
  * \class CCreateMap
@@ -106,31 +92,27 @@ inline string StringToUpperCase(const string & str) {
  */
 enum SU2_COMPONENT {
   SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
-  SU2_MDC = 2,	/*!< \brief Running the SU2_MDC software. */
-  SU2_GPC = 3,	/*!< \brief Running the SU2_GPC software. */
-  SU2_DDC = 4,	/*!< \brief Running the SU2_DDC software. */
-  SU2_MAC = 5,	/*!< \brief Running the SU2_MAC software. */
-  SU2_GDC = 6,	/*!< \brief Running the SU2_GDC software. */
-  SU2_PBC = 7,	/*!< \brief Running the SU2_PBC software. */
-  SU2_SMC = 8,	/*!< \brief Running the SU2_SMC software. */
-  SU2_SOL = 9,	/*!< \brief Running the SU2_SOL software. */
+  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
+  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
+  SU2_PRT = 4,	/*!< \brief Running the SU2_PRT software. */
+  SU2_MSH = 5,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 6,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
 
-const unsigned int MAX_PROCESSORS = 1000;	/*!< \brief Maximum number of processors. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
-const unsigned int MAX_INDEX_VALUE = 100;	/*!< \brief Maximum value for a marker index. */
-const unsigned int MAX_NUMBER_MARKER = 200;	/*!< \brief Maximum number of domains. */
+const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */
+const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
+const unsigned int MAX_STRING_SIZE = 200;	/*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 10;	/*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		/*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		/*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3; /*!< \brief Maximum number of zones. */
-const unsigned int MAX_OUTPUT_VARS = 20; /*!< \brief Maximum number of output vars for each solution container. */
 const unsigned int NO_RK_ITER = 0;		/*!< \brief No Runge-Kutta iteration. */
 const unsigned int MESH_0 = 0;			/*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
-const unsigned int MAX_MPI_BUFFER = 52430000; /*!< \brief Buffer size for parallel simulations (50MB). */
 
 const double PRANDTL = 0.72;	        	/*!< \brief Fluid's Prandtl constant (air). */
 const double PRANDTL_TURB = 0.90;	/*!< \brief Fluid's turbulent Prandtl constant (air). */
@@ -148,9 +130,6 @@ const double ONE2 = 0.5;			/*!< \brief One divided by two. */
 const double TWO3 = 2.0 / 3.0;			/*!< \brief Two divided by three. */
 const double FOUR3 = 4.0 / 3.0;			/*!< \brief Four divided by three. */
 const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
-const unsigned int MAX_NUMBER_DOMAIN = 1000;	/*!< \brief Maximum number of domains. */
-const unsigned int MAX_COMM_LEVEL = 1000;	/*!< \brief Maximum number of communication levels. */
-const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
@@ -248,12 +227,22 @@ enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
   FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
-  
 };
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE)
 ("FREESURFACE", FREESURFACE);
+
+/*!
+ * \brief different system of measurements
+ */
+enum ENUM_MEASUREMENTS {
+  SI = 0,			/*!< \brief Definition of compressible solver. */
+  US = 1,				/*!< \brief Definition of incompressible solver. */
+};
+static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string, ENUM_MEASUREMENTS>
+("SI", SI)
+("US", US);
 
 /*!
  * \brief different types of systems
@@ -329,6 +318,49 @@ static const map<string, ENUM_SPACE> Space_Map = CCreateMap<string, ENUM_SPACE>
 ("NONE", NO_CONVECTIVE)
 ("SPACE_CENTERED", SPACE_CENTERED)
 ("SPACE_UPWIND", SPACE_UPWIND);
+
+/*!
+ * \brief types of fluid model
+ */
+enum ENUM_FLUIDMODEL {
+	STANDARD_AIR = 0,
+	IDEAL_GAS = 1, /*!< \brief _____. */
+	VW_GAS = 2,
+	PR_GAS = 3
+};
+
+static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
+("STANDARD_AIR", STANDARD_AIR)
+("IDEAL_GAS", IDEAL_GAS)
+("VW_GAS", VW_GAS)
+("PR_GAS", PR_GAS);
+
+/*!
+ * \brief types of initialization option
+ */
+
+enum ENUM_FREESTREAM_OPTION {
+	TEMPERATURE_FS = 0, /*!< \brief _____. */
+	DENSITY_FS = 1
+
+};
+
+static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateMap<string, ENUM_FREESTREAM_OPTION>
+("TEMPERATURE_FS", TEMPERATURE_FS)
+("DENSITY_FS", DENSITY_FS);
+
+
+/*!
+ * \brief types of fluid model
+ */
+enum ENUM_VISCOSITYMODEL {
+	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
+	SUTHERLAND = 1
+};
+
+static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
+("COSTANT_VISCOSITY", CONSTANT_VISCOSITY)
+("SUTHERLAND", SUTHERLAND);
 
 /*!
  * \brief types of spatial discretizations
@@ -410,7 +442,7 @@ static const map<string, ENUM_GUST_TYPE> Gust_Type_Map = CCreateMap<string, ENUM
  */
 enum ENUM_GUST_DIR {
   X_DIR = 0,        /*!< \brief _______. */
-  Y_DIR = 1, 		 /*!< \brief _______. */
+  Y_DIR = 1 		 /*!< \brief _______. */
 };
 static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_GUST_DIR>
 ("X_DIR", X_DIR)
@@ -793,7 +825,8 @@ enum ENUM_ADAPT {
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
-  TWOPHASE = 16			/*!< \brief Do a grid refinement on the free surface interphase. */
+  TWOPHASE = 16,			/*!< \brief Do a grid refinement on the free surface interphase. */
+  PERIODIC = 17			/*!< \brief Add the periodic halo cells. */
 };
 static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("NONE", NO_ADAPT)
@@ -811,6 +844,7 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
+("PERIODIC", PERIODIC)
 ("TWOPHASE", TWOPHASE);
 
 /*!
@@ -897,7 +931,8 @@ enum ENUM_PARAM {
   AIRFOIL = 24,		/*!< \brief Airfoil definition as design variables. */
   FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 27		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_THICKNESS_2D = 27,		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_CONTROL_SURFACE = 28		/*!< \brief Free form deformation for 3D design (control surface). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -913,6 +948,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
 ("FFD_TWIST_ANGLE", FFD_TWIST_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
+("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
@@ -1448,8 +1484,7 @@ public:
   ~COptionDoubleList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
-    int option_size = option_value.size();
-    
+    unsigned long option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE")==0){
       // No options
       this->size = 0;
@@ -1491,7 +1526,7 @@ public:
   ~COptionUShortList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
-    int option_size = option_value.size();
+    unsigned long option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE")==0){
       // No options
       this->size = 0;
@@ -1532,7 +1567,7 @@ public:
   ~COptionStringList(){};
   string SetValue(vector<string> option_value){
     // The size is the length of option_value
-    int option_size = option_value.size();
+    unsigned long option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE")==0){
       this->size = 0;
       return "";
@@ -1664,10 +1699,11 @@ class COptionDVParam : public COptionBase{
   string name; // identifier for the option
   unsigned short & nDV;
   double ** & paramDV;
+  string * & FFDTag;
   unsigned short* & design_variable;
   
 public:
-  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field){
+  COptionDVParam(string option_field_name, unsigned short & nDV_field, double** & paramDV_field, string* & FFDTag_field, unsigned short * & design_variable_field) : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field){
     this->name = option_field_name;
   }
   
@@ -1713,22 +1749,13 @@ public:
       newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_PARAM in configuration file.");
       return newstring;
     }
-    /*
-     #if 0
-     cout << "Found " << (*nDV_) << " DV parameters" << endl;
-     cout << "DV param value = ";
-     for (unsigned int i = 0; i < value.size(); i++)
-     cout << value[i] << ", ";
-     cout << endl;
-     #endif
-     */
-    
-    
     
     this->paramDV = new double*[this->nDV];
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++){
       this->paramDV[iDV] = new double[MAX_PARAMETERS];
     }
+    
+    this->FFDTag = new string[this->nDV];
     
     unsigned short nParamDV = 0;
     stringstream ss;
@@ -1754,6 +1781,7 @@ public:
         case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
         case FFD_TWIST_ANGLE: nParamDV = 7; break;
         case FFD_ROTATION: nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
@@ -1767,8 +1795,28 @@ public:
       
       // ?? Not sure what's going on. Didn't touch it.
       for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
+        
         ss << option_value[i] << " ";
-        ss >> this->paramDV[iDV][iParamDV];
+        
+        if ((iParamDV == 0) &&
+            ((this->design_variable[iDV] == FFD_SETTING) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
+             (this->design_variable[iDV] == FFD_CAMBER_2D) ||
+             (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
+             (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
+             (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
+             (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
+             (this->design_variable[iDV] == FFD_ROTATION) ||
+             (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
+             (this->design_variable[iDV] == FFD_CAMBER) ||
+             (this->design_variable[iDV] == FFD_THICKNESS))) {
+              ss >> this->FFDTag[iDV];
+              this->paramDV[iDV][iParamDV] = 0;
+            }
+        else
+          ss >> this->paramDV[iDV][iParamDV];
+        
         i++;
       }
       if (iDV < (this->nDV-1)) {
@@ -1789,6 +1837,7 @@ public:
   void SetDefault(){
     this->nDV = 0;
     this->paramDV = NULL;
+    this->FFDTag = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
@@ -1810,7 +1859,7 @@ public:
   ~COptionStringDoubleList(){};
   string SetValue(vector<string> option_value){
     // There must be an even number of entries (same number of strings and doubles
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals % 2) != 0){
       if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
         // It's okay to say its NONE
@@ -1822,7 +1871,7 @@ public:
       newstring.append(": must have an even number of entries");
       return newstring;
     }
-    int nVals = totalVals / 2;
+    unsigned long nVals = totalVals / 2;
     this->size = nVals;
     this->s_f = new string[nVals];
     this->d_f = new double[nVals];
@@ -1861,7 +1910,7 @@ public:
   ~COptionInlet(){};
   string SetValue(vector<string> option_value){
     
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker = NULL;
@@ -1883,7 +1932,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / 6;
+    unsigned long nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
@@ -1946,7 +1995,7 @@ public:
   ~COptionInletFixed(){};
   string SetValue(vector<string> option_value){
     
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker = NULL;
@@ -1966,7 +2015,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / 3;
+    unsigned long nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
@@ -2015,7 +2064,7 @@ public:
     
     const int mod_num = 11;
     
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->size = 0;
       this->marker_bound = NULL;
@@ -2039,7 +2088,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / mod_num;
+    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];
@@ -2054,7 +2103,7 @@ public:
     
     double deg2rad = PI_NUMBER/180.0;
     stringstream ss;
-    for (int i = 0; i < nVals; i++){
+    for (int i = 0; i < (nVals/2); i++){
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
       ss << option_value[mod_num*i + 2] << " ";
@@ -2097,6 +2146,59 @@ public:
       this->rot_angles[i][1] *= deg2rad;
       this->rot_angles[i][2] *= deg2rad;
     }
+    
+    for (unsigned long i = (nVals/2); i < nVals; i++){
+      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
+      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
+      ss << option_value[mod_num*(i-nVals/2) + 2] << " ";
+      if (!(ss >> this->rot_center[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 3] << " ";
+      if (!(ss >> this->rot_center[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 4] << " ";
+      if (!(ss >> this->rot_center[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 5] << " ";
+      if (!(ss >> this->rot_angles[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 6] << " ";
+      if (!(ss >> this->rot_angles[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 7] << " ";
+      if (!(ss >> this->rot_angles[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 8] << " ";
+      if (!(ss >> this->translation[i][0])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 9] << " ";
+      if (!(ss >> this->translation[i][1])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      ss << option_value[mod_num*(i-nVals/2) + 10] << " ";
+      if (!(ss >> this->translation[i][2])){
+        return badValue(option_value, "periodic", this->name);
+      }
+      /*--- Mirror the rotational angles and translation vector (rotational 
+       center does not need to move) ---*/
+      this->rot_center[i][0] *= 1.0;
+      this->rot_center[i][1] *= 1.0;
+      this->rot_center[i][2] *= 1.0;
+      this->rot_angles[i][0] *= -deg2rad;
+      this->rot_angles[i][1] *= -deg2rad;
+      this->rot_angles[i][2] *= -deg2rad;
+      this->translation[i][0] *= -1.0;
+      this->translation[i][1] *= -1.0;
+      this->translation[i][2] *= -1.0;
+    }
+    
     return "";
   }
   
@@ -2108,6 +2210,23 @@ public:
     this->rot_angles = NULL;
     this->translation = NULL;
   }
+};
+
+class COptionPython : public COptionBase{
+  string name;
+public:
+  COptionPython(const string name){
+    this->name = name;
+  }
+  ~COptionPython(){};
+  // No checking happens with python options
+  string SetValue(vector<string> option_value){
+    return "";
+  }
+  // No defaults with python options
+  void SetDefault(){
+    return;
+  };
 };
 
 class COptionActuatorDisk : public COptionBase{
@@ -2130,7 +2249,7 @@ public:
   ~COptionActuatorDisk(){};
   string SetValue(vector<string> option_value){
     const int mod_num = 9;
-    int totalVals = option_value.size();
+    unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)){
       this->SetDefault();
       return "";
@@ -2144,7 +2263,7 @@ public:
       return newstring;
     }
     
-    int nVals = totalVals / mod_num;
+    unsigned long nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
@@ -2161,7 +2280,6 @@ public:
     
     string tname = "actuator disk";
     stringstream ss;
-    unsigned short i = 0;
     for (int i = 0; i < this->inlet_size; i++){
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
@@ -2209,1449 +2327,3 @@ public:
   }
 };
 
-
-
-
-/*!
- * \class CAnyOptionRef
- * \brief provides a means of referencing variables of any type
- * \author J. Hicken
- *
- * In order to build a map that associates option names (strings) with
- * options, we need a way of referencing artbitrary types; otherwise,
- * we would need a separate map for ints, doubles, etc.  This class is
- * an abstract base class designed to accommodate this requirement.
- */
-class CAnyOptionRef {
-public:
-  virtual ~CAnyOptionRef() = 0;
-  virtual void WriteValue() = 0;
-  virtual void SetValue(const vector<string> & value) = 0;
-};
-inline CAnyOptionRef::~CAnyOptionRef() {}
-
-/*!
- * \class COptionRef
- * \brief a typed version of the base class for standard types
- * \tparam T - an arbitary standard type (short, int, double, etc)
- * \author J. Hicken
- *
- * This class can accommodate scalars and arrays of constant length.
- * If your option requies a variable length, use class CListOptionRef.
- * Why not use CListOptionRef for arrays?  You could, but COptionRef
- * lets you set default values for arrays (because it does not do any
- * memory management).
- */
-template <class T>
-class COptionRef : public CAnyOptionRef {
-private:
-  unsigned short ndim_; /*!< \brief number of array dimensions */
-  unsigned int* dim_; /*!< \brief length of each array dimension */
-  T* ref_; /*!< \brief pointer to the option */
-  
-  /*!< \brief function pointer used (if necessary) to set the value of the option */
-  void (*user_set_value_)(T* ref, const vector<string> & value);
-  
-public:
-  
-  /*!
-   * \brief constructor for scalar options
-   * \param[in] value - variable to create a reference to
-   */
-  COptionRef(T & value) {
-    ndim_ = 0;
-    dim_ = new unsigned int[ndim_];
-    ref_ = &value;
-    user_set_value_ = NULL;
-  }
-  
-  /*!
-   * \brief constructor for 1D fixed length array options
-   * \param[in] value_ptr - pointer to variable to create a reference to
-   * \param[in] size - length of the array option
-   */
-  COptionRef(T * & value_ptr, const int & size) {
-    ndim_ = 1;
-    dim_ = new unsigned int[ndim_];
-    if (size <= 0) {
-      cerr << "COptionRef::COptionRef(T&, const int &): "
-      << "invalid input: size = " << size << endl;
-      throw(-1);
-    }
-    dim_[0] = size;
-    ref_ = value_ptr;
-    user_set_value_ = NULL;
-  }
-  
-  /*!
-   * \brief constructor for scalar options that require special parsing
-   * \param[in] value - variable to create a reference to
-   * \param[in] set_value - function that sets options based on vector of strings
-   *
-   * If the option requires a special parsing of the configuration
-   * file, this constructor can be used to set a pointer to a function
-   * that performs the necessary parsing
-   */
-  COptionRef(T & value, void (*set_value)(T*, const vector<string>&)) {
-    ndim_ = 0;
-    dim_ = new unsigned int[ndim_];
-    ref_ = &value;
-    user_set_value_ = set_value;
-  }
-  
-  /*!
-   * \brief class destructor
-   */
-  ~COptionRef() {
-    if (ndim_ > 0) {
-      delete [] dim_;
-    }
-    user_set_value_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the referenced option using vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    stringstream ss;
-    if (user_set_value_ == NULL) {
-      if (ndim_ == 0) {
-        ss << value[0];
-        ss >> (*ref_);
-      } else if (ndim_ == 1) {
-        if (value.size() != dim_[0]) {
-          cerr << "COptionRef::SetValue(const vector<string>&): "
-          << "number of input values does not match size of option array."
-          << endl;
-          throw(-1);
-        }
-        for (unsigned int i = 0; i < dim_[0]; i++) {
-          ss << value[i] << " ";
-          ss >> (ref_[i]);
-        }
-      } else {
-        cerr << "COptionRef::SetValue(const vector<string>&): "
-        << "cannot handle 2d arrays yet" << endl;
-        throw(-1);
-      }
-    } else {
-      // this option requires a special function for parsing
-      (*user_set_value_)(ref_, value);
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    if (ndim_ == 0) {
-      cout << *ref_ << endl;
-    } else if (ndim_ == 1) {
-      for (unsigned int i = 0; i < dim_[0]; i++)
-        cout << ref_[i] << ", ";
-      cout << endl;
-    }
-  }
-};
-
-/*!
- * \class CListOptionRef
- * \brief for options of variable array length
- * \author J. Hicken
- */
-template <class T>
-class CListOptionRef : public CAnyOptionRef {
-private:
-  T** ref_; /*!< \brief pointer to the memory holding the list option */
-  unsigned short* ref_size_; /*!< \brief number of items in list */
-  
-public:
-  
-  /*!
-   * \brief constructor for list-type options
-   * \param[in] value - variable we want to create a reference to
-   * \param[in] size - number of elements the list WILL have
-   */
-  CListOptionRef(unsigned short & size, T* & value) {
-    ref_ = &value;
-    *ref_ = NULL;
-    size = 0;
-    ref_size_ = &size;
-  }
-  
-  /*!
-   * \brief sets the value of the referenced convection option using vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    stringstream ss;
-    *ref_size_ = static_cast<unsigned short>(value.size());
-    if (*ref_ != NULL) {
-      cerr << "Error in CListOptionRef(SetValue): "
-      << "list option has already been allocated."
-      << endl;
-      throw(-1);
-    }
-    (*ref_) = new T[*ref_size_];
-    for (unsigned short i = 0; i < *ref_size_; i++) {
-      ss << value[i] << " ";
-      ss >> (*ref_)[i];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    for (unsigned short i = 0; i < *ref_size_; i++)
-      cout << (*ref_)[i] << ", ";
-    cout << endl;
-  }
-};
-
-/*!
- * \class CEnumOptionRef
- * \brief a typed version of the base class for options associated with enumerations
- * \tparam T - the type of option (usually unsigned short)
- * \tparam Tenum - an enumeration assocatied with T
- * \author J. Hicken
- */
-template <class T, class Tenum>
-class CEnumOptionRef : public CAnyOptionRef {
-private:
-  T** ref_; /*!< \brief pointer to memory for the option */
-  unsigned short* ref_dim_; /*!< \brief number of elemets in ref_ for array enums*/
-  const map<string, Tenum> * Tmap_; /*!< \brief map between strings and enums */
-  
-public:
-  
-  /*!
-   * \brief constructor for scalar enum options
-   * \param[in] value - variable to create a reference to
-   * \param[in] Tmap - map between strings and enums
-   */
-  CEnumOptionRef(T & value, const map<string, Tenum> & Tmap) {
-    ref_ = new T*;
-    *ref_ = &value;
-    ref_dim_ = NULL;
-    Tmap_ = &Tmap;
-  }
-  
-  /*!
-   * \brief constructor for list enum options
-   * \param[in] value - variable to create a reference to
-   * \param[in] Tmap - map between strings and enums
-   * \param[in] size - length of the array option
-   */
-  CEnumOptionRef(unsigned short & size, T* & value, const map<string, Tenum> & Tmap) {
-    ref_ = &value;
-    ref_dim_ = &size;
-    Tmap_ = &Tmap;
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    if (ref_dim_ == NULL) {
-      cout << *(*ref_) << endl;
-    } else {
-      for (unsigned int i = 0; i < *ref_dim_; i++)
-        cout << (*ref_)[i] << ", ";
-      cout << endl;
-    }
-  }
-  
-  /*!
-   * \brief sets the value of the referenced enum option using vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    
-    int rank = MASTER_NODE;
-#ifndef NO_MPI
-#ifdef WINDOWS
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = MPI::COMM_WORLD.Get_rank();
-#endif
-#endif
-    
-    typename map<string,Tenum>::const_iterator it;
-    if (ref_dim_ == NULL) {
-      // this is a scalar enum option
-      it = Tmap_->find(StringToUpperCase(value[0]));
-      if (it == Tmap_->end()) {
-        if (rank == MASTER_NODE) {
-          cerr << "ERROR: Cannot find value " << value[0] << " in given map." << endl;
-          cerr << "Please check the name of the variable in the config file." << endl;
-        }
-#ifdef NO_MPI
-        exit(1);
-#else
-#ifdef WINDOWS
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#else
-        MPI::COMM_WORLD.Abort(1);
-        MPI::Finalize();
-#endif
-#endif
-      }
-      *(*ref_) = it->second;
-    } else {
-      // this is an array enum option
-      (*ref_dim_) = static_cast<unsigned short>(value.size());
-      (*ref_) = new T[*ref_dim_];
-      for (unsigned short i = 0; i < *ref_dim_; i++) {
-        it = Tmap_->find(StringToUpperCase(value[i]));
-        if (it == Tmap_->end()) {
-          if (rank == MASTER_NODE) {
-            cerr << "ERROR: Cannot find value " << value[i] << " in given map." << endl;
-            cerr << "Please check the name of the variable in the config file." << endl;
-          }
-#ifdef NO_MPI
-          exit(1);
-#else
-#ifdef WINDOWS
-          MPI_Abort(MPI_COMM_WORLD,1);
-          MPI_Finalize();
-#else
-          MPI::COMM_WORLD.Abort(1);
-          MPI::Finalize();
-#endif
-#endif
-        }
-        (*ref_)[i] = it->second;
-      }
-    }
-  }
-  
-};
-
-/*!
- * \class CMarkerOptionRef
- * \brief a typed version of the base class for marker options
- * \author J. Hicken
- */
-class CMarkerOptionRef : public CAnyOptionRef {
-private:
-  string** marker_ref_; /*!< \brief pointer to the memory for the marker option */
-  unsigned short* num_marker_; /*!< \brief number of markers */
-  
-public:
-  
-  /*!
-   * \brief constructor for marker options
-   * \param[in] value - variable to create a reference to
-   * \param[in] size - variable refering to the number of markers
-   */
-  CMarkerOptionRef(string* & value, unsigned short & size) {
-    marker_ref_ = &value;
-    *marker_ref_ = NULL;
-    num_marker_ = &size;
-  }
-  
-  /*!
-   * \brief sets the value of the referenced marker option using vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if (value.size() == 0) {
-      cerr << "Error in CMarkerOptionRef::SetValue(): "
-      << "marker option in config file with no value" << endl;
-      cerr << "Use NONE for no markers." << endl;
-      throw(-1);
-    }
-    if (marker_ref_ != NULL) delete [] (*marker_ref_);
-    (*marker_ref_) = new string[value.size()];
-    for (unsigned int i = 0; i < value.size(); i++)
-      (*marker_ref_)[i] = value[i];
-    if ( (value.size() == 1) && ((*marker_ref_)[0] == "NONE") ) {
-      *num_marker_ = 0;
-    } else {
-      *num_marker_ = value.size();
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    for (unsigned int i = 0; i < *num_marker_; i++)
-      cout << (*marker_ref_)[i] << ", ";
-    cout << endl;
-  }
-};
-
-/*!
- * \class CMarkerPeriodicRef
- * \brief Specialized option for periodic boundary markers
- * \author J. Hicken
- */
-class CMarkerPeriodicRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_PerBound_; /*!< \brief Number of periodic boundary markers. */
-  string** Marker_PerBound_; /*!< \brief Periodic boundaries markers. */
-  string** Marker_PerDonor_; /*!< \brief Rotationally periodic boundary donor markers. */
-  double*** Periodic_RotCenter_; /*!< \brief Rotational center for each periodic boundary. */
-  double*** Periodic_RotAngles_; /*!< \brief Rotation angles for each periodic boundary. */
-  double*** Periodic_Translation_; /*!< \brief Translation vector for each periodic boundary. */
-  
-public:
-  
-  /*!
-   * \brief constructor for periodic marker option
-   * \param[in] nMarker_PerBound - number of periodic boundary markers
-   * \param[in] Marker_PerBound - periodic boundary markers
-   * \param[in] Marker_PerDonor - boundary marker of rotationally periodic donor
-   * \param[in] Periodic_RotCenter - rotational center for each periodic boundary
-   * \param[in] Periodic_RotAngles - rotational angles for each periodic boundary
-   * \param[in] Periodic_Translation - translation vector for each periodic boundary
-   */
-  CMarkerPeriodicRef(unsigned short & nMarker_PerBound, string* & Marker_PerBound,
-                     string* & Marker_PerDonor, double** & Periodic_RotCenter,
-                     double** & Periodic_RotAngles, double** & Periodic_Translation) {
-    nMarker_PerBound_ = &nMarker_PerBound;
-    Marker_PerBound_ = &Marker_PerBound;
-    *Marker_PerBound_ = NULL;
-    Marker_PerDonor_ = &Marker_PerDonor;
-    *Marker_PerDonor_ = NULL;
-    Periodic_RotCenter_ = &Periodic_RotCenter;
-    *Periodic_RotCenter_ = NULL;
-    Periodic_RotAngles_ = &Periodic_RotAngles;
-    *Periodic_RotAngles_ = NULL;
-    Periodic_Translation_ = &Periodic_Translation;
-    *Periodic_Translation_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the periodic boundary parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_PerBound_ != NULL) || (*Marker_PerDonor_ != NULL) ||
-        (*Periodic_RotCenter_ != NULL) || (*Periodic_RotAngles_ != NULL) ||
-        (*Periodic_Translation_ != NULL) ) {
-      cerr << "Error in CMarkerPeriodicRef::SetValue(): "
-      << "one or more periodic-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 11 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_PerBound_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerPeriodicRef::SetValue(): "
-      << "incorrect number of MARKER_PERIODIC parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_PerBound_ = static_cast<unsigned short>(value.size())/11;
-    (*Marker_PerBound_)      = new string[*nMarker_PerBound_];
-    (*Marker_PerDonor_)      = new string[*nMarker_PerBound_];
-    (*Periodic_RotCenter_)   = new double*[*nMarker_PerBound_];
-    (*Periodic_RotAngles_)   = new double*[*nMarker_PerBound_];
-    (*Periodic_Translation_) = new double*[*nMarker_PerBound_];
-    for (unsigned short iMarker_PerBound = 0; iMarker_PerBound < *nMarker_PerBound_; iMarker_PerBound++) {
-      (*Periodic_RotCenter_)[iMarker_PerBound]   = new double[3];
-      (*Periodic_RotAngles_)[iMarker_PerBound]   = new double[3];
-      (*Periodic_Translation_)[iMarker_PerBound] = new double[3];
-    }
-    
-    stringstream ss;
-    unsigned short i = 0;
-    double deg2rad = PI_NUMBER/180.0;
-    for (unsigned short iMarker_PerBound = 0; iMarker_PerBound < *nMarker_PerBound_; iMarker_PerBound++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_PerBound_)[iMarker_PerBound];
-      ss << value[i++] << " ";
-      ss >> (*Marker_PerDonor_)[iMarker_PerBound];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_RotCenter_)[iMarker_PerBound][0];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_RotCenter_)[iMarker_PerBound][1];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_RotCenter_)[iMarker_PerBound][2];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_RotAngles_)[iMarker_PerBound][0];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_RotAngles_)[iMarker_PerBound][1];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_RotAngles_)[iMarker_PerBound][2];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_Translation_)[iMarker_PerBound][0];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_Translation_)[iMarker_PerBound][1];
-      ss << value[i++] << " ";
-      ss >> (*Periodic_Translation_)[iMarker_PerBound][2];
-      
-      /*--- Convert the angles from degrees to radians ---*/
-      (*Periodic_RotAngles_)[iMarker_PerBound][0] *= deg2rad;
-      (*Periodic_RotAngles_)[iMarker_PerBound][1] *= deg2rad;
-      (*Periodic_RotAngles_)[iMarker_PerBound][2] *= deg2rad;
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "CMarkerPeriodicRef::WriteValue(): not implemented yet" << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerPeriodicRef
- * \brief Specialized option for periodic boundary markers
- * \author J. Hicken
- */
-class CMarkerActuatorDiskRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_ActDisk_Inlet_; /*!< \brief Number of periodic boundary markers. */
-  unsigned short* nMarker_ActDisk_Outlet_; /*!< \brief Number of periodic boundary markers. */
-  
-  string** Marker_ActDisk_Inlet_; /*!< \brief Name of the inlet surface for the actuator disk. */
-  string** Marker_ActDisk_Outlet_; /*!< \brief Name of the outlet surface for the actuator disk. */
-  double*** ActDisk_Origin_; /*!< \brief Origin of the actuator disk. */
-  double** ActDisk_RootRadius_; /*!< \brief Root radius of the actuator disk. */
-  double** ActDisk_TipRadius_; /*!< \brief Tip radius of the actuator disk. */
-  double** ActDisk_CT_; /*!< \brief _____________________________. */
-  double** ActDisk_Omega_; /*!< \brief _____________________________. */
-  
-public:
-  
-  /*!
-   * \brief constructor for periodic marker option
-   * \param[in] nMarker_ActDisk_Inlet - ________________________
-   * \param[in] nMarker_ActDisk_Outlet - ________________________
-   * \param[in] Marker_ActDisk_Inlet - ________________________
-   * \param[in] Marker_ActDisk_Outlet - ________________________
-   * \param[in] ActDisk_Origin - ________________________
-   * \param[in] ActDisk_RootRadius -________________________
-   * \param[in] ActDisk_TipRadius - ________________________
-   * \param[in] ActDisk_CT - ________________________
-   * \param[in] ActDisk_Omega - ________________________
-   */
-  CMarkerActuatorDiskRef(unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
-                         string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
-                         double** & ActDisk_Origin, double* & ActDisk_RootRadius, double* & ActDisk_TipRadius,
-                         double* & ActDisk_CT, double* & ActDisk_Omega) {
-    nMarker_ActDisk_Inlet_ = &nMarker_ActDisk_Inlet;
-    nMarker_ActDisk_Outlet_ = &nMarker_ActDisk_Outlet;
-    
-    Marker_ActDisk_Inlet_ = &Marker_ActDisk_Inlet;
-    *Marker_ActDisk_Inlet_ = NULL;
-    
-    Marker_ActDisk_Outlet_ = &Marker_ActDisk_Outlet;
-    *Marker_ActDisk_Outlet_ = NULL;
-    
-    ActDisk_Origin_ = &ActDisk_Origin;
-    *ActDisk_Origin_ = NULL;
-    
-    ActDisk_RootRadius_ = &ActDisk_RootRadius;
-    *ActDisk_RootRadius_ = NULL;
-    
-    ActDisk_TipRadius_ = &ActDisk_TipRadius;
-    *ActDisk_TipRadius_ = NULL;
-    
-    ActDisk_CT_ = &ActDisk_CT;
-    *ActDisk_CT_ = NULL;
-    
-    ActDisk_Omega_ = &ActDisk_Omega;
-    *ActDisk_Omega_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the periodic boundary parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_ActDisk_Inlet_ != NULL) || (*Marker_ActDisk_Outlet_ != NULL) ||
-        (*ActDisk_Origin_ != NULL) ||
-        (*ActDisk_RootRadius_ != NULL) || (*ActDisk_TipRadius_ != NULL) ||
-        (*ActDisk_CT_ != NULL) || (*ActDisk_Omega_ != NULL) ) {
-      cerr << "Error in CMarkerPeriodicRef::SetValue(): "
-      << "one or more periodic-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 9 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_ActDisk_Inlet_ = 0;
-        return;
-      }
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_ActDisk_Outlet_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerActuatorDiskRef::SetValue(): "
-      << "incorrect number of MARKER_ACTDISK parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    
-    *nMarker_ActDisk_Inlet_ = static_cast<unsigned short>(value.size())/9;
-    *nMarker_ActDisk_Outlet_ = static_cast<unsigned short>(value.size())/9;
-    
-    (*Marker_ActDisk_Inlet_)  = new string[*nMarker_ActDisk_Inlet_];
-    (*Marker_ActDisk_Outlet_) = new string[*nMarker_ActDisk_Outlet_];
-    
-    (*ActDisk_Origin_)  = new double*[*nMarker_ActDisk_Inlet_];
-    for (unsigned short iMarker_ActDisk = 0; iMarker_ActDisk < *nMarker_ActDisk_Inlet_; iMarker_ActDisk++) {
-      (*ActDisk_Origin_)[iMarker_ActDisk] = new double[3];
-    }
-    
-    (*ActDisk_RootRadius_)  = new double[*nMarker_ActDisk_Inlet_];
-    (*ActDisk_TipRadius_)   = new double[*nMarker_ActDisk_Inlet_];
-    (*ActDisk_CT_)      = new double[*nMarker_ActDisk_Inlet_];
-    (*ActDisk_Omega_)   = new double[*nMarker_ActDisk_Inlet_];
-    
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker_ActDisk = 0; iMarker_ActDisk < *nMarker_ActDisk_Inlet_; iMarker_ActDisk++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_ActDisk_Inlet_)[iMarker_ActDisk];
-      ss << value[i++] << " ";
-      ss >> (*Marker_ActDisk_Outlet_)[iMarker_ActDisk];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_Origin_)[iMarker_ActDisk][0];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_Origin_)[iMarker_ActDisk][1];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_Origin_)[iMarker_ActDisk][2];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_RootRadius_)[iMarker_ActDisk];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_TipRadius_)[iMarker_ActDisk];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_CT_)[iMarker_ActDisk];
-      ss << value[i++] << " ";
-      ss >> (*ActDisk_Omega_)[iMarker_ActDisk];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "CMarkerActuatorDiskRef::WriteValue(): not implemented yet" << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerInletRef
- * \brief Specialized option for inlet boundary markers
- * \author J. Hicken
- */
-class CMarkerInletRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_Inlet_; /*!< \brief the number of inlet marker boundaries */
-  string** Marker_Inlet_;         /*!< \brief string names of inlet boundaries */
-  double** Ttotal_;               /*!< \brief specified total temperatures for inlet boundaries */
-  double** Ptotal_;               /*!< \brief specified total pressures for inlet boundaries */
-  double*** FlowDir_;             /*!< \brief specified flow direction vector (unit vector) for inlet boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for inlet marker option
-   * \param[in] nMarker_Inlet - the number of inlet marker boundaries
-   * \param[in] Marker_Inlet - string names of inlet boundaries
-   * \param[in] Ttotal - specified total temperatures for inlet boundaries
-   * \param[in] Ptotal - specified total pressures for inlet boundaries
-   * \param[in] FlowDir - specified flow direction vector (unit vector) for inlet boundaries
-   */
-  CMarkerInletRef(unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal,
-                  double* & Ptotal, double** & FlowDir) {
-    nMarker_Inlet_ = &nMarker_Inlet;
-    Marker_Inlet_ = &Marker_Inlet;
-    *Marker_Inlet_ = NULL;
-    Ttotal_ = &Ttotal;
-    *Ttotal_ = NULL;
-    Ptotal_ = &Ptotal;
-    *Ptotal_ = NULL;
-    FlowDir_ = &FlowDir;
-    *FlowDir_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the inlet parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_Inlet_ != NULL) || (*Ttotal_ != NULL) || (*Ptotal_ != NULL) ||
-        (*FlowDir_ != NULL) ) {
-      cerr << "Error in CMarkerInletRef::SetValue(): "
-      << "one or more inlet-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 6 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_Inlet_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerInletRef::SetValue(): "
-      << "incorrect number of MARKER_INLET parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_Inlet_ = static_cast<unsigned short>(value.size())/6;
-    (*Marker_Inlet_) = new string[*nMarker_Inlet_];
-    (*Ttotal_)       = new double[*nMarker_Inlet_];
-    (*Ptotal_)       = new double[*nMarker_Inlet_];
-    (*FlowDir_)      = new double*[*nMarker_Inlet_];
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Inlet_; iMarker++)
-      (*FlowDir_)[iMarker]   = new double[3];
-    
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Inlet_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_Inlet_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Ttotal_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Ptotal_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*FlowDir_)[iMarker][0];
-      ss << value[i++] << " ";
-      ss >> (*FlowDir_)[iMarker][1];
-      ss << value[i++] << " ";
-      ss >> (*FlowDir_)[iMarker][2];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "CMarkerInletRef::WriteValue(): not implemented yet" << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerInletRef_
- * \brief Specialized option for inlet boundary markers (no flow direction)
- * \author J. Hicken
- */
-class CMarkerInletRef_ : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_Inlet_; /*!< \brief the number of inlet marker boundaries */
-  string** Marker_Inlet_;         /*!< \brief string names of inlet boundaries */
-  double** Ttotal_;               /*!< \brief specified total temperatures for inlet boundaries */
-  double** Ptotal_;               /*!< \brief specified total pressures for inlet boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for inlet marker option
-   * \param[in] nMarker_Inlet - the number of inlet marker boundaries
-   * \param[in] Marker_Inlet - string names of inlet boundaries
-   * \param[in] Ttotal - specified total temperatures for inlet boundaries
-   * \param[in] Ptotal - specified total pressures for inlet boundaries
-   * \param[in] FlowDir - specified flow direction vector (unit vector) for inlet boundaries
-   */
-  CMarkerInletRef_(unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal,
-                   double* & Ptotal) {
-    nMarker_Inlet_ = &nMarker_Inlet;
-    Marker_Inlet_ = &Marker_Inlet;
-    *Marker_Inlet_ = NULL;
-    Ttotal_ = &Ttotal;
-    *Ttotal_ = NULL;
-    Ptotal_ = &Ptotal;
-    *Ptotal_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the inlet parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_Inlet_ != NULL) || (*Ttotal_ != NULL) || (*Ptotal_ != NULL) ) {
-      cerr << "Error in CMarkerInletRef_::SetValue(): "
-      << "one or more inlet-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 3 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_Inlet_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerInletRef_::SetValue(): "
-      << "incorrect number of MARKER_INLET parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_Inlet_ = static_cast<unsigned short>(value.size())/3;
-    (*Marker_Inlet_) = new string[*nMarker_Inlet_];
-    (*Ttotal_)       = new double[*nMarker_Inlet_];
-    (*Ptotal_)       = new double[*nMarker_Inlet_];
-    
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Inlet_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_Inlet_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Ttotal_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Ptotal_)[iMarker];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "Inlet markers (" << (*nMarker_Inlet_) << ")" << endl;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Inlet_; iMarker++)
-      cout << "name = " << (*Marker_Inlet_)[iMarker]
-      << ": temp. = " << (*Ttotal_)[iMarker]
-      << ": pressure. = " << (*Ptotal_)[iMarker] << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerDirichletRef
- * \brief Specialized option for Dirichlet for poissonal solver boundary markers
- * \author A. Lonkar
- */
-class CMarkerDirichletRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_Dirichlet_; /*!< \brief the number of Dirichlet marker boundaries */
-  string** Marker_Dirichlet_;         /*!< \brief string names of Dirichlet boundaries */
-  double** Value_Dirichlet_;               /*!< \brief specified values for Dirichlet boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for inlet marker option
-   * \param[in] nMarker_Dirichlet_Elec - the number of Dirichlet marker boundaries
-   * \param[in] nMarker_Dirichlet_Elec - string names of Dirichlet boundaries
-   * \param[in] Dirichlet_Value - specified value for the dirichlet boundaries
-   */
-  
-  CMarkerDirichletRef(unsigned short & nMarker_Dirichlet_Elec, string* & Marker_Dirichlet_Elec, double* & Dirichlet_Value) {
-    nMarker_Dirichlet_ = &nMarker_Dirichlet_Elec;
-    Marker_Dirichlet_ = &Marker_Dirichlet_Elec;
-    *Marker_Dirichlet_ = NULL;
-    Value_Dirichlet_ = &Dirichlet_Value;
-    *Value_Dirichlet_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the Dirichlet parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_Dirichlet_ != NULL) || (*Value_Dirichlet_ != NULL)) {
-      cerr << "Error in CMarkerDirichletRef::SetValue(): "
-      << "one or more Dirichlet-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 2 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_Dirichlet_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerDirichletRef::SetValue(): "
-      << "incorrect number of MARKER_DIRICHLET_ELEC parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_Dirichlet_ = static_cast<unsigned short>(value.size())/2;
-    (*Marker_Dirichlet_) = new string[*nMarker_Dirichlet_];
-    (*Value_Dirichlet_)       = new double[*nMarker_Dirichlet_];
-    
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Dirichlet_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_Dirichlet_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Value_Dirichlet_)[iMarker];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "CMarkerDirichletRef::WriteValue(): not implemented yet" << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerOutletRef
- * \brief Specialized option for outlet boundary markers
- * \author J. Hicken
- */
-class CMarkerOutletRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_Outlet_; /*!< \brief the number of outlet marker boundaries */
-  string** Marker_Outlet_;         /*!< \brief string names of outlet boundaries */
-  double** Pressure_;              /*!< \brief specified back pressures (static) for outlet boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for outlet marker option
-   * \param[in] nMarker_Outlet - the number of outlet marker boundaries
-   * \param[in] Marker_Outlet - string names of outlet boundaries
-   * \param[in] Pressure - specified back pressures (static) for outlet boundaries
-   */
-  CMarkerOutletRef(unsigned short & nMarker_Outlet, string* & Marker_Outlet, double* & Pressure) {
-    nMarker_Outlet_ = &nMarker_Outlet;
-    Marker_Outlet_ = &Marker_Outlet;
-    *Marker_Outlet_ = NULL;
-    Pressure_ = &Pressure;
-    *Pressure_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the outlet parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_Outlet_ != NULL) || (*Pressure_ != NULL) ) {
-      cerr << "Error in CMarkerOutletRef::SetValue(): "
-      << "one or more outlet-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 2 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_Outlet_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerOutletRef::SetValue(): "
-      << "incorrect number of MARKER_OUTLET parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_Outlet_  = static_cast<unsigned short>(value.size())/2;
-    (*Marker_Outlet_) = new string[*nMarker_Outlet_];
-    (*Pressure_)      = new double[*nMarker_Outlet_];
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Outlet_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_Outlet_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Pressure_)[iMarker];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "Outlet markers (" << (*nMarker_Outlet_) << ")" << endl;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Outlet_; iMarker++)
-      cout << "name = " << (*Marker_Outlet_)[iMarker]
-      << ": back press. = " << (*Pressure_)[iMarker] << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerDisplacementRef
- * \brief Specialized option for Displacement boundary markers
- * \author F. Palacios
- */
-class CMarkerDisplacementRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_Displacement_; /*!< \brief the number of Displacement marker boundaries */
-  string** Marker_Displacement_;         /*!< \brief string names of Displacement boundaries */
-  double** Displ_;              /*!< \brief specified Displacement for Displacement boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for outlet marker option
-   * \param[in] nMarker_Displacement - the number of Displacement marker boundaries
-   * \param[in] Marker_Displacement - string names of Displacement boundaries
-   * \param[in] Displ - specified back Displacement for Displacement boundaries
-   */
-  CMarkerDisplacementRef(unsigned short & nMarker_Displacement, string* & Marker_Displacement, double* & Displ) {
-    nMarker_Displacement_ = &nMarker_Displacement;
-    Marker_Displacement_ = &Marker_Displacement;
-    *Marker_Displacement_ = NULL;
-    Displ_ = &Displ;
-    *Displ_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the Displacement parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_Displacement_ != NULL) || (*Displ_ != NULL) ) {
-      cerr << "Error in CMarkerDisplacementRef::SetValue(): "
-      << "one or more Displacement-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 2 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_Displacement_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerDisplacementRef::SetValue(): "
-      << "incorrect number of MARKER_Displacement parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_Displacement_  = static_cast<unsigned short>(value.size())/2;
-    (*Marker_Displacement_) = new string[*nMarker_Displacement_];
-    (*Displ_)      = new double[*nMarker_Displacement_];
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Displacement_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_Displacement_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Displ_)[iMarker];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "Displacement markers (" << (*nMarker_Displacement_) << ")" << endl;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Displacement_; iMarker++)
-      cout << "name = " << (*Marker_Displacement_)[iMarker]
-      << ": displ. = " << (*Displ_)[iMarker] << endl;
-  }
-  
-};
-
-
-/*!
- * \class CMarkerLoadRef
- * \brief Specialized option for Load boundary markers
- * \author F. Palacios
- */
-class CMarkerLoadRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_Load_; /*!< \brief the number of load marker boundaries */
-  string** Marker_Load_;         /*!< \brief string names of load boundaries */
-  double** Force_;              /*!< \brief specified load for load boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for outlet marker option
-   * \param[in] nMarker_Load - the number of load marker boundaries
-   * \param[in] Marker_Load - string names of load boundaries
-   * \param[in] Force - specified back load for load boundaries
-   */
-  CMarkerLoadRef(unsigned short & nMarker_Load, string* & Marker_Load, double* & Force) {
-    nMarker_Load_ = &nMarker_Load;
-    Marker_Load_ = &Marker_Load;
-    *Marker_Load_ = NULL;
-    Force_ = &Force;
-    *Force_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the Load parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_Load_ != NULL) || (*Force_ != NULL) ) {
-      cerr << "Error in CMarkerLoadRef::SetValue(): "
-      << "one or more Load-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 2 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_Load_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerLoadRef::SetValue(): "
-      << "incorrect number of MARKER_LOAD parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_Load_  = static_cast<unsigned short>(value.size())/2;
-    (*Marker_Load_) = new string[*nMarker_Load_];
-    (*Force_)      = new double[*nMarker_Load_];
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Load_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_Load_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*Force_)[iMarker];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "Load markers (" << (*nMarker_Load_) << ")" << endl;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_Load_; iMarker++)
-      cout << "name = " << (*Marker_Load_)[iMarker]
-      << ": force. = " << (*Force_)[iMarker] << endl;
-  }
-  
-};
-
-/*!
- * \class CMarkerFlowLoadRef
- * \brief Specialized option for FlowLoad boundary markers
- * \author F. Palacios
- */
-class CMarkerFlowLoadRef : public CAnyOptionRef {
-private:
-  unsigned short* nMarker_FlowLoad_; /*!< \brief the number of FlowLoad marker boundaries */
-  string** Marker_FlowLoad_;         /*!< \brief string names of FlowLoad boundaries */
-  double** FlowForce_;              /*!< \brief specified FlowLoad for FlowLoad boundaries */
-  
-public:
-  
-  /*!
-   * \brief constructor for outlet marker option
-   * \param[in] nMarker_FlowLoad - the number of FlowLoad marker boundaries
-   * \param[in] Marker_FlowLoad - string names of FlowLoad boundaries
-   * \param[in] FlowForce - specified back FlowLoad for FlowLoad boundaries
-   */
-  CMarkerFlowLoadRef(unsigned short & nMarker_FlowLoad, string* & Marker_FlowLoad, double* & FlowForce) {
-    nMarker_FlowLoad_ = &nMarker_FlowLoad;
-    Marker_FlowLoad_ = &Marker_FlowLoad;
-    *Marker_FlowLoad_ = NULL;
-    FlowForce_ = &FlowForce;
-    *FlowForce_ = NULL;
-  }
-  
-  /*!
-   * \brief sets the value of the FlowLoad parameters given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if ( (*Marker_FlowLoad_ != NULL) || (*FlowForce_ != NULL) ) {
-      cerr << "Error in CMarkerFlowLoadRef::SetValue(): "
-      << "one or more FlowLoad-marker option arrays have already been allocated."
-      << endl;
-      throw(-1);
-    }
-    if (static_cast<int>(value.size()) % 2 != 0) {
-      if (value[0].compare("NONE") == 0) {
-        *nMarker_FlowLoad_ = 0;
-        return;
-      }
-      cerr << "Error in CMarkerFlowLoadRef::SetValue(): "
-      << "incorrect number of MARKER_FlowLoad parameters in the configuration file."
-      << endl;
-      throw(-1);
-    }
-    *nMarker_FlowLoad_  = static_cast<unsigned short>(value.size())/2;
-    (*Marker_FlowLoad_) = new string[*nMarker_FlowLoad_];
-    (*FlowForce_)      = new double[*nMarker_FlowLoad_];
-    stringstream ss;
-    unsigned short i = 0;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_FlowLoad_; iMarker++) {
-      ss << value[i++] << " ";
-      ss >> (*Marker_FlowLoad_)[iMarker];
-      ss << value[i++] << " ";
-      ss >> (*FlowForce_)[iMarker];
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "FlowLoad markers (" << (*nMarker_FlowLoad_) << ")" << endl;
-    for (unsigned short iMarker = 0; iMarker < *nMarker_FlowLoad_; iMarker++)
-      cout << "name = " << (*Marker_FlowLoad_)[iMarker]
-      << ": FlowForce. = " << (*FlowForce_)[iMarker] << endl;
-  }
-  
-};
-
-
-/*!
- * \class CConvOptionRef
- * \brief a typed version of the base class for convection discretization options
- * \author J. Hicken
- */
-class CConvOptionRef : public CAnyOptionRef {
-private:
-  unsigned short* space_ref_; /*!< \brief pointer to the space discretization type */
-  unsigned short* centered_ref_; /*!< \brief pointer to the centered discretization type */
-  unsigned short* upwind_ref_; /*!< \brief pointer to the upwind discretization type */
-  
-public:
-  
-  /*!
-   * \brief constructor for convection options
-   * \param[in] space - space discretization variable to create a reference to
-   * \param[in] centered - centered discretization variable to create a reference to
-   * \param[in] upwind - upwind discretization variable to create a reference to
-   */
-  CConvOptionRef(unsigned short & space, unsigned short & centered,
-                 unsigned short & upwind) {
-    space_ref_ = &space;
-    centered_ref_ = &centered;
-    upwind_ref_ = &upwind;
-  }
-  
-  /*!
-   * \brief sets the value of the referenced convection option using vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if (Centered_Map.count(value[0])) {
-      *space_ref_ = Space_Map.find("SPACE_CENTERED")->second;
-      *centered_ref_ = Centered_Map.find(value[0])->second;
-      *upwind_ref_ = NO_UPWIND;
-    } else if (Upwind_Map.count(value[0])) {
-      *space_ref_ = Space_Map.find("SPACE_UPWIND")->second;
-      *upwind_ref_ = Upwind_Map.find(value[0])->second;
-      *centered_ref_ = NO_CENTERED;
-    } else {
-      cerr << "Error in CConvOptionRef::SetValue(): "
-      << value[0] << " is an invalid space discretization" << endl;
-      cerr << "Please, check that the config file is compatible with SU2 3.1.0 \"eagle\"" << endl;
-      throw(-1);
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "space discretization: " << *space_ref_ << endl;
-    cout << "centered discretization: " << *centered_ref_ << endl;
-    cout << "upwind discretization: " << *upwind_ref_ << endl;
-  }
-};
-
-/*!
- * \class CMathProblemRef
- * \brief this very specialized option for MATH_PROBLEM set several variables
- * \author J. Hicken
- */
-class CMathProblemRef : public CAnyOptionRef {
-private:
-  bool* Adjoint_; /*!< \brief pointer to the Adjoint variable */
-  bool* OneShot_; /*!< \brief pointer to the OneShot variable */
-  bool* Linearized_; /*!< \brief pointer to the Linearized variable */
-  bool* Restart_Flow_; /*!< \brief pointer to the Restart_Flow variable */
-  
-public:
-  
-  /*!
-   * \brief constructor for math problem option
-   * \param[in] Adj - is the adjoint being solved
-   * \param[in] OneShot - is a one shot problem being solved
-   * \param[in] Linearized - is a linearized problem being solved
-   * \param[in] Restart_Flow - restart flow solution for adjoint and linearized problems
-   */
-  CMathProblemRef(bool & Adjoint, bool & OneShot, bool & Linearized,
-                  bool & Restart_Flow) {
-    Adjoint_ = &Adjoint;
-    OneShot_ = &OneShot;
-    Linearized_ = &Linearized;
-    Restart_Flow_ = &Restart_Flow;
-  }
-  
-  /*!
-   * \brief sets the value of the math problem given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    if (value[0] == "DIRECT") {
-      *Adjoint_ = false; *OneShot_ = false; *Linearized_ = false; *Restart_Flow_ = false;
-    } else if (value[0] == "ADJOINT") {
-      *Adjoint_ = true; *Restart_Flow_ = true;
-    }
-    if (value[0] == "LINEARIZED") {
-      *Linearized_ = true; *Restart_Flow_ = true;
-    }
-  }
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    cout << "Adjoint_ = " << *Adjoint_;
-    cout << ": OneShot_ = " << *OneShot_;
-    cout << ": Linearized_ = " << *Linearized_;
-    cout << ": Restart_Flow_ = " << *Restart_Flow_ << endl;
-  }
-};
-
-/*!
- * \class CDVParamOptionRef
- * \brief Specialized option for grid deformation parameters
- * \author J. Hicken
- */
-class CDVParamOptionRef : public CAnyOptionRef {
-private:
-  unsigned short* nDV_; /*!< \brief Number of variables. */
-  double*** ParamDV_; /*!< \brief Parameters of the variables. */
-  unsigned short** Design_Variable_; /*!< \brief design variable types; should already be allocated */
-  
-public:
-  
-  /*!
-   * \brief constructor for DVParam option
-   * \param[in] nDV - number of design variables
-   * \param[in] ParamDV - the paramters of each design variable
-   * \param[in] Design_Variable - DV types
-   */
-  CDVParamOptionRef(unsigned short & nDV, double** & ParamDV,
-                    unsigned short* & Design_Variable) {
-    nDV_ = &nDV;
-    ParamDV_ = &ParamDV;
-    Design_Variable_ = &Design_Variable;
-  }
-  
-  /*!
-   * \brief sets the value of the design variables given the vector of strings
-   * \param[in] value - a set of strings used to define the option
-   */
-  void SetValue(const vector<string> & value) {
-    
-    // use the ";" token to determine the number of design variables
-    *nDV_ = 0;
-    unsigned int num_semi = 0;
-    for (unsigned int i = 0; i < static_cast<unsigned int>(value.size()); i++) {
-      if (value[i].compare(";") == 0) {
-        (*nDV_)++;
-        num_semi++;
-      }
-    }
-    // if ";" are at both ends, we over-counted
-    if ( (value[0].compare(";") == 0) && (value[value.size()-1].compare(";") == 0) )
-      (*nDV_)--;
-    // if no ";" at either end, we under-counted
-    if ( (value[0].compare(";") != 0) && (value[value.size()-1].compare(";") != 0) )
-      (*nDV_)++;
-    
-    if ( (*nDV_ > 0) && (*Design_Variable_ == NULL) ) {
-      cerr << "Error in CDVParamOptionRef::SetValue(): "
-      << "Design_Variable array has not been allocated." << endl;
-      cerr << "Check that DV_KIND appears before DV_PARAM in configuration file." << endl;
-      throw(-1);
-    }
-    
-#if 0
-    cout << "Found " << (*nDV_) << " DV parameters" << endl;
-    cout << "DV param value = ";
-    for (unsigned int i = 0; i < value.size(); i++)
-      cout << value[i] << ", ";
-    cout << endl;
-#endif
-    
-    
-    
-    (*ParamDV_) = new double*[*nDV_];
-    for (unsigned short iDV = 0; iDV < *nDV_; iDV++)
-      (*ParamDV_)[iDV] = new double[MAX_PARAMETERS];
-    
-    unsigned short nParamDV = 0;
-    stringstream ss;
-    unsigned int i = 0;
-    for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
-      switch ((*Design_Variable_)[iDV]) {
-        case FFD_SETTING: nParamDV = 0; break;
-        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_CAMBER_2D: nParamDV = 2; break;
-        case FFD_THICKNESS_2D: nParamDV = 2; break;
-        case HICKS_HENNE: nParamDV = 2; break;
-        case SPHERICAL: nParamDV = 3; break;
-        case COSINE_BUMP: nParamDV = 3; break;
-        case FOURIER: nParamDV = 3; break;
-        case DISPLACEMENT: nParamDV = 3; break;
-        case ROTATION: nParamDV = 6; break;
-        case NACA_4DIGITS: nParamDV = 3; break;
-        case PARABOLIC: nParamDV = 2; break;
-        case OBSTACLE: nParamDV = 2; break;
-        case AIRFOIL: nParamDV = 2; break;
-        case STRETCH: nParamDV = 2; break;
-        case FFD_CONTROL_POINT: nParamDV = 7; break;
-        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-        case FFD_TWIST_ANGLE: nParamDV = 7; break;
-        case FFD_ROTATION: nParamDV = 7; break;
-        case FFD_CAMBER: nParamDV = 3; break;
-        case FFD_THICKNESS: nParamDV = 3; break;
-        case SURFACE_FILE: nParamDV = 0; break;
-        default : {
-          cerr << "Error in CDVParamOptionRef::SetValue(): "
-          << "undefined design variable type found in configuration file." << endl; break;
-        }
-      }
-      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
-        ss << value[i] << " ";
-        ss >> (*ParamDV_)[iDV][iParamDV];
-        i++;
-      }
-      if (iDV < (*nDV_)-1) {
-        if (value[i].compare(";") != 0) {
-          cerr << "Error in CDVParamOptionRef::SetValue(): "
-          << "a design variable in the configuration file "
-          << "has the wrong number of parameters" << endl;
-          throw(-1);
-        }
-        i++;
-      }
-    }
-  }
-  
-  
-  /*!
-   * \brief write the value of the option to std out (mostly for debugging)
-   */
-  void WriteValue() {
-    
-    for (unsigned short iDV = 0; iDV < *nDV_; iDV++) {
-      unsigned short nParamDV = 0;
-      switch ((*Design_Variable_)[iDV]) {
-        case FFD_SETTING: nParamDV = 0; break;
-        case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_CAMBER_2D: nParamDV = 2; break;
-        case FFD_THICKNESS_2D: nParamDV = 2; break;
-        case HICKS_HENNE: nParamDV = 2; break;
-        case SPHERICAL: nParamDV = 3; break;
-        case COSINE_BUMP: nParamDV = 3; break;
-        case FOURIER: nParamDV = 3; break;
-        case DISPLACEMENT: nParamDV = 3; break;
-        case ROTATION: nParamDV = 6; break;
-        case NACA_4DIGITS: nParamDV = 3; break;
-        case PARABOLIC: nParamDV = 2; break;
-        case FFD_CONTROL_POINT: nParamDV = 7; break;
-        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-        case FFD_TWIST_ANGLE: nParamDV = 7; break;
-        case FFD_ROTATION: nParamDV = 7; break;
-        case FFD_CAMBER: nParamDV = 3; break;
-        case FFD_THICKNESS: nParamDV = 3; break;
-        default : {
-          cerr << "Error in CDVParamOptionRef::SetValue(): "
-          << "undefined design variable type found in configuration file." << endl; break;
-        }
-      }
-      cout << "DV param type: " << (*Design_Variable_)[iDV] << ": values = ";
-      for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++)
-        cout << (*ParamDV_)[iDV][iParamDV] << ", ";
-      cout << endl;
-    }
-  }
-};

@@ -3,7 +3,7 @@
 ## \file finite_differences.py
 #  \brief Python script for doing the finite differences computation using the SU2 suite.
 #  \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.1.0 "eagle"
+#  \version 3.2.0 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -34,9 +34,11 @@ def main():
     parser = OptionParser()
     parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
-    parser.add_option("-p", "--partitions", dest="partitions", default=1,
+    parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-s", "--step",       dest="step",       default=1E-4,
+    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
+                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
+    parser.add_option("-s", "--step",       dest="step",       default=1E-3,
                       help="finite difference STEP", metavar="STEP")
     parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
                       help="output QUIET to log files", metavar="QUIET")    
@@ -45,6 +47,10 @@ def main():
     options.partitions = int( options.partitions )
     options.step       = float( options.step )    
     options.quiet      = options.quiet.upper() == 'TRUE'
+    
+    if options.oldpartitions != "oldpartitions":
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+        sys.exit()
     
     finite_differences( options.filename   ,
                         options.partitions ,
@@ -59,7 +65,7 @@ def main():
 
 def finite_differences( filename           , 
                         partitions = 0     , 
-                        step       = 1e-4  ,
+                        step       = 1e-3  ,
                         quiet      = False  ):
     # Config
     config = SU2.io.Config(filename)

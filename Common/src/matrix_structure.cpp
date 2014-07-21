@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -521,9 +521,13 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   double *Buffer_Receive = NULL, *Buffer_Send = NULL;
   int send_to, receive_from;
   
+#ifdef HAVE_MPI
+  MPI_Status status;
+#endif
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
-    if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       
       MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -547,16 +551,11 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
           Buffer_Send[iVertex*nVar+iVar] = x[iPoint*nVar+iVar];
       }
       
-#ifndef NO_MPI
+#ifdef HAVE_MPI
       
       /*--- Send/Receive information using Sendrecv ---*/
-#ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
-#else
-      MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
-                               Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
-#endif
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 
 #else
       
@@ -788,14 +787,14 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   
   nLinelet = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
-        (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ) ||
-        (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)) {
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+        (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+        (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)) {
       nLinelet += geometry->nVertex[iMarker];
     }
   }
@@ -811,14 +810,14 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
     /*--- Define the basic linelets, starting from each vertex ---*/
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX              ) ||
-          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-          (config->GetMarker_All_Boundary(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL             ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-          (config->GetMarker_All_Boundary(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
-          (config->GetMarker_All_Boundary(iMarker) == EULER_WALL             ) ||
-          (config->GetMarker_All_Boundary(iMarker) == DISPLACEMENT_BOUNDARY)){
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
+          (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
+          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
+          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL             ) ||
+          (config->GetMarker_All_KindBC(iMarker) == DISPLACEMENT_BOUNDARY)){
         iLinelet = 0;
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -859,6 +858,7 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
         
         add_point = false;
         counter = 0;
+        next_Point = geometry->node[iPoint]->GetPoint(0);
         for(iNode = 0; iNode < geometry->node[iPoint]->GetnPoint(); iNode++) {
           jPoint = geometry->node[iPoint]->GetPoint(iNode);
           iEdge = geometry->FindEdge(iPoint, jPoint);
@@ -926,17 +926,12 @@ unsigned short CSysMatrix::BuildLineletPreconditioner(CGeometry *geometry, CConf
   }
   Local_nLineLets = nLinelet;
 
-#ifdef NO_MPI
+#ifndef HAVE_MPI
   Global_nPoints = Local_nPoints;
   Global_nLineLets = Local_nLineLets;
 #else
-#ifdef WINDOWS
   MPI_Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  MPI::COMM_WORLD.Allreduce(&Local_nPoints, &Global_nPoints, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&Local_nLineLets, &Global_nLineLets, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-#endif
 #endif
 
   MeanPoints = int(double(Global_nPoints)/double(Global_nLineLets));

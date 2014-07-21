@@ -1,4 +1,4 @@
-# SU^2 Makefile.am for CFD
+# SU2 Makefile.am for CFD
 # Stanford University Aerospace Design Lab
 #
 # Created: 		10/26/12
@@ -15,11 +15,13 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 bin_PROGRAMS = ../bin/SU2_CFD
 
 ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
+    ../include/fluid_model.hpp \
+    ../include/fluid_model.inl \
 		../include/integration_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
-	       	../include/numerics_machine_learning.hpp \
+   	../include/numerics_machine_learning.hpp \
 		../include/numerics_machine_learning.inl \
 		../include/numerics_machine_learning_turbulent.hpp \
 		../include/numerics_structure.inl \
@@ -27,9 +29,15 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/solver_structure.hpp \
 		../include/solver_structure.inl \
 		../include/SU2_CFD.hpp \
+    ../include/transport_model.hpp \
+    ../include/transport_model.inl \
 		../include/variable_structure.hpp \
 		../include/variable_structure.inl \
 		../src/definition_structure.cpp \
+		../src/fluid_model.cpp \
+    ../src/fluid_model_pig.cpp \
+    ../src/fluid_model_pvdw.cpp \
+    ../src/fluid_model_ppr.cpp \
 		../src/integration_structure.cpp \
 		../src/integration_time.cpp \
 		../src/iteration_structure.cpp \
@@ -72,6 +80,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/solver_structure.cpp \
 		../src/solver_template.cpp \
 		../src/SU2_CFD.cpp \
+    ../src/transport_model.cpp \
 		../src/variable_adjoint_levelset.cpp \
 		../src/variable_adjoint_mean.cpp \
 		../src/variable_adjoint_tne2.cpp \

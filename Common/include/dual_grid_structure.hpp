@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,6 +23,9 @@
 
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
@@ -37,7 +40,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CDualGrid{
 protected:
@@ -74,7 +77,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG, CConfig *config) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG,double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \overload
@@ -82,7 +85,7 @@ public:
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
    * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config) = 0;
+	virtual void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG) = 0;
 	
 	/*! 
 	 * \brief A pure virtual member.
@@ -122,7 +125,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CPoint : public CDualGrid {
 private:
@@ -154,9 +157,10 @@ private:
 	unsigned short color;	/*!< \brief Color of the point in the partitioning strategy. */
 	double Wall_Distance;	/*!< \brief Distance to the nearest wall. */
   double SharpEdge_Distance;	/*!< \brief Distance to a sharp edge. */
-  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GDC). */
+  double Curvature;	/*!< \brief Value of the surface curvature (SU2_GEO). */
 	unsigned long GlobalIndex;	/*!< \brief Global index in the parallel simulation. */
 	unsigned short nNeighbor;	/*!< \brief Color of the point in the partitioning strategy. */
+  bool Flip_Orientation;	/*!< \brief Flip the orientation of the normal. */
 
 public:
 	
@@ -273,6 +277,19 @@ public:
 	void SetCoord(unsigned short val_dim, double val_coord);
   
   /*!
+	 * \brief Get the coordinates of the control volume.
+	 * \return pointer to the coordinate of the point.
+	 */
+	bool GetFlip_Orientation(void);
+	
+	/*!
+	 * \brief Set the coordinates for the control volume.
+	 * \param[in] val_dim - Position to store the coordinate.
+	 * \param[in] val_coord - Coordinate for val_dim.
+	 */
+	void SetFlip_Orientation(void);
+  
+  /*!
 	 * \brief Set the coordinates for the control volume.
 	 * \param[in] val_dim - Position to store the coordinate.
 	 * \param[in] val_coord - Coordinate for val_dim.
@@ -302,7 +319,17 @@ public:
 	 * \param[in] val_elem - Element to be added.		 
 	 */
 	void SetElem(unsigned long val_elem);
-	
+  
+  /*!
+	 * \brief Reset the elements of a control volume.
+	 */
+	void ResetElem(void);
+  
+  /*!
+	 * \brief Reset the points that compose the control volume.
+	 */
+	void ResetPoint(void);
+
 	/*! 
 	 * \brief Set the points that compose the control volume.
 	 * \param[in] val_point - Point to be added.		 
@@ -375,6 +402,11 @@ public:
 	 * \param[in] val_nmarker - Max number of marker.
 	 */		
 	void SetBoundary(unsigned short val_nmarker);
+  
+  /*!
+	 * \brief Reset the boundary of a control volume.
+	 */
+	void ResetBoundary(void);
 	
 	/*! 
 	 * \overload
@@ -442,6 +474,12 @@ public:
 	 * \return Global index in a parallel computation.
 	 */
 	unsigned long GetGlobalIndex(void);
+  
+  /*!
+	 * \brief Set the global index in a parallel computation.
+	 * \return Global index in a parallel computation.
+	 */
+	void SetGlobalIndex(unsigned long val_globalindex);
 	
 	/*! 
 	 * \brief Get the volume of the control volume at time n.
@@ -633,13 +671,13 @@ public:
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
 	 *        definition of the function in all the derived classes).
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
 
 	/*! 
 	 * \brief This function does nothing (it comes from a pure virtual function, that implies the 
@@ -682,7 +720,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CEdge : public CDualGrid {
 private:
@@ -696,9 +734,9 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] val_iPoint - First node of the edge.		 
 	 * \param[in] val_jPoint - Second node of the edge.
-	 * \param[in] val_ndim - Number of dimensions of the problem.		 
+	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 */
-	CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_ndim);
+	CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -759,7 +797,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the control volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
 	
 	/*!
 	 * \overload
@@ -769,7 +807,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the contorl volume boundaries.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.
@@ -819,7 +857,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  */
 class CVertex : public CDualGrid {
 private:
@@ -839,9 +877,9 @@ public:
 	/*! 
 	 * \brief Constructor of the class.
 	 * \param[in] val_point - Node of the vertex.
-	 * \param[in] val_ndim - Number of dimensions of the problem.		
+	 * \param[in] val_nDim - Number of dimensions of the problem.		
 	 */
-	CVertex(unsigned long val_point, unsigned short val_ndim);
+	CVertex(unsigned long val_point, unsigned short val_nDim);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -868,7 +906,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \overload
@@ -877,7 +915,7 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
-	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG, CConfig *config);
+	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);
 	
 	/*! 
 	 * \brief Copy the the normal vector of a face.

@@ -2,7 +2,7 @@
  * \file output_cgns.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.1.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -24,7 +24,7 @@
 
 void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,cgns_coord,element_dims,physical_dims,cgns_err;
@@ -37,14 +37,10 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
 	int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
-#ifdef WINDOWS
-	MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-	nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 	if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
 #endif
   
@@ -56,7 +52,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		buffer = config->GetFlow_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Remove the domain number from the CGNS filename ---*/
     if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
 #endif
@@ -111,11 +107,11 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_WRITE,&cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 3.1.0 "eagle") only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently (release 3.2.0 "eagle") only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 3.1.0 "eagle") ---*/
-		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base_results);
+    /*--- write CGNS base data (one base assumed as of version 3.2.0 "eagle") ---*/
+		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base_results);
 		if (cgns_err) cg_error_print();
 
 		isize[0][0] = geometry->GetGlobal_nPointDomain();				// vertex size
@@ -123,7 +119,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
 
 		/*--- write CGNS zone data ---*/
-		cgns_err = cg_zone_write(cgns_file,cgns_base_results,"SU^2 Zone",isize[0],Unstructured,&cgns_zone_results);
+		cgns_err = cg_zone_write(cgns_file,cgns_base_results,"SU2 Zone",isize[0],Unstructured,&cgns_zone_results);
 		if (cgns_err) cg_error_print();
 
 		cgns_err = cg_goto(cgns_file,cgns_base_results,"Zone_t",cgns_zone_results,"end");
@@ -144,18 +140,18 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		}
 		else {
 			/*--- Write a CGNS link for the node coordinates ---*/
-			cgns_err = cg_link_write("GridCoordinates",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/GridCoordinates");
+			cgns_err = cg_link_write("GridCoordinates",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/GridCoordinates");
 			if (cgns_err) cg_error_print();
 		}
     
 		/*--- Write a CGNS link for each element type connectivity ---*/
-		if (nGlobal_Tria > 0) cgns_err = cg_link_write("Triangle Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Triangle Elements");
-		if (nGlobal_Quad > 0) cgns_err = cg_link_write("Quadrilateral Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Quadrilateral Elements");
-		if (nGlobal_Tetr > 0) cgns_err = cg_link_write("Tetrahedral Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Tetrahedral Elements");
-		if (nGlobal_Hexa > 0) cgns_err = cg_link_write("Hexahedral Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Hexahedral Elements");
-		if (nGlobal_Pyra > 0) cgns_err = cg_link_write("Pyramid Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Pyramid Elements");
-		if (nGlobal_Wedg > 0) cgns_err = cg_link_write("Wedge Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Wedge Elements");
-		if (nGlobal_Line > 0) cgns_err = cg_link_write("Line Elements",(char *)base_file.c_str(),"/SU^2 Base/SU^2 Zone/Line Elements");
+		if (nGlobal_Tria > 0) cgns_err = cg_link_write("Triangle Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Triangle Elements");
+		if (nGlobal_Quad > 0) cgns_err = cg_link_write("Quadrilateral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Quadrilateral Elements");
+		if (nGlobal_Tetr > 0) cgns_err = cg_link_write("Tetrahedral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Tetrahedral Elements");
+		if (nGlobal_Hexa > 0) cgns_err = cg_link_write("Hexahedral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Hexahedral Elements");
+		if (nGlobal_Pyra > 0) cgns_err = cg_link_write("Pyramid Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Pyramid Elements");
+		if (nGlobal_Wedg > 0) cgns_err = cg_link_write("Wedge Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Wedge Elements");
+		if (nGlobal_Line > 0) cgns_err = cg_link_write("Line Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Line Elements");
 		if (cgns_err) cg_error_print();
 
     
@@ -169,7 +165,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
   
 #else // Not built with CGNS support
   
-	cout << "CGNS file requested but SU^2 was built without CGNS support. No file written" << "\n"; 
+	cout << "CGNS file requested but SU2 was built without CGNS support. No file written" << "\n"; 
   
 #endif
   
@@ -177,7 +173,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 
 void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,element_dims,physical_dims,cgns_err;
@@ -195,14 +191,10 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   /*--- Remove the domain number from the CGNS filename ---*/
   int nProcessor;
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-  nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
 #endif
   
@@ -214,7 +206,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
     
 		buffer = config->GetFlow_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Remove the domain number from the CGNS filename ---*/
     if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
 #endif
@@ -237,8 +229,8 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 3.1.0 "eagle") ---*/
-		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base);
+		/*--- write CGNS base data (one base assumed as of version 3.2.0 "eagle") ---*/
+		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
 		if (cgns_err) cg_error_print();
     
 		/*--- write CGNS descriptor data ---*/
@@ -269,7 +261,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		else cgns_err = cg_simulation_type_write(cgns_file,cgns_base,NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU^2 version 3.1.0 \"eagle\", Stanford University Aerospace Design Lab");
+		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.0 \"eagle\", Stanford University Aerospace Design Lab");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -277,7 +269,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
     
 		/*--- write CGNS zone data ---*/
-		cgns_err = cg_zone_write(cgns_file,cgns_base,"SU^2 Zone",isize[0],Unstructured,&cgns_zone);
+		cgns_err = cg_zone_write(cgns_file,cgns_base,"SU2 Zone",isize[0],Unstructured,&cgns_zone);
 		if (cgns_err) cg_error_print();
 
     cgns_err = cg_goto(cgns_file,cgns_base,"Zone_t",cgns_zone,"end");
@@ -338,7 +330,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
   
 #else // Not built with CGNS support
   
-	cout << "CGNS file requested but SU^2 was built without CGNS support. No file written" << "\n"; 
+	cout << "CGNS file requested but SU2 was built without CGNS support. No file written" << "\n"; 
   
 #endif
   
@@ -346,7 +338,7 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 
 void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned short iZone) {
   
-#ifndef NO_CGNS
+#ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,cgns_flow,cgns_field,element_dims,physical_dims,cgns_err;
@@ -361,14 +353,10 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifndef NO_MPI
+#ifdef HAVE_MPI
   int nProcessor;
   /*--- Remove the domain number from the CGNS filename ---*/
-#ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&nProcessor);
-#else
-  nProcessor = MPI::COMM_WORLD.Get_size();
-#endif
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
 #endif
   
@@ -380,7 +368,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		buffer = config->GetFlow_FileName();
     
-#ifndef NO_MPI
+#ifdef HAVE_MPI
     /*--- Remove the domain number from the CGNS filename ---*/
     if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
 #endif
@@ -433,8 +421,8 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-//		/*--- write CGNS base data (one base assumed as of version 3.1.0 "eagle") ---*/
-//		cgns_err = cg_base_write(cgns_file,"SU^2 Base",element_dims,physical_dims,&cgns_base);
+//		/*--- write CGNS base data (one base assumed as of version 3.2.0 "eagle") ---*/
+//		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
 //		if (cgns_err) cg_error_print();
     
 		isize[0][0] = nGlobal_Poin;				// vertex size
@@ -442,7 +430,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
     
 //		/*--- write CGNS zone data ---*/
-//		cgns_err = cg_zone_write(cgns_file,cgns_base,"SU^2 Zone",isize[0],Unstructured,&cgns_zone);
+//		cgns_err = cg_zone_write(cgns_file,cgns_base,"SU2 Zone",isize[0],Unstructured,&cgns_zone);
 //		if (cgns_err) cg_error_print();
     
 		cgns_err = cg_goto(cgns_file,cgns_base_results,"Zone_t",cgns_zone_results,"end");
@@ -551,7 +539,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   
 #else // Not built with CGNS support
   
-	cout << "CGNS file requested but SU^2 was built without CGNS support. No file written" << "\n"; 
+	cout << "CGNS file requested but SU2 was built without CGNS support. No file written" << "\n"; 
   
 #endif
   
