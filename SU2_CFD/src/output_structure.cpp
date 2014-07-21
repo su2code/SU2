@@ -3423,7 +3423,6 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
     if (!Local_Halo[iPoint]) nTotalPoints++;
   
   nGlobal_Poin = nTotalPoints;
-  nGlobal_Poin = geometry->GetnPointDomain();
   Data = new double*[nVar_Total];
   for (iVar = 0; iVar < nVar_Total; iVar++) {
     Data[iVar] = new double[nGlobal_Poin];
