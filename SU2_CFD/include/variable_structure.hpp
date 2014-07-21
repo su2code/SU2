@@ -32,6 +32,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "fluid_model.hpp"
+
 
 using namespace std;
 
@@ -69,6 +71,9 @@ protected:
 													 note that this variable cannnot be static, it is possible to 
 													 have different number of nVar in the same problem. */
   unsigned short nPrimVar, nPrimVarGrad;		/*!< \brief Number of variables of the problem,
+                                             note that this variable cannnot be static, it is possible to
+                                             have different number of nVar in the same problem. */
+  unsigned short nSecondaryVar, nSecondaryVarGrad;		/*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
   
@@ -1008,6 +1013,11 @@ public:
 	 * \brief A virtual member.
 	 */		
 	virtual bool SetPrimVar_Compressible(CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	 virtual bool SetPrimVar_Compressible(CFluidModel *FluidModel);
   
   /*!
 	 * \brief A virtual member.
@@ -1043,6 +1053,11 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
+	virtual bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel);
+
+	/*!
+	 * \brief A virtual member.
+	 */
 	virtual bool SetPrimVar_Incompressible(double Density_Inf, CConfig *config);
   
   /*!
@@ -1063,22 +1078,42 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual double GetPrimVar(unsigned short val_var);
+	virtual double GetPrimitive(unsigned short val_var);
   
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual void SetPrimVar(unsigned short val_var, double val_prim);
+  virtual void SetPrimitive(unsigned short val_var, double val_prim);
   
   /*!
 	 * \brief A virtual member.
 	 */
-  virtual void SetPrimVar(double *val_prim);
+  virtual void SetPrimitive(double *val_prim);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetPrimVar(void);
+	virtual double *GetPrimitive(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual double GetSecondary(unsigned short val_var);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetSecondary(unsigned short val_var, double val_secondary);
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetSecondary(double *val_secondary);
+  
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual double *GetSecondary(void);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1225,13 +1260,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
 	 */	
-	virtual void SetPrimVar(CConfig *config);
+	virtual void SetPrimitive(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
 	 */
-	virtual void SetPrimVar(CConfig *config, double *Coord);
+	virtual void SetPrimitive(CConfig *config, double *Coord);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1310,6 +1345,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
+//	virtual void SetLaminarViscosity(void);
+	virtual void SetLaminarViscosity(double laminarViscosity);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
 	virtual void SetLaminarViscosity(CConfig *config);
 
 	/*!
@@ -1402,7 +1444,72 @@ public:
 	 * \return Value of the primitive variables gradient.
 	 */
 	virtual double *GetLimiter_Primitive(void);
-
+  
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual void SetGradient_SecondaryZero(unsigned short val_secondaryvar);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value to add to the gradient of the Secondary variables.
+	 */
+	virtual void AddGradient_Secondary(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value to subtract to the gradient of the Secondary variables.
+	 */
+	virtual void SubtractGradient_Secondary(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the Secondary variables gradient.
+	 */
+	virtual double GetGradient_Secondary(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the Secondary variables gradient.
+	 */
+	virtual double GetLimiter_Secondary(unsigned short val_var);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	virtual void SetGradient_Secondary(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	virtual void SetLimiter_Secondary(unsigned short val_var, double val_value);
+  
+	/*!
+	 * \brief A virtual member.
+	 * \return Value of the Secondary variables gradient.
+	 */
+	virtual double **GetGradient_Secondary(void);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \return Value of the Secondary variables gradient.
+	 */
+	virtual double *GetLimiter_Secondary(void);
+  
 	/*!
 	 * \brief Set the blending function for the blending of k-w and k-eps.
 	 * \param[in] val_viscosity - Value of the vicosity.
@@ -1814,9 +1921,16 @@ protected:
   double *WindGustDer;        /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
+  
 	double *Primitive;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
 	double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */ 
   double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */ 
+
+  /*--- Secondary variable definition ---*/
+  
+	double *Secondary;	/*!< \brief Primitive variables (T,vx,vy,vz,P,rho,h,c) in compressible flows. */
+	double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T,vx,vy,vz,P,rho). */
+  double *Limiter_Secondary;    /*!< \brief Limiter of the primitive variables (T,vx,vy,vz,P,rho). */
 
 public:
 
@@ -1916,6 +2030,71 @@ public:
 	 */
 	double *GetLimiter_Primitive(void);
 
+  /*!
+	 * \brief Set to zero the gradient of the primitive variables.
+	 */
+	void SetGradient_SecondaryZero(unsigned short val_secondaryvar);
+  
+	/*!
+	 * \brief Add <i>val_value</i> to the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value to add to the gradient of the primitive variables.
+	 */
+	void AddGradient_Secondary(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
+	 */
+	void SubtractGradient_Secondary(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+	/*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double GetGradient_Secondary(unsigned short val_var, unsigned short val_dim);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double GetLimiter_Secondary(unsigned short val_var);
+  
+	/*!
+	 * \brief Set the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetGradient_Secondary(unsigned short val_var, unsigned short val_dim, double val_value);
+  
+  /*!
+	 * \brief Set the gradient of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \param[in] val_value - Value of the gradient.
+	 */
+	void SetLimiter_Secondary(unsigned short val_var, double val_value);
+  
+	/*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double **GetGradient_Secondary(void);
+  
+  /*!
+	 * \brief Get the value of the primitive variables gradient.
+	 * \return Value of the primitive variables gradient.
+	 */
+	double *GetLimiter_Secondary(void);
+  
 	/*!
 	 * \brief Set the value of the pressure.
 	 */
@@ -1932,11 +2111,16 @@ public:
 	 */
 	void SetEnthalpy(void);
 	
+//	/*!
+//	 * \brief Set all the primitive variables for compressible flows.
+//	 */
+//	bool SetPrimVar_Compressible(CConfig *config);
+
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Compressible(CConfig *config);
-	
+	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
+
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows.
 	 */
@@ -1952,7 +2136,7 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the primitive variable for the index <i>val_var</i>.
 	 */
-	double GetPrimVar(unsigned short val_var);
+	double GetPrimitive(unsigned short val_var);
   
   /*!
 	 * \brief Set the value of the primitive variables.
@@ -1960,21 +2144,49 @@ public:
    * \param[in] val_var - Index of the variable.
 	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
 	 */
-	void SetPrimVar(unsigned short val_var, double val_prim);
+	void SetPrimitive(unsigned short val_var, double val_prim);
   
   /*!
 	 * \brief Set the value of the primitive variables.
 	 * \param[in] val_prim - Primitive variables.
 	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
 	 */
-	void SetPrimVar(double *val_prim);
+	void SetPrimitive(double *val_prim);
 
 	/*!
 	 * \brief Get the primitive variables of the problem.
 	 * \return Pointer to the primitive variable vector.
 	 */
-	double *GetPrimVar(void);
-	
+	double *GetPrimitive(void);
+  
+  /*!
+	 * \brief Get the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the primitive variable for the index <i>val_var</i>.
+	 */
+	double GetSecondary(unsigned short val_var);
+  
+  /*!
+	 * \brief Set the value of the primitive variables.
+	 * \param[in] val_var - Index of the variable.
+   * \param[in] val_var - Index of the variable.
+	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
+	 */
+	void SetSecondary(unsigned short val_var, double val_secondary);
+  
+  /*!
+	 * \brief Set the value of the primitive variables.
+	 * \param[in] val_prim - Primitive variables.
+	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
+	 */
+	void SetSecondary(double *val_secondary);
+  
+	/*!
+	 * \brief Get the primitive variables of the problem.
+	 * \return Pointer to the primitive variable vector.
+	 */
+	double *GetSecondary(void);
+  
 	/*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
@@ -2219,7 +2431,7 @@ public:
 	/*!
 	 * \brief Set the laminar viscosity.
 	 */
-	void SetLaminarViscosity(CConfig *config);
+	void SetLaminarViscosity(double laminarViscosity);
 
 	/*!
 	 * \overload
@@ -2291,16 +2503,21 @@ public:
 	 */
 	double GetStrainMag(void);
 
-	/*!
-	 * \brief Set the value of pressure.
-	 */
-	bool SetPressure(double Gamma, double turb_ke);
+//	/*!
+//	 * \brief Set the value of pressure.
+//	 */
+//	bool SetPressure(double Gamma, double turb_ke);
 	
+//	/*!
+//	 * \brief Set all the primitive variables for compressible flows
+//	 */
+//	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
+
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
-	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
-	
+	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel);
+
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
@@ -3207,7 +3424,7 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the primitive variable for the index <i>val_var</i>.
 	 */
-	double GetPrimVar(unsigned short val_var);
+	double GetPrimitive(unsigned short val_var);
   
   /*!
 	 * \brief Set the value of the primitive variables.
@@ -3215,20 +3432,20 @@ public:
    * \param[in] val_var - Index of the variable.
 	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
 	 */
-	void SetPrimVar(unsigned short val_var, double val_prim);
+	void SetPrimitive(unsigned short val_var, double val_prim);
   
   /*!
 	 * \brief Set the value of the primitive variables.
 	 * \param[in] val_prim - Primitive variables.
 	 * \return Set the value of the primitive variable for the index <i>val_var</i>.
 	 */
-	void SetPrimVar(double *val_prim);
+	void SetPrimitive(double *val_prim);
   
 	/*!
 	 * \brief Get the primitive variables of the problem.
 	 * \return Pointer to the primitive variable vector.
 	 */
-	double *GetPrimVar(void);
+	double *GetPrimitive(void);
   
   /*!
 	 * \brief A virtual member.

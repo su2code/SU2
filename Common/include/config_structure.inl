@@ -400,6 +400,34 @@ inline unsigned short CConfig::GetSystemMeasurements(void) { return SystemMeasur
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
+inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
+
+inline unsigned short CConfig::GetKind_FreeStreamOption(void) {return Kind_FreeStreamOption; } 
+
+inline double CConfig::GetPressure_Critical(void) { return Pressure_Critical; }
+
+inline double CConfig::GetTemperature_Critical(void) { return Temperature_Critical; }
+
+inline double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
+
+inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
+
+inline double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }
+
+inline double CConfig::GetMu_RefND(void) { return Mu_RefND; }
+
+inline double CConfig::GetMu_Temperature_RefND(void) { return Mu_Temperature_RefND; }
+
+inline double CConfig::GetMu_SND(void) { return Mu_SND; }
+
+inline void CConfig::SetMu_ConstantND(double mu_const) { Mu_ConstantND = mu_const; }
+
+inline void CConfig::SetMu_RefND(double mu_ref) { Mu_RefND = mu_ref; }
+
+inline void CConfig::SetMu_Temperature_RefND(double mu_Tref) {Mu_Temperature_RefND = mu_Tref; }
+
+inline void CConfig::SetMu_SND(double mu_s) {Mu_SND = mu_s; }
+
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 
 inline void CConfig::SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type) { Kind_GridMovement[val_iZone] = motion_Type; }
@@ -1123,3 +1151,11 @@ inline double CConfig::GetDamp_Fixed_CL(void) {return Damp_Fixed_CL; }
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 
 inline void CConfig::SetUpdate_AoA(bool val_update) { Update_AoA = val_update; }
+
+inline void CConfig::SetNonphysical_Points(unsigned long val_nonphys_points) { Nonphys_Points = val_nonphys_points; }
+
+inline unsigned long CConfig::GetNonphysical_Points(void) { return Nonphys_Points; }
+
+inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr) { Nonphys_Reconstr = val_nonphys_reconstr; }
+
+inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }

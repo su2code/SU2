@@ -257,6 +257,9 @@ private:
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
 	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
+	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
+	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
+	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
@@ -546,6 +549,14 @@ private:
 	Gas_Constant,     /*!< \brief Specific gas constant. */
 	Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
 	Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
+	Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
+	Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
+	Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
+	Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
+	Mu_ConstantND,   /*!< \brief Constant Viscosity for CostantViscosity model.  */
+	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
+	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
+	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
 	FreeSurface_Zero,	/*!< \brief Coordinate of the level set zero. */
 	FreeSurface_Depth,	/*!< \brief Coordinate of the level set zero. */
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
@@ -667,7 +678,9 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
-
+  unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
+  Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  
   /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
 //	map<string, CAnyOptionRef*> param;
   
@@ -2389,6 +2402,88 @@ public:
 	 * \return Gas model that we are using.
 	 */		
 	unsigned short GetKind_GasModel(void);
+
+	/*!
+	 * \brief Fluid model that we are using.
+	 * \return Fluid model that we are using.
+	 */
+	unsigned short GetKind_FluidModel(void);
+
+	/*!
+	 * \brief free stream option to initialize the solution
+	 * \return free stream option
+	 */
+	unsigned short GetKind_FreeStreamOption(void);
+
+	/*!
+	 * \brief Get the value of the critical pressure.
+	 * \return Critical pressure.
+	 */
+	double GetPressure_Critical(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetTemperature_Critical(void);
+
+	/*!
+	 * \brief Get the value of the critical pressure.
+	 * \return Critical pressure.
+	 */
+	double GetAcentric_Factor(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	unsigned short GetKind_ViscosityModel(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_ConstantND(void);
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_RefND(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_Temperature_RefND(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	double GetMu_SND(void);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_ConstantND(double mu_const);
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_RefND(double mu_ref);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_Temperature_RefND(double mu_Tref);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetMu_SND(double mu_s);
 
 	/*! 
 	 * \brief Get the kind of method for computation of spatial gradients.
@@ -5006,6 +5101,30 @@ public:
 	 * \return <code>TRUE</code> if we should update the AoA for fixed lift mode; otherwise <code>FALSE</code>.
 	 */
 	bool GetUpdate_AoA(void);
+  
+  /*!
+	 * \brief Set the current number of non-physical nodes in the solution.
+   * \param[in] val_nonphys_points - current number of non-physical points.
+	 */
+	void SetNonphysical_Points(unsigned long val_nonphys_points);
+  
+  /*!
+	 * \brief Get the current number of non-physical nodes in the solution.
+	 * \return Current number of non-physical points.
+	 */
+	unsigned long GetNonphysical_Points(void);
+  
+  /*!
+	 * \brief Set the current number of non-physical reconstructions for 2nd-order upwinding.
+   * \param[in] val_nonphys_reconstr - current number of non-physical reconstructions for 2nd-order upwinding.
+	 */
+	void SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr);
+  
+  /*!
+	 * \brief Get the current number of non-physical reconstructions for 2nd-order upwinding.
+	 * \return Current number of non-physical reconstructions for 2nd-order upwinding.
+	 */
+	unsigned long GetNonphysical_Reconstr(void);
   
 	/*!
 	 * \brief Given arrays x[1..n] and y[1..n] containing a tabulated function, i.e., yi = f(xi), with

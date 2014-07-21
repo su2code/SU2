@@ -1017,6 +1017,12 @@ void CAvgGradCorrected_TurbML::ComputeResidual(double *val_residual, double **Ja
 CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsigned short val_nVar,
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
+  double *uinf = config->GetVelocity_FreeStreamND();
+  for (unsigned short i = 0; i < nDim; i++){
+    uInfinity += uinf[i] * uinf[i];
+  }
+  uInfinity = sqrt(uInfinity);
+  
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   //transition     = (config->GetKind_Trans_Model() == LM);
   transition = false; // Debugging, -AA
@@ -1133,6 +1139,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   }
   SANondimInputs->NondimensionalizeSource(nResidual, SANondimResidual);
   
+  
+  fw = SAOtherOutputs->fw;
+  
   // Need the individual terms of the NuHat Norm
   double dNuHatDXBar = DNuhatDXj[0] / sqrt(SANondimInputs->SourceNondim);
   double dNuHatDYBar = DNuhatDXj[1] / sqrt(SANondimInputs->SourceNondim);
@@ -1140,6 +1149,8 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double dVDXBar = DUiDXj[1][0] / SANondimInputs->OmegaNondim;
   double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
   double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
+  double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
+  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;
@@ -1433,6 +1444,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
   }else if (featureset.compare("fw_les_2")==0){
+    nInputMLVariables = 8;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
@@ -1471,6 +1483,50 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
+  }else if(featureset.compare("mul_destruction") == 0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    MLModel->Predict(netInput, netOutput);
+    
+    // The output is a multiplier to the destruction term. Replicate the
+    // destruction term
+    double mul_dest = netOutput[0];
+    Residual[0] = SAResidual[0];
+    Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
+    Residual[2] = SAResidual[2];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+  }else if(featureset.compare("mul_production")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    MLModel->Predict(netInput, netOutput);
+    // The output is a multiplier to the destruction term. Replicate the
+    // production term
+    double mul_prod = netOutput[0];
+    Residual[0] = mul_prod * Turbulent_Kinematic_Viscosity * SAOtherOutputs->Omega;
+    Residual[1] = SAResidual[1];
+    Residual[2] = SAResidual[2];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
   }else{
     cout << "None of the conditions met" << endl;
     cout << "featureset is " << featureset << endl;
@@ -1480,12 +1536,51 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   delete [] netOutput;
   
   // Hack if the wall distance is too low
-  if (dist_i < 1e-10){
+  if (dist_i < 1e-6){
     for (int i= 0; i < nResidual; i++){
       Residual[i] = 0;
       NondimResidual[i] = 0;
+      SAResidual[i] = 0;
+      SANondimResidual[i] = 0;
     }
   }
+  
+  // Compute Shivaji Medida's BL vs. Wake equation
+  double strainRateMag = 0;
+  for (int i= 0; i < nDim; i++){
+    for (int j = 0; j < nDim; j++){
+      double sij = 0.5 * (DUiDXj[i][j] + DUiDXj[j][i]);
+      strainRateMag += 2 * (sij * sij);
+    }
+  }
+  
+  //cout << "strain rate mag = " << strainRateMag << endl;
+  strainRateMag = sqrt(strainRateMag);
+//  cout << "after sqrt = " << strainRateMag << endl;
+  
+  double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
+  
+  fWake = exp(- (1e-10 * ReS * ReS));
+//  cout << "ReS = " << ReS << endl;
+//  cout << "fWake = " << fWake << endl;
+  
+  double magU = 0;
+  for (unsigned short i = 0; i < nDim; i++){
+    magU += V_i[1+i] * V_i[1+i];
+  }
+  magU = sqrt(magU);
+  
+//  cout << "x loc " << Coord_i[0] << endl;
+//  cout << "y loc " << Coord_i[1] << endl;
+//  cout <<  "u infinity = " << uInfinity << endl;
+//  cout << "magU = " << magU << endl;
+//  cout << "gt? " << (magU > uInfinity * 0.99) << endl;
+  isInBL = fWake > 0.5 && (magU < uInfinity * 0.99);
+//  cout << "Is in BL " << isInBL << endl;
+  
+//  if (Coord_i[0] < -200 && Coord_i[1] > 200){
+//    throw "ahh";
+//  }
   
   
   // Now that we have found the ML Residual and the SA residual, see if there are
@@ -1494,11 +1589,29 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   unsigned short nStrings = config->GetNumML_Turb_Model_Extra();
   string *extraString = config->GetML_Turb_Model_Extra();
   
+  bool hasBlOnly = false;
+  for (int i= 0; i < nStrings; i++){
+    if (extraString[i].compare("BlOnly") == 0){
+      hasBlOnly = true;
+      break;
+    }
+  }
+  
   if (nStrings > 0){
     if (extraString[0].compare("FlatplateBlOnlyCutoff") == 0){
         // Only use ML in the boundary layer and have a sharp cutoff
       if ((Coord_i[0] < 0) || (Coord_i[1]) > 0.06 ){
         // Not in the BL, so just use the SA residual
+        for (int i = 0; i < nResidual; i++){
+          Residual[i] = SAResidual[i];
+          NondimResidual[i] = SANondimResidual[i];
+        }
+      }
+    }
+    if (hasBlOnly){
+      // Only use ML in the boundary layer (where isInBL == true)
+      if (isInBL){
+        // Then use SA
         for (int i = 0; i < nResidual; i++){
           Residual[i] = SAResidual[i];
           NondimResidual[i] = SANondimResidual[i];
