@@ -3088,9 +3088,6 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     SigmaPsiE[iDim] = new double[nDim];
   }
   
-  /*--- Compute gradient of adjoint variables on the surface ---*/
-  SetSurface_Gradient(geometry, config);
-  
   /*--- Initialize total sensitivites ---*/
   Total_Sens_Geo   = 0.0;
   Total_Sens_Mach  = 0.0;

@@ -8802,6 +8802,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 
 void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  
   unsigned long iPoint, jPoint, iEdge;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -8809,33 +8810,39 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points, coordinates and normal vector in edge ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Primitive variables, and gradient ---*/
+    
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
     
     /*--- Turbulent kinetic energy ---*/
+    
     if (config->GetKind_Turb_Model() == SST)
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
     /*--- Compute and update residual ---*/
+    
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
     
     /*--- Implicit part ---*/
+    
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     }
+    
   }
   
 }
