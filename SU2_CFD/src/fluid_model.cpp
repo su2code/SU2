@@ -33,14 +33,13 @@ CFluidModel::CFluidModel(void) {
 	Pressure = 0.0;
 	SoundSpeed2 = 0.0;
 	Temperature = 0.0;
-	ThermalConductivity = 0.0;
 	dPdrho_e = 0.0;
 	dPde_rho = 0.0;
 	dTdrho_e = 0.0;
 	dTde_rho = 0.0;
 
 	DynamicViscosity = NULL;
-
+	ThermalConductivity = NULL;
 
 }
 
@@ -61,4 +60,16 @@ void CFluidModel::SetViscosityModel (CConfig *config){
 	}
 }
 
+//void CFluidModel::SetThermalConductivityModel (CConfig *config){
+//	switch (config->GetKind_ThermalConductivityModel()) {
+//
+//	case CONSTANT_THERMALCONDUCTIVITY:
+//		ThermalConductivity = new CConstantThermalConductivity(double kt_const);
+//		break;
+//	case CONSTANT_PRANDTL:
+//		ThermalConductivity = new CConstantPrandtl();
+//		break;
+//
+//	}
+//}
 

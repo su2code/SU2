@@ -324,6 +324,14 @@ inline void CVariable::SetdPdrho_e(double dPdrho_e) { }
 
 inline void CVariable::SetdPde_rho(double dPde_rho) { }
 
+inline void CVariable::SetdTdrho_e(double dTdrho_e) { }
+
+inline void CVariable::SetdTde_rho(double dTde_rho) { }
+
+inline void CVariable::Setdmudrho_T(double dmudrho_T) { }
+
+inline void CVariable::SetdmudT_rho(double dmudT_rho) { }
+
 inline bool CVariable::SetPressure(double Gamma) { return false; }
 
 inline bool CVariable::SetPressure(CConfig *config) { return false; }
@@ -659,6 +667,22 @@ inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
 inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
     Primitive[nDim+5] = laminarViscosity;
+}
+
+inline void CNSVariable::SetdTdrho_e(double dTdrho_e) {  
+   Secondary[2] = dTdrho_e; 
+}
+
+inline void CNSVariable::SetdTde_rho(double dTde_rho) { 
+   Secondary[3] = dTde_rho; 
+}
+
+inline void CNSVariable::Setdmudrho_T(double dmudrho_T) {  
+   Secondary[4] = dmudrho_T; 
+}
+
+inline void CNSVariable::SetdmudT_rho(double dmudT_rho) { 
+   Secondary[5] = dmudT_rho; 
 }
 
 inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }

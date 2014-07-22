@@ -23,7 +23,11 @@
 #pragma once
 
 inline double CViscosityModel::GetViscosity() { return Mu; }
-inline double CViscosityModel::GetDmuDT_d() { return DmuDT_d ; }
-inline double CViscosityModel::GetDmuDd_T() { return DmuDd_T ; }
+inline double CViscosityModel::GetDerViscosity_rho_T () { return dmudrho_T; }
+inline double CViscosityModel::GetDerViscosity_T_rho () { return dmudT_rho; }
 inline void CViscosityModel::SetViscosity(double T, double rho) {}
 
+inline double CThermalConductivityModel::GetThermalConductivity() { return Kt; }
+inline double CThermalConductivityModel::GetDerThermalConductivity_rho_T () { return dktdrho_T; }
+inline double CThermalConductivityModel::GetDerThermalConductivity_T_rho () { return dktdT_rho; }
+inline void CThermalConductivityModel::SetThermalConductivity(double par1, double par2) {}

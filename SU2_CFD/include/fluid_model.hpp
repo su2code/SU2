@@ -52,13 +52,13 @@ double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 Pressure, 				/*!< \brief Pressure. */
 			 SoundSpeed2, 			/*!< \brief SpeedSound. */
 			 Temperature,			/*!< \brief Temperature. */
-			 ThermalConductivity, 	/*!< \brief ThermalConductivity. */
 			 dPdrho_e, 				/*!< \brief DpDd_e. */
 			 dPde_rho, 				/*!< \brief DpDe_d. */
 			 dTdrho_e, 				/*!< \brief DTDd_e. */
 			 dTde_rho; 				/*!< \brief DTDe_d. */
 
-CViscosityModel *DynamicViscosity;	        /*!< \brief Viscosity */
+CViscosityModel *DynamicViscosity;	              /*!< \brief Viscosity */
+CThermalConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity */
 
 public:
 
@@ -114,6 +114,12 @@ public:
 		double GetLaminarViscosity (double T, double rho);
 
 		/*!
+		 * \brief Get fluid thermal conductivity
+		 */
+
+		double GetThermalConductivity (double par1, double par2);
+
+		/*!
 		 * \brief Get fluid pressure partial derivative.
 		 */
 		double GetdPdrho_e ();
@@ -124,9 +130,44 @@ public:
 		double GetdPde_rho ();
 
 		/*!
+		 * \brief Get fluid temperature partial derivative.
+		 */
+		double GetdTdrho_e ();
+
+		/*!
+		 * \brief Get fluid temperature partial derivative.
+		 */
+		double GetdTde_rho ();
+
+		/*!
+		 * \brief Get fluid dynamic viscosity partial derivative.
+		 */
+		double Getdmudrho_T ();
+
+		/*!
+		 * \brief Get fluid dynamic viscosity partial derivative.
+		 */
+		double GetdmudT_rho ();
+
+		/*!
+		 * \brief Get fluid thermal conductivity partial derivative.
+		 */
+		double Getdktdrho_T ();
+
+		/*!
+		 * \brief Get fluid thermal conductivity partial derivative.
+		 */
+		double GetdktdT_rho ();
+
+		/*!
 		 * \brief Set viscosity model.
 		 */
 		void SetViscosityModel (CConfig *config);
+
+		/*!
+		 * \brief Set thermal conductivity model.
+		 */
+		void SetThermalConductivityModel (CConfig *config);
 
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
