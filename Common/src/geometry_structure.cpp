@@ -2491,9 +2491,10 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   unsigned long iElem_Bound, TotalElem, *nElem_Bound_Copy, iVertex_;
   string Grid_Marker;
-  unsigned short iDomain, nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, iMarker, iMarker_;
+  unsigned short nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, jMarker, iMarker, iMarker_;
   CPrimalGrid*** bound_Copy;
-  short *Marker_All_SendRecv_Copy;
+  short *Marker_All_SendRecv_Copy, jDomain, iDomain, iNewDomain, nNewDomain;
+  vector<short> NewDomain;
   bool CheckStart;
   
   int rank = MASTER_NODE;
@@ -2516,6 +2517,34 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       nMarker_Physical++;
     }
   }
+  
+  /*--- Check that all the send received markers have a partner ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+      
+      CheckStart = true;
+      iDomain = Marker_All_SendRecv[iMarker];
+      
+      for (jMarker = 0; jMarker < nMarker; jMarker++) {
+        if (bound[jMarker][0]->GetVTK_Type() == VERTEX) {
+          jDomain = Marker_All_SendRecv[jMarker];
+          if (iDomain == -jDomain) { CheckStart = false; break; }
+        }
+      }
+      
+      if (CheckStart) NewDomain.push_back(-iDomain);
+      
+    }
+  }
+  
+  nNewDomain = NewDomain.size();
+
+#ifdef HAVE_MPI
+  /*--- Finalize MPI parallelization ---*/
+	MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
   
   /*--- Identify if there are markers that send/received with the same domain,
    they should be together---*/
@@ -2579,7 +2608,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   /*--- Create an structure to store the Send/Receive
    boundaries, because they require some reorganization ---*/
   
-  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive;
+  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive + nNewDomain;
   bound_Copy = new CPrimalGrid**[nMarker_Physical + nMarker_SendRecv];
   nElem_Bound_Copy = new unsigned long [nMarker_Physical + nMarker_SendRecv];
   Marker_All_SendRecv_Copy = new short [nMarker_Physical + nMarker_SendRecv];
@@ -2644,6 +2673,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       
     }
     
+    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
+      if (NewDomain[iNewDomain] == iDomain) {
+        iMarker_++;
+        nElem_Bound_Copy[iMarker_] = 0;
+        bound_Copy[iMarker_] = new CPrimalGrid*[1];
+        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
+        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
+      }
+    }
+    
     /*--- Compute the total number of elements (adding all the
      boundaries with the same Send/Receive ---*/
     
@@ -2658,7 +2697,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       iVertex_ = 0;
       nElem_Bound_Copy[iMarker_] = TotalElem;
       bound_Copy[iMarker_] = new CPrimalGrid*[TotalElem];
-      
     }
     
     for (iMarkersDomain = 0; iMarkersDomain < DomainReceiveCount[iDomain]; iMarkersDomain++) {
@@ -2671,6 +2709,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         iVertex_++;
       }
       
+    }
+    
+    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
+      if (NewDomain[iNewDomain] == -iDomain) {
+        iMarker_++;
+        nElem_Bound_Copy[iMarker_] = 0;
+        bound_Copy[iMarker_] = new CPrimalGrid*[1];
+        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
+        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
+      }
     }
     
   }
@@ -7787,7 +7835,8 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron, kPoint, jPoint, iVertex;
   unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
-  idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
+  idx_t ne = 0, nn, etype, numflag, nparts, edgecut;
+  idx_t *elmnts = NULL, *epart = NULL, *npart = NULL, *eptr = NULL;
   int rank, size;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -7928,33 +7977,29 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   if (GetnDim() == 2) eptr[ne] = 3*ne;
   else eptr[ne] = 4*ne;
   
-#ifdef METIS_5
-  /*--- Calling METIS 5.0.2 ---*/
+  /*--- Set some options for METIS ---*/
+  
   int options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+  
+  /*--- Call METIS to partition the mesh ---*/
+  
   METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS 5.0.2. ("  << edgecut << " edge cuts)." << endl;
-#else
-  /*--- Calling METIS 4.0.3 ---*/
-  METIS_PartMeshNodal(&ne, &nn, elmnts, &etype, &numflag, &nparts, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS 4.0.3. ("  << edgecut << " edge cuts)." << endl;
-#endif
+  cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
+
+  /*--- Store the partitioning information for each node ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetColor(npart[iPoint]);
   
-  //  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  //    if (node[iPoint]->GetCoord(0) < -5.0)
-  //    node[iPoint]->SetColor(2);
-  //  }
-  
+  /*--- Free memory and exit ---*/
   
   delete[] epart;
   delete[] npart;
   delete[] elmnts;
   delete[] eptr;
-  
+
 #endif
 #endif
   

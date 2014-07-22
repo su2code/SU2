@@ -366,13 +366,6 @@ public:
 	void SetGridVel_Gradient(CGeometry *geometry, CConfig *config);
     
 	/*!
-	 * \brief Compute the Least Squares gradient of the solution on the profile surface.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetSurface_Gradient(CGeometry *geometry, CConfig *config);
-    
-	/*!
 	 * \brief Compute slope limiter.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.

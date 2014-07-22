@@ -365,9 +365,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    a unit vector. */
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 
-  /* DESCRIPTION: Riemann boundary marker(s) with the following formats,
-   /// TODO
-   a unit vector. */
+  /* DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
   /* DESCRIPTION: % Supersonic inlet boundary marker(s)
    Format: (inlet marker, temperature, static pressure, velocity_x,
@@ -1241,6 +1239,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  
+  /*--- Initialize non-physical points/reconstructions to zero ---*/
+  Nonphys_Points   = 0;
+  Nonphys_Reconstr = 0;
+  
+
   /*--- Don't do any deformation if there is no Design variable information ---*/
 
   if (Design_Variable == NULL) {
@@ -1984,6 +1988,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     CFL[iCFL] = CFL[iCFL-1]*MG_CFLRedCoeff;
 
   if (nRKStep == 0) {
+    nRKStep = 1;
     RK_Alpha_Step = new double[1]; RK_Alpha_Step[0] = 1.0;
   }
 

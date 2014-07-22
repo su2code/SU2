@@ -5414,7 +5414,7 @@ fi
 
 
 
-     METIS_INCLUDE="-DMETIS_5 -I\$(top_srcdir)/externals/metis/include"
+     METIS_INCLUDE="-I\$(top_srcdir)/externals/metis/include"
      METIS_LIB="\$(top_builddir)/externals/metis/libmetis.a"
 
 $as_echo "#define HAVE_METIS 1" >>confdefs.h

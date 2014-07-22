@@ -16,7 +16,7 @@ bin_PROGRAMS = ../bin/SU2_CFD
 
 ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
     ../include/fluid_model.hpp \
-    ../include/fluid_model.inl \ 
+    ../include/fluid_model.inl \
 		../include/integration_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
@@ -30,8 +30,8 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../include/solver_structure.inl \
 		../include/SU2_CFD.hpp \
     ../include/transport_model.hpp \
-    ../include/transport_model.inl \   		
-		../include/variable_structure.hpp \		
+    ../include/transport_model.inl \
+		../include/variable_structure.hpp \
 		../include/variable_structure.inl \
 		../src/definition_structure.cpp \
 		../src/fluid_model.cpp \
@@ -80,7 +80,7 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 		../src/solver_structure.cpp \
 		../src/solver_template.cpp \
 		../src/SU2_CFD.cpp \
-    ../src/transport_model.cpp \		
+    ../src/transport_model.cpp \
 		../src/variable_adjoint_levelset.cpp \
 		../src/variable_adjoint_mean.cpp \
 		../src/variable_adjoint_tne2.cpp \
