@@ -23,8 +23,8 @@
 #pragma once
 
 inline double CViscosityModel::GetViscosity() { return Mu; }
-inline double CViscosityModel::GetDerViscosity_rho_T () { return dmudrho_T; }
-inline double CViscosityModel::GetDerViscosity_T_rho () { return dmudT_rho; }
+inline double CViscosityModel::Getdmudrho_T () { return dmudrho_T; }
+inline double CViscosityModel::GetdmudT_rho() { return dmudT_rho; }
 inline void CViscosityModel::SetViscosity(double T, double rho) {}
 
 inline double CThermalConductivityModel::GetThermalConductivity() { return Kt; }

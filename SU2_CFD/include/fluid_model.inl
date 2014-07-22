@@ -39,10 +39,10 @@ inline double CFluidModel::GetLaminarViscosity (double T, double rho) {
         return DynamicViscosity->GetViscosity();
 }
 inline double CFluidModel::Getdmudrho_T () {
-        return DynamicViscosity->GetDerViscosity_rho_T();
+        return DynamicViscosity->Getdmudrho_T();
 }
 inline double CFluidModel::GetdmudT_rho () {
-        return DynamicViscosity->GetDerViscosity_T_rho();
+        return DynamicViscosity->GetdmudT_rho();
 }
 
 inline double CFluidModel::GetThermalConductivity (double par1, double par2) {

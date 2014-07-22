@@ -130,6 +130,11 @@ inline void CNumerics::SetPrimitive(double *val_v_i, double *val_v_j) {
 	V_j = val_v_j;
 }
 
+inline void CNumerics::SetSecondary(double *val_s_i, double *val_s_j) {
+  S_i = val_s_i;
+  S_j = val_s_j;
+}
+
 inline void CNumerics::SetConservative(double *val_u_0, double *val_u_1, double *val_u_2) {
 	U_0 = val_u_0;
 	U_1 = val_u_1;

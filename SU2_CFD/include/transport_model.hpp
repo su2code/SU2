@@ -72,12 +72,12 @@ public:
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerViscosity_rho_T(void);
+		double Getdmudrho_T(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerViscosity_T_rho(void);
+		double GetdmudT_rho(void);
 
 		/*!
 		 * \brief Set Viscosity.

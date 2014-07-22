@@ -118,6 +118,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   iPoint_UndLapl = NULL;  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
+  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
   CharacPrimVar = NULL;
   Cauchy_Serie = NULL;
   
@@ -2982,8 +2983,8 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
-  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *V_i, *V_j, *Limiter_i = NULL,
-  *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel;
+  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
+  	  	  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false;
@@ -3021,6 +3022,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Get primitive variables ---*/
     
     V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
+    S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
     
     /*--- High order reconstruction using MUSCL strategy ---*/
     
@@ -3032,7 +3034,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       
       Gradient_i = node[iPoint]->GetGradient_Primitive(); Gradient_j = node[jPoint]->GetGradient_Primitive();
-      if (limiter) { Limiter_i = node[iPoint]->GetLimiter_Primitive(); Limiter_j = node[jPoint]->GetLimiter_Primitive(); }
+      if (limiter) {
+    	  Limiter_i = node[iPoint]->GetLimiter_Primitive(); Limiter_j = node[jPoint]->GetLimiter_Primitive();
+
+      }
       
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
@@ -3074,16 +3079,42 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         counter_local++;
       }
       
+      if (compressible) {
+          Gradient_i = node[iPoint]->GetGradient_Secondary(); Gradient_j = node[jPoint]->GetGradient_Secondary();
+          if (limiter) {
+        	  Limiter_i = node[iPoint]->GetLimiter_Secondary(); Limiter_j = node[jPoint]->GetLimiter_Secondary();
+          }
+
+      for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+              Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+                Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+              }
+              if (limiter) {
+                Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+                Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+              }
+              else {
+            	Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
+            	Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
+              }
+		}
+
+
+      }
       /*--- Set conservative variables with reconstruction ---*/
       
       numerics->SetPrimitive(Primitive_i, Primitive_j);
+      numerics->SetSecondary(Secondary_i, Secondary_j);
       
+
     } else {
       
       /*--- Set conservative variables without reconstruction ---*/
       
       numerics->SetPrimitive(V_i, V_j);
-      
+      numerics->SetSecondary(S_i, S_j);
     }
     
     /*--- Free surface simulation should include gradient of the hydrostatic pressure ---*/
@@ -9174,7 +9205,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
-    if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
+    if (compressible) {
+    	RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
+    	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
+    }
+
     if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(eddy_visc, turb_ke, config);
     if (!RightSol) ErrorCounter++;
