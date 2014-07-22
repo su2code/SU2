@@ -638,7 +638,9 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 
 void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
-  /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+	SetdPdrho_e(FluidModel->GetdPdrho_e());
+	SetdPde_rho(FluidModel->GetdPde_rho());
+    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
 	SetdTdrho_e( FluidModel->GetdTdrho_e() );
 	SetdTde_rho( FluidModel->GetdTde_rho() );
