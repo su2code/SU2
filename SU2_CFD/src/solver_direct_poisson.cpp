@@ -481,6 +481,10 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     StiffMatrix.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
   }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    StiffMatrix.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+  }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
   }

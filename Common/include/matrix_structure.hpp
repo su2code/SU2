@@ -49,7 +49,8 @@ private:
 	nPointDomain,           /*!< \brief Number of points in the grid. */
 	nVar,                   /*!< \brief Number of variables. */
 	nEqn;                   /*!< \brief Number of equations. */
-	double *matrix;               /*!< \brief Entries of the sparse matrix. */
+	double *matrix;            /*!< \brief Entries of the sparse matrix. */
+	double *ILU_matrix;         /*!< \brief Entries of the ILU sparse matrix. */
 	unsigned long *row_ptr;    /*!< \brief Pointers to the first element in each row. */
 	unsigned long *col_ind;    /*!< \brief Column index for each of the elements in val(). */
 	unsigned long nnz;         /*!< \brief Number of possible nonzero entries in the matrix. */
@@ -165,6 +166,45 @@ public:
 	 * \param[in] **val_block - Block to subtract to A(i,j).
 	 */
 	void SubtractBlock(unsigned long point_i, double **val_block);
+  
+  /*!
+	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 */
+	double *GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
+  
+  /*!
+	 * \brief Set the value of a block in the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to set to A(i,j).
+	 */
+	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block);
+  
+  /*!
+	 * \brief Set the value of a block in the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to set to A(i,j).
+	 */
+	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
+  
+	/*!
+	 * \brief Adds the specified block to the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to add to A(i,j).
+	 */
+	void AddBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
+  
+	/*!
+	 * \brief Subtracts the specified block to the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to subtract to A(i,j).
+	 */
+	void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
   
 	/*!
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
@@ -329,6 +369,11 @@ public:
 	void BuildJacobiPreconditioner(void);
   
 	/*!
+	 * \brief Build the Jacobi preconditioner.
+	 */
+	void BuildILUPreconditioner(void);
+  
+	/*!
 	 * \brief Build the Linelet preconditioner.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -341,7 +386,14 @@ public:
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
-	
+  
+	/*!
+	 * \brief Multiply CSysVector by the preconditioner
+	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+	 * \param[out] prod - Result of the product A*vec.
+	 */
+	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+
   /*!
 	 * \brief Multiply CSysVector by the preconditioner
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
@@ -426,6 +478,38 @@ public:
 	 * \brief destructor of the class
 	 */
 	~CJacobiPreconditioner() {}
+  
+	/*!
+	 * \brief operator that defines the preconditioner operation
+	 * \param[in] u - CSysVector that is being preconditioned
+	 * \param[out] v - CSysVector that is the result of the preconditioning
+	 */
+	void operator()(const CSysVector & u, CSysVector & v) const;
+};
+
+
+/*!
+ * \class CILUPreconditioner
+ * \brief specialization of preconditioner that uses CSysMatrix class
+ */
+class CILUPreconditioner : public CPreconditioner {
+private:
+	CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
+	CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
+	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
+  
+public:
+  
+	/*!
+	 * \brief constructor of the class
+	 * \param[in] matrix_ref - matrix reference that will be used to define the preconditioner
+	 */
+	CILUPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
+  
+	/*!
+	 * \brief destructor of the class
+	 */
+	~CILUPreconditioner() {}
   
 	/*!
 	 * \brief operator that defines the preconditioner operation

@@ -3139,6 +3139,10 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
+  }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
   }
