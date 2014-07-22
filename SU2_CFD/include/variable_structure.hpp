@@ -1125,10 +1125,30 @@ public:
    	 */
      virtual void SetdPde_rho(double dPde_rho);
 
+    /*!
+  	 * \brief A virtual member.
+  	 */
+     virtual void SetdTdrho_e(double dTdrho_e);
+
+    /*!
+     * \brief A virtual member.
+     */
+     virtual void SetdTde_rho(double dTde_rho);
+
+     /*!
+   	 * \brief A virtual member.
+   	 */
+      virtual void Setdmudrho_T(double Setdmudrho_T);
+
+     /*!
+      * \brief A virtual member.
+      */
+      virtual void SetdmudT_rho(double SetdmudT_rho);
+
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual double *GetSecondary(void);
+	 virtual double *GetSecondary(void);
 	
 	/*!
 	 * \brief A virtual member.
@@ -2543,10 +2563,35 @@ public:
 //	 */
 //	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config);
 
+   /*!
+	* \brief Set the derivative of temperature with respect to density (at constant internal energy).
+	*/
+    void SetdTdrho_e(double dTdrho_e);
+
+   /*!
+    * \brief Set the derivative of temperature with respect to internal energy (at constant density).
+    */
+    void SetdTde_rho(double dTde_rho);
+
+     /*!
+      * \brief Set the derivative of laminar viscosity with respect to density (at constant temperature).
+      */
+    void Setdmudrho_T(double Setdmudrho_T);
+
+   /*!
+    * \brief Set the derivative of laminar viscosity with respect to temperature (at constant density).
+    */
+    void SetdmudT_rho(double SetdmudT_rho);
+
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
 	 */
 	bool SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel);
+
+	/*!
+	 * \brief Set all the secondary variables (partial derivatives) for compressible flows
+	 */
+	void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
 
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
