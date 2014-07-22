@@ -62,6 +62,21 @@ inline void CJacobiPreconditioner::operator()(const CSysVector & u, CSysVector &
   sparse_matrix->ComputeJacobiPreconditioner(u, v, geometry, config);
 }
 
+inline CILUPreconditioner::CILUPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+  sparse_matrix = &matrix_ref;
+  geometry = geometry_ref;
+  config = config_ref;
+}
+
+inline void CILUPreconditioner::operator()(const CSysVector & u, CSysVector & v) const {
+  if (sparse_matrix == NULL) {
+    cerr << "CILUPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl;
+    cerr << "pointer to sparse matrix is NULL." << endl;
+    throw(-1);
+  }
+  sparse_matrix->ComputeILUPreconditioner(u, v, geometry, config);
+}
+
 inline CLU_SGSPreconditioner::CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
       geometry = geometry_ref;
