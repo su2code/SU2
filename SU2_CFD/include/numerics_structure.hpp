@@ -5748,6 +5748,7 @@ private:
   bool   implicit;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
   double *rhos, *vel, *Y, *hs, *eves, *Cvtrs, *Cvves;
+  double *V, **GV;
   double *GInvRho, **GVeloRho, **tau, **eta, **pi, **zeta;
   double *GPhiGInvRho, *GPsiEZetaTau;// *GPsirsGr, *DGPsirsGrs, *GPsiEJ, *GPsiEveJ;
   double ***dIdr, ***dJdr, **GY, **SdIdr, **Js, *SIk;

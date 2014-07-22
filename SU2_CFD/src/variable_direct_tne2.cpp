@@ -2104,6 +2104,7 @@ void CTNE2NSVariable::SetTransportCoefficients_WBE(CConfig *config) {
       }
     }
     DiffusionCoeff[iSpecies] = (1-Xs[iSpecies])/denom;
+//    DiffusionCoeff[iSpecies] = 0.0;
   }
   
   

@@ -2953,15 +2953,15 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
     
     /*--- Update adjoint viscous residual ---*/
-//    LinSysRes.SubtractBlock(iPoint, Residual_i);
-//    LinSysRes.AddBlock(jPoint, Residual_j);
-//
-//    if (implicit) {
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-//      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
-//      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-//      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
-//    }
+    LinSysRes.SubtractBlock(iPoint, Residual_i);
+    LinSysRes.AddBlock(jPoint, Residual_j);
+
+    if (implicit) {
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    }
   }
 }
 
@@ -3046,10 +3046,14 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
 		/*--- Gradient of primitive and adjoint variables ---*/
 		numerics->SetPrimVarGradient(solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive(),
                                  solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive());
+    numerics->SetConsVarGradient(solver_container[TNE2_SOL]->node[iPoint]->GetGradient(),
+                                 solver_container[TNE2_SOL]->node[iPoint]->GetGradient());
 		numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(),
                                     node[iPoint]->GetGradient());
     second_numerics->SetPrimVarGradient(solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive(),
                                         solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive());
+    second_numerics->SetConsVarGradient(solver_container[TNE2_SOL]->node[iPoint]->GetGradient(),
+                                        solver_container[TNE2_SOL]->node[iPoint]->GetGradient());
 		second_numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(),
                                            node[iPoint]->GetGradient());
     
@@ -3736,68 +3740,35 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                         CConfig *config,
                                         unsigned short val_marker) {
   
-  bool implicit;
+  bool implicit, heat_flux_obj;
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex, total_index;
-  double ktr, kve;
-  double dnPsiE, dnPsiEve;
-  double *Normal, *d;
-  double *dPdU, *dTdU, *dTvedU;
-  double *Psi, *phi;
-  double **GradPsi;
-  
-//	unsigned long iVertex, iPoint, total_index, Point_Normal;
-//	unsigned short iDim, iVar, jVar, jDim;
-//	double *d, *U, l1psi, mu_dyn, Temp, dVisc_T, rho, pressure, div_phi,
-//  force_stress, Sigma_5, **PsiVar_Grad, phi[3];
-//  double phis1, phis2, sq_vel, ProjVel, Enthalpy, *GridVel, phi_u, d_n;
-//  double Energy, ViscDens, XiDens, Density, SoundSpeed, Pressure, dPhiE_dn, Laminar_Viscosity, Eddy_Viscosity,
-//  Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
-//  Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
-//  Sigma_yz5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
-//  
-//  
-//  double *Psi = new double[nVar];
-//	double **Tau = new double* [nDim];
-//	for (iDim = 0; iDim < nDim; iDim++)
-//		Tau[iDim] = new double [nDim];
-//  double *Velocity = new double[nDim];
-//  double *Normal = new double[nDim];
-//  
-//  double **GradPhi = new double* [nDim];
-//  for (iDim = 0; iDim < nDim; iDim++)
-//    GradPhi[iDim] = new double [nDim];
-//  double *GradPsiE = new double [nDim];
-  
+  double *dPdU, *d;
+  double phi[3], Normal[3];
   
   /*--- Set booleans ---*/
   implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
+                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
+                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
   
-  /*--- Allocate arrays ---*/
-  Normal = new double[nDim];
-  phi    = new double[nDim];
-  Psi    = new double[nVar];
+  if (heat_flux_obj) {
+    cout << "WARNING: Heat flux-based objectives not implemented in HEATFLUX B.C." << endl;
+  }
 
   /*--- Loop over boundary points ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
 		if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Initialize the convective & viscous residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Res_Conv_i[iVar] = 0.0;
-        Res_Visc_i[iVar] = 0.0;
         if (implicit) {
           for (jVar = 0; jVar < nVar; jVar ++)
             Jacobian_ii[iVar][jVar] = 0.0;
         }
       }
-      
-      /*--- Retrieve adjoint solution at the wall boundary node ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				Psi[iVar] = node[iPoint]->GetSolution(iVar);
-      GradPsi = node[iPoint]->GetGradient();
       
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -3811,26 +3782,7 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
         phi[iDim] = d[iDim];
       
       /*--- Acquire flow quantities ---*/
-      ktr = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
-      kve = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
       dPdU   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
-      dTdU   = solver_container[TNE2_SOL]->node[iPoint]->GetdTdU();
-      dTvedU = solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU();
-
-      /*--- Weak imposition of the energy equation ---*/
-      // Note: dn PsiE & dn PsiEve = 0.  We apply 'proportional control' to
-      //       drive the boundary condition to satisfaction.
-      dnPsiE   = 0.0;
-      dnPsiEve = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        dnPsiE   += GradPsi[nSpecies+nDim][iDim]  *Normal[iDim];
-        dnPsiEve += GradPsi[nSpecies+nDim+1][iDim]*Normal[iDim];
-      }
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Visc_i[iVar] = ktr*dTdU[iVar]  *dnPsiE +
-                           kve*dTvedU[iVar]*(dnPsiE + dnPsiEve);
-      }
       
       /*--- Convective terms ---*/
       // Energy
@@ -3839,13 +3791,18 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
         Res_Conv_i[nSpecies+nDim+1] += phi[iDim]*Normal[iDim]*dPdU[nSpecies+nDim+1];
       }
       
-      /*--- Apply the viscous residual ---*/
+      /*--- Apply the residual ---*/
       LinSysRes.AddBlock(iPoint, Res_Conv_i);
-      LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
       
+      if (implicit) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Jacobian_ii[nSpecies+nDim][nSpecies+iDim]   = Normal[iDim]*dPdU[nSpecies+nDim];
+          Jacobian_ii[nSpecies+nDim+1][nSpecies+iDim] = Normal[iDim]*dPdU[nSpecies+nDim+1];
+        }
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+      }
       
-      
-      /*--- Strong BC imposition for the adjoint velocity equations ---*/
+      /*--- Impose adjoint velocity B.C. 'strongly' ---*/
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
       node[iPoint]->SetVel_ResTruncError_Zero();
@@ -3857,71 +3814,8 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 					Jacobian.DeleteValsRowi(total_index);
 				}
 			}
-      
-      
-//      
-//      
-//      
-//      
-//      /*--- Energy resiudal due to the convective term ---*/
-//      l1psi = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        l1psi += Normal[iDim]*d[iDim];
-//      Res_Conv_i[nVar-1] = l1psi*Gamma_Minus_One;
-//      
-//      /*--- Components of the effective and adjoint stress tensors ---*/
-//      PsiVar_Grad = node[iPoint]->GetGradient();
-//      div_phi = 0;
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        div_phi += PsiVar_Grad[iDim+1][iDim];
-//        for (jDim = 0; jDim < nDim; jDim++)
-//          Tau[iDim][jDim] = (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
-//      }
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Tau[iDim][iDim] -= TWO3*div_phi;
-//      
-//      /*--- force_stress = n_i \Tau_{ij} d_j ---*/
-//      force_stress = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        for (jDim = 0; jDim < nDim; jDim++)
-//          force_stress += Normal[iDim]*Tau[iDim][jDim]*d[jDim];
-//      
-//      /*--- \partial \mu_dyn \partial T ---*/
-//      mu_dyn = solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity();
-//      Temp = solver_container[TNE2_SOL]->node[iPoint]->GetTemperature();
-//      dVisc_T = 0.0;  // dVisc_T = mu_dyn*(Temp+3.0*mu2)/(2.0*Temp*(Temp+mu2));
-//      
-//      /*--- \Sigma_5 ---*/
-//      Sigma_5 = (Gamma/Cp)*dVisc_T*force_stress;
-//      
-//      /*--- Imposition of residuals ---*/
-//      rho = solver_container[TNE2_SOL]->node[iPoint]->GetDensity();
-//      pressure = solver_container[TNE2_SOL]->node[iPoint]->GetPressure();
-//      Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
-//      Res_Conv_i[nVar-1] -= Sigma_5/rho;
-//      
-//      /*--- Update convective and viscous residuals ---*/
-//      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-//      LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
-//      if (implicit) {
-//        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-//      }
 		}
 	}
-  
-  
-  
-//	for (iDim = 0; iDim < nDim; iDim++)
-//		delete [] Tau[iDim];
-//	delete [] Tau;
-//  delete [] Psi;
-//  delete [] Velocity;
-//  delete [] Normal;
-//  delete [] GradPsiE;
-//  for (iDim = 0; iDim < nDim; iDim++)
-//    delete [] GradPhi[iDim];
-//  delete [] GradPhi;
-  
 }
 
 
@@ -3932,9 +3826,85 @@ void CAdjTNE2NSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                     CConfig *config,
                                                     unsigned short val_marker) {
   
+  bool implicit, heat_flux_obj;
+  unsigned short iDim, iSpecies, iVar, jVar;
+  unsigned long iPoint, iVertex;
+  double *d, *dPdU;
+  double phi[3], Normal[3];
+  
   /*--- Use already-implemented Heat Flux BC as a baseline ---*/
   BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics,
                    config, val_marker);
+  
+  /*--- The adjoint species density boundary condition is: 
+   GPsi_rs \cdot n = -(GPsiE \cdot n)hs -(GPsiEve \cdot n)eves ---*/
+  
+  /*--- Determine the nature of the objective function ---*/
+  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
+                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
+                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
+  
+  /*--- Determine time-stepping algorithm ---*/
+  implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  
+  /*--- Loop over all boundary points ---*/
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+		if (geometry->node[iPoint]->GetDomain()) {
+      
+      if (!heat_flux_obj) {
+        
+        /*---+++ B.C. Enforcement Details +++---*/
+        // For force-based objectives with adiabatic wall b.c.'s:
+        // GPsiE \cdot n = 0, GPsiEve \cdot n = 0
+        //
+        // Use convective flux for the adjoint density equations to enforce
+        // GPsi_rs \cdot n = 0
+        /*---+++                          +++---*/
+        
+        /*--- Initialize the residual vector ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Conv_i[iVar] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_ii[iVar][jVar] = 0.0;
+        }
+        
+        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+        
+        /*--- Acquire flow quantities ---*/
+        dPdU   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
+        
+        /*--- Get the force projection vector ---*/
+        // Note: For force-based objective functions, this will be non-zero and
+        //       for energy-based objectives, it will be zero.
+        d = node[iPoint]->GetForceProj_Vector();
+        for (iDim = 0; iDim < nDim; iDim++)
+          phi[iDim] = d[iDim];
+        
+        /*--- Set the value of the residual ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Res_Conv_i[iSpecies] += dPdU[iSpecies]*phi[iDim]*Normal[iDim];
+        
+        /*--- Apply the residual to the linear system ---*/
+        LinSysRes.AddBlock(iPoint, Res_Conv_i);
+        
+        if (implicit) {
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+            for (iDim = 0; iDim < nDim; iDim++)
+              Jacobian_ii[iSpecies][nSpecies+iDim] = dPdU[iSpecies]*Normal[iDim];
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        }
+        
+      } else {
+        
+        cout << "WARNING: THERMAL OBJECTIVE FUNCTION NOT IMPLEMENTED IN HEATFLUX_NONCATALYTIC!!" << endl;
+        
+      }
+    }
+  }
 }
 
 void CAdjTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
@@ -3957,82 +3927,40 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                           CConfig *config,
                                           unsigned short val_marker) {
 
-
   bool implicit, heat_flux_obj;
-	unsigned long iVertex, iPoint, total_index, Point_Normal;
-	unsigned short iDim, iVar, jVar;
-  unsigned short RHOS_INDEX, RHO_INDEX, T_INDEX, TVE_INDEX;
-	double *V, *dPdU, *d, q, dn;
-  double *GradT, *GradTve;
-  double ktr, kve, qtr, qve;
+	unsigned long iVertex, iPoint, total_index;
+	unsigned short iDim, iVar;
+  unsigned short T_INDEX, TVE_INDEX;
+	double *d, q;
+  double ktr, kve, qtr, qve, pnorm;
+  double *GT, *GTve;
   double Area;
   double phi[3];
-  double pnorm;
-  double *Psi, *Normal, UnitNormal[3];
+  double Normal[3], UnitNormal[3];
   
   /*--- Set booleans from CConfig specifications ---*/
   implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
   heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
-                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX));
-  
-  /*--- Allocate arrays ---*/
-  Psi = new double[nVar];
-  Normal = new double[nDim];
+                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
+                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
   
   /*--- Get primitive vector locators ---*/
-  RHOS_INDEX = solver_container[TNE2_SOL]->node[0]->GetRhosIndex();
-  RHO_INDEX  = solver_container[TNE2_SOL]->node[0]->GetRhoIndex();
   T_INDEX    = solver_container[TNE2_SOL]->node[0]->GetTIndex();
   TVE_INDEX  = solver_container[TNE2_SOL]->node[0]->GetTveIndex();
   
   /*--- Loop over all boundary points ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
-    /*--- Get node and neighbor information ---*/
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-    
 		if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Initialize the convective & viscous residuals to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv_i[iVar] = 0.0;
-        Res_Visc_i[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar ++)
-            Jacobian_ii[iVar][jVar] = 0.0;
-        }
-      }
       
-      /*--- Retrieve adjoint solution at the boundary node ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-				Psi[iVar] = node[iPoint]->GetSolution(iVar);
-      
-      /*--- Retrieve primitive variables at the boundary node ---*/
-      V = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
-      dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
-      
-			/*--- Normal vector for this vertex ---*/
-      // Note: Convention is outward facing normal
-			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      Area = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-        Normal[iDim] = -Normal[iDim];
-        Area += Normal[iDim]*Normal[iDim];
-      }
-      Area = sqrt(Area);
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
-      
-      /*--- Get the force projection vector (based on the objective function) ---*/
+      /*--- Get the force projection vector ---*/
+      // Note: For temperature-based objective functions, d = 0
 			d = node[iPoint]->GetForceProj_Vector();
-      
-      /*--- Apply the momentum boundary condition ---*/
-      dn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+
+      /*--- Set the adjoint velocity boundary condition ---*/
+      for (iDim = 0; iDim < nDim; iDim++)
         phi[iDim] = d[iDim];
-        dn += d[iDim]*Normal[iDim];
-      }
       
       /*--- Apply the B.C. to the linear system ---*/
       for (iDim = 0; iDim < nDim; iDim++)
@@ -4047,46 +3975,56 @@ void CAdjTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
 				}
 			}
       
-      /*--- If heat-flux objective, determine appropriate energy B.C. ---*/
-      if (heat_flux_obj) {
+      /*--- Set the adjoint energy B.C. ---*/
+      if (!heat_flux_obj) {
+
+        q = 0.0;
+
+      } else {
         
-        /*--- Read from config file ---*/
+        /*--- Get p-norm value from configuration settings ---*/
         pnorm = config->GetPnormHeat();
         
+        /*--- Normal vector for this vertex ---*/
+        // Note: Convention is outward facing normal
+        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Normal[iDim] = -Normal[iDim];
+          Area += Normal[iDim]*Normal[iDim];
+        }
+        Area = sqrt(Area);
+        for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim]/Area;
+        
         /*--- Determine local heat flux ---*/
-        ktr = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
-        kve = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
-        GradT   = solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive()[T_INDEX];
-        GradTve = solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive()[TVE_INDEX];
+        ktr  = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
+        kve  = solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
+        GT   = solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive()[T_INDEX];
+        GTve = solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive()[TVE_INDEX];
         qtr = 0.0;
         qve = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          qtr += ktr*GradT[iDim]*UnitNormal[iDim];
-          qve += kve*GradTve[iDim]*UnitNormal[iDim];
+          qtr += ktr*GT[iDim]*UnitNormal[iDim];
+          qve += kve*GTve[iDim]*UnitNormal[iDim];
         }
         q = -pnorm * pow(qtr+qve, pnorm-1.0) * Area;
         
-      } else {
-        q = 0.0;
       }
       
-      /*--- Apply the boundary condition to the linear system ---*/
+      /*--- Apply the B.C. to the linear system ---*/
       LinSysRes.SetBlock_Zero(iPoint, nSpecies+nDim);
       LinSysRes.SetBlock_Zero(iPoint, nSpecies+nDim+1);
-      node[iPoint]->SetSolution_Old(nSpecies+nDim,   q);
-      node[iPoint]->SetSolution_Old(nSpecies+nDim+1, 0.0);
+      node[iPoint]->SetSolution_Old(nSpecies+nDim, q);
+      node[iPoint]->SetSolution_Old(nSpecies+nDim+1, q);
       if (implicit) {
-        iVar = nSpecies+nDim;
-        total_index = iPoint*nVar+iVar;
+        total_index = iPoint*nVar+(nSpecies+nDim);
         Jacobian.DeleteValsRowi(total_index);
-        Jacobian.DeleteValsRowi(total_index+1);
+        total_index = iPoint*nVar+(nSpecies+nDim+1);
+        Jacobian.DeleteValsRowi(total_index);
       }
+      
     }
   }
-  
-  
-  delete [] Psi;
-  delete [] Normal;
 }
 
 void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
@@ -4095,10 +4033,89 @@ void CAdjTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                       CNumerics *visc_numerics,
                                                       CConfig *config,
                                                       unsigned short val_marker) {
+  bool implicit, heat_flux_obj;
+  unsigned short iDim, iSpecies, iVar, jVar;
+  unsigned long iPoint, iVertex;
+  double dnPsiE, dnPsiEve;
+  double T, Tve;
+  double *d, *dPdU, *Psi;
+  double phi[3], Normal[3], hs[nSpecies], eves[nSpecies];
   
   /*--- Use already implemented Isothermal BC as a baseline ---*/
   BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics,
                      config, val_marker);
+  
+  /*--- Set booleans from CConfig specifications ---*/
+  implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
+                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
+                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
+  
+  
+  /*--- Loop over all boundary points ---*/
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+		if (geometry->node[iPoint]->GetDomain()) {
+      
+      if (!heat_flux_obj) {
+        
+        /*--- Initialize residual ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Conv_i[iVar] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_ii[iVar][jVar] = 0.0;
+        }
+        
+        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+        
+        /*--- Acquire flow quantities ---*/
+        dPdU = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
+        T    = solver_container[TNE2_SOL]->node[iPoint]->GetTemperature();
+        Tve  = solver_container[TNE2_SOL]->node[iPoint]->GetTemperature_ve();
+        
+        /*--- Get the force projection vector ---*/
+        // Note: For temperature-based objective functions, d = 0
+        d = node[iPoint]->GetForceProj_Vector();
+        
+        /*--- Retrieve adjoint variables ---*/
+        Psi = node[iPoint]->GetSolution();
+        
+        /*--- Set the adjoint velocity boundary condition ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          phi[iDim] = d[iDim];
+        
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          eves[iSpecies] = solver_container[TNE2_SOL]->node[iPoint]->CalcEve(config, Tve, iSpecies);
+          hs[iSpecies]   = solver_container[TNE2_SOL]->node[iPoint]->CalcHs(config, T, eves[iSpecies], iSpecies);
+          for (iDim = 0; iDim < nDim; iDim++)
+            Res_Conv_i[iSpecies] += (dPdU[iSpecies]*phi[iDim]*Normal[iDim]        -
+                                     Psi[nSpecies+nDim]*Normal[iDim]*hs[iSpecies] -
+                                     Psi[nSpecies+nDim+1]*Normal[iDim]*eves[iSpecies]);
+        }
+        
+        LinSysRes.AddBlock(iPoint, Res_Conv_i);
+        
+        if (implicit) {
+          // NEED TO IMPLEMENT CONTRIBUTIONS FROM PsiE and PsiEve TERMS!!
+          
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Jacobian_ii[iSpecies][nSpecies+iDim] = dPdU[iSpecies]*Normal[iDim];
+            }
+          }
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        }
+        
+      } else {
+        
+        cout << "WARNING: THERMAL OBJECTIVES NOT IMPLEMENTED ISOTHERMAL_NONCATALYTIC B.C.!!" << endl;
+        
+      }
+    }
+  }
+  
   
 //  bool implicit;
 //  unsigned short iDim, iSpecies, jSpecies, iVar, jVar;
@@ -4356,9 +4373,51 @@ void CAdjTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                    CConfig *config,
                                                    unsigned short val_marker) {
   
+  bool implicit, heat_flux_obj;
+  unsigned short iSpecies;
+  unsigned long iPoint, iVertex, total_index;
+  double psiE, psiEve;
+  
+  /*--- Sets the boundary condition for the adjoint species density ---*/
+  // For catalytic boundaries, Psi_rs = -PsiE*hs -PsiEve*eves
+  
   /*--- Use already implemented Isothermal BC as a baseline ---*/
   BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics,
                      config, val_marker);
   
+  /*--- Determine the time-stepping routine ---*/
+  implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+  
+  /*--- Determine the nature of the objective function ---*/
+  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
+                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
+                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
+  
+  /*--- Loop over all boundary points ---*/
+	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+		if (geometry->node[iPoint]->GetDomain()) {
+      
+      if (!heat_flux_obj) {
+        
+        /*--- Set the value of the adjoint energy on the boundary ---*/
+        psiE   = 0.0;
+        psiEve = 0.0;
+        
+        /*--- Apply the B.C. to the linear system ---*/
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          LinSysRes.SetBlock_Zero(iPoint, iSpecies);
+          node[iPoint]->SetSolution_Old(iSpecies, 0.0);
+          if (implicit) {
+            total_index = iPoint*nVar+(iSpecies);
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        }
+        
+      } else {
+        cout << "WARNING: NEED TO IMPLEMENT THERMAL OBJECTIVE IN ISOTHERMAL_CATALYTIC BC" << endl;
+      }
+    }
+  }
 }
 
