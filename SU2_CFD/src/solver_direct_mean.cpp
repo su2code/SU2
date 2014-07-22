@@ -480,6 +480,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #else
     counter_global = counter_local;
 #endif
+    config->SetNonphysical_Points(counter_global);
     if ((rank == MASTER_NODE) && (counter_global != 0))
       cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
   }
@@ -2715,8 +2716,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+  
   
 }
 
@@ -2983,14 +2984,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short iMesh) {
   double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *V_i, *V_j, *Limiter_i = NULL,
   *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel;
-  unsigned long iEdge, iPoint, jPoint;
+  unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
-  
+  bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false;
+
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && ((iMesh == MESH_0) || low_fidelity));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
+  bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   
@@ -3045,6 +3048,30 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
+      }
+      
+      /*--- Check for non-physical solutions after reconstruction. If found,
+       use the cell-average value of the solution. This results in a locally
+       first-order approximation, but this is typically only active
+       during the start-up of a calculation. ---*/
+      
+      if (compressible) {
+        neg_pressure_i = (Primitive_i[nDim+1] < 0.0);
+        neg_pressure_j = (Primitive_j[nDim+1] < 0.0);
+        neg_density_i  = (Primitive_i[nDim+2] < 0.0);
+        neg_density_j  = (Primitive_j[nDim+2] < 0.0);
+      }
+      
+      /*--- If non-physical, use the cell-averaged state. ---*/
+      if (neg_density_i || neg_pressure_i) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Primitive_i[iVar] = V_i[iVar];
+        counter_local++;
+      }
+      if (neg_density_j || neg_pressure_j) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Primitive_j[iVar] = V_j[iVar];
+        counter_local++;
       }
       
       /*--- Set conservative variables with reconstruction ---*/
@@ -3151,6 +3178,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     }
     
   }
+  
+  /*--- Warning message about non-physical reconstructions ---*/
+#ifdef HAVE_MPI
+  MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  counter_global = counter_local;
+#endif
+  if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   
 }
 
@@ -9174,8 +9209,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   
 }
 
@@ -9384,6 +9418,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
 
 void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  
   unsigned long iPoint, jPoint, iEdge;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -9391,33 +9426,39 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points, coordinates and normal vector in edge ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
     /*--- Primitive variables, and gradient ---*/
+    
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
     
     /*--- Turbulent kinetic energy ---*/
+    
     if (config->GetKind_Turb_Model() == SST)
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     
     /*--- Compute and update residual ---*/
+    
     numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
     
     LinSysRes.SubtractBlock(iPoint, Res_Visc);
     LinSysRes.AddBlock(jPoint, Res_Visc);
     
     /*--- Implicit part ---*/
+    
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
       Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
       Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
     }
+    
   }
   
 }
