@@ -2666,7 +2666,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
      FreeSurface Incompressible flow, primitive variables nDim+5, (P,vx,vy,vz,rho,beta,LevelSet,Dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
     
-    if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel); }
+//    if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel); }
+    if (compressible) {
+    	RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
+    	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
+    }
     if (incompressible) { RightSol = node[iPoint]->SetPrimVar_Incompressible(Density_Inf, config); }
     if (freesurface) {    RightSol = node[iPoint]->SetPrimVar_FreeSurface(config); }
     if (!RightSol) ErrorCounter++;
@@ -5520,8 +5524,8 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 
           FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
 
-          Kappa_b = FluidModel->GetDpDe_d() / Density_b; ///getKappa
-          Chi_b = FluidModel->GetDpDd_e() - Kappa_b * StaticEnergy_b;/// cambiare in getCHI
+          Kappa_b = FluidModel->GetdPde_rho() / Density_b; ///getKappa
+          Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;/// cambiare in getCHI
 
           Pressure_b = FluidModel->GetPressure();
           Enthalpy_b = Energy_b + Pressure_b/Density_b;
@@ -6056,8 +6060,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         SoundSpeed_i = FluidModel->GetSoundSpeed();
 
-        Kappa_i = FluidModel->GetDpDe_d() / Density_i; ///getKappa
-        Chi_i = FluidModel->GetDpDd_e() - Kappa_i * StaticEnergy_i;/// cambiare in getCHI
+        Kappa_i = FluidModel->GetdPde_rho() / Density_i;
+        Chi_i = FluidModel->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
 
         ProjVelocity_i = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -6279,8 +6283,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         Pressure_b = FluidModel->GetPressure();
         Enthalpy_b = Energy_b + Pressure_b/Density_b;
 
-        Kappa_b = FluidModel->GetDpDe_d() / Density_b;              ///change with getKappa
-        Chi_b = FluidModel->GetDpDd_e() - Kappa_b * StaticEnergy_b; /// change with getCHI
+        Kappa_b = FluidModel->GetdPde_rho() / Density_b;
+        Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
 
         /*--- Compute the residuals ---*/
         conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);

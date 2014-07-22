@@ -22,13 +22,18 @@
 
 #include "../include/transport_model.hpp"
 
+
+/* ------------------------------------------------- */
+/* ----------- Dynamic Viscosity Models ------------ */
+/* ------------------------------------------------- */
+
 CViscosityModel::CViscosityModel(void) {
 
   /*--- Attributes initialization ---*/
 
 	Mu = 0.0;
-	DmuDd_T = 0.0;
-	DmuDT_d = 0.0;
+	dmudrho_T = 0.0;
+	dmudT_rho = 0.0;
 
 }
 
@@ -70,9 +75,62 @@ CSutherland::~CSutherland(void) { }
 void CSutherland::SetViscosity(double T, double rho) {
 
 	Mu = Mu_ref*pow((T/T_ref),(3.0/2.0))*((T_ref + S)/(T + S));
-	DmuDT_d = 0.0;
-	DmuDd_T = 0.0;
+	dmudrho_T = 0.0;
+	dmudT_rho = 0.0;
+
 }
 
 
+/* ------------------------------------------------- */
+/* ---------- Thermal Conductivity Models ---------- */
+/* ------------------------------------------------- */
+
+CThermalConductivityModel::CThermalConductivityModel(void) {
+
+  /*--- Attributes initialization ---*/
+
+	Kt = 0.0;
+	dktdrho_T = 0.0;
+	dktdT_rho = 0.0;
+
+}
+
+CThermalConductivityModel::~CThermalConductivityModel(void) { }
+
+
+CConstantThermalConductivity::CConstantThermalConductivity(void) : CThermalConductivityModel() { }
+
+CConstantThermalConductivity::CConstantThermalConductivity(double kt_const) : CThermalConductivityModel() {
+
+  /*--- Attributes initialization ---*/
+
+	Kt = kt_const;
+
+}
+
+CConstantThermalConductivity::~CConstantThermalConductivity(void) { }
+
+
+CConstantPrandtl::CConstantPrandtl(void) : CThermalConductivityModel() { }
+
+CConstantPrandtl::CConstantPrandtl(double pr_const) : CThermalConductivityModel() {
+
+  /*--- Attributes initialization ---*/
+
+	Pr_const = pr_const;
+
+}
+
+void CConstantPrandtl::SetThermalConductivity(double par1, double par2) {
+
+	double Cp = par1;
+	double Mu = par2;
+
+	Kt = Mu*Cp/Pr_const;
+	dktdrho_T = 0.0;
+	dktdT_rho = 0.0;
+
+}
+
+CConstantPrandtl::~CConstantPrandtl(void) { }
 

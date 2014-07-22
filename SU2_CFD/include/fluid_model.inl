@@ -1,5 +1,5 @@
 /*!
- * \file gas_model.inl
+ * \file fluid_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
  * \version 3.2.0 "eagle"
@@ -29,12 +29,33 @@ inline double CFluidModel::GetDensity () { return Density; }
 inline double CFluidModel::GetEntropy () { return Entropy; }
 inline double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
 inline double CFluidModel::GetTemperature () { return Temperature; }
-inline double CFluidModel::GetDpDd_e () { return DpDd_e; }
-inline double CFluidModel::GetDpDe_d () { return DpDe_d; }
+inline double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
+inline double CFluidModel::GetdPde_rho () { return dPde_rho; }
+inline double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
+inline double CFluidModel::GetdTde_rho () { return dTde_rho; }
+
 inline double CFluidModel::GetLaminarViscosity (double T, double rho) {
         DynamicViscosity->SetViscosity(T, rho);
         return DynamicViscosity->GetViscosity();
 }
+inline double CFluidModel::Getdmudrho_T () {
+        return DynamicViscosity->GetDerViscosity_rho_T();
+}
+inline double CFluidModel::GetdmudT_rho () {
+        return DynamicViscosity->GetDerViscosity_T_rho();
+}
+
+inline double CFluidModel::GetThermalConductivity (double par1, double par2) {
+        ThermalConductivity->SetThermalConductivity(par1, par2);
+        return ThermalConductivity->GetThermalConductivity();
+}
+inline double CFluidModel::Getdktdrho_T () {
+        return ThermalConductivity->GetDerThermalConductivity_rho_T();
+}
+inline double CFluidModel::GetdktdT_rho () {
+        return ThermalConductivity->GetDerThermalConductivity_T_rho();
+}
+
 inline void CFluidModel::SetTDState_rhoe (double rho, double e ) { }
 inline void CFluidModel::SetTDState_PT (double P, double T ) { }
 inline void CFluidModel::SetTDState_Prho (double P, double rho ) { }

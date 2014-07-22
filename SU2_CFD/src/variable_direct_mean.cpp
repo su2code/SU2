@@ -415,6 +415,16 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   
 }
 
+void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+	unsigned short iVar;
+
+   /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+   SetdPdrho_e(FluidModel->GetdPdrho_e());
+   SetdPde_rho(FluidModel->GetdPde_rho());
+
+}
+
 bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) {
   
   double ArtComp_Factor = config->GetArtComp_Factor();
@@ -624,6 +634,18 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   
   return RightVol;
   
+}
+
+void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+
+  /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+	SetdTdrho_e( FluidModel->GetdTdrho_e() );
+	SetdTde_rho( FluidModel->GetdTde_rho() );
+
+	Setdmudrho_T( FluidModel->Getdmudrho_T() );
+	SetdmudT_rho( FluidModel->GetdmudT_rho() );
+
 }
 
 bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config) {

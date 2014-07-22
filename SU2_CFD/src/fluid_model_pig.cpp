@@ -48,11 +48,11 @@ void CIdealGas::SetTDState_rhoe (double rho, double e ){
 	Pressure = Gamma_Minus_One*Density*StaticEnergy;
 	Temperature = Gamma_Minus_One*StaticEnergy/Gas_Constant;
 	SoundSpeed2 = Gamma*Pressure/Density;
-	DpDd_e = Gamma_Minus_One*StaticEnergy;
-	DpDe_d = Gamma_Minus_One*Density;
-	DTDd_e = 0.0;
-	DTDe_d = Gamma_Minus_One/Gas_Constant;
 	Entropy = (Gamma/Gamma_Minus_One*log(Temperature) - log(Pressure))*Gas_Constant;
+	dPdrho_e = Gamma_Minus_One*StaticEnergy;
+	dPde_rho = Gamma_Minus_One*Density;
+	dTdrho_e = 0.0;
+	dTde_rho = Gamma_Minus_One/Gas_Constant;
 
 }
 

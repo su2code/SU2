@@ -272,6 +272,8 @@ inline bool CVariable::SetPrimVar_Compressible(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) { return true; }
 
+inline void CVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) { }
+
 inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) { return true; }
@@ -317,6 +319,18 @@ inline void CVariable::SetVelocityInc(void) { }
 inline void CVariable::SetPhi_Old(double *val_phi) { }
 
 inline void CVariable::SetDiffLevelSet(double val_difflevelset) { }
+
+inline void CVariable::SetdPdrho_e(double dPdrho_e) { }
+
+inline void CVariable::SetdPde_rho(double dPde_rho) { }
+
+inline void CVariable::SetdTdrho_e(double dTdrho_e) { }
+
+inline void CVariable::SetdTde_rho(double dTde_rho) { }
+
+inline void CVariable::Setdmudrho_T(double dmudrho_T) { }
+
+inline void CVariable::SetdmudT_rho(double dmudT_rho) { }
 
 inline bool CVariable::SetPressure(double Gamma) { return false; }
 
@@ -547,6 +561,14 @@ inline bool CEulerVariable::SetTemperature(double temperature) {
    else return true;
 }
 
+inline void CEulerVariable::SetdPdrho_e(double dPdrho_e) {  
+   Secondary[0] = dPdrho_e; 
+}
+
+inline void CEulerVariable::SetdPde_rho(double dPde_rho) { 
+   Secondary[1] = dPde_rho; 
+}
+
 inline double CEulerVariable::GetPrimitive(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CEulerVariable::SetPrimitive(unsigned short val_var, double val_prim) { Primitive[val_var] = val_prim; }
@@ -645,6 +667,22 @@ inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
 inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
     Primitive[nDim+5] = laminarViscosity;
+}
+
+inline void CNSVariable::SetdTdrho_e(double dTdrho_e) {  
+   Secondary[2] = dTdrho_e; 
+}
+
+inline void CNSVariable::SetdTde_rho(double dTde_rho) { 
+   Secondary[3] = dTde_rho; 
+}
+
+inline void CNSVariable::Setdmudrho_T(double dmudrho_T) {  
+   Secondary[4] = dmudrho_T; 
+}
+
+inline void CNSVariable::SetdmudT_rho(double dmudT_rho) { 
+   Secondary[5] = dmudT_rho; 
 }
 
 inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }
