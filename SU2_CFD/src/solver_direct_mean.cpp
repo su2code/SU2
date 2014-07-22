@@ -5977,7 +5977,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
   double Gas_Constant       = config->GetGas_ConstantND();
-  unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
@@ -5995,7 +5994,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   Velocity_e = new double[nDim];
 
 
-  V_boundary = new double[nVar];
+  V_boundary = new double[nPrimVar];
   Lambda_i = new double[nVar];
   u_i = new double[nVar];
   u_e = new double[nVar];
@@ -6069,27 +6068,30 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
 
 
-        switch(Kind_Inlet)//(Kind_Riemann) /// TOTALTEMPERATURE_TOTALPRESSURE, DENSITY_VELOCITY (MASS_FLOW), PRESSURE
+        switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
-            /// TODO!! change getinlet_Ptotal in getRieman_data: functon which takes the values and stores them into an array
 
-            case TOTAL_CONDITIONS://TOTAL_CONDITIONS_PT: //TOTALTEMPERATURE_TOTALPRESSURE:
+
+            case TOTAL_CONDITIONS_PT:
                 /*--- Retrieve the specified total conditions for this boundary. ---*/
 
-                if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-                else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-                T_Total  = config->GetInlet_Ttotal(Marker_Tag);
-                Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+                if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+                else P_Total  = config->GetRiemann_Var1(Marker_Tag);
+                T_Total  = config->GetRiemann_Var2(Marker_Tag);
+                Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+//               cout << Marker_Tag << endl;
 
                 /*--- Non-dim. the inputs if necessary. ---*/
                 P_Total /= config->GetPressure_Ref();
                 T_Total /= config->GetTemperature_Ref();
+//                getchar();
 
                 /* --- Computes the total state --- */
 
                 FluidModel->SetTDState_PT(P_Total, T_Total);
 
-                Enthalpy_e = FluidModel->GetStaticEnergy() + FluidModel->GetPressure()/FluidModel->GetDensity();
+
+                Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
 
                 Entropy_e = FluidModel->GetEntropy();
 
@@ -6102,6 +6104,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 }
 
                 StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+//                cout << StaticEnthalpy_e << " "<< Entropy_e << endl;
 
                 FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
 
@@ -6118,12 +6121,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 break;
 
 
-            case -1://DENSITY_VELOCITY:
+            case DENSITY_VELOCITY:
 
                 /*--- Retrieve the specified density and velocity magnitude ---*/
-                Density_e  = config->GetInlet_Ttotal(Marker_Tag);
-                VelMag_e   = config->GetInlet_Ptotal(Marker_Tag);
-                Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+                Density_e  = config->GetRiemann_Var1(Marker_Tag);
+                VelMag_e   = config->GetRiemann_Var2(Marker_Tag);
+                Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
                 /*--- Non-dim. the inputs if necessary. ---*/
                 Density_e /= config->GetDensity_Ref();
@@ -6142,15 +6145,18 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 break;
 
 
-            case -2://STATIC_PRESSURE:
+            case STATIC_PRESSURE:
 
-                Pressure_e = config->GetInlet_Ptotal(Marker_Tag); /// Warning! this shuld take the static pressure !change name function
+                Pressure_e = config->GetRiemann_Var1(Marker_Tag);
                 Pressure_e /= config->GetPressure_Ref();
 
                 Density_e = Density_i;
 
                 FluidModel->SetTDState_Prho(Pressure_e, Density_e);
 
+//                cout << Marker_Tag << endl;
+
+//                getchar();
                 Velocity2_e = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++) {
                   Velocity_e[iDim] = Velocity_i[iDim];
@@ -6199,6 +6205,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             dw[iVar] = 0;
             for (jVar = 0; jVar < nVar; jVar++)
                 dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+//            cout << u_e[iVar]<< " "<< u_i[iVar] << endl;
         }
 
         /*--- Compute the boundary state u_b using characteristics ---*/
@@ -6215,8 +6222,47 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             }
         }
 
+
+//        /*--- Primitive variables, using the derived quantities ---*/
+//
+//        V_boundary[nDim+2] = u_b[0];
+//        double v2 = 0;
+//        for (iDim = 0; iDim < nDim; iDim++){
+//        	V_boundary[iDim+1] = u_b[iDim]/u_b[0];
+//        	v2 += V_boundary[iDim+1]*V_boundary[iDim+1];
+//        }
+//        double e_b = u_b[nVar-1]/u_b[0] - 0.5*v2;
+//        FluidModel->SetTDState_rhoe(u_b[0], e_b);
+//        V_boundary[0] = FluidModel->GetTemperature() ;
+//        V_boundary[nDim+1] = FluidModel->GetPressure();
+//        V_boundary[nDim+3] = u_b[nVar-1]/u_b[0] + V_boundary[nDim+1]/u_b[0];
+//        V_boundary[nDim+4] = FluidModel->GetSoundSpeed();
+////        cout <<  V_boundary[0] << " "<<  V_boundary[1] << " "<<  V_boundary[2] << " "<<  V_boundary[3] << " "<<  V_boundary[4] << " "<< V_boundary[5] << " "<< Marker_Tag << " "<< endl;
+//
+//
+//        /*--- Set various quantities in the solver class ---*/
+//        conv_numerics->SetPrimitive(V_domain, V_boundary);
+//
+//        if (grid_movement)
+//          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+//
+//        /*--- Compute the residual using an upwind scheme ---*/
+//        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//
+//        /*--- Update residual value ---*/
+//        LinSysRes.AddBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//        if (implicit)
+//          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+//        for (iVar = 0; iVar < nVar; iVar++){
+//        	cout << u_i[iVar] <<" "<< u_b[iVar]<<" "<< u_e[iVar] << endl;
+//        }
+
         /*--- Compute the thermodynamic state in u_b ---*/
         Density_b = u_b[0];
+//        cout << u_b[0] << endl;
 
         Velocity2_b = 0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -6274,9 +6320,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
 
                /*--- Compute flux jacobian in state b ---*/
-
-              conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1, Jacobian_b);
+//             cout << Enthalpy_b << " " << Chi_b<< " " << Kappa_b <<" "<< endl;
+              conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
 /// check ALE
+
+
+
+
               if (grid_movement)
               {
                 Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
@@ -6296,9 +6346,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                           Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
                       }
                   }
+//              cout << Jacobian_i[iVar][0] << " " << Jacobian_i[iVar][1] << " " << Jacobian_i[iVar][2]<< " " << Jacobian_i[iVar][3]<< " " << endl;
               }
 
-              Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+
+//              Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
 
 
               for (iVar = 0; iVar < nVar; iVar++)
@@ -6362,7 +6414,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
-
+// getchar();
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
   delete [] Velocity_e;
@@ -6687,7 +6739,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
     }
   }
-  
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
   

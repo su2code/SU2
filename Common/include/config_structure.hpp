@@ -190,7 +190,7 @@ private:
 	double *Nozzle_Ttotal;    /*!< \brief Specified total temperatures for nacelle boundaries. */
 	double *Nozzle_Ptotal;    /*!< \brief Specified total pressures for nacelle boundaries. */
 	double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
-	double *Riemann_var1, *Riemann_var2;    /*!< \brief Specified values for Riemann boundary. */
+	double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
 	double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
 	double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
@@ -867,12 +867,12 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
-  void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short & option_field, const map<string, Tenum> & enum_map,
-                                 double* & Ttotal, double* & Ptotal, double** & FlowDir){
+  template <class Tenum>
+  void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+                                 double* & var1, double* & var2, double** & FlowDir){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionRiemann(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, Ttotal, Ptotal, FlowDir);
+    COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -4828,6 +4828,35 @@ public:
 	 * \return The outlet pressure.
 	 */
 	double GetOutlet_Pressure(string val_index);
+
+	/*!
+	 * \brief Get the var 1 at Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return The var1
+	 */
+	double GetRiemann_Var1(string val_marker);
+
+	/*!
+	 * \brief Get the var 2 at Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return The var2
+	 */
+
+	double GetRiemann_Var2(string val_marker);
+
+	/*!
+	 * \brief Get the Flowdir at Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return The Flowdir
+	 */
+	double* GetRiemann_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_Riemann(string val_marker);
 
 	/*!
 	 * \brief Get the wall temperature (static) at an isothermal boundary.

@@ -52,6 +52,7 @@ void CIdealGas::SetTDState_rhoe (double rho, double e ){
 	DpDe_d = Gamma_Minus_One*Density;
 	DTDd_e = 0.0;
 	DTDe_d = Gamma_Minus_One/Gas_Constant;
+	Entropy = (Gamma/Gamma_Minus_One*log(Temperature) - log(Pressure))*Gas_Constant;
 
 }
 
@@ -76,7 +77,7 @@ void CIdealGas::SetEnergy_Prho (double P, double rho ){
 
 void CIdealGas::SetTDState_hs (double h, double s ){
 
-	double T = h*Gamma_Minus_One/Gamma/Gas_Constant;
+	double T = h*Gamma_Minus_One/Gas_Constant/Gamma;
 	double P = exp(Gamma/Gamma_Minus_One*log(T) - s/Gas_Constant);
 
 	SetTDState_PT(P, T);

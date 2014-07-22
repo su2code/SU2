@@ -667,7 +667,8 @@ enum BC_TYPE {
   ISOTHERMAL_CATALYTIC = 34, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 35,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 36,	/*!< \brief Actuator disk outlet boundary definition. */
-  SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
+  SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
+  RIEMANN_BOUNDARY= 100   /*!< \brief Riemann Boundary definition. */
 };
 
 /*!
@@ -1992,23 +1993,26 @@ public:
   }
 };
 
+template <class Tenum>
 class COptionRiemann : public COptionBase{
 
-  map<string, Tenum> enum_map;
-  unsigned short & field; // Reference to the feildname
+  map<string, Tenum> m;
+  unsigned short* & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
   double * & var1;
-  double * & ptotal;
+  double * & var2;
   double ** & flowdir;
 
 public:
-  COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short & option_field, const map<string, Tenum> enum_map, double* & Ttotal, double* & Ptotal, double** & FlowDir) : size(nMarker_Riemann), marker(Marker_Riemann), field(option_field), var1(Ttotal), var2(Ptotal), flowdir(FlowDir){
+  COptionRiemann(string option_field_name, unsigned short & nMarker_Riemann, string* & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> m, double* & var1, double* & var2, double** & FlowDir) : size(nMarker_Riemann),
+  	  	  	  	  marker(Marker_Riemann), field(option_field), var1(var1), var2(var2), flowdir(FlowDir){
     this->name = option_field_name;
-    this->enum_map = enum_map;
+    this->m = m;
   }
-  ~COptionInlet(){};
+  ~COptionRiemann(){};
+
   string SetValue(vector<string> option_value){
 
     unsigned long totalVals = option_value.size();
@@ -2016,7 +2020,6 @@ public:
       this->size = 0;
       this->marker = NULL;
       this->field = 0;
-      this->enum_map = 0;
       this->var1 = NULL;
       this->var2 = NULL;
       this->flowdir = NULL;
@@ -2032,8 +2035,7 @@ public:
       this->var1 = NULL;
       this->var2 = NULL;
       this->flowdir = NULL;
-      this->field = 1;
-      this->enum_map = TOTAL_CONDITIONS_PT;
+      this->field = NULL;
       return newstring;
     }
 
@@ -2053,7 +2055,7 @@ public:
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[7*i]);
         // Check to see if the enum value is in the map
-    if (this->enum_map.find(option_value[7*i + 1]) == enum_map.end()){
+    if (this->m.find(option_value[7*i + 1]) == m.end()){
       string str;
       str.append(this->name);
       str.append(": invalid option value ");

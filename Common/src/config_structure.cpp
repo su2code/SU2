@@ -368,7 +368,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Riemann boundary marker(s) with the following formats,
    /// TODO
    a unit vector. */
-  addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_var1, Riemann_var2, Riemann_FlowDir);
+  addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
   /* DESCRIPTION: % Supersonic inlet boundary marker(s)
    Format: (inlet marker, temperature, static pressure, velocity_x,
    velocity_y, velocity_z, ... ), i.e. primitive variables specified. */
@@ -2744,7 +2744,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   /*--- Boundary (marker) treatment ---*/
   nMarker_All = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_PerBound + nMarker_NearFieldBound + nMarker_Supersonic_Inlet +
-  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet +
+  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Riemann+ nMarker_Inlet +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalCatalytic +
   nMarker_IsothermalNonCatalytic + nMarker_HeatFlux + nMarker_HeatFluxCatalytic +
   nMarker_HeatFluxNonCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
@@ -2767,7 +2767,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   unsigned short iMarker_All, iMarker_Config, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Outlet, iMarker_Isothermal, iMarker_IsothermalCatalytic,
+  iMarker_Inlet, iMarker_Riemann, iMarker_Outlet, iMarker_Isothermal, iMarker_IsothermalCatalytic,
   iMarker_IsothermalNonCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNoncatalytic,
   iMarker_HeatFluxCatalytic, iMarker_NacelleInflow, iMarker_NacelleExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
@@ -2791,7 +2791,7 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
 
   nMarker_Config = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
-  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet +
+  nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
   nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
   nMarker_HeatFluxCatalytic + nMarker_NacelleInflow + nMarker_NacelleExhaust +
@@ -2888,6 +2888,12 @@ void CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone) 
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
     Marker_CfgFile_TagBound[iMarker_Config] = Marker_Inlet[iMarker_Inlet];
     Marker_CfgFile_KindBC[iMarker_Config] = INLET_FLOW;
+    iMarker_Config++;
+  }
+
+  for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
+    Marker_CfgFile_TagBound[iMarker_Config] = Marker_Riemann[iMarker_Riemann];
+    Marker_CfgFile_KindBC[iMarker_Config] = RIEMANN_BOUNDARY;
     iMarker_Config++;
   }
 
@@ -5626,6 +5632,34 @@ double CConfig::GetOutlet_Pressure(string val_marker) {
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
   return Outlet_Pressure[iMarker_Outlet];
+}
+
+double CConfig::GetRiemann_Var1(string val_marker) {
+  unsigned short iMarker_Riemann;
+  for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
+    if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
+  return Riemann_Var1[iMarker_Riemann];
+}
+
+double CConfig::GetRiemann_Var2(string val_marker) {
+  unsigned short iMarker_Riemann;
+  for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
+    if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
+  return Riemann_Var2[iMarker_Riemann];
+}
+
+double* CConfig::GetRiemann_FlowDir(string val_marker) {
+  unsigned short iMarker_Riemann;
+  for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
+    if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
+  return Riemann_FlowDir[iMarker_Riemann];
+}
+
+unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
+  unsigned short iMarker_Riemann;
+  for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
+    if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
+  return Kind_Data_Riemann[iMarker_Riemann];
 }
 
 double CConfig::GetIsothermal_Temperature(string val_marker) {
