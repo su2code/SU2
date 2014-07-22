@@ -2,7 +2,7 @@
  * transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 1.0.0 "eagle"
+ * \version 3.2.0 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -23,16 +23,11 @@
 
 #ifndef TRANSPORT_MODEL_HPP_
 #define TRANSPORT_MODEL_HPP_
-
-
-
-
-
 #endif /* TRANSPORT_MODEL_HPP_ */
 #pragma once
+
 #include <stdio.h>
 #include <string.h>
-//#include <fluidprop.h>
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -45,10 +40,8 @@
 using namespace std;
 
 
-
-
 /*!
- * \class CGModel
+ * \class CViscosityModel
  * \brief Main class for defining the Transport-Physical Model
  * a child class for each particular Model (Power law, Sutherland, Chung, etc.)
  * \author S.Vitale, M.Pini
@@ -56,9 +49,9 @@ using namespace std;
  */
 class CViscosityModel {
 protected:
-double   	 Mu,			/*!< \brief Internal Energy. */
-			 DmuDT_d, 				/*!< \brief DpDd_e. */
-			 DmuDd_T; 				/*!< \brief DpDe_d. */
+double   	 Mu,			/*!< \brief Dynamic viscosity. */
+			 dmudrho_T, 	/*!< \brief DmuDrho_T. */
+			 dmudT_rho; 	/*!< \brief DmuDT_rho. */
 public:
 
 		/*!
@@ -77,19 +70,19 @@ public:
 		double GetViscosity(void);
 
 		/*!
-		 * \brief return viscosity value.
+		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDmuDT_d(void);
+		double GetDerViscosity_rho_T(void);
 
 		/*!
-		 * \brief return viscosity value.
+		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDmuDd_T(void);
+		double GetDerViscosity_T_rho(void);
 
 		/*!
 		 * \brief Set Viscosity.
 		 */
-		virtual	void SetViscosity(double T, double rho);
+		virtual	 void SetViscosity(double T, double rho);
 
 
 };
@@ -161,5 +154,119 @@ public:
 		void SetViscosity(double T, double rho);
 
 };
+
+
+/*!
+ * \class CThermalConductivityModel
+ * \brief Main class for defining the Transport-Physical Model
+ * a child class for each particular Model (Prandtl-based, etc.)
+ * \author S. Vitale, M. Pini
+ * \version 1.0
+ */
+class CThermalConductivityModel {
+protected:
+double   	 Kt,			/*!< \brief Thermal conductivity. */
+			 dktdrho_T, 	/*!< \brief DktDrho_T. */
+			 dktdT_rho; 	/*!< \brief DktDT_rho. */
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+		CThermalConductivityModel(void);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CThermalConductivityModel(void);
+
+		/*!
+		 * \brief return viscosity value.
+		 */
+		double GetThermalConductivity(void);
+
+		/*!
+		 * \brief return viscosity partial derivative value.
+		 */
+		double GetDerThermalConductivity_rho_T(void);
+
+		/*!
+		 * \brief return viscosity partial derivative value.
+		 */
+		double GetDerThermalConductivity_T_rho(void);
+
+		/*!
+		 * \brief Set Thermal conductivity.
+		 */
+		virtual	 void SetThermalConductivity(double par1, double par2);
+
+
+};
+
+
+/*!
+ * \class CConstantPrandtl
+ * \brief this class defines a constant thermal conductivity using a constant Prandtl's number
+ * \author S.Vitale, M.Pini
+ * \version 1.0
+ */
+class CConstantThermalConductivity : public CThermalConductivityModel {
+
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CConstantThermalConductivity(void);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CConstantThermalConductivity(double kt_const);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CConstantThermalConductivity(void);
+
+};
+
+
+/*!
+ * \class CConstantPrandtl
+ * \brief this class defines a non-constant thermal conductivity using a constant Prandtl's number
+ * \author S.Vitale, M.Pini
+ * \version 1.0
+ */
+class CConstantPrandtl : public CThermalConductivityModel {
+protected:
+	double   	 Pr_const;		/*!< \brief Prandtl's number. */
+
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CConstantPrandtl(void);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CConstantPrandtl(void);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+	    CConstantPrandtl(double pr_const);
+
+		/*!
+		 * \brief Set Thermal conductivity.
+		 * \brief par1 -> Cp.
+		 * \brief par2 -> Mu.
+		 */
+		void SetThermalConductivity(double par1, double par2);
+
+};
+
 
 #include "transport_model.inl"
