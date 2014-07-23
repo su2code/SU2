@@ -1860,8 +1860,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 	case VW_GAS:
 		FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical());
 		if(fs_temperature){
-			cout << "ERROR... Change the FREESTREAM_OPTION to DENSITY_FS"<< endl;
-			getchar();
 			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
 			Density_FreeStream = FluidModel->GetDensity();
 		} else {
