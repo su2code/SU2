@@ -1453,12 +1453,16 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->SetConservative(U_i, U_j);
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
-                      solver_container[TNE2_SOL]->node[jPoint]->GetdPdU());
-    numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
-                      solver_container[TNE2_SOL]->node[jPoint]->GetdTdU());
+    numerics->SetdPdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetdPdU());
+    numerics->SetdTdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetdTdU());
     numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                         solver_container[TNE2_SOL]->node[jPoint]->GetdTvedU());
+    numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetEve());
+    numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetCvve());
     
     /*--- Adjoint variables w/o reconstruction ---*/
     Psi_i = solver_container[ADJTNE2_SOL]->node[iPoint]->GetSolution();
@@ -1567,12 +1571,16 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
                            solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar());
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
-                      solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
-    numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
-                      solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
+    numerics->SetdPdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
+    numerics->SetdTdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
     numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                         solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
+    numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetEve());
+    numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetCvve());
     
     /*--- Set adjoint variables at point i ---*/
     numerics->SetAdjointVar(node[iPoint]->GetSolution(),

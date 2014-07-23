@@ -2144,13 +2144,6 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       GradV_i = node[iPoint]->GetGradient_Primitive();
       GradV_j = node[jPoint]->GetGradient_Primitive();
       if (limiter) {
-        
-//        lim_ij = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++)
-//          lim_ij += (0.5*(GradV_i[P_INDEX][iDim]+GradV_j[P_INDEX][iDim]))*
-//                    (0.5*(GradV_i[P_INDEX][iDim]+GradV_j[P_INDEX][iDim]));
-//        lim_ij = sqrt(lim_ij);
-//        lim_ij = exp(-lim_ij/1E3);
         Limiter_i = node[iPoint]->GetLimiter();
         Limiter_j = node[jPoint]->GetLimiter();
         lim_i = 1.0;
@@ -2170,8 +2163,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
           ProjGradU_j += Vector_j[iDim]*GradU_j[iVar][iDim];
         }
         if (limiter) {
-          Conserved_i[iVar] = U_i[iVar] + lim_ij*ProjGradU_i;
-          Conserved_j[iVar] = U_j[iVar] + lim_ij*ProjGradU_j;
+//          Conserved_i[iVar] = U_i[iVar] + lim_ij*ProjGradU_i;
+//          Conserved_j[iVar] = U_j[iVar] + lim_ij*ProjGradU_j;
+          Conserved_i[iVar] = U_i[iVar] + lim_i*ProjGradU_i;
+          Conserved_j[iVar] = U_j[iVar] + lim_j*ProjGradU_j;
 //          Conserved_i[iVar] = U_i[iVar] + Limiter_i[iVar]*ProjGradU_i;
 //          Conserved_j[iVar] = U_j[iVar] + Limiter_j[iVar]*ProjGradU_i;
         }
