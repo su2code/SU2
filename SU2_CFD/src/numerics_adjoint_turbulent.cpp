@@ -379,7 +379,9 @@ CSourcePieceWise_AdjTurb::~CSourcePieceWise_AdjTurb(void) {
 
 void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
 	unsigned short iDim, jDim;
+  
 	bool implicit = (config->GetKind_TimeIntScheme_AdjTurb() == EULER_IMPLICIT);
+  double Prandtl_Turb = config->GetPrandtl_Turb();
   
 	val_residual[0] = 0.0;
 	if (implicit)
@@ -485,7 +487,7 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(double *val_residual, double **va
 				vel_tau_gradpsi5 += Velocity[iDim]*tau[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim];
 			}
 		}
-		val_residual[0] += (tau_gradphi + vel_tau_gradpsi5 + Cp/PRANDTL_TURB*gradT_gradpsi5)*dEddyVisc_nuhat*Volume;
+		val_residual[0] += (tau_gradphi + vel_tau_gradpsi5 + Cp/Prandtl_Turb*gradT_gradpsi5)*dEddyVisc_nuhat*Volume;
     
 	}
 }

@@ -5194,10 +5194,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Add and substract to the residual ---*/
     
-//    if (config->GetKind_Solver() == ADJ_RANS) LinSysRes.AddBlock(iPoint, Residual);
-//    else LinSysRes.SubtractBlock(iPoint, Residual);
-    
-    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.AddBlock(iPoint, Residual);
     
   }
   
@@ -5300,6 +5297,8 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+  
+#ifndef DEBUG
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
@@ -5876,6 +5875,200 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   delete [] tau;
   delete [] Velocity;
   
+#else
+  
+  unsigned long iVertex, iPoint;
+	unsigned short iDim, iMarker, Boundary;
+	double *d, *U, *Psi, **PsiVar_Grad, **PrimVar_Grad, Enthalpy, mue_eff, cons_m_psi, kappa, temp_grad[3],
+	dpsi2_dx, dpsi2_dy, dpsi3_dx, dpsi3_dy, Sigma_xx, Sigma_yy, Sigma_xy, dpsi2_dz, dpsi3_dz, dpsi4_dx,
+	dpsi4_dy, dpsi4_dz, Sigma_zz, Sigma_xz, Sigma_yz, dvx_dx, dvx_dy, dvy_dx, dvy_dy, tau_xx, tau_yy, tau_xy,
+	dvx_dz, dvy_dz, dvz_dx, dvz_dy, dvz_dz, tau_zz, tau_xz, tau_yz, *Normal, dS, normal_grad_psi5, normal_grad_psi4,
+	normal_grad_u, normal_grad_v, normal_grad_w, tang_deriv_psi4[2], tang_deriv_psi5[3], tang_psi_5, tang_psi_4,
+	sigma_vel, tau_partial, v_gradconspsi, sigma_partial;
+	
+	double *Face_Normal = new double[nDim];
+  
+	Total_Sens_Geo = 0.0;
+	Total_Sens_Mach = 0.0;
+	Total_Sens_AoA = 0.0;
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+		Sens_Geo[iMarker] = 0.0;
+		Boundary = config->GetMarker_All_KindBC(iMarker);
+		if (Boundary == HEAT_FLUX) {
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+				if (geometry->node[iPoint]->GetDomain()) {
+					d = node[iPoint]->GetForceProj_Vector();
+					U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+					Psi = node[iPoint]->GetSolution();
+					PsiVar_Grad = node[iPoint]->GetGradient();
+					PrimVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+					Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+					mue_eff = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+					cons_m_psi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nVar-1]; // no velocities since they are zero
+					kappa = mue_eff/(Gamma_Minus_One*PRANDTL*config->GetMach()*config->GetMach());
+					for (iDim = 0; iDim < nDim; iDim++)
+						temp_grad[iDim] = PrimVar_Grad[0][iDim];
+					
+					/*--- Components of the adjoint stress tensor ---*/
+					dpsi2_dx = PsiVar_Grad[1][0];
+					dpsi2_dy = PsiVar_Grad[1][1];
+					dpsi3_dx = PsiVar_Grad[2][0];
+					dpsi3_dy = PsiVar_Grad[2][1];
+					Sigma_xx = mue_eff * (FOUR3 * dpsi2_dx -  TWO3 * dpsi3_dy);
+					Sigma_yy = mue_eff * (-TWO3 * dpsi2_dx + FOUR3 * dpsi3_dy);
+					Sigma_xy = mue_eff * (dpsi3_dx + dpsi2_dy);
+					if (nDim == 3) {
+						dpsi2_dz = PsiVar_Grad[1][2];
+						dpsi3_dz = PsiVar_Grad[2][2];
+						dpsi4_dx = PsiVar_Grad[3][0];
+						dpsi4_dy = PsiVar_Grad[3][1];
+						dpsi4_dz = PsiVar_Grad[3][2];
+						Sigma_xx = mue_eff * (FOUR3 * dpsi2_dx -  TWO3 * dpsi3_dy - TWO3  * dpsi4_dz);
+						Sigma_yy = mue_eff * (-TWO3 * dpsi2_dx + FOUR3 * dpsi3_dy - TWO3  * dpsi4_dz);
+						Sigma_xy = mue_eff * (dpsi3_dx + dpsi2_dy);
+						Sigma_zz = mue_eff * (-TWO3 * dpsi2_dx -  TWO3 * dpsi3_dy + FOUR3 * dpsi4_dz);
+						Sigma_xz = mue_eff * (dpsi4_dx + dpsi2_dz);
+						Sigma_yz = mue_eff * (dpsi4_dy + dpsi3_dz);
+					}
+					
+					/*--- Components of the effective stress tensor ---*/
+					dvx_dx = PrimVar_Grad[1][0];
+					dvx_dy = PrimVar_Grad[1][1];
+					dvy_dx = PrimVar_Grad[2][0];
+					dvy_dy = PrimVar_Grad[2][1];
+					tau_xx = - TWO3 * mue_eff * (dvy_dy - 2.0 * dvx_dx);
+					tau_yy = - TWO3 * mue_eff * (dvx_dx - 2.0 * dvy_dy);
+					tau_xy = mue_eff * (dvx_dy + dvy_dx);
+					if (nDim == 3) {
+						dvx_dz = PrimVar_Grad[1][2];
+						dvy_dz = PrimVar_Grad[2][2];
+						dvz_dx = PrimVar_Grad[3][0];
+						dvz_dy = PrimVar_Grad[3][1];
+						dvz_dz = PrimVar_Grad[3][2];
+						tau_xx = - TWO3 * mue_eff * (dvy_dy + dvz_dz - 2.0 * dvx_dx);
+						tau_yy = - TWO3 * mue_eff * (dvx_dx + dvz_dz - 2.0 * dvy_dy);
+						tau_xy = mue_eff * (dvx_dy + dvy_dx);
+						tau_zz = - TWO3 * mue_eff * (dvx_dx + dvy_dy - 2.0 * dvz_dz);
+						tau_xz = mue_eff * (dvx_dz + dvz_dx);
+						tau_yz = mue_eff * (dvy_dz + dvz_dy);
+					}
+					
+					Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+					dS = 0;
+					for (iDim = 0; iDim < nDim; iDim++) { dS += Normal[iDim]*Normal[iDim]; } dS = sqrt(dS);
+					for (iDim = 0; iDim < nDim; iDim++) { Face_Normal[iDim] = Normal[iDim]/dS; }
+					
+					/*--- Compute face area and the nondimensional normal to the surface ---*/
+					normal_grad_psi5 = 0; normal_grad_psi4 = 0;
+					normal_grad_u = 0; normal_grad_v = 0; normal_grad_w = 0;
+					
+					for (iDim = 0; iDim < nDim; iDim++) {
+						normal_grad_u += PrimVar_Grad[1][iDim]*Face_Normal[iDim];
+						normal_grad_v += PrimVar_Grad[2][iDim]*Face_Normal[iDim];
+						if (nDim == 2)
+							normal_grad_psi4 += PsiVar_Grad[nVar-1][iDim]*Face_Normal[iDim];
+						if (nDim == 3) {
+							normal_grad_w += PrimVar_Grad[3][iDim]*Face_Normal[iDim];
+							normal_grad_psi5 += PsiVar_Grad[nVar-1][iDim]*Face_Normal[iDim];
+						}
+					}
+					
+					if (nDim == 2) {
+						tang_deriv_psi4[0] = PsiVar_Grad[nVar-1][0] - normal_grad_psi4 * Face_Normal[0];
+						tang_deriv_psi4[1] = PsiVar_Grad[nVar-1][1] - normal_grad_psi4 * Face_Normal[1];
+					}
+					if (nDim == 3) {
+						tang_deriv_psi5[0] = PsiVar_Grad[nVar-1][0] - normal_grad_psi5 * Face_Normal[0];
+						tang_deriv_psi5[1] = PsiVar_Grad[nVar-1][1] - normal_grad_psi5 * Face_Normal[1];
+						tang_deriv_psi5[2] = PsiVar_Grad[nVar-1][2] - normal_grad_psi5 * Face_Normal[2];
+					}
+					
+					/*--- Compute sensitivity for each surface point, 2D and 3D case ---*/
+					if (nDim == 2) {
+						
+						/*--- sigma_vel = \psi_4 (\tau : nabla \vec u) ---*/
+						sigma_vel = Psi[nVar-1] * (tau_xx*dvx_dx + tau_xy*dvx_dy + tau_xy*dvy_dx + tau_yy*dvy_dy);
+						
+						/*--- tang_psi_4 = (\partial_tg \psi_4)\cdot (k\nabla T) ---*/
+						tang_psi_4 = kappa * (tang_deriv_psi4[0]*temp_grad[0] + tang_deriv_psi4[1]*temp_grad[1]);
+						
+						/*--- v_gradconspsi = (\rho \psi_j + \rho H \psi_4) (\partial_n \vec v) \cdot \vec n ---*/
+						v_gradconspsi = cons_m_psi *
+						(Face_Normal[0] * (Face_Normal[0]*dvx_dx + Face_Normal[1]*dvx_dy) +
+						 Face_Normal[1] * (Face_Normal[0]*dvy_dx + Face_Normal[1]*dvy_dy));
+						
+						/*--- tau_partial = \psi_4 tau_{ij} n_i \partial_n v_j ---*/
+						tau_partial = Psi[nVar-1] *
+						(tau_xx * Face_Normal[0] * normal_grad_u +
+						 tau_xy * Face_Normal[0] * normal_grad_v +
+						 tau_xy * Face_Normal[1] * normal_grad_u +
+						 tau_yy * Face_Normal[1] * normal_grad_v);
+						
+						/*--- sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
+						sigma_partial = Sigma_xx * Face_Normal[0] * normal_grad_u +
+						Sigma_xy * Face_Normal[0] * normal_grad_v +
+						Sigma_xy * Face_Normal[1] * normal_grad_u +
+						Sigma_yy * Face_Normal[1] * normal_grad_v;
+						
+						CSensitivity[iMarker][iVertex] = (sigma_vel - tang_psi_4 + v_gradconspsi - tau_partial + sigma_partial)*dS;
+					}
+					
+					if (nDim == 3) {
+						
+						/*--- sigma_vel = \psi_5 (\tau : nabla \vec u) ---*/
+						sigma_vel = Psi[nVar-1] *
+						(tau_xx*dvx_dx + tau_xy*dvx_dy + tau_xz*dvx_dz +
+						 tau_xy*dvy_dx + tau_yy*dvy_dy + tau_yz*dvy_dz +
+						 tau_xz*dvz_dx + tau_yz*dvz_dy + tau_zz*dvz_dz);
+						
+						/*--- tang_psi_5 = (\partial_tg \psi_5)\cdot (k\nabla T) ---*/
+						tang_psi_5 = kappa * (tang_deriv_psi5[0]*temp_grad[0] +
+                                  tang_deriv_psi5[1]*temp_grad[1] +
+                                  tang_deriv_psi5[2]*temp_grad[2]);
+						
+						/*--- v_gradconspsi = (\rho \psi_j + \rho H \psi_5) (\partial_n \vec v) \cdot \vec n ---*/
+						v_gradconspsi = cons_m_psi *
+						(Face_Normal[0] * (Face_Normal[0]*dvx_dx + Face_Normal[1]*dvx_dy + Face_Normal[2]*dvx_dz) +
+						 Face_Normal[1] * (Face_Normal[0]*dvy_dx + Face_Normal[1]*dvy_dy + Face_Normal[2]*dvy_dz) +
+						 Face_Normal[2] * (Face_Normal[0]*dvz_dx + Face_Normal[1]*dvz_dy + Face_Normal[2]*dvz_dz));
+						
+						/*--- tau_partial = \psi_5 tau_{ij} n_i \partial_n v_j ---*/
+						tau_partial = Psi[nVar-1] *
+						(tau_xx * Face_Normal[0] * normal_grad_u +
+						 tau_xy * Face_Normal[0] * normal_grad_v +
+						 tau_xz * Face_Normal[0] * normal_grad_w +
+						 tau_xy * Face_Normal[1] * normal_grad_u +
+						 tau_yy * Face_Normal[1] * normal_grad_v +
+						 tau_yz * Face_Normal[1] * normal_grad_w +
+						 tau_xz * Face_Normal[2] * normal_grad_u +
+						 tau_yz * Face_Normal[2] * normal_grad_v +
+						 tau_zz * Face_Normal[2] * normal_grad_w);
+						
+						/*--- sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
+						sigma_partial = Sigma_xx * Face_Normal[0] * normal_grad_u +
+						Sigma_xy * Face_Normal[0] * normal_grad_v +
+						Sigma_xz * Face_Normal[0] * normal_grad_w +
+						Sigma_xy * Face_Normal[1] * normal_grad_u +
+						Sigma_yy * Face_Normal[1] * normal_grad_v +
+						Sigma_yz * Face_Normal[1] * normal_grad_w +
+						Sigma_xz * Face_Normal[2] * normal_grad_u +
+						Sigma_yz * Face_Normal[2] * normal_grad_v +
+						Sigma_zz * Face_Normal[2] * normal_grad_w;
+						
+						CSensitivity[iMarker][iVertex] = (sigma_vel - tang_psi_5 + v_gradconspsi - tau_partial + sigma_partial)*dS;
+					}
+				}
+				Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex]*dS;
+			}
+      Total_Sens_Geo += Sens_Geo[iMarker];
+		}
+	}
+	
+	delete [] Face_Normal;
+  
+#endif
 }
 
 void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -6510,7 +6703,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
           SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-sq_vel));
           Pressure = (SoundSpeed * SoundSpeed * Density) / Gamma;
           ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
-          XiDens = Gamma * (Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB) / Density;
+          XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
           
           /*--- Average of the derivatives of the adjoint variables ---*/
           PsiVar_Grad = node[iPoint]->GetGradient();

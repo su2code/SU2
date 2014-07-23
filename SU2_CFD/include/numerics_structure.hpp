@@ -56,7 +56,9 @@ protected:
   double *Vector; /*!< \brief Auxiliary vector. */
   double *Enthalpy_formation;
 	unsigned short nDiatomics, nMonatomics;
-    
+	double Prandtl_Lam;				/*!< \brief Laminar Prandtl's number. */
+	double Prandtl_Turb;		/*!< \brief Turbulent Prandtl's number. */
+  
 public:
 	
   double

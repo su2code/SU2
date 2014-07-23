@@ -114,8 +114,6 @@ const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level
 const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
 
-const double PRANDTL = 0.72;	        	/*!< \brief Fluid's Prandtl constant (air). */
-const double PRANDTL_TURB = 0.90;	/*!< \brief Fluid's turbulent Prandtl constant (air). */
 const double AVOGAD_CONSTANT = 6.0221415E26;	/*!< \brief Avogardro's constant, number of particles in one kmole. */
 const double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
 const double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
