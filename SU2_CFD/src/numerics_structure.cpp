@@ -26,33 +26,35 @@ CNumerics::CNumerics(void) { }
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
                      CConfig *config) {
+  
+  unsigned short iVar, iDim, jDim;
+  
 	nDim = val_nDim;
 	nVar = val_nVar;
 	Gamma = config->GetGamma();
 	Gamma_Minus_One = Gamma - 1.0;
+  Prandtl_Lam = config->GetPrandtl_Lam();
+  Prandtl_Turb = config->GetPrandtl_Turb();
 	Gas_Constant = config->GetGas_ConstantND();
-
-	//U_id = new double [nVar];
-	//U_jd = new double [nVar];
 
 	UnitNormal = new double [nDim];
 	UnitNormald = new double [nDim];
 
 	Normal = new double [nDim];
 	Flux_Tensor = new double* [nVar];
-	for (unsigned short iVar = 0; iVar < (nVar); iVar++)
+	for (iVar = 0; iVar < (nVar); iVar++)
 		Flux_Tensor[iVar] = new double [nDim];
 
 	tau = new double* [nDim];
 	delta = new double* [nDim];
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+	for (iDim = 0; iDim < nDim; iDim++) {
 		tau[iDim] = new double [nDim];
 		delta[iDim] = new double [nDim];
 	}
 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-		for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-			if (iDim==jDim) delta[iDim][jDim]=1.0;
+	for (iDim = 0; iDim < nDim; iDim++) {
+		for (jDim = 0; jDim < nDim; jDim++) {
+			if (iDim == jDim) delta[iDim][jDim]=1.0;
 			else delta[iDim][jDim]=0.0;
 		}
 	}
@@ -76,6 +78,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   sumdFdYjh   = NULL;
   sumdFdYieve = NULL;
   sumdFdYjeve = NULL;
+  
   if ((config->GetKind_Solver() == TNE2_EULER)            ||
       (config->GetKind_Solver() == TNE2_NAVIER_STOKES)    ||
       (config->GetKind_Solver() == ADJ_TNE2_EULER)        ||
@@ -104,6 +107,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   l = new double [nDim];
   m = new double [nDim];
+  
 }
 
 CNumerics::~CNumerics(void) {
@@ -1697,7 +1701,7 @@ void CNumerics::GetViscousFlux(double *val_primvar, double **val_gradprimvar,
 
 	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 	double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-	double heat_flux_factor = Cp * (val_laminar_viscosity/PRANDTL + val_eddy_viscosity/PRANDTL_TURB);
+	double heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
 
 	double div_vel = 0.0;
 	for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
@@ -1761,7 +1765,7 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
 
 	total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 	Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-	heat_flux_factor = Cp * (val_laminar_viscosity/PRANDTL + val_eddy_viscosity/PRANDTL_TURB);
+	heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
 
 	div_vel = 0.0;
 	for (iDim = 0 ; iDim < nDim; iDim++)
@@ -1996,7 +2000,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 	double Density = val_Mean_PrimVar[nDim+2];
 	double Pressure = val_Mean_PrimVar[nDim+1];
 	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-	double heat_flux_factor = val_laminar_viscosity / PRANDTL + val_eddy_viscosity / PRANDTL_TURB;
+	double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
 	double cpoR = Gamma/(Gamma-1.0); // cp over R
 	double factor = total_viscosity*val_dS/(Density*val_dist_ij);
 	double phi_rho = -cpoR*heat_flux_factor*Pressure/(Density*Density);

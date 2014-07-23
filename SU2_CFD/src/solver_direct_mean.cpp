@@ -9525,6 +9525,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface        = (config->GetKind_Regime() == FREESURFACE);
+  double Prandtl_Lam      = config->GetPrandtl_Lam();
   
   /*--- For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values,
@@ -9659,7 +9660,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
             GradTemperature += Grad_PrimVar[0][iDim]*(-Normal[iDim]);
           
           Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-          thermal_conductivity = Cp * Viscosity/PRANDTL;
+          thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
           HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
           Heat_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
           MaxHeatFlux_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);

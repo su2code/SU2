@@ -1129,6 +1129,9 @@ void CAvgGrad_AdjFlow::ComputeResidual(double *val_residual_i, double *val_resid
   double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
   double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
   
+  double Prandtl_Lam      = config->GetPrandtl_Lam();
+  double Prandtl_Turb     = config->GetPrandtl_Turb();
+
 	/*--- States at the point i ---*/
 	Density_i = U_i[0];
 	sq_vel_i = 0;
@@ -1140,7 +1143,7 @@ void CAvgGrad_AdjFlow::ComputeResidual(double *val_residual_i, double *val_resid
 	SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-sq_vel_i));
 	Pressure_i = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
 	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
-	XiDens_i = Gamma * (Laminar_Viscosity_i/PRANDTL + Eddy_Viscosity_i/PRANDTL_TURB) / Density_i;
+	XiDens_i = Gamma * (Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
   
 	/*--- States at the point j ---*/
 	Density_j = U_j[0];
@@ -1153,7 +1156,7 @@ void CAvgGrad_AdjFlow::ComputeResidual(double *val_residual_i, double *val_resid
 	SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-sq_vel_j));
 	Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
 	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
-	XiDens_j = Gamma *(Laminar_Viscosity_j/PRANDTL + Eddy_Viscosity_j/PRANDTL_TURB) / Density_j;
+	XiDens_j = Gamma *(Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
   
 	/*--- Compute vector going from iPoint to jPoint ---*/
 	dist_ij_2 = 0.0;
@@ -1575,6 +1578,9 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(double *val_residual_i, double *
   double dSigmaxx_phi3, dSigmayy_phi3, dSigmazz_phi3, dSigmaxy_phi3, dSigmaxz_phi3, dSigmayz_phi3;
   double dSigmaxx5_psi5, dSigmayy5_psi5, dSigmazz5_psi5, dSigmaxy5_psi5, dSigmaxz5_psi5, dSigmayz5_psi5, dSigma5_psi5;
   
+  double Prandtl_Lam      = config->GetPrandtl_Lam();
+  double Prandtl_Turb     = config->GetPrandtl_Turb();
+  
 	/*--- States in point i ---*/
 	Density_i = U_i[0];
 	sq_vel_i = 0;
@@ -1586,7 +1592,7 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(double *val_residual_i, double *
 	SoundSpeed_i = sqrt(Gamma*Gamma_Minus_One*(Energy_i-sq_vel_i));
 	Pressure_i = (SoundSpeed_i * SoundSpeed_i * Density_i) / Gamma;
 	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / Density_i;
-	XiDens_i = Gamma *(Laminar_Viscosity_i/PRANDTL + Eddy_Viscosity_i/PRANDTL_TURB) / Density_i;
+	XiDens_i = Gamma *(Laminar_Viscosity_i/Prandtl_Lam + Eddy_Viscosity_i/Prandtl_Turb) / Density_i;
   
 	/*--- States in point j ---*/
 	Density_j = U_j[0];
@@ -1599,7 +1605,7 @@ void CAvgGradCorrected_AdjFlow::ComputeResidual(double *val_residual_i, double *
 	SoundSpeed_j = sqrt(Gamma*Gamma_Minus_One*(Energy_j-sq_vel_j));
 	Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
 	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / Density_j;
-	XiDens_j = Gamma *(Laminar_Viscosity_j/PRANDTL + Eddy_Viscosity_j/PRANDTL_TURB) / Density_j;
+	XiDens_j = Gamma *(Laminar_Viscosity_j/Prandtl_Lam + Eddy_Viscosity_j/Prandtl_Turb) / Density_j;
   
 	/*--- Compute vector going from iPoint to jPoint ---*/
 	dist_ij_2 = 0.0;
@@ -2224,6 +2230,8 @@ CSourceViscous_AdjFlow::~CSourceViscous_AdjFlow(void) {
 
 void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *config) {
   
+#ifndef DEBUG
+  
 	unsigned short iDim, jDim;
   
   double Temperature = V_i[0];
@@ -2237,8 +2245,10 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 	double invDensity     = 1.0/Density;
 	double invDensitysq   = invDensity*invDensity;
 	double invDensitycube = invDensitysq*invDensity;
-	double mu_tot_1 = Laminar_Viscosity + Eddy_Viscosity;
-	double mu_tot_2 = Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB;
+  double Prandtl_Lam      = config->GetPrandtl_Lam();
+  double Prandtl_Turb     = config->GetPrandtl_Turb();
+  double mu_tot_1 = Laminar_Viscosity + Eddy_Viscosity;
+	double mu_tot_2 = Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb;
 	double Gas_Constant = config->GetGas_ConstantND();
   
 	/*--- Required gradients of the flow variables, point j ---*/
@@ -2327,28 +2337,28 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   }
 	val_residual[nVar-1] = alpha_gradpsi5 * Volume;
   
-  /*--- Laminar viscosity sensitivity for NS ---*/
-  
-	if (config->GetKind_Solver() != ADJ_RANS) {
-    
-		double Temperature_Ref = config->GetTemperature_Ref();
-		double Temperature_Dim = Temperature*Temperature_Ref;
-    
-    double S = 0.0;
-    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
-    if (config->GetSystemMeasurements() == US) { S = 198.72; }
-		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
-    
-		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
-		double theta = (kappa_psi + Cp/PRANDTL*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-    
-    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
-    for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
-    val_residual[nVar-1] += theta*Volume;
-    
-	}
+//  /*--- Laminar viscosity sensitivity for NS ---*/
+//  
+//	if (config->GetKind_Solver() != ADJ_RANS) {
+//    
+//		double Temperature_Ref = config->GetTemperature_Ref();
+//		double Temperature_Dim = Temperature*Temperature_Ref;
+//    
+//    double S = 0.0;
+//    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+//    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+//		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+//    
+//		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+//		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
+//		double theta = (kappa_psi + Cp/PRANDTL*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+//    
+//    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
+//    val_residual[nVar-1] += theta*Volume;
+//    
+//	}
   
 	/*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
   
@@ -2383,10 +2393,10 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
     double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
     
 		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/PRANDTL_TURB*gradT_gradpsi5;
+		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/Prandtl_Turb*gradT_gradpsi5;
 		double cv1_const = 3.0*cv1_3/(Ji_3+cv1_3);
 		double theta = (kappa_psi*(1.0-Eddy_Viscosity/Laminar_Viscosity*cv1_const) -
-                    Cp/PRANDTL_TURB*gradT_gradpsi5*(1.0-PRANDTL_TURB/PRANDTL))*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+                    Cp/Prandtl_Turb*gradT_gradpsi5*(1.0-Prandtl_Turb/Prandtl_Lam))*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
 		double xi = kappa_psi*(1.0+cv1_const)*Eddy_Viscosity/Density;
     
 		val_residual[0] += (theta*(sq_vel-Energy) + xi)*Volume;
@@ -2467,6 +2477,292 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		}
 	}
   
+  
+#else
+  
+  
+	unsigned short iDim;
+	double rtau_xx, rtau_xy, rtau_xz, rtau_yy, rtau_yz, rtau_zz;
+	double Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz, Sigma_xx5, Sigma_yy5,
+	Sigma_zz5, Sigma_xy5, Sigma_xz5, Sigma_yz5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz,
+	Sigma5_x, Sigma5_y, Sigma5_z, alpha_x, alpha_y, alpha_z, beta_x, beta_y, beta_z;
+	double gm1 = Gamma_Minus_One;
+	
+	double Density = V_i[nDim+2];
+	double sq_vel = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++){
+		Velocity[iDim] = V_i[iDim+1];
+		sq_vel += 0.5*Velocity[iDim]*Velocity[iDim];
+	}
+  
+  double Pressure = V_i[nDim+1];
+  double Laminar_Viscosity = V_i[nDim+5];
+  double Eddy_Viscosity = V_i[nDim+6];
+  double invDensity     = 1.0/Density;
+  double invDensitysq   = invDensity*invDensity;
+  double invDensitycube = invDensitysq*invDensity;
+	double mue_eff = Laminar_Viscosity + Eddy_Viscosity;
+	double lambda = -TWO3*mue_eff;
+  double xi = Gamma*(Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB);
+  double vv2 = sq_vel;
+	
+	/*--- Density gradient ---*/
+  
+	double dDensity_dx = PrimVar_Grad_i[nDim+2][0];
+	double dDensity_dy = PrimVar_Grad_i[nDim+2][1];
+	double dDensity_dz = 0.0;
+	if (nDim == 3) dDensity_dz = PrimVar_Grad_i[nDim+2][2];
+	
+  /*--- Velocity field gradient ---*/
+  
+	double  GradVelocity[3][3];
+	GradVelocity[0][0] = PrimVar_Grad_i[1][0];
+  GradVelocity[0][1] = PrimVar_Grad_i[1][1];
+  if (nDim == 3) GradVelocity[0][2] = PrimVar_Grad_i[1][2];
+	GradVelocity[1][0] = PrimVar_Grad_i[2][0];
+  GradVelocity[1][1] = PrimVar_Grad_i[2][1];
+	if (nDim == 3) {
+    GradVelocity[1][2] = PrimVar_Grad_i[2][2];
+		GradVelocity[2][0] = PrimVar_Grad_i[3][0];
+		GradVelocity[2][1] = PrimVar_Grad_i[3][1];
+		GradVelocity[2][2] = PrimVar_Grad_i[3][2];
+	}
+	
+  /*--- Pressure gradient ---*/
+  
+	double dP_dx = PrimVar_Grad_i[nDim+1][0];
+	double dP_dy = PrimVar_Grad_i[nDim+1][1];
+	double dP_dz = 0.0;
+	if (nDim == 3) dP_dz = PrimVar_Grad_i[nDim+1][2];
+	
+  /*--- Adjoint energy gradient ---*/
+  
+	double dpsi5_dx = PsiVar_Grad_i[nVar-1][0];
+  double dpsi5_dy = PsiVar_Grad_i[nVar-1][1];
+	double dpsi5_dz = 0.0;
+  if (nDim == 3) dpsi5_dz = PsiVar_Grad_i[nVar-1][2];
+	
+	/*--- Adjoint velocity gradient ---*/
+  
+  double dpsi2_dx = PsiVar_Grad_i[1][0];
+  double dpsi2_dy = PsiVar_Grad_i[1][1];
+  double dpsi2_dz = 0.0;
+	if (nDim == 3) dpsi2_dz = PsiVar_Grad_i[1][2];
+	
+  double dpsi3_dx = PsiVar_Grad_i[2][0];
+  double dpsi3_dy = PsiVar_Grad_i[2][1];
+  double dpsi3_dz = 0.0;
+	if (nDim == 3) dpsi3_dz = PsiVar_Grad_i[2][2];
+	
+	double dpsi4_dx = 0.0;
+  double dpsi4_dy = 0.0;
+  double dpsi4_dz = 0.0;
+	if (nDim == 3) {
+		dpsi4_dx = PsiVar_Grad_i[3][0];
+		dpsi4_dy = PsiVar_Grad_i[3][1];
+		dpsi4_dz = PsiVar_Grad_i[3][2];
+	}
+	
+  /*--- 1.- Computation of the gradient of (1/Density) = - gradient(Density)/(Density^2) ---*/
+  
+  double dinvDensity_dx = - dDensity_dx * invDensitysq;
+  double dinvDensity_dy = - dDensity_dy * invDensitysq;
+	double dinvDensity_dz = 0.0;
+  if (nDim == 3) dinvDensity_dz = - dDensity_dz * invDensitysq;
+	
+  /*--- Computation of the  derivatives of P/(Density^2) It is computed as
+	 dp_dk(P/(Density^2)) = (dP_dk - 2 * P * dDensity_dk) / Density^3 ---*/
+  
+	double dPDensity2_dx = (dP_dx * Density - 2.0 * dDensity_dx * Pressure) * invDensitycube;
+  double dPDensity2_dy = (dP_dy * Density - 2.0 * dDensity_dy * Pressure) * invDensitycube;
+	double dPDensity2_dz = 0.0;
+  if (nDim == 3) dPDensity2_dz = (dP_dz * Density - 2.0 * dDensity_dz * Pressure) * invDensitycube;
+	
+	/*--- Computation of the  derivatives of v_i/rho ---*/
+  
+  double dVelocityxDensity_dx = GradVelocity[0][0] / Density + Velocity[0] * dinvDensity_dx;
+  double dVelocityxDensity_dy = GradVelocity[0][1] / Density + Velocity[0] * dinvDensity_dy;
+  double dVelocityxDensity_dz = 0.0;
+	if (nDim == 3) dVelocityxDensity_dz = GradVelocity[0][2] / Density + Velocity[0] * dinvDensity_dz;
+	
+  double dVelocityyDensity_dx = GradVelocity[1][0] / Density + Velocity[1] * dinvDensity_dx;
+  double dVelocityyDensity_dy = GradVelocity[1][1] / Density + Velocity[1] * dinvDensity_dy;
+  double dVelocityyDensity_dz = 0.0;
+	if (nDim == 3) dVelocityyDensity_dz = GradVelocity[1][2] / Density + Velocity[1] * dinvDensity_dz;
+	
+	double dVelocityzDensity_dx = 0.0;
+	double dVelocityzDensity_dy = 0.0;
+	double dVelocityzDensity_dz = 0.0;
+	if (nDim == 3) {
+		dVelocityzDensity_dx = GradVelocity[2][0] / Density + Velocity[2] * dinvDensity_dx;
+		dVelocityzDensity_dy = GradVelocity[2][1] / Density + Velocity[2] * dinvDensity_dy;
+		dVelocityzDensity_dz = GradVelocity[2][2] / Density + Velocity[2] * dinvDensity_dz;
+	}
+	
+  /*--- Abbreviations ---*/
+  
+	alpha_x = xi * dinvDensity_dx;
+  alpha_y = xi * dinvDensity_dy;
+	alpha_z = 0.0;
+  if (nDim == 3) alpha_z = xi * dinvDensity_dz;
+	
+  beta_x = ( xi / gm1 ) * dPDensity2_dx;
+  beta_y = ( xi / gm1 ) * dPDensity2_dy;
+	beta_z = 0.0;
+  if (nDim == 3) beta_z = ( xi / gm1 ) * dPDensity2_dz;
+	
+  /*--- Components of the effective stress tensor divided by density, point i ---*/
+  
+	if (nDim == 2) {
+		
+		rtau_xx = invDensity * lambda * (GradVelocity[1][1]  - 2.0 * GradVelocity[0][0]);
+		rtau_yy = invDensity * lambda * (GradVelocity[0][0]  - 2.0 * GradVelocity[1][1]);
+    
+		rtau_xy = invDensity * mue_eff * (GradVelocity[0][1] + GradVelocity[1][0]);
+		
+		/*--- Components of the adjoint tensors */
+		
+		Sigma_xx = mue_eff * (FOUR3 * dpsi2_dx -  TWO3 * dpsi3_dy);
+		Sigma_yy = mue_eff * (-TWO3 * dpsi2_dx + FOUR3 * dpsi3_dy);
+		
+		Sigma_xy = mue_eff * (dpsi3_dx + dpsi2_dy);
+		
+		Sigma_xx5 = mue_eff * ( FOUR3 * Velocity[0] * dpsi5_dx - TWO3 * Velocity[1] * dpsi5_dy -  TWO3 * Velocity[2] * dpsi5_dz);
+		Sigma_yy5 = mue_eff * (- TWO3 * Velocity[0] * dpsi5_dx + FOUR3 * Velocity[1] * dpsi5_dy -  TWO3 * Velocity[2] * dpsi5_dz);
+		
+		Sigma_xy5 = mue_eff * (Velocity[0] * dpsi5_dy + Velocity[1] * dpsi5_dx);
+		Sigma_xz5 = mue_eff * (Velocity[0] * dpsi5_dz + Velocity[2] * dpsi5_dx);
+		
+		eta_xx = Sigma_xx + Sigma_xx5;
+		eta_yy = Sigma_yy + Sigma_yy5;
+		
+		eta_xy = Sigma_xy + Sigma_xy5;
+		
+		Sigma5_x = ( xi /Density ) *  dpsi5_dx;
+		Sigma5_y = ( xi /Density ) *  dpsi5_dy;
+		
+		/*--- Viscous residual ---*/
+		
+		val_residual[0] = (  (- rtau_xx * Velocity[0] - rtau_xy  * Velocity[1]
+                          + alpha_x * vv2  - beta_x) *  dpsi5_dx +
+                       (- rtau_xy * Velocity[0] - rtau_yy  *  Velocity[1]
+                        + alpha_y * vv2  - beta_y) *  dpsi5_dy)*Volume;
+		
+    val_residual[1] = (    (rtau_xx - Velocity[0] * alpha_x) * dpsi5_dx
+                       + (rtau_xy - Velocity[0] * alpha_y) * dpsi5_dy)*Volume;
+		
+    val_residual[2] = (    (rtau_xy - Velocity[1] * alpha_x) * dpsi5_dx
+                       + (rtau_yy - Velocity[1] * alpha_y) * dpsi5_dy)*Volume;
+		
+    val_residual[3]  = (alpha_x * dpsi5_dx + alpha_y * dpsi5_dy)*Volume;
+		
+		/*--- Extra terms coming from grad(psi)* D *grad(invM) ---*/
+		
+    val_residual[0] += (- dVelocityxDensity_dx * eta_xx - dVelocityxDensity_dy * eta_xy
+                        - dVelocityyDensity_dx * eta_xy - dVelocityyDensity_dy * eta_yy
+                        + Sigma5_x * Velocity[0] * GradVelocity[0][0] + Sigma5_x * Velocity[1] * GradVelocity[1][0]
+                        + Sigma5_y * Velocity[0] * GradVelocity[0][1] + Sigma5_y * Velocity[1] * GradVelocity[1][1])*Volume;
+    
+    val_residual[1] += (dinvDensity_dx * eta_xx + dinvDensity_dy * eta_xy
+                        - GradVelocity[0][0] * Sigma5_x - GradVelocity[0][1] * Sigma5_y)*Volume;
+    
+    val_residual[2] += (dinvDensity_dx * eta_xy + dinvDensity_dy * eta_yy
+                        - GradVelocity[1][0] * Sigma5_x - GradVelocity[1][1] * Sigma5_y)*Volume;
+		
+	}
+	
+	if (nDim == 3) {
+    
+		rtau_xx = invDensity * lambda * (GradVelocity[1][1] + GradVelocity[2][2] - 2.0 * GradVelocity[0][0]);
+		rtau_yy = invDensity * lambda * (GradVelocity[0][0] + GradVelocity[2][2] - 2.0 * GradVelocity[1][1]);
+		rtau_zz = invDensity * lambda * (GradVelocity[0][0] + GradVelocity[1][1] - 2.0 * GradVelocity[2][2]);
+		
+		rtau_xy = invDensity * mue_eff * (GradVelocity[0][1] + GradVelocity[1][0]);
+		rtau_xz = invDensity * mue_eff * (GradVelocity[0][2] + GradVelocity[2][0]);
+		rtau_yz = invDensity * mue_eff * (GradVelocity[1][2] + GradVelocity[2][1]);
+		
+		/*--- Components of the adjoint tensors ---*/
+		
+		Sigma_xx = mue_eff * (FOUR3 * dpsi2_dx -  TWO3 * dpsi3_dy
+                          - TWO3  * dpsi4_dz);
+		Sigma_yy = mue_eff * (-TWO3 * dpsi2_dx + FOUR3 * dpsi3_dy
+                          - TWO3  * dpsi4_dz);
+		Sigma_zz = mue_eff * (-TWO3 * dpsi2_dx -  TWO3 * dpsi3_dy
+                          + FOUR3 * dpsi4_dz);
+		
+		Sigma_xy = mue_eff * (dpsi3_dx + dpsi2_dy);
+		Sigma_xz = mue_eff * (dpsi4_dx + dpsi2_dz);
+		Sigma_yz = mue_eff * (dpsi4_dy + dpsi3_dz);
+		
+		Sigma_xx5 = mue_eff * ( FOUR3 * Velocity[0] * dpsi5_dx
+                           - TWO3 * Velocity[1] * dpsi5_dy -  TWO3 * Velocity[2] * dpsi5_dz);
+		Sigma_yy5 = mue_eff * (- TWO3 * Velocity[0] * dpsi5_dx
+                           + FOUR3 * Velocity[1] * dpsi5_dy -  TWO3 * Velocity[2] * dpsi5_dz);
+		Sigma_zz5 = mue_eff * (- TWO3 * Velocity[0] * dpsi5_dx
+                           - TWO3 * Velocity[1] * dpsi5_dy + FOUR3 * Velocity[2] * dpsi5_dz);
+		
+		Sigma_xy5 = mue_eff * (Velocity[0] * dpsi5_dy + Velocity[1] * dpsi5_dx);
+		Sigma_xz5 = mue_eff * (Velocity[0] * dpsi5_dz + Velocity[2] * dpsi5_dx);
+		Sigma_yz5 = mue_eff * (Velocity[1] * dpsi5_dz + Velocity[2] * dpsi5_dy);
+		
+		eta_xx = Sigma_xx + Sigma_xx5;
+		eta_yy = Sigma_yy + Sigma_yy5;
+		eta_zz = Sigma_zz + Sigma_zz5;
+		
+		eta_xy = Sigma_xy + Sigma_xy5;
+		eta_xz = Sigma_xz + Sigma_xz5;
+		eta_yz = Sigma_yz + Sigma_yz5;
+		
+		Sigma5_x = ( xi /Density ) *  dpsi5_dx;
+		Sigma5_y = ( xi /Density ) *  dpsi5_dy;
+		Sigma5_z = ( xi /Density ) *  dpsi5_dz;
+		
+		/*--- Viscous residual ---*/
+		
+		val_residual[0] = (  (- rtau_xx * Velocity[0] - rtau_xy  * Velocity[1] - rtau_xz * Velocity[2]
+                          + alpha_x * vv2  - beta_x) *  dpsi5_dx +
+                       (- rtau_xy * Velocity[0] - rtau_yy  *  Velocity[1] - rtau_yz * Velocity[2]
+                        + alpha_y * vv2  - beta_y) *  dpsi5_dy +
+                       (- rtau_xz * Velocity[0] - rtau_yz  *  Velocity[1] - rtau_zz * Velocity[2]
+                        + alpha_z * vv2  - beta_z) *  dpsi5_dz)*Volume;
+		
+    val_residual[1] = (    (rtau_xx - Velocity[0] * alpha_x) * dpsi5_dx
+                       + (rtau_xy - Velocity[0] * alpha_y) * dpsi5_dy
+                       + (rtau_xz - Velocity[0] * alpha_z) * dpsi5_dz)*Volume;
+		
+    val_residual[2] = (    (rtau_xy - Velocity[1] * alpha_x) * dpsi5_dx
+                       + (rtau_yy - Velocity[1] * alpha_y) * dpsi5_dy
+                       + (rtau_yz - Velocity[1] * alpha_z) * dpsi5_dz)*Volume;
+		
+    val_residual[3] = (	  (rtau_xz - Velocity[2] * alpha_x) * dpsi5_dx
+                       + (rtau_yz - Velocity[2] * alpha_y) * dpsi5_dy
+                       + (rtau_zz - Velocity[2] * alpha_z) * dpsi5_dz )*Volume;
+		
+    val_residual[4]  = (alpha_x * dpsi5_dx + alpha_y * dpsi5_dy
+                        + alpha_z * dpsi5_dz)*Volume;
+		
+		/*--- Extra terms coming from grad(psi)* D *grad(invM) ---*/
+		
+    val_residual[0] += (- dVelocityxDensity_dx * eta_xx - dVelocityxDensity_dy * eta_xy - dVelocityxDensity_dz * eta_xz
+                        - dVelocityyDensity_dx * eta_xy - dVelocityyDensity_dy * eta_yy - dVelocityyDensity_dz * eta_yz
+                        - dVelocityzDensity_dx * eta_xz - dVelocityzDensity_dy * eta_yz - dVelocityzDensity_dz * eta_zz
+                        + Sigma5_x * Velocity[0] * GradVelocity[0][0] + Sigma5_x * Velocity[1] * GradVelocity[1][0] + Sigma5_x * Velocity[2] * GradVelocity[2][0]
+                        + Sigma5_y * Velocity[0] * GradVelocity[0][1] + Sigma5_y * Velocity[1] * GradVelocity[1][1] + Sigma5_y * Velocity[2] * GradVelocity[2][1]
+                        + Sigma5_z * Velocity[0] * GradVelocity[0][2] + Sigma5_z * Velocity[1] * GradVelocity[1][2] + Sigma5_z * Velocity[2] * GradVelocity[2][2])*Volume;
+    
+    val_residual[1] += (dinvDensity_dx * eta_xx + dinvDensity_dy * eta_xy + dinvDensity_dz * eta_xz
+                        - GradVelocity[0][0] * Sigma5_x - GradVelocity[0][1] * Sigma5_y - GradVelocity[0][2] * Sigma5_z)*Volume;
+    
+    val_residual[2] += (dinvDensity_dx * eta_xy + dinvDensity_dy * eta_yy + dinvDensity_dz * eta_yz
+                        - GradVelocity[1][0] * Sigma5_x - GradVelocity[1][1] * Sigma5_y - GradVelocity[1][2] * Sigma5_z)*Volume;
+    
+    val_residual[3] += (dinvDensity_dx * eta_xz + dinvDensity_dy * eta_yz + dinvDensity_dz * eta_zz
+                        - GradVelocity[2][0] * Sigma5_x - GradVelocity[2][1] * Sigma5_y - GradVelocity[2][2] * Sigma5_z)*Volume;
+    
+	}
+	 
+#endif
+
 }
 
 CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
