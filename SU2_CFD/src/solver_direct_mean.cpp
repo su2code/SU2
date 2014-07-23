@@ -6138,11 +6138,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-/////////////
-        ///*--- Build the external state u_e from boundary data and internal node ---*///
-
-
-
+ /*--- Build the external state u_e from boundary data and internal node ---*///
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
 
@@ -6154,12 +6150,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 else P_Total  = config->GetRiemann_Var1(Marker_Tag);
                 T_Total  = config->GetRiemann_Var2(Marker_Tag);
                 Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-//               cout << Marker_Tag << endl;
 
                 /*--- Non-dim. the inputs if necessary. ---*/
                 P_Total /= config->GetPressure_Ref();
                 T_Total /= config->GetTemperature_Ref();
-//                getchar();
 
                 /* --- Computes the total state --- */
 
