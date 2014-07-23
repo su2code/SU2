@@ -5156,6 +5156,12 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
         
       case TNE2_EULER : case TNE2_NAVIER_STOKES :
         
+        /*--- Computes primitive variables ---*/
+        solver_container[iZone][MESH_0][TNE2_SOL]->Preprocessing(geometry[iZone][MESH_0],
+                                                                 solver_container[iZone][MESH_0],
+                                                                 config[iZone], MESH_0, NO_RK_ITER,
+                                                                 RUNTIME_TNE2_SYS, true);
+        
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][TNE2_SOL], iExtIter, iZone);
         break;
         

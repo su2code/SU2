@@ -292,7 +292,8 @@ inline void CVariable::SetPrimVar(double *val_prim) { }
 
 inline bool CVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
                                     double *val_dPdU, double *val_dTdU,
-                                    double *val_dTvedU) { return false; }
+                                    double *val_dTvedU, double *val_eves,
+                                    double *val_Cvves) { return false; }
 
 inline bool CVariable::GradCons2GradPrimVar(CConfig *config, double *U,
                                             double *V, double **GradU,
@@ -333,16 +334,20 @@ inline double *CVariable::GetdTvedU() { return NULL; }
 inline double CVariable::CalcEve(CConfig *config, double val_Tve,
                                  unsigned short val_Species) { return 0; }
 
+inline double *CVariable::GetEve(void) { return NULL; }
+
 inline double CVariable::CalcHs(CConfig *config, double val_T, double val_eves,
                                 unsigned short val_Species) { return 0; }
 
 inline double CVariable::CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species) { return 0; }
 
-inline void CVariable::CalcdPdU(double *V, CConfig *config, double *dPdU) { }
+inline double *CVariable::GetCvve(void) { return NULL; }
+
+inline void CVariable::CalcdPdU(double *V, double *val_eves, CConfig *config, double *dPdU) { }
 
 inline void CVariable::CalcdTdU(double *V, CConfig *config, double *dTdU) { }
 
-inline void CVariable::CalcdTvedU(double *V, CConfig *config, double *dTvedU) { }
+inline void CVariable::CalcdTvedU(double *V, double *val_eves, CConfig *config, double *dTvedU) { }
 
 inline void CVariable::SetDeltaPressure(double *val_velocity, double Gamma) { }
 
@@ -736,6 +741,10 @@ inline double* CTNE2EulerVariable::GetdPdU(void) { return dPdU; }
 inline double* CTNE2EulerVariable::GetdTdU(void) { return dTdU; }
 
 inline double* CTNE2EulerVariable::GetdTvedU(void) { return dTvedU; }
+
+inline double* CTNE2EulerVariable::GetEve(void) { return eves; }
+
+inline double* CTNE2EulerVariable::GetCvve(void) { return Cvves; }
 
 inline double CTNE2EulerVariable::GetVelocity(unsigned short val_dim) { return Primitive[VEL_INDEX+val_dim]; }
 

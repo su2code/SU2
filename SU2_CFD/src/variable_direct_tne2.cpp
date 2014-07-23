@@ -26,12 +26,14 @@
 CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {  
 
   /*--- Array initialization ---*/
-	Primitive = NULL;
+	Primitive          = NULL;
 	Gradient_Primitive = NULL;
-	Limiter_Primitive = NULL;
-  dPdU = NULL;
-  dTdU = NULL;
+	Limiter_Primitive  = NULL;
+  dPdU   = NULL;
+  dTdU   = NULL;
   dTvedU = NULL;
+  eves   = NULL;
+  Cvves  = NULL;
   
   /*--- Define structure of the primtive variable vector ---*/
   // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
@@ -61,17 +63,19 @@ CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_ndim,
   nVar         = val_nvar;
   nPrimVar     = val_nprimvar;
   nPrimVarGrad = val_nprimvargrad;
-  nSpecies = config->GetnSpecies();
+  nSpecies     = config->GetnSpecies();
   
   ionization = config->GetIonization();
   
   /*--- Array initialization ---*/
-	Primitive = NULL;
+	Primitive          = NULL;
 	Gradient_Primitive = NULL;
-	Limiter_Primitive = NULL;
-  dPdU = NULL;
-  dTdU = NULL;
+	Limiter_Primitive  = NULL;
+  dPdU   = NULL;
+  dTdU   = NULL;
   dTvedU = NULL;
+  eves   = NULL;
+  Cvves  = NULL;
   
   /*--- Define structure of the primtive variable vector ---*/
   // Primitive: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
@@ -131,9 +135,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   RHOCVVE_INDEX = nSpecies+nDim+7;
   
   /*--- Array initialization ---*/
-	Primitive = NULL;
+	Primitive          = NULL;
 	Gradient_Primitive = NULL;
-	Limiter_Primitive = NULL;
+	Limiter_Primitive  = NULL;
   
   /*--- Allocate & initialize residual vectors ---*/
 	Res_TruncError = new double [nVar];
@@ -178,6 +182,10 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
   dPdU      = new double [nVar];
   dTdU      = new double [nVar];
   dTvedU    = new double [nVar];
+  
+  /*--- Allocate primitive vibrational energy arrays ---*/
+  eves      = new double [nSpecies];
+  Cvves     = new double [nSpecies];
   
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
@@ -312,9 +320,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
   RHOCVVE_INDEX = nSpecies+nDim+7;
   
   /*--- Array initialization ---*/
-	Primitive = NULL;
+	Primitive          = NULL;
 	Gradient_Primitive = NULL;
-  Limiter_Primitive = NULL;
+  Limiter_Primitive  = NULL;
   
   /*--- Allocate & initialize residual vectors ---*/
 	Res_TruncError = new double [nVar];
@@ -357,9 +365,13 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
   }
   
   /*--- Allocate partial derivative vectors ---*/
-  dPdU      = new double [nVar];
-  dTdU      = new double [nVar];
-  dTvedU    = new double [nVar];
+  dPdU   = new double [nVar];
+  dTdU   = new double [nVar];
+  dTvedU = new double [nVar];
+  
+  /*--- Allocate vibrational-electronic arrays ---*/
+  eves  = new double[nSpecies];
+  Cvves = new double[nSpecies];
   
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
@@ -385,9 +397,9 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   if (Res_TruncError != NULL) delete [] Res_TruncError;
   if (Residual_Old   != NULL) delete [] Residual_Old;
   if (Residual_Sum   != NULL) delete [] Residual_Sum;
-  if (Limiter != NULL) delete [] Limiter;
-  if (Solution_Max != NULL) delete [] Solution_Max;
-  if (Solution_Min != NULL) delete [] Solution_Min;
+  if (Limiter        != NULL) delete [] Limiter;
+  if (Solution_Max   != NULL) delete [] Solution_Max;
+  if (Solution_Min   != NULL) delete [] Solution_Min;
   
   if (Primitive != NULL) delete [] Primitive;
   if (Gradient_Primitive != NULL) {
@@ -395,10 +407,11 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
       delete Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
-  if (dPdU      != NULL) delete [] dPdU;
-  if (dTdU      != NULL) delete [] dTdU;
-  if (dTvedU    != NULL) delete [] dTvedU;
-  
+  if (dPdU   != NULL) delete [] dPdU;
+  if (dTdU   != NULL) delete [] dTdU;
+  if (dTvedU != NULL) delete [] dTvedU;
+  if (eves   != NULL) delete [] eves;
+  if (Cvves  != NULL) delete [] Cvves;
 }
 
 void CTNE2EulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
@@ -753,7 +766,8 @@ bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
 //  else { Primitive[A_INDEX] = sqrt(radical); return false; }
 }
 
-void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) {
+void CTNE2EulerVariable::CalcdPdU(double *V, double *val_eves,
+                                  CConfig *config, double *val_dPdU) {
 
   // Note: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties()
   // Note: Electron energy not included properly.
@@ -761,7 +775,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
   double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
   double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
-  double rho, rhos, T, Tve, evibs, eels, ef;
+  double rho, rhos, T, Tve, ef;
   double num, denom;
   
   if (val_dPdU == NULL) {
@@ -822,16 +836,16 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   }
   if (ionization) {
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
-      evibs = Ru/Ms[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
-      num = 0.0;
-      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
-      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
-        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
-      }
-      eels = Ru/Ms[iSpecies] * (num/denom);
+//      evibs = Ru/Ms[iSpecies] * thetav[iSpecies]/(exp(thetav[iSpecies]/Tve)-1.0);
+//      num = 0.0;
+//      denom = g[iSpecies][0] * exp(-thetae[iSpecies][0]/Tve);
+//      for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+//        num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//        denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
+//      }
+//      eels = Ru/Ms[iSpecies] * (num/denom);
       
-      val_dPdU[iSpecies] -= rho_el * Ru/Ms[nSpecies-1] * (evibs + eels)/rhoCvve;
+      val_dPdU[iSpecies] -= rho_el * Ru/Ms[nSpecies-1] * (val_eves[iSpecies])/rhoCvve;
     }
     ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1]*Tref[nSpecies-1];
     val_dPdU[nSpecies-1] = Ru*conc/rhoCvtr * (-ef + 0.5*sqvel)
@@ -1046,25 +1060,23 @@ void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
     val_dTdU[nSpecies+iDim] = -V[VEL_INDEX+iDim] / V[RHOCVTR_INDEX];
   
   /*--- Energy derivatives ---*/
-  val_dTdU[nSpecies+nDim]   = 1.0 / V[RHOCVTR_INDEX];
+  val_dTdU[nSpecies+nDim]   =  1.0 / V[RHOCVTR_INDEX];
   val_dTdU[nSpecies+nDim+1] = -1.0 / V[RHOCVTR_INDEX];
   
 }
 
-void CTNE2EulerVariable::CalcdTvedU(double *V, CConfig *config,
+void CTNE2EulerVariable::CalcdTvedU(double *V, double *val_eves, CConfig *config,
                                     double *val_dTvedU) {
   
   unsigned short iDim, iSpecies;
   double rhoCvve;
-  double eve;
   
   /*--- Rename for convenience ---*/
   rhoCvve = V[RHOCVVE_INDEX];
   
   /*--- Species density derivatives ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eve = CalcEve(config, V[TVE_INDEX], iSpecies);
-    val_dTvedU[iSpecies] = -eve/rhoCvve;
+    val_dTvedU[iSpecies] = -val_eves[iSpecies]/rhoCvve;
   }
   /*--- Momentum derivatives ---*/
   for (iDim = 0; iDim < nDim; iDim++)
@@ -1082,11 +1094,11 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   unsigned short iVar;
   
   /*--- Convert conserved to primitive variables ---*/
-  V_err = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU);
+  V_err = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
   if (V_err) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
-    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU);
+    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
   }
   
   SetVelocity2();
@@ -1148,7 +1160,8 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 
 bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
                                       double *val_dPdU, double *val_dTdU,
-                                      double *val_dTvedU) {
+                                      double *val_dTvedU, double *val_eves,
+                                      double *val_Cvves) {
   
   bool ionization, nonphys, nrconvg, converr;
 	unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
@@ -1204,11 +1217,11 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   
   /*--- T-R Temperature ---*/
   // Set temperature clipping values
-  Tmin   = 80.0;
-  Tmax   = 6E4;
+  Tmin = 80.0;
+  Tmax = 6E4;
   
   // Rename for convenience
-  rho = V[RHO_INDEX];
+  rho      = V[RHO_INDEX];
   rhoE_f   = 0.0;
   rhoE_ref = 0.0;
   rhoCvtr  = 0.0;
@@ -1251,33 +1264,33 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   
   // Check for non-physical solutions
   nonphys = false;
-  V[TVE_INDEX] = Tvemin;
-  rhoEve_t = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
-  if (rhoEve < rhoEve_t) {
-    nonphys = true;
-    converr = true;
-    V[TVE_INDEX] = Tvemin;
-//    cout << "Tve < Tve min" << endl;
-  }
-  
-  V[TVE_INDEX] = Tvemax;
-  rhoEve_t = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
-  if (rhoEve > rhoEve_t) {
-    nonphys = true;
-    converr = true;
-    V[TVE_INDEX] = Tvemax;
-//    cout << "Tve > Tve max" << endl;
-  }
+//  V[TVE_INDEX] = Tvemin;
+//  rhoEve_t = 0.0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
+//  if (rhoEve < rhoEve_t) {
+//    nonphys = true;
+//    converr = true;
+//    V[TVE_INDEX] = Tvemin;
+////    cout << "Tve < Tve min" << endl;
+//  }
+//  
+//  V[TVE_INDEX] = Tvemax;
+//  rhoEve_t = 0.0;
+//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
+//  if (rhoEve > rhoEve_t) {
+//    nonphys = true;
+//    converr = true;
+//    V[TVE_INDEX] = Tvemax;
+////    cout << "Tve > Tve max" << endl;
+//  }
   
   // Initialize trial values of Tve for Newton-Raphson method
-//  Tve   = Primitive[TVE_INDEX];
-//  Tve_o = Primitive[TVE_INDEX];
-  Tve   = V[T_INDEX];
-  Tve_o = V[T_INDEX];
+  Tve   = Primitive[TVE_INDEX];
+  Tve_o = Primitive[TVE_INDEX];
+//  Tve   = V[T_INDEX];
+//  Tve_o = V[T_INDEX];
 
   // Newton-Raphson
   if (!nonphys) {
@@ -1287,8 +1300,10 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
       rhoCvve      = 0.0;
       V[TVE_INDEX] = Tve;
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        rhoEve_t += U[iSpecies] * CalcEve(config, V[TVE_INDEX],  iSpecies);
-        rhoCvve  += U[iSpecies] * CalcCvve(V[TVE_INDEX], config, iSpecies);
+        val_eves[iSpecies] = CalcEve(config, V[TVE_INDEX], iSpecies);
+        val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
+        rhoEve_t += U[iSpecies] * val_eves[iSpecies];
+        rhoCvve  += U[iSpecies] * val_Cvves[iSpecies];
       }
       
       // Find the root
@@ -1324,11 +1339,15 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
         Tve = (Tve_o+Tve2)/2.0;
         V[TVE_INDEX] = Tve;
         rhoEve_t = 0.0;
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          rhoEve_t += U[iSpecies] * CalcEve(config, V[TVE_INDEX], iSpecies);
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          val_eves[iSpecies] = CalcEve(config, V[TVE_INDEX], iSpecies);
+          rhoEve_t += U[iSpecies] * val_eves[iSpecies];
+        }
         
         if (fabs(rhoEve_t - rhoEve) < tol) {
           V[TVE_INDEX] = Tve;
+          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+            val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
           break;
         } else {
           if (rhoEve_t > rhoEve) Tve2 = Tve;
@@ -1337,10 +1356,11 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
       }
     }
   }
-
+  
+  /*--- Set mixture rhoCvve ---*/
   V[RHOCVVE_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    V[RHOCVVE_INDEX] += U[iSpecies]*CalcCvve(V[TVE_INDEX], config, iSpecies);
+  V[RHOCVVE_INDEX] += U[iSpecies]*Cvves[iSpecies];
   
   /*--- Pressure ---*/
   V[P_INDEX] = 0.0;
@@ -1350,15 +1370,14 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
     V[P_INDEX] += U[nSpecies-1] * Ru/Ms[nSpecies-1] * V[TVE_INDEX];
 
   if (V[P_INDEX] < 0.0) {
-//    cout << "P: " << V[P_INDEX] << endl;
-    V[P_INDEX] = 1E-14;
+    V[P_INDEX] = 1E-20;
     converr = true;
   }
   
   /*--- Partial derivatives of pressure and temperature ---*/
-  CalcdPdU(  V, config, val_dPdU  );
+  CalcdPdU(  V, val_eves, config, val_dPdU  );
   CalcdTdU(  V, config, val_dTdU  );
-  CalcdTvedU(V, config, val_dTvedU);
+  CalcdTvedU(V, val_eves, config, val_dTvedU);
   
   
   /*--- Sound speed ---*/
@@ -2183,11 +2202,11 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
   bool V_err, bkup;
   unsigned short iVar;
   
-  V_err = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU);
+  V_err = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
   if (V_err) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
-    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU);
+    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
   }
   
   SetVelocity2();

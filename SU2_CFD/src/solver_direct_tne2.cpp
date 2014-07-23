@@ -2067,6 +2067,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   double *Limiter_i, *Limiter_j;
   double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
+  double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
   
   double lim_i, lim_j, lim_ij;
   
@@ -2086,6 +2087,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   dTdU_j      = new double[nVar];
   dTvedU_i    = new double[nVar];
   dTvedU_j    = new double[nVar];
+  Eve_i       = new double[nSpecies];
+  Eve_j       = new double[nSpecies];
+  Cvve_i      = new double[nSpecies];
+  Cvve_j      = new double[nSpecies];
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
@@ -2178,9 +2183,9 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       
       /*--- Calculate corresponding primitive reconstructed variables ---*/
       chk_err_i = node[iPoint]->Cons2PrimVar(config, Conserved_i, Primitive_i,
-                                             dPdU_i, dTdU_i, dTvedU_i);
+                                             dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
       chk_err_j = node[jPoint]->Cons2PrimVar(config, Conserved_j, Primitive_j,
-                                             dPdU_j, dTdU_j, dTvedU_j);
+                                             dPdU_j, dTdU_j, dTvedU_j, Eve_j, Cvve_j);
       
       
       /*--- Check for physical solutions in the reconstructed values ---*/
@@ -2191,17 +2196,19 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
         numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
         numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
+        numerics->SetEve(node[iPoint]->GetEve(), node[jPoint]->GetEve());
+        numerics->SetCvve(node[iPoint]->GetCvve(), node[jPoint]->GetCvve());
       } else {
         numerics->SetConservative(Conserved_i, Conserved_j);
         numerics->SetPrimitive(Primitive_i, Primitive_j);
         numerics->SetdPdU  (dPdU_i,   dPdU_j);
         numerics->SetdTdU  (dTdU_i,   dTdU_j);
         numerics->SetdTvedU(dTvedU_i, dTvedU_j);
+        numerics->SetEve(Eve_i, Eve_j);
+        numerics->SetCvve(Cvve_i, Cvve_j);
       }
       
 
-      
-      
 //      cout << "Solution" << endl;
 //      for (iVar = 0; iVar < nVar; iVar++) {
 //        cout << Conserved_i[iVar] << "\t" << U_i[iVar] << endl;
@@ -2255,76 +2262,13 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
       numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
       numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
+      numerics->SetEve(node[iPoint]->GetEve(), node[jPoint]->GetEve());
+      numerics->SetCvve(node[iPoint]->GetCvve(), node[jPoint]->GetCvve());
     }
     
     /*--- Compute the upwind residual ---*/
 		numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
-    
-    
-//    /////////// DEBUG /////////////
-//    unsigned short iVar, jVar;
-//    double *S_new, *S_old, d;
-//    double *U_j, *V_j;
-//    bool RightSol;
-//    S_new = new double[nVar];
-//    S_old = new double[nVar];
-//    V_j = new double[nPrimVar];
-//
-//    cout << "Analytic" << endl;
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      for (jVar = 0; jVar < nVar; jVar++) {
-//        cout << Jacobian_j[jVar][iVar] << "\t\t";
-//      }
-//      cout << endl;
-//    }
-//
-//    cout << endl << "FD: " << endl;
-//    // finite difference gradient
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//
-//      // set displacement value
-//      U_j = node[jPoint]->GetSolution();
-//      d = 0.0001*U_j[iVar];
-//      if (d == 0)
-//        d = 1E-12;
-//      U_j[iVar] += d;
-//      node[jPoint]->SetSolution(U_j);
-//      RightSol = node[jPoint]->SetPrimVar_Compressible(config);
-//      V_j = node[jPoint]->GetPrimVar();
-//
-//      /*-- pass to numerics ---*/
-//      numerics->SetConservative(U_i, U_j);
-//      numerics->SetPrimitive   (V_i, V_j);
-//      numerics->SetdPdU        (node[iPoint]->GetdPdU()    , node[jPoint]->GetdPdU()    );
-//      numerics->SetdTdU        (node[iPoint]->GetdTdU()    , node[jPoint]->GetdTdU()    );
-//      numerics->SetdTvedU      (node[iPoint]->GetdTvedU()  , node[jPoint]->GetdTvedU()  );
-//
-//      // Compute updated value
-//      numerics->ComputeResidual(S_new, Jacobian_i, Jacobian_j, config);
-//
-//      // return solution to original value
-//      U_j[iVar] -= d;
-//      node[iPoint]->SetSolution(iVar, U_j[iVar]);
-//      RightSol = node[jPoint]->SetPrimVar_Compressible(config);
-//
-//      /*-- pass to numerics ---*/
-//      numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-//      numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[jPoint]->GetPrimVar() );
-//      numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
-//      numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
-//      numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
-//
-//      // display FD gradient
-//      for (jVar = 0; jVar < nVar; jVar++)
-//        cout << (S_new[jVar]-Res_Conv[jVar])/d << "\t\t";
-//      cout << endl;
-//    }
-//    
-//    cin.get();
-//    //////////////////// DEBUG ////////////////////
-//    
-		
     /*--- Error checking ---*/
     chk_err_i = false;
     for (iVar = 0; iVar < nVar; iVar++)
@@ -2337,32 +2281,6 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
               Jacobian_j[iVar][jVar] != Jacobian_j[iVar][jVar])
             chk_err_i = true;
     }
-
-    //      cout << "NaN detected in convective flux/Jacobians." << endl;
-//    if (high_order_diss) {
-//      cout << "iPoint: " << iPoint << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << "Residual[" << iVar << "]: " << Res_Conv[iVar] << endl;
-//      cout << endl;
-//      for (iVar = 0; iVar < nPrimVar; iVar++)
-//        cout << "Prim[" << iVar << "]: " << Primitive_i[iVar] << endl;
-//      cout << endl;
-//      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-//        cout << "Lim[" << iVar << "]: " << Limiter_i[iVar] << endl;
-//      cout << endl;
-//      for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-//        cout << "GradV: " << GradV_i[iVar][0] << "\t" << GradV_i[iVar][1] << "\t" << GradV_i[iVar][2] << endl;
-//      cin.get();
-//    } else {
-//      cout << "iPoint: " << iPoint << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << "Residual[" << iVar << "]: " << Res_Conv[iVar] << endl;
-//      cout << endl;
-//      for (iVar = 0; iVar < nPrimVar; iVar++)
-//        cout << "Prim[" << iVar << "]: " << V_i[iVar] << endl;
-//      cin.get();
-//    }
-
     
     /*--- Update the residual values ---*/
 		LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -2387,6 +2305,10 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   delete [] dTdU_j;
   delete [] dTvedU_i;
   delete [] dTvedU_j;
+  delete [] Eve_i;
+  delete [] Eve_j;
+  delete [] Cvve_i;
+  delete [] Cvve_j;
 }
 
 void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
@@ -2421,6 +2343,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
     numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
     numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
+    numerics->SetEve(node[iPoint]->GetEve(), node[iPoint]->GetEve());
+    numerics->SetCvve(node[iPoint]->GetCvve(), node[iPoint]->GetCvve());
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -5649,11 +5573,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
     
-//    cout << "Local dt: " << Local_Delta_Time << endl;
-//    cout << "Local dtv: " << Local_Delta_Time_Visc << endl;
-//    cin.get();
-    
-//		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
     /*--- Store minimum and maximum dt's within the grid for printing ---*/
@@ -5774,6 +5694,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
     numerics->SetdTdU(node[iPoint]->GetdTdU(), node[jPoint]->GetdTdU());
     numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[jPoint]->GetdTvedU());
+    numerics->SetEve(node[iPoint]->GetEve(), node[jPoint]->GetEve());
+    numerics->SetCvve(node[iPoint]->GetCvve(), node[jPoint]->GetCvve());
     
     /*--- Species diffusion coefficients ---*/
     numerics->SetDiffusionCoeff(node[iPoint]->GetDiffusionCoeff(),
@@ -5857,6 +5779,8 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
     numerics->SetdTdU(node[iPoint]->GetdTdU(), node[iPoint]->GetdTdU());
     numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node[iPoint]->GetdTvedU());
+    numerics->SetEve(node[iPoint]->GetEve(), node[iPoint]->GetEve());
+    numerics->SetCvve(node[iPoint]->GetCvve(), node[iPoint]->GetCvve());
     
     /*--- Set volume of the dual grid cell ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());

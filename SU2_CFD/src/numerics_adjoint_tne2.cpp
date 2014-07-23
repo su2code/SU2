@@ -47,6 +47,8 @@ CUpwRoe_AdjTNE2::CUpwRoe_AdjTNE2(unsigned short val_nDim,
   MeandPdU   = new double[nVar];
   MeandTdU   = new double[nVar];
   MeandTvedU = new double[nVar];
+  MeanEve    = new double[nSpecies];
+  MeanCvve   = new double[nSpecies];
   DiffPsi    = new double[nVar];
   Lambda     = new double[nVar];
   Ai     = new double* [nVar];
@@ -71,6 +73,8 @@ CUpwRoe_AdjTNE2::~CUpwRoe_AdjTNE2(void) {
   delete [] MeandPdU;
   delete [] MeandTdU;
   delete [] MeandTvedU;
+  delete [] MeanEve;
+  delete [] MeanCvve;
   delete [] DiffPsi;
 	delete [] Lambda;
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -145,9 +149,9 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   /*--- Calculate mean variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     MeanU[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
-  var->Cons2PrimVar(config, MeanU, MeanV, MeandPdU, MeandTdU, MeandTvedU);
+  var->Cons2PrimVar(config, MeanU, MeanV, MeandPdU, MeandTdU,
+                    MeandTvedU, MeanEve, MeanCvve);
   MeanSoundSpeed = MeanV[A_INDEX];
-  
   
   for (iVar = 0; iVar < nVar; iVar++)
     DiffPsi[iVar] = Psi_j[iVar] - Psi_i[iVar];

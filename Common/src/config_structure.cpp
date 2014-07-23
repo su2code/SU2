@@ -2191,6 +2191,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             Reactions[iRxn][ii] = new int[6];
         }
         
+        Blottner  = new double*[nSpecies];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Blottner[iSpecies] = new double[3];
+        
         // Omega[iSpecies][jSpecies][iCoeff]
         Omega00 = new double**[nSpecies];
         Omega11 = new double**[nSpecies];
@@ -2240,19 +2244,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         CharVibTemp[3] = 0.0;
         CharVibTemp[4] = 0.0;
         
-        // Formation enthalpy: (JANAF values [KJ/Kmol])
-        Enthalpy_Formation[0] = 0.0;					//N2
-        Enthalpy_Formation[1] = 0.0;					//O2
-        Enthalpy_Formation[2] = 90.291E3;			//NO
-        Enthalpy_Formation[3] = 472.683E3;		//N
-        Enthalpy_Formation[4] = 249.173E3;		//O
+        // Formation enthalpy: (Scalabrin values, J/kg)
+        Enthalpy_Formation[0] = 0.0;			//N2
+        Enthalpy_Formation[1] = 0.0;			//O2
+        Enthalpy_Formation[2] = 3.0E6;    //NO
+        Enthalpy_Formation[3] = 3.36E7;		//N
+        Enthalpy_Formation[4] = 1.54E7;		//O
         
         // Reference temperature (JANAF values, [K])
         Ref_Temperature[0] = 0.0;
         Ref_Temperature[1] = 0.0;
-        Ref_Temperature[2] = 298.15;
-        Ref_Temperature[3] = 298.15;
-        Ref_Temperature[4] = 298.15;
+        Ref_Temperature[2] = 0.0;
+        Ref_Temperature[3] = 0.0;
+        Ref_Temperature[4] = 0.0;
+//        Ref_Temperature[2] = 298.15;
+//        Ref_Temperature[3] = 298.15;
+//        Ref_Temperature[4] = 298.15;
+        
+        // Blottner viscosity coefficients
+        // A                        // B                        // C
+        Blottner[0][0] = 2.68E-2;   Blottner[0][1] =  3.18E-1;  Blottner[0][2] = -1.13E1;  // N2
+        Blottner[1][0] = 4.49E-2;   Blottner[1][1] = -8.26E-2;  Blottner[1][2] = -9.20E0;  // O2
+        Blottner[2][0] = 4.36E-2;   Blottner[2][1] = -3.36E-2;  Blottner[2][2] = -9.58E0;  // NO
+        Blottner[3][0] = 1.16E-2;   Blottner[3][1] =  6.03E-1;  Blottner[3][2] = -1.24E1;  // N
+        Blottner[4][0] = 2.03E-2;   Blottner[4][1] =  4.29E-1;  Blottner[4][2] = -1.16E1;  // O
         
         // Number of electron states
         nElStates[0] = 15;                    // N2

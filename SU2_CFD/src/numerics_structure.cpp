@@ -73,9 +73,11 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   /// NEW
   hs  = NULL;
-  eve = NULL;
   Cvtr = NULL;
-  Cvve = NULL;
+  eve_i = NULL;
+  eve_j = NULL;
+  Cvve_i = NULL;
+  Cvve_j = NULL;
   Ys_i = NULL;
   Ys_j = NULL;
   In   = NULL;
@@ -105,9 +107,11 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     
     /// NEW
     hs = new double[nSpecies];
-    eve = new double[nSpecies];
     Cvtr = new double[nSpecies];
-    Cvve = new double[nSpecies];
+    eve_i = new double[nSpecies];
+    eve_j = new double[nSpecies];
+    Cvve_i = new double[nSpecies];
+    Cvve_j = new double[nSpecies];
     Ys_i = new double[nSpecies];
     Ys_j = new double[nSpecies];
     In   = new double[nSpecies];
@@ -193,9 +197,11 @@ CNumerics::~CNumerics(void) {
   
   /// NEW
   if (hs  != NULL) delete [] hs;
-  if (eve != NULL) delete [] eve;
   if (Cvtr != NULL) delete [] Cvtr;
-  if (Cvve != NULL) delete [] Cvve;
+  if (eve_i != NULL) delete [] eve_i;
+  if (eve_j != NULL) delete [] eve_j;
+  if (Cvve_i != NULL) delete [] Cvve_i;
+  if (Cvve_j != NULL) delete [] Cvve_j;
   if (Ys_i != NULL) delete [] Ys_i;
   if (Ys_j != NULL) delete [] Ys_j;
   if (In   != NULL) delete [] In;
@@ -1786,6 +1792,7 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
 
 void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    double **val_gradprimvar,
+                                   double *val_eve,
                                    double *val_normal,
                                    double *val_diffusioncoeff,
                                    double val_viscosity,
@@ -1827,10 +1834,8 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
   Ru  = UNIVERSAL_GAS_CONSTANT;
   V   = val_primvar;
   GV  = val_gradprimvar;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eve[iSpecies] = var->CalcEve(config, Tve, iSpecies);
-    hs[iSpecies]  = var->CalcHs(config, T, eve[iSpecies], iSpecies);
-  }
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    hs[iSpecies]  = var->CalcHs(config, T, val_eve[iSpecies], iSpecies);
   
   /*--- Calculate the velocity divergence ---*/
 	div_vel = 0.0;
@@ -1878,7 +1883,7 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
     /*--- Diffusion terms ---*/
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs[iSpecies];
-      Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * eve[iSpecies];
+      Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * val_eve[iSpecies];
     }
     
     /*--- Heat transfer terms ---*/
@@ -2069,15 +2074,16 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 
 void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
                                    double **val_Mean_GradPrimVar,
+                                   double *val_Mean_Eve,
+                                   double *val_Mean_Cvve,
                                    double *val_diffusion_coeff,
                                    double val_laminar_viscosity,
                                    double val_thermal_conductivity,
                                    double val_thermal_conductivity_ve,
-                                   double val_dist_ij,
-                                   double *val_normal, double val_dS,
-                                   double *val_Fv,
-                                   double **val_Jac_i,
-                                   double **val_Jac_j, CConfig *config) {
+                                   double val_dist_ij, double *val_normal,
+                                   double val_dS, double *val_Fv,
+                                   double **val_Jac_i, double **val_Jac_j,
+                                   CConfig *config) {
   
   bool ionization;
   unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, nHeavy, nEl;
@@ -2148,9 +2154,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
     Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
     Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
     Ys_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX];
-    eve[iSpecies]  = var->CalcEve(config, Tve, iSpecies);
-    hs[iSpecies]   = var->CalcHs(config, T, eve[iSpecies], iSpecies);
-    Cvve[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
+    hs[iSpecies]   = var->CalcHs(config, T, val_Mean_Eve[iSpecies], iSpecies);
     Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
   }
   for (iDim = 0; iDim < nDim; iDim++)
@@ -2263,10 +2267,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
                                                              Cvtr[iSpecies]   );
       dFdVj[nSpecies+2][nSpecies+2] += 0.5*val_Fv[iSpecies]*(Ru/Ms[iSpecies] +
                                                              Cvtr[iSpecies]   );
-      dFdVi[nSpecies+2][nSpecies+3] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
-      dFdVj[nSpecies+2][nSpecies+3] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
-      dFdVi[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
-      dFdVj[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
+      dFdVi[nSpecies+2][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+2][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVi[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
     }
     
     // Unique terms
@@ -2276,8 +2280,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
         dFdVi[iSpecies][jSpecies]   += -dJdr_i[iSpecies][jSpecies]*val_dS;
         dFdVj[nSpecies+2][iSpecies] += -dJdr_j[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
         dFdVi[nSpecies+2][iSpecies] += -dJdr_i[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
-        dFdVj[nSpecies+3][iSpecies] += -dJdr_j[jSpecies][iSpecies]*eve[jSpecies]*val_dS;
-        dFdVi[nSpecies+3][iSpecies] += -dJdr_i[jSpecies][iSpecies]*eve[jSpecies]*val_dS;
+        dFdVj[nSpecies+3][iSpecies] += -dJdr_j[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
+        dFdVi[nSpecies+3][iSpecies] += -dJdr_i[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
       }
     }
     
@@ -2336,10 +2340,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
                                                              Cvtr[iSpecies]   );
       dFdVj[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*(Ru/Ms[iSpecies] +
                                                              Cvtr[iSpecies]   );
-      dFdVi[nSpecies+3][nSpecies+4] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
-      dFdVj[nSpecies+3][nSpecies+4] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
-      dFdVi[nSpecies+4][nSpecies+4] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
-      dFdVj[nSpecies+4][nSpecies+4] += 0.5*val_Fv[iSpecies]*Cvve[iSpecies];
+      dFdVi[nSpecies+3][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+3][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVi[nSpecies+4][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+4][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
     }
     
     // Unique terms
@@ -2349,8 +2353,8 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
         dFdVi[iSpecies][jSpecies]   += -dJdr_i[iSpecies][jSpecies]*val_dS;
         dFdVj[nSpecies+3][iSpecies] += -dJdr_j[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
         dFdVi[nSpecies+3][iSpecies] += -dJdr_i[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
-        dFdVj[nSpecies+4][iSpecies] += -dJdr_j[jSpecies][iSpecies]*eve[jSpecies]*val_dS;
-        dFdVi[nSpecies+4][iSpecies] += -dJdr_i[jSpecies][iSpecies]*eve[jSpecies]*val_dS;
+        dFdVj[nSpecies+4][iSpecies] += -dJdr_j[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
+        dFdVi[nSpecies+4][iSpecies] += -dJdr_i[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
       }
     }
     

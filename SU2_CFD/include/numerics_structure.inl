@@ -100,6 +100,10 @@ inline void CNumerics::SetdPdU(double *val_dPdU_i, double *val_dPdU_j) { dPdU_i 
 inline void CNumerics::SetdTdU(double *val_dTdU_i, double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
 
 inline void CNumerics::SetdTvedU(double *val_dTvedU_i, double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
+
+inline void CNumerics::SetEve(double *val_Eve_i, double *val_Eve_j) {eve_i = val_Eve_i; eve_j = val_Eve_j; }
+
+inline void CNumerics::SetCvve(double *val_Cvve_i, double *val_Cvve_j) {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
 	
 inline void CNumerics::SetUndivided_Laplacian(double *val_und_lapl_i, double *val_und_lapl_j) {
 	Und_Lapl_i = val_und_lapl_i; 

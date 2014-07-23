@@ -190,7 +190,8 @@ public:
   double *dTdU_i, *dTdU_j;
   double *dTvedU_i, *dTvedU_j;
   // NEW
-  double *hs, *eve, *Cvtr, *Cvve;
+  double *hs, *Cvtr;
+  double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
   double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
   double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
   
@@ -741,6 +742,18 @@ public:
 	 */
   void SetdTvedU(double *val_dTvedU_i, double *val_dTvedU_j);
   
+  /*!
+	 * \brief Sets the value of Eve
+	 * \param[in] iRho_s
+	 */
+  void SetEve(double *val_Eve_i, double *val_Eve_j);
+  
+  /*!
+	 * \brief Sets the value of Eve
+	 * \param[in] iRho_s
+	 */
+  void SetCvve(double *val_Cvve_i, double *val_Cvve_j);
+  
 	/*!
 	 * \brief Get the inviscid fluxes.
 	 * \param[in] val_density - Value of the density.
@@ -842,6 +855,7 @@ public:
 	 */
 	void GetViscousProjFlux(double *val_primvar,
                           double **val_gradprimvar,
+                          double *val_eve,
                           double *val_normal,
                           double *val_diffusioncoeff,
                           double val_viscosity,
@@ -969,6 +983,8 @@ public:
 	 */
 	void GetViscousProjJacs(double *val_Mean_PrimVar,
                           double **val_Mean_GradPrimVar,
+                          double *val_Mean_Eve,
+                          double *val_Mean_Cvve,
                           double *val_diffusion_coeff,
                           double val_laminar_viscosity,
                           double val_thermal_conductivity,
@@ -4991,7 +5007,7 @@ class CUpwRoe_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
 	double *Diff_U;
-  double *RoeU, *RoeV;
+  double *RoeU, *RoeV, *RoeEve;
 	double *ProjFlux_i, *ProjFlux_j;
 	double *Lambda, *Epsilon;
 	double **P_Tensor, **invP_Tensor;
@@ -5046,7 +5062,7 @@ private:
 	double *Fc_i, *Fc_j;
 	double *Lambda_i, *Lambda_j;
   double *rhos_i, *rhos_j, *rhosst_i, *rhosst_j;
-  double *Ust_i, *Ust_j, *Vst_i, *Vst_j;
+  double *Ust_i, *Ust_j, *Vst_i, *Vst_j, *Evest_i, *Evest_j;
   double *dPdUst_i, *dPdUst_j;
 	double **P_Tensor, **invP_Tensor;
   unsigned short nSpecies, nPrimVar, nPrimVarGrad, nVar, nDim;
@@ -5188,7 +5204,7 @@ class CCentLax_TNE2 : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
 	double *Diff_U; /*!< \brief Difference of conservative variables. */
-  double *MeanU, *MeanV;
+  double *MeanU, *MeanV, *MeanEve;
   double *MeandPdU;
 	double *ProjFlux;  /*!< \brief Projected inviscid flux tensor. */
 	double Param_p, Param_Kappa_0; /*!< \brief Artificial dissipation parameters. */
@@ -5248,6 +5264,8 @@ private:
   *Mean_dTdU,
   *Mean_dTvedU,
   *Mean_dPdU,
+  *Mean_Eve,
+  *Mean_Cvve,
 	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
 	*Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
@@ -5304,9 +5322,12 @@ public:
 class CAvgGradCorrected_TNE2 : public CNumerics {
 private:
 	unsigned short iDim, iVar, nPrimVar, nPrimVarGrad;		/*!< \brief Iterators in dimension an variable. */
-	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
+	double
+  *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
 	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
+  *Mean_Eve,
+  *Mean_Cvve,
   *Edge_Vector,
   *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
 	*Mean_Diffusion_Coeff, /*!< \brief Mean value of the species diffusion coefficient. */
@@ -5371,7 +5392,6 @@ private:
   double *estar, *evib;
   double **tau_sr, *tauP, *tauMW, *taus;
   double *dkf, *dkb, *dRfok, *dRbok, *A;
-  double *eves, *Cvves;
   double *Cvvs, *Cvvsst;
   double *Cves;
   //  CVariable *var;
@@ -5437,6 +5457,7 @@ private:
   unsigned short nVar, nPrimVar, nPrimVarGrad, nSpecies;
   double *MeanU, *MeanV;
   double *MeandPdU, *MeandTdU, *MeandTvedU;
+  double *MeanEve, *MeanCvve;
   double *DiffPsi;
   double *UnitNormal;
   double *Lambda;

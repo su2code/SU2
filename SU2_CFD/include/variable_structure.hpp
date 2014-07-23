@@ -1023,7 +1023,8 @@ public:
 	 */
   virtual bool Cons2PrimVar(CConfig *config, double *U, double *V,
                             double *dPdU, double *dTdU,
-                            double *dTvedU);
+                            double *dTvedU, double *val_eves,
+                            double *val_Cvves);
   
   /*!
 	 * \brief Set Gradient of the primitive variables from
@@ -1156,6 +1157,11 @@ public:
                          unsigned short val_Species);
   
   /*!
+   * \brief Retrieves the value of Eve
+   */
+  virtual double *GetEve(void);
+  
+  /*!
    * \brief Calculates enthalpy per mass, \f$h_s\f$, for input species (not including KE)
    */
   virtual double CalcHs(CConfig *config, double val_T, double val_eves,
@@ -1167,10 +1173,15 @@ public:
   virtual double CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species);
   
   /*!
+   * \brief Returns the stored value of Cvve
+   */
+  virtual double *GetCvve(void);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration settings
 	 */
-	virtual void CalcdPdU(double *V, CConfig *config, double *dPdU);
+	virtual void CalcdPdU(double *V, double *val_eves, CConfig *config, double *dPdU);
   
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -1180,7 +1191,7 @@ public:
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  virtual void CalcdTvedU(double *V, CConfig *config, double *dTdU);
+  virtual void CalcdTvedU(double *V, double *val_eves, CConfig *config, double *dTdU);
   
   /*!
 	 * \brief A virtual member.
@@ -3032,6 +3043,8 @@ protected:
   double *dPdU;                 /*!< \brief Partial derivative of pressure w.r.t. conserved variables. */
   double *dTdU;  /*!< \brief Partial derivative of temperature w.r.t. conserved variables. */
   double *dTvedU; /*!< \brief Partial derivative of vib.-el. temperature w.r.t. conserved variables. */
+  double *eves;
+  double *Cvves;
   
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
@@ -3165,6 +3178,11 @@ public:
   double CalcEve(CConfig *config, double val_Tve, unsigned short val_Species);
   
   /*!
+   * \brief Returns the stored value of Eve at the specified node
+   */
+  double *GetEve(void);
+  
+  /*!
    * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
    */
   double CalcHs(CConfig *config, double val_T, double val_eves,
@@ -3174,13 +3192,18 @@ public:
    * \brief Calculates enthalpy per mass, \f$C^{vib-el}_{v_s}\f$, for input species (not including KE)
    */
   double CalcCvve(double val_Tve, CConfig *config, unsigned short val_Species);
+  
+  /*!
+   * \brief Returns the value of Cvve at the specified node
+   */
+  double *GetCvve(void);
 
   /*!
    * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
    * \param[in] config - Configuration settings
    * \param[in] dPdU - Passed-by-reference array to assign the derivatives
    */
-  void CalcdPdU(double *V, CConfig *config, double *dPdU);
+  void CalcdPdU(double *V, double *val_eves, CConfig *config, double *dPdU);
 
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -3190,7 +3213,7 @@ public:
   /*!
    * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
    */
-  void CalcdTvedU(double *V, CConfig *config, double *dTvedU);
+  void CalcdTvedU(double *V, double *val_eves, CConfig *config, double *dTvedU);
   
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -3231,7 +3254,8 @@ public:
 	 * \brief Set all the conserved variables.
 	 */
 	bool Cons2PrimVar(CConfig *config, double *U, double *V, double *dPdU,
-                    double *dTdU, double *dTvedU);
+                    double *dTdU, double *dTvedU, double *val_eves,
+                    double *val_Cvves);
   
   /*!
 	 * \brief Set Gradient of the primitive variables from
