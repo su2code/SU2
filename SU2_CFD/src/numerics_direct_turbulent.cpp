@@ -1483,6 +1483,28 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
+  }else if(featureset.compare("fw") == 0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    MLModel->Predict(netInput, netOutput);
+    
+    // The output is fw. Replicate the destruction term.
+    double fw_ml = netOutput[0];
+    double mul_dest = SAConstants->cw1 * fw_ml;
+    Residual[0] = SAResidual[0];
+    Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
+    Residual[2] = SAResidual[2];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
   }else if(featureset.compare("mul_destruction") == 0){
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
