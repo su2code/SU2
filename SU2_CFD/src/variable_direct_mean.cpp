@@ -416,7 +416,6 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
 }
 
 void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
-	unsigned short iVar;
 
    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 

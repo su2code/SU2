@@ -317,21 +317,6 @@ private:
 	Kind_ViscNumScheme_AdjTurb,	/*!< \brief Viscous scheme for the adjoint turbulence model. */
 	Kind_ViscNumScheme_AdjLevelSet,	/*!< \brief Viscous scheme for the adjoint level set equation. */
 	Kind_ViscNumScheme_Template,	/*!< \brief Viscous scheme for the template. */
-	Kind_SourNumScheme,			/*!< \brief Global definition of the source term. */
-	Kind_SourNumScheme_Flow,	/*!< \brief Source numerical scheme for the flow equations. */
-	Kind_SourNumScheme_Heat,	/*!< \brief Source numerical scheme for the flow equations. */
-	Kind_SourNumScheme_AdjFlow,		/*!< \brief Source numerical scheme for the adjoint flow equations. */
-  Kind_SourNumScheme_TNE2,	/*!< \brief Source numerical scheme for the flow equations. */
-  Kind_SourNumScheme_AdjTNE2,	/*!< \brief Source numerical scheme for the flow equations. */
-	Kind_SourNumScheme_LinFlow,		/*!< \brief Source numerical scheme for the linearized flow equations. */
-	Kind_SourNumScheme_Turb,	/*!< \brief Source numerical scheme for the turbulence model. */
-	Kind_SourNumScheme_Poisson,	/*!< \brief Source numerical scheme for the poisson potential. */
-	Kind_SourNumScheme_AdjTurb,	/*!< \brief Source numerical scheme for the adjoint turbulence model. */
-	Kind_SourNumScheme_AdjLevelSet,	/*!< \brief Source numerical scheme for the adjoint level set model. */
-	Kind_SourNumScheme_LevelSet,	/*!< \brief Source scheme for the level set equation. */
-	Kind_SourNumScheme_Wave,	/*!< \brief Source scheme for the wave equation. */
-	Kind_SourNumScheme_FEA,	/*!< \brief Source scheme for the FEA equation. */
-	Kind_SourNumScheme_Template,	/*!< \brief Source numerical scheme for the template. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
 	Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
@@ -1601,13 +1586,6 @@ public:
 	void SetKind_ViscNumScheme(unsigned short val_kind_viscnumscheme);
 
 	/*!
-	 * \brief Set the parameters of the source term.
-	 * \note The parameters will change because we are solving different kind of equations.
-	 * \param[in] val_kind_sournumscheme - Kind of source term.
-	 */
-	void SetKind_SourNumScheme(unsigned short val_kind_sournumscheme);
-
-	/*!
 	 * \brief Get the value of limiter coefficient.
 	 * \return Value of the limiter coefficient.
 	 */
@@ -2709,15 +2687,6 @@ public:
 	unsigned short GetKind_ViscNumScheme(void);
 
 	/*!
-	 * \brief Get the kind scheme for the source term integration.
-	 * \note This is the information that the code will use, the method will
-	 *       change in runtime depending of the specific equation (direct, adjoint,
-	 *       linearized) that is being solved.
-	 * \return Scheme for the source term integration.
-	 */
-	unsigned short GetKind_SourNumScheme(void);
-
-	/*!
 	 * \brief Get kind of center scheme for the convective terms.
 	 * \note This is the information that the code will use, the method will
 	 *       change in runtime depending of the specific equation (direct, adjoint,
@@ -2937,33 +2906,6 @@ public:
 	unsigned short GetKind_ViscNumScheme_AdjTNE2(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme for the wave
-	 (        equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the levelset equations.
-	 */
-	unsigned short GetKind_SourNumScheme_Wave(void);
-
-  /*!
-	 * \brief Get the kind of viscous numerical scheme for the wave
-	 (        equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the levelset equations.
-	 */
-	unsigned short GetKind_SourNumScheme_Heat(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the FEA
-	 (        equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the levelset equations.
-	 */
-	unsigned short GetKind_SourNumScheme_FEA(void);
-
-	/*!
 	 * \brief Get the kind of viscous numerical scheme for the adjoint level set
 	 (        equation.
 	 * \note This value is obtained from the config file, and it is constant
@@ -2980,38 +2922,6 @@ public:
 	 * \return Kind of viscous numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_ViscNumScheme_Template(void);
-
-	/*!
-	 * \brief Get the kind of source term for the flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the flow equations.
-	 */
-	unsigned short GetKind_SourNumScheme_Flow(void);
-
-  /*!
-	 * \brief Get the kind of source term for the flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the flow equations.
-	 */
-	unsigned short GetKind_SourNumScheme_TNE2(void);
-
-  /*!
-	 * \brief Get the kind of source term for the flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the flow equations.
-	 */
-	unsigned short GetKind_SourNumScheme_AdjTNE2(void);
-
-	/*!
-	 * \brief Get the kind of source term for the plasma equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the flow equations.
-	 */
-	unsigned short GetKind_SourNumScheme_Template(void);
 
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the flow equations.
@@ -3239,14 +3149,6 @@ public:
 	unsigned short GetKind_ViscNumScheme_FEA(void);
 
 	/*!
-	 * \brief Get the kind of source term for the adjoint flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the adjoint flow equations.
-	 */
-	unsigned short GetKind_SourNumScheme_AdjFlow(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3326,14 +3228,6 @@ public:
 	unsigned short GetKind_ViscNumScheme_LinFlow(void);
 
 	/*!
-	 * \brief Get the kind of source term for the linearized flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the linearized flow equations.
-	 */
-	unsigned short GetKind_SourNumScheme_LinFlow(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the linearized flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3399,14 +3293,6 @@ public:
 	unsigned short GetKind_ViscNumScheme_Turb(void);
 
 	/*!
-	 * \brief Get the kind of source term for the turbulence equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the turbulence equations.
-	 */
-	unsigned short GetKind_SourNumScheme_Turb(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the turbulence equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3430,14 +3316,6 @@ public:
 	 * \return Kind of viscous numerical scheme for the poisson potential equation.
 	 */
 	unsigned short GetKind_ViscNumScheme_Poisson(void);
-
-	/*!
-	 * \brief Get the kind of source term for the poisson potential equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the poisson potential equation.
-	 */
-	unsigned short GetKind_SourNumScheme_Poisson(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3466,22 +3344,6 @@ public:
 	 * \return Kind of viscous numerical scheme for the adjoint turbulence equations.
 	 */
 	unsigned short GetKind_ViscNumScheme_AdjTurb(void);
-
-	/*!
-	 * \brief Get the kind of source term for the adjoint turbulence equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the adjoint turbulence equations.
-	 */
-	unsigned short GetKind_SourNumScheme_AdjTurb(void);
-
-	/*!
-	 * \brief Get the kind of source term for the adjoint levelset equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of source term for the adjoint levelset equations.
-	 */
-	unsigned short GetKind_SourNumScheme_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint turbulence equations.

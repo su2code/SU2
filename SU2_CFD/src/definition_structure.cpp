@@ -718,13 +718,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Template()) {
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM] = new CSource_Template(nDim, nVar_Template, config);
-        break;
-      default : cout << "Source term not implemented." << endl; exit(1); break;
-    }
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+      numerics_container[iMGlevel][TEMPLATE_SOL][SOURCE_FIRST_TERM] = new CSource_Template(nDim, nVar_Template, config);
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
@@ -942,31 +937,20 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Flow()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          
-          if (config->GetRotating_Frame() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
-          else if (config->GetAxisymmetric() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
-          else if (config->GetGravityForce() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
-          else if (config->GetWind_Gust() == YES)
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceWindGust(nDim, nVar_Flow, config);
-          else
-            numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
-          
-          numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
-        }
-        
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      
+      if (config->GetRotating_Frame() == YES)
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_Flow(nDim, nVar_Flow, config);
+      else if (config->GetAxisymmetric() == YES)
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim,nVar_Flow, config);
+      else if (config->GetGravityForce() == YES)
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceGravity(nDim, nVar_Flow, config);
+      else if (config->GetWind_Gust() == YES)
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceWindGust(nDim, nVar_Flow, config);
+      else
+        numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+      
+      numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
     
   }
@@ -1080,19 +1064,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_TNE2()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-        }
-        
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
     }
     
   }
@@ -1143,20 +1116,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Turb()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
-          else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbML(nDim, nVar_Turb, config);
-          else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
-          numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
+      else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbML(nDim, nVar_Turb, config);
+      else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
+      numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
     }
     
     /*--- Definition of the boundary condition method ---*/
@@ -1216,18 +1180,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Turb()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
-          numerics_container[iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Trans, config);
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
+      numerics_container[iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Trans, config);
     }
     
     /*--- Definition of the boundary condition method ---*/
@@ -1248,17 +1203,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Poisson()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-        numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
-    }
+    numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+    numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+
   }
   
   /*--- Solver definition for the poisson potential problem ---*/
@@ -1273,17 +1220,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Heat()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
-        numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
-    }
+    numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+    numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
+    
   }
   
   /*--- Solver definition for the flow adjoint problem ---*/
@@ -1421,38 +1360,28 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_AdjFlow()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          
-          /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/
-          if ((adj_ns) && (!incompressible)) {
-            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
-            if (config->GetRotating_Frame() == YES)
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-            else
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
-            
-          }
-          else {
-            if (config->GetRotating_Frame() == YES)
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-            else if (config->GetAxisymmetric() == YES)
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
-            else
-              numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-            
-            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
-          }
-          
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      
+      /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/
+      if ((adj_ns) && (!incompressible)) {
+        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
+        if (config->GetRotating_Frame() == YES)
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+        else
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
+      }
+      else {
+        if (config->GetRotating_Frame() == YES)
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+        else if (config->GetAxisymmetric() == YES)
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
+        else
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+        
+        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+      }
     }
+    
   }
   
   /*--- Solver definition for the flow adjoint problem ---*/
@@ -1527,20 +1456,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_AdjTNE2()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-          
-          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_SECOND_TERM] = new CSource_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+      
+      numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_SECOND_TERM] = new CSource_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
     }
+    
   }
   
   /*--- Solver definition for the linearized flow problem ---*/
@@ -1611,21 +1532,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_AdjTurb()) {
-      case NONE :
-        break;
-      case PIECEWISE_CONSTANT :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          if (spalart_allmaras) {
-            numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
-            numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
-          }
-          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
-        }
-        break;
-      default :
-        cout << "Source term not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      if (spalart_allmaras) {
+        numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_AdjTurb(nDim, nVar_Adj_Turb, config);
+        numerics_container[iMGlevel][ADJTURB_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjTurb(nDim, nVar_Adj_Turb, config);
+      }
+      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
     }
     
     /*--- Definition of the boundary condition method ---*/
@@ -1656,14 +1568,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         cout << "Viscous scheme not implemented." << endl; exit(1);
         break;
     }
-    
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Wave()) {
-      case NONE : break;
-      case PIECEWISE_CONSTANT :
-        break;
-      default : break;
-    }
+
   }
   
   /*--- Solver definition for the FEA problem ---*/
@@ -1687,13 +1592,6 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         break;
     }
     
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    switch (config->GetKind_SourNumScheme_Wave()) {
-      case NONE : break;
-      case PIECEWISE_CONSTANT :
-        break;
-      default : break;
-    }
   }
   
 }

@@ -2337,28 +2337,28 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   }
 	val_residual[nVar-1] = alpha_gradpsi5 * Volume;
   
-//  /*--- Laminar viscosity sensitivity for NS ---*/
-//  
-//	if (config->GetKind_Solver() != ADJ_RANS) {
-//    
-//		double Temperature_Ref = config->GetTemperature_Ref();
-//		double Temperature_Dim = Temperature*Temperature_Ref;
-//    
-//    double S = 0.0;
-//    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
-//    if (config->GetSystemMeasurements() == US) { S = 198.72; }
-//		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
-//    
-//		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-//		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
-//		double theta = (kappa_psi + Cp/PRANDTL*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-//    
-//    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
-//    for (iDim = 0; iDim < nDim; iDim++)
-//      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
-//    val_residual[nVar-1] += theta*Volume;
-//    
-//	}
+  /*--- Laminar viscosity sensitivity for NS ---*/
+  
+	if (config->GetKind_Solver() != ADJ_RANS) {
+    
+		double Temperature_Ref = config->GetTemperature_Ref();
+		double Temperature_Dim = Temperature*Temperature_Ref;
+    
+    double S = 0.0;
+    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+    
+		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
+		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+    
+    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
+    val_residual[nVar-1] += theta*Volume;
+    
+	}
   
 	/*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
   
@@ -2495,6 +2495,8 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
 		sq_vel += 0.5*Velocity[iDim]*Velocity[iDim];
 	}
   
+  double Prandtl_Lam      = config->GetPrandtl_Lam();
+  double Prandtl_Turb     = config->GetPrandtl_Turb();
   double Pressure = V_i[nDim+1];
   double Laminar_Viscosity = V_i[nDim+5];
   double Eddy_Viscosity = V_i[nDim+6];
@@ -2503,7 +2505,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   double invDensitycube = invDensitysq*invDensity;
 	double mue_eff = Laminar_Viscosity + Eddy_Viscosity;
 	double lambda = -TWO3*mue_eff;
-  double xi = Gamma*(Laminar_Viscosity/PRANDTL + Eddy_Viscosity/PRANDTL_TURB);
+  double xi = Gamma*(Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb);
   double vv2 = sq_vel;
 	
 	/*--- Density gradient ---*/
