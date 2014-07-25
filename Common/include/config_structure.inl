@@ -594,8 +594,6 @@ inline unsigned short CConfig::GetKind_ConvNumScheme(void) { return Kind_ConvNum
 
 inline unsigned short CConfig::GetKind_ViscNumScheme(void) { return Kind_ViscNumScheme; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme(void) { return Kind_SourNumScheme; }
-
 inline unsigned short CConfig::GetKind_Centered(void) { return Kind_Centered; }
 
 inline unsigned short CConfig::GetKind_Upwind(void) { return Kind_Upwind; }
@@ -638,27 +636,11 @@ inline unsigned short CConfig::GetKind_ViscNumScheme_Flow(void) { return Kind_Vi
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_TNE2(void) { return Kind_ViscNumScheme_TNE2; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_Wave(void) { return Kind_SourNumScheme_Wave; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_Heat(void) { return Kind_SourNumScheme_Heat; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_FEA(void) { return Kind_SourNumScheme_FEA; }
-
 inline unsigned short CConfig::GetKind_ViscNumScheme_AdjLevelSet(void) { return Kind_ViscNumScheme_AdjLevelSet; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_AdjLevelSet(void) { return Kind_SourNumScheme_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Template(void) { return Kind_ViscNumScheme_Template; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_Flow(void) { return Kind_SourNumScheme_Flow; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_TNE2(void) { return Kind_SourNumScheme_TNE2; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_Template(void) { return Kind_SourNumScheme_Template; }
-
 inline unsigned short CConfig::GetKind_ViscNumScheme_Poisson(void) { return Kind_ViscNumScheme_Poisson; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_Poisson(void) { return Kind_SourNumScheme_Poisson; }
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
 
@@ -722,15 +704,11 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTNE2(void) { return Kind
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_AdjTNE2(void) { return Kind_ViscNumScheme_AdjTNE2; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_AdjTNE2(void) { return Kind_SourNumScheme_AdjTNE2; }
-
 inline unsigned short CConfig::GetKind_ViscNumScheme_Wave(void) { return Kind_ViscNumScheme_Wave; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Heat(void) { return Kind_ViscNumScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_FEA(void) { return Kind_ViscNumScheme_FEA; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_AdjFlow(void) { return Kind_SourNumScheme_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_Centered_AdjFlow(void) { return Kind_Centered_AdjFlow; }
 
@@ -748,8 +726,6 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_LinFlow(void) { return Kind
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_LinFlow(void) { return Kind_ViscNumScheme_LinFlow; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_LinFlow(void) { return Kind_SourNumScheme_LinFlow; }
-
 inline unsigned short CConfig::GetKind_Centered_LinFlow(void) { return Kind_Centered_LinFlow; }
 
 inline unsigned short CConfig::GetKind_Upwind_LinFlow(void) { return Kind_Upwind_LinFlow; }
@@ -766,8 +742,6 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_Turb(void) { return Kind_Co
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_Turb(void) { return Kind_ViscNumScheme_Turb; }
 
-inline unsigned short CConfig::GetKind_SourNumScheme_Turb(void) { return Kind_SourNumScheme_Turb; }
-
 inline unsigned short CConfig::GetKind_Centered_Turb(void) { return Kind_Centered_Turb; }
 
 inline unsigned short CConfig::GetKind_Upwind_Turb(void) {	return Kind_Upwind_Turb; }
@@ -777,8 +751,6 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTurb(void) { return Kind
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTurb(void) { return Kind_ConvNumScheme_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_ViscNumScheme_AdjTurb(void) { return Kind_ViscNumScheme_AdjTurb; }
-
-inline unsigned short CConfig::GetKind_SourNumScheme_AdjTurb(void) { return Kind_SourNumScheme_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_Centered_AdjTurb(void) { return Kind_Centered_AdjTurb; }
 
@@ -793,8 +765,6 @@ inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
 inline void CConfig::SetKind_ViscNumScheme(unsigned short val_kind_viscnumscheme) { Kind_ViscNumScheme = val_kind_viscnumscheme; }
-
-inline void CConfig::SetKind_SourNumScheme(unsigned short val_kind_sournumscheme) { Kind_SourNumScheme = val_kind_sournumscheme; }
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 

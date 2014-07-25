@@ -1795,7 +1795,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Energy_Ref= 0.0, Froude = 0.0;
   double Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0, Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0, Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
   unsigned short iDim;
   
   int rank = MASTER_NODE;

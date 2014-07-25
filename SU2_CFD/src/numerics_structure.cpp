@@ -750,12 +750,6 @@ void CNumerics::SetPastVolume (double val_volume_nM1, double val_volume_n, doubl
 
 void CNumerics::GetPMatrix(double *val_density, double *val_velocity,
 		double *val_soundspeed, double *val_normal, double **val_p_tensor) {
-//************************************************//
-// Please do not delete //SU2_CPP2C comment lines //
-//************************************************//
-
-//SU2_CPP2C SUB START GetPMatrix
-//SU2_CPP2C SUB VARS *val_density val_velocity *val_soundspeed val_p_tensor val_normal
 
 	double sqvel, rhooc, rhoxc, c2;
 
@@ -820,17 +814,10 @@ void CNumerics::GetPMatrix(double *val_density, double *val_velocity,
 		val_p_tensor[4][4]=0.5*(0.5*sqvel*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2])+rhoxc/Gamma_Minus_One);
 	}
 
-//SU2_CPP2C SUB END GetPMatrix
 }
 
 void CNumerics::GetPMatrix(double *val_density, double *val_velocity,
 		double *val_soundspeed, double *val_enthalpy, double *val_chi, double *val_kappa, double *val_normal, double **val_p_tensor) {
-	//************************************************//
-	// Please do not delete //SU2_CPP2C comment lines //
-	//************************************************//
-
-	//SU2_CPP2C SUB START GetPMatrix
-	//SU2_CPP2C SUB VARS *val_density val_velocity *val_soundspeed val_p_tensor val_normal
 
 	double sqvel, rhooc, rhoxc, c2, zeta;
 
@@ -897,7 +884,6 @@ void CNumerics::GetPMatrix(double *val_density, double *val_velocity,
 		val_p_tensor[4][4]=0.5*(*val_enthalpy*rhooc-*val_density*(val_velocity[0]*val_normal[0]+val_velocity[1]*val_normal[1]+val_velocity[2]*val_normal[2]));
 	}
 
-	//SU2_CPP2C SUB END GetPMatrix
 }
 
 void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
@@ -1061,7 +1047,7 @@ void CNumerics::GetPMatrix_inv(double *val_density, double *val_velocity,
 void CNumerics::GetPMatrix_inv(double **val_invp_tensor, double *val_density, double *val_velocity,
 		double *val_soundspeed, double *val_chi, double *val_kappa, double *val_normal) {
 
-	double rhoxc, c2, gm1, k0orho, k1orho, gm1_o_c2, gm1_o_rhoxc, sqvel, k_o_c2, k_o_rhoxc, dp_drho;
+	double rhoxc, c2, k0orho, k1orho, sqvel, k_o_c2, k_o_rhoxc, dp_drho;
 
 	rhoxc = *val_density * *val_soundspeed;
 	c2 = *val_soundspeed * *val_soundspeed;

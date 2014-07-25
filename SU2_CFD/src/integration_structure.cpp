@@ -74,12 +74,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 	}
   
 	/*--- Compute source term residuals ---*/
-  
-	switch (config->GetKind_SourNumScheme()) {
-    case PIECEWISE_CONSTANT:
-      solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-      break;
-	}
+
+  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
 	/*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
   
