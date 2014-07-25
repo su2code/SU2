@@ -535,21 +535,6 @@ static const map<string, ENUM_VISCOUS> Viscous_Map = CCreateMap<string, ENUM_VIS
 ("GALERKIN", GALERKIN);
 
 /*!
- * \brief types of source term methods to use
- */
-enum ENUM_SOURCE {
-  NO_SOURCE = 0,                /*!< \brief No source term. */
-  PIECEWISE_CONSTANT = 1,	/*!< \brief Numerical method for source term in flow equations. */
-  CHARGE_DIST = 2,		/*!< \brief Numerical method for source term in charge distribution. */
-  SOURCE_TEMPLATE = 4           /*!< \brief Template for New numerical method for source term. */
-};
-static const map<string, ENUM_SOURCE> Source_Map = CCreateMap<string, ENUM_SOURCE>
-("NONE", NO_SOURCE)
-("PIECEWISE_CONSTANT", PIECEWISE_CONSTANT)
-("CHARGE_DIST", CHARGE_DIST)
-("TEMPLATE_SOURCE_METHOD", SOURCE_TEMPLATE);
-
-/*!
  * \brief types of methods used to calculate source term Jacobians
  */
 enum ENUM_SOURCEJAC {
