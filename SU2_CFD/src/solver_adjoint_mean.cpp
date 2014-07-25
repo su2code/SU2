@@ -5192,9 +5192,9 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
     numerics->ComputeResidual(Residual, config);
     
-    /*--- Add and substract to the residual ---*/
+    /*--- Subtract to the residual ---*/
     
-    LinSysRes.AddBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, Residual);
     
   }
   

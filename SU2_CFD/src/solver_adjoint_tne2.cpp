@@ -3030,7 +3030,7 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
 		/*--- Compute viscous source term residual ---*/
 		second_numerics->ComputeSourceViscous(Residual_i, config);
     
-    /*--- Add and substract to the residual ---*/
+    /*--- Add and subtract to the residual ---*/
 		LinSysRes.AddBlock(iPoint, Residual_i);
 	}
 }

@@ -300,12 +300,12 @@ public:
 	void GetMultBlockVector(double *c, double *a, double *b);
 	
 	/*!
-	 * \brief Performs the substraction of two matrices.
+	 * \brief Performs the subtraction of two matrices.
 	 */
 	void GetSubsBlock(double *c, double *a, double *b);
 	
 	/*!
-	 * \brief Performs the substraction of two vectors.
+	 * \brief Performs the subtraction of two vectors.
 	 */
 	void GetSubsVector(double *c, double *a, double *b);
 	
