@@ -117,6 +117,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         xCoord = geometry->node[iPoint]->GetCoord(0);
         yCoord = geometry->node[iPoint]->GetCoord(1);
         if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+        
+        /*--- The output should be in inches ---*/
+        
+        if (config->GetSystemMeasurements() == US) {
+          xCoord *= 12.0; yCoord *= 12.0;
+          if (nDim == 3) zCoord *= 12.0;
+        }
+        
         Pressure = FlowSolver->node[iPoint]->GetPressure();
         PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
         SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
@@ -236,8 +244,18 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker,iVertex);
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
+          if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
+
+          /*--- If US system, the output should be in inches ---*/
+
+          if (config->GetSystemMeasurements() == US) {
+            Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
+            Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
+            if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
+          }
+          
           Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
-          if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2);
+          
           if (solver == EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if ((solver == NAVIER_STOKES) || (solver == RANS))
@@ -438,6 +456,14 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           IntBoundary_Jump = AdjSolver->node[iPoint]->GetIntBoundary_Jump();
           xCoord = geometry->node[iPoint]->GetCoord(0);
           yCoord = geometry->node[iPoint]->GetCoord(1);
+          
+          /*--- If US system, the output should be in inches ---*/
+          
+          if (config->GetSystemMeasurements() == US) {
+            xCoord *= 12.0;
+            yCoord *= 12.0;
+          }
+          
           SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
         }
@@ -451,9 +477,18 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution = AdjSolver->node[iPoint]->GetSolution();
+          
           xCoord = geometry->node[iPoint]->GetCoord(0);
           yCoord = geometry->node[iPoint]->GetCoord(1);
           zCoord = geometry->node[iPoint]->GetCoord(2);
+          
+          /*--- If US system, the output should be in inches ---*/
+          
+          if (config->GetSystemMeasurements() == US) {
+            xCoord *= 12.0;
+            yCoord *= 12.0;
+            zCoord *= 12.0;
+          }
           
           SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
@@ -528,6 +563,15 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             Buffer_Send_Phi_z[nVertex_Surface] = Solution[3];
             Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
           }
+          
+          /*--- If US system, the output should be in inches ---*/
+          
+          if (config->GetSystemMeasurements() == US) {
+            Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
+            Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
+            if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
+          }
+          
           nVertex_Surface++;
         }
       }
@@ -804,15 +848,25 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
     if (!Local_Halo[iPoint]) {
       
       /*--- Retrieve the current coordinates at this node. ---*/
+      
       for (iDim = 0; iDim < nDim; iDim++) {
         Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
+        
+        /*--- If US system, the output should be in inches ---*/
+
+        if (config->GetSystemMeasurements() == US) {
+          Coords[iDim][jPoint] *= 12.0;
+        }
+        
       }
       
       /*--- Increment a counter since we may be skipping over
        some halo nodes during this loop. ---*/
+      
       jPoint++;
     }
   }
@@ -943,6 +997,14 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       Buffer_Send_X[jPoint] = Coords_Local[0];
       Buffer_Send_Y[jPoint] = Coords_Local[1];
       if (nDim == 3) Buffer_Send_Z[jPoint] = Coords_Local[2];
+      
+      /*--- If US system, the output should be in inches ---*/
+      
+      if (config->GetSystemMeasurements() == US) {
+        Buffer_Send_X[jPoint] *= 12.0;
+        Buffer_Send_Y[jPoint] *= 12.0;
+        if (nDim == 3) Buffer_Send_Z[jPoint] *= 12.0;
+      }
       
       /*--- Store the global index for this local node. ---*/
       Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
