@@ -1725,7 +1725,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   if (compressible) {
     
     if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-    else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
+    else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.4855);
     
     /*--- Compute the Free Stream velocity, using the Mach number ---*/
     Temperature_FreeStream = config->GetTemperature_FreeStream();

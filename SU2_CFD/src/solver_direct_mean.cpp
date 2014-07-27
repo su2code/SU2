@@ -1835,7 +1835,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       case STANDARD_AIR:
         
         if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
+        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.4855);
         FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
         if (fs_temperature){
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -1939,13 +1939,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		if (config->GetSystemMeasurements() == US) {
     			config->SetMu_RefND(3.62E-7);
     			config->SetMu_SND(198.72);
-    			config->SetMu_Temperature_RefND(198.72);
+    			config->SetMu_Temperature_RefND(518.7);
     		}
         
     		FluidModel->SetViscosityModel(config);
         
     		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
     		config->SetViscosity_FreeStream(Viscosity_FreeStream);
+        
+        
     		Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds()); config->SetDensity_FreeStream(Density_FreeStream);
     		config->SetDensity_FreeStream(Density_FreeStream);
     		Pressure_FreeStream  = Density_FreeStream*config->GetGas_Constant()*Temperature_FreeStream;

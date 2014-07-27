@@ -2001,7 +2001,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
     else RefAreaCoeff = RefAreaCoeff/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
-
+    RefElemLength = RefElemLength/12.0;
+    
   }
 
   /*--- Reacting flows initialization ---*/
