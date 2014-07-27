@@ -1071,6 +1071,7 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
 }
 
 CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
+  
   delete MLModel;
   delete SAInputs;
   delete SAConstants;
@@ -1094,7 +1095,6 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 }
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-  
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -1443,8 +1443,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
-  }else if (featureset.compare("fw_les_2")==0){
-    nInputMLVariables = 8;
+  }else if (featureset.compare("fw_hifi")==0){
+    throw("doesn't work");
+    nInputMLVariables = 2;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
@@ -1467,6 +1468,40 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     if (newfw > 6){
       newfw = 6;
     }
+    // The output is the value of fw. Need to replace the destruction term with the new computation
+    double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
+    double dist2 = SAInputs->dist * SAInputs->dist;
+    double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
+    
+    for (int i= 0; i < nResidual; i++){
+      Residual[i] = SAResidual[i];
+    }
+    Residual[1] = newdestruction;
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
+  }else if (featureset.compare("fw_hifi_2")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    // Karthik nondimensionalizes by d / vhat whereas I do by /(v + vhat)
+    omegaBar *= 1 + 1/chi;
+    
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    
+    MLModel->Predict(netInput, netOutput);
+    
+    double safw = SAOtherOutputs->fw;
+    double newfw = netOutput[0];
     // The output is the value of fw. Need to replace the destruction term with the new computation
     double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
     double dist2 = SAInputs->dist * SAInputs->dist;
