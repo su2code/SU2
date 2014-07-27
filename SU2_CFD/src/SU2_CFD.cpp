@@ -331,7 +331,6 @@ MPI_Barrier(MPI_COMM_WORLD);
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
-    
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
