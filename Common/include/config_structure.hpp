@@ -1741,6 +1741,12 @@ public:
 	 * \brief Set the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
+	void SetTemperature_FreeStream(double val_temperature_freestream);
+  
+  /*!
+	 * \brief Set the Froude number for free surface problems.
+	 * \return Value of the Froude number.
+	 */
 	void SetTemperature_FreeStreamND(double val_temperature_freestreamnd);
 
   /*!

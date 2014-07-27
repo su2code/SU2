@@ -1158,18 +1158,34 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     
     Mesh_Scale_Change = config->GetMesh_Scale_Change();
     
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
+    /*--- Change the scale of the mesh ---*/
+    
+    if (Mesh_Scale_Change != 1.0) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
+        }
+        node[iPoint]->SetCoord(NewCoord);
       }
-      node[iPoint]->SetCoord(NewCoord);
+      if (config->GetMesh_Output()) {
+        SetMeshFile(config, config->GetMesh_Out_FileName());
+        cout.precision(4);
+        cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
+        cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+      }
     }
     
-    if (config->GetMesh_Output()) {
-      SetMeshFile(config, config->GetMesh_Out_FileName());
-      cout.precision(4);
-      cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
-      cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+    /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
+    
+    if (config->GetSystemMeasurements() == US) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
+        }
+        node[iPoint]->SetCoord(NewCoord);
+      }
+      
+      
     }
     
   }

@@ -1980,24 +1980,27 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
 
 
-  /*--- Re-scale the length based parameters ---*/
-  if (Kind_SU2 == SU2_CFD) {
+  /*--- Re-scale the length based parameters. The US system uses feet, 
+   but SU2 assumes that the grid is in inches ---*/
+  
+  if (SystemMeasurements == US) {
 
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]*Mesh_Scale_Change;
-      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]*Mesh_Scale_Change;
-      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]*Mesh_Scale_Change;
+      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
+      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
+      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
     }
 
     for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
-      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]*Mesh_Scale_Change;
-      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]*Mesh_Scale_Change;
-      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]*Mesh_Scale_Change;
+      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
+      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
+      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
     }
 
-    RefLengthMoment = RefLengthMoment*Mesh_Scale_Change;
-    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change;
-    else RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change*Mesh_Scale_Change;
+    RefLengthMoment = RefLengthMoment/12.0;
+    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+    else RefAreaCoeff = RefAreaCoeff/144.0;
+    Length_Reynolds = Length_Reynolds/12.0;
 
   }
 

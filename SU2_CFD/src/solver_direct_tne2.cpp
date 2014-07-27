@@ -1725,7 +1725,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   if (compressible) {
     
     if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-    else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(53.3533);
+    else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
     
     /*--- Compute the Free Stream velocity, using the Mach number ---*/
     Temperature_FreeStream = config->GetTemperature_FreeStream();
@@ -1928,21 +1928,21 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     if (compressible) {
       cout << "Specific gas constant: " << config->GetGas_Constant();
       if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/lbm.R." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
     }
     
     if (incompressible || freesurface) {
       cout << "Bulk modulus: " << config->GetBulk_Modulus();
       if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " psi." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
       cout << "Artificial compressibility factor: " << config->GetArtComp_Factor();
       if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " psi." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
     }
     
     cout << "Free-stream pressure: " << config->GetPressure_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psi." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
     
     if (compressible) {
       cout << "Free-stream temperature: " << config->GetTemperature_FreeStream();
@@ -1952,7 +1952,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     
     cout << "Free-stream density: " << config->GetDensity_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " lbm/ft^3." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
     
     if (nDim == 2) {
       cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
@@ -1963,11 +1963,11 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       cout << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
     }
     if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
-    else if (config->GetSystemMeasurements() == US) cout << " in/s. ";
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
     
     cout << "Magnitude: "	<< config->GetModVel_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " in/s." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
     
     if (compressible) {
       cout << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
@@ -1998,12 +1998,12 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     if (compressible) {
       cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
       if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/lbm.R." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
     }
     
     cout << "Reference pressure: " << config->GetPressure_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psi." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
     
     if (compressible) {
       cout << "Reference temperature: " << config->GetTemperature_Ref();
@@ -2013,11 +2013,11 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     
     cout << "Reference density: " << config->GetDensity_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " lbm/ft^3." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
     
     cout << "Reference velocity: " << config->GetVelocity_Ref();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " in/s." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
     
     if (compressible) {
       cout << "Reference energy per unit mass: " << config->GetEnergy_Ref();

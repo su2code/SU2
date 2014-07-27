@@ -269,6 +269,8 @@ inline void CConfig::SetModVel_FreeStream(double val_modvel_freestream) { ModVel
 
 inline void CConfig::SetModVel_FreeStreamND(double val_modvel_freestreamnd) { ModVel_FreeStreamND = val_modvel_freestreamnd; }
 
+inline void CConfig::SetTemperature_FreeStream(double val_temperature_freestream) { Temperature_FreeStream = val_temperature_freestream; }
+
 inline void CConfig::SetTemperature_FreeStreamND(double val_temperature_freestreamnd) { Temperature_FreeStreamND = val_temperature_freestreamnd; }
 
 inline void CConfig::SetGas_ConstantND(double val_gas_constantnd) { Gas_ConstantND = val_gas_constantnd; }
