@@ -2012,13 +2012,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       Aux_yPlus[iPoint] = 0.0;
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Aux_Heat[iPoint]  = solver[TNE2_SOL]->GetHeatFlux(iMarker,iVertex);
-        Aux_yPlus[iPoint] = solver[TNE2_SOL]->GetYPlus(iMarker,iVertex);
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Heat[iPoint]  = solver[TNE2_SOL]->GetHeatFlux(iMarker,iVertex);
+          Aux_yPlus[iPoint] = solver[TNE2_SOL]->GetYPlus(iMarker,iVertex);
+        }
       }
-    }
   }
   
   if ((Kind_Solver == ADJ_EULER)         ||
@@ -3071,13 +3071,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       Aux_yPlus[iPoint] = 0.0;
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
-      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
-        Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Heat[iPoint]  = solver[TNE2_SOL]->GetHeatFlux(iMarker,iVertex);
+          Aux_yPlus[iPoint] = solver[TNE2_SOL]->GetYPlus(iMarker,iVertex);
+        }
       }
-    }
     
     /*--- Species diffusion coefficients ---*/
     // Loop over this partition to collect the current variable
@@ -3257,7 +3257,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the Mach number variables. ---*/
-        Buffer_Send_Var[jPoint] = Aux_Heat[iVar];
+        Buffer_Send_Var[jPoint] = Aux_Heat[iPoint];
         jPoint++;
       }
     }
@@ -3298,7 +3298,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
         
         /*--- Load buffers with the Mach number variables. ---*/
-        Buffer_Send_Var[jPoint] = Aux_yPlus[iVar];
+        Buffer_Send_Var[jPoint] = Aux_yPlus[iPoint];
         jPoint++;
       }
     }

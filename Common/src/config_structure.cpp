@@ -898,7 +898,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specify transport coefficient model for multi-species simulations */
   AddEnumOption("TRANSPORT_COEFF_MODEL", Kind_TransCoeffModel, TransCoeffModel_Map, "WBE");
 	/* DESCRIPTION: Specify mass fraction of each species */
-	AddListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
+	AddListOption("GAS_COMPOSITION", nSpecies, Gas_Composition);
   
 	/*--- Options related to free surface simulation ---*/
 	/* CONFIG_CATEGORY: Free surface simulation */
@@ -1915,8 +1915,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kappa_4th_AdjTNE2 = Kappa_AdjTNE2[2];
     
     
+    bool init_err;
     unsigned short maxEl = 0;
     unsigned short iSpecies, jSpecies, iEl;
+    double mf;
     
     switch (Kind_GasModel) {
       case ONESPECIES:
@@ -1967,8 +1969,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
       case N2:
         
+        /*--- Check for errors in the initialization ---*/
+        init_err = false;
+        if (nSpecies != 2) {
+          cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+          init_err = true;
+        }
+        mf = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          mf += Gas_Composition[iSpecies];
+        if (mf != 1.0) {
+          cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+          init_err = true;
+        }
+        if (init_err == true) {
+#ifndef NO_MPI
+          MPI::Finalize();
+#else 
+          exit(0);
+#endif
+        }
+        
         /*--- Define parameters of the gas model ---*/
-        nSpecies    = 2;
         nReactions  = 2;
         ionization  = false;
         
@@ -2012,8 +2034,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         }
         
         MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.99;
-        MassFrac_FreeStream[1] = 0.01;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
+//        MassFrac_FreeStream[0] = 0.99;
+//        MassFrac_FreeStream[1] = 0.01;
         
         /*--- Assign gas properties ---*/
         
@@ -2164,8 +2188,29 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
         
       case AIR5:
+        
+        /*--- Check for errors in the initialization ---*/
+        init_err = false;
+        if (nSpecies != 5) {
+          cout << "CONFIG ERROR: nSpecies mismatch between gas model & gas composition" << endl;
+          init_err = true;
+        }
+        mf = 0.0;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          mf += Gas_Composition[iSpecies];
+        if (mf != 1.0) {
+          cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
+          init_err = true;
+        }
+        if (init_err == true) {
+#ifndef NO_MPI
+          MPI::Finalize();
+#else
+          exit(0);
+#endif
+        }
+        
         /*--- Define parameters of the gas model ---*/
-        nSpecies    = 5;
         nReactions  = 17;
         ionization  = false;
         
@@ -2216,11 +2261,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         
         // Free stream mass fractions
         MassFrac_FreeStream = new double[nSpecies];
-        MassFrac_FreeStream[0] = 0.78;
-        MassFrac_FreeStream[1] = 0.19;
-        MassFrac_FreeStream[2] = 0.01;
-        MassFrac_FreeStream[3] = 0.01;
-        MassFrac_FreeStream[4] = 0.01;
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
+//        MassFrac_FreeStream[0] = 0.78;
+//        MassFrac_FreeStream[1] = 0.19;
+//        MassFrac_FreeStream[2] = 0.01;
+//        MassFrac_FreeStream[3] = 0.01;
+//        MassFrac_FreeStream[4] = 0.01;
         
         /*--- Assign gas properties ---*/
         // Rotational modes of energy storage

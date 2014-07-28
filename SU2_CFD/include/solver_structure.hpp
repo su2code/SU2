@@ -6412,12 +6412,20 @@ public:
 	double GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex);
   
 	/*!
-	 * \brief Get the skin friction coefficient.
+	 * \brief Get the local heat flux.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the heat transfer coefficient.
+	 * \return Value of the heat flux.
 	 */
 	double GetHeatFlux(unsigned short val_marker, unsigned short val_vertex);
+  
+  /*!
+	 * \brief Get the local y+ value.
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	 * \return Value of y+.
+	 */
+	double GetYPlus(unsigned short val_marker, unsigned short val_vertex);
 
 };
 

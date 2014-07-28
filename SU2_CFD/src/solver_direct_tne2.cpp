@@ -5727,21 +5727,6 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
       if (Res_Visc[iVar] != Res_Visc[iVar])
         err = true;
     
-    if (err) {
-      cout.precision(8);
-      for (iVar = 0; iVar < nVar; iVar++)
-        cout << Res_Visc[iVar] << endl;
-      
-      cout << endl;
-      for (iVar = 0; iVar < nPrimVar; iVar++)
-        cout << node[iPoint]->GetPrimVar()[iVar] << endl;
-      cin.get();
-      cout << endl;
-      for (iVar = 0; iVar < nPrimVar; iVar++)
-        cout << node[jPoint]->GetPrimVar()[iVar] << endl;
-      cin.get();
-    }
-    
     if (implicit) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
@@ -5752,6 +5737,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
         }
       }
     } //implicit
+    if (err)
+      cout << "NaN in viscous residual.  Edge: " << iEdge << endl;
   } //iEdge
 }
 
@@ -6279,6 +6266,19 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				/*--- Compute y+ and non-dimensional velocity ---*/
 				FrictionVel = sqrt(fabs(WallShearStress)/Density);
         YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
+//        cout << "Y+: " << YPlus[iMarker][iVertex] << endl;
+//        cout << "WallDistMod: " << WallDistMod << endl;
+//        cout << "FrictionVel: " << FrictionVel << endl;
+//        cout << "Wall SS: " << WallShearStress << endl;
+//        cout << "TauTangent: " << TauTangent[0] << "\t" << TauTangent[1] << endl;
+//        cout << "Tau: " << endl;
+//        cout << "Visc: " << Viscosity << endl;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          for (jDim = 0; jDim < nDim; jDim++)
+//            cout << Tau[iDim][jDim] << "\t";
+//          cout << endl;
+//        }
+//        cin.get();
         
 				/*--- Compute heat flux on the wall ---*/
 				dTn = 0.0; dTven = 0.0;

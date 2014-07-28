@@ -738,6 +738,8 @@ inline double CTNE2NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline double CTNE2NSSolver::GetHeatFlux(unsigned short val_marker, unsigned short val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
+inline double CTNE2NSSolver::GetYPlus(unsigned short val_marker, unsigned short val_vertex) { return YPlus[val_marker][val_vertex]; }
+
 inline double CTNE2NSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
 
 inline double CTNE2NSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
