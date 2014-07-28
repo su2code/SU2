@@ -508,7 +508,7 @@ void CAdjTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *con
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                 Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -2482,12 +2482,16 @@ void CAdjTNE2EulerSolver::BC_Far_Field(CGeometry *geometry,
       conv_numerics->SetPrimitive(V_domain,V_infty);
       
       /*--- Pass supplementary information to CNumerics ---*/
-      conv_numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
-                             solver_container[TNE2_SOL]->node_infty->GetdPdU());
-      conv_numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
-                             solver_container[TNE2_SOL]->node_infty->GetdTdU());
+      conv_numerics->SetdPdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                               solver_container[TNE2_SOL]->node_infty->GetdPdU());
+      conv_numerics->SetdTdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                               solver_container[TNE2_SOL]->node_infty->GetdTdU());
       conv_numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                                solver_container[TNE2_SOL]->node_infty->GetdTvedU());
+      conv_numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                               solver_container[TNE2_SOL]->node_infty->GetEve());
+      conv_numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                               solver_container[TNE2_SOL]->node_infty->GetCvve());
       
       /*--- Pass adjoint solution to CNumerics ---*/
       conv_numerics->SetAdjointVar(Psi_domain, Psi_infty);
@@ -2933,12 +2937,17 @@ void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                            solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+    numerics->SetdPdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
                         solver_container[TNE2_SOL]->node[jPoint]->GetdPdU());
-    numerics->SetdTdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+    numerics->SetdTdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
                         solver_container[TNE2_SOL]->node[jPoint]->GetdTdU());
     numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                         solver_container[TNE2_SOL]->node[jPoint]->GetdTvedU());
+    numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetEve());
+    numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetCvve());
+    
     
     /*--- Pass transport coefficients to CNumerics ---*/
     numerics->SetDiffusionCoeff(        solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff(),
@@ -3038,18 +3047,26 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
                                    node[iPoint]->GetSolution());
     
     /*--- Pass supplementary information to CNumerics ---*/
-    numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
-                      solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
-    numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
-                      solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
+    numerics->SetdPdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
+    numerics->SetdTdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
     numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                         solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
-    second_numerics->SetdPdU(solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
-                             solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
-    second_numerics->SetdTdU(solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
-                             solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
+    numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetEve());
+    numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                        solver_container[TNE2_SOL]->node[iPoint]->GetCvve());
+    second_numerics->SetdPdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
+                               solver_container[TNE2_SOL]->node[iPoint]->GetdPdU());
+    second_numerics->SetdTdU  (solver_container[TNE2_SOL]->node[iPoint]->GetdTdU(),
+                               solver_container[TNE2_SOL]->node[iPoint]->GetdTdU());
     second_numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                                solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU());
+    second_numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                               solver_container[TNE2_SOL]->node[iPoint]->GetEve());
+    second_numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                               solver_container[TNE2_SOL]->node[iPoint]->GetCvve());
     
 		/*--- Gradient of primitive and adjoint variables ---*/
 		numerics->SetPrimVarGradient(solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive(),
@@ -3066,22 +3083,22 @@ void CAdjTNE2NSSolver::Source_Residual(CGeometry *geometry,
                                            node[iPoint]->GetGradient());
     
     /*--- Pass transport coefficients to CNumerics ---*/
-    numerics->SetDiffusionCoeff(solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff(),
-                                solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff());
-    numerics->SetLaminarViscosity(solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                  solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity());
-    numerics->SetThermalConductivity(solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity(),
-                                     solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity());
+    numerics->SetDiffusionCoeff        (solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff(),
+                                        solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff());
+    numerics->SetLaminarViscosity      (solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity(),
+                                        solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity());
+    numerics->SetThermalConductivity   (solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity(),
+                                        solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity());
     numerics->SetThermalConductivity_ve(solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve(),
                                         solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve());
-    second_numerics->SetDiffusionCoeff(solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff(),
-                                solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff());
-    second_numerics->SetLaminarViscosity(solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                  solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity());
-    second_numerics->SetThermalConductivity(solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity(),
-                                     solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity());
+    second_numerics->SetDiffusionCoeff        (solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff(),
+                                               solver_container[TNE2_SOL]->node[iPoint]->GetDiffusionCoeff());
+    second_numerics->SetLaminarViscosity      (solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity(),
+                                               solver_container[TNE2_SOL]->node[iPoint]->GetLaminarViscosity());
+    second_numerics->SetThermalConductivity   (solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity(),
+                                               solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity());
     second_numerics->SetThermalConductivity_ve(solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve(),
-                                        solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve());
+                                               solver_container[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve());
     
 		/*--- Set volume ---*/
 		numerics->SetVolume(geometry->node[iPoint]->GetVolume());

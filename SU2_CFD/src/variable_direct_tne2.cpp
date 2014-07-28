@@ -1217,8 +1217,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   
   /*--- T-R Temperature ---*/
   // Set temperature clipping values
-  Tmin = 80.0;
-  Tmax = 6E4;
+  Tmin = 50.0;
+  Tmax = 8E4;
   
   // Rename for convenience
   rho      = V[RHO_INDEX];
@@ -1254,43 +1254,43 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   
   /*--- V-E Temperature ---*/
   // Set temperature clipping values
-  Tvemin = 80.0;
-  Tvemax = 4E4;
+  Tvemin = 50.0;
+  Tvemax = 8E4;
   
   // Set tolerance for Newton-Raphson method
   tol     = 1.0E-4;
-  maxNIter = 20;
-  maxBIter = 24;
+  maxNIter = 15;
+  maxBIter = 35;
   
   // Check for non-physical solutions
   nonphys = false;
-//  V[TVE_INDEX] = Tvemin;
-//  rhoEve_t = 0.0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
-//  if (rhoEve < rhoEve_t) {
-//    nonphys = true;
-//    converr = true;
-//    V[TVE_INDEX] = Tvemin;
-////    cout << "Tve < Tve min" << endl;
-//  }
-//  
-//  V[TVE_INDEX] = Tvemax;
-//  rhoEve_t = 0.0;
-//  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
-//  if (rhoEve > rhoEve_t) {
-//    nonphys = true;
-//    converr = true;
-//    V[TVE_INDEX] = Tvemax;
-////    cout << "Tve > Tve max" << endl;
-//  }
+  V[TVE_INDEX] = Tvemin;
+  rhoEve_t = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
+  if (rhoEve < rhoEve_t) {
+    nonphys = true;
+    converr = true;
+    V[TVE_INDEX] = Tvemin;
+//    cout << "Tve < Tve min" << endl;
+  }
+  
+  V[TVE_INDEX] = Tvemax;
+  rhoEve_t = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
+  if (rhoEve > rhoEve_t) {
+    nonphys = true;
+    converr = true;
+    V[TVE_INDEX] = Tvemax;
+//    cout << "Tve > Tve max" << endl;
+  }
   
   // Initialize trial values of Tve for Newton-Raphson method
-  Tve   = Primitive[TVE_INDEX];
-  Tve_o = Primitive[TVE_INDEX];
-//  Tve   = V[T_INDEX];
-//  Tve_o = V[T_INDEX];
+//  Tve   = V[TVE_INDEX];
+//  Tve_o = V[TVE_INDEX];
+  Tve   = V[T_INDEX];
+  Tve_o = V[T_INDEX];
 
   // Newton-Raphson
   if (!nonphys) {
@@ -1360,7 +1360,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   /*--- Set mixture rhoCvve ---*/
   V[RHOCVVE_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  V[RHOCVVE_INDEX] += U[iSpecies]*Cvves[iSpecies];
+  V[RHOCVVE_INDEX] += U[iSpecies]*val_Cvves[iSpecies];
   
   /*--- Pressure ---*/
   V[P_INDEX] = 0.0;

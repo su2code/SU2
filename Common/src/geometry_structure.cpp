@@ -10105,8 +10105,8 @@ CDomainGeometry::CDomainGeometry(CGeometry *geometry, CConfig *config) {
   int rank, size;
   
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&rank);
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -11484,8 +11484,8 @@ void CDomainGeometry::SetSendReceive(CConfig *config) {
   int rank, size;
   
 #ifdef WINDOWS
-  MPI_Comm_size(MPI_COMM_WORLD,&rank);
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #else
   rank = MPI::COMM_WORLD.Get_rank();
   size = MPI::COMM_WORLD.Get_size();
@@ -11677,7 +11677,7 @@ void CDomainGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename)
   int size;
   
 #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&size);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
 #else
   size = MPI::COMM_WORLD.Get_size();
 #endif

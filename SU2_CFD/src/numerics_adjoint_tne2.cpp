@@ -787,8 +787,6 @@ CAvgGrad_AdjTNE2::CAvgGrad_AdjTNE2(unsigned short val_nDim,
   vel_j = new double[nDim];
   hs_i  = new double[nSpecies];
   hs_j  = new double[nSpecies];
-  eve_i = new double[nSpecies];
-  eve_j = new double[nSpecies];
   
   DdYk   = new double[nSpecies];
   dYdrs  = new double*[nSpecies];
@@ -820,7 +818,6 @@ CAvgGrad_AdjTNE2::CAvgGrad_AdjTNE2(unsigned short val_nDim,
     SigmaPhi[iDim]  = new double[nDim];
     SigmaPsiE[iDim] = new double[nDim];
   }
-  
 }
 
 CAvgGrad_AdjTNE2::~CAvgGrad_AdjTNE2(void) {
@@ -831,8 +828,6 @@ CAvgGrad_AdjTNE2::~CAvgGrad_AdjTNE2(void) {
   delete [] vel_j;
   delete [] hs_i;
   delete [] hs_j;
-  delete [] eve_i;
-  delete [] eve_j;
   
 	delete [] Edge_Vector;
   
@@ -945,8 +940,6 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     u2_j += vel_j[iDim]*vel_j[iDim];
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eve_i[iSpecies] = var->CalcEve(config, V_i[TVE_INDEX], iSpecies);
-    eve_j[iSpecies] = var->CalcEve(config, V_j[TVE_INDEX], iSpecies);
     hs_i[iSpecies]  = var->CalcHs (config, V_i[T_INDEX], eve_i[iSpecies], iSpecies);
     hs_j[iSpecies]  = var->CalcHs (config, V_j[T_INDEX], eve_j[iSpecies], iSpecies);
   }
@@ -1432,8 +1425,6 @@ CAvgGradCorrected_AdjTNE2::CAvgGradCorrected_AdjTNE2(unsigned short val_nDim,
   vel_j = new double[nDim];
   hs_i  = new double[nSpecies];
   hs_j  = new double[nSpecies];
-  eve_i = new double[nSpecies];
-  eve_j = new double[nSpecies];
   
   DdYk   = new double[nSpecies];
   dYdrs  = new double*[nSpecies];
@@ -1479,8 +1470,6 @@ CAvgGradCorrected_AdjTNE2::~CAvgGradCorrected_AdjTNE2(void) {
   delete [] vel_j;
   delete [] hs_i;
   delete [] hs_j;
-  delete [] eve_i;
-  delete [] eve_j;
   
 	delete [] Edge_Vector;
   
@@ -1584,8 +1573,6 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     vel[iDim] = 0.5*(vel_i[iDim]+vel_j[iDim]);
   }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    eve_i[iSpecies] = var->CalcEve(config, V_i[TVE_INDEX], iSpecies);
-    eve_j[iSpecies] = var->CalcEve(config, V_j[TVE_INDEX], iSpecies);
     hs_i[iSpecies]  = var->CalcHs (config, V_i[T_INDEX], eve_i[iSpecies], iSpecies);
     hs_j[iSpecies]  = var->CalcHs (config, V_j[T_INDEX], eve_j[iSpecies], iSpecies);
   }
@@ -1970,8 +1957,6 @@ CSource_AdjTNE2::CSource_AdjTNE2(unsigned short val_nDim,
 
   Y     = new double[nSpecies];
   hs    = new double[nSpecies];
-  eves  = new double[nSpecies];
-  Cvves = new double[nSpecies];
   Cvtrs = new double[nSpecies];
   SIk   = new double[nDim];
   GY    = new double*[nSpecies];
@@ -2000,8 +1985,6 @@ CSource_AdjTNE2::~CSource_AdjTNE2(void) {
   delete [] vel;
   delete [] Y;
   delete [] hs;
-  delete [] eves;
-  delete [] Cvves;
   delete [] Cvtrs;
   delete [] V;
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -2084,7 +2067,6 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   /*--- Calculate specific heat ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Cvtrs[iSpecies] = (3.0+xi[iSpecies])/2.0*Ru/Ms[iSpecies];
-    Cvves[iSpecies] = var->CalcCvve(Tve, config, iSpecies);
   }
   
   /*--- Convert from species density to mass-fraction, Y ---*/
@@ -2252,8 +2234,8 @@ void CSource_AdjTNE2::ComputeSourceViscous (double *val_residual, CConfig *confi
   // Species continuity
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      val_residual[iSpecies] += -Cvves[iSpecies]/rCvve*(GPsi[nSpecies+nDim][iDim]+
-                                                        GPsi[nSpecies+nDim+1][iDim])*GV[TVE_INDEX][iDim]*kve*Volume;
+      val_residual[iSpecies] += -Cvve_i[iSpecies]/rCvve*(GPsi[nSpecies+nDim][iDim]+
+                                                         GPsi[nSpecies+nDim+1][iDim])*GV[TVE_INDEX][iDim]*kve*Volume;
       val_residual[iSpecies] += -dTvedU_i[iSpecies]/rCvve*(GPsi[nSpecies+nDim][iDim]+
                                                            GPsi[nSpecies+nDim+1][iDim])*GV[RHOCVVE_INDEX][iDim]*kve*Volume;
     }

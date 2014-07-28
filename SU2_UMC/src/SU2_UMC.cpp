@@ -33,8 +33,8 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
 #ifndef NO_MPI
   /*--- MPI initialization, and buffer setting ---*/
-  MPI::Init(argc,argv);
-  rank = MPI::COMM_WORLD.Get_rank();
+//  MPI::Init(argc,argv);
+//  rank = MPI::COMM_WORLD.Get_rank();
 #endif
 
   /*--- Declare pointers to class objects ---*/

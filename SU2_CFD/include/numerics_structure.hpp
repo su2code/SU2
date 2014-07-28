@@ -5665,7 +5665,7 @@ public:
 class CAvgGrad_AdjTNE2 : public CNumerics {
 private:
   double *vel, *vel_i, *vel_j;
-  double *hs_i, *hs_j, *eve_i, *eve_j;
+  double *hs_i, *hs_j;
   double *GPsirsdotn; /*!< \brief Grad(PsiRhos) dot n. */
   double **Mean_GradPsirs; /*!< \brief Mean gradient in the adjoint species density between nodes i and j. */
 	double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint energy between nodes i and j. */
@@ -5716,7 +5716,7 @@ public:
 class CAvgGradCorrected_AdjTNE2 : public CNumerics {
 private:
   double *vel, *vel_i, *vel_j;
-  double *hs_i, *hs_j, *eve_i, *eve_j;
+  double *hs_i, *hs_j;
   double *GPsirsdotn; /*!< \brief Grad(PsiRhos) dot n. */
   double **Mean_GradPsirs; /*!< \brief Mean gradient in the adjoint species density between nodes i and j. */
 	double *Mean_GradPsiE;	/*!< \brief Mean gradient in the adjoint energy between nodes i and j. */
@@ -5768,7 +5768,7 @@ class CSource_AdjTNE2 : public CNumerics {
 private:
   bool   implicit;
   unsigned short nSpecies, nVar, nPrimVar, nPrimVarGrad;
-  double *rhos, *vel, *Y, *hs, *eves, *Cvtrs, *Cvves;
+  double *rhos, *vel, *Y, *hs, *Cvtrs;
   double *V, **GV;
   double *GInvRho, **GVeloRho, **tau, **eta, **pi, **zeta;
   double *GPhiGInvRho, *GPsiEZetaTau;// *GPsirsGr, *DGPsirsGrs, *GPsiEJ, *GPsiEveJ;

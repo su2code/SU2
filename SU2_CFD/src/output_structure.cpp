@@ -63,7 +63,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
   double PressCoeff = 0.0, SkinFrictionCoeff, HeatFlux;
-  double xCoord, yCoord, zCoord, Mach, Pressure;
+  double xCoord, yCoord, zCoord, Mach, Pressure, T, Tve;
   char cstr[200];
   
   unsigned short solver = config->GetKind_Solver();
@@ -107,7 +107,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
     case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
     case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" << endl; break;
-    case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
+    case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Temperature\", \"Temperature_ve\"" << endl; break;
   }
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -139,8 +139,10 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             break;
           case TNE2_NAVIER_STOKES:
             SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker,iVertex);
-            HeatFlux = FlowSolver->GetHeatFlux(iMarker,iVertex);
-            SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
+            HeatFlux          = FlowSolver->GetHeatFlux(iMarker,iVertex);
+            T   = FlowSolver->node[iPoint]->GetTemperature();
+            Tve = FlowSolver->node[iPoint]->GetTemperature_ve();
+            SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << ", " << T << ", " << Tve << endl;
             break;
         }
       }
@@ -220,20 +222,29 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   double *Buffer_Send_HeatTransfer = new double [MaxLocalVertex_Surface];
   double *Buffer_Recv_HeatTransfer = NULL;
   
+  double *Buffer_Send_T = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_T = NULL;
+  
+  double *Buffer_Send_Tve = new double [MaxLocalVertex_Surface];
+  double *Buffer_Recv_Tve = NULL;
+  
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
   unsigned long *Buffer_Recv_GlobalIndex = NULL;
   
   /*--- Prepare the receive buffers on the master node only. ---*/
   
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Coord_x = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_Coord_y = new double [nProcessor*MaxLocalVertex_Surface];
-    if (nDim == 3) Buffer_Recv_Coord_z = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_Press   = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_CPress  = new double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_Mach    = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Coord_x      = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Coord_y      = new double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3)
+      Buffer_Recv_Coord_z    = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Press        = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_CPress       = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Mach         = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_SkinFriction = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_HeatTransfer = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_T            = new double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_Tve          = new double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
   }
   
@@ -262,6 +273,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           if (solver == TNE2_NAVIER_STOKES) {
             Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker,iVertex);
             Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatFlux(iMarker,iVertex);
+            Buffer_Send_T[nVertex_Surface]            = FlowSolver->node[iPoint]->GetTemperature();
+            Buffer_Send_Tve[nVertex_Surface]          = FlowSolver->node[iPoint]->GetTemperature_ve();
           }
           nVertex_Surface++;
         }
@@ -312,6 +325,10 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
                            Buffer_Recv_SkinFriction, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
     MPI::COMM_WORLD.Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI::DOUBLE,
                            Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_T, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_T, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
+    MPI::COMM_WORLD.Gather(Buffer_Send_Tve, MaxLocalVertex_Surface, MPI::DOUBLE,
+                           Buffer_Recv_Tve, MaxLocalVertex_Surface, MPI::DOUBLE, MASTER_NODE);
   }
   
   MPI::COMM_WORLD.Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI::UNSIGNED_LONG,
@@ -362,7 +379,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
       case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
       case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
       case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" << endl; break;
-      case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
+      case TNE2_NAVIER_STOKES: SurfFlow_file << "\"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Temperature\", \"Temperature_ve\"" << endl; break;
     }
     
     /*--- Loop through all of the collected data and write each node's values ---*/
@@ -405,7 +422,10 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SkinFrictionCoeff = Buffer_Recv_SkinFriction[Total_Index];
             SurfFlow_file << scientific << SkinFrictionCoeff << ", ";
             HeatFlux = Buffer_Recv_HeatTransfer[Total_Index];
-            SurfFlow_file << scientific << HeatFlux << endl;
+            SurfFlow_file << scientific << HeatFlux << ", ";
+            T = Buffer_Recv_T[Total_Index];
+            Tve = Buffer_Recv_Tve[Total_Index];
+            SurfFlow_file << scientific << T << ", " << Tve << endl;
             break;
         }
       }
@@ -424,6 +444,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     delete [] Buffer_Recv_Mach;
     delete [] Buffer_Recv_SkinFriction;
     delete [] Buffer_Recv_HeatTransfer;
+    delete [] Buffer_Recv_T;
+    delete [] Buffer_Recv_Tve;
     delete [] Buffer_Recv_GlobalIndex;
     
   }
@@ -438,6 +460,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   delete [] Buffer_Send_Mach;
   delete [] Buffer_Send_SkinFriction;
   delete [] Buffer_Send_HeatTransfer;
+  delete [] Buffer_Send_T;
+  delete [] Buffer_Send_Tve;
   delete [] Buffer_Send_GlobalIndex;
   
 #endif
@@ -1896,6 +1920,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- Diffusivity, viscosity, & thermal conductivity ---*/
     iVar_TempLam = nVar_Total;
     nVar_Total += config->GetnSpecies()+3;
+    /*--- Viscous coefficients: Heat flux & y+ ---*/
+    iVar_ViscCoeffs = nVar_Total;
+    nVar_Total += 2;
   }
   
   if (Kind_Solver == POISSON_EQUATION) {
@@ -1973,6 +2000,25 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
         }
       }
+  }
+  
+  if (Kind_Solver == TNE2_NAVIER_STOKES) {
+    Aux_Frict = new double [geometry->GetnPointDomain()];
+    Aux_Heat  = new double [geometry->GetnPointDomain()];
+    Aux_yPlus = new double [geometry->GetnPointDomain()];
+    
+    for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+      Aux_Heat[iPoint]  = 0.0;
+      Aux_yPlus[iPoint] = 0.0;
+    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Aux_Heat[iPoint]  = solver[TNE2_SOL]->GetHeatFlux(iMarker,iVertex);
+        Aux_yPlus[iPoint] = solver[TNE2_SOL]->GetYPlus(iMarker,iVertex);
+      }
+    }
   }
   
   if ((Kind_Solver == ADJ_EULER)         ||
@@ -2184,7 +2230,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           /*--- Write thermal conductivity ---*/
           Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity();
           jVar++;
-          Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve();
+          Data[jVar][jPoint] = solver[TNE2_SOL]->node[iPoint]->GetThermalConductivity_ve(); jVar++;
+          /*--- Write heat flux ---*/
+          Data[jVar][jPoint] = Aux_Heat[iPoint]; jVar++;
+          /*--- Write y+ ---*/
+          Data[jVar][jPoint] = Aux_yPlus[iPoint];
           break;
           
         case ADJ_EULER:      case ADJ_NAVIER_STOKES:     case ADJ_RANS:
@@ -2294,7 +2344,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Auxiliary vectors for surface coefficients ---*/
   
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == TNE2_NAVIER_STOKES)) {
     Aux_Frict = new double[geometry->GetnPoint()];
     Aux_Heat  = new double[geometry->GetnPoint()];
     Aux_yPlus = new double[geometry->GetnPoint()];
@@ -3013,6 +3064,21 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   }
   
   if (Kind_Solver == TNE2_NAVIER_STOKES) {
+    
+    /*--- Load auxiliary variables ---*/
+    for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Aux_Heat[iPoint]  = 0.0;
+      Aux_yPlus[iPoint] = 0.0;
+    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker,iVertex);
+        Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker,iVertex);
+      }
+    }
+    
     /*--- Species diffusion coefficients ---*/
     // Loop over this partition to collect the current variable
     for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++) {
@@ -3170,6 +3236,88 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if (rank == MASTER_NODE) {
       jPoint = 0;
       iVar = iVar_TempLam+config->GetnSpecies()+2;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+          /*--- Get global index, then loop over each variable and store ---*/
+          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+          jPoint++;
+        }
+        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+    }
+    
+    /*--- Heat flux ---*/
+    jPoint = 0;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the Mach number variables. ---*/
+        Buffer_Send_Var[jPoint] = Aux_Heat[iVar];
+        jPoint++;
+      }
+    }
+    
+    /*--- Gather the data on the master node. ---*/
+#ifdef WINDOWS
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+#endif
+    
+    /*--- The master node unpacks and sorts this variable by global index ---*/
+    if (rank == MASTER_NODE) {
+      jPoint = 0;
+      iVar = iVar_ViscCoeffs;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+          /*--- Get global index, then loop over each variable and store ---*/
+          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+          jPoint++;
+        }
+        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+    }
+    
+    /*--- y+ ---*/
+    jPoint = 0;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the Mach number variables. ---*/
+        Buffer_Send_Var[jPoint] = Aux_yPlus[iVar];
+        jPoint++;
+      }
+    }
+    
+    /*--- Gather the data on the master node. ---*/
+#ifdef WINDOWS
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+#endif
+    
+    /*--- The master node unpacks and sorts this variable by global index ---*/
+    if (rank == MASTER_NODE) {
+      jPoint = 0;
+      iVar = iVar_ViscCoeffs+1;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
@@ -3378,7 +3526,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 #endif
   
   /*--- Release memory needed for surface coefficients ---*/
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+      (Kind_Solver == TNE2_NAVIER_STOKES)) {
     delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
   }
   if (( Kind_Solver == ADJ_EULER              ) ||
@@ -3655,7 +3804,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   if (Kind_Solver == TNE2_NAVIER_STOKES) {
     for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
       restart_file << "\t\"DiffusionCoeff_" << iSpecies << "\"";
-    restart_file << "\t\"Laminar_Viscosity\"\t\"ThermConductivity\"\t\"ThermConductivity_ve\"";
+    restart_file << "\t\"Laminar_Viscosity\"\t\"ThermConductivity\"\t\"ThermConductivity_ve\"\t\"Heat_Flux\"\t\"Y_Plus\"";
   }
   
   if (Kind_Solver == POISSON_EQUATION) {
