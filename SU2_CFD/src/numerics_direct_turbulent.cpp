@@ -1071,6 +1071,7 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
 }
 
 CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
+  
   delete MLModel;
   delete SAInputs;
   delete SAConstants;
@@ -1094,7 +1095,6 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 }
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-  
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -1443,8 +1443,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
-  }else if (featureset.compare("fw_les_2")==0){
-    nInputMLVariables = 8;
+  }else if (featureset.compare("fw_hifi")==0){
+    throw("doesn't work");
+    nInputMLVariables = 2;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
@@ -1467,6 +1468,40 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     if (newfw > 6){
       newfw = 6;
     }
+    // The output is the value of fw. Need to replace the destruction term with the new computation
+    double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
+    double dist2 = SAInputs->dist * SAInputs->dist;
+    double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
+    
+    for (int i= 0; i < nResidual; i++){
+      Residual[i] = SAResidual[i];
+    }
+    Residual[1] = newdestruction;
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
+  }else if (featureset.compare("fw_hifi_2")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    // Karthik nondimensionalizes by d / vhat whereas I do by /(v + vhat)
+    omegaBar *= 1 + 1/chi;
+    
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    
+    MLModel->Predict(netInput, netOutput);
+    
+    double safw = SAOtherOutputs->fw;
+    double newfw = netOutput[0];
     // The output is the value of fw. Need to replace the destruction term with the new computation
     double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
     double dist2 = SAInputs->dist * SAInputs->dist;
@@ -1576,33 +1611,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
   }
   
-  //cout << "strain rate mag = " << strainRateMag << endl;
   strainRateMag = sqrt(strainRateMag);
-//  cout << "after sqrt = " << strainRateMag << endl;
-  
   double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
-  
   fWake = exp(- (1e-10 * ReS * ReS));
-//  cout << "ReS = " << ReS << endl;
-//  cout << "fWake = " << fWake << endl;
-  
   double magU = 0;
   for (unsigned short i = 0; i < nDim; i++){
     magU += V_i[1+i] * V_i[1+i];
   }
   magU = sqrt(magU);
-  
-//  cout << "x loc " << Coord_i[0] << endl;
-//  cout << "y loc " << Coord_i[1] << endl;
-//  cout <<  "u infinity = " << uInfinity << endl;
-//  cout << "magU = " << magU << endl;
-//  cout << "gt? " << (magU > uInfinity * 0.99) << endl;
   isInBL = fWake > 0.5 && (magU < uInfinity * 0.99);
-//  cout << "Is in BL " << isInBL << endl;
-  
-//  if (Coord_i[0] < -200 && Coord_i[1] > 200){
-//    throw "ahh";
-//  }
   
   
   // Now that we have found the ML Residual and the SA residual, see if there are
@@ -1632,7 +1649,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     if (hasBlOnly){
       // Only use ML in the boundary layer (where isInBL == true)
-      if (isInBL){
+      if (!isInBL){
         // Then use SA
         for (int i = 0; i < nResidual; i++){
           Residual[i] = SAResidual[i];
@@ -1641,12 +1658,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       }
     }
   }
-  
-  
-//  cout << "SA nondim cross production " << SANondimResidual[2] << endl;
-//    cout << "Nondim cross production " << NondimResidual[2] << endl;
-//    cout << "SA cross production " << SAResidual[2] << endl;
-//    cout << "Cross production " << Residual[2] << endl;
   
   // Compute the differences
   for (int i = 0; i < nResidual; i++){
@@ -1657,20 +1668,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   // Store The residual for the outer structure
   val_residual[0] = Residual[3] * Volume;
   val_Jacobian_i[0][0] = SAJacobian[0] * Volume;
-  
-  
-  /*
-  cout << "Sa resid ";
-  for (int i = 0; i < nResidual; i++){
-    cout << SAResidual[i] << "\t";
-  }
-  cout << endl;
-  cout << "Ml resid ";
-  for (int i = 0; i < nResidual; i++){
-    cout << Residual[i] << "\t";
-  }
-  cout << endl;
-   */
   
 }
 
