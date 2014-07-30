@@ -700,6 +700,7 @@ void CEulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
   *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   int send_to, receive_from;
   
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&

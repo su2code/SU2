@@ -551,6 +551,10 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -586,7 +590,7 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -680,6 +684,10 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
   *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 	int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -715,7 +723,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_U, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -801,6 +809,10 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
 	int send_to, receive_from;
   double *Primitive;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
   Primitive = new double[nPrimVar];
   VEL_INDEX = node_infty->GetVelIndex();
   
@@ -833,7 +845,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_V, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_V, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_V, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_V, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_V, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -925,6 +937,9 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry,
   
   double *Limiter = new double[nVar];
 	
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
   
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
@@ -958,7 +973,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry,
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                  Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE,
-                 receive_from, 0, MPI_COMM_WORLD, NULL);
+                 receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE,
                                send_to, 0, Buffer_Receive_Limit,
@@ -1056,6 +1071,10 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry,
   *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
 	int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1093,7 +1112,7 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry,
 	  MPI_Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector,
                                MPI_DOUBLE, send_to, 0,
                                Buffer_Receive_Undivided_Laplacian,
-                               nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Undivided_Laplacian, nBufferS_Vector,
                                MPI::DOUBLE, send_to, 0,
@@ -1180,6 +1199,10 @@ void CTNE2EulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *confi
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
 	int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1223,9 +1246,9 @@ void CTNE2EulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *confi
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       MPI_Sendrecv(Buffer_Send_Neighbor, nBufferS_Vector, MPI_UNSIGNED_SHORT, send_to, 1,
-                               Buffer_Receive_Neighbor, nBufferR_Vector, MPI_UNSIGNED_SHORT, receive_from, 1, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_Neighbor, nBufferR_Vector, MPI_UNSIGNED_SHORT, receive_from, 1, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Lambda, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -1272,6 +1295,10 @@ void CTNE2EulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *
 	double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
 	int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1306,7 +1333,7 @@ void CTNE2EulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Lambda, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -1352,6 +1379,10 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
   for (iVar = 0; iVar < nVar; iVar++)
     Gradient[iVar] = new double[nDim];
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1389,7 +1420,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
 
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -1489,6 +1520,10 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Gradient[iVar] = new double[nDim];
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
 		if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -1525,7 +1560,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                               Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Gradient, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);
@@ -1629,6 +1664,10 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry,
   /*--- Initialize array to store the limiter ---*/
   double *Limiter = new double [nPrimVarGrad];
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
   /*--- Get the position of the velocity terms in the primitive vector ---*/
   VEL_INDEX = node_infty->GetVelIndex();
   
@@ -1664,7 +1703,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry,
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
       MPI_Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                   Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive_Limit, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);

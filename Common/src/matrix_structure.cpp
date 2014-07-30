@@ -521,6 +521,10 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
   double *Buffer_Receive = NULL, *Buffer_Send = NULL;
   int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -552,7 +556,7 @@ void CSysMatrix::SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConf
       /*--- Send/Receive information using Sendrecv ---*/
 #ifdef WINDOWS
 	  MPI_Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, NULL);
+                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       MPI::COMM_WORLD.Sendrecv(Buffer_Send, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
                                Buffer_Receive, nBufferR_Vector, MPI::DOUBLE, receive_from, 0);

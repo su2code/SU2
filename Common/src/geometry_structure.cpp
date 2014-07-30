@@ -6499,6 +6499,10 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
   
   newCoord = new double[nDim];
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
     if ((config->GetMarker_All_Boundary(iMarker) == SEND_RECEIVE) &&
@@ -6530,7 +6534,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config)  {
 #ifdef WINDOWS
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_Coord,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-                   Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+                   Buffer_Receive_Coord,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,&status);
 #else
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Coord, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
@@ -6638,6 +6642,10 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
   double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_GridVel = NULL, *Buffer_Send_GridVel = NULL, *GridVel = NULL, *newGridVel = NULL;
   int send_to, receive_from;
   
+#ifndef NO_MPI
+  MPI_Status status;
+#endif
+  
   newGridVel = new double[nDim];
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -6671,7 +6679,7 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config)  {
 #ifdef WINDOWS
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_GridVel,nBufferS_Vector,MPI_DOUBLE,send_to,0,
-                   Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,NULL);
+                   Buffer_Receive_GridVel,nBufferR_Vector,MPI_DOUBLE,receive_from,0,MPI_COMM_WORLD,&status);
 #else
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_GridVel, nBufferS_Vector, MPI::DOUBLE, send_to, 0,
@@ -7278,6 +7286,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 #ifdef NO_MPI
   rank = MASTER_NODE;
 #else
+  MPI_Status status;
 #ifdef WINDOWS
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
@@ -7675,9 +7684,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 #ifdef WINDOWS
       /*--- Send/Receive information using Sendrecv ---*/
       MPI_Sendrecv(Buffer_Send_Children,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,0,
-                   Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,NULL);
+                   Buffer_Receive_Children,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,0,MPI_COMM_WORLD,&status);
       MPI_Sendrecv(Buffer_Send_Parent,nBufferS_Vector,MPI_UNSIGNED_LONG,send_to,1,
-                   Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,NULL);
+                   Buffer_Receive_Parent,nBufferR_Vector,MPI_UNSIGNED_LONG,receive_from,1,MPI_COMM_WORLD,&status);
 #else
       /*--- Send/Receive information using Sendrecv ---*/
       MPI::COMM_WORLD.Sendrecv(Buffer_Send_Children, nBufferS_Vector, MPI::UNSIGNED_LONG, send_to, 0,
