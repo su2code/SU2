@@ -2229,7 +2229,7 @@ CSourceViscous_AdjFlow::~CSourceViscous_AdjFlow(void) {
 }
 
 void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *config) {
-    
+  
 	unsigned short iDim, jDim;
   
   double Temperature = V_i[0];
@@ -2324,157 +2324,164 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
     sq_vel += V_i[iDim+1]*V_i[iDim+1];
 	}
   
-	val_residual[0] = (-vel_sigma_gradpsi5*invDensity - Sigma_gradvel_o_rho + 0.5*sq_vel*alpha_gradpsi5 -
-                     beta_gradpsi5 + Sigma5_vel_gradvel*invDensity) * Volume;
+	val_residual[0] = (-vel_sigma_gradpsi5*invDensity + 0.5*sq_vel*alpha_gradpsi5 -
+                     beta_gradpsi5) * Volume;
 	for (iDim = 0; iDim < nDim; iDim++) {
+    val_residual[iDim+1] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++) {
-			val_residual[iDim+1] = (sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim]*invDensity +
-                              Sigma[iDim][jDim]*GradInvDensity[jDim] - V_i[iDim+1]*alpha_gradpsi5 -
-                              Sigma_5_vec[jDim]*PrimVar_Grad_i[iDim+1][jDim]*invDensity) * Volume;
+			val_residual[iDim+1] += (sigma[iDim][jDim]*PsiVar_Grad_i[nVar-1][jDim]*invDensity - V_i[iDim+1]*alpha[jDim]*PsiVar_Grad_i[nVar-1][jDim]) * Volume;
     }
   }
 	val_residual[nVar-1] = alpha_gradpsi5 * Volume;
+  
+//  val_residual[0] += (Sigma5_vel_gradvel*invDensity - Sigma_gradvel_o_rho) * Volume;
+//	for (iDim = 0; iDim < nDim; iDim++) {
+//		for (jDim = 0; jDim < nDim; jDim++) {
+//			val_residual[iDim+1] += (Sigma[iDim][jDim]*GradInvDensity[jDim] -
+//                              Sigma_5_vec[jDim]*PrimVar_Grad_i[iDim+1][jDim]*invDensity) * Volume;
+//    }
+//  }
   
   /*--- Laminar viscosity sensitivity for NS ---*/
   
 	if (config->GetKind_Solver() != ADJ_RANS) {
     
-		double Temperature_Ref = config->GetTemperature_Ref();
-		double Temperature_Dim = Temperature*Temperature_Ref;
-    
-    double S = 0.0;
-    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
-    if (config->GetSystemMeasurements() == US) { S = 198.72; }
-		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
-    
-		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
-		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-    
-    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
-    for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
-    val_residual[nVar-1] += theta*Volume;
+//		double Temperature_Ref = config->GetTemperature_Ref();
+//		double Temperature_Dim = Temperature*Temperature_Ref;
+//    
+//    double S = 0.0;
+//    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+//    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+//		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+//    
+//		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+//		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
+//		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+//    
+//    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
+//    val_residual[nVar-1] += theta*Volume;
     
 	}
   
-	/*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
-  
-	if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
-    
-		/*--- Closure constants ---*/
-    
-		double cv1_3 = 7.1*7.1*7.1;
-		double k2 = 0.41*0.41;
-		double cb1 = 0.1355;
-		double cw2 = 0.3;
-		double cw3_6 = pow(2.0,6.0);
-		double sigma = 2./3.;
-		double cb2 = 0.622;
-		double cw1 = cb1/k2+(1+cb2)/sigma;
-    
-		double nu, Ji, Ji_2, Ji_3, fv1;
-		nu = Laminar_Viscosity/Density;
-		Ji = TurbVar_i[0]/nu;
-		Ji_2 = Ji*Ji;
-		Ji_3 = Ji_2*Ji;
-		fv1 = Ji_3/(Ji_3+cv1_3);
-    
-		/*--- Contributions due to variation of viscosities ---*/
-    
-    double Temperature_Ref = config->GetTemperature_Ref();
-    double Temperature_Dim = Temperature*Temperature_Ref;
-    
-    double S = 0.0;
-    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
-    if (config->GetSystemMeasurements() == US) { S = 198.72; }
-    double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
-    
-		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/Prandtl_Turb*gradT_gradpsi5;
-		double cv1_const = 3.0*cv1_3/(Ji_3+cv1_3);
-		double theta = (kappa_psi*(1.0-Eddy_Viscosity/Laminar_Viscosity*cv1_const) -
-                    Cp/Prandtl_Turb*gradT_gradpsi5*(1.0-Prandtl_Turb/Prandtl_Lam))*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-		double xi = kappa_psi*(1.0+cv1_const)*Eddy_Viscosity/Density;
-    
-		val_residual[0] += (theta*(sq_vel-Energy) + xi)*Volume;
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
-		val_residual[nVar-1] += theta*Volume;
-    
-		/*--- Coupling residuals ---*/
-    
-		if (dist_i > 0.0) {
-			double fv2, Omega, Shat, dist_0_2, one_o_oneplusJifv1;
-			double r, g, g_6, glim, fw;
-			double dfw_g, dg_r, dr_nuhat, dr_Shat;
-			double dShat_fv2, dfv2_fv1, dfv1_Ji, dJi_nu, dJi_nuhat, dfv2_Ji;
-      
-			/*--- Vorticity ---*/
-			Omega = (PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0])*(PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0]);
-			if (nDim == 3) Omega += (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) +
-        (PrimVar_Grad_i[2][2]-PrimVar_Grad_i[3][1])*(PrimVar_Grad_i[2][2]-PrimVar_Grad_i[3][1]);
-			Omega = sqrt(Omega);
-      
-			dist_0_2 = dist_i*dist_i;
-			one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
-			fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-			Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
-      
-			r = min(TurbVar_i[0]/(Shat*k2*dist_0_2), 10.);
-			g = r + cw2*(pow(r,6.)-r);
-			g_6 = pow(g,6.);
-			glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
-			fw = g*glim;
-      
-			dfw_g  = glim*cw3_6/(g_6+cw3_6);
-			dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
-			dr_nuhat = 1.0/(Shat*k2*dist_0_2);
-			dr_Shat = -dr_nuhat*TurbVar_i[0]/Shat;
-      
-			dShat_fv2 = TurbVar_i[0]/(k2*dist_0_2);
-			dfv2_fv1 = Ji_2*one_o_oneplusJifv1*one_o_oneplusJifv1;
-			dfv1_Ji = 3.0*cv1_3*Ji_2/((Ji_3+cv1_3)*(Ji_3+cv1_3));
-			dJi_nuhat = 1.0/nu;
-			dJi_nu = -Ji/nu;
-			dfv2_Ji = -one_o_oneplusJifv1*one_o_oneplusJifv1;
-      
-			/*--- Terms 1 & 2: -Fcv\B7nabla(TurbPsi_i) - Fs\B7TurbPsi_i ---*/
-      
-			double gradTurbVar_gradTurbPsi = 0, vel_gradTurbPsi = 0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				gradTurbVar_gradTurbPsi += TurbVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
-				vel_gradTurbPsi += V_i[iDim+1]*TurbPsi_Grad_i[0][iDim];
-			}
-      
-			double alpha_coeff = Gamma_Minus_One/(Gas_Constant*Density)*dVisc_T;
-			double beta_coeff = alpha_coeff*(sq_vel-Energy)-Laminar_Viscosity_i/Density;
-			double Fs_coeff = TurbPsi_i[0]*(cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat)*
-      dShat_fv2*(dfv2_Ji+dfv2_fv1*dfv1_Ji)*dJi_nu;
-			double Gamma = Fs_coeff - gradTurbVar_gradTurbPsi/sigma;
-      
-			val_residual[0] -= (Gamma*beta_coeff - TurbVar_i[0]*vel_gradTurbPsi)/Density*Volume;
-			for (iDim = 0; iDim < nDim; iDim++)
-				val_residual[iDim+1] += (Gamma*alpha_coeff*V_i[iDim+1] - TurbVar_i[0]*TurbPsi_Grad_i[0][iDim])/Density*Volume;
-			val_residual[nVar-1] -= (Gamma*alpha_coeff)/Density*Volume;
-      
-      // this should improve stability (when commented):
-			/*--- Terms 3: -partial{T^s}_GradVel x GradN ---*/
-			//			double Ms_coeff = (cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat);
-			//			Ms_coeff *= TurbPsi_i[0]/(Omega + TURB_EPS);
-			//
-			//			for (iDim = 0; iDim < nDim; iDim++) {
-			//				for (jDim = 0; jDim < nDim; jDim++) {
-			//					val_residual[0] += Ms_coeff*(PrimVar_Grad_i[iDim+1][jDim]-PrimVar_Grad_i[jDim+1][iDim])*
-			//					GradVel_o_Rho[iDim][jDim]*dV;
-			//					val_residual[iDim+1] -= Ms_coeff*(PrimVar_Grad_i[iDim+1][jDim]-PrimVar_Grad_i[jDim+1][iDim])*
-			//					GradInvDensity[jDim]*dV;
-			//				}
-			//			}
-      
-		}
-	}
-  
+//	/*--- Coupling terms coming from the continuous adjoint turbulent equations ---*/
+//  
+//	if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc())) {
+//    
+//		/*--- Closure constants ---*/
+//    
+//		double cv1_3 = 7.1*7.1*7.1;
+//		double k2 = 0.41*0.41;
+//		double cb1 = 0.1355;
+//		double cw2 = 0.3;
+//		double cw3_6 = pow(2.0,6.0);
+//		double sigma = 2./3.;
+//		double cb2 = 0.622;
+//		double cw1 = cb1/k2+(1+cb2)/sigma;
+//    
+//		double nu, Ji, Ji_2, Ji_3, fv1;
+//		nu = Laminar_Viscosity/Density;
+//		Ji = TurbVar_i[0]/nu;
+//		Ji_2 = Ji*Ji;
+//		Ji_3 = Ji_2*Ji;
+//		fv1 = Ji_3/(Ji_3+cv1_3);
+//    
+//		/*--- Contributions due to variation of viscosities ---*/
+//    
+//    double Temperature_Ref = config->GetTemperature_Ref();
+//    double Temperature_Dim = Temperature*Temperature_Ref;
+//    
+//    double S = 0.0;
+//    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+//    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+//    double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+//    
+//		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+//		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1 + Cp/Prandtl_Turb*gradT_gradpsi5;
+//		double cv1_const = 3.0*cv1_3/(Ji_3+cv1_3);
+//		double theta = (kappa_psi*(1.0-Eddy_Viscosity/Laminar_Viscosity*cv1_const) -
+//                    Cp/Prandtl_Turb*gradT_gradpsi5*(1.0-Prandtl_Turb/Prandtl_Lam))*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+//		double xi = kappa_psi*(1.0+cv1_const)*Eddy_Viscosity/Density;
+//    
+//		val_residual[0] += (theta*(sq_vel-Energy) + xi)*Volume;
+//		for (iDim = 0; iDim < nDim; iDim++)
+//			val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
+//		val_residual[nVar-1] += theta*Volume;
+//    
+//		/*--- Coupling residuals ---*/
+//    
+//		if (dist_i > 0.0) {
+//			double fv2, Omega, Shat, dist_0_2, one_o_oneplusJifv1;
+//			double r, g, g_6, glim, fw;
+//			double dfw_g, dg_r, dr_nuhat, dr_Shat;
+//			double dShat_fv2, dfv2_fv1, dfv1_Ji, dJi_nu, dJi_nuhat, dfv2_Ji;
+//      
+//			/*--- Vorticity ---*/
+//			Omega = (PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0])*(PrimVar_Grad_i[1][1]-PrimVar_Grad_i[2][0]);
+//			if (nDim == 3) Omega += (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) +
+//        (PrimVar_Grad_i[2][2]-PrimVar_Grad_i[3][1])*(PrimVar_Grad_i[2][2]-PrimVar_Grad_i[3][1]);
+//			Omega = sqrt(Omega);
+//      
+//			dist_0_2 = dist_i*dist_i;
+//			one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
+//			fv2 = 1.0 - Ji*one_o_oneplusJifv1;
+//			Shat = max(Omega + TurbVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
+//      
+//			r = min(TurbVar_i[0]/(Shat*k2*dist_0_2), 10.);
+//			g = r + cw2*(pow(r,6.)-r);
+//			g_6 = pow(g,6.);
+//			glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
+//			fw = g*glim;
+//      
+//			dfw_g  = glim*cw3_6/(g_6+cw3_6);
+//			dg_r = 1.0 + cw2*(6.0*pow(r,5.0)-1.0);
+//			dr_nuhat = 1.0/(Shat*k2*dist_0_2);
+//			dr_Shat = -dr_nuhat*TurbVar_i[0]/Shat;
+//      
+//			dShat_fv2 = TurbVar_i[0]/(k2*dist_0_2);
+//			dfv2_fv1 = Ji_2*one_o_oneplusJifv1*one_o_oneplusJifv1;
+//			dfv1_Ji = 3.0*cv1_3*Ji_2/((Ji_3+cv1_3)*(Ji_3+cv1_3));
+//			dJi_nuhat = 1.0/nu;
+//			dJi_nu = -Ji/nu;
+//			dfv2_Ji = -one_o_oneplusJifv1*one_o_oneplusJifv1;
+//      
+//			/*--- Terms 1 & 2: -Fcv\B7nabla(TurbPsi_i) - Fs\B7TurbPsi_i ---*/
+//      
+//			double gradTurbVar_gradTurbPsi = 0, vel_gradTurbPsi = 0;
+//			for (iDim = 0; iDim < nDim; iDim++) {
+//				gradTurbVar_gradTurbPsi += TurbVar_Grad_i[0][iDim]*TurbPsi_Grad_i[0][iDim];
+//				vel_gradTurbPsi += V_i[iDim+1]*TurbPsi_Grad_i[0][iDim];
+//			}
+//      
+//			double alpha_coeff = Gamma_Minus_One/(Gas_Constant*Density)*dVisc_T;
+//			double beta_coeff = alpha_coeff*(sq_vel-Energy)-Laminar_Viscosity_i/Density;
+//			double Fs_coeff = TurbPsi_i[0]*(cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat)*
+//      dShat_fv2*(dfv2_Ji+dfv2_fv1*dfv1_Ji)*dJi_nu;
+//			double Gamma = Fs_coeff - gradTurbVar_gradTurbPsi/sigma;
+//      
+//			val_residual[0] -= (Gamma*beta_coeff - TurbVar_i[0]*vel_gradTurbPsi)/Density*Volume;
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				val_residual[iDim+1] += (Gamma*alpha_coeff*V_i[iDim+1] - TurbVar_i[0]*TurbPsi_Grad_i[0][iDim])/Density*Volume;
+//			val_residual[nVar-1] -= (Gamma*alpha_coeff)/Density*Volume;
+//      
+//      // this should improve stability (when commented):
+//			/*--- Terms 3: -partial{T^s}_GradVel x GradN ---*/
+//			//			double Ms_coeff = (cb1*TurbVar_i[0]-cw1*TurbVar_i[0]*TurbVar_i[0]/dist_0_2*dfw_g*dg_r*dr_Shat);
+//			//			Ms_coeff *= TurbPsi_i[0]/(Omega + TURB_EPS);
+//			//
+//			//			for (iDim = 0; iDim < nDim; iDim++) {
+//			//				for (jDim = 0; jDim < nDim; jDim++) {
+//			//					val_residual[0] += Ms_coeff*(PrimVar_Grad_i[iDim+1][jDim]-PrimVar_Grad_i[jDim+1][iDim])*
+//			//					GradVel_o_Rho[iDim][jDim]*dV;
+//			//					val_residual[iDim+1] -= Ms_coeff*(PrimVar_Grad_i[iDim+1][jDim]-PrimVar_Grad_i[jDim+1][iDim])*
+//			//					GradInvDensity[jDim]*dV;
+//			//				}
+//			//			}
+//      
+//		}
+//	}
+
 }
 
 CSourceConservative_AdjFlow::CSourceConservative_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
