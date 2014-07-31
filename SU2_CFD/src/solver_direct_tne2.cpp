@@ -6322,8 +6322,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				/*--- Compute heat flux on the wall ---*/
 				dTn = 0.0; dTven = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-          dTn   += Grad_PrimVar[T_INDEX][iDim]*Normal[iDim];
-          dTven += Grad_PrimVar[TVE_INDEX][iDim]*Normal[iDim];
+          dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
+          dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
         }
         
         HeatFlux[iMarker][iVertex] = ThermalCond*dTn + ThermalCond_ve*dTven;
@@ -6855,11 +6855,11 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
                                        unsigned short val_marker) {
   
   bool ionization, implicit, jnk;
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, jVar;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iVertex, iPoint, jPoint;
   double ktr, kve;
-  double Ti, Tvei, Tj, Tvej;
+  double Ti, Tvei, Tj, Tvej, *dTdU, *dTvedU;
   double Twall, dTdn, dTvedn, dTde, dTvede, dij, theta;
   double Area, *Normal, UnitNormal[3];
   double **PrimVarGrad;
@@ -6926,7 +6926,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         theta += UnitNormal[iDim]*UnitNormal[iDim];
       }
       
-      /*--- Initialize viscous residual (and Jacobian if implicit) to zero ---*/
+      /*--- Initialize viscous residual to zero ---*/
 			for (iVar = 0; iVar < nVar; iVar ++)
 				Res_Visc[iVar] = 0.0;
       
@@ -6971,11 +6971,26 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         dTdn   += PrimVarGrad[T_INDEX][iDim]*UnitNormal[iDim];
         dTvedn += PrimVarGrad[TVE_INDEX][iDim]*UnitNormal[iDim];
       }
-
+      
       /*--- Apply to the linear system ---*/
       Res_Visc[nSpecies+nDim]   = (ktr*dTdn+kve*dTvedn)*Area;
       Res_Visc[nSpecies+nDim+1] = kve*dTvedn*Area;
       LinSysRes.SubtractBlock(iPoint, Res_Visc);
+      
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        
+        dTdU   = node[iPoint]->GetdTdU();
+        dTvedU = node[iPoint]->GetdTvedU();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Jacobian_i[nSpecies+nDim][iVar] = -(ktr*theta/dij*dTdU[iVar] +
+                                              kve*theta/dij*dTvedU[iVar])*Area;
+          Jacobian_i[nSpecies+nDim+1][iVar] = -kve*theta/dij*dTvedU[iVar]*Area;
+        }
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      } // implicit
     }
   }
 }
