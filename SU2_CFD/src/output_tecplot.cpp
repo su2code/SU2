@@ -201,7 +201,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
       for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
         Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
-      Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\",\"Heat_Flux\",\"Y_Plus\"";
+      Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\",\"Heat_Flux\",\"Y_Plus\",\"Limiter\"";
     }
     
     if (Kind_Solver == POISSON_EQUATION) {

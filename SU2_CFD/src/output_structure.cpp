@@ -1764,12 +1764,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0, iVar_Eddy = 0, iVar_Sharp = 0;
   unsigned short iVar_GridVel = 0, iVar_PressMach = 0, iVar_Density = 0, iVar_TempLam = 0,
   iVar_Tempv = 0, iVar_EF =0, iVar_Temp = 0, iVar_Mach = 0, iVar_Press = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0;
+  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_FEA = 0, iVar_Extra = 0, iVar_Limiter = 0;
   
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure, factor;
   
-  double *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens;
+  double *Aux_Frict, *Aux_Heat, *Aux_yPlus, *Aux_Sens, *Aux_Lim;
   
   bool grid_movement  = (config->GetGrid_Movement());
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1788,6 +1788,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   double RefAreaCoeff = config->GetRefAreaCoeff();
   double Gamma = config->GetGamma();
   double RefVel2;
+  double tmp;
   
   /*--- Set the non-dimensionalization ---*/
   if (flow) {
@@ -1923,6 +1924,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- Viscous coefficients: Heat flux & y+ ---*/
     iVar_ViscCoeffs = nVar_Total;
     nVar_Total += 2;
+    /*--- Limiter ---*/
+    iVar_Limiter = nVar_Total;
+    nVar_Total++;
   }
   
   if (Kind_Solver == POISSON_EQUATION) {
@@ -2006,10 +2010,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     Aux_Frict = new double [geometry->GetnPointDomain()];
     Aux_Heat  = new double [geometry->GetnPointDomain()];
     Aux_yPlus = new double [geometry->GetnPointDomain()];
+    Aux_Lim   = new double [geometry->GetnPointDomain()];
     
     for(iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
       Aux_Heat[iPoint]  = 0.0;
       Aux_yPlus[iPoint] = 0.0;
+      tmp = 1.0;
+      for (iVar = 0; iVar < solver[TNE2_SOL]->GetnVar(); iVar++) {
+        if (solver[TNE2_SOL]->node[iPoint]->GetLimiter(iVar) < tmp)
+          tmp = solver[TNE2_SOL]->node[iPoint]->GetLimiter(iVar);
+      }
+      Aux_Lim[iPoint] = tmp;
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -2234,7 +2245,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           /*--- Write heat flux ---*/
           Data[jVar][jPoint] = Aux_Heat[iPoint]; jVar++;
           /*--- Write y+ ---*/
-          Data[jVar][jPoint] = Aux_yPlus[iPoint];
+          Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
+          /*--- Write limiter ---*/
+          Data[jVar][jPoint] = Aux_Lim[iPoint];
           break;
           
         case ADJ_EULER:      case ADJ_NAVIER_STOKES:     case ADJ_RANS:
@@ -2344,11 +2357,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Auxiliary vectors for surface coefficients ---*/
   
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
-      (Kind_Solver == TNE2_NAVIER_STOKES)) {
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
     Aux_Frict = new double[geometry->GetnPoint()];
     Aux_Heat  = new double[geometry->GetnPoint()];
     Aux_yPlus = new double[geometry->GetnPoint()];
+  }
+  
+  if (Kind_Solver == TNE2_NAVIER_STOKES) {
+    Aux_Frict = new double[geometry->GetnPoint()];
+    Aux_Heat  = new double[geometry->GetnPoint()];
+    Aux_yPlus = new double[geometry->GetnPoint()];
+    Aux_Lim   = new double[geometry->GetnPoint()];
   }
   
   if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -3069,6 +3088,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       Aux_Heat[iPoint]  = 0.0;
       Aux_yPlus[iPoint] = 0.0;
+      tmp = 1.0;
+      for (iVar = 0; iVar < solver[TNE2_SOL]->GetnVar(); iVar++) {
+        if (solver[TNE2_SOL]->node[iPoint]->GetLimiter(iVar) < tmp)
+          tmp = solver[TNE2_SOL]->node[iPoint]->GetLimiter(iVar);
+      }
+      Aux_Lim[iPoint] = tmp;
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -3318,6 +3343,47 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     if (rank == MASTER_NODE) {
       jPoint = 0;
       iVar = iVar_ViscCoeffs+1;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+          
+          /*--- Get global index, then loop over each variable and store ---*/
+          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
+          jPoint++;
+        }
+        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+    }
+    
+    /*--- Limiter ---*/
+    jPoint = 0;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Check for halos & write only if requested ---*/
+      if (geometry->node[iPoint]->GetDomain() || Wrt_Halo) {
+        
+        /*--- Load buffers with the Mach number variables. ---*/
+        Buffer_Send_Var[jPoint] = Aux_Lim[iPoint];
+        jPoint++;
+      }
+    }
+    
+    /*--- Gather the data on the master node. ---*/
+#ifdef WINDOWS
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    MPI::COMM_WORLD.Barrier();
+    MPI::COMM_WORLD.Gather(Buffer_Send_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           Buffer_Recv_Var, nBuffer_Scalar, MPI::DOUBLE,
+                           MASTER_NODE);
+#endif
+    
+    /*--- The master node unpacks and sorts this variable by global index ---*/
+    if (rank == MASTER_NODE) {
+      jPoint = 0;
+      iVar = iVar_Limiter;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
@@ -3804,7 +3870,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   if (Kind_Solver == TNE2_NAVIER_STOKES) {
     for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
       restart_file << "\t\"DiffusionCoeff_" << iSpecies << "\"";
-    restart_file << "\t\"Laminar_Viscosity\"\t\"ThermConductivity\"\t\"ThermConductivity_ve\"\t\"Heat_Flux\"\t\"Y_Plus\"";
+    restart_file << "\t\"Laminar_Viscosity\"\t\"ThermConductivity\"\t\"ThermConductivity_ve\"\t\"Heat_Flux\"\t\"Y_Plus\"\t\"Limiter\"";
   }
   
   if (Kind_Solver == POISSON_EQUATION) {
