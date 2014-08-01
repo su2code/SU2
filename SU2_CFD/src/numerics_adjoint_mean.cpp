@@ -74,16 +74,18 @@ CUpwRoe_AdjFlow::~CUpwRoe_AdjFlow(void) {
 }
 
 void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                                   double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
+                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
   
 	/*--- Compute the area ---*/
-	area = 0;
+  
+	area = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		area += Normal[iDim]*Normal[iDim];
 	area = sqrt(area);
 	rarea = 1.0 / area;
   
 	/*--- Components of the normal & unit normal vector of the current face ---*/
+  
 	Sx = Normal[0];
 	Sy = Normal[1];
 	Sz = 0.0; if (nDim == 3) Sz = Normal[2];
@@ -92,6 +94,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	nz = Sz * rarea;
   
 	/*--- Flow variable states at point i (left, _l) and j (right, _r)---*/
+  
 	rho_l  = U_i[0]; rho_r  = U_j[0];
 	u_l = U_i[1]/U_i[0]; v_l = U_i[2]/U_i[0]; w_l = 0.0;
 	u_r = U_j[1]/U_j[0]; v_r = U_j[2]/U_j[0]; w_r = 0.0;
@@ -100,14 +103,17 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	h_l = Enthalpy_i; h_r = Enthalpy_j;
   
 	/*--- One-half speed squared ---*/
+  
 	q_l = ONE2 * ((u_l*u_l) + (v_l*v_l) + (w_l*w_l));
 	q_r = ONE2 * ((u_r*u_r) + (v_r*v_r) + (w_r*w_r));
   
 	/*--- Projected velocity ---*/
+  
 	Q_l = (u_l * Sx) + (v_l * Sy) + (w_l * Sz);
 	Q_r = (u_r * Sx) + (v_r * Sy) + (w_r * Sz);
   
 	/*--- Mean adjoint variables ---*/
+  
 	psi1 = ONE2 * (Psi_i[0] + Psi_j[0]);
 	psi2 = ONE2 * (Psi_i[1] + Psi_j[1]);
 	psi3 = ONE2 * (Psi_i[2] + Psi_j[2]);
@@ -115,6 +121,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	psi5 = ONE2 * (Psi_i[nVar-1] + Psi_j[nVar-1]);
   
 	/*--- Left state ---*/
+  
 	l1psi = (Sx * psi2) + (Sy * psi3) + (Sz * psi4) + (Q_l * psi5);
 	l2psi = psi1 + (u_l * psi2) + (v_l * psi3) + (w_l * psi4) + (h_l * psi5);
   
@@ -125,6 +132,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	val_residual_i[nVar-1] = Q_l * psi5 + l1psi * Gamma_Minus_One;
   
 	/*--- Right state ---*/
+  
 	l1psi = (Sx * psi2) + (Sy * psi3) + (Sz * psi4) + (Q_r * psi5);
 	l2psi = psi1 + (u_r * psi2) + (v_r * psi3) + (w_r * psi4) + (h_r * psi5);
   
@@ -136,6 +144,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
   
   
 	/*--- f_{roe} = P^{-T} |lambda| P^T \delta \psi ---*/
+  
 	psi1_l = Psi_i[0];
 	psi2_l = Psi_i[1];
 	psi3_l = Psi_i[2];
@@ -149,6 +158,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	psi5_r = Psi_j[nVar-1];
   
 	/*--- Roe averaging ---*/
+  
 	rrho_l   = 1.0 / rho_l;
 	weight   = sqrt(rho_r * rrho_l);
 	rweight1 = 1.0 / (1.0 + weight);
@@ -172,6 +182,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	c  = sqrt(cc);
   
 	/*--- Contribution to velocity projection due to grid movement ---*/
+  
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -180,6 +191,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	}
   
 	/*--- Eigenvalues from the primal solution ---*/
+  
 	absQ  = fabs(Q);
 	absQp = fabs(Q + c * area);
 	absQm = fabs(Q - c * area);
@@ -195,6 +207,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	l1l2m  = (l2psi - c * l1psi) * absQm;
   
 	/*--- adjoint flux computation in the x,y and z coordinate system ---*/
+  
 	Residual_Roe[0] = ((1.0-alpha)*l2psi - (1.0-alpha)*cc/Gamma_Minus_One*psi5
                      - u*beta_u*(1.0-(nx*nx)) - v*beta_v*(1.0-(ny*ny))
                      - w*beta_w*(1.0-(nz*nz)) + ny*nz*(w*beta_v + v*beta_w)
@@ -220,6 +233,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	}
   
 	/*--- Flux contribution due to grid movement ---*/
+  
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -231,9 +245,11 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 	}
   
 	/*--- Implicit Contributions ---*/
+  
 	if (implicit) {
     
 		/*--- Prepare variables for use in matrix routines ---*/
+    
 		RoeDensity = U_i[0]*sqrt(U_j[0]/U_i[0]);
 		RoeSoundSpeed = c;
 		UnitNormal[0] = nx;  UnitNormal[1] = ny;  if (nDim == 3 ) UnitNormal[2] = nz;
@@ -244,24 +260,30 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
     
 		/*--- Jacobians of the inviscid flux, scaled by
 		 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+    
 		GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, ProjFlux_i);
 		GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, ProjFlux_j);
     
 		/*--- Compute P, inverse P, and store eigenvalues ---*/
+    
 		GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
 		GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
     
 		/*--- Flow eigenvalues ---*/
+    
 		for (iDim = 0; iDim < nDim; iDim++)
 			Lambda[iDim] = absQ;
 		Lambda[nVar-2] = absQp;
 		Lambda[nVar-1] = absQm;
     
 		/*--- Roe's Flux approximation ---*/
+    
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) {
 				Proj_ModJac_Tensor_ij = 0.0;
+        
 				/*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+        
 				for (kVar = 0; kVar < nVar; kVar++)
 					Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 				Proj_ModJac_Tensor[iVar][jVar] = 0.5*Proj_ModJac_Tensor_ij*area;
@@ -270,6 +292,7 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
     
 		/*--- Transpose the matrices and store the Jacobians. Note the negative
 		 sign for the ji and jj Jacobians bc the normal direction is flipped. ---*/
+    
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) {
 				val_Jacobian_ii[jVar][iVar] = ProjFlux_i[iVar][jVar] - Proj_ModJac_Tensor[iVar][jVar];
@@ -280,12 +303,15 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
 		}
     
 		/*--- Jacobian contribution due to grid movement ---*/
+    
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				ProjGridVel += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 			for (iVar = 0; iVar < nVar; iVar++) {
+        
 				/*--- Adjust Jacobian main diagonal ---*/
+        
 				val_Jacobian_ii[iVar][iVar] -= 0.5*ProjGridVel;
 				val_Jacobian_ij[iVar][iVar] -= 0.5*ProjGridVel;
 				val_Jacobian_ji[iVar][iVar] += 0.5*ProjGridVel;
@@ -2346,18 +2372,18 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   
 	if (config->GetKind_Solver() != ADJ_RANS) {
     
-//		double Temperature_Ref = config->GetTemperature_Ref();
-//		double Temperature_Dim = Temperature*Temperature_Ref;
-//    
-//    double S = 0.0;
-//    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
-//    if (config->GetSystemMeasurements() == US) { S = 198.72; }
-//		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
-//    
-//		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-//		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
-//		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-//    
+		double Temperature_Ref = config->GetTemperature_Ref();
+		double Temperature_Dim = Temperature*Temperature_Ref;
+    
+    double S = 0.0;
+    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+    
+		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
+		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+    
 //    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
 //    for (iDim = 0; iDim < nDim; iDim++)
 //      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;

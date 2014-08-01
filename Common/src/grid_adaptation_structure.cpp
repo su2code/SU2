@@ -1702,7 +1702,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		
 	}
 	
-	// Initial edges that are going to be divided
+	/*--- Initial edges that are going to be divided ---*/
+  
 	bool *DivEdge = new bool[geometry->GetnEdge()]; 
 	bool *DivElem = new bool[geometry->GetnElem()];
 	
@@ -1712,7 +1713,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++)
 		DivElem[iElem] = geometry->elem[iElem]->GetDivide();
 	
-	// Set the edge division in the reactangles and in the edge list.
+	/*--- Set the edge division in the reactangles and in the edge list. ---*/
+  
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		if (DivElem[iElem] == true) {
 			if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
@@ -1754,7 +1756,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				
 			}	
 	
-	// We must verify that all the elements have the right edges marked
+	/*--- We must verify that all the elements have the right edges marked ---*/
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
 			for (int iIndex = 0; iIndex < 3; iIndex++) {
@@ -1772,8 +1774,9 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		}
 	}
 	
-	// Only those elements that verify certain rules will be marked for hexa adaptation... 
-	// the others will need a new point in the middle and RectExts
+	/*--- Only those elements that verify certain rules will be marked for hexa adaptation...
+	 the others will need a new point in the middle and RectExts ---*/
+  
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
 			TriangleAdaptCode[iElem] = CheckTriangleCode(TriangleEdgeCode[iElem]);
@@ -1781,14 +1784,16 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
 			RectAdaptCode[iElem] = CheckRectCode(RectEdgeCode[iElem]);
 			
-			// Set the HexaElemCode
+			/*--- Set the RectAdaptCode ---*/
+      
 			if (RectAdaptCode[iElem] == 1) {
 				RectElemCode[iElem][0] = true;
 			}
 		}
 	}
 	
-	// Create the new nodes on the edges, on the faces, and in the element.
+	/*--- Create the new nodes on the edges, on the faces, and in the element. ---*/
+  
 	long *NodeAtEdges = new long[geometry->GetnEdge()];
 	long *NodeAtElem = new long[geometry->GetnElem()];
 	
@@ -1820,7 +1825,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			LinVar_Adapt[iPoint] = new double[nVar];
 	}
 	
-	// Set the value of the variables
+	/*--- Set the value of the variables ---*/
+  
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		for (iVar = 0; iVar < nVar; iVar ++) {
 			if (Restart_Flow) ConsVar_Adapt[iPoint][iVar] = ConsVar_Sol[iPoint][iVar];
@@ -1847,7 +1853,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						NodeAtEdges[TriangleEdgeIndex[iElem][iIndex]] = nPoint_new;
 						TriangleEdgeNode[iElem][iIndex] = nPoint_new;
 						
-						// Compute the coordinates of the new node					
+						/*--- Compute the coordinates of the new node ---*/
+            
 						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1;}
 						if (iIndex == 1) {no_0 = ip_1; no_1 = ip_2;}
 						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_0;}
@@ -1883,7 +1890,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						NodeAtEdges[RectEdgeIndex[iElem][iIndex]] = nPoint_new;
 						RectEdgeNode[iElem][iIndex] = nPoint_new;
 						
-						// Compute the coordinates of the new node					
+						/*--- Compute the coordinates of the new node ---*/
+            
 						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1;}
 						if (iIndex == 1) {no_0 = ip_1; no_1 = ip_2;}
 						if (iIndex == 2) {no_0 = ip_2; no_1 = ip_3;}
@@ -1913,7 +1921,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						NodeAtElem[RectElemIndex[iElem][iIndex]] = nPoint_new;
 						RectElemNode[iElem][iIndex] = nPoint_new;
 						
-						// Compute the coordinates of the new node
+						/*--- Compute the coordinates of the new node ---*/
+            
 						if (iIndex == 0) {no_0 = ip_0; no_1 = ip_1; no_2 = ip_2; no_3 = ip_3;}
 						for (iDim = 0; iDim < geometry->GetnDim(); iDim++) 
 							NewNodeCoord[nPoint_new][iDim] = 0.25*(geometry->node[no_0]->GetCoord(iDim) +
@@ -1936,7 +1945,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	}
 
 	
-	// if Hexa adapt code equals 0, then a semidivision is applied
+	/*--- if Rectangle adapt code equals 0, then a semidivision is applied  ---*/
 	long nSemiDivided = 0;
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
@@ -1945,8 +1954,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		}
 	}
 	
-	// If semidivision, then divide add a new point (hexa), divide the rectangle into triangles, 
-	// and find the right combination, it also create the new node (hexa).
+	/*--- If semidivision, then divide add a new point, divide the rectangle into triangles,
+   and find the right combination, it also create the new node (hexa).  ---*/
 	long nRectExt = nSemiDivided;
 	
 	long *RectExtAdaptCode;
@@ -1984,13 +1993,15 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
 			if (RectAdaptCode[iElem] == 0) {
 				
-				// Write the edge combination on the base.			
+				/*--- Write the edge combination on the base. ---*/
+        
 				ip_0 = geometry->elem[iElem]->GetNode(0);
 				ip_1 = geometry->elem[iElem]->GetNode(1);
 				ip_2 = geometry->elem[iElem]->GetNode(2);
 				ip_3 = geometry->elem[iElem]->GetNode(3);
 				
-				// Create the 1st RectExtid.			
+				/*--- Create the 1st RectExtid. ---*/
+        
 				RectRectExtIndex[iElem][0] = nRectExt; RectExtRectIndex[nRectExt] = iElem; 
 				
 				RectExtNode[nRectExt][0] = ip_0; RectExtNode[nRectExt][1] = ip_1;
@@ -2011,13 +2022,15 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		}
 	}
 	
-	//	Check the kind of RectExt partitioning that should be applied
+	/*--- Check the kind of RectExt partitioning that should be applied ---*/
+  
 	for (int iRectExt = 0; iRectExt < nRectExt; iRectExt ++) {
 		RectExtAdaptCode[iRectExt] = CheckRectExtCode(RectExtEdgeCode[iRectExt]);
 		if (RectExtAdaptCode[iRectExt] == 0) cout << "There is a problem with one RectExt" << endl;
 	}
 	
-	//  Create new structure
+	/*--- Create new structure ---*/
+  
 	nElem_new = geometry->GetnElem();
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
@@ -2051,7 +2064,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 		}
 	}
 	
-	// New points
+	/*--- New points ---*/
+  
 	geo_adapt->node = new CPoint*[nPoint_new];
 	
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
@@ -2060,7 +2074,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	for (iPoint = geometry->GetnPoint(); iPoint < nPoint_new; iPoint++)
 		geo_adapt->node[iPoint] = new CPoint(NewNodeCoord[iPoint][0], NewNodeCoord[iPoint][1], iPoint, config);
 	
-	// New elements
+	/*--- New elements ---*/
+  
 	geo_adapt->elem = new CPrimalGrid*[nElem_new];
 	
 	unsigned long iElemNew = 0;
@@ -2093,15 +2108,18 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) {
 			
-			// Triangle elements...
+			/*--- Triangle elements... ---*/
+      
 			if (TriangleAdaptCode[iElem] > 0) {
 				
-				// First the corners
+				/*--- First the corners ---*/
+        
 				nodes[0] = geometry->elem[iElem]->GetNode(0);		
 				nodes[1] = geometry->elem[iElem]->GetNode(1); 
 				nodes[2] = geometry->elem[iElem]->GetNode(2);
 				
-				// Next the points that correspond to the broken edges.
+				/*--- Next the points that correspond to the broken edges. ---*/
+        
 				nodes[3] = TriangleEdgeNode[iElem][0]; 
 				nodes[4] = TriangleEdgeNode[iElem][1];
 				nodes[5] = TriangleEdgeNode[iElem][2];
@@ -2109,7 +2127,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				TriangleDivision(TriangleAdaptCode[iElem], nodes, NULL, Division, &nPart);
 				for (long iPart = 0; iPart < nPart; iPart++) {
 					
-					// Triangle case
+					/*--- Triangle case ---*/
+          
 					if (Division[iPart][0] == 4) {
 						geo_adapt->elem[iElemNew] = new CTriangle(Division[iPart][1], 
 																											Division[iPart][2], 
@@ -2117,7 +2136,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						iElemNew++;
 					}
 					
-					// Rectangle case
+					/*--- Rectangle case ---*/
+          
 					if (Division[iPart][0] == 5) {
 						geo_adapt->elem[iElemNew] = new CRectangle(Division[iPart][1], 
 																											 Division[iPart][2], 
@@ -2129,18 +2149,23 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			}
 		}
 		if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
-			// Rect elements...
+      
+			/*--- Rect elements... ---*/
+      
 			if (RectAdaptCode[iElem] > 0) {
 				
-				// First the corners
+				/*--- First the corners ---*/
+        
 				nodes[0] = geometry->elem[iElem]->GetNode(0);		nodes[1] = geometry->elem[iElem]->GetNode(1);
 				nodes[2] = geometry->elem[iElem]->GetNode(2);		nodes[3] = geometry->elem[iElem]->GetNode(3);
 				
-				// Next the points that correspond to the broken edges.
+				/*--- Next the points that correspond to the broken edges. ---*/
+        
 				nodes[4] = RectEdgeNode[iElem][0]; nodes[5] = RectEdgeNode[iElem][1];
 				nodes[6] = RectEdgeNode[iElem][2]; nodes[7] = RectEdgeNode[iElem][3];
 				
-				// Next the points that correspond to the element.
+				/*--- Next the points that correspond to the element. ---*/
+        
 				nodes[8] = RectElemNode[iElem][0];
 				
 				RectDivision(RectAdaptCode[iElem], nodes, Division, &nPart);
@@ -2153,17 +2178,20 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				}
 			}
 			
-			// RectExt elements...
+			/*--- RectExt elements... ---*/
+      
 			if (RectAdaptCode[iElem] == 0) {
 				long iRectExt = RectRectExtIndex[iElem][0];
 				
-				// First the corners
+				/*--- First the corners ---*/
+        
 				nodes[0] = RectExtNode[iRectExt][0];	
 				nodes[1] = RectExtNode[iRectExt][1];	
 				nodes[2] = RectExtNode[iRectExt][2];	
 				nodes[3] = RectExtNode[iRectExt][3];	
 				
-				// Next the points that correspond to the broken edges.
+				/*--- Next the points that correspond to the broken edges. ---*/
+        
 				nodes[4] = RectExtEdgeNode[iRectExt][0];
 				nodes[5] = RectExtEdgeNode[iRectExt][1];
 				nodes[6] = RectExtEdgeNode[iRectExt][2];
@@ -2172,7 +2200,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				RectExtDivision(RectExtAdaptCode[iRectExt], nodes, Division, &nPart);
 				for (long iPart = 0; iPart < nPart; iPart++) {
 					
-					// Triangle case
+					/*--- Triangle case ---*/
+          
 					if (Division[iPart][0] == 4) {
 						geo_adapt->elem[iElemNew] = new CTriangle(Division[iPart][1], 
 																											Division[iPart][2], 
@@ -2180,7 +2209,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						iElemNew++;
 					}
 					
-					// Rectangle case
+					/*--- Rectangle case ---*/
+          
 					if (Division[iPart][0] == 5) {
 						geo_adapt->elem[iElemNew] = new CRectangle(Division[iPart][1], 
 																											 Division[iPart][2], 
@@ -2198,7 +2228,8 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	geo_adapt->SetnPointDomain(nPoint_new);
 	geo_adapt->SetnDim(nDim);
 	
-	//  Create boundary structure
+	/*--- Create boundary structure ---*/
+  
 	geo_adapt->SetnMarker(geometry->GetnMarker());
 	geo_adapt->nElem_Bound = new unsigned long [geometry->GetnMarker()];
 	geo_adapt->Tag_to_Marker = new string [MAX_NUMBER_MARKER];		
@@ -2223,8 +2254,40 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			ip_0 = geometry->bound[iMarker][iVertex]->GetNode(0); geo_adapt->node[ip_0]->SetBoundary(geometry->GetnMarker());
 			ip_1 = geometry->bound[iMarker][iVertex]->GetNode(1); geo_adapt->node[ip_1]->SetBoundary(geometry->GetnMarker());
 			long ip_01 = NodeAtEdges[geometry->FindEdge(ip_0,ip_1)];
-			
+      
 			if (ip_01 != -1) {
+        
+        
+//        if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+//          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+//          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)) {
+//          
+//          /*--- Recompute the coordinates using the NACA 4Digits analytical definition ---*/
+//          
+//          double Ya = 0.0 / 100.0; /*--- Maximum camber as a fraction of the chord
+//                                    (100 m is the first of the four digits) ---*/
+//          double Xa = 0.0 / 10.0; /*--- Location of maximum camber as a fraction of
+//                                   the chord (10 p is the second digit in the NACA xxxx description) ---*/
+//          double t = 12.0 / 100.0; /*--- Maximum thickness as a fraction of the
+//                                    chord (so 100 t gives the last two digits in
+//                                    the NACA 4-digit denomination) ---*/
+//          
+//          double *Coord = geo_adapt->node[ip_01]->GetCoord();
+//          double *Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//          
+//          double Ycurv = 0.0;
+//          if  (Coord[0] < Xa) Ycurv = (2.0*Xa*Coord[0]-pow(Coord[0],2.0))*(Ya/pow(Xa,2.0));
+//          else Ycurv = ((1.0-2.0*Xa)+2.0*Xa*Coord[0]-pow(Coord[0],2.0))*(Ya/pow((1.0-Xa), 2.0));
+//          
+//          double Yesp = 0.0;
+//          Yesp = t*(1.4845*sqrt(Coord[0])-0.6300*Coord[0]-1.7580*pow(Coord[0],2.0)+
+//                    1.4215*pow(Coord[0],3.0)-0.518*pow(Coord[0],4.0));
+//          
+//          if (Normal[1] > 0) Coord[1] = (Ycurv + Yesp);
+//          if (Normal[1] < 0) Coord[1] = (Ycurv - Yesp);
+//          
+//        }
+        
 				geo_adapt->node[ip_01]->SetBoundary(geometry->GetnMarker());
 				geo_adapt->bound[iMarker][nNewBCcv] = new CLine(ip_0, ip_01, 2);
 				nNewBCcv++;
@@ -3658,19 +3721,4 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	
 	cout << "Number of elements to adapt: " << nElem_real << endl;
 	delete [] Sensor;
-}
-
-void CGridAdaptation::WriteAdaptSensor(CGeometry *geometry, char mesh_filename[MAX_STRING_SIZE])
-{
-	unsigned long iPoint;
-	
-	ofstream para_file;
-	para_file.precision(15);
-	para_file.open(mesh_filename, ios::out | ios::app);
-		
-	para_file << "POINT_DATA " << geometry->GetnPoint() << endl;
-	para_file << "SCALARS Adapt_Sensor float 1" << endl;
-	para_file << "LOOKUP_TABLE default" << endl;
-	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		para_file << scientific << Index[iPoint] << endl;
 }
