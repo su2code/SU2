@@ -3326,23 +3326,24 @@ void CTNE2EulerSolver::SetPrimVar_Gradient(CConfig *config) {
   double **GradU, **GradV;
   
   /*--- Allocate ---*/
-  GradV = new double*[nPrimVarGrad];
-  for (iVar =0; iVar < nPrimVarGrad; iVar++)
-    GradV[iVar] = new double[nDim];
+//  GradV = new double*[nPrimVarGrad];
+//  for (iVar =0; iVar < nPrimVarGrad; iVar++)
+//    GradV[iVar] = new double[nDim];
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     U = node[iPoint]->GetSolution();
     V = node[iPoint]->GetPrimVar();
     GradU = node[iPoint]->GetGradient();
+    GradV = node[iPoint]->GetGradient_Primitive();
     
     node[iPoint]->GradCons2GradPrimVar(config, U, V, GradU, GradV);
   }
   
   
-  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    delete [] GradV[iVar];
-  delete [] GradV;
+//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+//    delete [] GradV[iVar];
+//  delete [] GradV;
 }
 
 
@@ -5433,34 +5434,18 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	/*--- Compute gradient of the primitive variables ---*/
   switch (config->GetKind_Gradient_Method()) {
     case GREEN_GAUSS:
-//      SetPrimVar_Gradient_GG(geometry, config);
+      SetPrimVar_Gradient_GG(geometry, config);
       SetSolution_Gradient_GG(geometry, config);
       break;
     case WEIGHTED_LEAST_SQUARES:
-//      SetPrimVar_Gradient_LS(geometry, config);
+      SetPrimVar_Gradient_LS(geometry, config);
       SetSolution_Gradient_LS(geometry, config);
       break;
   }
   
-  SetPrimVar_Gradient(config);
-  
-//  cout.precision(5);
-//  
-//  unsigned short iVar;
-//  cout << "Analytical: " << endl;
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-//    cout << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << endl;
-//  cin.get();
-//
-//  SetPrimVar_Gradient_LS(geometry, config);
-//////  unsigned short iVar;
-//  cout << "LS: " << endl;
-//  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-//    cout << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << "\t" << node[15]->GetGradient_Primitive(iVar, 0) << endl;
-//  cin.get();
+//  SetPrimVar_Gradient(config);
   
   if ((second_order) && (iMesh == MESH_0) && limiter) {
-//    SetPrimVar_Limiter(geometry, config);
     SetSolution_Limiter(geometry, config);
   }
   
@@ -6305,19 +6290,6 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 				/*--- Compute y+ and non-dimensional velocity ---*/
 				FrictionVel = sqrt(fabs(WallShearStress)/Density);
         YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
-//        cout << "Y+: " << YPlus[iMarker][iVertex] << endl;
-//        cout << "WallDistMod: " << WallDistMod << endl;
-//        cout << "FrictionVel: " << FrictionVel << endl;
-//        cout << "Wall SS: " << WallShearStress << endl;
-//        cout << "TauTangent: " << TauTangent[0] << "\t" << TauTangent[1] << endl;
-//        cout << "Tau: " << endl;
-//        cout << "Visc: " << Viscosity << endl;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          for (jDim = 0; jDim < nDim; jDim++)
-//            cout << Tau[iDim][jDim] << "\t";
-//          cout << endl;
-//        }
-//        cin.get();
         
 				/*--- Compute heat flux on the wall ---*/
 				dTn = 0.0; dTven = 0.0;
@@ -6325,6 +6297,20 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           dTn   += Grad_PrimVar[T_INDEX][iDim]*UnitNormal[iDim];
           dTven += Grad_PrimVar[TVE_INDEX][iDim]*UnitNormal[iDim];
         }
+        
+//        cout << "S: " << node[iPoint]->GetGradient()[0][0] << endl;
+//        cout << "U: " << node[iPoint]->GetSolution(0) << endl;
+//        unsigned short iVar;
+//        for (iVar = 0; iVar < nPrimVar; iVar++) {
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            cout << Grad_PrimVar[iVar][iDim] << "\t";
+//          cout << endl;
+//        }
+//        cin.get();
+//        if (Grad_PrimVar[T_INDEX][0] != 0) {
+//          cout << Grad_PrimVar[T_INDEX][0] << "\t" << Grad_PrimVar[T_INDEX][1] << endl;
+//          cin.get();
+//        }
         
         HeatFlux[iMarker][iVertex] = ThermalCond*dTn + ThermalCond_ve*dTven;
         Heat_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
@@ -6874,7 +6860,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   }
   
   /*--- Define 'proportional control' constant ---*/
-  C = 10;
+  C = 5;
   
 	/*--- Identify the boundary ---*/
 	string Marker_Tag = config->GetMarker_All_Tag(val_marker);

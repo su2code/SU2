@@ -3414,6 +3414,22 @@ public:
 	double GetLimiter_Primitive(unsigned short val_var);
   
   /*!
+	 * \brief Get the conserved variable limiter
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+  double *GetLimiter(void);
+  
+  /*!
+	 * \brief Get the conserved variable limiter
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_dim - Index of the dimension.
+	 * \return Value of the primitive variables gradient.
+	 */
+  double GetLimiter(unsigned short val_var);
+  
+  /*!
 	 * \brief Set the value of the limiter.
 	 */
   void SetLimiter_Primitive(unsigned short val_var, double val_value);

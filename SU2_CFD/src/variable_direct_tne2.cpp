@@ -29,6 +29,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
 	Primitive          = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive  = NULL;
+  Limiter            = NULL;
   dPdU   = NULL;
   dTdU   = NULL;
   dTvedU = NULL;
@@ -71,6 +72,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_ndim,
 	Primitive          = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive  = NULL;
+  Limiter            = NULL;
   dPdU   = NULL;
   dTdU   = NULL;
   dTvedU = NULL;
@@ -138,6 +140,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
 	Primitive          = NULL;
 	Gradient_Primitive = NULL;
 	Limiter_Primitive  = NULL;
+  Limiter            = NULL;
   
   /*--- Allocate & initialize residual vectors ---*/
 	Res_TruncError = new double [nVar];
@@ -153,16 +156,10 @@ CTNE2EulerVariable::CTNE2EulerVariable(double val_pressure,
 		Residual_Old = new double [nVar];
 	}
   
-  /*--- If using limiters, allocate the arrays ---*/
-  if ((config->GetKind_ConvNumScheme_TNE2() == SPACE_UPWIND) &&
-			(config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER)) {
-		Limiter      = new double [nVar];
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Limiter[iVar]      = 0.0;
-		}
-	}
   
   /*--- Allocate & initialize primitive variable & gradient arrays ---*/
+  Limiter = new double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Limiter[iVar] = 0.0;
   Primitive         = new double [nPrimVar];
   Limiter_Primitive = new double [nPrimVarGrad];
   Solution_Max      = new double [nPrimVarGrad];
@@ -323,6 +320,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
 	Primitive          = NULL;
 	Gradient_Primitive = NULL;
   Limiter_Primitive  = NULL;
+  Limiter            = NULL;
   
   /*--- Allocate & initialize residual vectors ---*/
 	Res_TruncError = new double [nVar];
@@ -339,9 +337,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(double *val_solution,
 	}
   
   /*--- If using limiters, allocate the arrays ---*/
+  Limiter = new double [nVar];
   if ((config->GetKind_ConvNumScheme_TNE2() == SPACE_UPWIND) &&
 			(config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER)) {
-		Limiter           = new double [nVar];
     Limiter_Primitive = new double [nPrimVarGrad];
 		Solution_Max      = new double [nPrimVarGrad];
 		Solution_Min      = new double [nPrimVarGrad];
@@ -393,6 +391,7 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
+  if (Limiter           != NULL) delete [] Limiter;
   
   if (Res_TruncError != NULL) delete [] Res_TruncError;
   if (Residual_Old   != NULL) delete [] Residual_Old;

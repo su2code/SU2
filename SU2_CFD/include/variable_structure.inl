@@ -782,6 +782,10 @@ inline double *CTNE2EulerVariable::GetLimiter_Primitive(void) { return Limiter_P
 
 inline double CTNE2EulerVariable::GetLimiter_Primitive(unsigned short val_var) { return Limiter_Primitive[val_var]; }
 
+inline double *CTNE2EulerVariable::GetLimiter(void) { return Limiter; }
+
+inline double CTNE2EulerVariable::GetLimiter(unsigned short val_var) { return Limiter[val_var]; }
+
 inline void CTNE2EulerVariable::SetLimiter_Primitive(unsigned short val_var, double val_value) { Limiter_Primitive[val_var] = val_value; }
 
 inline void CTNE2EulerVariable::SetLimiter(unsigned short val_var, double val_value) { Limiter[val_var] = val_value; }
