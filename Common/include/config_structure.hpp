@@ -909,7 +909,7 @@ public:
 	/*!
 	 * \brief Constructor of the class which reads the input file.
 	 */
-	CConfig(char case_filename[MAX_STRING_SIZE]);
+	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
 
 	/*!
 	 * \brief Destructor of the class.
