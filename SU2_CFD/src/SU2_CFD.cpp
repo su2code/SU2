@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   /*--- Read the name and format of the input mesh file ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name);
+  config = new CConfig(config_file_name, SU2_CFD);
   
   /*--- Get the number of zones and dimensions from the numerical grid
    (required for variables allocation) ---*/

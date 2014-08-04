@@ -50,7 +50,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
 }
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE]) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
   /*--- Initialize pointers to Null---*/
   SetPointersNull();
 
@@ -60,6 +60,9 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE]) {
   /*--- Parsing the config file  ---*/
   SetParsing(case_filename);
 
+  /*--- Configuration file postprocessing ---*/
+  SetPostprocessing(val_software, 1, 1);
+  
 }
 
 void CConfig::SetPointersNull(void){
