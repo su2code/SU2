@@ -492,7 +492,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, double* rhs)
   short iVar;
   double weight, aux;
   
-  double *Block = GetBlock(block_i, block_i);
+  double *Block = GetBlock_ILUMatrix(block_i, block_i);
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
@@ -1224,9 +1224,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   unsigned long iPoint, jPoint, kPoint, iVar, jVar, kVar, index, index_;
   double **invBlock_jj, *Block_ij, *Block_ik, **weight, *Block_jk, **Block;
   double **invBlock_nn, **invBlock_ii;
+  double *aux, *aux_;
 
   
-  /*--- Copy the jacobian matrix to the ILU matrix ---*/
+  /*--- Copy the jacobian matrix to the ILU matrix, Copy vec to prod ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
@@ -1234,11 +1235,6 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
       Block_ij = GetBlock(iPoint, jPoint);
       SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
     }
-  }
-  
-  /*--- Copy vec to prod ---*/
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
@@ -1246,8 +1242,8 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- nVar x nVar matrix for intermediate computations ---*/
   
-  double *aux = new double [nVar];
-  double *aux_ = new double [nVar];
+  aux = new double [nVar];
+  aux_ = new double [nVar];
   invBlock_jj = new double* [nVar];
   weight = new double* [nVar];
   Block = new double* [nVar];
@@ -1284,10 +1280,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
         
         for (kPoint = jPoint; kPoint < nPoint; kPoint++){
 
-          Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
           Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
+          Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
           
-          if ((Block_jk != NULL) && (Block_ik != NULL)) {
+          if ((Block_ik != NULL) && (Block_jk != NULL)) {
             
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
@@ -1319,16 +1315,6 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
       
     }
   }
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] invBlock_jj[iVar];
-    delete [] weight[iVar];
-    delete [] Block[iVar];
-  }
-  delete [] invBlock_jj;
-  delete [] weight;
-  delete [] Block;
-  
 
   /*--- Backwards substitution ---*/
 
@@ -1355,7 +1341,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
         for (iVar = 0; iVar < nVar; iVar++) {
           aux_[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++) {
-            aux_[iVar] += Block_ij[iVar*nVar+jVar] * prod[jPoint*nVar+iVar];
+            aux_[iVar] += Block_ij[iVar*nVar+jVar] * prod[jPoint*nVar+jVar];
           }
         }
         
@@ -1372,18 +1358,31 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     for (iVar = 0; iVar < nVar; iVar++) {
       aux_[iVar] = 0.0;
       for (jVar = 0; jVar < nVar; jVar++) {
-        aux_[iVar] += invBlock_ii[iVar][jVar] * (prod[iPoint*nVar+iVar]-aux[iVar]);
+        aux_[iVar] += invBlock_ii[iVar][jVar] * (prod[iPoint*nVar+jVar]-aux[jVar]);
       }
     }
 
     for (iVar = 0; iVar < nVar; iVar++) {
       prod[iPoint*nVar+iVar] = aux_[iVar];
-      cout << prod[iPoint*nVar+iVar] << endl;
     }
     
     if (iPoint == 0) break;
     
   }
+  
+  
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] invBlock_jj[iVar];
+    delete [] weight[iVar];
+    delete [] Block[iVar];
+  }
+  delete [] invBlock_jj;
+  delete [] weight;
+  delete [] Block;
+
+  
+  
   
 }
 
