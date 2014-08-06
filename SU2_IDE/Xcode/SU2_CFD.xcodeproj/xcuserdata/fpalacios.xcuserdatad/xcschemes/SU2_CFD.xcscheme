@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/NACA0012_Re1000"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/euler/naca0012"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "lam_NACA0012.cfg"
+            argument = "inv_NACA0012.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
