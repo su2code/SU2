@@ -191,20 +191,12 @@ public:
 	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
   
 	/*!
-	 * \brief Adds the specified block to the sparse matrix.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to add to A(i,j).
-	 */
-	void AddBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
-  
-	/*!
 	 * \brief Subtracts the specified block to the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] **val_block - Block to subtract to A(i,j).
 	 */
-	void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
+	void SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block);
   
 	/*!
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
@@ -214,6 +206,24 @@ public:
 	 */
 	void AddVal2Diag(unsigned long block_i, double val_matrix);
   
+  /*!
+	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
+	 *        of the matrix-by-blocks structure.
+	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
+	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+   * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+	 */
+  void MatrixVectorProduct(double *matrix, double *vector, double *product);
+  
+	/*!
+	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
+	 *        of the matrix-by-blocks structure.
+	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
+	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+   * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+	 */
+  void MatrixMatrixProduct(double *matrix_a, double *matrix_b, double *product);
+
 	/*!
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
 	 *        of the matrix-by-blocks structure.
@@ -369,7 +379,7 @@ public:
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[out] invBlock - Inverse block.
 	 */
-	void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, double **invBlock);
+	void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, double *invBlock);
  
 	/*!
 	 * \brief Inverse a block.
