@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/cont_adj_rans/rae2822"
+      customWorkingDirectory = "/Users/fpalacios/NACA0012_Re1000"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "turb_SA_RAE2822.cfg"
+            argument = "lam_NACA0012.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

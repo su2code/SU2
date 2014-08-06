@@ -486,6 +486,49 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
   
 }
 
+void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, double* rhs) {
+  
+  unsigned short jVar, kVar;
+  short iVar;
+  double weight, aux;
+  
+  double *Block = GetBlock(block_i, block_i);
+  
+  /*--- Copy block matrix, note that the original matrix
+   is modified by the algorithm---*/
+  for (kVar = 0; kVar < nVar; kVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      block[kVar*nVar+jVar] = Block[kVar*nVar+jVar];
+  
+  /*--- Gauss elimination ---*/
+  if (nVar == 1) {
+    rhs[0] /= block[0];
+  }
+  else {
+    
+    /*--- Transform system in Upper Matrix ---*/
+    for (iVar = 1; iVar < (short)nVar; iVar++) {
+      for (jVar = 0; jVar < iVar; jVar++) {
+        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+        for (kVar = jVar; kVar < nVar; kVar++)
+          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+        rhs[iVar] -= weight*rhs[jVar];
+      }
+    }
+    
+    /*--- Backwards substitution ---*/
+    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
+    for (iVar = nVar-2; iVar >= 0; iVar--) {
+      aux = 0.0;
+      for (jVar = iVar+1; jVar < nVar; jVar++)
+        aux += block[iVar*nVar+jVar]*rhs[jVar];
+      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
+      if (iVar == 0) break;
+    }
+  }
+  
+}
+
 void CSysMatrix::Gauss_Elimination(double* Block, double* rhs) {
   
   unsigned short jVar, kVar;
@@ -810,7 +853,26 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, double **invBlock) 
     aux_vector[iVar] = 1.0;
     
     /*--- Compute the i-th column of the inverse matrix ---*/
+    
     Gauss_Elimination(block_i, aux_vector);
+    for (jVar = 0; jVar < nVar; jVar++)
+      invBlock[jVar][iVar] = aux_vector[jVar];
+  }
+  
+}
+
+void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, double **invBlock) {
+  
+  unsigned long iVar, jVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++)
+      aux_vector[jVar] = 0.0;
+    aux_vector[iVar] = 1.0;
+    
+    /*--- Compute the i-th column of the inverse matrix ---*/
+    
+    Gauss_Elimination_ILUMatrix(block_i, aux_vector);
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar][iVar] = aux_vector[jVar];
   }
@@ -847,94 +909,100 @@ void CSysMatrix::BuildJacobiPreconditioner(void) {
 
 void CSysMatrix::BuildILUPreconditioner(void) {
   
-  unsigned long iPoint, jPoint, kPoint, iVar, jVar, kVar;
-  double **invBlock_jj, *Block_ij, **weight, *Block_jk, *Block_ik, **Block;
-
-  /*--- Copy the jacobian matrix to the ILU matrix ---*/
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (jPoint = 0; jPoint < nPoint; jPoint++) {
-      Block_ij = GetBlock(iPoint, jPoint);
-      if (Block_ij != NULL) {
-        SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
-      }
-    }
-  }
-  
-  /*--- nVar x nVar matrix for intermediate computations ---*/
-  
-  invBlock_jj = new double* [nVar];
-  weight = new double* [nVar];
-  Block = new double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    invBlock_jj[iVar] = new double [nVar];
-    weight[iVar] = new double [nVar];
-    Block[iVar] = new double [nVar];
-  }
-  
-  /*--- Compute ILU Preconditioner ---*/
-  
-  for (iPoint = 1; iPoint < nPoint; iPoint++) {
-    
-    for (jPoint = 0; jPoint < iPoint; jPoint++) {
-      
-      Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-
-      /*--- Check the index ---*/
-       
-      if (Block_ij != NULL) {
-        
-        /*--- Compute the inverse of the diagonal block ---*/
-        
-        InverseDiagonalBlock(jPoint, invBlock_jj);
-        
-        /*--- Matrix matrix multiplication ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            weight[iVar][jVar] = 0.0;
-            for (kVar = 0; kVar < nVar; kVar++) {
-              weight[iVar][jVar] += Block_ij[iVar*nVar+kVar] * invBlock_jj[kVar][jVar];
-            }
-          }
-        }
-        
-        for (kPoint = jPoint; kPoint < nPoint; kPoint++) {
-          
-          Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
-          Block_ik = GetBlock_ILUMatrix(jPoint, kPoint);
-
-          if ((Block_jk != NULL) && (Block_ik != NULL)) {
-            
-            /*--- Matrix matrix multiplication ---*/
-
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (jVar = 0; jVar < nVar; jVar++) {
-                Block[iVar][jVar] = 0.0;
-                for (kVar = 0; kVar < nVar; kVar++) {
-                  Block[iVar][jVar] += weight[iVar][kVar]*Block_jk[kVar*nVar+jVar];
-                }
-              }
-            }
-            
-            SubtractBlock_ILUMatrix(iPoint, kPoint, Block);
-          }
-          
-        }
-        
-      }
-      
-    }
-  }
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] invBlock_jj[iVar];
-    delete [] weight[iVar];
-    delete [] Block[iVar];
-  }
-  delete [] invBlock_jj;
-  delete [] weight;
-  delete [] Block;
+//  unsigned long iPoint, jPoint, kPoint, iVar, jVar, kVar, index, index_;
+//  double **invBlock_jj, *Block_ij, **weight, *Block_jk, **Block;
+//
+//  /*--- Copy the jacobian matrix to the ILU matrix ---*/
+//  
+//  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+//    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+//      jPoint = col_ind[index];
+//      Block_ij = GetBlock(iPoint, jPoint);
+//      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+//    }
+//  }
+//  
+//  /*--- nVar x nVar matrix for intermediate computations ---*/
+//  
+//  invBlock_jj = new double* [nVar];
+//  weight = new double* [nVar];
+//  Block = new double* [nVar];
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    invBlock_jj[iVar] = new double [nVar];
+//    weight[iVar] = new double [nVar];
+//    Block[iVar] = new double [nVar];
+//  }
+//  
+//  /*--- Compute ILU Preconditioner ---*/
+//  
+//  for (iPoint = 1; iPoint < nPoint; iPoint++) {
+//    
+//    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+//
+//      jPoint = col_ind[index];
+//      
+//      /*--- Check the index ---*/
+//      
+//      if (jPoint < iPoint) {
+//        
+//        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+//
+//        /*--- Compute the inverse of the diagonal block ---*/
+//        
+//        InverseDiagonalBlock(jPoint, invBlock_jj);
+//        
+//        /*--- Matrix matrix multiplication ---*/
+//        
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          for (jVar = 0; jVar < nVar; jVar++) {
+//            weight[iVar][jVar] = 0.0;
+//            for (kVar = 0; kVar < nVar; kVar++) {
+//              weight[iVar][jVar] += Block_ij[iVar*nVar+kVar] * invBlock_jj[kVar][jVar];
+//            }
+//          }
+//        }
+//        
+//        for (index_ = row_ptr[iPoint]; index_ < row_ptr[iPoint+1]; index_++) {
+//          
+//          kPoint = col_ind[index_];
+//
+//          if (kPoint >= jPoint) {
+//            
+//            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
+//            
+//            if (Block_jk != NULL) {
+//              
+//              /*--- Matrix matrix multiplication ---*/
+//              
+//              for (iVar = 0; iVar < nVar; iVar++) {
+//                for (jVar = 0; jVar < nVar; jVar++) {
+//                  Block[iVar][jVar] = 0.0;
+//                  for (kVar = 0; kVar < nVar; kVar++) {
+//                    Block[iVar][jVar] += weight[iVar][kVar]*Block_jk[kVar*nVar+jVar];
+//                  }
+//                }
+//              }
+//            }
+//            
+//            SubtractBlock_ILUMatrix(iPoint, kPoint, Block);
+//            
+//          }
+//          
+//        }
+//        
+//      }
+//      
+//    }
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    delete [] invBlock_jj[iVar];
+//    delete [] weight[iVar];
+//    delete [] Block[iVar];
+//  }
+//  delete [] invBlock_jj;
+//  delete [] weight;
+//  delete [] Block;
   
 }
 
@@ -1153,14 +1221,168 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 
 void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
-  unsigned long iPoint, iVar, jVar;
+  unsigned long iPoint, jPoint, kPoint, iVar, jVar, kVar, index, index_;
+  double **invBlock_jj, *Block_ij, *Block_ik, **weight, *Block_jk, **Block;
+  double **invBlock_nn, **invBlock_ii;
+
+  
+  /*--- Copy the jacobian matrix to the ILU matrix ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
+      jPoint = col_ind[index];
+      Block_ij = GetBlock(iPoint, jPoint);
+      SetBlock_ILUMatrix(iPoint, jPoint, Block_ij);
+    }
+  }
+  
+  /*--- Copy vec to prod ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      prod[(const unsigned int)(iPoint*nVar+iVar)] = 0.0;
-      for (jVar = 0; jVar < nVar; jVar++)
-        prod[(const unsigned int)(iPoint*nVar+iVar)] += invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
+      prod[iPoint*nVar+iVar] = vec[iPoint*nVar+iVar];
     }
+  }
+  
+  /*--- nVar x nVar matrix for intermediate computations ---*/
+  
+  double *aux = new double [nVar];
+  double *aux_ = new double [nVar];
+  invBlock_jj = new double* [nVar];
+  weight = new double* [nVar];
+  Block = new double* [nVar];
+  invBlock_nn = new double* [nVar];
+  invBlock_ii = new double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    invBlock_jj[iVar] = new double [nVar];
+    weight[iVar] = new double [nVar];
+    Block[iVar] = new double [nVar];
+    invBlock_nn[iVar] = new double [nVar];
+    invBlock_ii[iVar] = new double [nVar];
+  }
+  
+  /*--- Transform system in Upper Matrix ---*/
+  
+  for (iPoint = 1; iPoint < nPoint; iPoint++) {
+    
+    for (jPoint = 0; jPoint < iPoint; jPoint++) {
+      
+      Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+      
+      if (Block_ij != NULL) {
+        
+        InverseDiagonalBlock_ILUMatrix(jPoint, invBlock_jj);
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            weight[iVar][jVar] = 0.0;
+            for (kVar = 0; kVar < nVar; kVar++) {
+              weight[iVar][jVar] += Block_ij[iVar*nVar+kVar] * invBlock_jj[kVar][jVar];
+            }
+          }
+        }
+        
+        for (kPoint = jPoint; kPoint < nPoint; kPoint++){
+
+          Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
+          Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
+          
+          if ((Block_jk != NULL) && (Block_ik != NULL)) {
+            
+              for (iVar = 0; iVar < nVar; iVar++) {
+                for (jVar = 0; jVar < nVar; jVar++) {
+                  Block[iVar][jVar] = 0.0;
+                  for (kVar = 0; kVar < nVar; kVar++) {
+                    Block[iVar][jVar] += weight[iVar][kVar]*Block_jk[kVar*nVar+jVar];
+                  }
+                }
+              }
+            
+            SubtractBlock_ILUMatrix(iPoint, kPoint, Block);
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              aux[iVar] = 0.0;
+              for (jVar = 0; jVar < nVar; jVar++) {
+                aux[iVar] += weight[iVar][jVar] * prod[iPoint*nVar+jVar];
+              }
+            }
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              prod[iPoint*nVar+iVar] -= aux[iVar];
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+  }
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] invBlock_jj[iVar];
+    delete [] weight[iVar];
+    delete [] Block[iVar];
+  }
+  delete [] invBlock_jj;
+  delete [] weight;
+  delete [] Block;
+  
+
+  /*--- Backwards substitution ---*/
+
+  InverseDiagonalBlock_ILUMatrix((nPoint-1), invBlock_nn);
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    prod[ (nPoint-1)*nVar + iVar] = 0.0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      prod[ (nPoint-1)*nVar + iVar] += invBlock_nn[iVar][jVar] * prod[(nPoint-1)*nVar+jVar];
+    }
+  }
+  
+  
+  for (iPoint = nPoint-2; iPoint >= 0; iPoint--) {
+    
+    for (iVar = 0; iVar < nVar; iVar++) aux[iVar] = 0.0;
+    
+    for (jPoint = iPoint+1; jPoint < nPoint; jPoint++) {
+      
+      Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+      
+      if (Block_ij != NULL) {
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          aux_[iVar] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++) {
+            aux_[iVar] += Block_ij[iVar*nVar+jVar] * prod[jPoint*nVar+iVar];
+          }
+        }
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          aux[iVar] += aux_[iVar];
+        }
+        
+      }
+      
+    }
+    
+    InverseDiagonalBlock_ILUMatrix(iPoint, invBlock_ii);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      aux_[iVar] = 0.0;
+      for (jVar = 0; jVar < nVar; jVar++) {
+        aux_[iVar] += invBlock_ii[iVar][jVar] * (prod[iPoint*nVar+iVar]-aux[iVar]);
+      }
+    }
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      prod[iPoint*nVar+iVar] = aux_[iVar];
+      cout << prod[iPoint*nVar+iVar] << endl;
+    }
+    
+    if (iPoint == 0) break;
+    
   }
   
 }
