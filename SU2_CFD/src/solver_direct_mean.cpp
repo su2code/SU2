@@ -2012,7 +2012,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     /*--- Additional reference values defined by Pref, Tref, Rho_ref. By definition,
      Lref is one because we have converted the grid to meters.---*/
     
-    Length_Ref = 1.0;                                         config->SetLength_Ref(Length_Ref);
+    Length_Ref = config->GetLength_Reynolds();                config->SetLength_Ref(Length_Ref);
     Density_Ref = Density_FreeStream;                         config->SetDensity_Ref(Density_Ref);
     Velocity_Ref = ModVel_FreeStream;                         config->SetVelocity_Ref(Velocity_Ref);
     Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);   config->SetPressure_Ref(Pressure_Ref);
