@@ -27,11 +27,6 @@ inline void CSysMatrix::SetValZero(void) {
 		matrix[index] = 0.0;
 }
 
-inline void CSysMatrix::ScaleVals(double val_scale) { 
-	for (unsigned long index = 0; index < nnz*nVar*nVar; index++) 
-		matrix[index] *= val_scale; 
-}
-
 inline CSysMatrixVectorProduct::CSysMatrixVectorProduct(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;

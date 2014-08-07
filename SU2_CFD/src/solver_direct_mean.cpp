@@ -4213,7 +4213,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
                                 config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == FGMRES)
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                               config->GetLinear_Solver_Iter(), true);
+                               config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == RFGMRES){
 
     IterLinSol = 0;

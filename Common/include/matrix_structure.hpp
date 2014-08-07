@@ -110,12 +110,6 @@ public:
 	 */
 	void SetValZero(void);
   
-	/*!
-	 * \brief Scales the entries of the sparse matrix.
-	 * \param[in] val_scale - Factor of scaling.
-	 */
-	void ScaleVals(double val_scale);
-  
   /*!
 	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
@@ -163,22 +157,6 @@ public:
 	void SubtractBlock(unsigned long block_i, unsigned long block_j, double **val_block);
   
   /*!
-	 * \brief Adds the specified block to the sparse matrix.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to add to A(i,j).
-	 */
-	void AddBlock(unsigned long point_i, double **val_block);
-  
-	/*!
-	 * \brief Subtracts the specified block to the sparse matrix.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to subtract to A(i,j).
-	 */
-	void SubtractBlock(unsigned long point_i, double **val_block);
-  
-  /*!
 	 * \brief Copies the block (i,j) of the matrix-by-blocks structure in the internal variable *block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
 	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
@@ -192,14 +170,6 @@ public:
 	 * \param[in] **val_block - Block to set to A(i,j).
 	 */
 	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block);
-  
-  /*!
-	 * \brief Set the value of a block in the sparse matrix.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[in] **val_block - Block to set to A(i,j).
-	 */
-	void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block);
   
 	/*!
 	 * \brief Subtracts the specified block to the sparse matrix.
@@ -234,40 +204,12 @@ public:
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
 	 */
   void MatrixMatrixProduct(double *matrix_a, double *matrix_b, double *product);
-
-	/*!
-	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
-	 *        of the matrix-by-blocks structure.
-	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] *val_matrix - Values to add to the diagonal elements of A(i,i).
-	 * \param[in] num_dim - number of dimensions
-	 *
-	 */
-	void AddVal2Diag(unsigned long block_i, double* val_matrix, unsigned short num_dim);
-  
-  /*!
-	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
-	 *        of the matrix-by-blocks structure.
-	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] *val_matrix - Values to add to the diagonal elements of A(i,i).
-	 * \param[in] val_nDim - number of dimensions
-   * \param[in] val_nDiatomics - number of diatomic species
-	 *
-	 */
-	void AddVal2Diag(unsigned long block_i, double* val_matrix, unsigned short val_nDim, unsigned short val_nDiatomics);
   
 	/*!
 	 * \brief Deletes the values of the row i of the sparse matrix.
 	 * \param[in] i - Index of the row.
 	 */
 	void DeleteValsRowi(unsigned long i);
-  
-	/*!
-	 * \brief Returns the sum of the row i.
-	 * \param[in] i - Index of the row.
-	 * \return The sum of the row i.
-	 */
-	double SumAbsRowi(unsigned long i);
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
@@ -277,14 +219,6 @@ public:
 	 */
 	void Gauss_Elimination(unsigned long block_i, double* rhs);
   
-  /*!
-	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
-	 * \param[in] block_i - Index of the (i,i) subblock in the matrix-by-blocks structure.
-	 * \param[in] rhs - Right-hand-side of the linear system.
-	 * \return Solution of the linear system (overwritten on rhs).
-	 */
-	void Gauss_Elimination_ILUMatrix(unsigned long block_i, double* rhs);
-
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
 	 * \param[in] A - matrix-by-blocks structure.
@@ -292,6 +226,14 @@ public:
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
 	void Gauss_Elimination(double* Block, double* rhs);
+
+  /*!
+	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
+	 * \param[in] block_i - Index of the (i,i) subblock in the matrix-by-blocks structure.
+	 * \param[in] rhs - Right-hand-side of the linear system.
+	 * \return Solution of the linear system (overwritten on rhs).
+	 */
+	void Gauss_Elimination_ILUMatrix(unsigned long block_i, double* rhs);
   
   /*!
 	 * \fn void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, double* vec);
@@ -377,13 +319,6 @@ public:
 	 * \brief Performs the substraction of two vectors.
 	 */
 	void GetSubsVector(double *c, double *a, double *b);
-	
-	/*!
-	 * \brief Inverse diagonal block.
-	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-	 * \param[out] invBlock - Inverse block.
-	 */
-	void InverseDiagonalBlock(unsigned long block_i, double **invBlock);
   
 	/*!
 	 * \brief Inverse diagonal block.
@@ -450,13 +385,6 @@ public:
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
-  
-  /*!
-	 * \brief Multiply CSysVector by the preconditioner
-	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
-	 * \param[out] prod - Result of the product A*vec.
-	 */
-	void ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 	
   /*!
 	 * \brief Compute the residual Ax-b

@@ -335,22 +335,6 @@ double *CSysMatrix::GetBlock_ILUMatrix(unsigned long block_i, unsigned long bloc
   
 }
 
-void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double **val_block) {
-  
-  unsigned long iVar, jVar, index, step = 0;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-          ILU_matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar][jVar];
-      break;
-    }
-  }
-  
-}
-
 void CSysMatrix::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, double *val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
@@ -426,43 +410,6 @@ void CSysMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
   
 }
 
-void CSysMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short num_dim) {
-  
-  unsigned long step = 0, iVar, iSpecies;
-  
-  for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_i) {	// Only elements on the diagonal
-      for (iVar = 0; iVar < nVar; iVar++) {
-        iSpecies = iVar/(num_dim + 2);
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix[iSpecies];
-      }
-      break;
-    }
-  }
-  
-}
-
-void CSysMatrix::AddVal2Diag(unsigned long block_i,  double* val_matrix, unsigned short val_nDim,
-                             unsigned short val_nDiatomics) {
-  
-  unsigned long step = 0, iVar, iSpecies;
-  
-  for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_i) {	// Only elements on the diagonal
-      for (iVar = 0; iVar < nVar; iVar++) {
-        if (iVar < (val_nDim+3)*val_nDiatomics) iSpecies = iVar / (val_nDim+3);
-        else iSpecies = (iVar - (val_nDim+3)*val_nDiatomics) / (val_nDim+2) + val_nDiatomics;
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix[iSpecies];
-      }
-      break;
-    }
-  }
-  
-}
-
-
 void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
   unsigned long block_i = i/nVar;
@@ -475,20 +422,6 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
     if (col_ind[index] == block_i)
       matrix[index*nVar*nVar+row*nVar+row] = 1.0; // Set 1 to the diagonal element
   }
-  
-}
-
-double CSysMatrix::SumAbsRowi(unsigned long i) {
-  
-  unsigned long block_i = i/nVar;
-  unsigned long row = i - block_i*nVar;
-  
-  double sum = 0;
-  for (unsigned long index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++)
-    for (unsigned long iVar = 0; iVar < nVar; iVar ++)
-      sum += fabs(matrix[index*nVar*nVar+row*nVar+iVar]);
-  
-  return sum;
   
 }
 
@@ -896,24 +829,6 @@ void CSysMatrix::InverseBlock(double *Block, double *invBlock) {
   
 }
 
-void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, double **invBlock) {
-  
-  unsigned long iVar, jVar;
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++)
-      aux_vector[jVar] = 0.0;
-    aux_vector[iVar] = 1.0;
-    
-    /*--- Compute the i-th column of the inverse matrix ---*/
-    
-    Gauss_Elimination(block_i, aux_vector);
-    for (jVar = 0; jVar < nVar; jVar++)
-      invBlock[jVar][iVar] = aux_vector[jVar];
-  }
-  
-}
-
 void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, double *invBlock) {
   
   unsigned long iVar, jVar;
@@ -953,28 +868,18 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, double *i
 void CSysMatrix::BuildJacobiPreconditioner(void) {
   
   unsigned long iPoint, iVar, jVar;
-  double **invBlock;
-  
-  /*--- Small nVar x nVar matrix for intermediate computations ---*/
-  invBlock = new double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    invBlock[iVar] = new double [nVar];
   
   /*--- Compute Jacobi Preconditioner ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     /*--- Compute the inverse of the diagonal block ---*/
-    InverseDiagonalBlock(iPoint, invBlock);
+    InverseDiagonalBlock(iPoint, block_inverse);
     
     /*--- Set the inverse of the matrix to the invM structure (which is a vector) ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        invM[iPoint*nVar*nVar+iVar*nVar+jVar] = invBlock[iVar][jVar];
+        invM[iPoint*nVar*nVar+iVar*nVar+jVar] = block_inverse[iVar*nVar+jVar];
   }
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] invBlock[iVar];
-  delete [] invBlock;
   
 }
 
@@ -1407,22 +1312,6 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
         prod[(const unsigned int)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
     }
     
-  }
-  
-  /*--- MPI Parallelization ---*/
-  
-  SendReceive_Solution(prod, geometry, config);
-  
-}
-
-void CSysMatrix::ComputeIdentityPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
-  
-  unsigned long iPoint, iVar;
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      prod[(const unsigned int)(iPoint*nVar+iVar)] = vec[(const unsigned int)(iPoint*nVar+iVar)];
-    }
   }
   
   /*--- MPI Parallelization ---*/
