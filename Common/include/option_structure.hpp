@@ -999,14 +999,14 @@ static const map<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = CCreateMap<st
 enum ENUM_LINEAR_SOLVER_PREC {
   JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
   LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
-  LINELET = 3,		/*!< \brief Line implicit preconditioner. */
-  ILU = 4		/*!< \brief ILU preconditioner. */
+  LINELET = 3,  /*!< \brief Line implicit preconditioner. */
+  ILU = 4       /*!< \brief ILU(0) preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU", ILU);
+("ILU0", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries

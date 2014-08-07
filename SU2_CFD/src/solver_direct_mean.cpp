@@ -217,7 +217,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
     
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -4213,7 +4213,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
                                 config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == FGMRES)
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                               config->GetLinear_Solver_Iter(), false);
+                               config->GetLinear_Solver_Iter(), true);
   else if (config->GetKind_Linear_Solver() == RFGMRES){
 
     IterLinSol = 0;
@@ -8132,7 +8132,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
     /*--- Initialization of the structure of the whole Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);

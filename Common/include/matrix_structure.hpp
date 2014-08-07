@@ -55,11 +55,13 @@ private:
 	unsigned long *col_ind;    /*!< \brief Column index for each of the elements in val(). */
 	unsigned long nnz;         /*!< \brief Number of possible nonzero entries in the matrix. */
 	double *block;             /*!< \brief Internal array to store a subblock of the matrix. */
-	double *prod_block_vector; /*!< \brief Internal array to store the product of a subblock with a vector. */
+	double *block_inverse;             /*!< \brief Internal array to store a subblock of the matrix. */
+	double *block_weight;             /*!< \brief Internal array to store a subblock of the matrix. */
+  double *prod_block_vector; /*!< \brief Internal array to store the product of a subblock with a vector. */
 	double *prod_row_vector;   /*!< \brief Internal array to store the product of a matrix-by-blocks "row" with a vector. */
 	double *aux_vector;         /*!< \brief Auxilar array to store intermediate results. */
+  double *sum_vector;         /*!< \brief Auxilar array to store intermediate results. */
 	double *invM;              /*!< \brief Inverse of (Jacobi) preconditioner. */
-  
 	bool *LineletBool;                          /*!< \brief Identify if a point belong to a linelet. */
 	vector<unsigned long> *LineletPoint;        /*!< \brief Linelet structure. */
 	unsigned long nLinelet;                     /*!< \brief Number of Linelets in the system. */
@@ -88,7 +90,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn, bool EdgeConnect, CGeometry *geometry);
+  void Initialize(unsigned long nPoint, unsigned long nPointDomain, unsigned short nVar, unsigned short nEqn,
+                  bool EdgeConnect, CGeometry *geometry, CConfig *config);
   
   /*!
 	 * \brief Assings values to the sparse-matrix structure.
@@ -100,7 +103,7 @@ public:
 	 * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
 	 * \param[in] preconditioner - If <code>TRUE</code> then it use a preconditioner.
 	 */
-	void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz);
+	void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config);
   
 	/*!
 	 * \brief Sets to zero all the entries of the sparse matrix.
@@ -381,7 +384,14 @@ public:
 	 * \param[out] invBlock - Inverse block.
 	 */
 	void InverseDiagonalBlock(unsigned long block_i, double **invBlock);
-	
+  
+	/*!
+	 * \brief Inverse diagonal block.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[out] invBlock - Inverse block.
+	 */
+	void InverseDiagonalBlock(unsigned long block_i, double *invBlock);
+  
  	/*!
 	 * \brief Inverse diagonal block.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.

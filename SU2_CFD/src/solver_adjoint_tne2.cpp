@@ -143,7 +143,7 @@ CAdjTNE2EulerSolver::CAdjTNE2EulerSolver(CGeometry *geometry, CConfig *config, u
     
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (Adjoint Euler). MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -2515,7 +2515,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		}
     if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (Adjoint N-S). MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
