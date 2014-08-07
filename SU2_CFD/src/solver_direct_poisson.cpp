@@ -70,7 +70,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
   if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Poisson equation)." << endl;
-	StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   /*--- Solution and residual vectors ---*/
   
@@ -480,6 +480,10 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     StiffMatrix.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    StiffMatrix.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(StiffMatrix, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
