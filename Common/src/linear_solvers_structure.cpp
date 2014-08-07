@@ -366,7 +366,7 @@ int rank = 0;
     
     /*---  Output the relative residual if necessary ---*/
     
-    if ((((monitoring) && (rank == 0)) && ((i+1) % 1 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == 0)) && ((i+1) % 100 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
   }
 
   /*---  Solve the least-squares system and update solution ---*/
