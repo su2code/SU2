@@ -74,7 +74,7 @@ inline void CILUPreconditioner::operator()(const CSysVector & u, CSysVector & v)
     cerr << "pointer to sparse matrix is NULL." << endl;
     throw(-1);
   }
-  sparse_matrix->ComputeILUPreconditioner(u, v, geometry, config);
+  sparse_matrix->ComputeILUPreconditioner(u, v);
 }
 
 inline CLU_SGSPreconditioner::CLU_SGSPreconditioner(CSysMatrix & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {

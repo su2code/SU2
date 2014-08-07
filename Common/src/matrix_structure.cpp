@@ -101,6 +101,12 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   vector<unsigned long>::iterator it;
   vector<unsigned long> vneighs;
   
+//  nPoint = 3;
+//  nPointDomain = 3;
+//  nVar = 2;
+//  nEqn = 2;
+  
+  
   /*--- Don't delete *row_ptr, *col_ind because they are
    asigned to the Jacobian structure. ---*/
   
@@ -132,7 +138,11 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Create row_ptr structure, using the number of neighbors ---*/
   
   row_ptr = new unsigned long [nPoint+1];
-  row_ptr[0] = 0;
+//  row_ptr[0] = 0;
+//  row_ptr[1] = 2;
+//  row_ptr[2] = 3;
+//  row_ptr[3] = 5;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
   nnz = row_ptr[nPoint];
@@ -140,6 +150,14 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Create col_ind structure ---*/
   
   col_ind = new unsigned long [nnz];
+  
+//  col_ind[0] = 0;
+//  col_ind[1] = 2;
+//  col_ind[2] = 1;
+//  col_ind[3] = 0;
+//  col_ind[4] = 2;
+//
+  
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
     vneighs.clear();
@@ -177,6 +195,69 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Initialization matrix to zero ---*/
   
   SetValZero();
+  
+//  double *Block = new double [4];
+//  Block[0] = 2; Block[1] = 3; Block[2] = 5; Block[3] = 3; SetBlock(0, 0, Block);
+//  Block[0] = 4; Block[1] = 5; Block[2] = 1; Block[3] = 5; SetBlock(0, 2, Block);
+//  Block[0] = 6; Block[1] = 4; Block[2] = 5; Block[3] = 5; SetBlock(1, 1, Block);
+//  Block[0] = 2; Block[1] = 3; Block[2] = 5; Block[3] = 3; SetBlock(2, 0, Block);
+//  Block[0] = 1; Block[1] = 2; Block[2] = 3; Block[3] = 1; SetBlock(2, 2, Block);
+//
+//  double *Block_ = GetBlock(0,0);
+////  cout << Block_[0] <<" "<< Block_[1] <<endl;
+////  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+////  
+////  Block_ = GetBlock(0,2);
+////  cout << Block_[0] <<" "<< Block_[1] <<endl;
+////  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+////  
+////  Block_ = GetBlock(1,1);
+////  cout << Block_[0] <<" "<< Block_[1] <<endl;
+////  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+////  
+////  Block_ = GetBlock(2,0);
+////  cout << Block_[0] <<" "<< Block_[1] <<endl;
+////  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+////  
+////  Block_ = GetBlock(2,2);
+////  cout << Block_[0] <<" "<< Block_[1] <<endl;
+////  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+//  
+//  CSysVector vec(6), prod(6);
+//  
+//  vec[0] = 1;
+//  vec[1] = 1;
+//  vec[2] = 2;
+//  vec[3] = 2;
+//  vec[4] = 3;
+//  vec[5] = 3;
+//
+//  ComputeILUPreconditioner(vec, prod);
+//  
+//  Block_ = GetBlock_ILUMatrix(0,0);
+//  cout << Block_[0] <<" "<< Block_[1] <<endl;
+//  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+//  
+//  Block_ = GetBlock_ILUMatrix(0,2);
+//  cout << Block_[0] <<" "<< Block_[1] <<endl;
+//  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+//  
+//  Block_ = GetBlock_ILUMatrix(1,1);
+//  cout << Block_[0] <<" "<< Block_[1] <<endl;
+//  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+//  
+//  Block_ = GetBlock_ILUMatrix(2,0);
+//  cout << Block_[0] <<" "<< Block_[1] <<endl;
+//  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+//  
+//  Block_ = GetBlock_ILUMatrix(2,2);
+//  cout << Block_[0] <<" "<< Block_[1] <<endl;
+//  cout << Block_[2] <<" "<< Block_[3] <<endl<<endl;
+//  
+//  
+//
+//  
+//  cin.get();
   
   delete [] nNeigh;
   
@@ -248,6 +329,22 @@ void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, double *
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++)
           matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar][jVar];
+      break;
+    }
+  }
+  
+}
+  
+void CSysMatrix::SetBlock(unsigned long block_i, unsigned long block_j, double *val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];
       break;
     }
   }
@@ -1231,18 +1328,18 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
 }
 
-void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
+void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod) {
   
-  unsigned long iPoint, jPoint, kPoint, iVar, index;
-  double *Block_ij, *Block_ik, *weight, *Block_jk, *Block;
-  double *invBlock_jj, *invBlock_nn, *invBlock_ii;
-  double *aux, *aux_, *aux__;
-
+  unsigned long index;
+  double *Block_ij, *Block_ik, *Block_jk, *Weight;
+  double *Block, *InvBlock;
+  double *TotalVector, *AuxVector;
+  long iPoint, jPoint, kPoint;
+  unsigned short iVar;
   
-  /*--- Copy the jacobian matrix to the ILU matrix, Copy vec to prod ---*/
-  
+  /*--- Copy block matrix, note that the original matrix
+   is modified by the algorithm---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
       Block_ij = GetBlock(iPoint, jPoint);
@@ -1253,17 +1350,14 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     }
   }
   
-  /*--- nVar x nVar matrix for intermediate computations ---*/
+  /*--- nVar, and nVar x nVar matrix for intermediate computations ---*/
   
-  aux = new double [nVar];
-  aux_ = new double [nVar];
-  aux__ = new double [nVar];
-  invBlock_jj = new double [nVar*nVar];
-  weight = new double [nVar*nVar];
+  TotalVector = new double [nVar];
+  AuxVector = new double [nVar];
+  Weight = new double [nVar*nVar];
   Block = new double [nVar*nVar];
-  invBlock_nn = new double [nVar*nVar];
-  invBlock_ii = new double [nVar*nVar];
-  
+  InvBlock = new double [nVar*nVar];
+
   /*--- Transform system in Upper Matrix ---*/
   
   for (iPoint = 1; iPoint < nPoint; iPoint++) {
@@ -1274,50 +1368,63 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
       
       if (Block_ij != NULL) {
         
-        InverseDiagonalBlock_ILUMatrix(jPoint, invBlock_jj);
+        InverseDiagonalBlock_ILUMatrix(jPoint, InvBlock);
+        MatrixMatrixProduct(Block_ij, InvBlock, Weight);
         
-        MatrixMatrixProduct(Block_ij, invBlock_jj, weight);
-        
+//        cout << "Weight"<<iPoint<<" "<< jPoint << endl;
+//        cout << Weight[0] <<" "<<  Weight[1] <<endl;
+//        cout << Weight[2] <<" "<<  Weight[3] <<endl;
+
         for (kPoint = jPoint; kPoint < nPoint; kPoint++){
 
           Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
           Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
-          
+
           if ((Block_ik != NULL) && (Block_jk != NULL)) {
+
+//            cout <<" SubtractBlock_ILUMatrix "<< jPoint <<" "<< kPoint << endl;
+
+            MatrixMatrixProduct(Block_jk, Weight, Block);
             
-            MatrixMatrixProduct(weight, Block_jk, Block);
+//            cout << "Block"<<jPoint<<" "<< kPoint << endl;
+//            cout << Block[0] <<" "<<  Block[1] <<endl;
+//            cout << Block[2] <<" "<<  Block[3] <<endl;
+//            cin.get();
             
             SubtractBlock_ILUMatrix(iPoint, kPoint, Block);
-            
-            MatrixVectorProduct(weight, &prod[iPoint*nVar], aux);
-            
-            for (iVar = 0; iVar < nVar; iVar++) {
-              prod[iPoint*nVar+iVar] -= aux[iVar];
-            }
-            
+           
           }
           
         }
+        
+        MatrixVectorProduct(Weight, &prod[jPoint*nVar], AuxVector);
+//        cout <<"AuxVector "<< AuxVector[0] <<" "<< AuxVector[1] << endl << endl;
+
+        for (iVar = 0; iVar < nVar; iVar++)
+          prod[iPoint*nVar+iVar] -= AuxVector[iVar];
         
       }
       
     }
   }
+  
+//  cout  << endl << endl << vec[0] <<" "<< vec[1] <<" "<< vec[2] <<" "<< vec[3] <<" "<< vec[4] <<" "<< vec[5] << endl;
+//
+//  cout << prod[0] <<" "<< prod[1] <<" "<< prod[2] <<" "<< prod[3] <<" "<< prod[4] <<" "<< prod[5] << endl  << endl << endl;
+//  cin.get();
+  
 
   /*--- Backwards substitution ---*/
 
-  InverseDiagonalBlock_ILUMatrix((nPoint-1), invBlock_nn);
-  
-  MatrixVectorProduct(invBlock_nn, &prod[(nPoint-1)*nVar], aux);
+  InverseDiagonalBlock_ILUMatrix((nPoint-1), InvBlock);
+  MatrixVectorProduct(InvBlock, &prod[(nPoint-1)*nVar], AuxVector);
 
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    prod[ (nPoint-1)*nVar + iVar] = aux[iVar];
-  }
+  for (iVar = 0; iVar < nVar; iVar++)
+    prod[ (nPoint-1)*nVar + iVar] = AuxVector[iVar];
   
   for (iPoint = nPoint-2; iPoint >= 0; iPoint--) {
     
-    for (iVar = 0; iVar < nVar; iVar++) aux[iVar] = 0.0;
+    for (iVar = 0; iVar < nVar; iVar++) TotalVector[iVar] = 0.0;
     
     for (jPoint = iPoint+1; jPoint < nPoint; jPoint++) {
       
@@ -1325,35 +1432,35 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
       
       if (Block_ij != NULL) {
         
-        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux);
+        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], AuxVector);
         
-        for (iVar = 0; iVar < nVar; iVar++) aux[iVar] += aux_[iVar];
+        for (iVar = 0; iVar < nVar; iVar++) TotalVector[iVar] += AuxVector[iVar];
         
       }
       
     }
-    
-    InverseDiagonalBlock_ILUMatrix(iPoint, invBlock_ii);
-    
-    for (iVar = 0; iVar < nVar; iVar++) aux__[iVar] = (prod[iPoint*nVar+iVar]-aux[iVar]);
-    
-    MatrixVectorProduct(invBlock_ii, aux__, aux_);
 
-    for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = aux_[iVar];
+    for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = (prod[iPoint*nVar+iVar]-TotalVector[iVar]);
+
+    InverseDiagonalBlock_ILUMatrix(iPoint, InvBlock);
+    MatrixVectorProduct(InvBlock, &prod[iPoint*nVar], AuxVector);
+
+    for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = AuxVector[iVar];
     
     if (iPoint == 0) break;
     
   }
   
-  delete [] aux;
-  delete [] aux_;
-  delete [] invBlock_jj;
-  delete [] weight;
+//    cout << prod[0] <<" "<< prod[1] <<" "<< prod[2] <<" "<< prod[3] <<" "<< prod[4] <<" "<< prod[5] << endl  << endl << endl;
+//    cin.get();
+  
+  delete [] TotalVector;
+  delete [] AuxVector;
+
+  delete [] Weight;
   delete [] Block;
-  delete [] invBlock_nn;
-  delete [] invBlock_ii;
-  
-  
+  delete [] InvBlock;
+
 }
 
 void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {

@@ -135,6 +135,14 @@ public:
 	 */
 	void SetBlock(unsigned long block_i, unsigned long block_j, double **val_block);
   
+  /*!
+	 * \brief Set the value of a block in the sparse matrix.
+	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+	 * \param[in] **val_block - Block to set to A(i,j).
+	 */
+	void SetBlock(unsigned long block_i, unsigned long block_j, double *val_block);
+  
 	/*!
 	 * \brief Adds the specified block to the sparse matrix.
 	 * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
@@ -417,7 +425,7 @@ public:
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
-	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
+	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod);
 
   /*!
 	 * \brief Multiply CSysVector by the preconditioner
