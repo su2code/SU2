@@ -4134,6 +4134,8 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   double Delta, *local_Res_TruncError, Vol;
   
+  unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
+  double tol = config->GetLinear_Solver_Error();
   bool adjoint = config->GetAdjoint();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   
@@ -4213,16 +4215,15 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == RFGMRES){
-    unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
-    double tol = config->GetLinear_Solver_Error();
-    IterLinSol=0;
-    while (IterLinSol < config->GetLinear_Solver_Iter()){
+
+    IterLinSol = 0;
+    
+    while (IterLinSol < config->GetLinear_Solver_Iter()) {
       if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
         iterations = config->GetLinear_Solver_Iter()-IterLinSol;
       IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
                                   iterations, false); // increment total iterations
-      if (LinSysRes.norm()<tol)
-        break;
+      if (LinSysRes.norm() < tol) break;
       tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
       
     }

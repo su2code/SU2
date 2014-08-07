@@ -132,6 +132,7 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Create row_ptr structure, using the number of neighbors ---*/
   
   row_ptr = new unsigned long [nPoint+1];
+  row_ptr[0] = 0;
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     row_ptr[iPoint+1] = row_ptr[iPoint] + nNeigh[iPoint];
   nnz = row_ptr[nPoint];
@@ -480,17 +481,20 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
+  
   for (kVar = 0; kVar < nVar; kVar++)
     for (jVar = 0; jVar < nVar; jVar++)
       block[kVar*nVar+jVar] = Block[kVar*nVar+jVar];
   
   /*--- Gauss elimination ---*/
+  
   if (nVar == 1) {
     rhs[0] /= block[0];
   }
   else {
     
     /*--- Transform system in Upper Matrix ---*/
+    
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
@@ -501,6 +505,7 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, double* rhs) {
     }
     
     /*--- Backwards substitution ---*/
+    
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = nVar-2; iVar >= 0; iVar--) {
       aux = 0.0;
@@ -1320,14 +1325,6 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
 void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, iVar;
   
-  /*--- There are two approaches to the parallelization (AIAA-2000-0927):
-   1. Use a special scheduling algorithm which enables data parallelism by regrouping edges. This method has the advantage of 
-   producing exactly the same result as the single processor case, but it suffers from severe overhead penalties for parallel 
-   loop initiation, heavy interprocessor communications and poor load balance.
-   2. Split the computational domain into several nonoverlapping regions according to the number of processors, and apply the 
-   SGS method inside of each region with (or without) some special interprocessor boundary treatment. This approach may suffer 
-   from convergence degradation but takes advantage of minimal parallelization overhead and good load balance. ---*/
-  
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1338,10 +1335,6 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
     for (iVar = 0; iVar < nVar; iVar++)
       prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
   }
-  
-  /*--- Inner send-receive operation the solution vector ---*/
-  
-  SendReceive_Solution(prod, geometry, config);
   
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
@@ -1356,10 +1349,6 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
     for (iVar = 0; iVar < nVar; iVar++)
       prod[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
   }
-  
-  /*--- Final send-receive operation the solution vector (redundant in CFD simulations) ---*/
-  
-  SendReceive_Solution(prod, geometry, config);
   
 }
 
