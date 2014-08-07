@@ -74,7 +74,7 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	}
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);

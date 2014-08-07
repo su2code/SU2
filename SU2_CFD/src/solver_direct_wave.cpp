@@ -58,9 +58,9 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	}
   
 	/*--- Initialization of matrix structures ---*/
-	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
