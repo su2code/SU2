@@ -225,7 +225,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
     
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -4185,25 +4185,32 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   double Delta, *local_Res_TruncError, Vol;
   
+  unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
+  double tol = config->GetLinear_Solver_Error();
   bool adjoint = config->GetAdjoint();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   
   /*--- Set maximum residual to zero ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
   
   /*--- Build implicit system ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Read the residual ---*/
+    
     local_Res_TruncError = node[iPoint]->GetResTruncError();
     
     /*--- Read the volume ---*/
+    
     Vol = geometry->node[iPoint]->GetVolume();
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
+    
     Delta = Vol / node[iPoint]->GetDelta_Time();
     
     if (roe_turkel) {
@@ -4218,6 +4225,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
       LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
@@ -4228,6 +4236,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Initialize residual and solution at the ghost points ---*/
+  
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar + iVar;
@@ -4237,12 +4246,17 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Solve the linear system (Krylov subspace methods) ---*/
+  
   CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
   
   CPreconditioner* precond = NULL;
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
@@ -4260,30 +4274,30 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
                                config->GetLinear_Solver_Iter(), false);
   else if (config->GetKind_Linear_Solver() == RFGMRES){
-    unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
-    double tol = config->GetLinear_Solver_Error();
-    IterLinSol=0;
-    while (IterLinSol < config->GetLinear_Solver_Iter()){
+
+    IterLinSol = 0;
+    
+    while (IterLinSol < config->GetLinear_Solver_Iter()) {
       if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
         iterations = config->GetLinear_Solver_Iter()-IterLinSol;
       IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
                                   iterations, false); // increment total iterations
-      if (LinSysRes.norm()<tol)
-        break;
+      if (LinSysRes.norm() < tol) break;
       tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
-      // std::cout <<" Completed a restart iteration"<<std::endl;
       
     }
   }
   
   /*--- The the number of iterations of the linear solver ---*/
+  
   SetIterLinSolver(IterLinSol);
   
-  /*--- dealocate memory ---*/
+  /*--- Dealocate memory ---*/
   delete mat_vec;
   delete precond;
   
   /*--- Update solution (system written in terms of increments) ---*/
+  
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -4293,9 +4307,11 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- MPI solution ---*/
+  
   Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
+  
   SetResidual_RMS(geometry, config);
   
 }
@@ -8905,7 +8921,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
     /*--- Initialization of the structure of the whole Jacobian ---*/
     if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
