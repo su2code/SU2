@@ -566,6 +566,8 @@ inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) {
 
 inline double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Error; }
 
+inline double CConfig::GetEntropyFix_Coeff(void) { return EntropyFix_Coeff; }
+
 inline unsigned short CConfig::GetAdjTurb_Linear_Iter(void) { return AdjTurb_Linear_Iter; }
 
 inline double CConfig::GetCFLRedCoeff_AdjTurb(void) { return CFLRedCoeff_AdjTurb; }

@@ -359,6 +359,7 @@ private:
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
 	double Linear_Solver_Relax;		/*!< \brief Relaxation coefficient of the linear solver. */
 	double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
+  double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
 	unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
 	double *Section_Location;                  /*!< \brief Airfoil section limit. */
   unsigned short nSections,      /*!< \brief Number of section cuts to make when calculating internal volume. */
@@ -2552,6 +2553,12 @@ public:
 	 * \return Min error of the linear solver for the implicit formulation.
 	 */
 	double GetAdjTurb_Linear_Error(void);
+  
+  /*!
+	 * \brief Get the entropy fix.
+	 * \return Vaule of the entropy fix.
+	 */
+	double GetEntropyFix_Coeff(void);
 
 	/*!
 	 * \brief Get max number of iterations of the linear solver for the implicit formulation.

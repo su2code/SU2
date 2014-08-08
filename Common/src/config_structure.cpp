@@ -506,7 +506,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
-
+  /* DESCRIPTION: Entropy fix factor */
+  addDoubleOption("ENTROPY_FIX_COEFF", EntropyFix_Coeff, 0.0);
+  
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
 

@@ -4534,26 +4534,32 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Primitive_i, *Primitive_j,
   dave, LimK, eps2, dm, dp, du, limiter;
   
-  /*--- Initialize solution max and solution min in the entire domain --*/
+  /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
+  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       node[iPoint]->SetSolution_Max(iVar, -EPS);
       node[iPoint]->SetSolution_Min(iVar, EPS);
+      node[iPoint]->SetLimiter_Primitive(iVar, 2.0);
     }
   }
   
   /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Point identification, Normal vector and area ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    /*--- Get the conserved variables ---*/
+    /*--- Get the primitive variables ---*/
+    
     Primitive_i = node[iPoint]->GetPrimitive();
     Primitive_j = node[jPoint]->GetPrimitive();
     
     /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+    
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       du = (Primitive_j[iVar] - Primitive_i[iVar]);
       node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
@@ -4561,115 +4567,118 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
       node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
     }
+    
   }
   
-  /*--- Initialize the limiter --*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      node[iPoint]->SetLimiter_Primitive(iVar, 2.0);
+  
+  /*--- Minmod (Roe 1984) limiter ---*/
+  
+  if (config->GetKind_SlopeLimit() == MINMOD) {
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      iPoint     = geometry->edge[iEdge]->GetNode(0);
+      jPoint     = geometry->edge[iEdge]->GetNode(1);
+      Gradient_i = node[iPoint]->GetGradient_Primitive();
+      Gradient_j = node[jPoint]->GetGradient_Primitive();
+      Coord_i    = geometry->node[iPoint]->GetCoord();
+      Coord_j    = geometry->node[jPoint]->GetCoord();
+      
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        
+        /*--- Calculate the interface left gradient, delta- (dm) ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+        
+        /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+        
+        if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+        else dp = node[iPoint]->GetSolution_Min(iVar);
+        
+        limiter = max(0.0, min(1.0, dp/dm));
+        
+        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar))
+          node[iPoint]->SetLimiter_Primitive(iVar, limiter);
+        
+        /*-- Repeat for point j on the edge ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+        
+        if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+        else dp = node[jPoint]->GetSolution_Min(iVar);
+        
+        limiter = max(0.0, min(1.0, dp/dm));
+        
+        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar))
+          node[jPoint]->SetLimiter_Primitive(iVar, limiter);
+      }
+      
     }
+    
   }
   
-  switch (config->GetKind_SlopeLimit()) {
+  /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
+  
+  if (config->GetKind_SlopeLimit() == VENKATAKRISHNAN) {
+    
+    /*-- Get limiter parameters from the configuration file ---*/
+    
+    dave = config->GetRefElemLength();
+    LimK = config->GetLimiterCoeff();
+    eps2 = pow((LimK*dave), 3.0);
+    
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
-      /*--- Minmod (Roe 1984) limiter ---*/
-    case MINMOD:
+      iPoint     = geometry->edge[iEdge]->GetNode(0);
+      jPoint     = geometry->edge[iEdge]->GetNode(1);
+      Gradient_i = node[iPoint]->GetGradient_Primitive();
+      Gradient_j = node[jPoint]->GetGradient_Primitive();
+      Coord_i    = geometry->node[iPoint]->GetCoord();
+      Coord_j    = geometry->node[jPoint]->GetCoord();
       
-      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
-        iPoint     = geometry->edge[iEdge]->GetNode(0);
-        jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Gradient_i = node[iPoint]->GetGradient();
-        Gradient_j = node[jPoint]->GetGradient();
-        Coord_i    = geometry->node[iPoint]->GetCoord();
-        Coord_j    = geometry->node[jPoint]->GetCoord();
+        /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          
-          /*--- Calculate the interface left gradient, delta- (dm) ---*/
-          dm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-          
-          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
-          else dp = node[iPoint]->GetSolution_Min(iVar);
-          
-          limiter = max(0.0, min(1.0,dp/dm));
-          
-          if (limiter < node[iPoint]->GetLimiter_Primitive(iVar))
-            if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter_Primitive(iVar, limiter);
-          
-          /*-- Repeat for point j on the edge ---*/
-          dm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-          
-          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
-          else dp = node[jPoint]->GetSolution_Min(iVar);
-          
-          limiter = max(0.0, min(1.0,dp/dm));
-          
-          if (limiter < node[jPoint]->GetLimiter_Primitive(iVar))
-            if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter_Primitive(iVar, limiter);
-        }
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+        
+        /*--- Calculate the interface right gradient, delta+ (dp) ---*/
+        
+        if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
+        else dp = node[iPoint]->GetSolution_Min(iVar);
+        
+        limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+        
+        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar))
+          node[iPoint]->SetLimiter_Primitive(iVar, limiter);
+        
+        /*-- Repeat for point j on the edge ---*/
+        
+        dm = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+        
+        if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
+        else dp = node[jPoint]->GetSolution_Min(iVar);
+        
+        limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+        
+        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar))
+          node[jPoint]->SetLimiter_Primitive(iVar, limiter);
       }
-      break;
       
-      /*--- Venkatakrishnan (Venkatakrishnan 1994) limiter ---*/
-    case VENKATAKRISHNAN:
-      
-      /*-- Get limiter parameters from the configuration file ---*/
-      dave = config->GetRefElemLength();
-      LimK = config->GetLimiterCoeff();
-      eps2 = pow((LimK*dave), 3.0);
-      
-      for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-        
-        iPoint     = geometry->edge[iEdge]->GetNode(0);
-        jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Primitive_i = node[iPoint]->GetPrimitive();
-        Primitive_j = node[jPoint]->GetPrimitive();
-        Gradient_i = node[iPoint]->GetGradient_Primitive();
-        Gradient_j = node[jPoint]->GetGradient_Primitive();
-        Coord_i    = geometry->node[iPoint]->GetCoord();
-        Coord_j    = geometry->node[jPoint]->GetCoord();
-        
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          
-          /*--- Calculate the interface left gradient, delta- (dm) ---*/
-          dm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
-          
-          /*--- Calculate the interface right gradient, delta+ (dp) ---*/
-          if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
-          else dp = node[iPoint]->GetSolution_Min(iVar);
-          
-          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-          
-          if (limiter < node[iPoint]->GetLimiter_Primitive(iVar))
-            if (geometry->node[iPoint]->GetDomain()) node[iPoint]->SetLimiter_Primitive(iVar, limiter);
-          
-          /*-- Repeat for point j on the edge ---*/
-          dm = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
-          
-          if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
-          else dp = node[jPoint]->GetSolution_Min(iVar);
-          
-          limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-          
-          if (limiter < node[jPoint]->GetLimiter_Primitive(iVar))
-            if (geometry->node[jPoint]->GetDomain()) node[jPoint]->SetLimiter_Primitive(iVar, limiter);
-        }
-      }
-      break;
-      
+    }
+    
   }
   
   /*--- Limiter MPI ---*/
+  
   Set_MPI_Primitive_Limiter(geometry, config);
   
 }
@@ -4937,8 +4946,8 @@ void CEulerSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) {
         
         iPoint     = geometry->edge[iEdge]->GetNode(0);
         jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Gradient_i = node[iPoint]->GetGradient();
-        Gradient_j = node[jPoint]->GetGradient();
+        Gradient_i = node[iPoint]->GetGradient_Secondary();
+        Gradient_j = node[jPoint]->GetGradient_Secondary();
         Coord_i    = geometry->node[iPoint]->GetCoord();
         Coord_j    = geometry->node[jPoint]->GetCoord();
         
@@ -4986,8 +4995,6 @@ void CEulerSolver::SetSecondary_Limiter(CGeometry *geometry, CConfig *config) {
         
         iPoint     = geometry->edge[iEdge]->GetNode(0);
         jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Secondary_i = node[iPoint]->GetSecondary();
-        Secondary_j = node[jPoint]->GetSecondary();
         Gradient_i = node[iPoint]->GetGradient_Secondary();
         Gradient_j = node[jPoint]->GetGradient_Secondary();
         Coord_i    = geometry->node[iPoint]->GetCoord();
