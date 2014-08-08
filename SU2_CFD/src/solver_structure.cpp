@@ -987,8 +987,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
         
         iPoint     = geometry->edge[iEdge]->GetNode(0);
         jPoint     = geometry->edge[iEdge]->GetNode(1);
-        Solution_i = node[iPoint]->GetSolution();
-        Solution_j = node[jPoint]->GetSolution();
         Gradient_i = node[iPoint]->GetGradient();
         Gradient_j = node[jPoint]->GetGradient();
         Coord_i    = geometry->node[iPoint]->GetCoord();
