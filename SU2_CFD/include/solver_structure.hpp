@@ -1696,77 +1696,96 @@ public:
    * \brief A virtual member.
    * \return average total pressure evaluated at an exit boundary marker
    */
-  virtual double GetOneD_Pt(void);
+  virtual double GetOneD_TotalPress(void);
 
   /*!
    * \brief A virtual member.
    * \param[in] val_exit_pt: value of the total average pressure at the exit.
    */
-  virtual void SetOneD_Pt(double AveragePressure);
+  virtual void SetOneD_TotalPress(double AveragePressure);
 
   /*!
    * \brief A virtual member.
    * \return average Mach number evaluated at an exit boundary marker
    */
-  virtual double GetOneD_M(void);
+  virtual double GetOneD_Mach(void);
 
   /*!
    * \brief A virtual member.
    * \set average Mach number evaluated at an exit boundary marker
    */
-  virtual void SetOneD_M(double AverageMach);
+  virtual void SetOneD_Mach(double AverageMach);
+  
   /*!
    * \brief A virtual member.
    * \return average temperature evaluated at an exit boundary marker
    */
-  virtual double GetOneD_T(void);
+  virtual double GetOneD_Temp(void);
+  
   /*!
    * \brief A virtual member.
    * \set average temperature evaluated at an exit boundary marker
    */
-  virtual void SetOneD_T(double AverageTemperature);
-
+  virtual void SetOneD_Temp(double AverageTemperature);
+  
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
+   * \return average temperature evaluated at an exit boundary marker
+   */
+  virtual double GetOneD_MassFlowRate(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \set average temperature evaluated at an exit boundary marker
+   */
+  virtual void SetOneD_MassFlowRate(double MassFlowRate);
+  
+  /*!
+   * \brief A virtual member.
    * \ Get the flux averaged pressure at a marker.(same as area averaged pressure)
-     */
-  virtual double GetOneD_fluxavgP(void);
+   */
+  virtual double GetOneD_FluxAvgPress(void);
+  
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Set the flux averaged pressure at a marker. (same as area averaged pressure)
-     */
-  virtual void SetOneD_fluxavgP(double PressureRef);
+   */
+  virtual void SetOneD_FluxAvgPress(double PressureRef);
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-     */
-  virtual double GetOneD_fluxavgRho(void);
+   */
+  virtual double GetOneD_FluxAvgDensity(void);
+  
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-     */
-  virtual void SetOneD_fluxavgRho(double DensityRef);
+   */
+  virtual void SetOneD_FluxAvgDensity(double DensityRef);
+  
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
-     */
-  virtual double GetOneD_fluxavgU(void);
+   */
+  virtual double GetOneD_FluxAvgVelocity(void);
+  
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
-     */
-  virtual void SetOneD_fluxavgU(double VelocityRef);
+   */
+  virtual void SetOneD_FluxAvgVelocity(double VelocityRef);
+  
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
-     */
-  virtual double GetOneD_fluxavgH(void);
+   */
+  virtual double GetOneD_FluxAvgEntalpy(void);
   /*!
-     * \brief A virtual member.
+   * \brief A virtual member.
    * \ Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
-     */
-  virtual void SetOneD_fluxavgH(double EnthalpyRef);
-
+   */
+  virtual void SetOneD_FluxAvgEntalpy(double EnthalpyRef);
+  
   /*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2015,10 +2034,11 @@ protected:
 	AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
 	
   double
-  OneD_Pt, /*!< \brief average total pressure evaluated at an exit */
-  OneD_M, /*!< \brief area average Mach evaluated at an exit */
-  OneD_T, /*!< \brief area average Temperature evaluated at an exit */
+  OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
+  OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
+  OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
   OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
+  OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
   OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
@@ -2926,71 +2946,88 @@ public:
 	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
 	 */
 	void SetTotal_CFreeSurface(double val_cfreesurface);
-
+  
 	/*!
-	   * \brief Provide the averaged total pressure at a marker.
-	   */
-	double GetOneD_Pt(void);
-
+   * \brief Provide the averaged total pressure at a marker.
+   */
+	double GetOneD_TotalPress(void);
+  
 	/*!
-	   * \brief Set the value of averaged total pressure
-	   * \param[in] val_exit_pt - value of the averaged pressure
-	   */
-	void SetOneD_Pt(double AveragePressure);
-
+   * \brief Set the value of averaged total pressure
+   * \param[in] val_exit_pt - value of the averaged pressure
+   */
+	void SetOneD_TotalPress(double AveragePressure);
+  
   /*!
-     * \brief Provide the averaged Mach number at a marker.
-     */
-  double GetOneD_M(void);
-
+   * \brief Provide the averaged Mach number at a marker.
+   */
+  double GetOneD_Mach(void);
+  
   /*!
-     * \brief Set the averaged Mach number at a marker.
-     */
-  void SetOneD_M(double AverageMach);
-
+   * \brief Set the averaged Mach number at a marker.
+   */
+  void SetOneD_Mach(double AverageMach);
+  
   /*!
-     * \brief Provide the averaged Mach number at a marker.
-     */
-  double GetOneD_T(void);
-
+   * \brief Provide the averaged Mach number at a marker.
+   */
+  double GetOneD_Temp(void);
+  
   /*!
-     * \brief Set the averaged Temperature at a marker.
-     */
-  void SetOneD_T(double AverageTemperature);
-
+   * \brief Set the averaged Temperature at a marker.
+   */
+  void SetOneD_Temp(double AverageTemperature);
+  
   /*!
-     * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
-     */
-  double GetOneD_fluxavgP(void);
+   * \brief Provide the averaged Mach number at a marker.
+   */
+  double GetOneD_MassFlowRate(void);
+  
   /*!
-     * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
-     */
-  void SetOneD_fluxavgP(double PressureRef);
+   * \brief Set the averaged Temperature at a marker.
+   */
+  void SetOneD_MassFlowRate(double MassFlowRate);
+  
   /*!
-     * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-     */
-  double GetOneD_fluxavgRho(void);
+   * \brief Get the flux averaged pressure at a marker.(same as area averaged pressure)
+   */
+  double GetOneD_FluxAvgPress(void);
+  
   /*!
-     * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
-     */
-  void SetOneD_fluxavgRho(double DensityRef);
+   * \brief Set the flux averaged pressure at a marker. (same as area averaged pressure)
+   */
+  void SetOneD_FluxAvgPress(double PressureRef);
+  
   /*!
-     * \brief Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
-     */
-  double GetOneD_fluxavgU(void);
+   * \brief Get the flux averaged density at a marker. ( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   */
+  double GetOneD_FluxAvgDensity(void);
+  
   /*!
-     * \brief Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
-     */
-  void SetOneD_fluxavgU(double VelocityRef);
+   * \brief Set the flux averaged density at a marker.( = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) )
+   */
+  void SetOneD_FluxAvgDensity(double DensityRef);
+  
   /*!
-     * \brief Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
-     */
-  double GetOneD_fluxavgH(void);
+   * \brief Get the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+   */
+  double GetOneD_FluxAvgVelocity(void);
+  
   /*!
-     * \brief Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
-     */
-  void SetOneD_fluxavgH(double EnthalpyRef);
-
+   * \brief Set the flux averaged velocity at a marker. = sqrt ( \int((rho*u)*u^2dA)/\int(rho*u*dA) )
+   */
+  void SetOneD_FluxAvgVelocity(double VelocityRef);
+  
+  /*!
+   * \brief Get the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+   */
+  double GetOneD_FluxAvgEntalpy(void);
+  
+  /*!
+   * \brief Set the flux averaged enthalpy at a marker. = \int(rho*u*h dA) / \int(rho *u *dA )
+   */
+  void SetOneD_FluxAvgEntalpy(double EnthalpyRef);
+  
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
 	 * \param[in] geometry - Geometrical definition of the problem.
