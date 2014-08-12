@@ -722,7 +722,9 @@ enum ENUM_OBJECTIVE {
   MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
   MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
   MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
-  MAX_THICK_SEC5 = 27           /*!< \brief Maximum thickness in section 5. */
+  MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
+  AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
+  MASS_FLOW_RATE = 29 	        /*!< \brief Mass Flow Rate objective function definition. */
 };
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
@@ -751,7 +753,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC2", MAX_THICK_SEC2)
 ("MAX_THICK_SEC3", MAX_THICK_SEC3)
 ("MAX_THICK_SEC4", MAX_THICK_SEC4)
-("MAX_THICK_SEC5", MAX_THICK_SEC5);
+("MAX_THICK_SEC5", MAX_THICK_SEC5)
+("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
+("MASS_FLOW_RATE", MASS_FLOW_RATE);
 
 /*!
  * \brief types of Continuous equations

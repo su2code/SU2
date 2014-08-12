@@ -4600,8 +4600,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
               }
             }
             /*---- Averaged stagnation pressure at an exit ---- */
-            if (output_1d)
+            if (output_1d) {
               sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
+            }
             
             /*--- Transition residual ---*/
             if (transition){
@@ -4921,7 +4922,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            /*---- Averaged stagnation pressure at an exit ---- */
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -4968,6 +4968,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5576,7 +5577,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
-  double *Normal = NULL, Area = 0.0, OverArea = 0.0, *Coord = NULL,
+  double *Normal = NULL, Area = 0.0, OverArea = 0.0, *Coord = NULL, UnitaryNormal[3],
   Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
@@ -5586,6 +5587,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   double Gamma = config->GetGamma();
+  unsigned short nDim = geometry->GetnDim();
   
   
   /*--- Loop over the markers ---*/
@@ -5607,7 +5609,12 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
         
         if (geometry->node[iPoint]->GetDomain()) {
           
+          
+          /*--- Compute area, and unitary normal ---*/
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
+
           Coord = geometry->node[iPoint]->GetCoord();
           
           if (compressible){
@@ -5622,15 +5629,11 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           /*-- Find velocity normal to the marked surface/opening --*/
           
           U = 0.0; Enthalpy = 0.0; Mach = 0.0; Velocity2 = 0.0; Stag_Pressure = 0.0;
-          Area = 0.0; Temperature = 0.0; RhoU = 0.0;
+          Temperature = 0.0; RhoU = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-            U += Normal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
-            Area += Normal[iDim]*Normal[iDim];
+            U += UnitaryNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
           }
           
-          Area = sqrt(Area);
-          
-          U = U/Area;
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
           Velocity2 = solver_container->node[iPoint]->GetVelocity2();
           Temperature = solver_container->node[iPoint]->GetTemperature();
@@ -5659,9 +5662,9 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
         AverageTemperature += abs(SumTemperature*OverArea);
         MassFlowRate += SumRhoU;
         PressureRef += abs(SumPressure*OverArea);
-        VelocityRef+= abs(sqrt(abs(SumForUref/SumRhoU)));
-        EnthalpyRef+=abs(SumEnthalpy/SumRhoU);
-        DensityRef+=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
+        VelocityRef += abs(sqrt(abs(SumForUref/SumRhoU)));
+        EnthalpyRef +=abs(SumEnthalpy/SumRhoU);
+        DensityRef +=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
         
       }
       
@@ -5693,7 +5696,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
 #endif
   
-  /*--- Set Area Averaged Stagnation Pressure Output ---*/
+  /*--- Set the 1D output ---*/
   
   solver_container->SetOneD_TotalPress(AveragePressure);
   solver_container->SetOneD_Mach(AverageMach);
