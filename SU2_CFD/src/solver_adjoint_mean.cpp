@@ -1139,6 +1139,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[1] = 0.0;
               ForceProj_Vector[2] = 0.0; }
             break;
+          case AVG_TOTAL_PRESSURE : break;
+          case MASS_FLOW_RATE : break;
         }
         
         /*--- Store the force projection vector at this node ---*/

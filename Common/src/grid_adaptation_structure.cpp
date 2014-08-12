@@ -317,6 +317,8 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     sprintf (buffer, "_cfz.dat");
   if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          sprintf (buffer, "_totheat.dat");
   if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        sprintf (buffer, "_maxheat.dat");
+  if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      sprintf (buffer, "_pt.dat");
+	if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          sprintf (buffer, "_mfr.dat");
 
 	strcat(cstr, buffer);
 	
@@ -3631,6 +3633,9 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
 	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     sprintf (buffer, "_cfz.dat");
   if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          sprintf (buffer, "_totheat.dat");
   if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        sprintf (buffer, "_maxheat.dat");
+  if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      sprintf (buffer, "_pt.dat");
+  if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          sprintf (buffer, "_mfr.dat");
+  
 	strcat(cstr, buffer);
 	
 	ofstream restart_adjfile;

@@ -794,7 +794,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Output the rind layers in the solution files */
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
-  addBoolOption("WRT_1D_OUTPUT", Wrt_1D_Output, false);
+  addBoolOption("1D_OUTPUT", Wrt_1D_Output, false);
 
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   /*--- Options related to dynamic meshes ---*/
@@ -3385,6 +3385,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case MAXIMUM_HEATFLUX: cout << "Maximum heat flux objective function." << endl; break;
       case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
       case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
+      case AVG_TOTAL_PRESSURE: cout << "Average total objective pressure." << endl; break;
+      case MASS_FLOW_RATE: cout << "Mass flow rate objective function." << endl; break;
 		}
 
 	}
@@ -5065,6 +5067,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
+      case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
+      case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
     }
     Filename.append(AdjExt);
 
