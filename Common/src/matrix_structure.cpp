@@ -1101,7 +1101,7 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
 }
 
-void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod) {
+void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
   
   unsigned long index, index_;
   double *Block_ij, *Block_jk;
@@ -1155,6 +1155,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     }
   }
   
+  /*--- MPI Parallelization ---*/
+  
+  SendReceive_Solution(prod, geometry, config);
+  
   /*--- Backwards substitution ---*/
   
   InverseDiagonalBlock_ILUMatrix((nPoint-1), block_inverse);
@@ -1195,6 +1199,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     
   }
   
+  /*--- MPI Parallelization ---*/
+  
+  SendReceive_Solution(prod, geometry, config);
+  
 }
 
 void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config) {
@@ -1202,7 +1210,7 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
   
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
     LowerProduct(prod, iPoint);                                        // Compute L.x*
     for (iVar = 0; iVar < nVar; iVar++)
       aux_vector[iVar] = vec[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
@@ -1211,9 +1219,13 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
       prod[iPoint*nVar+iVar] = aux_vector[iVar];                       // Assesing x* = solution
   }
   
+  /*--- MPI Parallelization ---*/
+  
+  SendReceive_Solution(prod, geometry, config);
+
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
-  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
+  for (iPoint = nPoint-1; (int)iPoint >= 0; iPoint--) {
     DiagonalProduct(prod, iPoint);                 // Compute D.x*
     for (iVar = 0; iVar < nVar; iVar++)
       aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
@@ -1224,6 +1236,10 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
     for (iVar = 0; iVar < nVar; iVar++)
       prod[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
   }
+
+  /*--- MPI Parallelization ---*/
+  
+  SendReceive_Solution(prod, geometry, config);
   
 }
 
@@ -1246,6 +1262,10 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
       }
     }
   }
+  
+  /*--- MPI Parallelization ---*/
+  
+  SendReceive_Solution(prod, geometry, config);
   
   /*--- Solve linelet using a Thomas' algorithm ---*/
   

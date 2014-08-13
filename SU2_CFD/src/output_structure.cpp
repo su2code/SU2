@@ -4951,7 +4951,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             cout.setf(ios::scientific,ios::floatfield);
             cout << Total_CNearFieldOF; }
           else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
-          else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
           if (aeroelastic) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -4994,7 +4994,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
           if (aeroelastic) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
