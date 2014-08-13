@@ -370,7 +370,7 @@ public:
 	 * \param[in] vec - CSysVector to be multiplied by the preconditioner.
 	 * \param[out] prod - Result of the product A*vec.
 	 */
-	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod);
+	void ComputeILUPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
 
   /*!
 	 * \brief Multiply CSysVector by the preconditioner
