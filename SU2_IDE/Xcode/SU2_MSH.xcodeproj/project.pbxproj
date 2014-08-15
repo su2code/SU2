@@ -236,7 +236,7 @@
 				GCC_WARN_SHADOW = YES;
 				INSTALL_PATH = /usr/local/bin;
 				PRODUCT_NAME = SU2_MSH;
-				SDKROOT = "";
+				SDKROOT = macosx10.8;
 			};
 			name = Debug;
 		};
@@ -258,7 +258,7 @@
 				GCC_WARN_SHADOW = YES;
 				INSTALL_PATH = /usr/local/bin;
 				PRODUCT_NAME = SU2_MSH;
-				SDKROOT = "";
+				SDKROOT = macosx10.8;
 			};
 			name = Release;
 		};

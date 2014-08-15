@@ -105,6 +105,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   nPrimVar     = nSpecies + nDim + 8;
   nPrimVarGrad = nSpecies + nDim + 8;
   
+  /*--- Perform the non-dimensionalization for the flow equations using the
+   specified reference values. ---*/
+  
+  SetNondimensionalization(geometry, config, iMesh);
+  
 	/*--- Allocate a CVariable array for each node of the mesh ---*/
 	node = new CVariable*[nPoint];
   
@@ -182,7 +187,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
 		/*--- Initialization of the structure for the global Jacobian ---*/
 		if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure. MG level: " << iMesh <<"." << endl;
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -236,11 +241,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   Total_MaxHeat  = 0.0;
   
 	/*--- Read farfield conditions from the config file ---*/
-	Pressure_Inf       = config->GetPressure_FreeStream();
+	Pressure_Inf       = config->GetPressure_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
-  Mach_Inf           = config->GetMach_FreeStreamND();
+  Mach_Inf           = config->GetMach();
   
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
   Mvec_Inf = new double[nDim];
@@ -807,7 +812,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
         iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
         for (iVar = 0; iVar < nPrimVar; iVar++)
-          Buffer_Send_V[iVar*nVertexS+iVertex] = node[iPoint]->GetPrimVar(iVar);
+          Buffer_Send_V[iVar*nVertexS+iVertex] = node[iPoint]->GetPrimitive(iVar);
       }
       
 #ifdef HAVE_MPI
@@ -877,7 +882,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
         
         /*--- Copy transformed conserved variables back into buffer. ---*/
         for (iVar = 0; iVar < nPrimVar; iVar++)
-          node[iPoint]->SetPrimVar(iVar, Primitive[iVar]);
+          node[iPoint]->SetPrimitive(iVar, Primitive[iVar]);
         
       }
       
@@ -1683,6 +1688,411 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry,
   
 }
 
+void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+  
+  double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0, Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0,
+  Velocity_Reynolds = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0;
+  double Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
+  Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Energy_Ref= 0.0, Froude = 0.0;
+  double Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0, Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
+  Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0, Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
+  unsigned short iDim;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Local variables and memory allocation ---*/
+  
+  double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  double Beta             = config->GetAoS()*PI_NUMBER/180.0;
+  double Gamma_Minus_One  = Gamma - 1.0;
+  double Mach             = config->GetMach();
+  double Reynolds         = config->GetReynolds();
+  bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible     = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface        = (config->GetKind_Regime() == FREESURFACE);
+  bool unsteady           = (config->GetUnsteady_Simulation() != NO);
+  bool viscous            = config->GetViscous();
+  bool grid_movement      = config->GetGrid_Movement();
+  bool gravity            = config->GetGravityForce();
+  bool turbulent          = config->GetKind_Solver() == RANS;
+  bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  
+  if (compressible) {
+    
+    if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
+    else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.4855);
+    
+    /*--- Compute the Free Stream velocity, using the Mach number ---*/
+    Temperature_FreeStream = config->GetTemperature_FreeStream();
+    Mach2Vel_FreeStream = sqrt(Gamma*config->GetGas_Constant()*Temperature_FreeStream);
+    
+    if (nDim == 2) {
+      config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
+      config->GetVelocity_FreeStream()[1] = sin(Alpha)*Mach*Mach2Vel_FreeStream;
+    }
+    if (nDim == 3) {
+      config->GetVelocity_FreeStream()[0] = cos(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
+      config->GetVelocity_FreeStream()[1] = sin(Beta)*Mach*Mach2Vel_FreeStream;
+      config->GetVelocity_FreeStream()[2] = sin(Alpha)*cos(Beta)*Mach*Mach2Vel_FreeStream;
+    }
+    
+    /*--- Compute the modulus of the free stream velocity ---*/
+    
+    ModVel_FreeStream = 0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+    ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
+    
+    if (viscous) {
+      
+      /*--- First, check if there is mesh motion. If yes, use the Mach
+       number relative to the body to initialize the flow. ---*/
+      
+      if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
+      else Velocity_Reynolds = ModVel_FreeStream;
+      
+      /*--- For viscous flows, pressure will be computed from a density
+       that is found from the Reynolds number. The viscosity is computed
+       from the dimensional version of Sutherland's law ---*/
+      if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
+      if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
+      Viscosity_FreeStream = Mu_ref*(pow(Temperature_FreeStream/T_ref, 1.5) * (T_ref+S)/(Temperature_FreeStream+S));
+      Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds()); config->SetDensity_FreeStream(Density_FreeStream);
+      Pressure_FreeStream  = Density_FreeStream*config->GetGas_Constant()*Temperature_FreeStream;
+      
+      /*--- Turbulence quantities ---*/
+      
+      Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+      Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+      
+    }
+    else {
+      
+      /*--- For inviscid flow, density is calculated from the specified
+       total temperature and pressure using the gas law. ---*/
+      
+      Pressure_FreeStream = config->GetPressure_FreeStream();
+      Density_FreeStream  = Pressure_FreeStream/(config->GetGas_Constant()*Temperature_FreeStream); config->SetDensity_FreeStream(Density_FreeStream);
+      
+    }
+    
+    /*-- Compute the freestream energy. ---*/
+    
+    Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One) + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+    if (tkeNeeded) { Energy_FreeStream += Tke_FreeStream; }; config->SetEnergy_FreeStream(Energy_FreeStream);
+    
+    /*--- Additional reference values defined by Pref, Tref, Rho_ref. By definition,
+     Lref is one because we have converted the grid to meters.---*/
+    
+    Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
+    Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
+    Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
+    Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
+    Force_Ref         = Velocity_Ref*Velocity_Ref/Length_Ref;                        config->SetForce_Ref(Force_Ref);
+    Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
+    Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
+    Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
+    
+  }
+  
+  else {
+    
+    /*--- Reference length = 1 (by default)
+     Reference density = liquid density or freestream
+     Reference viscosity = liquid viscosity or freestream
+     Reference velocity = liquid velocity or freestream
+     Reference pressure = Reference density * Reference velocity * Reference velocity
+     Reynolds number based on the liquid or reference viscosity ---*/
+    
+    Pressure_FreeStream = 0.0; config->SetPressure_FreeStream(Pressure_FreeStream);
+    Density_FreeStream  = config->GetDensity_FreeStream();
+    ModVel_FreeStream = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+    ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
+    
+    /*--- Additional reference values defined by Pref, Tref, Rho_ref. By definition,
+     Lref is one because we have converted the grid to meters.---*/
+    
+    Length_Ref = 1.0;                                         config->SetLength_Ref(Length_Ref);
+    Density_Ref = Density_FreeStream;                         config->SetDensity_Ref(Density_Ref);
+    Velocity_Ref = ModVel_FreeStream;                         config->SetVelocity_Ref(Velocity_Ref);
+    Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);   config->SetPressure_Ref(Pressure_Ref);
+    
+    if (viscous) {
+      Viscosity_FreeStream = config->GetViscosity_FreeStream();
+      Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream;  config->SetReynolds(Reynolds);
+      Viscosity_Ref = Viscosity_FreeStream * Reynolds;                        config->SetViscosity_Ref(Viscosity_Ref);
+    }
+    
+    /*--- Compute Mach number ---*/
+    
+    Mach = ModVel_FreeStream / sqrt(config->GetBulk_Modulus()/Density_FreeStream);   config->SetMach(Mach);
+    
+    /*--- Compute Alpha angle ---*/
+    
+    if (nDim == 2) Alpha = atan(config->GetVelocity_FreeStream()[1]/config->GetVelocity_FreeStream()[0])*180.0/PI_NUMBER;
+    else Alpha = atan(config->GetVelocity_FreeStream()[2]/config->GetVelocity_FreeStream()[0])*180.0/PI_NUMBER;
+    config->SetAoA(Alpha);
+    
+    /*--- Compute Beta angle ---*/
+    
+    if (nDim == 2) Beta = 0.0;
+    else Beta = asin(config->GetVelocity_FreeStream()[1]/ModVel_FreeStream)*180.0/PI_NUMBER;
+    config->SetAoS(Beta);
+    
+    /*--- Compute Froude ---*/
+    
+    Froude = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);   config->SetFroude(Froude);
+    Time_Ref = Length_Ref/Velocity_Ref;                             config->SetTime_Ref(Time_Ref);
+    
+  }
+  
+  /*--- Divide by reference values, to compute the non-dimensional free-stream values ---*/
+  
+  Pressure_FreeStreamND = Pressure_FreeStream/config->GetPressure_Ref();  config->SetPressure_FreeStreamND(Pressure_FreeStreamND);
+  Density_FreeStreamND  = Density_FreeStream/config->GetDensity_Ref();    config->SetDensity_FreeStreamND(Density_FreeStreamND);
+  
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
+  }
+  
+  Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
+  
+  Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
+  
+  ModVel_FreeStreamND = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
+  ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
+  
+  Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+  
+  Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+  config->SetTke_FreeStream(Tke_FreeStream);
+  
+  Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
+  config->SetTke_FreeStreamND(Tke_FreeStreamND);
+  
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  config->SetOmega_FreeStream(Omega_FreeStream);
+  
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+  config->SetOmega_FreeStreamND(Omega_FreeStreamND);
+  
+  Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
+  if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
+  
+  Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+  
+  Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
+  Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
+  
+  /*--- Write output to the console if this is the master node and first domain ---*/
+  
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
+    
+    cout.precision(6);
+    
+    if (compressible) {
+      if (viscous) {
+        cout << "Viscous flow: Computing pressure using the ideal gas law" << endl;
+        cout << "based on the free-stream temperature and a density computed" << endl;
+        cout << "from the Reynolds number." << endl;
+      } else {
+        cout << "Inviscid flow: Computing density based on free-stream" << endl;
+        cout << "temperature and pressure using the ideal gas law." << endl;
+      }
+      cout << "Note: Negative pressure, temperature or density is not allowed!" << endl;
+    }
+    
+    if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
+    else cout << "Force coefficients computed using free-stream values." << endl;
+    
+    if (incompressible || freesurface) {
+      cout << "Viscous and Inviscid flow: rho_ref, and vel_ref" << endl;
+      cout << "are based on the free-stream values, p_ref = rho_ref*vel_ref^2." << endl;
+      cout << "The free-stream value of the pressure is 0." << endl;
+      cout << "Mach number: "<< config->GetMach() << ", computed using the Bulk modulus." << endl;
+      cout << "Angle of attack (deg): "<< config->GetAoA() << ", computed using the the free-stream velocity." << endl;
+      cout << "Side slip angle (deg): "<< config->GetAoS() << ", computed using the the free-stream velocity." << endl;
+      if (viscous) cout << "Reynolds number: " << config->GetReynolds() << ", computed using free-stream values."<<endl;
+      cout << "Only dimensional computation, the grid should be dimensional." << endl;
+    }
+    
+    cout <<"-- Input conditions:"<< endl;
+    
+    if (compressible) {
+      cout << "Specific gas constant: " << config->GetGas_Constant();
+      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
+    }
+    
+    if (incompressible || freesurface) {
+      cout << "Bulk modulus: " << config->GetBulk_Modulus();
+      if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
+      cout << "Artificial compressibility factor: " << config->GetArtComp_Factor();
+      if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
+    }
+    
+    cout << "Free-stream pressure: " << config->GetPressure_FreeStream();
+    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
+    
+    if (compressible) {
+      cout << "Free-stream temperature: " << config->GetTemperature_FreeStream();
+      if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+    }
+    
+    cout << "Free-stream density: " << config->GetDensity_FreeStream();
+    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
+    
+    if (nDim == 2) {
+      cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
+      cout << config->GetVelocity_FreeStream()[1] << ")";
+    }
+    if (nDim == 3) {
+      cout << "Free-stream velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
+      cout << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
+    }
+    if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
+    
+    cout << "Magnitude: "	<< config->GetModVel_FreeStream();
+    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
+    
+    if (compressible) {
+      cout << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
+      if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
+    }
+    
+    if (viscous) {
+      cout << "Free-stream viscosity: " << config->GetViscosity_FreeStream();
+      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
+      if (turbulent){
+        cout << "Free-stream turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
+        if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
+        else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
+        cout << "Free-stream specific dissipation: " << config->GetOmega_FreeStream();
+        if (config->GetSystemMeasurements() == SI) cout << " 1/s." << endl;
+        else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
+      }
+    }
+    
+    if (unsteady) { cout << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << endl; }
+    
+    /*--- Print out reference values. ---*/
+    
+    cout <<"-- Reference values:"<< endl;
+    
+    if (compressible) {
+      cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
+    }
+    
+    cout << "Reference pressure: " << config->GetPressure_Ref();
+    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
+    
+    if (compressible) {
+      cout << "Reference temperature: " << config->GetTemperature_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+    }
+    
+    cout << "Reference density: " << config->GetDensity_Ref();
+    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
+    
+    cout << "Reference velocity: " << config->GetVelocity_Ref();
+    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
+    
+    if (compressible) {
+      cout << "Reference energy per unit mass: " << config->GetEnergy_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
+    }
+    
+    if (incompressible || freesurface) {
+      cout << "Reference length: " << config->GetLength_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " in." << endl;
+    }
+    
+    if (viscous) {
+      cout << "Reference viscosity: " << config->GetViscosity_Ref();
+      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
+    }
+    
+    if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
+    
+    /*--- Print out resulting non-dim values here. ---*/
+    
+    cout << "-- Resulting non-dimensional state:" << endl;
+    cout << "Mach number (non-dim): " << config->GetMach() << endl;
+    if (viscous) {
+      cout << "Reynolds number (non-dim): " << config->GetReynolds() <<". Re length: " << config->GetLength_Reynolds();
+      if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " in." << endl;
+    }
+    if (gravity) {
+      cout << "Froude number (non-dim): " << Froude << endl;
+      cout << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+    }
+    
+    if (compressible) {
+      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
+      cout << "Free-stream temperature (non-dim): " << config->GetTemperature_FreeStreamND() << endl;
+    }
+    
+    cout << "Free-stream pressure (non-dim): " << config->GetPressure_FreeStreamND() << endl;
+    
+    cout << "Free-stream density (non-dim): " << config->GetDensity_FreeStreamND() << endl;
+    
+    if (nDim == 2) {
+      cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
+      cout << config->GetVelocity_FreeStreamND()[1] << "). ";
+    } else {
+      cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
+      cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
+    }
+    cout << "Magnitude: "	 << config->GetModVel_FreeStreamND() << endl;
+    
+    if (compressible)
+      cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
+    
+    if (viscous) {
+      cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
+      if (turbulent){
+        cout << "Free-stream turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << endl;
+        cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
+      }
+    }
+    
+    if (unsteady) {
+      cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
+      cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
+    }
+    
+    cout << endl;
+    
+  }
+  
+}
+
 void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
                                      CSolver **solution_container,
                                      CConfig *config,
@@ -1727,17 +2137,17 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetSolution_Gradient_GG(geometry, config);
-        SetPrimVar_Gradient_GG(geometry, config);
+        SetPrimitive_Gradient_GG(geometry, config);
         break;
       case WEIGHTED_LEAST_SQUARES:
         SetSolution_Gradient_LS(geometry, config);
-        SetPrimVar_Gradient_LS(geometry, config);
+        SetPrimitive_Gradient_LS(geometry, config);
         break;
     }
     
 		/*--- Limiter computation ---*/
 		if ((limiter) && (iMesh == MESH_0)) {
-      SetPrimVar_Limiter(geometry, config);
+      SetPrimitive_Limiter(geometry, config);
       SetSolution_Limiter(geometry, config);
     }
 	}
@@ -1938,7 +2348,7 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
     
 		/*--- Pass conservative & primitive variables w/o reconstruction to CNumerics ---*/
 		numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-    numerics->SetPrimitive(node[iPoint]->GetPrimVar(), node[jPoint]->GetPrimVar());
+    numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
     
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(node[iPoint]->GetdPdU(), node[jPoint]->GetdPdU());
@@ -2024,8 +2434,8 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
     /*--- Get conserved & primitive variables from CVariable ---*/
     U_i = node[iPoint]->GetSolution();
     U_j = node[jPoint]->GetSolution();
-    V_i = node[iPoint]->GetPrimVar();
-    V_j = node[jPoint]->GetPrimVar();
+    V_i = node[iPoint]->GetPrimitive();
+    V_j = node[jPoint]->GetPrimitive();
     
     
     /*--- High order reconstruction using MUSCL strategy ---*/
@@ -2250,7 +2660,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
       
       /*--- Set conserved & primitive variables  ---*/
       numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
-      numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),  node[iPoint]->GetPrimVar() );
+      numerics->SetPrimitive   (node[iPoint]->GetPrimitive(),  node[iPoint]->GetPrimitive() );
       
       /*--- Pass supplementary information to CNumerics ---*/
       numerics->SetdPdU(node[iPoint]->GetdPdU(), node[iPoint]->GetdPdU());
@@ -2337,8 +2747,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
             /*--- Set conserved & primitive variables  ---*/
             numerics->SetConservative(node[iPoint]->GetSolution(),
                                       node[iPoint]->GetSolution());
-            numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),
-                                      node[iPoint]->GetPrimVar() );
+            numerics->SetPrimitive   (node[iPoint]->GetPrimitive(),
+                                      node[iPoint]->GetPrimitive() );
             numerics->SetdPdU        (node[iPoint]->GetdPdU(),
                                       node[iPoint]->GetdPdU());
             numerics->SetdTdU        (node[iPoint]->GetdTdU(),
@@ -2401,8 +2811,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
             /*--- Set conserved & primitive variables  ---*/
             numerics->SetConservative(node[iPoint]->GetSolution(),
                                       node[iPoint]->GetSolution());
-            numerics->SetPrimitive   (node[iPoint]->GetPrimVar(),
-                                      node[iPoint]->GetPrimVar() );
+            numerics->SetPrimitive   (node[iPoint]->GetPrimitive(),
+                                      node[iPoint]->GetPrimitive() );
             numerics->SetdPdU        (node[iPoint]->GetdPdU(),
                                       node[iPoint]->GetdPdU());
             numerics->SetdTdU        (node[iPoint]->GetdTdU(),
@@ -2729,6 +3139,10 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
   }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
+  }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
   }
@@ -2771,7 +3185,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
 }
 
-void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, jPoint, iEdge, iVertex;
 	unsigned short iDim, iSpecies, iVar, iMarker, RHOS_INDEX, RHO_INDEX;
 	double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average, rho_i,
@@ -2798,12 +3212,12 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
     
     /*--- Pull primitives from CVariable ---*/
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
-			PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+			PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+			PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
 		}
     
-//    rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
-//    rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
+//    rho_i = node[iPoint]->GetPrimitive(RHO_INDEX);
+//    rho_j = node[jPoint]->GetPrimitive(RHO_INDEX);
 //    
 //    /*--- Modify densities to be mass concentration ---*/
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -2832,10 +3246,10 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
         
         /*--- Get primitives from CVariable ---*/
 				for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-					PrimVar_Vertex[iVar] = node[iPoint]->GetPrimVar(iVar);
+					PrimVar_Vertex[iVar] = node[iPoint]->GetPrimitive(iVar);
         
         /*--- Modify species density to mass concentration ---*/
-        rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+        rho_i = node[iPoint]->GetPrimitive(RHO_INDEX);
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           PrimVar_Vertex[RHOS_INDEX+iSpecies] = PrimVar_Vertex[RHOS_INDEX+iSpecies]/rho_i;
         
@@ -2868,7 +3282,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_GG(CGeometry *geometry, CConfig *conf
   
 }
 
-void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
 	unsigned short iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
 	unsigned long iPoint, jPoint;
@@ -2897,11 +3311,11 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
     /*--- Get primitives from CVariable ---*/
     
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-			PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+			PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
     
 //    /*--- Modify species density to mass fraction ---*/
 //    
-//    rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+//    rho_i = node[iPoint]->GetPrimitive(RHO_INDEX);
 //    for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++)
 //      PrimVar_i[RHOS_INDEX+iSpecies] = PrimVar_i[RHOS_INDEX+iSpecies]/rho_i;
     
@@ -2919,11 +3333,11 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			Coord_j = geometry->node[jPoint]->GetCoord();
       
 			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-				PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+				PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
       
       /*--- Modify species density to mass fraction ---*/
       
-//      rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
+//      rho_j = node[jPoint]->GetPrimitive(RHO_INDEX);
 //      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //        PrimVar_j[RHOS_INDEX+iSpecies] = PrimVar_j[RHOS_INDEX+iSpecies]/rho_j;
       
@@ -3024,7 +3438,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 }
 
 
-void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry,
+void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
                                               CConfig *config,
                                               unsigned long val_Point) {
 
@@ -3050,10 +3464,10 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry,
   
   /*--- Get primitives from CVariable ---*/
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-    PrimVar_i[iVar] = node[iPoint]->GetPrimVar(iVar);
+    PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
   
 //  /*--- Modify species density to mass fraction ---*/
-//  rho_i = node[iPoint]->GetPrimVar(RHO_INDEX);
+//  rho_i = node[iPoint]->GetPrimitive(RHO_INDEX);
 //  for (iSpecies =0 ; iSpecies < nSpecies; iSpecies++)
 //    PrimVar_i[RHOS_INDEX+iSpecies] = PrimVar_i[RHOS_INDEX+iSpecies]/rho_i;
   
@@ -3070,10 +3484,10 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry,
     Coord_j = geometry->node[jPoint]->GetCoord();
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
+      PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
     
 //    /*--- Modify species density to mass fraction ---*/
-//    rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
+//    rho_j = node[jPoint]->GetPrimitive(RHO_INDEX);
 //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
 //      PrimVar_j[RHOS_INDEX+iSpecies] = PrimVar_j[RHOS_INDEX+iSpecies]/rho_j;
     
@@ -3162,7 +3576,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry,
 }
 
 
-void CTNE2EulerSolver::SetPrimVar_Limiter(CGeometry *geometry,
+void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
                                           CConfig *config) {
 
   unsigned long iEdge, iPoint, jPoint;
@@ -3189,8 +3603,8 @@ void CTNE2EulerSolver::SetPrimVar_Limiter(CGeometry *geometry,
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
     /*--- Get the conserved variables ---*/
-    Primitive_i = node[iPoint]->GetPrimVar();
-    Primitive_j = node[jPoint]->GetPrimVar();
+    Primitive_i = node[iPoint]->GetPrimitive();
+    Primitive_j = node[jPoint]->GetPrimitive();
     
     /*--- Compute the maximum, and minimum values for nodes i & j ---*/
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -3218,8 +3632,8 @@ void CTNE2EulerSolver::SetPrimVar_Limiter(CGeometry *geometry,
         
         iPoint      = geometry->edge[iEdge]->GetNode(0);
         jPoint      = geometry->edge[iEdge]->GetNode(1);
-        Primitive_i = node[iPoint]->GetPrimVar();
-        Primitive_j = node[jPoint]->GetPrimVar();
+        Primitive_i = node[iPoint]->GetPrimitive();
+        Primitive_j = node[jPoint]->GetPrimitive();
         Gradient_i  = node[iPoint]->GetGradient_Primitive();
         Gradient_j  = node[jPoint]->GetGradient_Primitive();
         Coord_i     = geometry->node[iPoint]->GetCoord();
@@ -3270,8 +3684,8 @@ void CTNE2EulerSolver::SetPrimVar_Limiter(CGeometry *geometry,
         
         iPoint      = geometry->edge[iEdge]->GetNode(0);
         jPoint      = geometry->edge[iEdge]->GetNode(1);
-        Primitive_i = node[iPoint]->GetPrimVar();
-        Primitive_j = node[jPoint]->GetPrimVar();
+        Primitive_i = node[iPoint]->GetPrimitive();
+        Primitive_j = node[jPoint]->GetPrimitive();
         Gradient_i  = node[iPoint]->GetGradient_Primitive();
         Gradient_j  = node[jPoint]->GetGradient_Primitive();
         Coord_i     = geometry->node[iPoint]->GetCoord();
@@ -3741,9 +4155,9 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       
 			/*--- Retrieve solution at the boundary node & free-stream ---*/
       U_domain = node[iPoint]->GetSolution();
-      V_domain = node[iPoint]->GetPrimVar();
+      V_domain = node[iPoint]->GetPrimitive();
       U_infty  = node_infty->GetSolution();
-      V_infty  = node_infty->GetPrimVar();
+      V_infty  = node_infty->GetPrimitive();
       
       /*--- Pass conserved & primitive variables to CNumerics ---*/
       conv_numerics->SetConservative(U_domain, U_infty);
@@ -3772,8 +4186,8 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetConservative(node[iPoint]->GetSolution(),
                                        node_infty->GetSolution() );
-        visc_numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
-                                    node_infty->GetPrimVar() );
+        visc_numerics->SetPrimitive(node[iPoint]->GetPrimitive(),
+                                    node_infty->GetPrimitive() );
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
                                           node_infty->GetGradient_Primitive() );
         
@@ -3857,7 +4271,7 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
       
 			/*--- Retrieve solution at this boundary node ---*/
 			for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimitive(iVar);
       
 			/*--- Build the fictitious intlet state based on characteristics ---*/
       
@@ -4114,7 +4528,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
       
 			/*--- Current solution at this boundary node ---*/
 			for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+      for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimitive(iVar);
       
 			/*--- Build the fictitious intlet state based on characteristics ---*/
       
@@ -4304,7 +4718,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
       
 			/*--- Current solution at this boundary node ---*/
 			for (iVar = 0; iVar < nVar; iVar++) U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-			for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimVar(iVar);
+			for (iVar = 0; iVar < nPrimVar; iVar++) V_domain[iVar] = node[iPoint]->GetPrimitive(iVar);
       
 			/*--- Normal vector for this vertex (negate for outward convention) ---*/
 			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
@@ -4803,7 +5217,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		/*--- Initialization of the structure of the global Jacobian ---*/
 		if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -4882,15 +5296,15 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   MaxHeatFlux_Visc     = new double[nMarker];
   
 	/*--- Read farfield conditions from config ---*/
-	Pressure_Inf       = config->GetPressure_FreeStream();
+	Pressure_Inf       = config->GetPressure_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
-  Mach_Inf           = config->GetMach_FreeStreamND();
+  Mach_Inf           = config->GetMach();
   
   // Note: May need to investigate these more carefully...
 	Viscosity_Inf = config->GetViscosity_FreeStreamND();
-	Mach_Inf      = config->GetMach_FreeStreamND();
+	Mach_Inf      = config->GetMach();
 	Prandtl_Lam   = config->GetPrandtl_Lam();
 	Prandtl_Turb  = config->GetPrandtl_Turb();
   
@@ -5200,17 +5614,17 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	/*--- Compute gradient of the primitive variables ---*/
   switch (config->GetKind_Gradient_Method()) {
     case GREEN_GAUSS:
-      SetPrimVar_Gradient_GG(geometry, config);
+      SetPrimitive_Gradient_GG(geometry, config);
       SetSolution_Gradient_GG(geometry, config);
       break;
     case WEIGHTED_LEAST_SQUARES:
-      SetPrimVar_Gradient_LS(geometry, config);
+      SetPrimitive_Gradient_LS(geometry, config);
       SetSolution_Gradient_LS(geometry, config);
       break;
   }
   
   if ((second_order) && (iMesh == MESH_0) && limiter) {
-//    SetPrimVar_Limiter(geometry, config);
+//    SetPrimitive_Limiter(geometry, config);
     SetSolution_Limiter(geometry, config);
   }
   
@@ -5453,8 +5867,8 @@ void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
     /*--- Primitive variables, and gradient ---*/
     numerics->SetConservative(node[iPoint]->GetSolution(),
                               node[jPoint]->GetSolution() );
-    numerics->SetPrimitive(node[iPoint]->GetPrimVar(),
-                           node[jPoint]->GetPrimVar() );
+    numerics->SetPrimitive(node[iPoint]->GetPrimitive(),
+                           node[jPoint]->GetPrimitive() );
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
                                  node[jPoint]->GetGradient_Primitive() );
 
@@ -5962,7 +6376,7 @@ void CTNE2NSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
 				Res_Visc[iVar] = 0.0;
       
       /*--- Get temperature gradient information ---*/
-      V = node[iPoint]->GetPrimVar();
+      V = node[iPoint]->GetPrimitive();
       GradV  = node[iPoint]->GetGradient_Primitive();
       
       /*--- Rename for convenience ---*/
@@ -6089,7 +6503,7 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       }
       
       /*--- Get temperature gradient information ---*/
-      V = node[iPoint]->GetPrimVar();
+      V = node[iPoint]->GetPrimitive();
       GradV  = node[iPoint]->GetGradient_Primitive();
       dTdn   = 0.0;
       dTvedn = 0.0;
@@ -6153,8 +6567,8 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       //      //       (convention is to subtract sources)
       //      sour_numerics->SetConservative(node[iPoint]->GetSolution(),
       //                                     node[iPoint]->GetSolution() );
-      //      sour_numerics->SetPrimitive   (node[iPoint]->GetPrimVar() ,
-      //                                     node[iPoint]->GetPrimVar()  );
+      //      sour_numerics->SetPrimitive   (node[iPoint]->GetPrimitive() ,
+      //                                     node[iPoint]->GetPrimitive()  );
       //      sour_numerics->SetdPdU        (node[iPoint]->GetdPdU()    ,
       //                                     node[iPoint]->GetdPdU()     );
       //      sour_numerics->SetdTdU        (node[iPoint]->GetdTdU()    ,
@@ -6271,22 +6685,22 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
       jnk = node[iPoint]->SetTemperature_ve(Twall);
       
       /*--- Calculate the gradient of temperature ---*/
-      SetPrimVar_Gradient_LS(geometry, config, iPoint);
+      SetPrimitive_Gradient_LS(geometry, config, iPoint);
       PrimVarGrad = node[iPoint]->GetGradient_Primitive();
       
       /*--- Calculate useful quantities ---*/
-//      rhoCvtr = node[iPoint]->GetPrimVar(RHOCVTR_INDEX);
-//      rhoCvve = node[iPoint]->GetPrimVar(RHOCVVE_INDEX);
+//      rhoCvtr = node[iPoint]->GetPrimitive(RHOCVTR_INDEX);
+//      rhoCvve = node[iPoint]->GetPrimitive(RHOCVVE_INDEX);
 //      ktr     = node[iPoint]->GetThermalConductivity();
 //      kve     = node[iPoint]->GetThermalConductivity_ve();
-//      Ti      = node[iPoint]->GetPrimVar(T_INDEX);
-//      Tvei    = node[iPoint]->GetPrimVar(TVE_INDEX);
-//      Tj      = node[jPoint]->GetPrimVar(T_INDEX);
-//      Tvej    = node[jPoint]->GetPrimVar(TVE_INDEX);
+//      Ti      = node[iPoint]->GetPrimitive(T_INDEX);
+//      Tvei    = node[iPoint]->GetPrimitive(TVE_INDEX);
+//      Tj      = node[jPoint]->GetPrimitive(T_INDEX);
+//      Tvej    = node[jPoint]->GetPrimitive(TVE_INDEX);
 //      dTdU    = node[iPoint]->GetdTdU();
 //      dTvedU  = node[iPoint]->GetdTvedU();
       
-      V       = node[iPoint]->GetPrimVar();
+      V       = node[iPoint]->GetPrimitive();
       ktr     = node[iPoint]->GetThermalConductivity();
       kve     = node[iPoint]->GetThermalConductivity_ve();
       node[iPoint]->CalcdTdU(V, config, dTdU);
@@ -6428,7 +6842,7 @@ void CTNE2NSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
 				Res_Visc[iVar] = 0.0;
       
       /*--- Get temperature gradient information ---*/
-      V     = node[iPoint]->GetPrimVar();
+      V     = node[iPoint]->GetPrimitive();
       GradV = node[iPoint]->GetGradient_Primitive();
       
       /*--- Rename for convenience ---*/
@@ -6524,7 +6938,7 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 				Res_Visc[iVar] = 0.0;
       
       /*--- Get primitive information ---*/
-      V = node[iPoint]->GetPrimVar();
+      V = node[iPoint]->GetPrimitive();
       Ds = node[iPoint]->GetDiffusionCoeff();
       
       /*--- Rename for convenience ---*/
@@ -6533,11 +6947,11 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
       /*--- Calculate revised wall species densities ---*/
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         rhos = Yst[iSpecies]*rho;
-        node[iPoint]->SetPrimVar(rhos, RHOS_INDEX+iSpecies);
+        node[iPoint]->SetPrimitive(rhos, RHOS_INDEX+iSpecies);
       }
       
       /*--- Calculate revised primitive variable gradients ---*/
-      SetPrimVar_Gradient_LS(geometry, config, iPoint);
+      SetPrimitive_Gradient_LS(geometry, config, iPoint);
       GradV = node[iPoint]->GetGradient_Primitive();
       
       /*--- Calculate normal derivative of mass fraction ---*/
@@ -6640,8 +7054,8 @@ void CTNE2NSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
 //				Res_Visc[iVar] = 0.0;
 //      
 //      /*--- Get primitive information ---*/
-//      Vi = node[iPoint]->GetPrimVar();
-//      Vj = node[jPoint]->GetPrimVar();
+//      Vi = node[iPoint]->GetPrimitive();
+//      Vj = node[jPoint]->GetPrimitive();
 //      Di = node[iPoint]->GetDiffusionCoeff();
 //      Dj = node[jPoint]->GetDiffusionCoeff();
 //      

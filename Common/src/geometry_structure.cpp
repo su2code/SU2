@@ -1164,18 +1164,34 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     
     Mesh_Scale_Change = config->GetMesh_Scale_Change();
     
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
+    /*--- Change the scale of the mesh ---*/
+    
+    if (Mesh_Scale_Change != 1.0) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          NewCoord[iDim] = Mesh_Scale_Change*node[iPoint]->GetCoord(iDim);
+        }
+        node[iPoint]->SetCoord(NewCoord);
       }
-      node[iPoint]->SetCoord(NewCoord);
+      if (config->GetMesh_Output()) {
+        SetMeshFile(config, config->GetMesh_Out_FileName());
+        cout.precision(4);
+        cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
+        cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+      }
     }
     
-    if (config->GetMesh_Output()) {
-      SetMeshFile(config, config->GetMesh_Out_FileName());
-      cout.precision(4);
-      cout << "Scaled mesh by a factor of " << Mesh_Scale_Change << endl;
-      cout << " and wrote to the output file: " << config->GetMesh_Out_FileName() << endl;
+    /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
+    
+    if (config->GetSystemMeasurements() == US) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
+        }
+        node[iPoint]->SetCoord(NewCoord);
+      }
+      
+      
     }
     
   }
@@ -2497,9 +2513,10 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   unsigned long iElem_Bound, TotalElem, *nElem_Bound_Copy, iVertex_;
   string Grid_Marker;
-  unsigned short iDomain, nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, iMarker, iMarker_;
+  unsigned short nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, jMarker, iMarker, iMarker_;
   CPrimalGrid*** bound_Copy;
-  short *Marker_All_SendRecv_Copy;
+  short *Marker_All_SendRecv_Copy, jDomain, iDomain, iNewDomain, nNewDomain;
+  vector<short> NewDomain;
   bool CheckStart;
   
   int rank = MASTER_NODE;
@@ -2522,6 +2539,34 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       nMarker_Physical++;
     }
   }
+  
+  /*--- Check that all the send received markers have a partner ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
+      
+      CheckStart = true;
+      iDomain = Marker_All_SendRecv[iMarker];
+      
+      for (jMarker = 0; jMarker < nMarker; jMarker++) {
+        if (bound[jMarker][0]->GetVTK_Type() == VERTEX) {
+          jDomain = Marker_All_SendRecv[jMarker];
+          if (iDomain == -jDomain) { CheckStart = false; break; }
+        }
+      }
+      
+      if (CheckStart) NewDomain.push_back(-iDomain);
+      
+    }
+  }
+  
+  nNewDomain = NewDomain.size();
+
+#ifdef HAVE_MPI
+  /*--- Finalize MPI parallelization ---*/
+	MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
   
   /*--- Identify if there are markers that send/received with the same domain,
    they should be together---*/
@@ -2585,7 +2630,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   /*--- Create an structure to store the Send/Receive
    boundaries, because they require some reorganization ---*/
   
-  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive;
+  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive + nNewDomain;
   bound_Copy = new CPrimalGrid**[nMarker_Physical + nMarker_SendRecv];
   nElem_Bound_Copy = new unsigned long [nMarker_Physical + nMarker_SendRecv];
   Marker_All_SendRecv_Copy = new short [nMarker_Physical + nMarker_SendRecv];
@@ -2650,6 +2695,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       
     }
     
+    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
+      if (NewDomain[iNewDomain] == iDomain) {
+        iMarker_++;
+        nElem_Bound_Copy[iMarker_] = 0;
+        bound_Copy[iMarker_] = new CPrimalGrid*[1];
+        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
+        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
+      }
+    }
+    
     /*--- Compute the total number of elements (adding all the
      boundaries with the same Send/Receive ---*/
     
@@ -2664,7 +2719,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       iVertex_ = 0;
       nElem_Bound_Copy[iMarker_] = TotalElem;
       bound_Copy[iMarker_] = new CPrimalGrid*[TotalElem];
-      
     }
     
     for (iMarkersDomain = 0; iMarkersDomain < DomainReceiveCount[iDomain]; iMarkersDomain++) {
@@ -2677,6 +2731,16 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         iVertex_++;
       }
       
+    }
+    
+    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
+      if (NewDomain[iNewDomain] == -iDomain) {
+        iMarker_++;
+        nElem_Bound_Copy[iMarker_] = 0;
+        bound_Copy[iMarker_] = new CPrimalGrid*[1];
+        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
+        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
+      }
     }
     
   }
@@ -4954,6 +5018,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
 }
 
 void CPhysicalGeometry::Check_Orientation(CConfig *config) {
+  
   unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6,
   iElem, Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
   iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface;
@@ -4963,9 +5028,11 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
   bool find;
   
   /*--- Loop over all the elements ---*/
+  
   for (iElem = 0; iElem < nElem; iElem++) {
     
     /*--- 2D grid, triangle case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -4981,6 +5048,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
     /*--- 2D grid, rectangle case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5013,6 +5081,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
     /*--- 3D grid, tetrahedron case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5034,6 +5103,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
     /*--- 3D grid, wedge case ---*/
+    
     if (elem[iElem]->GetVTK_Type() == WEDGE) {
       
       Point_1 = elem[iElem]->GetNode(0); Coord_1 = node[Point_1]->GetCoord();
@@ -5051,6 +5121,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         (Coord_6[iDim]-Coord_3[iDim]); }
       
       /*--- The normal vector should point to the interior of the element ---*/
+      
       n[0] = a[1]*b[2]-b[1]*a[2];
       n[1] = -(a[0]*b[2]-b[0]*a[2]);
       n[2] = a[0]*b[1]-b[0]*a[1];
@@ -5065,6 +5136,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         (Coord_3[iDim]-Coord_6[iDim]); }
       
       /*--- The normal vector should point to the interior of the element ---*/
+      
       n[0] = a[1]*b[2]-b[1]*a[2];
       n[1] = -(a[0]*b[2]-b[0]*a[2]);
       n[2] = a[0]*b[1]-b[0]*a[1];
@@ -5183,6 +5255,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
   }
   
   /*--- Surface elements ---*/
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
       
@@ -5198,6 +5271,7 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
       }
       
       /*--- 2D grid, line case ---*/
+      
       if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
         
         Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
@@ -5209,7 +5283,12 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
           b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
         test = a[0]*b[1]-b[0]*a[1];
         
-        if (test < 0.0) bound[iMarker][iElem_Surface]->Change_Orientation();
+        if (test < 0.0) {
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          node[Point_1_Surface]->SetFlip_Orientation();
+          node[Point_2_Surface]->SetFlip_Orientation();
+        }
+        
       }
       
       /*--- 3D grid, triangle case ---*/
@@ -5229,7 +5308,13 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         n[2] = a[0]*b[1]-b[0]*a[1];
         
         test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        if (test < 0.0) bound[iMarker][iElem_Surface]->Change_Orientation();
+        if (test < 0.0) {
+          bound[iMarker][iElem_Surface]->Change_Orientation();
+          node[Point_1_Surface]->SetFlip_Orientation();
+          node[Point_2_Surface]->SetFlip_Orientation();
+          node[Point_3_Surface]->SetFlip_Orientation();
+        }
+        
       }
       
       if (bound[iMarker][iElem_Surface]->GetVTK_Type() == RECTANGLE) {
@@ -5276,8 +5361,14 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
         n[2] = a[0]*b[1]-b[0]*a[1];
         test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
         
-        if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0))
+        if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
           bound[iMarker][iElem_Surface]->Change_Orientation();
+          node[Point_1_Surface]->SetFlip_Orientation();
+          node[Point_2_Surface]->SetFlip_Orientation();
+          node[Point_3_Surface]->SetFlip_Orientation();
+          node[Point_4_Surface]->SetFlip_Orientation();
+        }
+        
       }
     }
 }
@@ -7766,7 +7857,8 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron, kPoint, jPoint, iVertex;
   unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
-  idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
+  idx_t ne = 0, nn, etype, numflag, nparts, edgecut;
+  idx_t *elmnts = NULL, *epart = NULL, *npart = NULL, *eptr = NULL;
   int rank, size;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -7907,33 +7999,29 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   if (GetnDim() == 2) eptr[ne] = 3*ne;
   else eptr[ne] = 4*ne;
   
-#ifdef METIS_5
-  /*--- Calling METIS 5.0.2 ---*/
+  /*--- Set some options for METIS ---*/
+  
   int options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+  
+  /*--- Call METIS to partition the mesh ---*/
+  
   METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS 5.0.2. ("  << edgecut << " edge cuts)." << endl;
-#else
-  /*--- Calling METIS 4.0.3 ---*/
-  METIS_PartMeshNodal(&ne, &nn, elmnts, &etype, &numflag, &nparts, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS 4.0.3. ("  << edgecut << " edge cuts)." << endl;
-#endif
+  cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
+
+  /*--- Store the partitioning information for each node ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetColor(npart[iPoint]);
   
-  //  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-  //    if (node[iPoint]->GetCoord(0) < -5.0)
-  //    node[iPoint]->SetColor(2);
-  //  }
-  
+  /*--- Free memory and exit ---*/
   
   delete[] epart;
   delete[] npart;
   delete[] elmnts;
   delete[] eptr;
-  
+
 #endif
 #endif
   

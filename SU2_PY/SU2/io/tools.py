@@ -193,6 +193,8 @@ def get_headerMap():
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
+                 "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
+                 "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "Time(min)"       : "TIME"         }
     
     return map_dict
@@ -219,6 +221,8 @@ optnames_aero = [ "LIFT"                    ,
                   "FIGURE_OF_MERIT"         ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
+                  "AVG_TOTAL_PRESSURE"      ,
+                  "MASS_FLOW_RATE"          ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
@@ -412,6 +416,8 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                  : "ct"        ,
                  "TORQUE"                  : "cq"        ,
                  "FIGURE_OF_MERIT"         : "merit"     ,
+                 "AVG_TOTAL_PRESSURE"      : "pt"        ,
+                 "MASS_FLOW_RATE"          : "mfw"       ,
                  "FREE_SURFACE"            : "fs"        }
     
     # if none or false, return map
@@ -544,6 +550,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "EQUIV_AREA"     : 
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
                 write_format.append(", %.10f, %.10f")
+            if key == "1D_OUTPUT"     :
+                header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_FluxAvg_Pressure","Grad_FluxAvg_Density","Grad_FluxAvg_Velocity","Grad_FluxAvg_Enthalpy"')
+                write_format.append(", %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f")
             if key == "INV_DESIGN_CP"     :
                 header.append(r',"Grad_Cp_Diff"')
                 write_format.append(", %.10f")
@@ -659,6 +668,9 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "EQUIV_AREA"     : 
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
             write_format.append(r', %.10f, %.10f')
+        if key == "1D_OUTPUT":
+            header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","FluxAvg_Pressure","FluxAvg_Density","FluxAvg_Velocity","FluxAvg_Enthalpy"])
+            write_format.append(r', %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         if key == "INV_DESIGN_CP"     :
             header_list.extend(["Cp_Diff"])
             write_format.append(r', %.10f')
@@ -715,6 +727,7 @@ def get_specialCases(config):
     all_special_cases = [ 'FREE_SURFACE'                     ,
                           'ROTATING_FRAME'                   ,
                           'EQUIV_AREA'                       ,
+                          '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
                           'INV_DESIGN_HEATFLUX'              ]
     

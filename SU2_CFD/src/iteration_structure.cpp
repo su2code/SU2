@@ -42,6 +42,10 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Set the initial condition ---*/
+  for (iZone = 0; iZone < nZone; iZone++)
+    solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+  
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -66,10 +70,6 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		IntIter = ExtIter;
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-    
-		/*--- Set the initial condition ---*/
-    
-		solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
     
 		/*--- Update global parameters ---*/
     
@@ -281,9 +281,9 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 			 note that in the direct Euler problem we are not computing the gradients of the primitive variables ---*/
       
 			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0], config_container[iZone]);
+				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_GG(geometry_container[iZone][MESH_0], config_container[iZone]);
 			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
+				solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_LS(geometry_container[iZone][MESH_0], config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
       
@@ -483,10 +483,10 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
        sensitivity computation, note that in the direct Euler problem we
        are not computing the gradients of the primitive variables ---*/
 			if (config_container[iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_GG(geometry_container[iZone][MESH_0],
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_GG(geometry_container[iZone][MESH_0],
                                                                           config_container[iZone]);
 			if (config_container[iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimVar_Gradient_LS(geometry_container[iZone][MESH_0],
+				solver_container[iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_LS(geometry_container[iZone][MESH_0],
                                                                           config_container[iZone]);
       
 			/*--- Set contribution from cost function for boundary conditions ---*/
@@ -1702,7 +1702,7 @@ void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
 	delete [] b_coeffs;
 	delete [] fitted_coords;
 	delete [] fitted_velocities;
-	for (iZone = 0; iZone < nDim; iZone++) {
+	for (iZone = 0; iZone < nZone; iZone++) {
 		delete [] coords[iZone];
 	}
 	delete [] coords;

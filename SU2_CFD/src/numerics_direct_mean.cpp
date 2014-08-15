@@ -1262,6 +1262,20 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
 	Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
 	Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
   
+  /*--- Mavriplis entropy correction ---*/
+  
+  MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
+  Delta = config->GetEntropyFix_Coeff();
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    sign = 1.0; if (Lambda[iVar] < 0.0) sign = -1.0;
+    Lambda[iVar] = sign*max(fabs(Lambda[iVar]), Delta*MaxLambda);
+  }
+  
+	for (iVar = 0; iVar < nVar; iVar++)
+		Lambda[iVar] = fabs(Lambda[iVar]);
+
+  
 //	/*--- Harten and Hyman (1983) entropy correction ---*/
 //	for (iDim = 0; iDim < nDim; iDim++)
 //		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
@@ -1274,9 +1288,6 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
 //			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
 //		else
 //			Lambda[iVar] = fabs(Lambda[iVar]);
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		Lambda[iVar] = fabs(Lambda[iVar]);
   
 	if (!implicit) {
     

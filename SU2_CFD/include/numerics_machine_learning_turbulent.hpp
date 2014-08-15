@@ -37,6 +37,10 @@ public:
   SpalartAllmarasOtherOutputs();
   ~SpalartAllmarasOtherOutputs();
   double fw;
+  double mul_production; // multiplier of OmegaNu
+  double mul_destruction; // multiplier of (Nu/ d)^2
+  double mul_crossproduction; // multiplier of dnuhat_i / dx_i
+  double Omega; // Sqrt vorticity
 };
 
 class SpalartAllmarasConstants{

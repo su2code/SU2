@@ -56,7 +56,9 @@ protected:
   double *Vector; /*!< \brief Auxiliary vector. */
   double *Enthalpy_formation;
 	unsigned short nDiatomics, nMonatomics;
-    
+	double Prandtl_Lam;				/*!< \brief Laminar Prandtl's number. */
+	double Prandtl_Turb;		/*!< \brief Turbulent Prandtl's number. */
+  
 public:
 	
   double
@@ -127,6 +129,8 @@ public:
 	*U_3;				/*!< \brief Vector of conservative variables at node 3. */
 	double *V_i,		/*!< \brief Vector of primitive variables at point i. */
 	*V_j;				/*!< \brief Vector of primitive variables at point j. */
+	double *S_i,		/*!< \brief Vector of secondary variables at point i. */
+	*S_j;				/*!< \brief Vector of secondary variables at point j. */
 	double *Psi_i,		/*!< \brief Vector of adjoint variables at point i. */
 	*Psi_j;				/*!< \brief Vector of adjoint variables at point j. */
 	double *DeltaU_i,	/*!< \brief Vector of linearized variables at point i. */
@@ -278,6 +282,13 @@ public:
 	 * \param[in] val_v_j - Value of the primitive variable at point j.
 	 */
 	void SetPrimitive(double *val_v_i, double *val_v_j);
+
+	/*!
+	 * \brief Set the value of the primitive variables.
+	 * \param[in] val_v_i - Value of the primitive variable at point i.
+	 * \param[in] val_v_j - Value of the primitive variable at point j.
+	 */
+	void SetSecondary(double *val_s_i, double *val_s_j);
     
 	/*!
 	 * \brief Set the value of the conservative variables.
@@ -904,6 +915,18 @@ public:
                                            double **val_Proj_Jac_tensor);
     
 	/*!
+	 * \brief Compute the projection of the inviscid Jacobian matrices for general fluid model.
+	 * \param[in] val_velocity Pointer to the velocity.
+	 * \param[in] val_energy Value of the energy.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[in] val_scale - Scale of the projection.
+	 * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+	 */
+	void GetInviscidProjJac(double *val_velocity, double *val_enthalphy,
+							double *val_chi, double *val_kappa,
+							double *val_normal, double val_scale,
+							double **val_Proj_Jac_tensor);	
+	/*!
 	 * \overload
 	 * \brief Compute the projection of the inviscid Jacobian matrices.
 	 * \param[in] val_velocity Pointer to the velocity.
@@ -990,7 +1013,23 @@ public:
                                  double *val_normal, double val_dS,
                                  double **val_Proj_Jac_Tensor_i,
                                  double **val_Proj_Jac_Tensor_j);
-    
+	
+	/*!
+	  * \overload
+	  * \brief Computation of the matrix P for a generic fluid model
+	  * \param[in] val_density - Value of the density.
+	  * \param[in] val_velocity - Value of the velocity.
+	  * \param[in] val_soundspeed - Value of the sound speed.
+	  * \param[in] val_enthalpy - Value of the Enthalpy
+	  * \param[in] val_chi - Value of the derivative of Pressure with respect to the Density.
+	  * \param[in] val_kappa - Value of the derivative of Pressure with respect to the volume specific Static Energy.
+	  * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	  * \param[out] val_p_tensor - Pointer to the P matrix.
+	  */
+	  void GetPMatrix(double *val_density, double *val_velocity,
+			  	  	  double *val_soundspeed, double *val_enthalpy, double *val_chi, double *val_kappa,
+			  	  	  double *val_normal, double **val_p_tensor);    
+
 	/*!
 	 * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
 	 *        the form $P^{-1}(A.Normal)P=Lambda$.
@@ -1099,7 +1138,21 @@ public:
                                    double *val_velocity, double *val_betainv2,
                                    double *val_levelset, double *val_normal,
                                    double **val_p_tensor);
-    
+
+	/*!
+	   * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
+	   * in the form $P^{-1}(A.Normal)P=Lambda$.
+	   * \param[in] val_density - Value of the density.
+	   * \param[in] val_velocity - Value of the velocity.
+	   * \param[in] val_soundspeed - Value of the sound speed.
+	   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+	   */
+	  void GetPMatrix_inv(double **val_invp_tensor, double *val_density,
+			  	  	  	  double *val_velocity, double *val_soundspeed,
+			  	  	  	  double *val_chi, double *val_kappa,
+			  	  	  	  double *val_normal);    
+	
 	/*!
 	 * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
 	 *        in the form $P^{-1}(A.Normal)P=Lambda$.
@@ -1521,7 +1574,7 @@ private:
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *ProjFlux_i, *ProjFlux_j;
 	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
+	double *Lambda, *Epsilon, MaxLambda, Delta, sign;
 	double **P_Tensor, **invP_Tensor;
 	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
 	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
@@ -3881,6 +3934,8 @@ private:
 	double k2;
 	double cb1;
 	double cw2;
+  double ct3;
+  double ct4;
 	double cw3_6;
   double cb2_sigma;
 	double sigma;
@@ -3888,7 +3943,7 @@ private:
 	double cw1;
 	double DivVelocity, Vorticity;
 	unsigned short iDim;
-	double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+	double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
 	double r, g, g_6, glim, fw;
 	double norm2_Grad;
 	double dfv1, dfv2, dShat;
@@ -4000,7 +4055,7 @@ private:
 	double DivVelocity, Vorticity;
 	unsigned short iDim;
 	double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
-	double r, g, g_6, glim, fw;
+	double r, g, g_6, glim;
 	double norm2_Grad;
 	double dfv1, dfv2, dShat;
 	double dr, dg, dfw;;
@@ -4016,11 +4071,12 @@ private:
   double Production, Destruction, CrossProduction;
   CScalePredictor* MLModel;
   
+  double uInfinity;
 
   
   SpalartAllmarasInputs* SAInputs;
   SpalartAllmarasConstants* SAConstants;
-  SpalartAllmarasOtherOutputs* SAOtherOutputs;
+
   int nResidual;
   int nJacobian;
   
@@ -4031,6 +4087,11 @@ private:
   double** DUiDXj;
   double* DNuhatDXj;
 public:
+  bool isInBL;
+  double fw;
+  double fWake;
+  SpalartAllmarasOtherOutputs* SAOtherOutputs;
+  
   double *SAResidual;
   double * SANondimResidual;
   double* Residual;
