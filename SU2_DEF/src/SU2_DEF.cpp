@@ -93,7 +93,6 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
   geometry[ZONE_0]->SetBoundVolume();
-  geometry[ZONE_0]->Check_Orientation(config[ZONE_0]);
   
   /*--- Create the edge structure ---*/
   

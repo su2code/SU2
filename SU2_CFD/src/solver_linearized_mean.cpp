@@ -68,7 +68,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Jacobian_i[iVar] = new double [nVar]; Jacobian_j[iVar] = new double [nVar]; }
 		/*--- Initialization of the structure of the whole Jacobian ---*/
-		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -460,7 +460,7 @@ void CLinEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 	double *W_wall = new double[nVar];
 	double *W_infty = new double[nVar];
 	double *W_update = new double[nVar];
-	double Mach = config->GetMach_FreeStreamND();
+	double Mach = config->GetMach();
 	double DeltaMach = 1.0;
 
 	/*--- Loop over all the vertices ---*/

@@ -49,6 +49,9 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
 	
+  /*--- Flip the normal orientation ---*/
+  Flip_Orientation = false;
+  
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
 	Move = true;
 
@@ -121,6 +124,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, unsigned long val_globali
 	/*--- Indicator if the control volume has been agglomerated ---*/
 	Agglomerate = false;
 	
+  /*--- Flip the normal orientation ---*/
+  Flip_Orientation = false;
+  
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
 	Move = true;
 	
@@ -201,6 +207,9 @@ CPoint::CPoint(double val_coord_0, double val_coord_1, double val_coord_2, unsig
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
 	Move = true;
 	
+  /*--- Flip the normal orientation ---*/
+  Flip_Orientation = false;
+
 	/*--- Identify boundaries, physical boundaries (not send-receive 
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/

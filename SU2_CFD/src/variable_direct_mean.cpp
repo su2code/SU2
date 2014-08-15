@@ -44,7 +44,8 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool windgust = config->GetWind_Gust();
+  bool viscous = config->GetViscous();
+  bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -57,7 +58,10 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
+    else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
+  }
 
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -85,6 +89,10 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   Limiter_Primitive = new double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
+  
+  Limiter_Secondary = new double [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Limiter_Secondary[iVar] = 0.0;
   
   Limiter = new double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -160,6 +168,9 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
+  Secondary = new double [nSecondaryVar];
+  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P,vx,vy,vz,rho),
         FreeSurface Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,dist),
         Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
@@ -169,6 +180,13 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
     Gradient_Primitive[iVar] = new double [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Primitive[iVar][iDim] = 0.0;
+  }
+  
+  Gradient_Secondary = new double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+    Gradient_Secondary[iVar] = new double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Secondary[iVar][iDim] = 0.0;
   }
   
 }
@@ -182,7 +200,8 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool windgust = config->GetWind_Gust();
+  bool viscous = config->GetViscous();
+  bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
 	TS_Source = NULL;
@@ -195,7 +214,10 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4; }
+  if (compressible)   { nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
+    else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
+  }
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new double [nVar];
@@ -223,6 +245,10 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
   
+  Limiter_Secondary = new double [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Limiter_Secondary[iVar] = 0.0;
+
   Limiter = new double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
@@ -272,6 +298,9 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
   Primitive = new double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
+  Secondary = new double [nSecondaryVar];
+  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
+
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P,vx,vy,vz,rho),
         FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
         Compressible flow, gradients primitive variables nDim+4, (T,vx,vy,vz,P,rho,h)
@@ -283,8 +312,12 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
   
-  /*--- Allocate the limiter for the primitive variables ---*/
-  Limiter_Primitive = new double [nPrimVarGrad];
+  Gradient_Secondary = new double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+    Gradient_Secondary[iVar] = new double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Secondary[iVar][iDim] = 0.0;
+  }
   
 }
 
@@ -313,6 +346,14 @@ void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 			Gradient_Primitive[iVar][iDim] = 0.0;
 }
 
+void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
+	unsigned short iVar, iDim;
+  
+	for (iVar = 0; iVar < val_secondaryvar; iVar++)
+		for (iDim = 0; iDim < nDim; iDim++)
+			Gradient_Secondary[iVar][iDim] = 0.0;
+}
+
 double CEulerVariable::GetProjVel(double *val_vector) {
 	double ProjVel;
 	unsigned short iDim;
@@ -324,18 +365,21 @@ double CEulerVariable::GetProjVel(double *val_vector) {
 	return ProjVel;
 }
 
-bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
+bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
-  double Gas_Constant = config->GetGas_ConstantND();
-	double Gamma = config->GetGamma();
+
+  SetVelocity();   // Computes velocity and velocity^2
+  double density = GetDensity();
+  double staticEnergy = GetEnergy()-0.5*Velocity2;
+  /* check will be moved inside fluid model plus error description strings*/
+  FluidModel->SetTDState_rhoe(density, staticEnergy);
   
-  SetVelocity();                                // Computes velocity and velocity^2
-  check_dens = SetDensity();                    // Check the density
-	check_press = SetPressure(Gamma);							// Requires velocity2 computation.
-	check_sos = SetSoundSpeed(Gamma);             // Requires pressure computation.
-	check_temp = SetTemperature(Gas_Constant);		// Requires pressure computation.
+  check_dens = SetDensity();
+  check_press = SetPressure(FluidModel->GetPressure());
+  check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+  check_temp = SetTemperature(FluidModel->GetTemperature());
   
   /*--- Check that the solution has a physical meaning ---*/
   
@@ -348,11 +392,16 @@ bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
     
     /*--- Recompute the primitive variables ---*/
     
-    SetVelocity();
+    SetVelocity();   // Computes velocity and velocity^2
+    double density = GetDensity();
+    double staticEnergy = GetEnergy()-0.5*Velocity2;
+    /* check will be moved inside fluid model plus error description strings*/
+    FluidModel->SetTDState_rhoe(density, staticEnergy);
+
     check_dens = SetDensity();
-    check_press = SetPressure(Gamma);
-    check_sos = SetSoundSpeed(Gamma);
-    check_temp = SetTemperature(Gas_Constant);
+    check_press = SetPressure(FluidModel->GetPressure());
+    check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+    check_temp = SetTemperature(FluidModel->GetTemperature());
     
     RightVol = false;
     
@@ -364,6 +413,15 @@ bool CEulerVariable::SetPrimVar_Compressible(CConfig *config) {
   
   return RightVol;
   
+}
+
+void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+
+   /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+   SetdPdrho_e(FluidModel->GetdPdrho_e());
+   SetdPde_rho(FluidModel->GetdPde_rho());
+
 }
 
 bool CEulerVariable::SetPrimVar_Incompressible(double Density_Inf, CConfig *config) {
@@ -518,18 +576,22 @@ void CNSVariable::SetStrainMag(void) {
   
 }
 
-bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CConfig *config) {
+bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
-  double Gas_Constant = config->GetGas_ConstantND();
-	double Gamma = config->GetGamma();
   
-  SetVelocity();                                  // Computes velocity and velocity^2
-  check_dens = SetDensity();                      // Check the density
-	check_press = SetPressure(Gamma, turb_ke);      // Requires velocity2 computation.
-	check_sos = SetSoundSpeed(Gamma);               // Requires pressure computation.
-	check_temp = SetTemperature(Gas_Constant);      // Requires pressure computation.
+  SetVelocity();   // Computes velocity and velocity^2
+  double density = GetDensity();
+  double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+
+  /* check will be moved inside fluid model plus error description strings*/
+  FluidModel->SetTDState_rhoe(density, staticEnergy);
+
+  check_dens = SetDensity();
+  check_press = SetPressure(FluidModel->GetPressure());
+  check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+  check_temp = SetTemperature(FluidModel->GetTemperature());
   
   /*--- Check that the solution has a physical meaning ---*/
   
@@ -542,11 +604,16 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CCon
     
     /*--- Recompute the primitive variables ---*/
     
-    SetVelocity();
-    check_dens = SetDensity();
-    check_press = SetPressure(Gamma, turb_ke);
-    check_sos = SetSoundSpeed(Gamma);
-    check_temp = SetTemperature(Gas_Constant);
+    SetVelocity();   // Computes velocity and velocity^2
+	double density = GetDensity();
+	double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
+	/* check will be moved inside fluid model plus error description strings*/
+	FluidModel->SetTDState_rhoe(density, staticEnergy);
+
+	check_dens = SetDensity();
+	check_press = SetPressure(FluidModel->GetPressure());
+	check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
+	check_temp = SetTemperature(FluidModel->GetTemperature());
     
     RightVol = false;
     
@@ -558,7 +625,7 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CCon
   
   /*--- Set laminar viscosity ---*/
   
-	SetLaminarViscosity(config);                    // Requires temperature computation.
+	SetLaminarViscosity(FluidModel->GetLaminarViscosity(FluidModel->GetTemperature(), GetDensity()));
   
   /*--- Set eddy viscosity ---*/
   
@@ -566,6 +633,20 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CCon
   
   return RightVol;
   
+}
+
+void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+
+	SetdPdrho_e(FluidModel->GetdPdrho_e());
+	SetdPde_rho(FluidModel->GetdPde_rho());
+    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+	SetdTdrho_e( FluidModel->GetdTdrho_e() );
+	SetdTde_rho( FluidModel->GetdTde_rho() );
+
+	Setdmudrho_T( FluidModel->Getdmudrho_T() );
+	SetdmudT_rho( FluidModel->GetdmudT_rho() );
+
 }
 
 bool CNSVariable::SetPrimVar_Incompressible(double Density_Inf, double Viscosity_Inf, double eddy_visc, double turb_ke, CConfig *config) {

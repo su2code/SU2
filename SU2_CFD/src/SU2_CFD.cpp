@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   /*--- Read the name and format of the input mesh file ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name);
+  config = new CConfig(config_file_name, SU2_CFD);
   
   /*--- Get the number of zones and dimensions from the numerical grid
    (required for variables allocation) ---*/
@@ -132,12 +132,7 @@ int main(int argc, char *argv[]) {
     /*--- Change the name of the input-output files for a parallel computation ---*/
     config_container[iZone]->SetFileNameDomain(rank+1);
 #endif
-    
-    /*--- Perform the non-dimensionalization for the flow equations using the
-     specified reference values. ---*/
-    
-    config_container[iZone]->SetNondimensionalization(nDim, iZone);
-    
+        
     /*--- Definition of the geometry class. Within this constructor, the
      mesh file is read and the primal grid is stored (node coords, connectivity,
      & boundary markers. MESH_0 is the index of the finest mesh. ---*/
@@ -336,7 +331,6 @@ MPI_Barrier(MPI_COMM_WORLD);
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
-    
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:
@@ -485,9 +479,17 @@ MPI_Barrier(MPI_COMM_WORLD);
     
   }
   
-  /*--- Close the convergence history file. ---*/
-  
+  /*--- Output some information to the console. ---*/
   if (rank == MASTER_NODE) {
+    cout << endl;
+    
+  /*--- Print out the number of non-physical points and reconstructions ---*/
+  if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+    cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+  if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+    cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
+  
+  /*--- Close the convergence history file. ---*/
     ConvHist_file.close();
     cout << endl <<"History file closed." << endl;
   }

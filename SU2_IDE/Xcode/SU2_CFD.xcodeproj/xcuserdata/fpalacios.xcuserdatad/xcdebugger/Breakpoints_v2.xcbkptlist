@@ -6,16 +6,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "../../Common/src/config_structure.cpp"
-            timestampString = "424363300.634769"
+            filePath = "../../SU2_CFD/src/solver_direct_mean.cpp"
+            timestampString = "428128194.815385"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2969"
-            endingLineNumber = "2969"
-            landmarkName = "CConfig::SetMarkers(unsigned short val_software, unsigned short val_izone)"
+            startingLineNumber = "2154"
+            endingLineNumber = "2154"
+            landmarkName = "CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh)"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>

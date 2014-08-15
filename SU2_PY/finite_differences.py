@@ -38,7 +38,7 @@ def main():
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
                       help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
-    parser.add_option("-s", "--step",       dest="step",       default=1E-4,
+    parser.add_option("-s", "--step",       dest="step",       default=1E-3,
                       help="finite difference STEP", metavar="STEP")
     parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
                       help="output QUIET to log files", metavar="QUIET")    
@@ -65,7 +65,7 @@ def main():
 
 def finite_differences( filename           , 
                         partitions = 0     , 
-                        step       = 1e-4  ,
+                        step       = 1e-3  ,
                         quiet      = False  ):
     # Config
     config = SU2.io.Config(filename)

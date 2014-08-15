@@ -74,12 +74,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 	}
   
 	/*--- Compute source term residuals ---*/
-  
-	switch (config->GetKind_SourNumScheme()) {
-    case PIECEWISE_CONSTANT:
-      solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
-      break;
-	}
+
+  solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
 	/*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
   
@@ -99,13 +95,16 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 			case INLET_FLOW:
 				solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-      case SUPERSONIC_INLET:
+            case SUPERSONIC_INLET:
 				solver_container[MainSolver]->BC_Supersonic_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-			case OUTLET_FLOW:
+            break;
+            case OUTLET_FLOW:
 				solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
-			case FAR_FIELD:
+            case RIEMANN_BOUNDARY:
+				solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+				break;
+            case FAR_FIELD:
 				solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
 				break;
 			case SYMMETRY_PLANE:
