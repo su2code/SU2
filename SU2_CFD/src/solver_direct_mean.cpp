@@ -125,6 +125,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Cauchy_Serie = NULL;
   
   node_infty=NULL;
+  Velocity_Inf = NULL;
   PrimVar_i=NULL;
   PrimVar_j=NULL;
 
@@ -502,8 +503,9 @@ CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker, iPoint, iVertex, iDim;
 
   /*--- Pointers from CEuler ---*/
+
   if (node_infty!=NULL)       delete [] node_infty;
-  if (Velocity_Inf!=NULL)     delete [] Velocity_Inf;
+//  if (Velocity_Inf!=NULL)     delete [] Velocity_Inf; // commented b/c causes segfault in NS dealloc.
   if (iPoint_UndLapl!=NULL)   delete [] iPoint_UndLapl;
   if (jPoint_UndLapl!=NULL)   delete [] jPoint_UndLapl;
   if (PrimVar_i!=NULL)        delete [] PrimVar_i;
@@ -7049,6 +7051,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ForceViscous = NULL;
   MomentViscous = NULL;
   CSkinFriction = NULL;
+  Velocity_Inf = NULL;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -7474,6 +7477,7 @@ CNSSolver::~CNSSolver(void) {
   unsigned short iMarker;
 
   /*--- Array initialization ---*/
+
   if (CDrag_Visc != NULL)      delete [] CDrag_Visc;
   if (CLift_Visc != NULL)      delete [] CLift_Visc;
   if (CSideForce_Visc != NULL) delete [] CSideForce_Visc;

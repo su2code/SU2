@@ -290,7 +290,7 @@ void CGeometry::TestGeometry(void) {
       para_file << endl;
     }
   }
-  
+  delete [] Normal;
 }
 
 void CGeometry::SetSpline(vector<double> &x, vector<double> &y, unsigned long n, double yp1, double ypn, vector<double> &y2) {
