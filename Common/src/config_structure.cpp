@@ -568,6 +568,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
   /* DESCRIPTION: Coefficient for the limiter */
   addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  /* DESCRIPTION: Freeze the value of the limiter after a number of iterations */
+  addUnsignedLongOption("LIMITER_ITER", LimiterIter, 1E6);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
   addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
 
