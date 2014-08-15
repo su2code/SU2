@@ -1210,7 +1210,7 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     LowerProduct(prod, iPoint);                                        // Compute L.x*
     for (iVar = 0; iVar < nVar; iVar++)
       aux_vector[iVar] = vec[iPoint*nVar+iVar] - prod_row_vector[iVar]; // Compute aux_vector = b - L.x*
@@ -1225,7 +1225,7 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
 
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
-  for (iPoint = nPoint-1; (int)iPoint >= 0; iPoint--) {
+  for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
     DiagonalProduct(prod, iPoint);                 // Compute D.x*
     for (iVar = 0; iVar < nVar; iVar++)
       aux_vector[iVar] = prod_row_vector[iVar];   // Compute aux_vector = D.x*
