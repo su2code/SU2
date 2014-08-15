@@ -290,11 +290,11 @@ void CWaveSolver::Source_Template(CGeometry *geometry,
 
 }
 
-void CWaveSolver::Galerkin_Method(CGeometry *geometry, 
+void CWaveSolver::Viscous_Residual(CGeometry *geometry, 
                                     CSolver **solver_container, 
                                     CNumerics *numerics,
                                     CConfig   *config, 
-                                    unsigned short iMesh) {
+                                    unsigned short iMesh, unsigned short iRKStep) {
   
   /* Local variables and initialization */
   

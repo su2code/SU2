@@ -422,8 +422,8 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh) {
+void CFEASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim;
 	unsigned long iElem, PointCorners[8], iPoint, total_index;
