@@ -97,6 +97,7 @@ private:
   double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */
+  unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
@@ -1570,6 +1571,12 @@ public:
 	 * \return Value of the limiter coefficient.
 	 */
 	double GetLimiterCoeff(void);
+  
+  /*!
+	 * \brief Freeze the value of the limiter after a number of iterations.
+	 * \return Number of iterations.
+	 */
+	unsigned long GetLimiterIter(void);
 
   /*!
 	 * \brief Get the value of sharp edge limiter.

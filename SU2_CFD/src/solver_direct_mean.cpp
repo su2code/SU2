@@ -2654,18 +2654,19 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  bool adjoint        = config->GetAdjoint();
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool low_fidelity   = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool second_order   = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER));
-  bool limiter        = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
-  bool center         = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst     = center && (config->GetKind_Centered_Flow() == JST);
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool engine         = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
-  bool fixed_cl       = config->GetFixed_CL_Mode();
+  unsigned long ExtIter = config->GetExtIter();
+  bool adjoint          = config->GetAdjoint();
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
+  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER));
+  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
+  bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
+  bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible   = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
+  bool engine           = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
+  bool fixed_cl         = config->GetFixed_CL_Mode();
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
@@ -2685,7 +2686,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
      FreeSurface Incompressible flow, primitive variables nDim+5, (P,vx,vy,vz,rho,beta,LevelSet,Dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
     
-//    if (compressible) {   RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel); }
     if (compressible) {
     	RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
     	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
@@ -9315,6 +9315,7 @@ CNSSolver::~CNSSolver(void) {
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
+  double eddy_visc = 0.0, turb_ke = 0.0;
   bool RightSol = true;
   int rank;
   
@@ -9324,22 +9325,23 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  bool adjoint = config->GetAdjoint();
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
-  bool center_jst = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow = (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER);
-  bool limiter_turb = (config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  unsigned long ExtIter     = config->GetExtIter();
+  bool adjoint              = config->GetAdjoint();
   unsigned short turb_model = config->GetKind_Turb_Model();
-  bool tkeNeeded = (turb_model == SST);
-  bool fixed_cl = config->GetFixed_CL_Mode();
-  double eddy_visc = 0.0, turb_ke = 0.0;
-  bool engine = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
+  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
+  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
+  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
+  bool tkeNeeded            = (turb_model == SST);
+  bool fixed_cl             = config->GetFixed_CL_Mode();
+  bool engine               = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
+  
   if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
   
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
@@ -9347,6 +9349,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Compute distance function to zero level set ---*/
+  
   if (freesurface) SetFreeSurface_Distance(geometry, config);
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -9359,6 +9362,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
      Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+    
     if (compressible) {
     	RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);
     	node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
@@ -9369,11 +9373,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     if (!RightSol) ErrorCounter++;
     
     /*--- Initialize the convective, source and viscous residual vector ---*/
+    
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
   /*--- Artificial dissipation ---*/
+  
   if (center) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
@@ -9383,17 +9389,21 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   }
   
   /*--- Compute gradient of the primitive variables ---*/
+  
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
   
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+  
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb)) { SetPrimitive_Limiter(geometry, config); }
   
   /*--- Initialize the jacobian matrices ---*/
+  
   if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
+  
 #ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);

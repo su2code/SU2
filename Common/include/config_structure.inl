@@ -249,6 +249,8 @@ inline double CConfig::GetChargeCoeff(void) { return ChargeCoeff; }
 
 inline double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
 
+inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
+
 inline double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }
 
 inline double CConfig::GetReynolds(void) { return Reynolds; }
