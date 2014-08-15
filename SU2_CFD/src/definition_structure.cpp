@@ -709,13 +709,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Template()) {
-      case AVG_GRAD : case AVG_GRAD_CORRECTED : case GALERKIN :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][TEMPLATE_SOL][VISC_TERM] = new CViscous_Template(nDim, nVar_Template, config);
-        break;
-      default : cout << "Viscous scheme not implemented." << endl; exit(1); break;
-    }
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+      numerics_container[iMGlevel][TEMPLATE_SOL][VISC_TERM] = new CViscous_Template(nDim, nVar_Template, config);
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
@@ -870,70 +865,35 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Flow()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        if (compressible) {
-          /*--- Compressible flow ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-          }
-        }
-        if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-          }
-        }
-        if (freesurface) {
-          /*--- Freesurface flow, use artificial compressibility method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-          }
-        }
-        break;
-      case AVG_GRAD_CORRECTED :
-        if (compressible) {
-          /*--- Compressible flow ---*/
-          numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-          
-          /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-        }
-        if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-          
-          /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-        }
-        if (freesurface) {
-          /*--- Freesurface flow, use artificial compressibility method ---*/
-          numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-          
-          /*--- Definition of the boundary condition method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-        }
-        break;
-      case GALERKIN :
-        cout << "Galerkin viscous scheme not implemented." << endl; exit(1); exit(1);
-        break;
-      default :
-        cout << "Numerical viscous scheme not recognized." << endl; exit(1); exit(1);
-        break;
+    if (compressible) {
+      /*--- Compressible flow ---*/
+      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+      
+      /*--- Definition of the boundary condition method ---*/
+      for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+    }
+    if (incompressible) {
+      /*--- Incompressible flow, use artificial compressibility method ---*/
+      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+      
+      /*--- Definition of the boundary condition method ---*/
+      for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+    }
+    if (freesurface) {
+      /*--- Freesurface flow, use artificial compressibility method ---*/
+      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+      
+      /*--- Definition of the boundary condition method ---*/
+      for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1034,33 +994,14 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_TNE2()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        /*--- Compressible TNE2 ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM]       = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-        }
-        break;
-      case AVG_GRAD_CORRECTED :
-        /*--- Compressible TNE2 ---*/
-        numerics_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-        }
-        /*--- Definition of the boundary condition method ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-        }
-        break;
-      case GALERKIN :
-        cout << "Galerkin viscous scheme not implemented." << endl; exit(1); exit(1);
-        break;
-      default :
-        cout << "Numerical viscous scheme not recognized." << endl; exit(1); exit(1);
-        break;
+    /*--- Compressible TNE2 ---*/
+    numerics_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+    for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+    }
+    /*--- Definition of the boundary condition method ---*/
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1090,29 +1031,10 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Turb()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-          if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
-          else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbML(nDim, nVar_Turb, config);
-          else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, config);
-        }
-        break;
-      case AVG_GRAD_CORRECTED :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-          if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
-          else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbML(nDim, nVar_Turb, config);
-          else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
-        }
-        break;
-      case GALERKIN :
-        cout << "Viscous scheme not implemented." << endl;
-        exit(1); break;
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
+      if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
+      else if (machine_learning) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbML(nDim, nVar_Turb, config);
+      else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1158,25 +1080,8 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Turb()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-          numerics_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, config);
-        }
-        break;
-      case AVG_GRAD_CORRECTED :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
-          numerics_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
-        }
-        break;
-      case GALERKIN :
-        cout << "Viscous scheme not implemented." << endl;
-        exit(1); break;
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++){
+      numerics_container[iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1195,12 +1100,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (poisson) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Poisson()) {
-      case GALERKIN :
-        numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
-        break;
-      default : cout << "Viscous scheme not implemented." << endl; exit(1); break;
-    }
+    numerics_container[MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
@@ -1212,12 +1112,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (heat) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Heat()) {
-      case GALERKIN :
-        numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Heat, config);
-        break;
-      default : cout << "Viscous scheme not implemented." << endl; exit(1); break;
-    }
+    numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Heat, config);
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
@@ -1318,45 +1213,20 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_AdjFlow()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        if (compressible) {
-          /*--- Compressible flow ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-          }
-        }
-        if (incompressible || freesurface) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-        }
-        
-        break;
-      case AVG_GRAD_CORRECTED :
-        if (compressible) {
-          /*--- Compressible flow ---*/
-          numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
-          numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
-          }
-        }
-        if (incompressible || freesurface) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-          for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-        }
-        
-        break;
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
+    if (compressible) {
+      /*--- Compressible flow ---*/
+      numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
+      numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+        numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+        numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+      }
+    }
+    if (incompressible || freesurface) {
+      /*--- Incompressible flow, use artificial compressibility method ---*/
+      numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+        numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1431,28 +1301,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_AdjTNE2()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-        }
-        break;
-        
-//      case AVG_GRAD_CORRECTED :
-//        numerics_container[MESH_0][ADJTNE2_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-//        numerics_container[MESH_0][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-//        for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-//          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_Flow, config);
-//          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2nDim, nVar_Adj_Flow, config);
-//        }
-//        break;
-        
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+      numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1509,26 +1360,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_AdjTurb()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          if (spalart_allmaras){
-            numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGrad_AdjTurb(nDim, nVar_Adj_Turb, config);
-          }
-          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
-        break;
-      case AVG_GRAD_CORRECTED :
-        for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          if (spalart_allmaras){
-            numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
-          }
-          else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
-        break;
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
+    for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+      if (spalart_allmaras){
+        numerics_container[iMGlevel][ADJTURB_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTurb(nDim, nVar_Adj_Turb, config);
+      }
+      else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(1);}
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1552,22 +1388,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (wave) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_Wave()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
-      case AVG_GRAD_CORRECTED :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
-      case GALERKIN :
-        numerics_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
-        break;
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
-    }
+    numerics_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
 
   }
   
@@ -1575,22 +1396,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   if (fea) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ViscNumScheme_FEA()) {
-      case NONE :
-        break;
-      case AVG_GRAD :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
-      case AVG_GRAD_CORRECTED :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
-      case GALERKIN :
-        numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_Wave, config);
-        break;
-      default :
-        cout << "Viscous scheme not implemented." << endl; exit(1);
-        break;
-    }
+    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_Wave, config);
     
   }
   

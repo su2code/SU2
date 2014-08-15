@@ -258,9 +258,6 @@ inline void CSolver::Viscous_Residual(CGeometry *geometry,
                                       CNumerics *numerics, CConfig
                                       *config, unsigned short iMesh,
                                       unsigned short iRKstep) { }
-
-inline void CSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
-									   CConfig *config, unsigned short iMesh) { }
 									   
 inline void CSolver::AddStiffMatrix(double ** StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3) { }
 									   

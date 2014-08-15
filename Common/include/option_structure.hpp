@@ -520,21 +520,6 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
 ("SHARP_EDGES", SHARP_EDGES);
 
 /*!
- * \brief types of viscous term discretizations
- */
-enum ENUM_VISCOUS {
-  NO_VISCOUS = 0,               /*!< \brief No viscous term computation. */
-  AVG_GRAD = 1,			/*!< \brief Average of gradients method for viscous term computation. */
-  AVG_GRAD_CORRECTED = 2,	/*!< \brief Average of gradients with correction for viscous term computation. */
-  GALERKIN = 3			/*!< \brief Galerkin method for viscous term computation. */
-};
-static const map<string, ENUM_VISCOUS> Viscous_Map = CCreateMap<string, ENUM_VISCOUS>
-("NONE", NO_VISCOUS)
-("AVG_GRAD", AVG_GRAD)
-("AVG_GRAD_CORRECTED", AVG_GRAD_CORRECTED)
-("GALERKIN", GALERKIN);
-
-/*!
  * \brief types of methods used to calculate source term Jacobians
  */
 enum ENUM_SOURCEJAC {

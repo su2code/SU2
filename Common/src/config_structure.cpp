@@ -573,8 +573,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, AVG_GRAD_CORRECTED);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -585,8 +583,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -601,22 +597,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, AVG_GRAD_CORRECTED);
-
+  
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
   /* DESCRIPTION: Slope limiter */
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, NO_VISCOUS);
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, NO_VISCOUS);
   default_vec_2d[0] = 0.15; default_vec_2d[1] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_2d);
@@ -627,13 +617,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, NO_VISCOUS);
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -644,8 +630,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, NO_VISCOUS);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -653,18 +637,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, GALERKIN);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, NO_VISCOUS);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, GALERKIN);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, GALERKIN);
 
   /* CONFIG_CATEGORY: Adjoint and Gradient */
   /*--- Options related to the adjoint and gradient ---*/
@@ -1951,27 +1923,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
     cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
-    exit(1);
-  }
-
-  if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
-      && (Kind_ViscNumScheme_Flow == NONE)) {
-    cout << "You must define a viscous numerical method for the flow equations!!" << endl;
-    exit(1);
-  }
-
-  if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
-    cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
-    exit(1);
-  }
-
-  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_TNE2 == NONE)) {
-    cout << "You must define a viscous numerical method for the TNE2 Navier-Stokes equations!!" << endl;
-    exit(1);
-  }
-
-  if ((Kind_Solver == ADJ_TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
-    cout << "You must define a viscous numerical method for the adjoint TNE2 Navier-Stokes equations!!" << endl;
     exit(1);
   }
 
@@ -3633,17 +3584,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      switch (Kind_ViscNumScheme_Flow) {
-        case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
-        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous flow terms)." << endl; break;
-      }
+        cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      switch (Kind_ViscNumScheme_TNE2) {
-        case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
-        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous flow terms)." << endl; break;
-      }
+        cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))
@@ -3653,25 +3598,20 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Piecewise constant integration of the adjoint source terms." << endl;
 
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
-      switch (Kind_ViscNumScheme_AdjFlow) {
-        case AVG_GRAD: cout << "Average of gradients (viscous adjoint terms)." << endl; break;
-        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous adjoint terms)." << endl; break;
-      }
+      cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
     if (Kind_Solver == RANS) {
-      if (Kind_ViscNumScheme_Turb == AVG_GRAD) cout << "Average of gradients (viscous turbulence terms)." << endl;
-      if (Kind_ViscNumScheme_Turb == AVG_GRAD_CORRECTED) cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
+      cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
       cout << "Piecewise constant integration of the turbulence model source terms." << endl;
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
-      if (Kind_ViscNumScheme_Poisson == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
+      cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
     }
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
-      if (Kind_ViscNumScheme_AdjTurb == AVG_GRAD) cout << "Average of gradients (1st order) for computation of adjoint viscous turbulence terms." << endl;
-      if (Kind_ViscNumScheme_AdjTurb == AVG_GRAD_CORRECTED) cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
+      cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
       cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
@@ -5166,7 +5106,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
@@ -5175,7 +5114,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
@@ -5184,21 +5122,18 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       break;
@@ -5207,7 +5142,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       break;
@@ -5216,7 +5150,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_TNE2);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       break;
@@ -5225,14 +5158,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                               SpatialOrder_AdjFlow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
@@ -5241,14 +5172,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                               SpatialOrder_AdjFlow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
@@ -5257,28 +5186,24 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                               SpatialOrder_AdjFlow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
                               SpatialOrder_AdjTurb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjTurb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
@@ -5287,14 +5212,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       if (val_system == RUNTIME_ADJTNE2_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2,
                               Kind_Upwind_AdjTNE2, Kind_SlopeLimit_AdjTNE2,
                               SpatialOrder_AdjTNE2);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTNE2);
       }
       break;
@@ -5303,14 +5226,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_TNE2);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       if (val_system == RUNTIME_ADJTNE2_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2,
                               Kind_Upwind_AdjTNE2, Kind_SlopeLimit_AdjTNE2,
                               SpatialOrder_AdjTNE2);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjTNE2);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTNE2);
       }
       break;
@@ -5330,28 +5251,24 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
     case POISSON_EQUATION:
       if (val_system == RUNTIME_POISSON_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Poisson);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson);
       }
       break;
     case WAVE_EQUATION:
       if (val_system == RUNTIME_WAVE_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Wave);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
       }
       break;
     case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Heat);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
     case LINEAR_ELASTICITY:
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_FEA);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
       }
       break;
@@ -5360,12 +5277,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_FEA);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
       }
       break;

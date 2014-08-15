@@ -971,17 +971,6 @@ public:
     
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	virtual void Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] StiffMatrix_Elem - Stiffness matrix of an element
 	 */
 	virtual void AddStiffMatrix(double **StiffMatrix_Elem, unsigned long Point_0, unsigned long Point_1, unsigned long Point_2, unsigned long Point_3 );
@@ -4918,8 +4907,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh);
+	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
 	 * \brief Integrate the Poisson equation using a Galerkin method.
@@ -5044,8 +5033,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh);
+	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
 	 * \brief Impose via the residual the Euler wall boundary condition.
@@ -5199,8 +5188,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh);
+	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short iMesh, unsigned short iRKStep);
   
   /*!
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
@@ -5315,8 +5304,8 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] iMesh - Index of the mesh in multigrid computations.
 	 */
-	void Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh);
+	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short iMesh, unsigned short iRKStep);
     
 	/*!
 	 * \brief Impose a displacement (constraint) boundary condition.

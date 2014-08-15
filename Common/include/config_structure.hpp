@@ -303,20 +303,6 @@ private:
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
 	Kind_ConvNumScheme_AdjLevelSet,	/*!< \brief Centered or upwind scheme for the adjoint level set equation. */
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
-	Kind_ViscNumScheme,			/*!< \brief Global definition of the viscous term. */
-	Kind_ViscNumScheme_Flow,	/*!< \brief Viscous scheme for the flow equations. */
-	Kind_ViscNumScheme_Heat,	/*!< \brief Viscous scheme for the flow equations. */
-	Kind_ViscNumScheme_AdjFlow,		/*!< \brief Viscous scheme for the adjoint flow equations. */
-  Kind_ViscNumScheme_TNE2,	/*!< \brief Viscous scheme for the flow equations. */
-  Kind_ViscNumScheme_AdjTNE2, /*!< \brief Viscous scheme for the flow equations. */
-	Kind_ViscNumScheme_LinFlow,		/*!< \brief Viscous scheme for the linearized flow equations. */
-	Kind_ViscNumScheme_Turb,	/*!< \brief Viscous scheme for the turbulence model. */
-	Kind_ViscNumScheme_Poisson,	/*!< \brief Viscous scheme for the poisson potential. */
-	Kind_ViscNumScheme_Wave,	/*!< \brief Viscous scheme for the wave equation. */
-	Kind_ViscNumScheme_FEA,	/*!< \brief Viscous scheme for the FEA equation. */
-	Kind_ViscNumScheme_AdjTurb,	/*!< \brief Viscous scheme for the adjoint turbulence model. */
-	Kind_ViscNumScheme_AdjLevelSet,	/*!< \brief Viscous scheme for the adjoint level set equation. */
-	Kind_ViscNumScheme_Template,	/*!< \brief Viscous scheme for the template. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
 	Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
@@ -1580,13 +1566,6 @@ public:
 			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
 
 	/*!
-	 * \brief Set the parameters of the viscous numerical scheme.
-	 * \note The parameters will change because we are solving different kind of equations.
-	 * \param[in] val_kind_viscnumscheme - Kind of viscous scheme.
-	 */
-	void SetKind_ViscNumScheme(unsigned short val_kind_viscnumscheme);
-
-	/*!
 	 * \brief Get the value of limiter coefficient.
 	 * \return Value of the limiter coefficient.
 	 */
@@ -2691,15 +2670,6 @@ public:
 	unsigned short GetKind_ConvNumScheme(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme.
-	 * \note This is the information that the code will use, the method will
-	 *       change in runtime depending of the specific equation (direct, adjoint,
-	 *       linearized) that is being solved.
-	 * \return Kind of the viscous scheme.
-	 */
-	unsigned short GetKind_ViscNumScheme(void);
-
-	/*!
 	 * \brief Get kind of center scheme for the convective terms.
 	 * \note This is the information that the code will use, the method will
 	 *       change in runtime depending of the specific equation (direct, adjoint,
@@ -2889,54 +2859,6 @@ public:
 	unsigned short GetKind_ConvNumScheme_AdjLevelSet(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme for the flow
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_Flow(void);
-
-  /*!
-	 * \brief Get the kind of viscous numerical scheme for the flow
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_TNE2(void);
-
-  /*!
-	 * \brief Get the kind of viscous numerical scheme for the flow
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_AdjTNE2(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the adjoint level set
-	 (        equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the levelset equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_AdjLevelSet(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the plasma
-	 *        equations (Galerkin, Average of gradients)
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_Template(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3122,46 +3044,6 @@ public:
 	unsigned short GetKind_ConvNumScheme_AdjFlow(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme for the adjoint flow
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_AdjFlow(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the wave
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_Wave(void);
-
-  /*!
-	 * \brief Get the kind of viscous numerical scheme for the wave
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_Heat(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the FEA
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the adjoint flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_FEA(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3232,15 +3114,6 @@ public:
 	unsigned short GetKind_ConvNumScheme_LinFlow(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme for the linearized flow
-	 *        equations (Galerkin, Divergence theorem or Weiss correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the linearized flow equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_LinFlow(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the linearized flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3296,16 +3169,6 @@ public:
 	unsigned short GetKind_ConvNumScheme_Turb(void);
 
 	/*!
-	 * \brief Get the kind of viscous numerical scheme for the turbulence
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the turbulence equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_Turb(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the turbulence equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
@@ -3320,15 +3183,6 @@ public:
 	 * \return Kind of upwind convective numerical scheme for the turbulence equations.
 	 */
 	unsigned short GetKind_Upwind_Turb(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the poisson potential
-	 *        equation (Galerkin).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the poisson potential equation.
-	 */
-	unsigned short GetKind_ViscNumScheme_Poisson(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3347,16 +3201,6 @@ public:
 	 * \return Kind of convective numerical scheme for the adjoint turbulence equations.
 	 */
 	unsigned short GetKind_ConvNumScheme_AdjTurb(void);
-
-	/*!
-	 * \brief Get the kind of viscous numerical scheme for the adjoint turbulence
-	 *        equations (Galerkin, Average of gradients, Average of gradients
-	 *        with correction).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of viscous numerical scheme for the adjoint turbulence equations.
-	 */
-	unsigned short GetKind_ViscNumScheme_AdjTurb(void);
 
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint turbulence equations.
