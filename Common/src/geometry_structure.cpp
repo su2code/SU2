@@ -10451,7 +10451,8 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 #ifndef HAVE_MPI
             point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
-            point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex;
+            point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex;
+            if (size > SINGLE_NODE) point_line >> GlobalIndex;
 #endif
             node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
             iPoint++; break;
@@ -10460,7 +10461,8 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
 #ifndef HAVE_MPI
             point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
 #else
-            point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex; point_line >> GlobalIndex;
+            point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; point_line >> LocalIndex;
+            if (size > SINGLE_NODE) point_line >> GlobalIndex;
 #endif
             node[iPoint] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], GlobalIndex, config);
             iPoint++; break;

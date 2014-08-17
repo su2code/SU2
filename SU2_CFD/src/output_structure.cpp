@@ -2003,8 +2003,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
   nVar_Consv = nVar_First + nVar_Second + nVar_Third;
   
-  if (config->GetWrt_Residuals()) nVar_Total = 2*nVar_Consv;
-  else nVar_Total = nVar_Consv;
+  nVar_Total = nVar_Consv;
+  
+  /*--- Add the limiters ---*/
+  if (config->GetWrt_Limiters()) nVar_Total += nVar_Consv;
+  
+  /*--- Add the residuals ---*/
+  if (config->GetWrt_Residuals()) nVar_Total += nVar_Consv;
   
   /*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
   if (grid_movement) {
@@ -2040,10 +2045,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     nVar_Total += 1;
   }
   
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    /*--- Sharp edges ---*/
-    iVar_Sharp = nVar_Total;
-    nVar_Total += 1;
+  if (config->GetWrt_SharpEdges()) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      /*--- Sharp edges ---*/
+      iVar_Sharp = nVar_Total;
+      nVar_Total += 1;
+    }
   }
   
   if ((Kind_Solver == TNE2_EULER)         ||
@@ -2228,6 +2235,35 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         jVar++;
       }
       
+      /*--- Limiters (first, second and third system of equations) ---*/
+      if (config->GetWrt_Limiters()) {
+        
+        if (solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
+          for (iVar = 0; iVar < nVar_First; iVar++) {
+            Data[jVar][jPoint] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
+            jVar++;
+          }
+        }
+        else { for (iVar = 0; iVar < nVar_First; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
+        
+        if (solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
+          for (iVar = 0; iVar < nVar_Second; iVar++) {
+            Data[jVar][jPoint] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
+            jVar++;
+          }
+        }
+        else { for (iVar = 0; iVar < nVar_Second; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
+
+        if (solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
+          for (iVar = 0; iVar < nVar_Third; iVar++) {
+            Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
+            jVar++;
+          }
+        }
+        else { for (iVar = 0; iVar < nVar_Third; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
+
+      }
+      
       /*--- Residual (first, second and third system of equations) ---*/
       if (config->GetWrt_Residuals()) {
         for (iVar = 0; iVar < nVar_First; iVar++) {
@@ -2273,7 +2309,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
           }
-          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          if (config->GetWrt_SharpEdges()) {
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          }
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus ---*/
         case NAVIER_STOKES:
@@ -2301,7 +2339,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
           }
-          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          if (config->GetWrt_SharpEdges()) {
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          }
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus, eddy viscosity ---*/
         case RANS:
@@ -2331,7 +2371,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); jVar++;
           }
-          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          if (config->GetWrt_SharpEdges()) {
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          }
           break;
           /*--- Write poisson field. ---*/
         case POISSON_EQUATION:
@@ -2501,7 +2543,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   double *Buffer_Send_Var = new double[MaxLocalPoint];
   double *Buffer_Recv_Var = NULL;
-  
+ 
   double *Buffer_Send_Res = new double[MaxLocalPoint];
   double *Buffer_Recv_Res = NULL;
   
@@ -2576,7 +2618,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (!Local_Halo[iPoint] || Wrt_Halo) {
         
         /*--- Get this variable into the temporary send buffer. ---*/
+        
         Buffer_Send_Var[jPoint] = solver[CurrentIndex]->node[iPoint]->GetSolution(jVar);
+        
+        if (config->GetWrt_Limiters()) {
+          Buffer_Send_Vol[jPoint] = solver[CurrentIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+        }
+        
         if (config->GetWrt_Residuals()) {
           Buffer_Send_Res[jPoint] = solver[CurrentIndex]->LinSysRes.GetBlock(iPoint, jVar);
         }
@@ -2585,16 +2633,24 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (iVar == 0) {
           Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
         }
+        
         jPoint++;
+        
       }
     }
     
     /*--- Gather the data on the master node. ---*/
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    
+    if (config->GetWrt_Limiters()) {
+      MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    }
+    
     if (config->GetWrt_Residuals()) {
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     }
+    
     if (iVar == 0) {
       MPI_Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
     }
@@ -2606,17 +2662,29 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
           /*--- Get global index, then loop over each variable and store ---*/
+          
           iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          
           Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-          if (config->GetWrt_Residuals()) {
-            Data[iVar+nVar_Consv][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          
+          if (config->GetWrt_Limiters()) {
+            Data[iVar+nVar_Consv][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
           }
+          
+          if (config->GetWrt_Residuals()) {
+            unsigned short ExtraIndex;
+            ExtraIndex = nVar_Consv;
+            if (config->GetWrt_Limiters()) ExtraIndex = 2*nVar_Consv;
+            Data[iVar+ExtraIndex][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          }
+          
           jPoint++;
         }
         /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
         jPoint = (iProcessor+1)*nBuffer_Scalar;
       }
     }
+    
   }
   
   /*--- Additional communication routine for the grid velocity. Note that
@@ -2931,38 +2999,41 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   }
   
   /*--- Communicate the Sharp Edges ---*/
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+  if (config->GetWrt_SharpEdges()) {
     
-    /*--- Loop over this partition to collect the current variable ---*/
-    jPoint = 0;
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
-      /*--- Check for halos & write only if requested ---*/
-      if (!Local_Halo[iPoint] || Wrt_Halo) {
+      /*--- Loop over this partition to collect the current variable ---*/
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
-        /*--- Load buffers with the pressure and mach variables. ---*/
-        Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
-        jPoint++;
-      }
-    }
-    
-    /*--- Gather the data on the master node. ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    
-    /*--- The master node unpacks and sorts this variable by global index ---*/
-    if (rank == MASTER_NODE) {
-      jPoint = 0; iVar = iVar_Sharp;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+        /*--- Check for halos & write only if requested ---*/
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
           
-          /*--- Get global index, then loop over each variable and store ---*/
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          /*--- Load buffers with the pressure and mach variables. ---*/
+          Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
           jPoint++;
         }
-        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+      
+      /*--- Gather the data on the master node. ---*/
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_Sharp;
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+            
+            /*--- Get global index, then loop over each variable and store ---*/
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            jPoint++;
+          }
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
       }
     }
   }
@@ -3704,6 +3775,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
     restart_file << "\t\"Conservative_" << iVar+1<<"\"";
   }
+  if (config->GetWrt_Limiters()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      restart_file << "\t\"Limiter_" << iVar+1<<"\"";
+    }
+  }
   if (config->GetWrt_Residuals()) {
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       restart_file << "\t\"Residual_" << iVar+1<<"\"";
@@ -3736,8 +3812,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << "\t\"Eddy_Viscosity\"";
   }
   
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    restart_file << "\t\"Sharp_Edge_Dist\"";
+  if (config->GetWrt_SharpEdges()) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      restart_file << "\t\"Sharp_Edge_Dist\"";
+    }
   }
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {

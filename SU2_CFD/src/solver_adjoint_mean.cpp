@@ -1696,6 +1696,8 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement    = config->GetGrid_Movement();
   
+  /*--- Add reconstruction to the direct solution!!!!!!!!---*/
+  
   for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/

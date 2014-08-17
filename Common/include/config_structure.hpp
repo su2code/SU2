@@ -492,6 +492,8 @@ private:
 	Wrt_Restart,                /*!< \brief Write a restart solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
 	Wrt_Residuals,              /*!< \brief Write residuals to solution file */
+  Wrt_Limiters,              /*!< \brief Write residuals to solution file */
+	Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
@@ -2109,6 +2111,18 @@ public:
 	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
 	 */
 	bool GetWrt_Residuals(void);
+  
+	/*!
+	 * \brief Get information about writing residuals to volume solution file.
+	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
+	 */
+	bool GetWrt_Limiters(void);
+  
+	/*!
+	 * \brief Get information about writing residuals to volume solution file.
+	 * \return <code>TRUE</code> means that residuals will be written to the solution file.
+	 */
+	bool GetWrt_SharpEdges(void);
 
   /*!
 	 * \brief Get information about writing rind layers to the solution files.

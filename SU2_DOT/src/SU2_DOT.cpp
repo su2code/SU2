@@ -307,14 +307,14 @@ int main(int argc, char *argv[]) {
 							VarCoord = boundary->vertex[iMarker][iVertex]->GetVarCoord();
 							Sensitivity = boundary->vertex[iMarker][iVertex]->GetAuxVar();
               MeshScale = config->GetMesh_Scale_Change();
-
+              
 							dS = 0.0; 
 							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
 								dS += Normal[iDim]*Normal[iDim];
 								deps[iDim] = VarCoord[iDim] / delta_eps;
 							}
 							dS = sqrt(dS);
-							
+
 							dalpha_deps = 0.0;
 							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
 								dalpha[iDim] = Normal[iDim] / dS;
