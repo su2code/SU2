@@ -342,7 +342,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
   
 	/*--- local CGNS variables ---*/
 	int cgns_file,cgns_flow,cgns_field,element_dims,physical_dims,cgns_err;
-	unsigned long iVar, iExtIter = config->GetExtIter();
+	unsigned long jVar, iVar, iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
 	bool unsteady = config->GetUnsteady_Simulation();
@@ -469,14 +469,23 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		if (cgns_err) cg_error_print();
 	}
   
-	/*--- Write conservative variable residuals to CGNS file ---*/
-    if (config->GetWrt_Residuals()){
-        for (iVar = nVar_Consv; iVar < 2*nVar_Consv; iVar++) {
-            name.str(string()); name << "Conservative Residual " << iVar-nVar_Consv+1;
-            cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field);
-            if (cgns_err) cg_error_print();
-        }
+  /*--- Write primitive variable residuals to CGNS file ---*/
+  if (config->GetWrt_Limiters()){
+    for (jVar = 0; jVar < nVar_Consv; jVar++) {
+      name.str(string()); name << "Primitive Limiter " << jVar+1;
+      cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
+      if (cgns_err) cg_error_print();
     }
+  }
+  
+	/*--- Write conservative variable residuals to CGNS file ---*/
+  if (config->GetWrt_Residuals()){
+    for (jVar = 0; jVar < nVar_Consv; jVar++) {
+      name.str(string()); name << "Conservative Residual " << jVar+1;
+      cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
+      if (cgns_err) cg_error_print();
+    }
+  }
   
 	/*--- Write grid velocities to CGNS file, if applicable ---*/
 	if (config->GetGrid_Movement()) {

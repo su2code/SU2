@@ -765,6 +765,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_RESTART", Wrt_Restart, true);
   /* DESCRIPTION: Output residual info to solution/restart file */
   addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  /* DESCRIPTION: Output residual info to solution/restart file */
+  addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
+  /* DESCRIPTION: Output residual info to solution/restart file */
+  addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
@@ -3462,7 +3466,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
           << ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-          cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
           cout << "Second order integration." << endl;
         }
         if (Kind_Centered_AdjFlow == LAX) {
@@ -3494,6 +3497,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             break;
         }
       }
+      
+      cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
 
     }
 
