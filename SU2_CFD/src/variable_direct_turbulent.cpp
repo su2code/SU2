@@ -35,9 +35,11 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
   unsigned short iVar;
 
   /*--- Array initialization ---*/
+  
 	TS_Source = NULL;
   
 	/*--- Allocate space for the time spectral source terms ---*/
+  
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -45,6 +47,7 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 	}
   
 	/*--- Allocate space for the limiter ---*/
+  
   Limiter = new double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
