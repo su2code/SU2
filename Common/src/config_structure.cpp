@@ -30,37 +30,48 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 #endif
 
   /*--- Initialize pointers to Null---*/
+  
   SetPointersNull();
 
   /*--- Reading config options  ---*/
+  
   SetConfig_Options(val_iZone, val_nZone);
 
   /*--- Parsing the config file  ---*/
+  
   SetParsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
+  
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
   /*--- Configuration file boundaries/markers seting ---*/
+  
   SetMarkers(val_software, val_iZone);
 
   /*--- Configuration file output ---*/
+  
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
     SetOutput(val_software, val_iZone);
 
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
+  
   /*--- Initialize pointers to Null---*/
+  
   SetPointersNull();
 
   /*--- Reading config options  ---*/
+  
   SetConfig_Options(1, 1);
 
   /*--- Parsing the config file  ---*/
+  
   SetParsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
+  
   SetPostprocessing(val_software, 1, 1);
   
 }
@@ -569,7 +580,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Coefficient for the limiter */
   addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /* DESCRIPTION: Freeze the value of the limiter after a number of iterations */
-  addUnsignedLongOption("LIMITER_ITER", LimiterIter, 1E6);
+  addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
   addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
 
