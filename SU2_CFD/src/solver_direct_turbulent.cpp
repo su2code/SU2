@@ -485,6 +485,10 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
       
       Gradient_i = node[iPoint]->GetGradient();
       Gradient_j = node[jPoint]->GetGradient();
+      if (limiter) {
+        Limiter_i = node[iPoint]->GetLimiter();
+        Limiter_j = node[jPoint]->GetLimiter();
+      }
       
       for (iVar = 0; iVar < nVar; iVar++) {
         Project_Grad_i = 0.0; Project_Grad_j = 0.0;
@@ -492,8 +496,14 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
           Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
         }
-        Solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
-        Solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
+        if (limiter) {
+          Solution_i[iVar] = Turb_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+          Solution_j[iVar] = Turb_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+        }
+        else {
+          Solution_i[iVar] = Turb_i[iVar] + Project_Grad_i;
+          Solution_j[iVar] = Turb_j[iVar] + Project_Grad_j;
+        }
       }
       
       numerics->SetTurbVar(Solution_i, Solution_j);
@@ -1223,7 +1233,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-  //  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
 }
 
@@ -3379,7 +3389,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-  //  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
   
 }
 

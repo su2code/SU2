@@ -511,12 +511,12 @@ static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<strin
  */
 enum ENUM_LIMITER {
   VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
-  MINMOD = 1,           /*!< \brief Slope limiter using minmod method. */
+  BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2       /*!< \brief Slope limiter using sharp edges. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
-("MINMOD", MINMOD)
+("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES);
 
 /*!

@@ -2246,17 +2246,17 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
         else { for (iVar = 0; iVar < nVar_First; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
         
-        if (solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
+        if (solver[SecondIndex]->node[iPoint]->GetLimiter() != NULL) {
           for (iVar = 0; iVar < nVar_Second; iVar++) {
-            Data[jVar][jPoint] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
+            Data[jVar][jPoint] = solver[SecondIndex]->node[iPoint]->GetLimiter(iVar);
             jVar++;
           }
         }
         else { for (iVar = 0; iVar < nVar_Second; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
 
-        if (solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
+        if (solver[ThirdIndex]->node[iPoint]->GetLimiter() != NULL) {
           for (iVar = 0; iVar < nVar_Third; iVar++) {
-            Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
+            Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter(iVar);
             jVar++;
           }
         }

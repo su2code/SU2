@@ -3404,8 +3404,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3426,8 +3426,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3459,8 +3459,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3501,8 +3501,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3530,8 +3530,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3573,8 +3573,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
