@@ -2290,7 +2290,7 @@ void CSource_TNE2::ComputeAxisymmetric(double *val_residual,
 //	double yinv, Enthalpy_i, Velocity_i, v2;
 	
   /*--- Calculate inverse of y coordinate ---*/
-	if (Coord_i[1] > 0.0) yinv = 1.0/Coord_i[1];
+	if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
 	else yinv = 0.0;
   
   /*--- Rename for convenience ---*/

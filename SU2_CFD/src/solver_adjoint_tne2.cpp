@@ -1252,7 +1252,7 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
     if (!RightSol) ErrorCounter++;
     
 		/*--- Initialize the convective residual vector ---*/
-		LinSysRes.SetBlock_Zero(iPoint);
+		if (!Output) LinSysRes.SetBlock_Zero(iPoint);
 	}
   
   /*--- Upwind second order reconstruction ---*/
@@ -1337,8 +1337,8 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
 		/*--- Pass conservative & primitive variables w/o reconstruction ---*/
 		numerics->SetConservative(solver_container[TNE2_SOL]->node[iPoint]->GetSolution(),
                               solver_container[TNE2_SOL]->node[jPoint]->GetSolution());
-    numerics->SetPrimitive(solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
-                           solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());    
+    numerics->SetPrimitive(   solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar(),
+                              solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar());
 
     /*--- Pass supplementary information to CNumerics ---*/
     numerics->SetdPdU(  solver_container[TNE2_SOL]->node[iPoint]->GetdPdU(),
@@ -1347,6 +1347,10 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                         solver_container[TNE2_SOL]->node[jPoint]->GetdTdU());
     numerics->SetdTvedU(solver_container[TNE2_SOL]->node[iPoint]->GetdTvedU(),
                         solver_container[TNE2_SOL]->node[jPoint]->GetdTvedU());
+    numerics->SetEve   (solver_container[TNE2_SOL]->node[iPoint]->GetEve(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetEve());
+    numerics->SetCvve  (solver_container[TNE2_SOL]->node[iPoint]->GetCvve(),
+                        solver_container[TNE2_SOL]->node[jPoint]->GetCvve());
     
     /*--- Set the value of the largest eigenvalue ---*/
     numerics->SetLambda(solver_container[TNE2_SOL]->node[iPoint]->GetLambda(),
@@ -1416,7 +1420,9 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
   
   /*--- Set booleans based on config settings ---*/
 	implicit        = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-	second_order    = (((config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER) || (config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER_LIMITER)) && (iMesh == MESH_0));
+	second_order    = (((config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER)        ||
+                      (config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER_LIMITER))
+                     && (iMesh == MESH_0));
   limiter         = (config->GetSpatialOrder_AdjTNE2() == SECOND_ORDER_LIMITER);
 
   if (second_order)
@@ -2010,8 +2016,7 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
           PrimVar_Grad = solver_container[TNE2_SOL]->node[iPoint]->GetGradient_Primitive();
           ConsVar_Grad = solver_container[TNE2_SOL]->node[iPoint]->GetGradient();
           ConsPsi_Grad = node[iPoint]->GetAuxVarGradient();
-          ConsPsi = node[iPoint]->GetAuxVar();          
-          
+          ConsPsi = node[iPoint]->GetAuxVar();
           d_press = 0.0; grad_v = 0.0; v_gradconspsi = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             

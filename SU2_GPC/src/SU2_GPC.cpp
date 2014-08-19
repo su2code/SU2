@@ -141,7 +141,6 @@ int main(int argc, char *argv[]) {
 	}
   
 	for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-				
     if (size == SINGLE_NODE) { Jacobian_file << iDV; }
     
     /*--- Free Form deformation based ---*/
@@ -201,13 +200,10 @@ int main(int argc, char *argv[]) {
         }
         
         /*--- Recompute cartesian coordinates using the new control points position ---*/
-        
         surface_mov->SetCartesianCoord(boundary, config, FFDBox[iFFDBox], iFFDBox);
-        
       }
-      
     }
-			 
+		
     /*--- HicksHenne design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
@@ -301,45 +297,45 @@ int main(int argc, char *argv[]) {
 		delta_eps = config->GetDV_Value(iDV);
     my_Gradient = 0.0; Gradient = 0.0;
       
-      /*--- Reset update points ---*/
-      for (iPoint = 0; iPoint < boundary->GetnPoint(); iPoint++)
-        UpdatePoint[iPoint] = true;
-      
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-				if (config->GetMarker_All_DV(iMarker) == YES) {
-					for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
-						
-						iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
-						if ((iPoint < boundary->GetnPointDomain()) && UpdatePoint[iPoint]) {
-							
-							Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
-							VarCoord = boundary->vertex[iMarker][iVertex]->GetVarCoord();
-							Sensitivity = boundary->vertex[iMarker][iVertex]->GetAuxVar();
-              MeshScale = config->GetMesh_Scale_Change();
-
-							dS = 0.0; 
-							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
-								dS += Normal[iDim]*Normal[iDim];
-								deps[iDim] = VarCoord[iDim] / delta_eps;
-							}
-							dS = sqrt(dS);
-							
-							dalpha_deps = 0.0;
-							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
-								dalpha[iDim] = Normal[iDim] / dS;
-								dalpha_deps -= dalpha[iDim]*deps[iDim];
-							}
-							
-              /*--- Store the geometric sensitivity for this DV (rows) & this node (column) ---*/
-              if (size == SINGLE_NODE) {
-                Jacobian_file  << ", " << dalpha_deps;
-              }
-              
-							my_Gradient += MeshScale*Sensitivity*dalpha_deps;
-							UpdatePoint[iPoint] = false;
-						}
-					}
-				}				
+    /*--- Reset update points ---*/
+    for (iPoint = 0; iPoint < boundary->GetnPoint(); iPoint++)
+      UpdatePoint[iPoint] = true;
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = boundary->vertex[iMarker][iVertex]->GetNode();
+          if ((iPoint < boundary->GetnPointDomain()) && UpdatePoint[iPoint]) {
+            
+            Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
+            VarCoord = boundary->vertex[iMarker][iVertex]->GetVarCoord();
+            Sensitivity = boundary->vertex[iMarker][iVertex]->GetAuxVar();
+            MeshScale = config->GetMesh_Scale_Change();
+            
+            dS = 0.0;
+            for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
+              dS += Normal[iDim]*Normal[iDim];
+              deps[iDim] = VarCoord[iDim] / delta_eps;
+            }
+            dS = sqrt(dS);
+            
+            dalpha_deps = 0.0;
+            for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
+              dalpha[iDim] = Normal[iDim] / dS;
+              dalpha_deps -= dalpha[iDim]*deps[iDim];
+            }
+            
+            /*--- Store the geometric sensitivity for this DV (rows) & this node (column) ---*/
+            if (size == SINGLE_NODE) {
+              Jacobian_file  << ", " << dalpha_deps;
+            }
+            
+            my_Gradient += MeshScale*Sensitivity*dalpha_deps;
+            UpdatePoint[iPoint] = false;
+          }
+        }
+      }				
     }
     
 #ifndef NO_MPI

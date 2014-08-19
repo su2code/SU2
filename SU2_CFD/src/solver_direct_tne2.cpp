@@ -1836,18 +1836,19 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   
   Set_MPI_Primitive(geometry, config);
   
-	/*--- Upwind second order reconstruction ---*/
+  
+  /*--- Upwind second order reconstruction ---*/
 	if ((second_order) && (iMesh == MESH_0)) {
     
     /*--- Calculate the gradients ---*/
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetSolution_Gradient_GG(geometry, config);
-//        SetPrimVar_Gradient_GG(geometry, config);
+        SetPrimVar_Gradient_GG(geometry, config);
         break;
       case WEIGHTED_LEAST_SQUARES:
         SetSolution_Gradient_LS(geometry, config);
-//        SetPrimVar_Gradient_LS(geometry, config);
+        SetPrimVar_Gradient_LS(geometry, config);
         break;
     }
     
@@ -2058,9 +2059,11 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
 		/*--- Points in edge, set normal vectors, and number of neighbors ---*/
-		iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
+		iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
 		numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-		numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+		numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(),
+                          geometry->node[jPoint]->GetnNeighbor());
     
 		/*--- Pass conservative & primitive variables w/o reconstruction to CNumerics ---*/
 		numerics->SetConservative(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
