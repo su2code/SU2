@@ -95,12 +95,10 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
   
 	/*--- Flow variable states at point i (left, _l) and j (right, _r)---*/
   
-	rho_l  = U_i[0]; rho_r  = U_j[0];
-	u_l = U_i[1]/U_i[0]; v_l = U_i[2]/U_i[0]; w_l = 0.0;
-	u_r = U_j[1]/U_j[0]; v_r = U_j[2]/U_j[0]; w_r = 0.0;
-	if (nDim == 3) w_l = U_i[3]/U_i[0];
-	if (nDim == 3) w_r = U_j[3]/U_j[0];
-	h_l = Enthalpy_i; h_r = Enthalpy_j;
+	rho_l  = V_i[nDim+2]; rho_r  = V_j[nDim+2];
+	u_l = V_i[1]; v_l = V_i[2]; w_l = 0.0; if (nDim == 3) w_l = V_i[3];
+	u_r = V_j[1]; v_r = V_j[2]; w_r = 0.0; if (nDim == 3) w_r = V_j[3];
+	h_l = V_i[nDim+3]; h_r = V_j[nDim+3];
   
 	/*--- One-half speed squared ---*/
   
@@ -250,13 +248,22 @@ void CUpwRoe_AdjFlow::ComputeResidual (double *val_residual_i, double *val_resid
     
 		/*--- Prepare variables for use in matrix routines ---*/
     
-		RoeDensity = U_i[0]*sqrt(U_j[0]/U_i[0]);
+		RoeDensity = V_i[nDim+2]*sqrt(V_j[nDim+2]/V_i[nDim+2]);
 		RoeSoundSpeed = c;
 		UnitNormal[0] = nx;  UnitNormal[1] = ny;  if (nDim == 3 ) UnitNormal[2] = nz;
 		RoeVelocity[0]   = u;   RoeVelocity[1]   = v;   if (nDim == 3 ) RoeVelocity[2]   = w;
 		Velocity_i[0]    = u_l; Velocity_i[1]    = v_l; if (nDim == 3 ) Velocity_i[2]    = w_l;
 		Velocity_j[0]    = u_r; Velocity_j[1]    = v_r; if (nDim == 3 ) Velocity_j[2]    = w_r;
-		Energy_i = U_i[nDim+1] / U_i[0]; Energy_j = U_j[nDim+1] / U_j[0];
+    
+    Pressure_i = V_i[nDim+1];
+    Density_i = V_i[nDim+2];
+    Enthalpy_i = V_i[nDim+3];
+    Energy_i = Enthalpy_i - Pressure_i/Density_i;
+
+    Pressure_j = V_i[nDim+1];
+    Density_j = V_i[nDim+2];
+    Enthalpy_j = V_i[nDim+3];
+    Energy_j = Enthalpy_j - Pressure_j/Density_j;
     
 		/*--- Jacobians of the inviscid flux, scaled by
 		 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
@@ -370,24 +377,30 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
                                           double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj,CConfig *config) {
   
 	/*--- Compute face area ---*/
+  
 	Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
   
   /*--- Compute and unitary normal vector ---*/
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		UnitNormal[iDim] = Normal[iDim]/Area;
     if (fabs(UnitNormal[iDim]) < EPS) UnitNormal[iDim] = EPS;
   }
   
 	/*--- Set the variables at point i, and j ---*/
-	Pressure_i = U_i[0]; Pressure_j = U_j[0];
   
+	Pressure_i = V_i[0];          Pressure_j = V_j[0];
+  DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
+  BetaInc2_i = V_i[nDim+2];     BetaInc2_j = V_j[nDim+2];
+
 	for (iDim = 0; iDim < nDim; iDim++) {
-		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
-		Velocity_j[iDim] = U_j[iDim+1]/DensityInc_j;
+		Velocity_i[iDim] = V_i[iDim+1];
+		Velocity_j[iDim] = V_j[iDim+1];
 	}
   
 	/*--- Jacobians of the inviscid flux, scaled by 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  
 	GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, Proj_Jac_Tensor_i);
 	GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, Proj_Jac_Tensor_j);
   
@@ -400,6 +413,7 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
 	}
   
 	/*--- Mean variables at points iPoint and jPoint ---*/
+  
 	MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
 	MeanPressure = 0.5*(Pressure_i + Pressure_j);
 	MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
@@ -413,10 +427,12 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
 	MeanSoundSpeed = sqrt(ProjVelocity*ProjVelocity + (MeanBetaInc2/MeanDensity) * Area * Area);
   
 	/*--- Compute P, inverse P, and store eigenvalues ---*/
+  
 	GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
 	GetPArtCompMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, P_Tensor);
   
 	/*--- Flow eigenvalues ---*/
+  
 	if (nDim == 2) {
 		Lambda[0] = ProjVelocity;
 		Lambda[1] = ProjVelocity + MeanSoundSpeed;
@@ -434,10 +450,13 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
   
   
 	/*--- Flux approximation ---*/
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		for (jVar = 0; jVar < nVar; jVar++) {
 			Proj_ModJac_Tensor_ij = 0.0;
+      
 			/*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+      
 			for (kVar = 0; kVar < nVar; kVar++)
 				Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 			Proj_ModJac_Tensor[iVar][jVar] = 0.5*Proj_ModJac_Tensor_ij;
@@ -452,6 +471,7 @@ void CUpwRoeArtComp_AdjFlow::ComputeResidual (double *val_residual_i, double *va
   
 	/*--- Implicit contributions, Transpose the matrices and store the Jacobians. Note the negative
 	 sign for the ji and jj Jacobians bc the normal direction is flipped. ---*/
+  
 	if (implicit) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			for (jVar = 0; jVar < nVar; jVar++) {

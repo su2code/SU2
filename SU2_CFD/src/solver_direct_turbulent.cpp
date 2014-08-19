@@ -430,7 +430,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     
-    /*--- Conservative variables w/o reconstruction ---*/
+    /*--- Primitive variables w/o reconstruction ---*/
     
     V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
     V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();

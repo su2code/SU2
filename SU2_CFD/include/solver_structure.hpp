@@ -4095,7 +4095,9 @@ protected:
 	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 	double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
 	double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-  
+  double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
+	*FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
+
   double pnorm;
     
 public:
