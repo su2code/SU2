@@ -2658,7 +2658,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool adjoint          = config->GetAdjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER));
+  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
@@ -3000,18 +3000,19 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
+  
   double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
-  	  	  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel;
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false;
-
+  
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && ((iMesh == MESH_0) || low_fidelity));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
-  bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool compressible     = (config->GetKind_Regime() == COMPRESSIBLE);
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   
@@ -3050,10 +3051,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
       
-      Gradient_i = node[iPoint]->GetGradient_Primitive(); Gradient_j = node[jPoint]->GetGradient_Primitive();
+      Gradient_i = node[iPoint]->GetGradient_Primitive();
+      Gradient_j = node[jPoint]->GetGradient_Primitive();
       if (limiter) {
-    	  Limiter_i = node[iPoint]->GetLimiter_Primitive(); Limiter_j = node[jPoint]->GetLimiter_Primitive();
-
+    	  Limiter_i = node[iPoint]->GetLimiter_Primitive();
+        Limiter_j = node[jPoint]->GetLimiter_Primitive();
       }
       
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -3085,6 +3087,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       }
       
       /*--- If non-physical, use the cell-averaged state. ---*/
+      
       if (neg_density_i || neg_pressure_i) {
         for (iVar = 0; iVar < nVar; iVar++)
           Primitive_i[iVar] = V_i[iVar];
@@ -3096,42 +3099,48 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         counter_local++;
       }
       
+      /*--- If compressible, compute 2nd order reconstruction for the secondary variables ---*/
+
       if (compressible) {
-          Gradient_i = node[iPoint]->GetGradient_Secondary(); Gradient_j = node[jPoint]->GetGradient_Secondary();
-          if (limiter) {
-        	  Limiter_i = node[iPoint]->GetLimiter_Secondary(); Limiter_j = node[jPoint]->GetLimiter_Secondary();
+        
+        Gradient_i = node[iPoint]->GetGradient_Secondary();
+        Gradient_j = node[jPoint]->GetGradient_Secondary();
+        if (limiter) {
+          Limiter_i = node[iPoint]->GetLimiter_Secondary();
+          Limiter_j = node[jPoint]->GetLimiter_Secondary();
+        }
+        
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
           }
-
-      for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-              Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) {
-                Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-                Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-              }
-              if (limiter) {
-                Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-                Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-              }
-              else {
-            	Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
-            	Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
-              }
-		}
-
-
+          if (limiter) {
+            Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+            Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          }
+          else {
+            Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
+            Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
+          }
+        }
+        
       }
+      
       /*--- Set conservative variables with reconstruction ---*/
       
       numerics->SetPrimitive(Primitive_i, Primitive_j);
       numerics->SetSecondary(Secondary_i, Secondary_j);
       
-
+      
     } else {
       
       /*--- Set conservative variables without reconstruction ---*/
       
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
+      
     }
     
     /*--- Free surface simulation should include gradient of the hydrostatic pressure ---*/
@@ -3163,8 +3172,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
         }
         
-        Gradient_i = node[iPoint]->GetGradient_Primitive(); Gradient_j = node[jPoint]->GetGradient_Primitive();
-        if (limiter) { Limiter_i = node[iPoint]->GetLimiter_Primitive(); Limiter_j = node[jPoint]->GetLimiter_Primitive(); }
+        Gradient_i = node[iPoint]->GetGradient_Primitive();
+        Gradient_j = node[jPoint]->GetGradient_Primitive();
+        if (limiter) {
+          Limiter_i = node[iPoint]->GetLimiter_Primitive();
+          Limiter_j = node[jPoint]->GetLimiter_Primitive();
+        }
         
         /*--- Note that the pressure reconstruction always includes the hydrostatic gradient,
          and we should limit only the kinematic contribution ---*/
@@ -6139,15 +6152,13 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim, jDim, iVar, jVar, kVar;
+  unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
-  double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
-  Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-  alpha, aa, bb, cc, dd, Area, UnitNormal[3];
+  double P_Total, T_Total, *Flow_Dir, Area, UnitNormal[3];
 
-  double *Velocity_b, Velocity2_b, VelMag_b, Enthalpy_b, Entropy_b, Energy_b, StaticEnthalpy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
-  double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e, StaticEnthalpy_e, StaticEnergy_e, Density_e, Kappa_e, Chi_e, Pressure_e, Temperature_e;
-  double *Velocity_i, Velocity2_i, VelMag_i, Enthalpy_i, Entropy_i, Energy_i, StaticEnthalpy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, Temperature_i, SoundSpeed_i;
+  double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
+  double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
+  double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
   double ProjGridVel, ProjVelocity_i, ProjVelocity_b;
   double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
 
@@ -6155,11 +6166,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
-  double Gas_Constant       = config->GetGas_ConstantND();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
@@ -9298,6 +9304,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
   bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_adjflow      = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
@@ -9361,7 +9368,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
   
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb)) { SetPrimitive_Limiter(geometry, config); }
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)) { SetPrimitive_Limiter(geometry, config); }
   
   /*--- Initialize the jacobian matrices ---*/
   

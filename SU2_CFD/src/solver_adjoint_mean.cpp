@@ -1633,15 +1633,18 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge, normal, and neighbors---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
     
     /*--- Adjoint variables w/o reconstruction ---*/
+    
     numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     
     /*--- Conservative variables w/o reconstruction ---*/
+    
     numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
                               solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
     
@@ -1666,32 +1669,38 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     }
     
     /*--- Mesh motion ---*/
+    
     if (grid_movement) {
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     }
     
     /*--- Compute residuals ---*/
+    
     numerics->ComputeResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
     
     /*--- Update convective and artificial dissipation residuals ---*/
+    
     LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
     LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
     LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
     LinSysRes.SubtractBlock(jPoint, Res_Visc_j);
     
     /*--- Implicit contribution to the residual ---*/
+    
     if (implicit) {
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
       Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_ji);
       Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_jj);
     }
+    
   }
 }
 
 
 void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+  
   double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, *Limiter_i = NULL,
   *Limiter_j = NULL, *Psi_i = NULL, *Psi_j = NULL, *V_i, *V_j;
   unsigned long iEdge, iPoint, jPoint;
@@ -3813,7 +3822,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
   unsigned long iVertex, iPoint, Point_Normal;
   double Velocity[3], bcn, phin, Area, UnitNormal[3],
   ProjGridVel, *GridVel;
-  double *V_inlet, *V_domain;
+  double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -3823,8 +3832,8 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
   bool grid_movement = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-  double *Normal = new double[nDim];
-  double *Psi_domain = new double[nVar]; double *Psi_inlet = new double[nVar];
+  Normal = new double[nDim];
+  Psi_domain = new double[nVar]; Psi_inlet = new double[nVar];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -3849,7 +3858,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
       
-      /*--- Set the normal point ---*/
+      /*--- Index of the closest interior node ---*/
       
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
@@ -3857,7 +3866,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
-      /*--- Retrieve solution at the farfield boundary node ---*/
+      /*--- Retrieve solution at the boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
@@ -3975,10 +3984,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   double Pressure, P_Exit, Velocity[3], Velocity2, Enthalpy;
   double Density, Energy, Height;
   double Vn, SoundSpeed, Mach_Exit, Ubn, a1, LevelSet, Density_Outlet = 0.0;
-  double *Psi_domain = new double [nVar]; double *Psi_outlet = new double [nVar];
-  double *Normal = new double[nDim];
   double Area, UnitNormal[3];
-  double *V_outlet, *V_domain;
+  double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -3990,9 +3997,11 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   double epsilon          = config->GetFreeSurface_Thickness();
   double RatioDensity     = config->GetRatioDensity();
   double Froude           = config->GetFroude();
-  
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
+  Psi_domain = new double [nVar]; Psi_outlet = new double [nVar];
+  Normal = new double[nDim];
+
   /*--- Loop over all the vertices ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -4002,11 +4011,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Set the normal vector ---*/
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      
+      conv_numerics->SetNormal(Normal);
+
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
@@ -4023,11 +4033,11 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
-      /*--- Retrieve solution at the farfield boundary node ---*/
+      /*--- Retrieve solution at the boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
-      /*--- Adjoint flow solution at the wall ---*/
+      /*--- Adjoint flow solution at the boundary ---*/
       
       for (iVar = 0; iVar < nVar; iVar++)
         Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
@@ -4146,7 +4156,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Set the flow and adjoint states in the solver ---*/
       
-      conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_outlet);
       conv_numerics->SetAdjointVar(Psi_domain, Psi_outlet);
       
@@ -4179,7 +4188,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  double *Normal, *U_domain, *U_inflow, *Psi_domain, *Psi_inflow, Pressure, P_Fan, Velocity[3], Velocity2, Entropy, Density, Energy, Riemann, Enthalpy, Vn, SoundSpeed, Mach_Exit, Vn_Exit, UnitNormal[3], Area, a1;
+  
+  double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3], Velocity2, Density, Vn, UnitNormal[3], Area, a1;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   
@@ -4187,20 +4197,23 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   Normal = new double[nDim];
-  U_domain = new double[nVar]; U_inflow = new double[nVar];
   Psi_domain = new double[nVar]; Psi_inflow = new double[nVar];
   
   /*--- Loop over all the vertices ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- If the node belong to the domain ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      
+      conv_numerics->SetNormal(Normal);
+
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
@@ -4209,70 +4222,36 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
       
-      /*--- Current solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        U_domain[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+      /*--- Allocate the value at the inflow ---*/
       
-      /*--- Retrieve the specified back pressure for this outlet. ---*/
-      P_Fan = config->GetFanFace_Pressure(Marker_Tag);
+      V_inflow = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
-      /*--- Check whether the flow is supersonic at the exit. The type
-       of boundary update depends on this. ---*/
-      Density = U_domain[0];
-      Velocity2 = 0.0; Vn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = U_domain[iDim+1]/Density;
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-        Vn += Velocity[iDim]*UnitNormal[iDim];
-      }
-      Energy     = U_domain[nVar-1]/Density;
-      Pressure   = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-      SoundSpeed = sqrt(Gamma*Pressure/Density);
-      Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
+      /*--- Retrieve solution at the boundary node ---*/
       
-      /*--- Subsonic exit flow: there is one incoming characteristic,
-       therefore one variable can be specified (back pressure) and is used
-       to update the conservative variables. Compute the entropy and the
-       acoustic variable. These riemann invariants, as well as the tangential
-       velocity components, are extrapolated. ---*/
-      Entropy = Pressure*pow(1.0/Density,Gamma);
-      Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
-      /*--- Compute the new fictious state at the outlet ---*/
-      Density    = pow(P_Fan/Entropy,1.0/Gamma);
-      Pressure   = P_Fan;
-      SoundSpeed = sqrt(Gamma*P_Fan/Density);
-      Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-      Velocity2  = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-      }
-      Energy  = P_Fan/(Density*Gamma_Minus_One) + 0.5*Velocity2;
-      Enthalpy = (Energy*Density + Pressure) / Density;
+      /*--- Adjoint flow solution at the boundary ---*/
       
-      /*--- Conservative variables, using the derived quantities ---*/
-      U_inflow[0] = Density;
-      U_inflow[1] = Velocity[0]*Density;
-      U_inflow[2] = Velocity[1]*Density;
-      U_inflow[3] = Energy*Density;
-      if (nDim == 3) {
-        U_inflow[3] = Velocity[2]*Density;
-        U_inflow[4] = Energy*Density;
-      }
-      
-      conv_numerics->SetConservative(U_domain, U_inflow);
-      conv_numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), SoundSpeed);
-      conv_numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), Enthalpy);
-      
-      /*--- Adjoint flow solution at the wall ---*/
       for (iVar = 0; iVar < nVar; iVar++)
         Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
       
+      /*--- Subsonic flow is assumed. ---*/
+      
+      P_Fan = config->GetFanFace_Pressure(Marker_Tag);
+      Density = V_domain[nDim+2];
+      Velocity2 = 0.0; Vn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[iDim+1];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Vn += Velocity[iDim]*UnitNormal[iDim];
+      }
+      
       /*--- Shorthand for repeated term in the boundary conditions ---*/
-      a1 = Gamma*(P_Fan/(Density*Gamma_Minus_One))/(Vn);
+      
+      a1 = Gamma*(P_Fan/(Density*Gamma_Minus_One))/Vn;
       
       /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
+      
       Psi_inflow[nVar-1] = Psi_domain[nVar-1];
       Psi_inflow[0] = 0.5*Psi_inflow[nVar-1]*Velocity2;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -4280,56 +4259,62 @@ void CAdjEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_co
         Psi_inflow[iDim+1] = -Psi_inflow[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
       }
       
+      /*--- Set the flow and adjoint states in the solver ---*/
+      
+      conv_numerics->SetPrimitive(V_domain, V_inflow);
       conv_numerics->SetAdjointVar(Psi_domain, Psi_inflow);
       
-      /*--- Set the normal vector ---*/
-      conv_numerics->SetNormal(Normal);
-      
       /*--- Compute the residual ---*/
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
+                                     Jacobian_ji, Jacobian_jj, config);
       
       /*--- Add and Subtract Residual ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Residual_i);
       
       /*--- Implicit contribution to the residual ---*/
+      
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
     }
   }
   
+  /*--- Free locally allocated memory ---*/
+
   delete [] Normal;
-  delete [] U_domain; delete [] U_inflow;
   delete [] Psi_domain; delete [] Psi_inflow;
   
 }
 
 void CAdjEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
   unsigned long iVertex, iPoint, Point_Normal;
-  double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann, Enthalpy, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, SoundSpeed, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3], *Normal, *U_domain, *U_exhaust, *Psi_domain, *Psi_exhaust;
+  double Area, UnitNormal[3], *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  double Gas_Constant = config->GetGas_ConstantND();
   
   Normal = new double[nDim];
-  U_domain = new double[nVar]; U_exhaust = new double[nVar];
   Psi_domain = new double[nVar]; Psi_exhaust = new double[nVar];
   
-  /*--- Loop over all the vertices ---*/
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    /*--- If the node belong to the domain ---*/
+    /*--- Check that the node belongs to the domain (i.e., not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Index of the closest interior node ---*/
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      
+      conv_numerics->SetNormal(Normal);
+
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
@@ -4338,132 +4323,52 @@ void CAdjEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_c
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = Normal[iDim]/Area;
       
-      /*--- Current solution at this boundary node ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        U_domain[iVar] = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+      /*--- Index of the closest interior node ---*/
       
-      /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
-       therefore we can specify all but one state variable at the inlet.
-       The outgoing Riemann invariant provides the final piece of info. ---*/
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
-      /*--- Retrieve the specified total conditions for this inlet. ---*/
-      P_Total  = config->GetNozzle_Ptotal(Marker_Tag);
-      T_Total  = config->GetNozzle_Ttotal(Marker_Tag);
+      /*--- Allocate the value at the exhaust ---*/
       
-      /*--- Non-dim. the inputs if necessary. ---*/
-      P_Total /= config->GetPressure_Ref();
-      T_Total /= config->GetTemperature_Ref();
+      V_exhaust = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
       
-      /*--- Store primitives and set some variables for clarity. ---*/
-      Density = U_domain[0];
-      Velocity2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = U_domain[iDim+1]/Density;
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-      }
-      Energy      = U_domain[nVar-1]/Density;
-      Pressure    = Gamma_Minus_One*Density*(Energy-0.5*Velocity2);
-      H_Total     = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
-      SoundSpeed2 = Gamma*Pressure/Density;
+      /*--- Retrieve solution at the boundary node ---*/
       
-      /*--- Compute the acoustic Riemann invariant that is extrapolated
-       from the domain interior. ---*/
-      Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Riemann += Velocity[iDim]*UnitNormal[iDim];
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       
-      /*--- Total speed of sound ---*/
-      SoundSpeed_Total2 = Gamma_Minus_One*(H_Total - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
+      /*--- Adjoint flow solution at the boundary ---*/
       
-      /*--- The flow direction is defined by the surface normal ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        Flow_Dir[iDim] = -UnitNormal[iDim];
-      
-      /*--- Dot product of normal and flow direction. This should
-       be negative due to outward facing boundary normal convention. ---*/
-      alpha = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        alpha += UnitNormal[iDim]*Flow_Dir[iDim];
-      
-      /*--- Coefficients in the quadratic equation for the velocity ---*/
-      aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
-      bb = -1.0*Gamma_Minus_One*alpha*Riemann;
-      cc =  0.5*Gamma_Minus_One*Riemann*Riemann -2.0*SoundSpeed_Total2/Gamma_Minus_One;
-      
-      /*--- Solve quadratic equation for velocity magnitude. Value must
-       be positive, so the choice of root is clear. ---*/
-      dd = bb*bb - 4.0*aa*cc;
-      dd = sqrt(max(0.0,dd));
-      Vel_Mag   = (-bb + dd)/(2.0*aa);
-      Vel_Mag   = max(0.0,Vel_Mag);
-      Velocity2 = Vel_Mag*Vel_Mag;
-      
-      /*--- Compute speed of sound from total speed of sound eqn. ---*/
-      SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-      
-      /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-      Mach2 = Velocity2/SoundSpeed2;
-      Mach2 = min(1.0,Mach2);
-      Velocity2   = Mach2*SoundSpeed2;
-      Vel_Mag     = sqrt(Velocity2);
-      SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
-      SoundSpeed = sqrt(SoundSpeed2);
-      
-      /*--- Compute new velocity vector at the inlet ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
-      
-      /*--- Static temperature from the speed of sound relation ---*/
-      Temperature = SoundSpeed2/(Gamma*Gas_Constant);
-      
-      /*--- Static pressure using isentropic relation at a point ---*/
-      Pressure = P_Total*pow((Temperature/T_Total),Gamma/Gamma_Minus_One);
-      
-      /*--- Density at the inlet from the gas law ---*/
-      Density = Pressure/(Gas_Constant*Temperature);
-      
-      /*--- Using pressure, density, & velocity, compute the energy ---*/
-      Energy = Pressure/(Density*Gamma_Minus_One)+0.5*Velocity2;
-      
-      /*--- Conservative variables, using the derived quantities ---*/
-      U_exhaust[0] = Density;
-      for (iDim = 0; iDim < nDim; iDim++)
-        U_exhaust[iDim+1] = Velocity[iDim]*Density;
-      U_exhaust[nDim+1] = Energy*Density;
-      
-      conv_numerics->SetConservative(U_domain, U_exhaust);
-      conv_numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(), SoundSpeed);
-      conv_numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(), Enthalpy);
-      
-      /*--- Adjoint flow solution at the wall ---*/
       for (iVar = 0; iVar < nVar; iVar++)
         Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
       
       /*--- Adjoint flow solution at the exhaust (this should be improved using characteristics bc) ---*/
+      
       Psi_exhaust[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Psi_exhaust[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
       Psi_exhaust[nDim+1] = 0.0;
       
+      /*--- Set the flow and adjoint states in the solver ---*/
+      
+      conv_numerics->SetPrimitive(V_domain, V_exhaust);
       conv_numerics->SetAdjointVar(Psi_domain, Psi_exhaust);
+
+      /*--- Compute the residual using an upwind scheme ---*/
       
-      /*--- Set the normal vector ---*/
-      conv_numerics->SetNormal(Normal);
-      
-      /*--- Compute the residual ---*/
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
       
       /*--- Add and Subtract Residual ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Residual_i);
       
       /*--- Implicit contribution to the residual ---*/
+      
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
     }
   }
   
   delete [] Normal;
-  delete [] U_domain; delete [] U_exhaust;
   delete [] Psi_domain; delete [] Psi_exhaust;
   
 }

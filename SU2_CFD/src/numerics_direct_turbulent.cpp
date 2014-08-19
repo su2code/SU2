@@ -1103,7 +1103,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
   double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
   double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
-  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
+//  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;

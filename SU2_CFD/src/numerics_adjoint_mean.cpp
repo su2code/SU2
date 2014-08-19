@@ -2278,14 +2278,14 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   
 	unsigned short iDim, jDim;
   
-  double Temperature = V_i[0];
+//  double Temperature = V_i[0];
   double Pressure = V_i[nDim+1];
 	double Density = V_i[nDim+2];
-  double Enthalpy = V_i[nDim+3];
+//  double Enthalpy = V_i[nDim+3];
   double Laminar_Viscosity = V_i[nDim+5];
   double Eddy_Viscosity = V_i[nDim+6];
   
-  double Energy = Enthalpy - Pressure/Density;
+//  double Energy = Enthalpy - Pressure/Density;
 	double invDensity     = 1.0/Density;
 	double invDensitysq   = invDensity*invDensity;
 	double invDensitycube = invDensitysq*invDensity;
@@ -2293,7 +2293,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   double Prandtl_Turb     = config->GetPrandtl_Turb();
   double mu_tot_1 = Laminar_Viscosity + Eddy_Viscosity;
 	double mu_tot_2 = Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb;
-	double Gas_Constant = config->GetGas_ConstantND();
+//	double Gas_Constant = config->GetGas_ConstantND();
   
 	/*--- Required gradients of the flow variables, point j ---*/
   
@@ -2392,18 +2392,18 @@ void CSourceViscous_AdjFlow::ComputeResidual (double *val_residual, CConfig *con
   
 	if (config->GetKind_Solver() != ADJ_RANS) {
     
-		double Temperature_Ref = config->GetTemperature_Ref();
-		double Temperature_Dim = Temperature*Temperature_Ref;
-    
-    double S = 0.0;
-    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
-    if (config->GetSystemMeasurements() == US) { S = 198.72; }
-		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
-    
-		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
-		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
-		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
-    
+//		double Temperature_Ref = config->GetTemperature_Ref();
+//		double Temperature_Dim = Temperature*Temperature_Ref;
+//    
+//    double S = 0.0;
+//    if (config->GetSystemMeasurements() == SI) { S = 110.4; }
+//    if (config->GetSystemMeasurements() == US) { S = 198.72; }
+//		double dVisc_T = ((Laminar_Viscosity)/(2.0*Temperature_Dim*(Temperature_Dim + S)))*(Temperature_Dim + 3.0*S)*Temperature_Ref;
+//    
+//		double Cp = (Gamma/Gamma_Minus_One)*Gas_Constant;
+//		double kappa_psi = (sigma_gradpsi + vel_sigma_gradpsi5)/mu_tot_1;
+//		double theta = (kappa_psi + Cp/Prandtl_Lam*gradT_gradpsi5)*dVisc_T*Gamma_Minus_One/(Gas_Constant*Density);
+//    
 //    val_residual[0] += (theta*(sq_vel-Energy))*Volume;
 //    for (iDim = 0; iDim < nDim; iDim++)
 //      val_residual[iDim+1] -= theta*V_i[iDim+1]*Volume;
