@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/cont_adj_euler/naca0012"
+      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/AhmedBody"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "inv_NACA0012.cfg"
+            argument = "AhmedBody.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

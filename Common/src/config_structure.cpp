@@ -247,7 +247,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /* DESCRIPTION: Value of the Bulk Modulus  */
-  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
+  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Artifical compressibility factor  */
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
