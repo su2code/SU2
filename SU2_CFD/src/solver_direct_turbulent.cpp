@@ -578,18 +578,22 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
   /*--- Convective fluxes across symmetry plane are equal to zero. ---*/
+
 }
 
 void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+  
   /*--- Convective fluxes across euler wall are equal to zero. ---*/
+
 }
 
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  double Delta, Vol, density_old, density;
+  double Delta, Vol, density_old = 0.0, density = 0.0;
   
   bool adjoint = config->GetAdjoint();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -695,7 +699,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           if (incompressible || freesurface) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(0);
+            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
           }
           
