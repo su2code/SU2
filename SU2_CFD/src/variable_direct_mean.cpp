@@ -519,6 +519,7 @@ CNSVariable::CNSVariable(double *val_solution, unsigned short val_nDim,
 CNSVariable::~CNSVariable(void) { }
 
 void CNSVariable::SetVorticity(void) {
+  
 	double u_y = Gradient_Primitive[1][1];
 	double v_x = Gradient_Primitive[2][0];
 	double u_z = 0.0;
