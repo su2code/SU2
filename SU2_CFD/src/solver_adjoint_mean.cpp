@@ -4461,13 +4461,16 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #endif
   
   /*--- Norm heat flux objective test ---*/
+  
   pnorm = 10;
   
   /*--- Set the gamma value ---*/
+  
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Define geometry constants in the solver structure ---*/
+  
   nDim         = geometry->GetnDim();
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
@@ -4480,6 +4483,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   node = new CVariable*[nPoint];
   
   /*--- Define some auxiliary arrays related to the residual ---*/
+  
   Point_Max    = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
   
   Residual     = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
@@ -4493,21 +4497,25 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Res_Visc_j   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc_j[iVar]   = 0.0;
   
   /*--- Define some auxiliary arrays related to the solution ---*/
+  
   Solution   = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
   Solution_i = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
   Solution_j = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
 
   /*--- Define some auxiliary arrays related to the flow solution ---*/
+  
   FlowPrimVar_i = new double[nDim+7]; for (iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_i[iVar] = 0.0;
   FlowPrimVar_j = new double[nDim+7]; for (iVar = 0; iVar < nDim+7; iVar++) FlowPrimVar_j[iVar] = 0.0;
 
   /*--- Define some auxiliary vectors related to the geometry ---*/
+  
   Vector   = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
   Vector_i = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
   Vector_j = new double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
   
   /*--- Point to point Jacobians. These are always defined because
    they are also used for sensitivity calculations. ---*/
+  
   Jacobian_i = new double* [nVar];
   Jacobian_j = new double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -4516,10 +4524,12 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Solution and residual vectors ---*/
+  
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
   /*--- Jacobians and vector structures for implicit computations ---*/
+  
   if (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT) {
     Jacobian_ii = new double*[nVar];
     Jacobian_ij = new double*[nVar];
@@ -4761,7 +4771,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }

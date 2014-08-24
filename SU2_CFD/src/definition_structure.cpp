@@ -1121,53 +1121,64 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   }
   
   /*--- Solver definition for the flow adjoint problem ---*/
+  
   if (adj_euler || adj_ns) {
     
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case NO_CONVECTIVE :
         cout << "No convective scheme." << endl; exit(1);
         break;
+        
       case SPACE_CENTERED :
+        
         if (compressible) {
+          
           /*--- Compressible flow ---*/
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             default : cout << "Centered scheme not implemented." << endl; exit(1); break;
           }
+          
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config);
           
-          /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
+          
         }
-        if (incompressible) {
+        
+        if (incompressible || freesurface) {
+          
           /*--- Incompressible flow, use artificial compressibility method ---*/
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
-            case JST : cout << "Centered scheme not implemented." << endl; exit(1); break;
+            case JST : numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJSTArtComp_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             default : cout << "Centered scheme not implemented." << endl; exit(1); break;
           }
+          
           for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLaxArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
           
-          /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
             numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
           
         }
-        if (freesurface) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          cout << "Centered scheme not implemented." << endl; exit(1);
-        }
+        
         break;
+
       case SPACE_UPWIND :
+        
         if (compressible) {
+          
           /*--- Compressible flow ---*/
+          
           switch (config->GetKind_Upwind_AdjFlow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
@@ -1179,8 +1190,11 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
           }
         }
-        if (incompressible) {
+        
+        if (incompressible || freesurface) {
+          
           /*--- Incompressible flow, use artificial compressibility method ---*/
+          
           switch (config->GetKind_Upwind_AdjFlow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
@@ -1192,19 +1206,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
           }
         }
-        if (freesurface) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
-          switch (config->GetKind_Upwind_AdjFlow()) {
-            case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE:
-              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-                numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoeArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-              }
-              break;
-            default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
-          }
-        }
+
         break;
         
       default :
@@ -1213,43 +1215,76 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    
     if (compressible) {
+      
       /*--- Compressible flow ---*/
+      
       numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
       numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
+      
       for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
         numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
         numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
       }
+      
     }
+    
     if (incompressible || freesurface) {
+      
       /*--- Incompressible flow, use artificial compressibility method ---*/
+      
       numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
-      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+      numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+
+      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
         numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+        numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+      }
+      
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    
     for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
       
       /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/
-      if ((adj_ns) && (!incompressible)) {
-        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
-        if (config->GetRotating_Frame() == YES)
-          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-        else
-          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
-      }
-      else {
-        if (config->GetRotating_Frame() == YES)
-          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
-        else if (config->GetAxisymmetric() == YES)
-          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
-        else
-          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+      
+      if (compressible) {
         
-        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+        if (adj_ns) {
+          
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
+          
+          if (config->GetRotating_Frame() == YES)
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+          else
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
+          
+        }
+        
+        else {
+          
+          if (config->GetRotating_Frame() == YES)
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
+          else if (config->GetAxisymmetric() == YES)
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_AdjFlow(nDim, nVar_Adj_Flow, config);
+          else
+            numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+          
+          numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+          
+        }
+        
       }
+      
+      if (incompressible || freesurface) {
+
+        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+        numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
+
+      }
+      
     }
     
   }
