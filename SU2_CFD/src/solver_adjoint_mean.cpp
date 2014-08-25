@@ -1556,6 +1556,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
+  
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool second_order   = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER) || (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER));
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
@@ -1566,36 +1567,44 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Compute nacelle inflow and exhaust properties ---*/
+  
   GetNacelle_Properties(geometry, config, iMesh, Output);
   
   /*--- Residual initialization ---*/
+  
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Get the distance form a sharp edge ---*/
+    
     SharpEdge_Distance = geometry->node[iPoint]->GetSharpEdge_Distance();
     
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
+    
     if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
     if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
     if (!RightSol) ErrorCounter++;
     
     /*--- Initialize the convective residual vector ---*/
+    
     LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
   /*--- Compute gradients for upwind second-order reconstruction ---*/
+  
   if ((second_order) && (iMesh == MESH_0)) {
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
     
     /*--- Limiter computation ---*/
+    
     if (limiter) SetSolution_Limiter(geometry, config);
   }
   
   /*--- Artificial dissipation for centered schemes ---*/
+  
   if (center) {
     if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
@@ -1606,9 +1615,11 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   }
   
   /*--- Implicit solution ---*/
+  
   if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
+  
 #ifdef HAVE_MPI
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1745,33 +1756,6 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
         Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
       }
-      
-//      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
-//      
-//      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-//      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
-//      if (limiter) {
-//        Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
-//        Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
-//      }
-//      
-//      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-//        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-//          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-//        }
-//        if (limiter) {
-//          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-//          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-//        }
-//        else {
-//          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-//          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
-//        }
-//      }
-//      
-//      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
       
       /*--- Adjoint variables using gradient reconstruction and limiters ---*/
 
