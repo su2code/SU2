@@ -1893,21 +1893,26 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
   }
   
   /*--- Mean variables at points iPoint and jPoint ---*/
+  
   MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
   MeanPressure = 0.5*(Pressure_i + Pressure_j);
   MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
   MeanSoundSpeed = sqrt(ProjVelocity*ProjVelocity + (MeanBetaInc2/MeanDensity) * Area * Area);
   
   /*--- Compute ProjFlux_i ---*/
+  
   GetInviscidArtCompProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, Normal, ProjFlux_i);
   
   /*--- Compute ProjFlux_j ---*/
+  
   GetInviscidArtCompProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, Normal, ProjFlux_j);
   
   /*--- Compute P and Lambda (matrix of eigenvalues) ---*/
+  
   GetPArtCompMatrix(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, P_Tensor);
   
   /*--- Flow eigenvalues ---*/
+  
   if (nDim == 2) {
     Lambda[0] = ProjVelocity;
     Lambda[1] = ProjVelocity + MeanSoundSpeed;
@@ -1921,24 +1926,29 @@ void CUpwArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobi
   }
   
   /*--- Absolute value of the eigenvalues ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
   
   /*--- Compute inverse P ---*/
-  GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
   
+  GetPArtCompMatrix_inv(&MeanDensity, MeanVelocity, &MeanBetaInc2, UnitNormal, invP_Tensor);
+
+  /*--- Jacobian of the inviscid flux ---*/
+
   if (implicit) {
-    /*--- Jacobian of the inviscid flux ---*/
     GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, Normal, 0.5, val_Jacobian_i);
     GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, Normal, 0.5, val_Jacobian_j);
   }
   
   /*--- Diference variables iPoint and jPoint ---*/
+  
   Diff_U[0] = Pressure_j - Pressure_i;
   for (iDim = 0; iDim < nDim; iDim++)
     Diff_U[iDim+1] = Velocity_j[iDim]*DensityInc_i - Velocity_i[iDim]*DensityInc_j;
   
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -2944,107 +2954,6 @@ void CSourceAxisymmetric_Flow::ComputeResidual(double *val_residual, double **Ja
       for (int jVar=0; jVar<4; jVar++)
         Jacobian_i[iVar][jVar] *= yinv*Volume;
   }
-  
-}
-
-CSource_JouleHeating::CSource_JouleHeating(unsigned short val_nDim, unsigned short val_nVar,
-                                           CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-  
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  Velocity = new double [nDim];
-  Gamma = config->GetGamma();
-  Gas_Constant = config->GetGas_ConstantND();
-  
-}
-
-CSource_JouleHeating::~CSource_JouleHeating(void) {
-  
-}
-
-void CSource_JouleHeating::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {
-  
-  double Current = 100.0;//config->GetCurrent();
-  for (unsigned short iVar = 0; iVar < nVar; iVar ++) {
-    val_residual[iVar] = 0.0;
-    for (unsigned short jVar = 0; jVar < nVar; jVar ++)
-      val_Jacobian_i[iVar][jVar] = 0.0;
-    
-  }
-  //		if (fabs(Integralsqr < 1E-16) || (Integralsqr != Integralsqr)) {
-  //			cout << " Integral = "<< Integralsqr << endl;
-  //			cin.get();
-  //		}
-  val_residual[nVar-1] = Current*Current*Elec_Conduct*Volume/(4.0*PI_NUMBER*PI_NUMBER*Integralsqr);
-  
-}
-
-void CSource_JouleHeating::SetElec_Cond() {
-  
-  Density = U_i[0];
-  sq_vel = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    Velocity[iDim] = U_i[iDim+1]/Density;
-    sq_vel += Velocity[iDim]*Velocity[iDim];
-  }
-  Energy = U_i[nDim+1]/Density;
-  SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-0.5*sq_vel));
-  Pressure = (Gamma-1.0) * Density * (Energy - 0.5*sq_vel);
-  Temperature = Pressure/(Gas_Constant*Density);
-  double Patm = Pressure / 101325.0;
-  
-  double *coeff_a, *coeff_c, *coeff_d;
-  coeff_a = new double[8];
-  coeff_c = new double[8];
-  coeff_d = new double[8];
-  
-  double w, sigma, x0,x1,x2, x3,x4;
-  
-  x0 = 1.0; x1 = Patm; x2 = Patm*Patm ; x3 = pow(Patm,3); x4 = pow(Patm,4);
-  x1 = log(x1); x2 = log(x2); x3 = log(x3); x4 = log(x4);
-  
-  coeff_a[0] = exp(1.635045e0*x0 + 4.450390e-2*x1 - 5.928863e-4*x2  + 0.0*x3 + 0.0*x4);
-  coeff_c[0] = exp(5.748398e0*x0 + 6.411299e-2*x1 + 0.0*x2    	  + 0.0*x3 + 0.0*x4);
-  coeff_d[0] = exp(1.786355e0*x0 - 1.212690e-2*x1 - 2.375673e-4*x2  + 0.0*x3 + 0.0*x4);
-  w		   = exp(1.419925e0*x0 - 3.875497e-2*x1 + 0.0*x2	  	  + 0.0*x3 + 0.0*x4);
-  
-  sigma = coeff_a[0] - coeff_c[0]*exp(-pow(Temperature/coeff_d[0],w));
-  
-  coeff_c[1] = exp(8.930803e0*x0 + 5.718843e-2*x1 + 1.093759e-3*x2  + 0.0*x3 			+ 0.0*x4);
-  coeff_c[2] = exp(8.576847e0*x0 + 1.004174e-1*x1 + 7.406762e-3*x2  - 1.095186e-3*x3  + 0.0*x4);
-  coeff_c[3] = exp(1.023493e1*x0 + 6.651575e-2*x1 + 1.090308e-3*x2  - 6.576415e-5*x3 	+ 4.715318e-7*x4);
-  coeff_c[4] = exp(1.072380e1*x0 - 5.671452e-2*x1 + 1.468210e-4*x2  + 2.608196e-5*x3 	+ 6.511719e-6*x4);
-  coeff_c[5] = exp(1.106431e1*x0 + 5.578774e-2*x1 + 6.639655e-4*x2  - 0.0*x3 			+ 0.0*x4);
-  coeff_c[6] = exp(1.023203e1*x0 + 8.703300e-2*x1 + 5.007602e-3*x2  + 0.0*x3 			+ 0.0*x4);
-  coeff_c[7] = exp(2.946755e1*x0 - 4.289010e0*x1  - 3.224136e-1*x2  + 9.371814e-2*x3 	+ 0.0*x4);
-  
-  
-  coeff_d[1] = exp(7.014976e0*x0 +  7.625175e-2*x1 + 3.011941e-4*x2  + 0.0*x3 		 + 0.0*x4);
-  coeff_d[2] = exp(9.113182e0*x0 -  8.202725e-2*x1 + 6.299430e-3*x2  + 9.099828e-4*x3  + 0.0*x4);
-  coeff_d[3] = exp(8.039563e0*x0 +  1.435966e-1*x1 + 8.862611e-3*x2  - 3.478227e-4*x3  - 3.614711e-5*x4);
-  coeff_d[4] = exp(8.556977e0*x0 +  2.227207e-1*x1 - 2.773160e-3*x2  - 1.684219e-3*x3  + 1.878188e-4*x4);
-  coeff_d[5] = exp(9.309043e0*x0 +  1.366510e-1*x1 - 2.599317e-3*x2  + 0.0*x3 		 + 0.0*x4);
-  coeff_d[6] = exp(1.130562e1*x0 -  2.184155e-2*x1 - 1.865543e-4*x2  + 0.0*x3 		 + 0.0*x4);
-  coeff_d[7] = exp(2.430324e1*x0 -  2.653523e0*x1  - 3.309222e-1*x2  + 4.769061e-2*x3  + 0.0*x4);
-  
-  
-  coeff_a[1] =  exp(4.493934e-2*x0 -  9.063708e-3*x1 - 2.489500e-3*x2  + 0.0*x3 		   + 0.0*x4);
-  x0 = 1.0; 	  x1 = log(Patm); x2 = x1*x1 ; x3 = pow(x1,3); x4 = pow(x1,4);
-  
-  coeff_a[2] =  (1.593153e0*x0  +  4.137850e-2*x1 + 1.430491e-2*x2  - 4.403957e-7*x3  + 0.0*x4);
-  coeff_a[3] = -(2.627897e-1*x0 +  2.917558e-3*x1 + 3.036205e-3*x2  - 1.926651e-4*x3  - 2.917018e-5*x4);
-  coeff_a[4] = -(1.707216e-1*x0 +  2.035164e-2*x1 + 1.809127e-3*x2  - 9.630175e-5*x3  + 1.781249e-5*x4);
-  coeff_a[5] = -(2.480007e-1*x0 +  2.217818e-2*x1 + 9.094614e-4*x2  + 0.0*x3 		   + 0.0*x4);
-  coeff_a[6] =  (3.636707e0*x0  -  1.436268e-1*x1 - 2.934926e-3*x2  + 0.0*x3 		   + 0.0*x4);
-  coeff_a[7] =  coeff_a[3] + coeff_a[4] + coeff_a[5] - coeff_a[1] - coeff_a[2] - coeff_a[6];
-  
-  
-  double q = 0;
-  for (int i = 1; i < 8; ++i) {
-    q = (Temperature - coeff_c[i]) / coeff_d[i];
-    sigma = sigma + coeff_a[i] * q/(exp(q) + exp(-q));
-  }
-  
-  Elec_Conduct = exp(sigma);
   
 }
 

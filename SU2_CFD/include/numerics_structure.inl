@@ -423,11 +423,7 @@ inline double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 
 inline double CNumerics::GetElec_CondIntegral() {return 0;}
 
-inline double CSource_JouleHeating::GetElec_CondIntegral() {return Elec_Conduct*Coord_i[1]*(Coord_i[1]-Coord_j[1]);}
-
 inline void CNumerics::SetElec_CondIntegralsqr(double val_var) {}
-
-inline void CSource_JouleHeating::SetElec_CondIntegralsqr(double val_var) {Integralsqr = val_var; }
 
 inline void CNumerics::ComputeResidual(double **val_Jacobian_i, double *val_Jacobian_mui, double ***val_Jacobian_gradi, CConfig *config) { }
 

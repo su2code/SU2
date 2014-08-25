@@ -132,6 +132,11 @@ void CConfig::SetPointersNull(void){
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
 
+  /*--- Variable initialization ---*/
+  
+  ExtIter = 0;
+  IntIter = 0;
+  
   /*--- Reacting chemistry, collisions, plasma ---*/
 
   Reactions=NULL;                 Omega00=NULL;               Omega11=NULL;
@@ -143,7 +148,7 @@ void CConfig::SetPointersNull(void){
   CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
   Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
   Diss=NULL;
-
+  
 }
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
