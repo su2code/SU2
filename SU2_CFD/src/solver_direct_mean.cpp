@@ -1873,8 +1873,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 	case PR_GAS:
 		FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical(), config->GetAcentric_Factor());
 		if(fs_temperature){
-			cout << "ERROR... Change the FREESTREAM_OPTION to DENSITY_FS"<< endl;
-			getchar();
 			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
 			Density_FreeStream = FluidModel->GetDensity();
 		} else {
