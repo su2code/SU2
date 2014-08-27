@@ -35,9 +35,11 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
   unsigned short iVar;
 
   /*--- Array initialization ---*/
+  
 	TS_Source = NULL;
   
 	/*--- Allocate space for the time spectral source terms ---*/
+  
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 		TS_Source = new double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -45,6 +47,7 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 	}
   
 	/*--- Allocate space for the limiter ---*/
+  
   Limiter = new double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
@@ -134,6 +137,7 @@ CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Initialization of variables ---*/
+  
 	Solution[0] = val_kine;     Solution_Old[0] = val_kine;
 	Solution[1] = val_omega;	Solution_Old[1] = val_omega;
   
@@ -145,9 +149,11 @@ CTurbSSTVariable::CTurbSSTVariable(double val_kine, double val_omega, double val
 	CDkw = 0.0;
   
 	/*--- Initialization of eddy viscosity ---*/
+  
 	muT = val_muT;
   
 	/*--- Allocate and initialize solution for the dual time strategy ---*/
+  
 	if (dual_time) {
 		Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
 		Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
@@ -162,6 +168,7 @@ void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, do
 	double arg2, arg2A, arg2B, arg1;
   
 	/*--- Cross diffusion ---*/
+  
 	CDkw = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		CDkw += Gradient[0][iDim]*Gradient[1][iDim];
@@ -169,6 +176,7 @@ void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, do
 	CDkw = max(CDkw, pow(10.0, -20.0));
   
 	/*--- F1 ---*/
+  
 	arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist);
 	arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]);
 	arg2 = max(arg2A, arg2B);
@@ -176,6 +184,7 @@ void CTurbSSTVariable::SetBlendingFunc(double val_viscosity, double val_dist, do
 	F1 = tanh(pow(arg1, 4.0));
   
 	/*--- F2 ---*/
+  
 	arg2 = max(2.0*arg2A, arg2B);
 	F2 = tanh(pow(arg2, 2.0));
   

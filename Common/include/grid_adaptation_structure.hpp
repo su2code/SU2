@@ -352,13 +352,7 @@ public:
 	 * \param[in] max_elem - _________________________.
 	 */	
 	void SetSensorElem(CGeometry *geometry, CConfig *config, unsigned long max_elem);
-	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] mesh_filename - _________________________.
-	 */	
-	void WriteAdaptSensor(CGeometry *geometry, char mesh_filename[MAX_STRING_SIZE]);
+
 };
 
 #include "grid_adaptation_structure.inl"

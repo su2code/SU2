@@ -56,7 +56,9 @@ protected:
   double *Vector; /*!< \brief Auxiliary vector. */
   double *Enthalpy_formation;
 	unsigned short nDiatomics, nMonatomics;
-    
+	double Prandtl_Lam;				/*!< \brief Laminar Prandtl's number. */
+	double Prandtl_Turb;		/*!< \brief Turbulent Prandtl's number. */
+  
 public:
 	
   double
@@ -1572,7 +1574,7 @@ private:
 	double *Velocity_i, *Velocity_j, *RoeVelocity;
 	double *ProjFlux_i, *ProjFlux_j;
 	double *delta_wave, *delta_vel;
-	double *Lambda, *Epsilon;
+	double *Lambda, *Epsilon, MaxLambda, Delta, sign;
 	double **P_Tensor, **invP_Tensor;
 	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
 	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
@@ -3991,6 +3993,8 @@ private:
 	double k2;
 	double cb1;
 	double cw2;
+  double ct3;
+  double ct4;
 	double cw3_6;
   double cb2_sigma;
 	double sigma;
@@ -3998,7 +4002,7 @@ private:
 	double cw1;
 	double DivVelocity, Vorticity;
 	unsigned short iDim;
-	double nu, Ji, fv1, fv2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+	double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
 	double r, g, g_6, glim, fw;
 	double norm2_Grad;
 	double dfv1, dfv2, dShat;
@@ -4852,102 +4856,6 @@ public:
     
 private:
 	bool incompressible;
-};
-
-/*!
- * \class CSource_Magnet
- * \brief Magnetic source terms class
- * \ingroup SourceDiscr
- * \author A. Lonkar.
- * \version 3.2.0 "eagle"
- */
-class CSource_Magnet : public CNumerics {
-private:
-	bool implicit;
-	double *MagneticField, *MagneticDipole,*velocity, *VcrossB;
-	double poisson_Conductivity,Stagnation_B;
-	double *Current_Density, *JcrossB,	*dpcenter, *vector_r;
-	unsigned short iDim, iVar;
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config -  Name of the input config file
-	 *
-	 */
-	CSource_Magnet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSource_Magnet(void);
-};
-
-/*!
- * \class CSource_JouleHeating
- * \brief Source terms for Joule Heating
- * \ingroup SourceDiscr
- * \author A. Lonkar.
- * \version 3.2.0 "eagle"
- */
-class CSource_JouleHeating : public CNumerics {
-private:
-	double Elec_Conduct;
-	double Density, Energy, Temperature, sq_vel,SoundSpeed, Pressure, Patm, *Velocity;
-	unsigned short iDim, jDim;
-	bool implicit;
-	double Integralsqr;
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] config -  Name of the input config file
-	 *
-	 */
-	CSource_JouleHeating(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-    
-	/*!
-	 * \brief Residual for source term integration.
-	 * \param[out] val_residual - Pointer to the total residual.
-	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ComputeResidual(double *val_residual, double **val_Jacobian_i,CConfig *config);
-    
-	/*!
-	 * \brief Set the value of the poissonal conductivity
-	 */
-	void SetElec_Cond();
-    
-	/*!
-	 * \brief Set the integral in poissonal conductivity calculation
-	 */
-	double GetElec_CondIntegral();
-    
-	/*!
-	 * \brief Set the square integral in poissonal conductivity calculation
-	 * \param[in] value of the square of the integral
-	 */
-	void SetElec_CondIntegralsqr(double val_var);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CSource_JouleHeating(void);
 };
 
 /*!

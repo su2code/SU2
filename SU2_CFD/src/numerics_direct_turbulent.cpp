@@ -246,51 +246,48 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
                                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  //transition     = (config->GetKind_Trans_Model() == LM);
-  transition = false; // Debugging, -AA
   rotating_frame = config->GetRotating_Frame();
   
   /*--- Spalart-Allmaras closure constants ---*/
-  cv1_3 = pow(7.1,3.0);
-  k2 = pow(0.41,2.0);
-  cb1 = 0.1355;
-  cw2 = 0.3;
-  cw3_6 = pow(2.0,6.0);
+  
+  cv1_3 = pow(7.1, 3.0);
+  k2    = pow(0.41, 2.0);
+  cb1   = 0.1355;
+  cw2   = 0.3;
+  ct3   = 1.2;
+  ct4   = 0.5;
+  cw3_6 = pow(2.0, 6.0);
   sigma = 2./3.;
-  cb2 = 0.622;
+  cb2   = 0.622;
   cb2_sigma = cb2/sigma;
-  cw1 = cb1/k2+(1+cb2)/sigma;
+  cw1 = cb1/k2+(1.0+cb2)/sigma;
   
-  /*--- LM transition model constants ---*/
-  beta = 0.5;
-  s1   = 2.0;
+  /*--- Create values for interfacing with the functions ---*/
   
-  /* Create values for interfacing with the functions */
   SAInputs = new SpalartAllmarasInputs(nDim);
   SAConstants = new SpalartAllmarasConstants;
   
-  nResidual = 4;
-  nJacobian = 1;
+  nResidual = 4; nJacobian = 1;
   testResidual = new double[nResidual];
   testJacobian = new double[nJacobian];
   DUiDXj = new double*[nDim];
-  for(int i=0; i < nDim; i++){
+  for(int i=0; i < nDim; i++)
     DUiDXj[i] = new double[nDim];
-  }
   DNuhatDXj = new double[nDim];
   
 }
 
 CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) {
+  
   delete SAInputs;
   delete SAConstants;
   delete testResidual;
   delete testJacobian;
-  for (int i=0; i < nDim; i++){
+  for (int i=0; i < nDim; i++)
     delete DUiDXj[i];
-  }
   delete DUiDXj;
   delete DNuhatDXj;
+  
 }
 
 void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
@@ -305,38 +302,40 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
   }
   
   val_residual[0] = 0.0;
-  Production = 0;
-  Destruction = 0;
-  CrossProduction = 0;
+  Production      = 0.0;
+  Destruction     = 0.0;
+  CrossProduction = 0.0;
   val_Jacobian_i[0][0] = 0.0;
   
   /*--- Computation of vorticity ---*/
+  
   Vorticity = (PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1])*(PrimVar_Grad_i[2][0]-PrimVar_Grad_i[1][1]);
-  if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2]) + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
+  if (nDim == 3) Vorticity += ( (PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])*(PrimVar_Grad_i[3][1]-PrimVar_Grad_i[2][2])
+                               + (PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0])*(PrimVar_Grad_i[1][2]-PrimVar_Grad_i[3][0]) );
   Omega = sqrt(Vorticity);
   
   /*--- Rotational correction term ---*/
+  
   if (rotating_frame) {
     div = PrimVar_Grad_i[1][0] + PrimVar_Grad_i[2][1];
     if (nDim == 3) div += PrimVar_Grad_i[3][2];
     StrainMag = 0.0;
-    // add diagonals
     StrainMag += pow(PrimVar_Grad_i[1][0] - 1.0/3.0*div,2.0);
     StrainMag += pow(PrimVar_Grad_i[2][1] - 1.0/3.0*div,2.0);
     if (nDim == 3) StrainMag += pow(PrimVar_Grad_i[3][2] - 1.0/3.0*div,2.0);
-    // add off diagonals
     StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][1]+PrimVar_Grad_i[2][0]),2.0);
     if (nDim == 3) {
       StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[1][2]+PrimVar_Grad_i[3][0]),2.0);
       StrainMag += 2.0*pow(0.5*(PrimVar_Grad_i[2][2]+PrimVar_Grad_i[3][1]),2.0);
     }
     StrainMag = sqrt(2.0*StrainMag);
-    Omega += 2.0*min(0.0,StrainMag-Omega);
+    Omega += 2.0*min(0.0, StrainMag-Omega);
   }
   
   if (dist_i > 1e-10) {
     
     /*--- Production term ---*/
+    
     dist_i_2 = dist_i*dist_i;
     nu = Laminar_Viscosity_i/Density_i;
     Ji = TurbVar_i[0]/nu;
@@ -344,16 +343,21 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     Ji_3 = Ji_2*Ji;
     fv1 = Ji_3/(Ji_3+cv1_3);
     fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+    ft2 = ct3*exp(-ct4*Ji_2);
     S = Omega;
     inv_k2_d2 = 1.0/(k2*dist_i_2);
     
     Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
-    inv_Shat = 1.0/max(Shat, 1.0e-10);
+    Shat = max(Shat, 1.0e-10);
+    inv_Shat = 1.0/Shat;
     
     /*--- Production term ---*/;
-    if (!transition) Production = cb1*Shat*TurbVar_i[0]*Volume;
-    else Production = cb1*Shat*TurbVar_i[0]*Volume*intermittency;
+
+//    Original SA model
+//    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
     
+    Production = cb1*Shat*TurbVar_i[0]*Volume;
+
     /*--- Destruction term ---*/
     
     r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
@@ -362,9 +366,11 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
     
-    if (!transition) Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
-    else Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume*min(max(intermittency,0.1),1.0);
+//    Original SA model
+//    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
     
+    Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
+
     /*--- Diffusion term ---*/
     
     norm2_Grad = 0.0;
@@ -374,76 +380,23 @@ void CSourcePieceWise_TurbSA::ComputeResidual(double *val_residual, double **val
     
     val_residual[0] = Production - Destruction + CrossProduction;
     
-    /*--- Implicit part ---*/
+    /*--- Implicit part, production term ---*/
     
-    /*--- Production term ---*/
     dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
     val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     
-    /*--- Destruction term ---*/
+    /*--- mplicit part, destruction term ---*/
+    
     dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
     if (r == 10.0) dr = 0.0;
-    dg = dr*(1.+cw2*(6.*pow(r,5.)-1.));
+    dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
   }
   
-  
-  // The above could be replaced with the call below to SpalartAllmarasSourceTerm
-  // but I don't know which of the public variables need to be kept
-  // Brendan Tracey
-  
-  
-  /*
-  for (int i =0; i < nDim; i++){
-    for (int j=0; j < nDim; j++){
-      DUiDXj[i][j] = PrimVar_Grad_i[i+1][j];
-    }
-    DNuhatDXj[i] = TurbVar_Grad_i[0][i];
-  }
-  
-  SAInputs->Set(DUiDXj, DNuhatDXj, rotating_frame, transition, dist_i, Laminar_Viscosity_i, Density_i, TurbVar_i[0], intermittency);
-  
-  
-  SpalartAllmarasSourceTerm(SAInputs, SAConstants, val_residual, val_Jacobian_i);
-  
-  for (int i=0; i < nResidual; i++){
-    val_residual[i] *= Volume;
-  }
-  
-  for (int i=0; i < nJacobian; i++){
-    val_Jacobian_i[i] *= Volume;
-  }
-  
-//  // Check if the old and new match
-//  //for (int i = 0; i < nResidual; i++){
-//  if (abs(Production - testResidual[0]) > 1e-15){
-//    cout << "Production doesn't match" << endl;
-//    cout << "diff is " << Production - testResidual[0] << endl;
-//    exit(10);
-//  }
-//  if (abs(Destruction - testResidual[1]) > 1e-15){
-//    cout << "Destruction doesn't match" << endl;
-//    exit(10);
-//  }
-//  if (abs(CrossProduction - testResidual[2]) > 1e-15){
-//    cout << "cpp Cross " <<  CrossProduction << endl;
-//    cout << "Func cross " << testResidual[2] << endl;
-//    cout << "dist_i " << dist_i << endl;
-//    cout << "Cross production doesn't match" << endl;
-//    exit(10);
-//  }
-//  if (abs(val_residual[0]-testResidual[3]) > 1e-15){
-//    cout << "Val residual is " << val_residual[0] << endl;
-//    cout << "Test residual is " << testResidual[3] << endl;
-//    cout << "Diff is " << val_residual[0] - testResidual[3] << endl;
-//    cout << "Full residual doesn't match" << endl;
-//    exit(10);
-//  }
-  */
 }
 
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar,
@@ -1071,6 +1024,7 @@ CSourcePieceWise_TurbML::CSourcePieceWise_TurbML(unsigned short val_nDim, unsign
 }
 
 CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
+  
   delete MLModel;
   delete SAInputs;
   delete SAConstants;
@@ -1094,7 +1048,6 @@ CSourcePieceWise_TurbML::~CSourcePieceWise_TurbML(void) {
 }
 
 void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
-  
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -1150,7 +1103,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   double dUDYBar = DUiDXj[0][1] / SANondimInputs->OmegaNondim;
   double dVDYBar = DUiDXj[1][1] / SANondimInputs->OmegaNondim;
   double Turbulent_Kinematic_Viscosity = TurbVar_i[0];
-  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
+//  double Laminar_Kinematic_Viscosity = Laminar_Viscosity_i / Density_i;
   
   int nInputMLVariables = 0;
   int nOutputMLVariables = 0;
@@ -1443,8 +1396,9 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
-  }else if (featureset.compare("fw_les_2")==0){
-    nInputMLVariables = 8;
+  }else if (featureset.compare("fw_hifi")==0){
+    throw("doesn't work");
+    nInputMLVariables = 2;
     nOutputMLVariables = 1;
     netInput = new double[nInputMLVariables];
     netOutput = new double[nOutputMLVariables];
@@ -1483,6 +1437,62 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
     
+  }else if (featureset.compare("fw_hifi_2")==0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    // Karthik nondimensionalizes by d / vhat whereas I do by /(v + vhat)
+    omegaBar *= 1 + 1/chi;
+    
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    
+    MLModel->Predict(netInput, netOutput);
+    
+    double safw = SAOtherOutputs->fw;
+    double newfw = netOutput[0];
+    // The output is the value of fw. Need to replace the destruction term with the new computation
+    double turbKinVisc = SAInputs->Turbulent_Kinematic_Viscosity;
+    double dist2 = SAInputs->dist * SAInputs->dist;
+    double newdestruction = SAConstants->cw1 * (newfw +safw) * turbKinVisc * turbKinVisc / dist2;
+    
+    for (int i= 0; i < nResidual; i++){
+      Residual[i] = SAResidual[i];
+    }
+    Residual[1] = newdestruction;
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
+    
+  }else if(featureset.compare("fw") == 0){
+    nInputMLVariables = 2;
+    nOutputMLVariables = 1;
+    netInput = new double[nInputMLVariables];
+    netOutput = new double[nOutputMLVariables];
+    double chi = SANondimInputs->Chi;
+    double omegaBar = SANondimInputs->OmegaBar;
+    netInput[0] = chi;
+    netInput[1] = omegaBar;
+    MLModel->Predict(netInput, netOutput);
+    
+    // The output is fw. Replicate the destruction term.
+    double fw_ml = netOutput[0];
+    double mul_dest = SAConstants->cw1 * fw_ml;
+    Residual[0] = SAResidual[0];
+    Residual[1] = mul_dest * Turbulent_Kinematic_Viscosity * Turbulent_Kinematic_Viscosity / (dist_i * dist_i);
+    Residual[2] = SAResidual[2];
+    Residual[3] = Residual[0] - Residual[1] + Residual[2];
+    for (int i= 0; i < nResidual; i++){
+      NondimResidual[i] = Residual[i];
+    }
+    SANondimInputs->NondimensionalizeSource(nResidual, NondimResidual);
   }else if(featureset.compare("mul_destruction") == 0){
     nInputMLVariables = 2;
     nOutputMLVariables = 1;
@@ -1554,33 +1564,15 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
   }
   
-  //cout << "strain rate mag = " << strainRateMag << endl;
   strainRateMag = sqrt(strainRateMag);
-//  cout << "after sqrt = " << strainRateMag << endl;
-  
   double ReS = Density_i * strainRateMag * dist_i * dist_i / (0.09 * Laminar_Viscosity_i);
-  
   fWake = exp(- (1e-10 * ReS * ReS));
-//  cout << "ReS = " << ReS << endl;
-//  cout << "fWake = " << fWake << endl;
-  
   double magU = 0;
   for (unsigned short i = 0; i < nDim; i++){
     magU += V_i[1+i] * V_i[1+i];
   }
   magU = sqrt(magU);
-  
-//  cout << "x loc " << Coord_i[0] << endl;
-//  cout << "y loc " << Coord_i[1] << endl;
-//  cout <<  "u infinity = " << uInfinity << endl;
-//  cout << "magU = " << magU << endl;
-//  cout << "gt? " << (magU > uInfinity * 0.99) << endl;
   isInBL = fWake > 0.5 && (magU < uInfinity * 0.99);
-//  cout << "Is in BL " << isInBL << endl;
-  
-//  if (Coord_i[0] < -200 && Coord_i[1] > 200){
-//    throw "ahh";
-//  }
   
   
   // Now that we have found the ML Residual and the SA residual, see if there are
@@ -1610,7 +1602,7 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
     }
     if (hasBlOnly){
       // Only use ML in the boundary layer (where isInBL == true)
-      if (isInBL){
+      if (!isInBL){
         // Then use SA
         for (int i = 0; i < nResidual; i++){
           Residual[i] = SAResidual[i];
@@ -1619,12 +1611,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
       }
     }
   }
-  
-  
-//  cout << "SA nondim cross production " << SANondimResidual[2] << endl;
-//    cout << "Nondim cross production " << NondimResidual[2] << endl;
-//    cout << "SA cross production " << SAResidual[2] << endl;
-//    cout << "Cross production " << Residual[2] << endl;
   
   // Compute the differences
   for (int i = 0; i < nResidual; i++){
@@ -1635,20 +1621,6 @@ void CSourcePieceWise_TurbML::ComputeResidual(double *val_residual, double **val
   // Store The residual for the outer structure
   val_residual[0] = Residual[3] * Volume;
   val_Jacobian_i[0][0] = SAJacobian[0] * Volume;
-  
-  
-  /*
-  cout << "Sa resid ";
-  for (int i = 0; i < nResidual; i++){
-    cout << SAResidual[i] << "\t";
-  }
-  cout << endl;
-  cout << "Ml resid ";
-  for (int i = 0; i < nResidual; i++){
-    cout << Residual[i] << "\t";
-  }
-  cout << endl;
-   */
   
 }
 

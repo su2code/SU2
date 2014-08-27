@@ -30,36 +30,50 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 #endif
 
   /*--- Initialize pointers to Null---*/
+  
   SetPointersNull();
 
   /*--- Reading config options  ---*/
+  
   SetConfig_Options(val_iZone, val_nZone);
 
   /*--- Parsing the config file  ---*/
+  
   SetParsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
+  
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
   /*--- Configuration file boundaries/markers seting ---*/
+  
   SetMarkers(val_software, val_iZone);
 
   /*--- Configuration file output ---*/
+  
   if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
     SetOutput(val_software, val_iZone);
 
 }
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE]) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
+  
   /*--- Initialize pointers to Null---*/
+  
   SetPointersNull();
 
   /*--- Reading config options  ---*/
+  
   SetConfig_Options(1, 1);
 
   /*--- Parsing the config file  ---*/
+  
   SetParsing(case_filename);
 
+  /*--- Configuration file postprocessing ---*/
+  
+  SetPostprocessing(val_software, 1, 1);
+  
 }
 
 void CConfig::SetPointersNull(void){
@@ -118,6 +132,11 @@ void CConfig::SetPointersNull(void){
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
 
+  /*--- Variable initialization ---*/
+  
+  ExtIter = 0;
+  IntIter = 0;
+  
   /*--- Reacting chemistry, collisions, plasma ---*/
 
   Reactions=NULL;                 Omega00=NULL;               Omega11=NULL;
@@ -129,7 +148,7 @@ void CConfig::SetPointersNull(void){
   CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
   Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
   Diss=NULL;
-
+  
 }
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
@@ -233,7 +252,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Turbulent Prandtl number (0.9 (air), only for compressible flows) */
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /* DESCRIPTION: Value of the Bulk Modulus  */
-  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 2.15E9);
+  addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Artifical compressibility factor  */
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
@@ -503,7 +522,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ADJTURB_LIN_ERROR", AdjTurb_Linear_Error, 1E-5);
   /* DESCRIPTION: Maximum number of iterations of the turbulent adjoint linear solver for the implicit formulation */
   addUnsignedShortOption("ADJTURB_LIN_ITER", AdjTurb_Linear_Iter, 10);
-
+  /* DESCRIPTION: Entropy fix factor */
+  addDoubleOption("ENTROPY_FIX_COEFF", EntropyFix_Coeff, 0.0);
+  
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
 
@@ -563,15 +584,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
   /* DESCRIPTION: Coefficient for the limiter */
   addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
+  /* DESCRIPTION: Freeze the value of the limiter after a number of iterations */
+  addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);
   /* DESCRIPTION: Coefficient for detecting the limit of the sharp edges */
   addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_FLOW", Kind_ViscNumScheme_Flow, Viscous_Map, AVG_GRAD_CORRECTED);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_FLOW", Kind_SourNumScheme_Flow, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -582,10 +601,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJFLOW", Kind_ViscNumScheme_AdjFlow, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_ADJFLOW", Kind_SourNumScheme_AdjFlow, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -600,28 +615,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_TURB", Kind_ViscNumScheme_Turb, Viscous_Map, AVG_GRAD_CORRECTED);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_TURB", Kind_SourNumScheme_Turb, Source_Map, PIECEWISE_CONSTANT);
-
+  
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
   /* DESCRIPTION: Slope limiter */
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJTURB", Kind_ViscNumScheme_AdjTurb, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_ADJTURB", Kind_SourNumScheme_AdjTurb, Source_Map, NO_SOURCE);
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_LIN", Kind_ViscNumScheme_LinFlow, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_LIN", Kind_SourNumScheme_LinFlow, Source_Map, NO_SOURCE);
   default_vec_2d[0] = 0.15; default_vec_2d[1] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_2d);
@@ -632,17 +635,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJLEVELSET", Kind_ViscNumScheme_AdjLevelSet, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_ADJLEVELSET", Kind_SourNumScheme_AdjLevelSet, Source_Map, NO_SOURCE);
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_TNE2", Kind_ViscNumScheme_TNE2, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_TNE2", Kind_SourNumScheme_TNE2, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_TNE2", SpatialOrder_TNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -653,10 +648,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Convective numerical method */
   addConvectOption("CONV_NUM_METHOD_ADJTNE2", Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2, Kind_Upwind_AdjTNE2);
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_ADJTNE2", Kind_ViscNumScheme_AdjTNE2, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_ADJTNE2", Kind_SourNumScheme_AdjTNE2, Source_Map, NO_SOURCE);
   /* DESCRIPTION: Spatial numerical order integration */
   addEnumOption("SPATIAL_ORDER_ADJTNE2", SpatialOrder_AdjTNE2, SpatialOrder_Map, SECOND_ORDER);
   /* DESCRIPTION: Slope limiter */
@@ -664,30 +655,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
   addDoubleArrayOption("AD_COEFF_ADJTNE2", 3, Kappa_AdjTNE2, default_vec_3d);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_WAVE", Kind_ViscNumScheme_Wave, Viscous_Map, GALERKIN);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_WAVE", Kind_SourNumScheme_Wave, Source_Map, NO_SOURCE);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_POISSON", Kind_ViscNumScheme_Poisson, Viscous_Map, NO_VISCOUS);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_POISSON", Kind_SourNumScheme_Poisson, Source_Map, NO_SOURCE);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_FEA", Kind_ViscNumScheme_FEA, Viscous_Map, GALERKIN);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_FEA", Kind_SourNumScheme_FEA, Source_Map, NO_SOURCE);
-
-  /* DESCRIPTION: Viscous numerical method */
-  addEnumOption("VISC_NUM_METHOD_HEAT", Kind_ViscNumScheme_Heat, Viscous_Map, GALERKIN);
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_HEAT", Kind_SourNumScheme_Heat, Source_Map, NO_SOURCE);
-
-  /* DESCRIPTION: Source term numerical method */
-  addEnumOption("SOUR_NUM_METHOD_TEMPLATE", Kind_SourNumScheme_Template, Source_Map, NO_SOURCE);
-
 
   /* CONFIG_CATEGORY: Adjoint and Gradient */
   /*--- Options related to the adjoint and gradient ---*/
@@ -814,10 +781,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_RESTART", Wrt_Restart, true);
   /* DESCRIPTION: Output residual info to solution/restart file */
   addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  /* DESCRIPTION: Output residual info to solution/restart file */
+  addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
+  /* DESCRIPTION: Output residual info to solution/restart file */
+  addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files */
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
-  addBoolOption("WRT_1D_OUTPUT", Wrt_1D_Output, false);
+  addBoolOption("1D_OUTPUT", Wrt_1D_Output, false);
 
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   /*--- Options related to dynamic meshes ---*/
@@ -1960,26 +1931,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     MGCycle = 0;
   }
 
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
-    Kind_SourNumScheme_Flow = PIECEWISE_CONSTANT;
-    Kind_SourNumScheme_AdjFlow  = PIECEWISE_CONSTANT;
-  }
-
-  if (Rotating_Frame == YES) {
-    Kind_SourNumScheme_Flow = PIECEWISE_CONSTANT;
-    Kind_SourNumScheme_AdjFlow  = PIECEWISE_CONSTANT;
-  }
-
-  if (Axisymmetric == YES) {
-    Kind_SourNumScheme_Flow = PIECEWISE_CONSTANT;
-    Kind_SourNumScheme_AdjFlow  = PIECEWISE_CONSTANT;
-  }
-
-  if (GravityForce == YES) {
-    Kind_SourNumScheme_Flow = PIECEWISE_CONSTANT;
-    Kind_SourNumScheme_AdjFlow  = PIECEWISE_CONSTANT;
-  }
-
   nCFL = nMultiLevel+1;
   CFL = new double[nCFL];
   CFL[0] = CFLFineGrid;
@@ -1997,32 +1948,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(1);
   }
 
-  if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS))
-      && (Kind_ViscNumScheme_Flow == NONE)) {
-    cout << "You must define a viscous numerical method for the flow equations!!" << endl;
-    exit(1);
-  }
-
-  if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_ViscNumScheme_AdjFlow == NONE)) {
-    cout << "You must define a viscous numerical method for the adjoint Navier-Stokes equations!!" << endl;
-    exit(1);
-  }
-
-  if (((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) && (Kind_SourNumScheme_AdjFlow == NONE)) {
-    cout << "You must define a source numerical method for the adjoint Navier-Stokes equations!!" << endl;
-    exit(1);
-  }
-
-  if ((Kind_Solver == TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_TNE2 == NONE)) {
-    cout << "You must define a viscous numerical method for the TNE2 Navier-Stokes equations!!" << endl;
-    exit(1);
-  }
-
-  if ((Kind_Solver == ADJ_TNE2_NAVIER_STOKES) && (Kind_ViscNumScheme_AdjTNE2 == NONE)) {
-    cout << "You must define a viscous numerical method for the adjoint TNE2 Navier-Stokes equations!!" << endl;
-    exit(1);
-  }
-
   /*--- Set a flag for viscous simulations ---*/
 
   Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
@@ -2033,25 +1958,29 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   );
 
 
-  /*--- Re-scale the length based parameters ---*/
-  if (Kind_SU2 == SU2_CFD) {
+  /*--- Re-scale the length based parameters. The US system uses feet, 
+   but SU2 assumes that the grid is in inches ---*/
+  
+  if (SystemMeasurements == US) {
 
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
-      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]*Mesh_Scale_Change;
-      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]*Mesh_Scale_Change;
-      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]*Mesh_Scale_Change;
+      RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
+      RefOriginMoment_Y[iMarker] = RefOriginMoment_Y[iMarker]/12.0;
+      RefOriginMoment_Z[iMarker] = RefOriginMoment_Z[iMarker]/12.0;
     }
 
     for (iMarker = 0; iMarker < nGridMovement; iMarker++) {
-      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]*Mesh_Scale_Change;
-      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]*Mesh_Scale_Change;
-      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]*Mesh_Scale_Change;
+      Motion_Origin_X[iMarker] = Motion_Origin_X[iMarker]/12.0;
+      Motion_Origin_Y[iMarker] = Motion_Origin_Y[iMarker]/12.0;
+      Motion_Origin_Z[iMarker] = Motion_Origin_Z[iMarker]/12.0;
     }
 
-    RefLengthMoment = RefLengthMoment*Mesh_Scale_Change;
-    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change;
-    else RefAreaCoeff = RefAreaCoeff*Mesh_Scale_Change*Mesh_Scale_Change;
-
+    RefLengthMoment = RefLengthMoment/12.0;
+    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+    else RefAreaCoeff = RefAreaCoeff/144.0;
+    Length_Reynolds = Length_Reynolds/12.0;
+    RefElemLength = RefElemLength/12.0;
+    
   }
 
   /*--- Reacting flows initialization ---*/
@@ -3429,6 +3358,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case MAXIMUM_HEATFLUX: cout << "Maximum heat flux objective function." << endl; break;
       case FIGURE_OF_MERIT: cout << "Rotor Figure of Merit objective function." << endl; break;
       case FREE_SURFACE: cout << "Free-Surface objective function." << endl; break;
+      case AVG_TOTAL_PRESSURE: cout << "Average total objective pressure." << endl; break;
+      case MASS_FLOW_RATE: cout << "Mass flow rate objective function." << endl; break;
 		}
 
 	}
@@ -3478,8 +3409,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3500,8 +3431,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3533,8 +3464,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3551,7 +3482,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "JST viscous coefficients (1st, 2nd, & 4th): " << Kappa_1st_AdjFlow
           << ", " << Kappa_2nd_AdjFlow << ", " << Kappa_4th_AdjFlow <<"."<< endl;
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-          cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
           cout << "Second order integration." << endl;
         }
         if (Kind_Centered_AdjFlow == LAX) {
@@ -3576,13 +3506,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
         }
       }
+      
+      cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
 
     }
 
@@ -3603,8 +3535,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3646,8 +3578,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                 cout << "The reference element size is: " << RefElemLength <<". "<< endl;
                 cout << "The reference sharp edge distance is: " << SharpEdgesCoeff*RefElemLength*LimiterCoeff <<". "<< endl;
                 break;
-              case MINMOD:
-                cout << "Minmod slope-limiting method." << endl;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
             }
             break;
@@ -3675,61 +3607,48 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      switch (Kind_ViscNumScheme_Flow) {
-        case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
-        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous flow terms)." << endl; break;
-      }
+        cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      switch (Kind_ViscNumScheme_TNE2) {
-        case AVG_GRAD: cout << "Average of gradients (viscous flow terms)." << endl; break;
-        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous flow terms)." << endl; break;
-      }
+        cout << "Average of gradients with correction (viscous flow terms)." << endl;
     }
 
-    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (Kind_SourNumScheme_Flow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the flow source terms." << endl;
-    }
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))
+      cout << "Piecewise constant integration of the flow source terms." << endl;
 
-    if (Kind_Solver == ADJ_EULER) {
-      if (Kind_SourNumScheme_AdjFlow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the adjoint source terms." << endl;
-    }
+    if (Kind_Solver == ADJ_EULER)
+      cout << "Piecewise constant integration of the adjoint source terms." << endl;
 
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
-      switch (Kind_ViscNumScheme_AdjFlow) {
-        case AVG_GRAD: cout << "Average of gradients (viscous adjoint terms)." << endl; break;
-        case AVG_GRAD_CORRECTED: cout << "Average of gradients with correction (viscous adjoint terms)." << endl; break;
-      }
+      cout << "Average of gradients with correction (viscous adjoint terms)." << endl;
     }
 
     if (Kind_Solver == RANS) {
-      if (Kind_ViscNumScheme_Turb == AVG_GRAD) cout << "Average of gradients (viscous turbulence terms)." << endl;
-      if (Kind_ViscNumScheme_Turb == AVG_GRAD_CORRECTED) cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
-      if (Kind_SourNumScheme_Turb == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the turbulence model source terms." << endl;
+      cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
+      cout << "Piecewise constant integration of the turbulence model source terms." << endl;
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
-      if (Kind_ViscNumScheme_Poisson == GALERKIN) cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
+      cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
     }
 
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc)) {
-      if (Kind_ViscNumScheme_AdjTurb == AVG_GRAD) cout << "Average of gradients (1st order) for computation of adjoint viscous turbulence terms." << endl;
-      if (Kind_ViscNumScheme_AdjTurb == AVG_GRAD_CORRECTED) cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
-      if (Kind_SourNumScheme_AdjTurb == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
+      cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
+      cout << "Piecewise constant integration of the turbulence adjoint model source terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
 
     if ((Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
-      if (Kind_SourNumScheme_AdjFlow == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
+      cout << "Piecewise constant integration of the Navier-Stokes eq. source terms." << endl;
     }
 
     if (Kind_Solver == POISSON_EQUATION) {
-      if (Kind_SourNumScheme_Poisson == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the poisson potential source terms." << endl;
+      cout << "Piecewise constant integration of the poisson potential source terms." << endl;
     }
 
     if (Kind_Solver == HEAT_EQUATION) {
-      if (Kind_SourNumScheme_Heat == PIECEWISE_CONSTANT) cout << "Piecewise constant integration of the heat equation source terms." << endl;
+      cout << "Piecewise constant integration of the heat equation source terms." << endl;
     }
 
     switch (Kind_Gradient_Method) {
@@ -5111,6 +5030,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
+      case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
+      case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
     }
     Filename.append(AdjExt);
 
@@ -5208,8 +5129,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
@@ -5218,8 +5137,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
@@ -5228,24 +5145,18 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       break;
@@ -5254,8 +5165,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       break;
@@ -5264,8 +5173,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_TNE2);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       break;
@@ -5274,16 +5181,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                               SpatialOrder_AdjFlow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_AdjFlow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
@@ -5292,16 +5195,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(NONE);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                               SpatialOrder_AdjFlow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjFlow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       break;
@@ -5310,32 +5209,24 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Flow);
-        SetKind_SourNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_ADJFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                               Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
                               SpatialOrder_AdjFlow);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjFlow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_AdjFlow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
       }
       if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Turb);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
                               SpatialOrder_AdjTurb);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjTurb);
-        SetKind_SourNumScheme(Kind_SourNumScheme_AdjTurb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
@@ -5344,16 +5235,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       if (val_system == RUNTIME_ADJTNE2_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2,
                               Kind_Upwind_AdjTNE2, Kind_SlopeLimit_AdjTNE2,
                               SpatialOrder_AdjTNE2);
-        SetKind_SourNumScheme(Kind_SourNumScheme_AdjTNE2);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTNE2);
       }
       break;
@@ -5362,16 +5249,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
                               Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
                               SpatialOrder_TNE2);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_TNE2);
-        SetKind_SourNumScheme(Kind_SourNumScheme_TNE2);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
       }
       if (val_system == RUNTIME_ADJTNE2_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTNE2, Kind_Centered_AdjTNE2,
                               Kind_Upwind_AdjTNE2, Kind_SlopeLimit_AdjTNE2,
                               SpatialOrder_AdjTNE2);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_AdjTNE2);
-        SetKind_SourNumScheme(Kind_SourNumScheme_AdjTNE2);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTNE2);
       }
       break;
@@ -5380,45 +5263,35 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(NONE); SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_LINFLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow,
                               Kind_Upwind_LinFlow, NONE, NONE);
-        SetKind_ViscNumScheme(NONE); SetKind_SourNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_LinFlow);
       }
       break;
     case POISSON_EQUATION:
       if (val_system == RUNTIME_POISSON_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Poisson);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Poisson);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson);
       }
       break;
     case WAVE_EQUATION:
       if (val_system == RUNTIME_WAVE_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Wave);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Wave);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
       }
       break;
     case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Heat);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_Heat);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
     case LINEAR_ELASTICITY:
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(Kind_SourNumScheme_FEA);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_FEA);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
       }
       break;
@@ -5427,14 +5300,10 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               SpatialOrder_Flow);
-        SetKind_SourNumScheme(Kind_SourNumScheme_Flow);
-        SetKind_ViscNumScheme(NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       if (val_system == RUNTIME_FEA_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_SourNumScheme(Kind_SourNumScheme_FEA);
-        SetKind_ViscNumScheme(Kind_ViscNumScheme_FEA);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
       }
       break;

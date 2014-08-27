@@ -117,6 +117,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
         xCoord = geometry->node[iPoint]->GetCoord(0);
         yCoord = geometry->node[iPoint]->GetCoord(1);
         if (nDim == 3) zCoord = geometry->node[iPoint]->GetCoord(2);
+        
+        /*--- The output should be in inches ---*/
+        
+        if (config->GetSystemMeasurements() == US) {
+          xCoord *= 12.0; yCoord *= 12.0;
+          if (nDim == 3) zCoord *= 12.0;
+        }
+        
         Pressure = FlowSolver->node[iPoint]->GetPressure();
         PressCoeff = FlowSolver->GetCPressure(iMarker,iVertex);
         SurfFlow_file << scientific << Global_Index << ", " << xCoord << ", " << yCoord << ", ";
@@ -236,8 +244,18 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           Buffer_Send_CPress[nVertex_Surface] = FlowSolver->GetCPressure(iMarker,iVertex);
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
+          if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
+
+          /*--- If US system, the output should be in inches ---*/
+
+          if (config->GetSystemMeasurements() == US) {
+            Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
+            Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
+            if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
+          }
+          
           Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
-          if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2);
+          
           if (solver == EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
           if ((solver == NAVIER_STOKES) || (solver == RANS))
@@ -438,6 +456,14 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           IntBoundary_Jump = AdjSolver->node[iPoint]->GetIntBoundary_Jump();
           xCoord = geometry->node[iPoint]->GetCoord(0);
           yCoord = geometry->node[iPoint]->GetCoord(1);
+          
+          /*--- If US system, the output should be in inches ---*/
+          
+          if (config->GetSystemMeasurements() == US) {
+            xCoord *= 12.0;
+            yCoord *= 12.0;
+          }
+          
           SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord << endl;
         }
@@ -451,9 +477,18 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution = AdjSolver->node[iPoint]->GetSolution();
+          
           xCoord = geometry->node[iPoint]->GetCoord(0);
           yCoord = geometry->node[iPoint]->GetCoord(1);
           zCoord = geometry->node[iPoint]->GetCoord(2);
+          
+          /*--- If US system, the output should be in inches ---*/
+          
+          if (config->GetSystemMeasurements() == US) {
+            xCoord *= 12.0;
+            yCoord *= 12.0;
+            zCoord *= 12.0;
+          }
           
           SurfAdj_file << scientific << iPoint << ", " << AdjSolver->GetCSensitivity(iMarker,iVertex) << ", " << Solution[0] << ", "
           << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord << endl;
@@ -528,6 +563,15 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             Buffer_Send_Phi_z[nVertex_Surface] = Solution[3];
             Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
           }
+          
+          /*--- If US system, the output should be in inches ---*/
+          
+          if (config->GetSystemMeasurements() == US) {
+            Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
+            Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
+            if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
+          }
+          
           nVertex_Surface++;
         }
       }
@@ -804,15 +848,25 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
     if (!Local_Halo[iPoint]) {
       
       /*--- Retrieve the current coordinates at this node. ---*/
+      
       for (iDim = 0; iDim < nDim; iDim++) {
         Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
+        
+        /*--- If US system, the output should be in inches ---*/
+
+        if (config->GetSystemMeasurements() == US) {
+          Coords[iDim][jPoint] *= 12.0;
+        }
+        
       }
       
       /*--- Increment a counter since we may be skipping over
        some halo nodes during this loop. ---*/
+      
       jPoint++;
     }
   }
@@ -943,6 +997,14 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       Buffer_Send_X[jPoint] = Coords_Local[0];
       Buffer_Send_Y[jPoint] = Coords_Local[1];
       if (nDim == 3) Buffer_Send_Z[jPoint] = Coords_Local[2];
+      
+      /*--- If US system, the output should be in inches ---*/
+      
+      if (config->GetSystemMeasurements() == US) {
+        Buffer_Send_X[jPoint] *= 12.0;
+        Buffer_Send_Y[jPoint] *= 12.0;
+        if (nDim == 3) Buffer_Send_Z[jPoint] *= 12.0;
+      }
       
       /*--- Store the global index for this local node. ---*/
       Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
@@ -1941,8 +2003,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
   nVar_Consv = nVar_First + nVar_Second + nVar_Third;
   
-  if (config->GetWrt_Residuals()) nVar_Total = 2*nVar_Consv;
-  else nVar_Total = nVar_Consv;
+  nVar_Total = nVar_Consv;
+  
+  /*--- Add the limiters ---*/
+  if (config->GetWrt_Limiters()) nVar_Total += nVar_Consv;
+  
+  /*--- Add the residuals ---*/
+  if (config->GetWrt_Residuals()) nVar_Total += nVar_Consv;
   
   /*--- Add the grid velocity to the restart file for the unsteady adjoint ---*/
   if (grid_movement) {
@@ -1980,10 +2047,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     nVar_Total += 1;
   }
   
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    /*--- Sharp edges ---*/
-    iVar_Sharp = nVar_Total;
-    nVar_Total += 1;
+  if (config->GetWrt_SharpEdges()) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      /*--- Sharp edges ---*/
+      iVar_Sharp = nVar_Total;
+      nVar_Total += 1;
+    }
   }
   
   if ((Kind_Solver == TNE2_EULER)         ||
@@ -2168,6 +2237,35 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         jVar++;
       }
       
+      /*--- Limiters (first, second and third system of equations) ---*/
+      if (config->GetWrt_Limiters()) {
+        
+        if (solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive() != NULL) {
+          for (iVar = 0; iVar < nVar_First; iVar++) {
+            Data[jVar][jPoint] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(iVar);
+            jVar++;
+          }
+        }
+        else { for (iVar = 0; iVar < nVar_First; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
+        
+        if (solver[SecondIndex]->node[iPoint]->GetLimiter() != NULL) {
+          for (iVar = 0; iVar < nVar_Second; iVar++) {
+            Data[jVar][jPoint] = solver[SecondIndex]->node[iPoint]->GetLimiter(iVar);
+            jVar++;
+          }
+        }
+        else { for (iVar = 0; iVar < nVar_Second; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
+
+        if (solver[ThirdIndex]->node[iPoint]->GetLimiter() != NULL) {
+          for (iVar = 0; iVar < nVar_Third; iVar++) {
+            Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter(iVar);
+            jVar++;
+          }
+        }
+        else { for (iVar = 0; iVar < nVar_Third; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
+
+      }
+      
       /*--- Residual (first, second and third system of equations) ---*/
       if (config->GetWrt_Residuals()) {
         for (iVar = 0; iVar < nVar_First; iVar++) {
@@ -2215,7 +2313,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; jVar++;
             Data[jVar][jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); jVar++;
           }
-          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          if (config->GetWrt_SharpEdges()) {
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          }
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus ---*/
         case NAVIER_STOKES:
@@ -2243,7 +2343,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_Heat[iPoint];  jVar++;
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
           }
-          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          if (config->GetWrt_SharpEdges()) {
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          }
           break;
           /*--- Write pressure, Cp, mach, temperature, laminar viscosity, skin friction, heat transfer, yplus, eddy viscosity ---*/
         case RANS:
@@ -2273,7 +2375,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[jVar][jPoint] = Aux_yPlus[iPoint]; jVar++;
             Data[jVar][jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); jVar++;
           }
-          Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          if (config->GetWrt_SharpEdges()) {
+            Data[jVar][jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance(); jVar++;
+          }
           break;
           /*--- Write poisson field. ---*/
         case POISSON_EQUATION:
@@ -2443,7 +2547,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   double *Buffer_Send_Var = new double[MaxLocalPoint];
   double *Buffer_Recv_Var = NULL;
-  
+ 
   double *Buffer_Send_Res = new double[MaxLocalPoint];
   double *Buffer_Recv_Res = NULL;
   
@@ -2518,7 +2622,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (!Local_Halo[iPoint] || Wrt_Halo) {
         
         /*--- Get this variable into the temporary send buffer. ---*/
+        
         Buffer_Send_Var[jPoint] = solver[CurrentIndex]->node[iPoint]->GetSolution(jVar);
+        
+        if (config->GetWrt_Limiters()) {
+          Buffer_Send_Vol[jPoint] = solver[CurrentIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+        }
+        
         if (config->GetWrt_Residuals()) {
           Buffer_Send_Res[jPoint] = solver[CurrentIndex]->LinSysRes.GetBlock(iPoint, jVar);
         }
@@ -2527,16 +2637,24 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (iVar == 0) {
           Buffer_Send_GlobalIndex[jPoint] = geometry->node[iPoint]->GetGlobalIndex();
         }
+        
         jPoint++;
+        
       }
     }
     
     /*--- Gather the data on the master node. ---*/
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    
+    if (config->GetWrt_Limiters()) {
+      MPI_Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    }
+    
     if (config->GetWrt_Residuals()) {
       MPI_Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     }
+    
     if (iVar == 0) {
       MPI_Gather(Buffer_Send_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
     }
@@ -2548,17 +2666,29 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
           
           /*--- Get global index, then loop over each variable and store ---*/
+          
           iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          
           Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-          if (config->GetWrt_Residuals()) {
-            Data[iVar+nVar_Consv][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          
+          if (config->GetWrt_Limiters()) {
+            Data[iVar+nVar_Consv][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
           }
+          
+          if (config->GetWrt_Residuals()) {
+            unsigned short ExtraIndex;
+            ExtraIndex = nVar_Consv;
+            if (config->GetWrt_Limiters()) ExtraIndex = 2*nVar_Consv;
+            Data[iVar+ExtraIndex][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          }
+          
           jPoint++;
         }
         /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
         jPoint = (iProcessor+1)*nBuffer_Scalar;
       }
     }
+    
   }
   
   /*--- Additional communication routine for the grid velocity. Note that
@@ -2911,38 +3041,41 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   }
   
   /*--- Communicate the Sharp Edges ---*/
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+  if (config->GetWrt_SharpEdges()) {
     
-    /*--- Loop over this partition to collect the current variable ---*/
-    jPoint = 0;
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
-      /*--- Check for halos & write only if requested ---*/
-      if (!Local_Halo[iPoint] || Wrt_Halo) {
+      /*--- Loop over this partition to collect the current variable ---*/
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         
-        /*--- Load buffers with the pressure and mach variables. ---*/
-        Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
-        jPoint++;
-      }
-    }
-    
-    /*--- Gather the data on the master node. ---*/
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    
-    /*--- The master node unpacks and sorts this variable by global index ---*/
-    if (rank == MASTER_NODE) {
-      jPoint = 0; iVar = iVar_Sharp;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+        /*--- Check for halos & write only if requested ---*/
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
           
-          /*--- Get global index, then loop over each variable and store ---*/
-          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-          Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          /*--- Load buffers with the pressure and mach variables. ---*/
+          Buffer_Send_Var[jPoint] = geometry->node[iPoint]->GetSharpEdge_Distance();
           jPoint++;
         }
-        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+      
+      /*--- Gather the data on the master node. ---*/
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_Sharp;
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+            
+            /*--- Get global index, then loop over each variable and store ---*/
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            jPoint++;
+          }
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
       }
     }
   }
@@ -3684,6 +3817,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
     restart_file << "\t\"Conservative_" << iVar+1<<"\"";
   }
+  if (config->GetWrt_Limiters()) {
+    for (iVar = 0; iVar < nVar_Consv; iVar++) {
+      restart_file << "\t\"Limiter_" << iVar+1<<"\"";
+    }
+  }
   if (config->GetWrt_Residuals()) {
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
       restart_file << "\t\"Residual_" << iVar+1<<"\"";
@@ -3716,8 +3854,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << "\t\"Eddy_Viscosity\"";
   }
   
-  if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    restart_file << "\t\"Sharp_Edge_Dist\"";
+  if (config->GetWrt_SharpEdges()) {
+    if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      restart_file << "\t\"Sharp_Edge_Dist\"";
+    }
   }
   
   if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
@@ -3917,7 +4057,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char wave_coeff[]= ",\"CWave\"";
   char fea_coeff[]= ",\"CFEA\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
-  char oneD_outputs[]= ",\"1D_Pt\",\"1D_Mach\",\"1D_Temperature\",\"Flux Avg Pressure\",\"Flux Avg Density\",\"Flux Avg Velocity\",\"Flux Avg Enthalpy\"";
+  char oneD_outputs[]= ",\"Avg_TotalPress\",\"Avg_Mach\",\"Avg_Temperature\",\"MassFlowRate\",\"FluxAvg_Pressure\",\"FluxAvg_Density\",\"FluxAvg_Velocity\",\"FluxAvg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   
@@ -4037,23 +4177,24 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                                      double timeused,
                                      unsigned short val_iZone) {
   
+  bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
+  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+
 	int rank;
-  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MASTER_NODE;
 #endif
   
-  /* If 1-D outputs requested, calculated them. Requires info from all nodes*/
-  bool output_1d  = ((*config)->GetWrt_1D_Output());
+  /*--- If 1-D outputs requested, calculated them. Requires info from all nodes, 
+   Get area-averaged and flux-averaged values at the specified surface ---*/
+  
   if (output_1d) {
     switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
-        unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-        /* Get area-averaged and flux-averaged values at the specified surface*/
         OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
     }
   }
@@ -4077,7 +4218,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     unsigned long LinSolvIter = 0;
     double timeiter = timeused/double(iExtIter+1);
     
-    unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
     unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
     unsigned short nSpecies = config[val_iZone]->GetnSpecies();
     
@@ -4110,7 +4250,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Regime() == RANS) || (config[val_iZone]->GetKind_Regime() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Regime() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Regime() == ADJ_RANS);
     
-    //bool output_1d  = ((*config)->GetWrt_1D_Output());
     bool output_per_surface = false;
     if(config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
     
@@ -4120,8 +4259,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0;
     
-    double OneD_Stagnation_Pressure = 0.0, OneD_Mach = 0.0, OneD_Temp = 0.0,
-    OneD_FluxAvgP=0.0, OneD_FluxAvgRho=0.0, OneD_FluxAvgU=0.0, OneD_FluxAvgH=0.0;
+    double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
+    OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0;
     
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
@@ -4281,15 +4420,19 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         }
         
         if (output_1d) {
-          /* Get area-averaged and flux-averaged values at the specified surface*/
-          //OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
-          OneD_Stagnation_Pressure=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Pt();
-          OneD_Mach=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_M();
-          OneD_Temp=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_T();
-          OneD_FluxAvgP=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_fluxavgP();
-          OneD_FluxAvgRho=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_fluxavgRho();
-          OneD_FluxAvgU=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_fluxavgU();
-          OneD_FluxAvgH=solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_fluxavgH();
+          
+          /*--- Get area-averaged and flux-averaged values at the specified surface ---*/
+          
+          OneD_AvgStagPress = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_TotalPress();
+          OneD_AvgMach = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Mach();
+          OneD_AvgTemp = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_Temp();
+          OneD_MassFlowRate = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
+          
+          OneD_FluxAvgPress = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgPress();
+          OneD_FluxAvgDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgDensity();
+          OneD_FluxAvgVelocity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgVelocity();
+          OneD_FluxAvgEntalpy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgEntalpy();
+          
         }
         
         /*--- Flow Residuals ---*/
@@ -4577,8 +4720,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
               }
             }
             /*---- Averaged stagnation pressure at an exit ---- */
-            if (output_1d)
-              sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_Stagnation_Pressure, OneD_Mach, OneD_Temp,OneD_FluxAvgP, OneD_FluxAvgRho, OneD_FluxAvgU, OneD_FluxAvgH);
+            if (output_1d) {
+              sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
+            }
             
             /*--- Transition residual ---*/
             if (transition){
@@ -4898,7 +5042,6 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            /*---- Averaged stagnation pressure at an exit ---- */
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -4928,7 +5071,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             cout.setf(ios::scientific,ios::floatfield);
             cout << Total_CNearFieldOF; }
           else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
-          else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
           if (aeroelastic) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -4945,6 +5088,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -4970,7 +5114,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else { cout.width(15); cout << min(1000.0,max(-1000.0, Total_CLift)); cout.width(15); cout << min(1000.0,max(-1000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
           if (aeroelastic) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -5552,101 +5696,119 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
   
   unsigned long iVertex, iPoint;
-  unsigned short iDim, iMarker,Out1D;
-  double *Normal = NULL, Area,*Coord,
+  unsigned short iDim, iMarker, Out1D;
+  double *Normal = NULL, Area = 0.0, OverArea = 0.0, *Coord = NULL, UnitaryNormal[3],
   Stag_Pressure, Mach, Temperature, Pressure = 0.0, Density = 0.0, Velocity2, Enthalpy, RhoU, U,// local values at each node (Velocity2 = V^2). U = normal velocity
-  SumPressure = 0, SumStagPressure = 0,SumArea = 0, SumMach = 0, SumTemperature = 0, SumForUref=0, SumRhoU=0,SumEnthalpy=0,// sum of (local value ) * (dA) (integral)
-  AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, // Area Averaged value ( sum / A )
-  VelocityRef=0.0, EnthalpyRef=0.0, DensityRef=0.0, PressureRef=0.0; // Flux conserved values. TemperatureRef follows ideal gas
-  
+  SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
+  AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
+  VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
+
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   double Gamma = config->GetGamma();
+  unsigned short nDim = geometry->GetnDim();
   
   
   /*--- Loop over the markers ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    Out1D = config ->GetMarker_All_Out_1D(iMarker);
+    
+    Out1D = config->GetMarker_All_Out_1D(iMarker);
     
     /*--- Loop over the vertices to compute the output ---*/
     
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  
+    if (Out1D == YES) {
       
-      /*--- Find the normal direction ---*/
-      
-      if ( (geometry->node[iPoint]->GetDomain()) && (Out1D == YES) ) {
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Coord = geometry->node[iPoint]->GetCoord();
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Find the normal direction ---*/
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          
+          
+          /*--- Compute area, and unitary normal ---*/
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
+
+          Coord = geometry->node[iPoint]->GetCoord();
+          
+          if (compressible){
+            Pressure = solver_container->node[iPoint]->GetPressure();
+            Density = solver_container->node[iPoint]->GetDensity();
+          }
+          if (incompressible || freesurface){
+            Pressure = solver_container->node[iPoint]->GetPressureInc();
+            Density = solver_container->node[iPoint]->GetDensityInc();
+          }
+          
+          /*-- Find velocity normal to the marked surface/opening --*/
+          
+          U = 0.0; Enthalpy = 0.0; Mach = 0.0; Velocity2 = 0.0; Stag_Pressure = 0.0;
+          Temperature = 0.0; RhoU = 0.0;
+          for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+            U += UnitaryNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+          }
+          
+          Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
+          Velocity2 = solver_container->node[iPoint]->GetVelocity2();
+          Temperature = solver_container->node[iPoint]->GetTemperature();
+
+          Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
+          Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
+          
+          RhoU = U*Density;
+          SumStagPressure += Stag_Pressure * Area;
+          SumArea += Area;
+          SumMach += Mach*Area;
+          SumPressure += Pressure * Area;
+          SumTemperature += Temperature*Area;
+          SumRhoU += RhoU*Area;
+          SumForUref+=RhoU*U*U*Area;
+          SumEnthalpy+=RhoU*Enthalpy*Area;
+          
+        }
       }
       
-      /*--- Integrate quantities over marked surface --- */
-      if ((geometry->node[iPoint]->GetDomain()) &&(Out1D==YES)){
+      if (SumRhoU != 0.0) { // To avoid division by 0
         
-        if (compressible){
-          Pressure = solver_container->node[iPoint]->GetPressure();
-          Density = solver_container->node[iPoint]->GetDensity();
-        }
-        if (incompressible || freesurface){
-          Pressure = solver_container->node[iPoint]->GetPressureInc();
-          Density = solver_container->node[iPoint]->GetDensityInc();
-        }
-        /*-- Find velocity normal to the marked surface/opening --*/
-        U=0.0; Enthalpy=0; Mach=0; Velocity2=0; Stag_Pressure=0;
-        Area=0; Temperature=0; RhoU=0;
-        for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-          U+=Normal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
-        }
+        OverArea = 1.0/SumArea;
+        AveragePressure += abs(SumStagPressure*OverArea);
+        AverageMach += abs(SumMach*OverArea);
+        AverageTemperature += abs(SumTemperature*OverArea);
+        MassFlowRate += SumRhoU;
+        PressureRef += abs(SumPressure*OverArea);
+        VelocityRef += abs(sqrt(abs(SumForUref/SumRhoU)));
+        EnthalpyRef +=abs(SumEnthalpy/SumRhoU);
+        DensityRef +=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
         
-        Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
-        Velocity2 =solver_container->node[iPoint]->GetVelocity2();
-        
-        Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-        Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
-        Temperature = solver_container->node[iPoint]->GetTemperature();
-        Area = 0.0; for (iDim = 0; iDim < geometry->GetnDim(); iDim++) Area += Normal[iDim]*Normal[iDim];
-        Area = sqrt(Area);
-        U = U*(1.0/Area);        // Normalize velocity (Normal[iDim] is not a unit normal)
-        RhoU=U*Density;
-        SumStagPressure += Stag_Pressure * Area;
-        SumArea += Area;
-        SumMach += Mach*Area;
-        SumPressure += Pressure * Area;
-        SumTemperature += Temperature*Area;
-        SumRhoU += RhoU*Area;
-        SumForUref+=RhoU*U*U*Area;
-        SumEnthalpy+=RhoU*Enthalpy*Area;
       }
+      
     }
     
-    if (Out1D==YES && SumRhoU !=0){
-      double OverArea = 1.0/SumArea;
-      AveragePressure += abs(SumStagPressure*OverArea);
-      AverageMach += abs(SumMach*OverArea);
-      AverageTemperature += abs(SumTemperature*OverArea);
-      PressureRef += abs(SumPressure*OverArea);
-      VelocityRef+= abs(sqrt(abs(SumForUref/SumRhoU)));
-      EnthalpyRef+=abs(SumEnthalpy/SumRhoU);
-      DensityRef+=abs(PressureRef*Gamma/(Gamma-1)/(EnthalpyRef-0.5*VelocityRef*VelocityRef));
-    }
   }
   
 #ifdef HAVE_MPI
+  
   /*--- Add AllBound information using all the nodes ---*/
   
-  double My_AveragePressure        = AveragePressure;        AveragePressure = 0.0;
-  double My_AverageMach            = AverageMach;            AverageMach = 0.0;
-  double My_AverageTemperature     = AverageTemperature;     AverageTemperature = 0.0;
-  double My_PressureRef            = PressureRef;            PressureRef = 0.0;
-  double My_VelocityRef            = VelocityRef;            VelocityRef = 0.0;
-  double My_EnthalpyRef            = EnthalpyRef;            EnthalpyRef = 0.0;
-  double My_DensityRef             = DensityRef;             DensityRef = 0.0;
+  double My_AveragePressure     = AveragePressure;    AveragePressure = 0.0;
+  double My_AverageMach         = AverageMach;        AverageMach = 0.0;
+  double My_AverageTemperature  = AverageTemperature; AverageTemperature = 0.0;
+  double My_MassFlowRate        = MassFlowRate;       MassFlowRate = 0.0;
+  double My_PressureRef         = PressureRef;        PressureRef = 0.0;
+  double My_VelocityRef         = VelocityRef;        VelocityRef = 0.0;
+  double My_EnthalpyRef         = EnthalpyRef;        EnthalpyRef = 0.0;
+  double My_DensityRef          = DensityRef;         DensityRef = 0.0;
   
   MPI_Allreduce(&My_AveragePressure, &AveragePressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_AverageMach, &AverageMach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_AverageTemperature, &AverageTemperature, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&My_MassFlowRate, &MassFlowRate, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_PressureRef, &PressureRef, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_VelocityRef, &VelocityRef, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&My_EnthalpyRef , &EnthalpyRef , 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -5654,15 +5816,17 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   
 #endif
   
-  /*--- Set Area Averaged Stagnation Pressure Output ---*/
+  /*--- Set the 1D output ---*/
   
-  solver_container->SetOneD_Pt(AveragePressure);
-  solver_container->SetOneD_M(AverageMach);
-  solver_container->SetOneD_T(AverageTemperature);
-  solver_container->SetOneD_fluxavgP(PressureRef);
-  solver_container->SetOneD_fluxavgRho(DensityRef);
-  solver_container->SetOneD_fluxavgU(VelocityRef);
-  solver_container->SetOneD_fluxavgH(EnthalpyRef);
+  solver_container->SetOneD_TotalPress(AveragePressure);
+  solver_container->SetOneD_Mach(AverageMach);
+  solver_container->SetOneD_Temp(AverageTemperature);
+  solver_container->SetOneD_MassFlowRate(MassFlowRate);
+
+  solver_container->SetOneD_FluxAvgPress(PressureRef);
+  solver_container->SetOneD_FluxAvgDensity(DensityRef);
+  solver_container->SetOneD_FluxAvgVelocity(VelocityRef);
+  solver_container->SetOneD_FluxAvgEntalpy(EnthalpyRef);
   
 }
 
