@@ -6266,11 +6266,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 /* --- Compute the boundary state u_e --- */
 
-                Velocity2_e = 0.0;
+                Velocity2_e = Velocity2_i;
+
                 for (iDim = 0; iDim < nDim; iDim++) {
-                  Velocity_e[iDim] = Velocity_i[iDim];
-                  Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-                }
+				  Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+				}
+
 
                 StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 //                cout << StaticEnthalpy_e << " "<< Entropy_e << endl;
