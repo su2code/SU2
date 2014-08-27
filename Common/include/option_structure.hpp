@@ -114,8 +114,6 @@ const unsigned int MESH_1 = 1;			/*!< \brief Definition of the finest grid level
 const unsigned int ZONE_0 = 0;			/*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1;			/*!< \brief Definition of the first grid domain. */
 
-const double PRANDTL = 0.72;	        	/*!< \brief Fluid's Prandtl constant (air). */
-const double PRANDTL_TURB = 0.90;	/*!< \brief Fluid's turbulent Prandtl constant (air). */
 const double AVOGAD_CONSTANT = 6.0221415E26;	/*!< \brief Avogardro's constant, number of particles in one kmole. */
 const double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
 const double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
@@ -513,43 +511,13 @@ static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<strin
  */
 enum ENUM_LIMITER {
   VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
-  MINMOD = 1,           /*!< \brief Slope limiter using minmod method. */
+  BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2       /*!< \brief Slope limiter using sharp edges. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
-("MINMOD", MINMOD)
+("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES);
-
-/*!
- * \brief types of viscous term discretizations
- */
-enum ENUM_VISCOUS {
-  NO_VISCOUS = 0,               /*!< \brief No viscous term computation. */
-  AVG_GRAD = 1,			/*!< \brief Average of gradients method for viscous term computation. */
-  AVG_GRAD_CORRECTED = 2,	/*!< \brief Average of gradients with correction for viscous term computation. */
-  GALERKIN = 3			/*!< \brief Galerkin method for viscous term computation. */
-};
-static const map<string, ENUM_VISCOUS> Viscous_Map = CCreateMap<string, ENUM_VISCOUS>
-("NONE", NO_VISCOUS)
-("AVG_GRAD", AVG_GRAD)
-("AVG_GRAD_CORRECTED", AVG_GRAD_CORRECTED)
-("GALERKIN", GALERKIN);
-
-/*!
- * \brief types of source term methods to use
- */
-enum ENUM_SOURCE {
-  NO_SOURCE = 0,                /*!< \brief No source term. */
-  PIECEWISE_CONSTANT = 1,	/*!< \brief Numerical method for source term in flow equations. */
-  CHARGE_DIST = 2,		/*!< \brief Numerical method for source term in charge distribution. */
-  SOURCE_TEMPLATE = 4           /*!< \brief Template for New numerical method for source term. */
-};
-static const map<string, ENUM_SOURCE> Source_Map = CCreateMap<string, ENUM_SOURCE>
-("NONE", NO_SOURCE)
-("PIECEWISE_CONSTANT", PIECEWISE_CONSTANT)
-("CHARGE_DIST", CHARGE_DIST)
-("TEMPLATE_SOURCE_METHOD", SOURCE_TEMPLATE);
 
 /*!
  * \brief types of methods used to calculate source term Jacobians
@@ -739,7 +707,9 @@ enum ENUM_OBJECTIVE {
   MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
   MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
   MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
-  MAX_THICK_SEC5 = 27           /*!< \brief Maximum thickness in section 5. */
+  MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
+  AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
+  MASS_FLOW_RATE = 29 	        /*!< \brief Mass Flow Rate objective function definition. */
 };
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
@@ -768,7 +738,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC2", MAX_THICK_SEC2)
 ("MAX_THICK_SEC3", MAX_THICK_SEC3)
 ("MAX_THICK_SEC4", MAX_THICK_SEC4)
-("MAX_THICK_SEC5", MAX_THICK_SEC5);
+("MAX_THICK_SEC5", MAX_THICK_SEC5)
+("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
+("MASS_FLOW_RATE", MASS_FLOW_RATE);
 
 /*!
  * \brief types of Continuous equations
@@ -1013,12 +985,14 @@ static const map<string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = CCreateMap<st
 enum ENUM_LINEAR_SOLVER_PREC {
   JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
   LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
-  LINELET = 3		/*!< \brief Line implicit preconditioner. */
+  LINELET = 3,  /*!< \brief Line implicit preconditioner. */
+  ILU = 4       /*!< \brief ILU(0) preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
-("LINELET", LINELET);
+("LINELET", LINELET)
+("ILU0", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries

@@ -70,7 +70,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
   
 	/*--- Initialization of the structure of the whole Jacobian ---*/
   if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Poisson equation)." << endl;
-	StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   /*--- Solution and residual vectors ---*/
   
@@ -347,8 +347,8 @@ void CPoissonSolver::Copy_Zone_Solution(CSolver ***solver1_solution,
  * \brief calculate the element stiffness matrix
  * \author A. Lonkar
  */
-void CPoissonSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh) {
+void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL;
@@ -480,6 +480,10 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     StiffMatrix.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    StiffMatrix.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(StiffMatrix, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);

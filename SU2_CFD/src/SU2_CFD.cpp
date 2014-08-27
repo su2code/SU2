@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   /*--- Read the name and format of the input mesh file ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name);
+  config = new CConfig(config_file_name, SU2_CFD);
   
   /*--- Get the number of zones and dimensions from the numerical grid
    (required for variables allocation) ---*/
@@ -331,7 +331,6 @@ MPI_Barrier(MPI_COMM_WORLD);
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
-    
     switch (config_container[ZONE_0]->GetKind_Solver()) {
         
       case EULER: case NAVIER_STOKES: case RANS:

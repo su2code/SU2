@@ -119,9 +119,10 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
   
+  config->SetKind_Linear_Solver_Prec(LU_SGS);
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry);
+  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
   
   /*--- Loop over the total number of grid deformation iterations. The surface
    deformation can be divided into increments to help with stability. In
@@ -166,6 +167,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+//  CPreconditioner* precond      = new CILUPreconditioner(StiffMatrix, geometry, config);
     CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
@@ -185,9 +187,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     }
     else
       IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
-
-
-    
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     

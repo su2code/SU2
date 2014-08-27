@@ -68,10 +68,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	}
   
 	/*--- Initialization of matrix structures ---*/
-  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Linear Elasticity)." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -422,8 +422,8 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
   
 }
 
-void CFEASolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh) {
+void CFEASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim;
 	unsigned long iElem, PointCorners[8], iPoint, total_index;
@@ -1205,6 +1205,10 @@ void CFEASolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);

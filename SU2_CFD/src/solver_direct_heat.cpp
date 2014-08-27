@@ -61,10 +61,10 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
 	/*--- Initialization of matrix structures ---*/
   
-	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Linear Elasticity)." << endl;
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   if (config->GetKind_Linear_Solver_Prec() == LINELET) {
     nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -263,8 +263,8 @@ void CHeatSolver::Source_Residual(CGeometry *geometry,
   
 }
 
-void CHeatSolver::Galerkin_Method(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                  CConfig *config, unsigned short iMesh) {
+void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0, total_index, iPoint;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3 = NULL, Thermal_Diffusivity;
@@ -533,6 +533,10 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);

@@ -81,7 +81,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 				Jacobian_j[iVar] = new double [nVar];
 			}
 			/*--- Initialization of the structure of the whole Jacobian ---*/
-			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
       if (config->GetKind_Linear_Solver_Prec() == LINELET) {
         nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -260,6 +260,10 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);

@@ -42,6 +42,10 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Set the initial condition ---*/
+  for (iZone = 0; iZone < nZone; iZone++)
+    solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+  
   /*--- Initial set up for unsteady problems with dynamic meshes. ---*/
   
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -66,10 +70,6 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 		IntIter = ExtIter;
 		if ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-    
-		/*--- Set the initial condition ---*/
-    
-		solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
     
 		/*--- Update global parameters ---*/
     

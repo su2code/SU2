@@ -96,7 +96,7 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
       
       /*--- Initialization of the structure of the whole Jacobian ---*/
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Adj. Level Set). MG level: 0." << endl;
-      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
       if (config->GetKind_Linear_Solver_Prec() == LINELET) {
         nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -1001,6 +1001,10 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
   if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
     Jacobian.BuildJacobiPreconditioner();
     precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+  }
+  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
+    Jacobian.BuildILUPreconditioner();
+    precond = new CILUPreconditioner(Jacobian, geometry, config);
   }
   else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
     precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
