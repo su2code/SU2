@@ -2692,12 +2692,22 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Gradient computation ---*/
     
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+    if (config->GetKind_Gradient_Method() == GREEN_GAUSS){
+    	SetPrimitive_Gradient_GG(geometry, config);
+    	SetSecondary_Gradient_GG(geometry, config);
+    }
+    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
+    	SetPrimitive_Gradient_LS(geometry, config);
+    	SetSecondary_Gradient_LS(geometry, config);
+    }
+
     
     /*--- Limiter computation ---*/
     
-    if ((limiter) && (iMesh == MESH_0)) SetPrimitive_Limiter(geometry, config);
+    if ((limiter) && (iMesh == MESH_0)){
+    	SetPrimitive_Limiter(geometry, config);
+    	SetSecondary_Limiter(geometry, config);
+    }
     
   }
   
@@ -9343,8 +9353,14 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Compute gradient of the primitive variables ---*/
   
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetPrimitive_Gradient_GG(geometry, config);
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetPrimitive_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS){
+	  SetPrimitive_Gradient_GG(geometry, config);
+	  SetSecondary_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
+	  SetPrimitive_Gradient_LS(geometry, config);
+	  SetSecondary_Gradient_LS(geometry, config);
+  }
   
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
