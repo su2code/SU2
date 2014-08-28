@@ -428,7 +428,13 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
-	virtual void Check_Orientation(CConfig *config);
+	virtual void Check_IntElem_Orientation(CConfig *config);
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Check_BoundElem_Orientation(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1061,7 +1067,13 @@ public:
 	 * \brief Check the volume element orientation.
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
-	void Check_Orientation(CConfig *config);
+	void Check_IntElem_Orientation(CConfig *config);
+  
+  /*!
+	 * \brief Check the volume element orientation.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Check_BoundElem_Orientation(CConfig *config);
 
 	/*! 
 	 * \brief Set the domains for grid grid partitioning.
