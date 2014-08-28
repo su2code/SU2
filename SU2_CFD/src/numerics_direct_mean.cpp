@@ -513,8 +513,8 @@ void CCentLax_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-  Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-  Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+  Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+  Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
   StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
   sc0 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
