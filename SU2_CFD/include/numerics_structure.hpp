@@ -1606,6 +1606,65 @@ public:
 	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
 };
 
+
+/*!
+ * \class CUpwGeneralRoe_Flow
+ * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
+ * \ingroup ConvDiscr
+ * \author S.Vitale, G.Gori, M.Pini
+ * \version 3.2.0 "eagle"
+ */
+class CUpwGeneralRoe_Flow : public CNumerics {
+private:
+	bool implicit, grid_movement;
+	double *Diff_U;
+	double *Velocity_i, *Velocity_j, *RoeVelocity;
+	double *ProjFlux_i, *ProjFlux_j;
+	double *delta_wave, *delta_vel;
+	double *Lambda, *Epsilon;
+	double **P_Tensor, **invP_Tensor;
+	double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+	unsigned short iDim, iVar, jVar, kVar;
+
+
+	double StaticEnthalpy_i, StaticEnergy_i, StaticEnthalpy_j, StaticEnergy_j, Kappa_i, Kappa_j, Chi_i, Chi_j, Velocity2_i, Velocity2_j;
+	double RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CUpwGeneralRoe_Flow(void);
+
+	/*!
+	 * \brief Compute the Roe's flux between two nodes i and j.
+	 * \param[out] val_residual - Pointer to the total residual.
+	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config);
+
+	/*!
+	 * \brief Compute the Average for a general fluid flux between two nodes i and j.
+	 * Using the approach of Vinokur and Montagne'
+	 */
+
+	void ComputeRoeAverage();
+};
+
+
 /*!
  * \class CUpwMSW_Flow
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.

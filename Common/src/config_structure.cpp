@@ -974,9 +974,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Visualize the deformation */
   addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
-  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
+  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 10);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
   addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */

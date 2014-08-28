@@ -5011,15 +5011,13 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
   
 }
 
-void CPhysicalGeometry::Check_Orientation(CConfig *config) {
+void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
   
   unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6,
-  iElem, Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
-  iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface;
+  iElem;
   double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
   *Coord_5, *Coord_6, a[3], b[3], c[3], n[3], test;
-  unsigned short iDim, iMarker, iNode_Domain, iNode_Surface;
-  bool find;
+  unsigned short iDim;
   
   /*--- Loop over all the elements ---*/
   
@@ -5247,6 +5245,17 @@ void CPhysicalGeometry::Check_Orientation(CConfig *config) {
     }
     
   }
+  
+}
+
+void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
+  
+  unsigned long Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
+  iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface;
+  double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
+  *Coord_5, a[3], b[3], c[3], n[3], test;
+  unsigned short iDim, iMarker, iNode_Domain, iNode_Surface;
+  bool find;
   
   /*--- Surface elements ---*/
   

@@ -1376,6 +1376,308 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
   
 }
 
+CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  grid_movement = config->GetGrid_Movement();
+
+
+  Diff_U = new double [nVar];
+  Velocity_i = new double [nDim];
+  Velocity_j = new double [nDim];
+  RoeVelocity = new double [nDim];
+  delta_vel  = new double [nDim];
+  delta_wave = new double [nVar];
+  ProjFlux_i = new double [nVar];
+  ProjFlux_j = new double [nVar];
+  Lambda = new double [nVar];
+  Epsilon = new double [nVar];
+  P_Tensor = new double* [nVar];
+  invP_Tensor = new double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    P_Tensor[iVar] = new double [nVar];
+    invP_Tensor[iVar] = new double [nVar];
+  }
+}
+
+CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
+
+  delete [] Diff_U;
+  delete [] Velocity_i;
+  delete [] Velocity_j;
+  delete [] RoeVelocity;
+  delete [] delta_vel;
+  delete [] delta_wave;
+  delete [] ProjFlux_i;
+  delete [] ProjFlux_j;
+  delete [] Lambda;
+  delete [] Epsilon;
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] P_Tensor[iVar];
+    delete [] invP_Tensor[iVar];
+  }
+  delete [] P_Tensor;
+  delete [] invP_Tensor;
+
+}
+
+void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+
+	/*--- Face area (norm or the normal vector) ---*/
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+	Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
+
+	/*-- Unit Normal ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+		UnitNormal[iDim] = Normal[iDim]/Area;
+
+  /*--- Primitive variables at point i ---*/
+
+
+
+  Velocity2_i = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+	  Velocity_i[iDim] = V_i[iDim+1];
+	  Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
+  }
+
+  Pressure_i = V_i[nDim+1];
+  Density_i = V_i[nDim+2];
+  Enthalpy_i = V_i[nDim+3];
+  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  StaticEnthalpy_i = Enthalpy_i - 0.5*Velocity2_i;
+  StaticEnergy_i = StaticEnthalpy_i - Pressure_i/Density_i;
+
+  Kappa_i = S_i[1]/Density_i;
+  Chi_i = S_i[0] - Kappa_i*StaticEnergy_i;
+  SoundSpeed_i = sqrt(Chi_i + StaticEnthalpy_i*Kappa_i);
+
+  /*--- Primitive variables at point j ---*/
+
+
+  Velocity2_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    Velocity_j[iDim] = V_j[iDim+1];
+    Velocity2_j += Velocity_j[iDim]*Velocity_j[iDim];
+
+  }
+
+  Pressure_j = V_j[nDim+1];
+  Density_j = V_j[nDim+2];
+  Enthalpy_j = V_j[nDim+3];
+  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+
+  StaticEnthalpy_j = Enthalpy_j - 0.5*Velocity2_j;
+  StaticEnergy_j = StaticEnthalpy_j - Pressure_j/Density_j;
+
+  Kappa_j = S_j[1]/Density_j;
+  Chi_j = S_j[0] - Kappa_j*StaticEnergy_j;
+  SoundSpeed_j = sqrt(Chi_j + StaticEnthalpy_j*Kappa_j);
+
+  /*--- Recompute conservative variables ---*/
+
+  double U_i[5], U_j[5];
+  U_i[0] = Density_i; U_j[0] = Density_j;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    U_i[iDim+1] = Density_i*Velocity_i[iDim]; U_j[iDim+1] = Density_j*Velocity_j[iDim];
+  }
+  U_i[nDim+1] = Density_i*Energy_i; U_j[nDim+1] = Density_j*Energy_j;
+
+//	/*--- Roe-averaged variables at interface between i & j ---*/
+
+    ComputeRoeAverage();
+
+
+	/*--- Compute ProjFlux_i ---*/
+	GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
+
+	/*--- Compute ProjFlux_j ---*/
+	GetInviscidProjFlux(&Density_j, Velocity_j, &Pressure_j, &Enthalpy_j, Normal, ProjFlux_j);
+
+	/*--- Compute P and Lambda (do it with the Normal) ---*/
+
+	GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, &RoeEnthalpy, &RoeChi, &RoeKappa, UnitNormal, P_Tensor);
+
+	ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
+	for (iDim = 0; iDim < nDim; iDim++) {
+		ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
+		ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+		ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
+	}
+
+	/*--- Projected velocity adjustment due to mesh motion ---*/
+	if (grid_movement) {
+		double ProjGridVel = 0.0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			ProjGridVel   += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*UnitNormal[iDim];
+		}
+		ProjVelocity   -= ProjGridVel;
+		ProjVelocity_i -= ProjGridVel;
+		ProjVelocity_j -= ProjGridVel;
+	}
+
+	/*--- Flow eigenvalues and entropy correctors ---*/
+	for (iDim = 0; iDim < nDim; iDim++)
+		Lambda[iDim] = ProjVelocity;
+
+	Lambda[nVar-2] = ProjVelocity + RoeSoundSpeed;
+	Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
+
+//	/*--- Harten and Hyman (1983) entropy correction ---*/
+//	for (iDim = 0; iDim < nDim; iDim++)
+//		Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
+//
+//	Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
+//	Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+//
+//	for (iVar = 0; iVar < nVar; iVar++)
+//		if ( fabs(Lambda[iVar]) < Epsilon[iVar] )
+//			Lambda[iVar] = (Lambda[iVar]*Lambda[iVar] + Epsilon[iVar]*Epsilon[iVar])/(2.0*Epsilon[iVar]);
+//		else
+//			Lambda[iVar] = fabs(Lambda[iVar]);
+
+	for (iVar = 0; iVar < nVar; iVar++)
+		Lambda[iVar] = fabs(Lambda[iVar]);
+
+	if (!implicit) {
+
+		/*--- Compute wave amplitudes (characteristics) ---*/
+		proj_delta_vel = 0.0;
+		for (iDim = 0; iDim < nDim; iDim++) {
+			delta_vel[iDim] = Velocity_j[iDim] - Velocity_i[iDim];
+			proj_delta_vel += delta_vel[iDim]*Normal[iDim];
+		}
+		delta_p = Pressure_j - Pressure_i;
+		delta_rho = Density_j - Density_i;
+		proj_delta_vel = proj_delta_vel/Area;
+
+		if (nDim == 2) {
+			delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
+			delta_wave[1] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
+			delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
+			delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
+		} else {
+			delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
+			delta_wave[1] = UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0];
+			delta_wave[2] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
+			delta_wave[3] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
+			delta_wave[4] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
+		}
+
+		/*--- Roe's Flux approximation ---*/
+		for (iVar = 0; iVar < nVar; iVar++) {
+			val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+			for (jVar = 0; jVar < nVar; jVar++)
+				val_residual[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
+		}
+
+		/*--- Flux contribution due to grid motion ---*/
+		if (grid_movement) {
+			ProjVelocity = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++)
+				ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+			for (iVar = 0; iVar < nVar; iVar++) {
+				val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+			}
+		}
+	}
+	else {
+
+		/*--- Compute inverse P ---*/
+
+		GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed,&RoeChi , &RoeKappa, UnitNormal);
+
+		/*--- Jacobians of the inviscid flux, scaled by
+     0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+		GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, 0.5, val_Jacobian_i);
+
+		GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, 0.5, val_Jacobian_j);
+
+
+		/*--- Diference variables iPoint and jPoint ---*/
+		for (iVar = 0; iVar < nVar; iVar++)
+			Diff_U[iVar] = U_j[iVar]-U_i[iVar];
+
+		/*--- Roe's Flux approximation ---*/
+		for (iVar = 0; iVar < nVar; iVar++) {
+			val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+			for (jVar = 0; jVar < nVar; jVar++) {
+				Proj_ModJac_Tensor_ij = 0.0;
+				/*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+				for (kVar = 0; kVar < nVar; kVar++)
+					Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
+				val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+				val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+				val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+			}
+		}
+
+		/*--- Jacobian contributions due to grid motion ---*/
+		if (grid_movement) {
+			ProjVelocity = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++)
+				ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+			for (iVar = 0; iVar < nVar; iVar++) {
+				val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+				/*--- Implicit terms ---*/
+				val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
+				val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
+			}
+		}
+
+	}
+
+}
+
+
+void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
+
+	double delta_rhoStaticEnergy, err_P, s, D, stateSeparationLimit;
+	// double tol = 10-6;
+	//
+	R = sqrt(fabs(Density_j/Density_i));
+	RoeDensity = R*Density_i;
+	sq_vel = 0;	for (iDim = 0; iDim < nDim; iDim++) {
+		RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
+		sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
+	}
+
+	RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
+	delta_rho = Density_j - Density_i;
+	delta_p = Pressure_j - Pressure_i;
+	RoeKappa = 0.5*(Kappa_i + Kappa_j);
+	RoeChi = 0.5*(Chi_i + Chi_j);
+	// /* It works only using the hat values*/
+
+	s = RoeChi + RoeKappaStaticEnthalpy;
+	D = s*s*delta_rho*delta_rho + delta_p*delta_p;
+
+	// The below tolerance works well for both dimensional and dimensionless cases.
+	// Anyway to be checked upon different test cases.
+	double tol = 1.0e-03;
+
+	if (s > tol && D > tol) {
+
+		RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
+		delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
+
+		err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
+		s = RoeChi + RoeKappaStaticEnthalpy;
+		D = s*s*delta_rho*delta_rho + delta_p*delta_p;
+
+		RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
+		RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
+
+	}
+
+	RoeSoundSpeed = sqrt(RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel));
+
+}
+
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   /*--- Set booleans from CConfig settings ---*/

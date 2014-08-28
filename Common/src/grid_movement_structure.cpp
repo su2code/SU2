@@ -205,11 +205,11 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     MinVolume = Check_Grid(geometry);
     
-    if ((rank == MASTER_NODE) && Screen_Output) {
+    if (rank == MASTER_NODE) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << config->GetGridDef_Nonlinear_Iter()
-      << ". Linear iteration: " << IterLinSol << "." << endl;
-      if (nDim == 2) cout << "Minimum area: " << MinVolume << ". Error: " << NumError << "." <<endl;
-      else cout << "Minimum volume: " << MinVolume << ". Error: " << NumError << "." <<endl;
+      << ". Linear iter.: " << IterLinSol << ". ";
+      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << NumError << "." <<endl;
+      else cout << "Min. volume: " << MinVolume << ". Error: " << NumError << "." <<endl;
     }
     
   }

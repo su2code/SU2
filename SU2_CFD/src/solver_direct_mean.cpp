@@ -1827,78 +1827,64 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     /*--- Compute the Free Stream velocity, using the Mach number ---*/
     
     Pressure_FreeStream = config->GetPressure_FreeStream();
-    Density_FreeStream  = config->GetDensity_FreeStream();
-    Temperature_FreeStream  = config->GetTemperature_FreeStream();
-    
-    switch (config->GetKind_FluidModel()) {
-        
-      case STANDARD_AIR:
-        
-        if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.4855);
-        FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
-        if (fs_temperature){
-          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-          Density_FreeStream = FluidModel->GetDensity();
-          config->SetDensity_FreeStream(Density_FreeStream);
-        } else {
-          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream);
-          Temperature_FreeStream = FluidModel->GetTemperature();
-          config->SetTemperature_FreeStream(Temperature_FreeStream);
-        }
-        break;
-        
-      case IDEAL_GAS:
-        
-        FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
-        if (fs_temperature){
-          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-          Density_FreeStream = FluidModel->GetDensity();
-          config->SetDensity_FreeStream(Density_FreeStream);
-        } else {
-          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream);
-          Temperature_FreeStream = FluidModel->GetTemperature();
-          config->SetTemperature_FreeStream(Temperature_FreeStream);
-        }
-        break;
-        
-      case VW_GAS:
-        
-        FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical());
-        if (fs_temperature){
-          cout << "ERROR... Change the FREESTREAM_OPTION to DENSITY_FS"<< endl;
-          getchar();
-          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-          Density_FreeStream = FluidModel->GetDensity();
-          config->SetDensity_FreeStream(Density_FreeStream);
-        } else {
-          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream);
-          Temperature_FreeStream = FluidModel->GetTemperature();
-          config->SetTemperature_FreeStream(Temperature_FreeStream);
-        }
-        break;
-        
-      case PR_GAS:
-        
-        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical(), config->GetAcentric_Factor());
-        if(fs_temperature){
-          cout << "ERROR... Change the FREESTREAM_OPTION to DENSITY_FS"<< endl;
-          getchar();
-          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-          Density_FreeStream = FluidModel->GetDensity();
-          config->SetDensity_FreeStream(Density_FreeStream);
-        } else {
-          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream);
-          Temperature_FreeStream = FluidModel->GetTemperature();
-          config->SetTemperature_FreeStream(Temperature_FreeStream);
-        }
-        break;
-        
-    }
-    
-    Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
-    
-    /*--- Compute the Free Stream velocity, using the Mach number ---*/
+	Density_FreeStream  = config->GetDensity_FreeStream();
+	Temperature_FreeStream  = config->GetTemperature_FreeStream();
+	switch (config->GetKind_FluidModel()) {
+
+	case STANDARD_AIR:
+		if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
+		else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(53.3533);
+
+		FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
+			if(fs_temperature){
+				FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+				Density_FreeStream = FluidModel->GetDensity();
+			}else {
+				FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+				Temperature_FreeStream = FluidModel->GetTemperature();
+			}
+			break;
+
+	case IDEAL_GAS:
+		FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
+		if(fs_temperature){
+			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+			Density_FreeStream = FluidModel->GetDensity();
+		}else {
+			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+			Temperature_FreeStream = FluidModel->GetTemperature();
+		}
+		break;
+
+	case VW_GAS:
+		FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical());
+		if(fs_temperature){
+			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+			Density_FreeStream = FluidModel->GetDensity();
+		} else {
+
+			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+			Temperature_FreeStream = FluidModel->GetTemperature();
+
+		}
+		break;
+
+	case PR_GAS:
+		FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical(), config->GetAcentric_Factor());
+		if(fs_temperature){
+			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+			Density_FreeStream = FluidModel->GetDensity();
+		} else {
+			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+			Temperature_FreeStream = FluidModel->GetTemperature();
+
+		}
+		break;
+	}
+
+	Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
+
+	/*--- Compute the Free Stream velocity, using the Mach number ---*/
     
     if (nDim == 2) {
       config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -6252,11 +6238,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-/////////////
-        ///*--- Build the external state u_e from boundary data and internal node ---*///
-
-
-
+ /*--- Build the external state u_e from boundary data and internal node ---*///
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
 
@@ -6268,12 +6250,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 else P_Total  = config->GetRiemann_Var1(Marker_Tag);
                 T_Total  = config->GetRiemann_Var2(Marker_Tag);
                 Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-//               cout << Marker_Tag << endl;
 
                 /*--- Non-dim. the inputs if necessary. ---*/
                 P_Total /= config->GetPressure_Ref();
                 T_Total /= config->GetTemperature_Ref();
-//                getchar();
 
                 /* --- Computes the total state --- */
 
@@ -6286,11 +6266,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 /* --- Compute the boundary state u_e --- */
 
-                Velocity2_e = 0.0;
+                Velocity2_e = Velocity2_i;
+
                 for (iDim = 0; iDim < nDim; iDim++) {
-                  Velocity_e[iDim] = Velocity_i[iDim];
-                  Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-                }
+				  Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+				}
+
 
                 StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 //                cout << StaticEnthalpy_e << " "<< Entropy_e << endl;
