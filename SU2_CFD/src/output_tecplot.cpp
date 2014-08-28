@@ -180,11 +180,11 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ",\"Pressure\",\"Pressure_Coefficient\",\"Mach\"";
+      Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      Tecplot_File << ", \"Temperature\", \"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
+      Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
     }
     
     if (Kind_Solver == RANS) {
@@ -1833,13 +1833,13 @@ string AssembleVariableNames(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      variables << "Pressure Pressure_Coefficient Mach ";
-      *NVar += 3;
+      variables << "Pressure Temperature Pressure_Coefficient Mach ";
+      *NVar += 4;
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      variables << "Temperature Laminar_Viscosity Skin_Friction_Coefficient Heat_Flux Y_Plus ";
-      *NVar += 5;
+      variables << "Laminar_Viscosity Skin_Friction_Coefficient Heat_Flux Y_Plus ";
+      *NVar += 4;
     }
     
     if (Kind_Solver == RANS) {

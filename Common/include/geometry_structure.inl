@@ -60,7 +60,9 @@ inline unsigned long CGeometry::GetnElemWedg(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemPyra(void) { return 0; }
 
-inline void CGeometry::Check_Orientation(CConfig *config) { }
+inline void CGeometry::Check_IntElem_Orientation(CConfig *config) { }
+
+inline void CGeometry::Check_BoundElem_Orientation(CConfig *config) { }
 
 inline void CGeometry::SetColorGrid(CConfig *config) { }
 

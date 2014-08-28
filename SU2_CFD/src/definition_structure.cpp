@@ -229,8 +229,9 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
     if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
     geometry[iZone][MESH_0]->SetBoundVolume();
-    geometry[iZone][MESH_0]->Check_Orientation(config[iZone]);
-    
+    geometry[iZone][MESH_0]->Check_IntElem_Orientation(config[iZone]);
+    geometry[iZone][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
+
     /*--- Create the edge structure ---*/
     
     if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
@@ -610,6 +611,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   
   /*--- Initialize some useful booleans ---*/
   euler            = false;   ns               = false;   turbulent        = false;
@@ -785,9 +787,18 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           switch (config->GetKind_Upwind_Flow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
-              for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+              if(ideal_gas){
+
+            	  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+            		  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+            		  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+            	  }
+              } else {
+
+				  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
+					  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
+					  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
+            	  }
               }
               break;
               
