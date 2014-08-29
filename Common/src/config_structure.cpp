@@ -152,9 +152,11 @@ void CConfig::SetPointersNull(void){
 }
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
+  
   double default_vec_3d[3];
   double default_vec_2d[2];
   double default_vec_6d[6];
+  
   nZone = val_nZone;
   iZone = val_iZone;
 
@@ -570,8 +572,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
   /* DESCRIPTION: Damping factor for the correction prolongation */
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
-  /* DESCRIPTION: CFL reduction factor on the coarse levels */
-  addDoubleOption("MG_CFL_REDUCTION", MG_CFLRedCoeff, 0.9);
   /* DESCRIPTION: Maximum number of children in the agglomeration stage */
   addUnsignedShortOption("MAX_CHILDREN", MaxChildren, 500);
   /* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
@@ -1181,12 +1181,10 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
 
-  unsigned short iZone;
+  unsigned short iZone, iCFL;
 
-#ifndef HAVE_MPI
   int size = SINGLE_NODE;
-#else
-  int size;
+#ifdef HAVE_MPI
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
@@ -1935,8 +1933,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   CFL = new double[nCFL];
   CFL[0] = CFLFineGrid;
   if (Adjoint) CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
-  for (unsigned short iCFL = 1; iCFL < nCFL; iCFL++)
-    CFL[iCFL] = CFL[iCFL-1]*MG_CFLRedCoeff;
+  
+  for (iCFL = 1; iCFL < nCFL; iCFL++)
+    CFL[iCFL] = CFL[iCFL-1];
 
   if (nRKStep == 0) {
     nRKStep = 1;
@@ -3791,7 +3790,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
       if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
-      cout << "Reduction of the CFL coefficient in the coarse levels: " << MG_CFLRedCoeff <<"."<<endl;
       cout << "Max. number of children in the agglomeration stage: " << MaxChildren <<"."<<endl;
       cout << "Max. length of an agglom. elem. (compared with the domain): " << MaxDimension <<"."<<endl;
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<<endl;
@@ -3813,9 +3811,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       cout << "Courant-Friedrichs-Lewy number:   ";
       cout.precision(3);
-      for (unsigned short iCFL = 0; iCFL < nMultiLevel+1; iCFL++) {
-        cout.width(6); cout << CFL[iCFL];
-      }
+      cout.width(6); cout << CFL[0];
       cout << endl;
 
       if (nMultiLevel !=0) {
@@ -5079,39 +5075,30 @@ void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
 
 void CConfig::UpdateCFL(unsigned long val_iter) {
   double coeff;
-  bool change;
   unsigned short iCFL;
 
-  if ((val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0)) {
-    change = false;
-    for (iCFL = 0; iCFL <= nMultiLevel; iCFL++) {
-      coeff = pow(MG_CFLRedCoeff, double(iCFL));
-      if (Adjoint) coeff = coeff * CFLRedCoeff_AdjFlow;
-
-      if (CFL[iCFL]*CFLRamp[0] < CFLRamp[2]*coeff) {
-        CFL[iCFL] = CFL[iCFL]*CFLRamp[0];
-        change = true;
-      }
-    }
-
-#ifndef HAVE_MPI
-    if (change) {
-      cout <<"\n New value of the CFL number: ";
-      for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
-        cout << CFL[iCFL] <<", ";
-      cout << CFL[nMultiLevel] <<".\n"<< endl;
-    }
-#else
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if ((change) && (rank == MASTER_NODE)) {
-      cout <<"\n New value of the CFL number: ";
-      for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
-        cout << CFL[iCFL] <<", ";
-      cout << CFL[nMultiLevel] <<".\n"<< endl;
-    }
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+  
+  if (Adjoint) coeff = CFLRedCoeff_AdjFlow;
+  else coeff = 1.0;
+
+  if ((val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
+
+    for (iCFL = 0; iCFL <= nMultiLevel; iCFL++)
+        CFL[iCFL] *= CFLRamp[0];
+
+    if (rank == MASTER_NODE) {
+      cout <<"\n New value of the CFL number: ";
+      for (iCFL = 0; iCFL < nMultiLevel; iCFL++)
+        cout << CFL[iCFL] <<", ";
+      cout << CFL[nMultiLevel] <<".\n"<< endl;
+    }
+
   }
+  
 }
 
 void CConfig::SetGlobalParam(unsigned short val_solver,

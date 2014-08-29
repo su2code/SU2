@@ -355,6 +355,8 @@ inline unsigned short CConfig::GetGeometryMode(void) { return GeometryMode; }
 
 inline double CConfig::GetCFL(unsigned short val_mesh) {	return CFL[val_mesh]; }
 
+inline void CConfig::SetCFL(unsigned short val_mesh, double val_cfl) { CFL[val_mesh] = val_cfl; }
+
 inline double CConfig::GetUnst_CFL(void) {	return Unst_CFL; }
 
 inline double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
