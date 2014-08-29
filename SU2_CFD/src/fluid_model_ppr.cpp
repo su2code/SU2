@@ -107,7 +107,7 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 }
 
 void CPengRobinson::SetTDState_PT (double P, double T ) {
-	double toll= 1e-4;
+	double toll= 1e-9;
 	double A, B, Z, DZ, F, F1;
 	double rho, fv, e;
 	double sqrt2=sqrt(2);
@@ -143,7 +143,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	double fv, A, B, C, sqrt2=sqrt(2);
 	double f, f1, v;
 	double dv = 1.0;
-	double toll =1e-5;
+	double toll =1e-9;
 
 	Temperature = h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(Temperature) + s/Gas_Constant);
