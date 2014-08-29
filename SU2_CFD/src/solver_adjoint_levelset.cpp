@@ -98,7 +98,8 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
       if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Adj. Level Set). MG level: 0." << endl;
       Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
-      if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+      if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+          (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
         nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
         if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
       }
@@ -968,21 +969,26 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
 	double Delta = 0.0, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
+  
     SetRes_RMS(0, 0.0);
     SetRes_Max(0, 0.0, 0);
     
 	/*--- Build implicit system ---*/
+  
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 		
 		/*--- Read the volume ---*/
+    
 		Vol = geometry->node[iPoint]->GetVolume();
 		
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
+    
 		Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
         
 		Jacobian.AddVal2Diag(iPoint,Delta);
         
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    
 		LinSysRes[iPoint] = -LinSysRes[iPoint];
 		LinSysSol[iPoint] = 0.0;
 		AddRes_RMS(0, LinSysRes[iPoint]*LinSysRes[iPoint]);
@@ -990,6 +996,7 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
 	}
     
     /*--- Initialize residual and solution at the ghost points ---*/
+  
     for (iPoint = geometry->GetnPointDomain(); iPoint < geometry->GetnPoint(); iPoint++) {
         LinSysRes[iPoint] = 0.0;
         LinSysSol[iPoint] = 0.0;

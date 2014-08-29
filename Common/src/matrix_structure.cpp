@@ -221,14 +221,19 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
   
   /*--- Set specific preconditioner matrices (ILU) ---*/
-  if (config->GetKind_Linear_Solver_Prec() == ILU) {
+  
+  if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
+    (config->GetKind_Linear_Solver() == SMOOTHER_ILU)) {
     ILU_matrix = new double [nnz*nVar*nEqn];	// Reserve memory for the ILU matrix
     for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++)    ILU_matrix[iVar] = 0.0;
   }
   
   /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
+  
   if ((config->GetKind_Linear_Solver_Prec() == JACOBI) ||
-      (config->GetKind_Linear_Solver_Prec() == LINELET))   {
+      (config->GetKind_Linear_Solver_Prec() == LINELET) ||
+      (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
+      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET))   {
     invM = new double [nPoint*nVar*nEqn];	// Reserve memory for the values of the inverse of the preconditioner
     for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
   }

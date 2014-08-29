@@ -35,7 +35,11 @@
 #include <iomanip>
 #include <string>
 
+#include "option_structure.hpp"
 #include "vector_structure.hpp"
+#include "matrix_structure.hpp"
+#include "config_structure.hpp"
+#include "geometry_structure.hpp"
 
 using namespace std;
 
@@ -184,6 +188,18 @@ public:
   unsigned long BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                         CPreconditioner & precond, double tol,
                         unsigned long m, bool monitoring);
+  
+  /*!
+   * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
+   * \param[in] b - the right hand size vector
+   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] precond - object that defines preconditioner
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] m - maximum size of the search subspace
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   */
+  unsigned long Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
   
 };
 

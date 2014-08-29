@@ -907,6 +907,7 @@ enum ENUM_PARAM {
   FFD_ROTATION = 13,		/*!< \brief Free form deformation for 3D design (rotation around a line). */
   FFD_CAMBER = 14,		/*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS = 15,		/*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_EDGE = 29,		/*!< \brief Free form deformation for 3D design (edge change). */
   PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
   OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
   STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
@@ -937,6 +938,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
+("FFD_EDGE", FFD_EDGE)
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
 ("STRETCH", STRETCH)
@@ -955,7 +957,11 @@ enum ENUM_LINEAR_SOLVER {
   CONJUGATE_GRADIENT = 4,	/*!< \brief Preconditionated conjugate gradient method for grid deformation. */
   FGMRES = 5,    	/*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB = 6,	/*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  RFGMRES = 7
+  RFGMRES = 7,  /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
+  SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
+  SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
+  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -964,7 +970,11 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
 ("BCGSTAB", BCGSTAB)
 ("FGMRES", FGMRES)
-("RFGMRES", RFGMRES);
+("RFGMRES", RFGMRES)
+("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
+("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
+("SMOOTHER_LINELET", SMOOTHER_LINELET)
+("SMOOTHER_ILU0", SMOOTHER_ILU);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1771,6 +1781,7 @@ public:
         case FFD_ROTATION: nParamDV = 7; break;
         case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
+        case FFD_EDGE: nParamDV = 10; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
         default : {
@@ -1798,7 +1809,8 @@ public:
              (this->design_variable[iDV] == FFD_ROTATION) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
-             (this->design_variable[iDV] == FFD_THICKNESS))) {
+             (this->design_variable[iDV] == FFD_THICKNESS) ||
+             (this->design_variable[iDV] == FFD_EDGE))) {
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }

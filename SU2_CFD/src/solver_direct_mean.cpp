@@ -4181,14 +4181,15 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 }
 
 void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
   unsigned short iVar, jVar;
   unsigned long iPoint, total_index, IterLinSol = 0;
   double Delta, *local_Res_TruncError, Vol;
   
-  unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
-  double tol = config->GetLinear_Solver_Error();
+  double SolverTol = config->GetLinear_Solver_Error();
+  unsigned long MaxIter = config->GetLinear_Solver_Iter();
   bool adjoint = config->GetAdjoint();
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   
   /*--- Set maximum residual to zero ---*/
   
@@ -4245,57 +4246,89 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
   
-  /*--- Solve the linear system (Krylov subspace methods) ---*/
+//  CSysSolve system;
+//  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+  /*--- Solve the linear system using a Krylov subspace method ---*/
   
-  CPreconditioner* precond = NULL;
-  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
-    Jacobian.BuildILUPreconditioner();
-    precond = new CILUPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
-    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CLineletPreconditioner(Jacobian, geometry, config);
-  }
-  
-  CSysSolve system;
-  if (config->GetKind_Linear_Solver() == BCGSTAB)
-    IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                                config->GetLinear_Solver_Iter(), false);
-  else if (config->GetKind_Linear_Solver() == FGMRES)
-    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                               config->GetLinear_Solver_Iter(), false);
-  else if (config->GetKind_Linear_Solver() == RFGMRES){
+  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
+      || config->GetKind_Linear_Solver() == RFGMRES) {
 
-    IterLinSol = 0;
+    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     
-    while (IterLinSol < config->GetLinear_Solver_Iter()) {
-      if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-        iterations = config->GetLinear_Solver_Iter()-IterLinSol;
-      IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
-                                  iterations, false); // increment total iterations
-      if (LinSysRes.norm() < tol) break;
-      tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
-      
+    CPreconditioner* precond = NULL;
+    switch (config->GetKind_Linear_Solver_Prec()) {
+      case JACOBI:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+        break;
+      case ILU:
+        Jacobian.BuildILUPreconditioner();
+        precond = new CILUPreconditioner(Jacobian, geometry, config);
+        break;
+      case LU_SGS:
+        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
+        break;
+      case LINELET:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CLineletPreconditioner(Jacobian, geometry, config);
+        break;
+    }
+    
+    CSysSolve system;
+    switch (config->GetKind_Linear_Solver()) {
+      case BCGSTAB:
+        IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        break;
+      case FGMRES:
+        IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        break;
+      case RFGMRES:
+        IterLinSol = 0;
+        while (IterLinSol < config->GetLinear_Solver_Iter()) {
+          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+          IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+          if (LinSysRes.norm() < SolverTol) break;
+          SolverTol = SolverTol*(1.0/LinSysRes.norm());
+        }
+        break;
+    }
+    
+    /*--- Dealocate memory of the Krylov subspace method ---*/
+    
+    delete mat_vec;
+    delete precond;
+    
+  }
+  
+  /*--- Smooth the linear system. ---*/
+
+  else {
+    switch (config->GetKind_Linear_Solver()) {
+      case SMOOTHER_LUSGS:
+        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+      case SMOOTHER_JACOBI:
+        Jacobian.BuildJacobiPreconditioner();
+        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+      case SMOOTHER_ILU:
+        Jacobian.BuildILUPreconditioner();
+        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+      case SMOOTHER_LINELET:
+        Jacobian.BuildJacobiPreconditioner();
+        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+        IterLinSol = 1;
     }
   }
-  
+
   /*--- The the number of iterations of the linear solver ---*/
   
   SetIterLinSolver(IterLinSol);
-  
-  /*--- Dealocate memory ---*/
-  delete mat_vec;
-  delete precond;
-  
+    
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
