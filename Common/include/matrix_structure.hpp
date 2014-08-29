@@ -32,7 +32,7 @@
 
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
-#include "linear_solvers_structure.hpp"
+#include "vector_structure.hpp"
 
 using namespace std;
 
@@ -385,7 +385,7 @@ public:
 	 * \param[out] prod - Result of the product A*vec.
 	 */
 	void ComputeLineletPreconditioner(const CSysVector & vec, CSysVector & prod, CGeometry *geometry, CConfig *config);
-	
+
   /*!
 	 * \brief Compute the residual Ax-b
 	 * \param[in] sol - CSysVector to be multiplied by the preconditioner.

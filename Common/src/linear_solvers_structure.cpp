@@ -514,3 +514,88 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 	
 	return i;
 }
+
+unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
+  
+//  double SolverTol = config->GetLinear_Solver_Error();
+//  unsigned long MaxIter = config->GetLinear_Solver_Iter();
+  unsigned long IterLinSol = 0;
+//
+//  /*--- Solve the linear system using a Krylov subspace method ---*/
+//  cout << BCGSTAB;
+//  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
+//      || config->GetKind_Linear_Solver() == RFGMRES) {
+//    
+//    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+//  
+//    CPreconditioner* precond = NULL;
+////    switch (config->GetKind_Linear_Solver_Prec()) {
+////      case JACOBI:
+////        Jacobian.BuildJacobiPreconditioner();
+////        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+////        break;
+////      case ILU:
+////        Jacobian.BuildILUPreconditioner();
+////        precond = new CILUPreconditioner(Jacobian, geometry, config);
+////        break;
+////      case LU_SGS:
+//        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
+////        break;
+////      case LINELET:
+////        Jacobian.BuildJacobiPreconditioner();
+////        precond = new CLineletPreconditioner(Jacobian, geometry, config);
+////        break;
+////    }
+////    
+////    switch (config->GetKind_Linear_Solver()) {
+////      case BCGSTAB:
+////        IterLinSol = BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+////        break;
+////      case FGMRES:
+//        IterLinSol = FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+////        break;
+////      case RFGMRES:
+////        IterLinSol = 0;
+////        while (IterLinSol < config->GetLinear_Solver_Iter()) {
+////          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+////            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+////          IterLinSol += FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+////          if (LinSysRes.norm() < SolverTol) break;
+////          SolverTol = SolverTol*(1.0/LinSysRes.norm());
+////        }
+////        break;
+////    }
+//    
+//    /*--- Dealocate memory of the Krylov subspace method ---*/
+//    
+//    delete mat_vec;
+//    delete precond;
+//    
+//  }
+//  
+//  /*--- Smooth the linear system. ---*/
+//  
+////  else {
+////    switch (config->GetKind_Linear_Solver()) {
+////      case SMOOTHER_LUSGS:
+////        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
+////        break;
+////      case SMOOTHER_JACOBI:
+////        Jacobian.BuildJacobiPreconditioner();
+////        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
+////        break;
+////      case SMOOTHER_ILU:
+////        Jacobian.BuildILUPreconditioner();
+////        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
+////        break;
+////      case SMOOTHER_LINELET:
+////        Jacobian.BuildJacobiPreconditioner();
+////        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
+////        break;
+//        IterLinSol = 1;
+////    }
+////  }
+  
+  return IterLinSol;
+  
+}
