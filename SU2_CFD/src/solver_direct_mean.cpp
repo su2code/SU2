@@ -1820,7 +1820,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool turbulent          = config->GetKind_Solver() == RANS;
   bool tkeNeeded          = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
   bool fs_temperature     = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
-  bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
+  bool ideal_gas       = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   
   if (compressible) {
 
@@ -1905,7 +1905,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
     if (viscous) {
       
-    	if (standard_air) {
+    	if (ideal_gas) {
         
     		/*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
@@ -6132,8 +6132,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
 
-
-            case TOTAL_CONDITIONS_PT:
+            case TOTAL_CONDITIONS_PT: case SUPERSONIC_INFLOW:
                 /*--- Retrieve the specified total conditions for this boundary. ---*/
 
                 if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -6156,13 +6155,19 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 /* --- Compute the boundary state u_e --- */
 
-                Velocity2_e = Velocity2_i;
+                if(config->GetKind_Data_Riemann(Marker_Tag) == TOTAL_CONDITIONS_PT){
+                	Velocity2_e = Velocity2_i;
 
-                for (iDim = 0; iDim < nDim; iDim++) {
-				  Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-				}
-
-
+                	for (iDim = 0; iDim < nDim; iDim++) {
+                		Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+                	}
+                }else{
+                	Velocity2_e = 0.0;
+                	for (iDim = 0; iDim < nDim; iDim++) {
+						Velocity_e[iDim] = Flow_Dir[iDim]/config->GetVelocity_Ref();
+						Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+                		}
+                }
                 StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 //                cout << StaticEnthalpy_e << " "<< Entropy_e << endl;
 
@@ -6228,7 +6233,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 break;
 
-
             default:
                 cout << "Warning! Invalid Riemann input!" << endl; /// Put safe exit here!
 
@@ -6265,7 +6269,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             dw[iVar] = 0;
             for (jVar = 0; jVar < nVar; jVar++)
                 dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
-//            cout << u_e[iVar]<< " "<< u_i[iVar] << endl;
+
         }
 
         /*--- Compute the boundary state u_b using characteristics ---*/
@@ -6278,11 +6282,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 if(Lambda_i[jVar] < 0)
                 {
                     u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+
                 }
             }
         }
 
-
+//       cout << u_e[2]<< " "<< u_i[2] <<" "<< u_b[2] << endl;
 //        /*--- Primitive variables, using the derived quantities ---*/
 //
 //        V_boundary[nDim+2] = u_b[0];
