@@ -1636,7 +1636,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 
 void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 
-	double delta_rhoStaticEnergy, err_P, s, D, stateSeparationLimit;
+	double delta_rhoStaticEnergy, err_P, s, D;//, stateSeparationLimit;
 	// double tol = 10-6;
 	//
 	R = sqrt(fabs(Density_j/Density_i));
@@ -2915,6 +2915,7 @@ CAvgGradCorrected_Flow::~CAvgGradCorrected_Flow(void) {
 void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
+  
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
@@ -2924,6 +2925,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
     UnitNormal[iDim] = Normal[iDim]/Area;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
+  
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -2931,6 +2933,7 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
   }
   
   /*--- Laminar and Eddy viscosity ---*/
+  
   Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
   Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   
@@ -2941,11 +2944,13 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
   }
   
   /*--- Mean Viscosities and turbulent kinetic energy ---*/
+  
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity    = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke           = 0.5*(turb_ke_i + turb_ke_j);
   
   /*--- Projection of the mean gradient in the direction of the edge ---*/
+  
   for (iVar = 0; iVar < nDim+1; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -2961,13 +2966,16 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
   }
   
   /*--- Get projected flux tensor ---*/
+  
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   
   /*--- Save residual value ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
   /*--- Compute the implicit part ---*/
+  
   if (implicit) {
     
     if (dist_ij_2 == 0.0) {
@@ -3028,6 +3036,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
     UnitNormal[iDim] = Normal[iDim]/Area;
   
   /*--- Conversion to Primitive Variables ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
@@ -3035,14 +3044,17 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
   }
   
   /*--- Laminar and Eddy viscosity ---*/
+  
   Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
   Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   
   /*--- Mean Viscosities ---*/
+  
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   
   /*--- Compute vector going from iPoint to jPoint ---*/
+  
   dist_ij_2 = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -3050,6 +3062,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
   }
   
   /*--- Projection of the mean gradient in the direction of the edge ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -3065,13 +3078,16 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
   }
   
   /*--- Get projected flux tensor ---*/
+  
   GetViscousArtCompProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   
   /*--- Update viscous residual ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
   /*--- Implicit part ---*/
+  
   if (implicit) {
     
     if (dist_ij_2 == 0.0) {
