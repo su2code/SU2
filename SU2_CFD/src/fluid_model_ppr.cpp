@@ -196,7 +196,12 @@ void CPengRobinson::SetEnergy_Prho (double P, double rho ) {
 
 }
 
-
+void CPengRobinson::SetTDState_rhoT (double rho, double T){
+	double fv,e, sqrt2=sqrt(2);
+	fv = atanh( rho * b * sqrt2/(1 + rho*b));
+	e = T*Gas_Constant/Gamma_Minus_One + a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit))*sqrt(T) - a*(k+1)*(k+1)*fv/(b*sqrt2);
+	SetTDState_rhoe(rho, e);
+}
 
 
 
