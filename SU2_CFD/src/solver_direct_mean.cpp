@@ -6065,7 +6065,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
-  double P_Total, T_Total, *Flow_Dir, Area, UnitNormal[3];
+  double P_Total, T_Total, P_static, T_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
 
   double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
@@ -6167,7 +6167,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
 
-            case TOTAL_CONDITIONS_PT: case SUPERSONIC_INFLOW:
+            case TOTAL_CONDITIONS_PT: case TOTAL_SUPERSONIC_INFLOW:
                 /*--- Retrieve the specified total conditions for this boundary. ---*/
 
                 if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -6267,6 +6267,42 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 Enthalpy_e = Energy_e + Pressure_e/Density_e;
 
                 break;
+            case STATIC_SUPERSONIC_INFLOW:
+			    /*--- Retrieve the specified total conditions for this boundary. ---*/
+
+			    if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+			    else P_static  = config->GetRiemann_Var1(Marker_Tag);
+			    T_static  = config->GetRiemann_Var2(Marker_Tag);
+			    Mach = config->GetRiemann_FlowDir(Marker_Tag);
+
+			    /*--- Non-dim. the inputs if necessary. ---*/
+			    P_static /= config->GetPressure_Ref();
+			    T_static /= config->GetTemperature_Ref();
+
+			   /* --- Computes the total state --- */
+
+			    FluidModel->SetTDState_PT(P_static, T_static);
+				/* --- Compute the boundary state u_e --- */
+
+				Velocity2_e = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Velocity_e[iDim] = Mach[iDim]*FluidModel->GetSoundSpeed();
+					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+					}
+
+
+				Density_e = FluidModel->GetDensity();
+				StaticEnergy_e = FluidModel->GetStaticEnergy();
+
+				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;              /// Change with getStaticEnergy()
+
+				if (tkeNeeded) Energy_e += GetTke_Inf();
+
+				Pressure_e = FluidModel->GetPressure();
+				Enthalpy_e = Energy_e + Pressure_e/Density_e;
+
+				break;
+
 
             default:
                 cout << "Warning! Invalid Riemann input!" << endl; /// Put safe exit here!
