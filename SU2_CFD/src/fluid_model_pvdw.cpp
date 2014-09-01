@@ -116,8 +116,12 @@ void CVanDerWaalsGas::SetEnergy_Prho (double P, double rho ) {
 
 }
 
+void CVanDerWaalsGas::SetTDState_rhoT (double rho, double T) {
 
+	double e = T*Gas_Constant/Gamma_Minus_One - a*rho;
+	SetTDState_rhoe(rho, e);
 
+}
 
 
 

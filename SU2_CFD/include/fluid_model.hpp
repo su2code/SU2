@@ -215,6 +215,16 @@ public:
 		 */
 		virtual void SetTDState_hs (double h, double s );
 
+
+		/*!
+		 * \brief virtual member that would be different for each gas model implemented
+		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
+		 * \param[in] th1 - first thermodynamic variable (rho).
+		 * \param[in] th2 - second thermodynamic variable (T).
+		 *
+		 */
+		virtual void SetTDState_rhoT (double rho, double T );
+
 };
 
 
@@ -295,6 +305,15 @@ public:
 		 */
 		void SetTDState_hs (double h, double s );
 
+
+		/*!
+		 * \brief virtual member that would be different for each gas model implemented
+		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
+		 * \param[in] th1 - first thermodynamic variable (rho).
+		 * \param[in] th2 - second thermodynamic variable (T).
+		 *
+		 */
+		void SetTDState_rhoT (double rho, double T );
 };
 
 
@@ -366,6 +385,16 @@ public:
 		 *
 		 */
 		void SetTDState_hs (double h, double s );
+
+
+		/*!
+		 * \brief virtual member that would be different for each gas model implemented
+		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
+		 * \param[in] th1 - first thermodynamic variable (rho).
+		 * \param[in] th2 - second thermodynamic variable (T).
+		 *
+		 */
+		void SetTDState_rhoT (double rho, double T );
 
 };
 
@@ -443,6 +472,16 @@ public:
 		 *
 		 */
 		void SetTDState_hs (double h, double s );
+
+		/*!
+		 * \brief virtual member that would be different for each gas model implemented
+		 * \param[in] InputSpec - Input pair for FLP calls ("rhoT").
+		 * \param[in] th1 - first thermodynamic variable (rho).
+		 * \param[in] th2 - second thermodynamic variable (T).
+		 *
+		 */
+		void SetTDState_rhoT (double rho, double T );
+
 };
 
 

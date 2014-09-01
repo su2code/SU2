@@ -60,5 +60,5 @@ inline void CFluidModel::SetTDState_rhoe (double rho, double e ) { }
 inline void CFluidModel::SetTDState_PT (double P, double T ) { }
 inline void CFluidModel::SetTDState_Prho (double P, double rho ) { }
 inline void CFluidModel::SetTDState_hs (double h, double s ) { }
-//inline void CFluidModel::SetTDState_Ps (double P, double s ) { }
+inline void CFluidModel::SetTDState_rhoT (double rho, double T ) { }
 inline void CFluidModel::SetEnergy_Prho (double P, double rho ) { }
