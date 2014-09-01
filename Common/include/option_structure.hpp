@@ -646,13 +646,16 @@ enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
   DENSITY_VELOCITY = 2,         /*!< \brief User specifies density and velocity, and flow direction. */
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
-  SUPERSONIC_INFLOW = 4           /*!< \brief User specifies static pressure. */
+  TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
+  STATIC_SUPERSONIC_INFLOW = 5 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
 };
+
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
-("SUPERSONIC_INFLOW", SUPERSONIC_INFLOW);
+("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
+("STATIC_SUPERSONIC_INFLOW", STATIC_SUPERSONIC_INFLOW);
 
 /*!
  * \brief types inlet boundary treatments
