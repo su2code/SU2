@@ -669,8 +669,8 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	double sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -784,8 +784,8 @@ void CCentJSTArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *va
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -991,8 +991,8 @@ void CCentLax_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
@@ -1104,8 +1104,8 @@ void CCentLaxArtComp_AdjFlow::ComputeResidual (double *val_resconv_i, double *va
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
 	/*--- Compute streching factor ---*/
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda),Param_p);
+	Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
+	Phi_j = pow(Lambda_j/(4.0*MeanLambda), Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j);
   
 	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));

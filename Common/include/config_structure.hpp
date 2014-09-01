@@ -238,7 +238,6 @@ private:
 	unsigned short nMultiLevel;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	double
-	MG_CFLRedCoeff,		/*!< \brief CFL reduction coefficient on the MG coarse level. */
 	CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
 	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
@@ -1869,6 +1868,13 @@ public:
 	 * \return CFL number for each grid.
 	 */
 	double GetCFL(unsigned short val_mesh);
+  
+  /*!
+	 * \brief Get the Courant Friedrich Levi number for each grid.
+	 * \param[in] val_mesh - Index of the mesh were the CFL is applied.
+	 * \return CFL number for each grid.
+	 */
+	void SetCFL(unsigned short val_mesh, double val_cfl);
 
 	/*!
 	 * \brief Get the Courant Friedrich Levi number for each grid, for each species
