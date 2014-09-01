@@ -1903,6 +1903,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
     ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
     
+
     if (viscous) {
       
     	if (ideal_gas) {
@@ -1936,9 +1937,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
     		Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds()); config->SetDensity_FreeStream(Density_FreeStream);
     		config->SetDensity_FreeStream(Density_FreeStream);
-    		Pressure_FreeStream  = Density_FreeStream*config->GetGas_Constant()*Temperature_FreeStream;
+    		FluidModel->SetTDState_rhoT(Density_FreeStream, Temperature_FreeStream);
+    		Pressure_FreeStream  = FluidModel->GetPressure();
     		config->SetPressure_FreeStream(Pressure_FreeStream);
-    		Energy_FreeStream = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One) + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+    		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
         
     	} else {
     		FluidModel->SetViscosityModel(config);

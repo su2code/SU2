@@ -85,7 +85,12 @@ void CIdealGas::SetTDState_hs (double h, double s ){
 
 }
 
+void CIdealGas::SetTDState_rhoT (double rho, double T ){
 
+	double e = T*Gas_Constant/Gamma_Minus_One;
+	SetTDState_rhoe(rho, e);
+
+}
 
 
 
