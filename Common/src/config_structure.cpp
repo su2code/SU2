@@ -1054,7 +1054,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY:FFD point inversion */
 
   /* DESCRIPTION: Number of total iterations in the FFD point inversion */
-  addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 1000);
+  addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-8);

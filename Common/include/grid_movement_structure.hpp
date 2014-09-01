@@ -421,9 +421,8 @@ public:
 	 * \param[in] tol - Level of convergence of the iterative method.
 	 * \param[in] it_max - Maximal number of iterations.
 	 * \return Parametric coordinates of the point.
-	 * \attention Does this function work in boxes with degree greater than 9?. See ONERA M6 example
-	 */		
-	double *GetParametricCoord_Iterative(double *xyz, double *guess, double tol, unsigned long it_max);
+	 */
+	double *GetParametricCoord_Iterative(double *xyz, double *guess, CConfig *config);
 	
 	/*! 
 	 * \brief Compute the cross product.
