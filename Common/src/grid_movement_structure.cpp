@@ -1132,8 +1132,8 @@ double CVolumetricMovement::GetWedge_Volume(double CoordCorners[8][3]) {
   double r1[3], r2[3], r3[3], CrossProduct[3], Volume;
   
   Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[2];
+  Coord_1 = CoordCorners[2];
+  Coord_2 = CoordCorners[1];
   Coord_3 = CoordCorners[5];
   
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1145,12 +1145,12 @@ double CVolumetricMovement::GetWedge_Volume(double CoordCorners[8][3]) {
 	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
+    
   Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[5];
+  Coord_1 = CoordCorners[5];
+  Coord_2 = CoordCorners[1];
   Coord_3 = CoordCorners[4];
   
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -1166,8 +1166,8 @@ double CVolumetricMovement::GetWedge_Volume(double CoordCorners[8][3]) {
   Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[4];
-  Coord_2 = CoordCorners[5];
+  Coord_1 = CoordCorners[5];
+  Coord_2 = CoordCorners[4];
   Coord_3 = CoordCorners[3];
   
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -2739,7 +2739,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
           
 					/*--- Find the parametric coordinate ---*/
           
-					ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config->GetFFD_Tol(), config->GetnFFD_Iter());
+					ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config);
           
 					/*--- If the parametric coordinates are in (0,1) the point belongs to the FFDBox ---*/
           
@@ -2771,6 +2771,11 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 						ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
             
 					}
+          else {
+            cout << "Please check this point: (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> ("
+            << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<")."<< endl;
+          }
+          
 				}
 			}
     }
@@ -2807,7 +2812,7 @@ void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config
 		for (jOrder = 0; jOrder < FFDBoxChild->GetmOrder(); jOrder++)
 			for (kOrder = 0; kOrder < FFDBoxChild->GetnOrder(); kOrder++) {
 				CartCoord = FFDBoxChild->GetCoordControlPoints(iOrder, jOrder, kOrder);
-				ParamCoord = FFDBoxParent->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config->GetFFD_Tol(), config->GetnFFD_Iter());
+				ParamCoord = FFDBoxParent->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config);
 				FFDBoxChild->SetParCoordControlPoints(ParamCoord, iOrder, jOrder, kOrder);
 			}
 
@@ -2896,7 +2901,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 			/*--- Find the parametric coordinate using as ParamCoordGuess the previous value ---*/
       
 			ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
-			ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config->GetFFD_Tol(), config->GetnFFD_Iter());
+			ParamCoord = FFDBox->GetParametricCoord_Iterative(CartCoord, ParamCoordGuess, config);
 					
 			/*--- Set the new value of the parametric coordinates ---*/
       
@@ -6390,12 +6395,15 @@ void CFreeFormDefBox::GetFFDHessian(double *uvw, double *xyz, double **val_Hessi
   
 }
 
-double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, double tol,
-																										 unsigned long it_max) {
+double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *ParamCoordGuess, CConfig *config) {
   
 	double IndepTerm[3], SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3];
 	unsigned short iDim, jDim, RandonCounter;
 	unsigned long iter;
+  
+  double tol = config->GetFFD_Tol();
+  unsigned short it_max = config->GetnFFD_Iter();
+  unsigned short Random_Trials = 500;
   
 	/*--- Allocate the Hessian ---*/
   
@@ -6410,7 +6418,7 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 	
   /*--- External iteration ---*/
 
-	for (iter = 0; iter < it_max; iter++) {
+	for (iter = 0; iter < it_max*Random_Trials; iter++) {
 		  
 		/*--- The independent term of the solution of our system is -Gradient(sol_old) ---*/
 
@@ -6471,19 +6479,18 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 
 		MinNormError = min(NormError, MinNormError);
 		  
-		/*--- If we have no convergence with 200 iterations probably we are in a local minima.
-     If we are outside the FFDBox then NormError > sqrt(3) ---*/
+		/*--- If we have no convergence with Random_Trials iterations probably we are in a local minima. ---*/
     
-		if ( (((iter % 200) == 0) && (iter != 0)) || (NormError > 1.8) ) {
+		if ( (((iter % it_max) == 0) && (iter != 0)) || (NormError > 1.8) ) {
 			RandonCounter++;
-      for (iDim = 0; iDim < nDim; iDim++)
-        ParamCoord[iDim] = double(rand())/double(RAND_MAX);
-      
-      if (RandonCounter == 50) {
-        cout << endl << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<"."<< endl;
-        break;
+      if (RandonCounter == Random_Trials) {
+        cout << endl << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Min Error: "<< MinNormError <<". Iter: "<< iter <<"."<< endl;
       }
-      
+      else {
+        SOR_Factor = 0.1;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ParamCoord[iDim] = double(rand())/double(RAND_MAX);
+      }
 		}
     
 	}
@@ -6492,8 +6499,14 @@ double *CFreeFormDefBox::GetParametricCoord_Iterative(double *xyz, double *Param
 		delete [] Hessian[iDim];
 	delete [] Hessian;
 
-	/*--- Real Solution is now ParamCoord; Return it ---*/
+  /*--- The code has hit the max number of iterations ---*/
+
+  if (iter == it_max*Random_Trials) {
+    cout << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Increase the value of FFD_ITERATIONS." << endl;
+  }
   
+	/*--- Real Solution is now ParamCoord; Return it ---*/
+
 	return ParamCoord;
   
 }

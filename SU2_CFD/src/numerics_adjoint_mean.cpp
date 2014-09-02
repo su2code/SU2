@@ -2047,16 +2047,20 @@ CAvgGradCorrectedArtComp_AdjFlow::~CAvgGradCorrectedArtComp_AdjFlow(void) {
 }
 
 void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii, double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
+  
   unsigned short iVar, jVar, iDim, jDim;
   double ViscDens_i, ViscDens_j, dist_ij_2;
   
   /*--- States in point i ---*/
+  
   ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / DensityInc_i;
   
   /*--- States in point j ---*/
+  
   ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_j;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
+  
   dist_ij_2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
@@ -2064,6 +2068,7 @@ void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(double *val_residual_i, d
   }
   
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge, weiss correction ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPsiVar_Edge[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -2076,12 +2081,14 @@ void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(double *val_residual_i, d
   }
   
   /*--- Average of the derivatives of the adjoint variables ---*/
+  
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++)
       Mean_GradPhi[iDim][jDim] = Mean_GradPsiVar[iDim+1][jDim];
   }
   
   /*--- Compute the viscous residual ---*/
+  
   if (nDim == 3) {
     
 		val_residual_i[0] = 0.0;
@@ -2094,22 +2101,6 @@ void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(double *val_residual_i, d
 		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1] + Mean_GradPhi[1][2] * Normal[2]);
 		val_residual_j[3] = ViscDens_j * (Mean_GradPhi[2][0] * Normal[0] + Mean_GradPhi[2][1] * Normal[1] + Mean_GradPhi[2][2] * Normal[2]);
     
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_ij[iVar][jVar] = 0.0;
-          val_Jacobian_ii[iVar][jVar] = 0.0;
-          
-        }
-      }
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_ji[iVar][jVar] = 0.0;
-          val_Jacobian_jj[iVar][jVar] = 0.0;
-        }
-      }
-    }
-    
   } else if (nDim == 2) {
     
 		val_residual_i[0] = 0.0;
@@ -2120,45 +2111,103 @@ void CAvgGradCorrectedArtComp_AdjFlow::ComputeResidual(double *val_residual_i, d
 		val_residual_j[1] = ViscDens_j * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1]);
 		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1]);
     
-    if (implicit) {
+  }
+    
+  if (implicit) {
+    
+//    if (dist_ij_2 == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           val_Jacobian_ij[iVar][jVar] = 0.0;
           val_Jacobian_ii[iVar][jVar] = 0.0;
-          
-        }
-      }
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
           val_Jacobian_ji[iVar][jVar] = 0.0;
           val_Jacobian_jj[iVar][jVar] = 0.0;
         }
       }
-    }
+//    }
+    
+//    else {
+//      
+//      GetViscousArtCompProjJacs(Laminar_Viscosity_i, Eddy_Viscosity_i, sqrt(dist_ij_2), UnitNormal,
+//                                Area, val_Jacobian_ii, val_Jacobian_ij);
+//      
+//      /*--- Compute transponse ---*/
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ii[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_ij[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ii[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//      GetViscousArtCompProjJacs(Laminar_Viscosity_j, Eddy_Viscosity_j, sqrt(dist_ij_2), UnitNormal,
+//                                Area, val_Jacobian_ji, val_Jacobian_jj);
+//      
+//      /*--- Compute transponse ---*/
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_ji[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ji[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ji[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//    }
     
   }
+  
+  
 }
 
 void CAvgGradArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *val_residual_j,
                                           double **val_Jacobian_ii, double **val_Jacobian_ij,
                                           double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config) {
   unsigned short iVar, jVar, iDim, jDim;
-	double ViscDens_i, ViscDens_j;
+  double ViscDens_i, ViscDens_j, dist_ij_2, Edge_Vector[3];
   
 	/*--- States in the point i ---*/
+  
 	ViscDens_i = (Laminar_Viscosity_i + Eddy_Viscosity_i) / DensityInc_i;
   
 	/*--- States in the point j ---*/
+  
 	ViscDens_j = (Laminar_Viscosity_j + Eddy_Viscosity_j) / DensityInc_j;
   
+  /*--- Compute vector going from iPoint to jPoint ---*/
+  
+  dist_ij_2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+  }
+  
 	/*--- Average of the derivatives of the adjoint variables ---*/
+  
 	for (iDim = 0; iDim < nDim; iDim++) {
 		for (jDim = 0; jDim < nDim; jDim++)
 			Mean_GradPhi[iDim][jDim] =  0.5*(PsiVar_Grad_i[iDim+1][jDim]+PsiVar_Grad_j[iDim+1][jDim]);
 	}
   
 	/*--- Compute the adjoint viscous residual ---*/
+  
 	if (nDim == 3) {
     
 		val_residual_i[0] = 0.0;
@@ -2171,22 +2220,6 @@ void CAvgGradArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *va
 		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1] + Mean_GradPhi[1][2] * Normal[2]);
 		val_residual_j[3] = ViscDens_j * (Mean_GradPhi[2][0] * Normal[0] + Mean_GradPhi[2][1] * Normal[1] + Mean_GradPhi[2][2] * Normal[2]);
     
-    if (implicit) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_ij[iVar][jVar] = 0.0;
-          val_Jacobian_ii[iVar][jVar] = 0.0;
-        }
-      }
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_ji[iVar][jVar] = 0.0;
-          val_Jacobian_jj[iVar][jVar] = 0.0;
-        }
-      }
-    }
-    
   } else if (nDim == 2) {
     
 		val_residual_i[0] = 0.0;
@@ -2197,23 +2230,68 @@ void CAvgGradArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *va
 		val_residual_j[1] = ViscDens_j * (Mean_GradPhi[0][0] * Normal[0] + Mean_GradPhi[0][1] * Normal[1]);
 		val_residual_j[2] = ViscDens_j * (Mean_GradPhi[1][0] * Normal[0] + Mean_GradPhi[1][1] * Normal[1]);
     
-    if (implicit) {
+	}
+  
+  if (implicit) {
+    
+//    if (dist_ij_2 == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           val_Jacobian_ij[iVar][jVar] = 0.0;
           val_Jacobian_ii[iVar][jVar] = 0.0;
-          
-        }
-      }
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
           val_Jacobian_ji[iVar][jVar] = 0.0;
           val_Jacobian_jj[iVar][jVar] = 0.0;
         }
       }
-    }
+//    }
     
-	}
+//    else {
+//      
+//      GetViscousArtCompProjJacs(Laminar_Viscosity_i, Eddy_Viscosity_i, sqrt(dist_ij_2), UnitNormal,
+//                                Area, val_Jacobian_ii, val_Jacobian_ij);
+//      
+//      /*--- Compute transponse ---*/
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ii[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_ij[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ii[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//      GetViscousArtCompProjJacs(Laminar_Viscosity_j, Eddy_Viscosity_j, sqrt(dist_ij_2), UnitNormal,
+//                                Area, val_Jacobian_ji, val_Jacobian_jj);
+//      
+//      /*--- Compute transponse ---*/
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_ji[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ji[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          Jacobian[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
+//      
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        for (jVar = 0; jVar < nVar; jVar++)
+//          val_Jacobian_ji[iVar][jVar] = Jacobian[jVar][iVar];
+//      
+//    }
+  
+  }
   
 }
 
