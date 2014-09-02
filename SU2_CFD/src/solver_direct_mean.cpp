@@ -5399,7 +5399,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   bool Update_AoA = false;
   double Target_CL, AoA_inc, AoA, Eps_Factor = 1e2;
   double DampingFactor = config->GetDamp_Fixed_CL();
-  double Beta = config->GetAoS();
+  double Beta = config->GetAoS()*PI_NUMBER/180.0;
   double Vel_Infty[3], Vel_Infty_Mag;
   
   int rank = MASTER_NODE;
@@ -5422,7 +5422,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Cauchy_Counter = 0;
       for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
         Cauchy_Serie[iCounter] = 0.0;
-      AoA_old = config->GetAoA();
+      AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     }
     
     /*--- Check on the level of convergence in the lift coefficient. ---*/
@@ -5472,7 +5472,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Retrieve the old AoA. ---*/
     
-    AoA_old = config->GetAoA();
+    AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
     /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
     
@@ -5483,7 +5483,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     if (iMesh == MESH_0)
       AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
     else
-      AoA = config->GetAoA();
+      AoA = config->GetAoA()*PI_NUMBER/180.0;
     
     /*--- Update the freestream velocity vector at the farfield ---*/
     
@@ -5519,7 +5519,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     if (iMesh == MESH_0) {
       for (iDim = 0; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-      config->SetAoA(AoA);
+      config->SetAoA(AoA*180.0/PI_NUMBER);
     }
     
     /*--- Reset the local cauchy criteria ---*/
@@ -5538,7 +5538,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << " Target CL: " << config->GetTarget_CL();
     cout << ", Current CL: " << Total_CLift;
-    cout << ", Current AoA: " << config->GetAoA()*180.0/PI_NUMBER << " deg" << endl;
+    cout << ", Current AoA: " << config->GetAoA() << " deg" << endl;
     cout << "-------------------------------------------------------------------------" << endl;
   }
   

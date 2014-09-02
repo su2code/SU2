@@ -2656,6 +2656,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
 
+  /*--- Check for 2nd order w/ limiting for JST and correct ---*/
+  
+  if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
+    SpatialOrder_Flow = SECOND_ORDER;
+  
+  if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
+    SpatialOrder_AdjFlow = SECOND_ORDER;
 
   delete [] tmp_smooth;
 
