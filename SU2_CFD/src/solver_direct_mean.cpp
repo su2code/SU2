@@ -6204,14 +6204,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 		}
                 }
                 StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-//                cout << StaticEnthalpy_e << " "<< Entropy_e << endl;
 
                 FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
 
                 Density_e = FluidModel->GetDensity();
                 StaticEnergy_e = FluidModel->GetStaticEnergy();
 
-                Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;              /// Change with getStaticEnergy()
+                Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
 
                 if (tkeNeeded) Energy_e += GetTke_Inf();
 
@@ -6254,9 +6253,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 FluidModel->SetTDState_Prho(Pressure_e, Density_e);
 
-//                cout << Marker_Tag << endl;
-
-//                getchar();
                 Velocity2_e = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++) {
                   Velocity_e[iDim] = Velocity_i[iDim];
@@ -6269,6 +6265,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 break;
 
             case STATIC_SUPERSONIC_INFLOW_PT:
+
 			    /*--- Retrieve the specified total conditions for this boundary. ---*/
 
 			    if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -6295,7 +6292,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				Density_e = FluidModel->GetDensity();
 				StaticEnergy_e = FluidModel->GetStaticEnergy();
 
-				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;              /// Change with getStaticEnergy()
+				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
 
 				if (tkeNeeded) Energy_e += GetTke_Inf();
 
@@ -6332,7 +6329,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				Density_e = FluidModel->GetDensity();
 				StaticEnergy_e = FluidModel->GetStaticEnergy();
 
-				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;              /// Change with getStaticEnergy()
+				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
 
 				if (tkeNeeded) Energy_e += GetTke_Inf();
 
