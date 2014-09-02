@@ -219,9 +219,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Critical Temperature, default value for AIR */
   addDoubleOption("CRITICAL_TEMPERATURE", Temperature_Critical, 131.00);
   /* DESCRIPTION: Critical Pressure, default value for MDM */
-  addDoubleOption("CRITICAL_PRESSURE", Pressure_Critical, 3588550);
+  addDoubleOption("CRITICAL_PRESSURE", Pressure_Critical, 3588550.0);
   /* DESCRIPTION: Critical Density, default value for MDM */
-  addDoubleOption("CRITICAL_DENSITY", Density_Critical, 263);
+  addDoubleOption("CRITICAL_DENSITY", Density_Critical, 263.0);
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
   /* DESCRIPTION: Critical Density, default value for MDM */
