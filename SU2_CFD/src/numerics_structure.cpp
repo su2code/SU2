@@ -2476,6 +2476,7 @@ void CNumerics::GetViscousArtCompProjJacs(double val_laminar_viscosity,
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 	}
+  
 }
 
 void CNumerics::CreateBasis(double *val_Normal) {

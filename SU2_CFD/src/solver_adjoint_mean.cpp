@@ -4769,61 +4769,58 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
-  if (true) {
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
-    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-      
-      /*--- Points in edge, coordinates and normal vector---*/
-      
-      iPoint = geometry->edge[iEdge]->GetNode(0);
-      jPoint = geometry->edge[iEdge]->GetNode(1);
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-      numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-      
-      /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
-      
-      numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
-                                solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
-      numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
-      
-      /*--- Gradient of Adjoint Variables ---*/
-      
-      numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
-      
-      /*--- Viscosity and eddy viscosity---*/
-      
-      if (compressible) {
-        numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
-                                      solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
-        numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
-                                   solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
-      }
-      if (incompressible || freesurface) {
-        numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
-                                solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
-        numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                      solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc());
-        numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                   solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosityInc());
-      }
-      
-      /*--- Compute residual in a non-conservative way, and update ---*/
-      
-      numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-      
-      /*--- Update adjoint viscous residual ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual_i);
-      LinSysRes.AddBlock(jPoint, Residual_j);
-      
-      if (implicit) {
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-        Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
-        Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
-        Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
-      }
-      
+    /*--- Points in edge, coordinates and normal vector---*/
+    
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    
+    /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
+    
+    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
+                              solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
+    numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
+    
+    /*--- Gradient of Adjoint Variables ---*/
+    
+    numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
+    
+    /*--- Viscosity and eddy viscosity---*/
+    
+    if (compressible) {
+      numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(),
+                                    solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
+      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
+                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
     }
+    if (incompressible || freesurface) {
+      numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
+                              solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
+      numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
+                                    solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc());
+      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
+                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosityInc());
+    }
+    
+    /*--- Compute residual in a non-conservative way, and update ---*/
+    
+    numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+    
+    /*--- Update adjoint viscous residual ---*/
+    
+    LinSysRes.SubtractBlock(iPoint, Residual_i);
+    LinSysRes.AddBlock(jPoint, Residual_j);
+    
+    if (implicit) {
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_ij);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_ji);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_jj);
+    }
+    
   }
   
 }
