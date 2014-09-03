@@ -137,7 +137,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nVar = nDim+2;
-    nPrimVar = nDim+8; nPrimVarGrad = nDim+4;
+    nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     nSecondaryVar = 2; nSecondaryVarGrad = 2;
   }
   
@@ -8824,12 +8824,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Define geometry constants in the solver structure
    Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta,lamMu,EddyMu),
    FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,lamMu,EddyMu, dist),
-   Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c,lamMu,EddyMu) ---*/
+   Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c,lamMu,EddyMu,ThCond,Cp) ---*/
   nDim = geometry->GetnDim();
   if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nVar = nDim+2;
-    nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     nSecondaryVar = 8; nSecondaryVarGrad = 2;
   }
   
@@ -9343,7 +9343,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
     /*--- Incompressible flow, primitive variables nDim+3, (P,vx,vy,vz,rho,beta),
      FreeSurface Incompressible flow, primitive variables nDim+4, (P,vx,vy,vz,rho,beta,dist),
-     Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c) ---*/
+     Compressible flow, primitive variables nDim+5, (T,vx,vy,vz,P,rho,h,c,lamMu,eddyMu,ThCond,Cp) ---*/
     
     if (compressible) {
     	RightSol = node[iPoint]->SetPrimVar_Compressible(eddy_visc, turb_ke, FluidModel);

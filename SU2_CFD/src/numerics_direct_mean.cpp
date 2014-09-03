@@ -2740,13 +2740,17 @@ void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   }
   
   /*--- Laminar and Eddy viscosity ---*/
-  Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-  Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  Laminar_Viscosity_i = V_i[nDim+5];    Laminar_Viscosity_j = V_j[nDim+5];
+  Eddy_Viscosity_i = V_i[nDim+6];       Eddy_Viscosity_j = V_j[nDim+6];
+  Thermal_Conductivity_i = V_i[nDim+7]; Thermal_Conductivity_j = V_j[nDim+7];
+  Cp_i = V_i[nDim+8]; Cp_j = V_j[nDim+8];
   
   /*--- Mean Viscosities and turbulent kinetic energy---*/
-  Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
-  Mean_Eddy_Viscosity    = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
-  Mean_turb_ke           = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  Mean_Cp                   = 0.5*(Cp_i + Cp_j);
   
   /*--- Mean gradient approximation ---*/
   for (iVar = 0; iVar < nDim+1; iVar++) {
@@ -2756,7 +2760,8 @@ void CAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_
   }
   
   /*--- Get projected flux tensor ---*/
-  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  GetViscousProjFlux( Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
+		              Mean_Thermal_Conductivity, Mean_Cp );
   
   /*--- Update viscous residual ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -2936,6 +2941,8 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
   
   Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
   Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+  Thermal_Conductivity_i = V_i[nDim+7]; Thermal_Conductivity_j = V_j[nDim+7];
+  Cp_i = V_i[nDim+8]; Cp_j = V_j[nDim+8];
   
   for (iVar = 0; iVar < nDim+3; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
@@ -2945,9 +2952,11 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
   
   /*--- Mean Viscosities and turbulent kinetic energy ---*/
   
-  Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
-  Mean_Eddy_Viscosity    = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
-  Mean_turb_ke           = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
+  Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
+  Mean_Cp                   = 0.5*(Cp_i + Cp_j);
   
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   
@@ -2967,7 +2976,8 @@ void CAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double **val_
   
   /*--- Get projected flux tensor ---*/
   
-  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  GetViscousProjFlux( Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
+		              Mean_Thermal_Conductivity, Mean_Cp );
   
   /*--- Save residual value ---*/
   

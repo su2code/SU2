@@ -80,6 +80,8 @@ public:
   Thermal_Conductivity_j, /*!< \brief Thermal conductivity at point j. */
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
+  double Cp_i, /*!< \brief Cp at point i. */
+  Cp_j;         /*!< \brief Cp at point j. */
   double *Theta_v; /*!< \brief Characteristic vibrational temperature */
 	double Eddy_Viscosity_i,	/*!< \brief Eddy viscosity at point i. */
 	Eddy_Viscosity_j;			/*!< \brief Eddy viscosity at point j. */
@@ -830,13 +832,16 @@ public:
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[in] val_laminar_viscosity - Laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
+	 * \param[in] val_thermal_conductivity - Thermal Conductivity.
+	 * \param[in] val_eddy_conductivity - Eddy Conductivity.
 	 */
     
 	void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
                           double val_turb_ke, double *val_normal,
                           double val_laminar_viscosity,
-                          double val_eddy_viscosity);
-  
+                          double val_eddy_viscosity,
+                          double val_thermal_conductivity,
+                          double val_eddy_conductivity);
     
     /*!
 	 * * \brief Compute the projection of the viscous fluxes into a direction.
@@ -2987,11 +2992,14 @@ public:
  */
 class CAvgGrad_Flow : public CNumerics {
 private:
-	unsigned short iDim, iVar, jVar;		/*!< \brief Iterators in dimension an variable. */
-	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
-	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
-	**Mean_GradPrimVar,						/*!< \brief Mean value of the gradient. */
-	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
+	unsigned short iDim, iVar, jVar;	   /*!< \brief Iterators in dimension an variable. */
+	double *Mean_PrimVar,				   /*!< \brief Mean primitive variables. */
+	*PrimVar_i, *PrimVar_j,				   /*!< \brief Primitives variables at point i and 1. */
+	**Mean_GradPrimVar,					   /*!< \brief Mean value of the gradient. */
+	Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
+	Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
+	Mean_Thermal_Conductivity,             /*!< \brief Mean value of the thermal conductivity. */
+	Mean_Cp,                               /*!< \brief Mean value of the Cp. */
 	Mean_turb_ke,				/*!< \brief Mean value of the turbulent kinetic energy. */
 	*ProjFlux,	/*!< \brief Projection of the viscous fluxes. */
 	dist_ij;						/*!< \brief Length of the edge and face. */
@@ -3298,9 +3306,12 @@ private:
 	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
 	*Edge_Vector,									/*!< \brief Vector form point i to point j. */
 	**Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,	/*!< \brief Mean value of the gradient. */
-	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,			/*!< \brief Mean value of the viscosity. */
-	Mean_turb_ke,				/*!< \brief Mean value of the turbulent kinetic energy. */
-	dist_ij_2,					/*!< \brief Length of the edge and face. */
+	Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
+	Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
+	Mean_Thermal_Conductivity,   /*!< \brief Mean value of the thermal conductivity. */
+	Mean_Cp,                     /*!< \brief Mean value of the specific heat. */
+	Mean_turb_ke,				 /*!< \brief Mean value of the turbulent kinetic energy. */
+	dist_ij_2,					 /*!< \brief Length of the edge and face. */
 	*ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
 	bool implicit;			/*!< \brief Implicit calculus. */
     

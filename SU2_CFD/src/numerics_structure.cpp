@@ -1743,15 +1743,16 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
                                    double **val_gradprimvar, double val_turb_ke,
                                    double *val_normal,
                                    double val_laminar_viscosity,
-                                   double val_eddy_viscosity) {
+                                   double val_eddy_viscosity,
+                                   double val_thermal_conductivity,
+                                   double val_mean_cp) {
 
 	unsigned short iVar, iDim, jDim;
 	double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
 	Density = val_primvar[nDim+2];
 
 	total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-	Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-	heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
+	heat_flux_factor = val_thermal_conductivity + val_mean_cp*val_eddy_viscosity/Prandtl_Turb;
 
 	div_vel = 0.0;
 	for (iDim = 0 ; iDim < nDim; iDim++)

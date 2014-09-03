@@ -1413,6 +1413,12 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetSpecificHeatCp(double Cp);
+
+	/*!
+	 * \brief A virtual member.
 	 */		
 	virtual void SetVorticity(void);
 
@@ -2509,6 +2515,11 @@ public:
 	 * \brief Set the laminar viscosity.
 	 */
 	void SetThermalConductivity(double thermalConductivity);
+
+	/*!
+	 * \brief Set the specific heat Cp.
+	 */
+	void SetSpecificHeatCp(double Cp);
 
 	/*!
 	 * \brief Set the vorticity value.
