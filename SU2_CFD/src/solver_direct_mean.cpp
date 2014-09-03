@@ -2656,7 +2656,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool engine           = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
-  
+  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
   if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
@@ -2697,11 +2698,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS){
     	SetPrimitive_Gradient_GG(geometry, config);
-    	if (compressible) SetSecondary_Gradient_GG(geometry, config);
+    	if (compressible && !ideal_gas) SetSecondary_Gradient_GG(geometry, config);
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
     	SetPrimitive_Gradient_LS(geometry, config);
-    	if (compressible) SetSecondary_Gradient_LS(geometry, config);
+    	if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
     }
 
     
@@ -2709,7 +2710,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     if ((limiter) && (iMesh == MESH_0)){
     	SetPrimitive_Limiter(geometry, config);
-    	SetSecondary_Limiter(geometry, config);
+    	if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
     }
     
   }
@@ -9310,7 +9311,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool tkeNeeded            = (turb_model == SST);
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
-  
+  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
   if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
@@ -9363,11 +9365,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS){
 	  SetPrimitive_Gradient_GG(geometry, config);
-	  if (compressible) SetSecondary_Gradient_GG(geometry, config);
+	  if (compressible && !ideal_gas) SetSecondary_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
 	  SetPrimitive_Gradient_LS(geometry, config);
-	  if (compressible) SetSecondary_Gradient_LS(geometry, config);
+	  if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
   }
   
   /*--- Compute the limiter in case we need it in the turbulence model
