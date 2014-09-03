@@ -233,7 +233,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*--- Options related to Costant Viscosity Model ---*/
 
-  /* DESCRIPTION: Critical Temperature, default value for AIR */
+  /* DESCRIPTION: default value for AIR */
   addDoubleOption("MU_CONSTANT", Mu_ConstantND , 1.716E-5);
 
   /*--- Options related to Sutherland Viscosity Model ---*/
@@ -244,6 +244,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MU_T_REF", Mu_Temperature_RefND, 273.15);
   /* DESCRIPTION: Sutherland constant, default value for AIR SI */
   addDoubleOption("SUTHERLAND_CONSTANT", Mu_SND, 110.4);
+
+  /*--- Options related to Thermal Conductivity Model ---*/
+
+  addEnumOption("CONDUCTIVITY_MODEL", Kind_ConductivityModel, ConductivityModel_Map, CONSTANT_PRANDTL);
+
+ /*--- Options related to Costant Viscosity Model ---*/
+
+ /* DESCRIPTION: default value for AIR */
+  addDoubleOption("KT_CONSTANT", Kt_ConstantND , 0.0257);
 
   /* DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values) */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);

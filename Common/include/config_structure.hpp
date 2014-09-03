@@ -263,6 +263,7 @@ private:
 	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
 	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
 	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
+	Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
 	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
@@ -532,6 +533,7 @@ private:
 	Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
 	Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
 	Mu_ConstantND,   /*!< \brief Constant Viscosity for CostantViscosity model.  */
+	Kt_ConstantND,   /*!< \brief Constant Thermal Conductivity for CostantConductivity model.  */
 	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
 	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
 	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
@@ -562,6 +564,7 @@ private:
 	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization. */
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
+	Conductivity_Ref,    /*!< \brief Reference conductivity for non-dimensionalization. */
 	Energy_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
 	Wall_Temperature,    /*!< \brief Temperature at an isotropic wall in Kelvin. */
 	Omega_Ref,        /*!< \brief Reference angular velocity for non-dimensionalization. */
@@ -1318,6 +1321,12 @@ public:
 	double GetViscosity_Ref(void);
 
 	/*!
+	 * \brief Get the value of the reference conductivity for non-dimensionalization.
+	 * \return Reference conductivity for non-dimensionalization.
+	 */
+	double GetConductivity_Ref(void);
+
+	/*!
 	 * \brief Get the value of the reference angular velocity for non-dimensionalization.
 	 * \return Reference angular velocity for non-dimensionalization.
 	 */
@@ -1682,6 +1691,12 @@ public:
 	 * \return Value of the Froude number.
 	 */
 	void SetViscosity_Ref(double val_viscosity_ref);
+
+   /*!
+    * \brief Set the Froude number for free surface problems.
+	* \return Value of the Froude number.
+	*/
+	void SetConductivity_Ref(double val_conductivity_ref);
 
   /*!
 	 * \brief Set the Froude number for free surface problems.
@@ -2443,10 +2458,23 @@ public:
 	unsigned short GetKind_ViscosityModel(void);
 
 	/*!
+	 * \brief Get the value of the thermal conductivity .
+	 * \return Critical temperature.
+	 */
+	unsigned short GetKind_ConductivityModel(void);
+
+	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
 	 */
 	double GetMu_ConstantND(void);
+
+	/*!
+	 * \brief Get the value of the non-dimensional thermal conductivity.
+	 * \return Critical temperature.
+	 */
+	double GetKt_ConstantND(void);
+
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.
@@ -2470,6 +2498,13 @@ public:
 	 * \return Critical temperature.
 	 */
 	void SetMu_ConstantND(double mu_const);
+
+	/*!
+	 * \brief Get the value of the critical temperature.
+	 * \return Critical temperature.
+	 */
+	void SetKt_ConstantND(double kt_const);
+
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.

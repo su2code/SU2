@@ -184,6 +184,8 @@ inline double CConfig::GetTime_Ref(void) { return Time_Ref; }
 
 inline double CConfig::GetViscosity_Ref(void) { return Viscosity_Ref; }
 
+inline double CConfig::GetConductivity_Ref(void) { return Conductivity_Ref; }
+
 inline double CConfig::GetOmega_Ref(void) { return Omega_Ref; }
 
 inline double CConfig::GetForce_Ref(void) { return Force_Ref; }
@@ -321,6 +323,8 @@ inline void CConfig::SetGas_Constant(double val_gas_constant) { Gas_Constant = v
 
 inline void CConfig::SetViscosity_Ref(double val_viscosity_ref) { Viscosity_Ref = val_viscosity_ref; }
 
+inline void CConfig::SetConductivity_Ref(double val_conductivity_ref) { Conductivity_Ref = val_conductivity_ref; }
+
 inline void CConfig::SetEnergy_Ref(double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
 inline double CConfig::GetAoA(void) { return AoA; }
@@ -418,7 +422,11 @@ inline double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
 
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 
+inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }
+
 inline double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }
+
+inline double CConfig::GetKt_ConstantND(void) { return Kt_ConstantND; }
 
 inline double CConfig::GetMu_RefND(void) { return Mu_RefND; }
 
@@ -433,6 +441,8 @@ inline void CConfig::SetMu_RefND(double mu_ref) { Mu_RefND = mu_ref; }
 inline void CConfig::SetMu_Temperature_RefND(double mu_Tref) {Mu_Temperature_RefND = mu_Tref; }
 
 inline void CConfig::SetMu_SND(double mu_s) {Mu_SND = mu_s; }
+
+inline void CConfig::SetKt_ConstantND(double kt_const) { Kt_ConstantND = kt_const; }
 
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 

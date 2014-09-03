@@ -27,6 +27,7 @@ CIdealGas::CIdealGas() : CFluidModel() {
 	Gamma = 0.0;
 	Gamma_Minus_One = 0.0;
 	Gas_Constant = 0.0;
+	Cp = 0.0;
 }
 
 
@@ -34,8 +35,8 @@ CIdealGas::CIdealGas(double gamma, double R ) : CFluidModel() {
 	Gamma = gamma;
 	Gamma_Minus_One = Gamma - 1.0;
 	Gas_Constant = R;
-
- }
+	Cp = Gamma/Gamma_Minus_One*Gas_Constant;
+}
 
 
 CIdealGas::~CIdealGas(void) {

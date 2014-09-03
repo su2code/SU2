@@ -29,31 +29,32 @@ inline double CFluidModel::GetDensity () { return Density; }
 inline double CFluidModel::GetEntropy () { return Entropy; }
 inline double CFluidModel::GetStaticEnergy () { return StaticEnergy; }
 inline double CFluidModel::GetTemperature () { return Temperature; }
+inline double CFluidModel::GetCp () { return Cp; }
 inline double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
 inline double CFluidModel::GetdPde_rho () { return dPde_rho; }
 inline double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
 inline double CFluidModel::GetdTde_rho () { return dTde_rho; }
 
 inline double CFluidModel::GetLaminarViscosity (double T, double rho) {
-        DynamicViscosity->SetViscosity(T, rho);
-        return DynamicViscosity->GetViscosity();
+        LaminarViscosity->SetViscosity(T, rho);
+        return LaminarViscosity->GetViscosity();
 }
 inline double CFluidModel::Getdmudrho_T () {
-        return DynamicViscosity->Getdmudrho_T();
+        return LaminarViscosity->Getdmudrho_T();
 }
 inline double CFluidModel::GetdmudT_rho () {
-        return DynamicViscosity->GetdmudT_rho();
+        return LaminarViscosity->GetdmudT_rho();
 }
 
-inline double CFluidModel::GetThermalConductivity (double par1, double par2) {
-        ThermalConductivity->SetThermalConductivity(par1, par2);
-        return ThermalConductivity->GetThermalConductivity();
+inline double CFluidModel::GetThermalConductivity (double T, double rho, double mu, double cp) {
+        ThermalConductivity->SetConductivity(T, rho, mu, cp);
+        return ThermalConductivity->GetConductivity();
 }
 inline double CFluidModel::Getdktdrho_T () {
-        return ThermalConductivity->GetDerThermalConductivity_rho_T();
+        return ThermalConductivity->Getdktdrho_T();
 }
 inline double CFluidModel::GetdktdT_rho () {
-        return ThermalConductivity->GetDerThermalConductivity_T_rho();
+        return ThermalConductivity->GetdktdT_rho();
 }
 
 inline void CFluidModel::SetTDState_rhoe (double rho, double e ) { }

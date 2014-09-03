@@ -85,7 +85,7 @@ void CSutherland::SetViscosity(double T, double rho) {
 /* ---------- Thermal Conductivity Models ---------- */
 /* ------------------------------------------------- */
 
-CThermalConductivityModel::CThermalConductivityModel(void) {
+CConductivityModel::CConductivityModel(void) {
 
   /*--- Attributes initialization ---*/
 
@@ -95,12 +95,12 @@ CThermalConductivityModel::CThermalConductivityModel(void) {
 
 }
 
-CThermalConductivityModel::~CThermalConductivityModel(void) { }
+CConductivityModel::~CConductivityModel(void) { }
 
 
-CConstantThermalConductivity::CConstantThermalConductivity(void) : CThermalConductivityModel() { }
+CConstantConductivity::CConstantConductivity(void) : CConductivityModel() { }
 
-CConstantThermalConductivity::CConstantThermalConductivity(double kt_const) : CThermalConductivityModel() {
+CConstantConductivity::CConstantConductivity(double kt_const) : CConductivityModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -108,12 +108,12 @@ CConstantThermalConductivity::CConstantThermalConductivity(double kt_const) : CT
 
 }
 
-CConstantThermalConductivity::~CConstantThermalConductivity(void) { }
+CConstantConductivity::~CConstantConductivity(void) { }
 
 
-CConstantPrandtl::CConstantPrandtl(void) : CThermalConductivityModel() { }
+CConstantPrandtl::CConstantPrandtl(void) : CConductivityModel() { }
 
-CConstantPrandtl::CConstantPrandtl(double pr_const) : CThermalConductivityModel() {
+CConstantPrandtl::CConstantPrandtl(double pr_const) : CConductivityModel() {
 
   /*--- Attributes initialization ---*/
 
@@ -121,12 +121,9 @@ CConstantPrandtl::CConstantPrandtl(double pr_const) : CThermalConductivityModel(
 
 }
 
-void CConstantPrandtl::SetThermalConductivity(double par1, double par2) {
+void CConstantPrandtl::SetConductivity(double T, double rho, double mu, double cp) {
 
-	double Cp = par1;
-	double Mu = par2;
-
-	Kt = Mu*Cp/Pr_const;
+	Kt = mu*cp/Pr_const;
 	dktdrho_T = 0.0;
 	dktdT_rho = 0.0;
 
