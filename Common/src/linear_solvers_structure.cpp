@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 3.2.0 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -22,14 +22,14 @@
 
 #include "../include/linear_solvers_structure.hpp"
 
-void CSysSolve::applyGivens(const double & s, const double & c, double & h1, double & h2) {
+void CSysSolve::ApplyGivens(const double & s, const double & c, double & h1, double & h2) {
   
   double temp = c*h1 + s*h2;
   h2 = c*h2 - s*h1;
   h1 = temp;
 }
 
-void CSysSolve::generateGivens(double & dx, double & dy, double & s, double & c) {
+void CSysSolve::GenerateGivens(double & dx, double & dy, double & s, double & c) {
   
   if ( (dx == 0.0) && (dy == 0.0) ) {
     c = 1.0;
@@ -38,13 +38,13 @@ void CSysSolve::generateGivens(double & dx, double & dy, double & s, double & c)
   else if ( fabs(dy) > fabs(dx) ) {
     double tmp = dx/dy;
     dx = sqrt(1.0 + tmp*tmp);
-    s = sign(1.0/dx,dy);
+    s = Sign(1.0/dx,dy);
     c = tmp*s;
   }
   else if ( fabs(dy) <= fabs(dx) ) {
     double tmp = dy/dx;
     dy = sqrt(1.0 + tmp*tmp);
-    c = sign(1.0/dy,dx);
+    c = Sign(1.0/dy,dx);
     s = tmp*c;
   }
   else {
@@ -58,7 +58,7 @@ void CSysSolve::generateGivens(double & dx, double & dy, double & s, double & c)
   dy = 0.0;
 }
 
-void CSysSolve::solveReduced(const int & n, const vector<vector<double> > & Hsbg,
+void CSysSolve::SolveReduced(const int & n, const vector<vector<double> > & Hsbg,
                              const vector<double> & rhs, vector<double> & x) {
   // initialize...
   for (int i = 0; i < n; i++)
@@ -72,7 +72,7 @@ void CSysSolve::solveReduced(const int & n, const vector<vector<double> > & Hsbg
   }
 }
 
-void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w) {
+void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w) {
   
   /*--- Parameter for reorthonormalization ---*/
   static const double reorth = 0.98;
@@ -125,7 +125,7 @@ void CSysSolve::modGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   w[i+1] /= nrm;
 }
 
-void CSysSolve::writeHeader(const string & solver, const double & restol, const double & resinit) {
+void CSysSolve::WriteHeader(const string & solver, const double & restol, const double & resinit) {
   
   cout << "# " << solver << " residual history" << endl;
   cout << "# Residual tolerance target = " << restol << endl;
@@ -133,13 +133,13 @@ void CSysSolve::writeHeader(const string & solver, const double & restol, const 
   
 }
 
-void CSysSolve::writeHistory(const int & iter, const double & res, const double & resinit) {
+void CSysSolve::WriteHistory(const int & iter, const double & res, const double & resinit) {
   
   cout << "     " << iter << "     " << res/resinit << endl;
   
 }
 
-unsigned long CSysSolve::ConjugateGradient(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
 int rank = 0;
@@ -184,8 +184,8 @@ int rank = 0;
   /*--- Output header information including initial residual ---*/
   int i = 0;
   if ((monitoring) && (rank == 0))  {
-    writeHeader("CG", tol, norm_r);
-    writeHistory(i, norm_r, norm0);
+    WriteHeader("CG", tol, norm_r);
+    WriteHistory(i, norm_r, norm0);
   }
   
   /*---  Loop over all search directions ---*/
@@ -206,7 +206,7 @@ int rank = 0;
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) writeHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
     
     precond(r, z);
     
@@ -245,7 +245,7 @@ int rank = 0;
   
 }
 
-unsigned long CSysSolve::FGMRES(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
 int rank = 0;
@@ -327,8 +327,8 @@ int rank = 0;
   
   int i = 0;
   if ((monitoring) && (rank == 0)) {
-    writeHeader("FGMRES", tol, beta);
-    writeHistory(i, beta, norm0);
+    WriteHeader("FGMRES", tol, beta);
+    WriteHistory(i, beta, norm0);
   }
   
   /*---  Loop over all search directions ---*/
@@ -349,16 +349,16 @@ int rank = 0;
     
     /*---  Modified Gram-Schmidt orthogonalization ---*/
     
-    modGramSchmidt(i, H, w);
+    ModGramSchmidt(i, H, w);
     
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix
 		 then generate the new Givens rotation matrix and apply it to
 		 the last two elements of H[:][i] and g ---*/
     
     for (int k = 0; k < i; k++)
-      applyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
-    generateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
-    applyGivens(sn[i], cs[i], g[i], g[i+1]);
+      ApplyGivens(sn[k], cs[k], H[k][i], H[k+1][i]);
+    GenerateGivens(H[i][i], H[i+1][i], sn[i], cs[i]);
+    ApplyGivens(sn[i], cs[i], g[i], g[i+1]);
     
     /*---  Set L2 norm of residual and check if solution has converged ---*/
     
@@ -366,12 +366,12 @@ int rank = 0;
     
     /*---  Output the relative residual if necessary ---*/
     
-    if ((((monitoring) && (rank == 0)) && ((i+1) % 100 == 0)) && (rank == 0)) writeHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == 0)) && ((i+1) % 100 == 0)) && (rank == 0)) WriteHistory(i+1, beta, norm0);
   }
 
   /*---  Solve the least-squares system and update solution ---*/
   
-  solveReduced(i, H, g, y);
+  SolveReduced(i, H, g, y);
   for (int k = 0; k < i; k++) {
     x.Plus_AX(y[k], z[k]);
   }
@@ -398,7 +398,7 @@ int rank = 0;
   
 }
 
-unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
+unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                  CPreconditioner & precond, double tol, unsigned long m, bool monitoring) {
 	
   int rank = 0;
@@ -446,8 +446,8 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
   /*--- Output header information including initial residual ---*/
   int i = 0;
   if ((monitoring) && (rank == 0)) {
-    writeHeader("BCGSTAB", tol, norm_r);
-    writeHistory(i, norm_r, norm0);
+    WriteHeader("BCGSTAB", tol, norm_r);
+    WriteHistory(i, norm_r, norm0);
   }
 	
   /*---  Loop over all search directions ---*/
@@ -492,7 +492,7 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0) && (rank == 0)) writeHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0) && (rank == 0)) WriteHistory(i+1, norm_r, norm0);
     
   }
 	  
@@ -517,84 +517,84 @@ unsigned long CSysSolve::BCGSTAB(const CSysVector & b, CSysVector & x, CMatrixVe
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
   
-//  double SolverTol = config->GetLinear_Solver_Error();
-//  unsigned long MaxIter = config->GetLinear_Solver_Iter();
+  double SolverTol = config->GetLinear_Solver_Error();
+  unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
-//
-//  /*--- Solve the linear system using a Krylov subspace method ---*/
-//  cout << BCGSTAB;
-//  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-//      || config->GetKind_Linear_Solver() == RFGMRES) {
-//    
-//    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-//  
-//    CPreconditioner* precond = NULL;
-////    switch (config->GetKind_Linear_Solver_Prec()) {
-////      case JACOBI:
-////        Jacobian.BuildJacobiPreconditioner();
-////        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-////        break;
-////      case ILU:
-////        Jacobian.BuildILUPreconditioner();
-////        precond = new CILUPreconditioner(Jacobian, geometry, config);
-////        break;
-////      case LU_SGS:
-//        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-////        break;
-////      case LINELET:
-////        Jacobian.BuildJacobiPreconditioner();
-////        precond = new CLineletPreconditioner(Jacobian, geometry, config);
-////        break;
-////    }
-////    
-////    switch (config->GetKind_Linear_Solver()) {
-////      case BCGSTAB:
-////        IterLinSol = BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-////        break;
-////      case FGMRES:
-//        IterLinSol = FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-////        break;
-////      case RFGMRES:
-////        IterLinSol = 0;
-////        while (IterLinSol < config->GetLinear_Solver_Iter()) {
-////          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-////            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-////          IterLinSol += FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-////          if (LinSysRes.norm() < SolverTol) break;
-////          SolverTol = SolverTol*(1.0/LinSysRes.norm());
-////        }
-////        break;
-////    }
-//    
-//    /*--- Dealocate memory of the Krylov subspace method ---*/
-//    
-//    delete mat_vec;
-//    delete precond;
-//    
-//  }
-//  
-//  /*--- Smooth the linear system. ---*/
-//  
-////  else {
-////    switch (config->GetKind_Linear_Solver()) {
-////      case SMOOTHER_LUSGS:
-////        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
-////        break;
-////      case SMOOTHER_JACOBI:
-////        Jacobian.BuildJacobiPreconditioner();
-////        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
-////        break;
-////      case SMOOTHER_ILU:
-////        Jacobian.BuildILUPreconditioner();
-////        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
-////        break;
-////      case SMOOTHER_LINELET:
-////        Jacobian.BuildJacobiPreconditioner();
-////        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
-////        break;
-//        IterLinSol = 1;
-////    }
-////  }
+  
+  /*--- Solve the linear system using a Krylov subspace method ---*/
+  
+  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
+      || config->GetKind_Linear_Solver() == RFGMRES) {
+    
+    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+    
+    CPreconditioner* precond = NULL;
+    switch (config->GetKind_Linear_Solver_Prec()) {
+      case JACOBI:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+        break;
+      case ILU:
+        Jacobian.BuildILUPreconditioner();
+        precond = new CILUPreconditioner(Jacobian, geometry, config);
+        break;
+      case LU_SGS:
+        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
+        break;
+      case LINELET:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CLineletPreconditioner(Jacobian, geometry, config);
+        break;
+    }
+    
+    switch (config->GetKind_Linear_Solver()) {
+      case BCGSTAB:
+        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        break;
+      case FGMRES:
+        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        break;
+      case RFGMRES:
+        IterLinSol = 0;
+        while (IterLinSol < config->GetLinear_Solver_Iter()) {
+          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+          if (LinSysRes.norm() < SolverTol) break;
+          SolverTol = SolverTol*(1.0/LinSysRes.norm());
+        }
+        break;
+    }
+    
+    /*--- Dealocate memory of the Krylov subspace method ---*/
+    
+    delete mat_vec;
+    delete precond;
+    
+  }
+  
+  /*--- Smooth the linear system. ---*/
+  
+  else {
+    switch (config->GetKind_Linear_Solver()) {
+      case SMOOTHER_LUSGS:
+        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+      case SMOOTHER_JACOBI:
+        Jacobian.BuildJacobiPreconditioner();
+        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+      case SMOOTHER_ILU:
+        Jacobian.BuildILUPreconditioner();
+        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+      case SMOOTHER_LINELET:
+        Jacobian.BuildJacobiPreconditioner();
+        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
+        break;
+        IterLinSol = 1;
+    }
+  }
   
   return IterLinSol;
   

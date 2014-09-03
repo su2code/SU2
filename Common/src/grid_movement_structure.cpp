@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -167,26 +167,10 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
     CPreconditioner* precond      = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-//  CPreconditioner* precond      = new CILUPreconditioner(StiffMatrix, geometry, config);
     CSysSolve *system             = new CSysSolve();
     
     /*--- Solve the linear system ---*/
-    if (config->GetKind_Linear_Solver() == RFGMRES){
-      unsigned long iterations = config ->GetLinear_Solver_Restart_Frequency();
-      double tol = NumError;
-      IterLinSol=0;
-      while (IterLinSol < Smoothing_Iter){
-            if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > Smoothing_Iter)
-              iterations = Smoothing_Iter-IterLinSol;
-            IterLinSol += system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, tol,
-                               iterations, Screen_Output); // increment total iterations
-            if (LinSysRes.norm()<tol)
-              break;
-            tol = tol*(1.0/LinSysRes.norm()); // Increase tolerance to reflect that we are now solving relative to an intermediate residual.
-      }
-    }
-    else
-      IterLinSol = system->FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
+    IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, Screen_Output);
 
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
     
@@ -601,14 +585,14 @@ double CVolumetricMovement::ShapeFunc_Triangle(double Xi, double Eta, double Coo
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1];
   ad[0][1] = -xs[0][1];
   ad[1][0] = -xs[1][0];
   ad[1][1] = xs[0][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
   
@@ -664,14 +648,14 @@ double CVolumetricMovement::ShapeFunc_Rectangle(double Xi, double Eta, double Co
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1];
   ad[0][1] = -xs[0][1];
   ad[1][0] = -xs[1][0];
   ad[1][1] = xs[0][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
   
@@ -732,7 +716,7 @@ double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, dou
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -744,7 +728,7 @@ double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, dou
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   
@@ -801,7 +785,7 @@ double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, do
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -813,7 +797,7 @@ double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, do
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   
@@ -888,7 +872,7 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Mu, do
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -900,7 +884,7 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Mu, do
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   
@@ -962,7 +946,7 @@ double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Mu, do
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -974,7 +958,7 @@ double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Mu, do
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   

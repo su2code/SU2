@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.inl
  * \brief inline subroutines of the <i>linear_solvers_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-inline double CSysSolve::sign(const double & x, const double & y) const {
+inline double CSysSolve::Sign(const double & x, const double & y) const {
   if (y == 0.0)
     return 0.0;
   else {

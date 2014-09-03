@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief mesh functions
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.0 "eagle"
+#  \version 3.2.1 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory

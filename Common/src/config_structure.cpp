@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -2641,9 +2641,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for constant lift mode  ---*/
   if (Fixed_CL_Mode) {
 
-    /*--- Set the initial AoA to zero. This will be updated after an
-     interval of iterations of the flow solver. ---*/
-    AoA = 0.0;
+    /*--- The initial AoA will be taken as the value input in the 
+     config file (the default is zero). ---*/
 
     /*--- We will force the use of the cauchy convergence criteria for
      constant lift mode. ---*/
@@ -2657,6 +2656,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   }
 
+  /*--- Check for 2nd order w/ limiting for JST and correct ---*/
+  
+  if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
+    SpatialOrder_Flow = SECOND_ORDER;
+  
+  if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
+    SpatialOrder_AdjFlow = SECOND_ORDER;
 
   delete [] tmp_smooth;
 
@@ -3006,7 +3012,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
 
-  cout << "|                             Release 3.2.0 \"eagle\"                     |" << endl;
+  cout << "|                             Release 3.2.1 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
@@ -3707,6 +3713,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
               cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
               break;
+            case SMOOTHER_JACOBI:
+              cout << "A Jacobi method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case SMOOTHER_ILU:
+              cout << "A ILU0 method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case SMOOTHER_LUSGS:
+              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case SMOOTHER_LINELET:
+              cout << "A Linelet method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
           }
           break;
       }
@@ -3717,9 +3739,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
           switch (Kind_Linear_Solver) {
-            case LU_SGS:
-              cout << "A LU - symmetric Gauss-Seidel iteration is used for solving the linear system." << endl;
-              break;
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;
