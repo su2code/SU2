@@ -163,7 +163,7 @@ public:
  * \author S. Vitale, M. Pini
  * \version 1.0
  */
-class CThermalConductivityModel {
+class CConductivityModel {
 protected:
 double   	 Kt,			/*!< \brief Thermal conductivity. */
 			 dktdrho_T, 	/*!< \brief DktDrho_T. */
@@ -173,32 +173,32 @@ public:
 		/*!
 		 * \brief Constructor of the class.
 		 */
-		CThermalConductivityModel(void);
+		CConductivityModel(void);
 
 		/*!
 		 * \brief Destructor of the class.
 		 */
-		virtual ~CThermalConductivityModel(void);
+		virtual ~CConductivityModel(void);
 
 		/*!
 		 * \brief return viscosity value.
 		 */
-		double GetThermalConductivity(void);
+		double GetConductivity(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerThermalConductivity_rho_T(void);
+		double Getdktdrho_T(void);
 
 		/*!
 		 * \brief return viscosity partial derivative value.
 		 */
-		double GetDerThermalConductivity_T_rho(void);
+		double GetdktdT_rho(void);
 
 		/*!
 		 * \brief Set Thermal conductivity.
 		 */
-		virtual	 void SetThermalConductivity(double par1, double par2);
+		virtual	 void SetConductivity(double T, double rho, double mu, double cp);
 
 
 };
@@ -210,24 +210,24 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantThermalConductivity : public CThermalConductivityModel {
+class CConstantConductivity : public CConductivityModel {
 
 public:
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CConstantThermalConductivity(void);
+	    CConstantConductivity(void);
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CConstantThermalConductivity(double kt_const);
+	    CConstantConductivity(double kt_const);
 
 		/*!
 		 * \brief Destructor of the class.
 		 */
-		virtual ~CConstantThermalConductivity(void);
+		virtual ~CConstantConductivity(void);
 
 };
 
@@ -238,7 +238,7 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantPrandtl : public CThermalConductivityModel {
+class CConstantPrandtl : public CConductivityModel {
 protected:
 	double   	 Pr_const;		/*!< \brief Prandtl's number. */
 
@@ -264,7 +264,7 @@ public:
 		 * \brief par1 -> Cp.
 		 * \brief par2 -> Mu.
 		 */
-		void SetThermalConductivity(double par1, double par2);
+		void SetConductivity(double T, double rho, double mu, double cp);
 
 };
 

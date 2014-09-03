@@ -588,11 +588,12 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 
   /* check will be moved inside fluid model plus error description strings*/
   FluidModel->SetTDState_rhoe(density, staticEnergy);
+  double temperature = FluidModel->GetTemperature();
 
   check_dens = SetDensity();
   check_press = SetPressure(FluidModel->GetPressure());
   check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-  check_temp = SetTemperature(FluidModel->GetTemperature());
+  check_temp = SetTemperature(temperature);
   
   /*--- Check that the solution has a physical meaning ---*/
   
@@ -610,11 +611,12 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 	double staticEnergy = GetEnergy()-0.5*Velocity2 - turb_ke;
 	/* check will be moved inside fluid model plus error description strings*/
 	FluidModel->SetTDState_rhoe(density, staticEnergy);
+    double temperature = FluidModel->GetTemperature();
 
 	check_dens = SetDensity();
 	check_press = SetPressure(FluidModel->GetPressure());
 	check_sos = SetSoundSpeed(FluidModel->GetSoundSpeed2());
-	check_temp = SetTemperature(FluidModel->GetTemperature());
+	check_temp = SetTemperature(temperature);
     
     RightVol = false;
     
@@ -622,15 +624,22 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   
   /*--- Set enthalpy ---*/
   
-   SetEnthalpy();                                  // Requires pressure computation.
+  SetEnthalpy();                                  // Requires pressure computation.
   
   /*--- Set laminar viscosity ---*/
   
-   SetLaminarViscosity(FluidModel->GetLaminarViscosity(FluidModel->GetTemperature(), GetDensity()));
+  double lam_visc = FluidModel->GetLaminarViscosity(temperature, density);
+  SetLaminarViscosity(lam_visc);
   
   /*--- Set eddy viscosity ---*/
   
   SetEddyViscosity(eddy_visc);
+
+  /*--- Set thermal conductivity ---*/
+
+  double cp = FluidModel->GetCp();
+  double th_cond = FluidModel->GetThermalConductivity(temperature, density, lam_visc, cp);
+  SetThermalConductivity(th_cond);
   
   return RightVol;
   
@@ -638,15 +647,21 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
 
 void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
-	SetdPdrho_e(FluidModel->GetdPdrho_e());
-	SetdPde_rho(FluidModel->GetdPde_rho());
-    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+    /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+
+	SetdPdrho_e( FluidModel->GetdPdrho_e() );
+	SetdPde_rho( FluidModel->GetdPde_rho() );
 
 	SetdTdrho_e( FluidModel->GetdTdrho_e() );
 	SetdTde_rho( FluidModel->GetdTde_rho() );
 
+    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
 	Setdmudrho_T( FluidModel->Getdmudrho_T() );
 	SetdmudT_rho( FluidModel->GetdmudT_rho() );
+
+	Setdktdrho_T( FluidModel->Getdktdrho_T() );
+	SetdktdT_rho( FluidModel->GetdktdT_rho() );
 
 }
 

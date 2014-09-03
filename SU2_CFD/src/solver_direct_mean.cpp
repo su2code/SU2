@@ -1793,7 +1793,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Velocity_Reynolds = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0;
   double Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
-  Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Energy_Ref= 0.0, Froude = 0.0;
+  Gas_Constant_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Energy_Ref= 0.0, Froude = 0.0;
   double Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0, Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0, Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
@@ -1930,7 +1930,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     			config->SetMu_Temperature_RefND(518.7);
     		}
         
-    		FluidModel->SetViscosityModel(config);
+    		FluidModel->SetLaminarViscosityModel(config);
         
     		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
     		config->SetViscosity_FreeStream(Viscosity_FreeStream);
@@ -1944,7 +1944,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
         
     	} else {
-    		FluidModel->SetViscosityModel(config);
+    		FluidModel->SetLaminarViscosityModel(config);
     		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
         config->SetViscosity_FreeStream(Viscosity_FreeStream);
     		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
@@ -1979,6 +1979,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     Force_Ref         = Velocity_Ref*Velocity_Ref/Length_Ref;                        config->SetForce_Ref(Force_Ref);
     Gas_Constant_Ref  = Velocity_Ref*Velocity_Ref/config->GetTemperature_Ref();      config->SetGas_Constant_Ref(Gas_Constant_Ref);
     Viscosity_Ref     = config->GetDensity_Ref()*Velocity_Ref*Length_Ref;            config->SetViscosity_Ref(Viscosity_Ref);
+    Conductivity_Ref  = Viscosity_Ref*Gas_Constant_Ref;                              config->SetConductivity_Ref(Conductivity_Ref);
     Froude            = ModVel_FreeStream/sqrt(STANDART_GRAVITY*Length_Ref);         config->SetFroude(Froude);
     
   }
@@ -2098,12 +2099,20 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
   
-  if(viscous){
+  if (viscous) {
+	  /* constant viscosity model */
+	  config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
+
+	  /* sutherland's model */
 	  config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
 	  config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
 	  config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
-	  FluidModel->SetViscosityModel(config);
-    
+
+	  /* constant thermal conductivity model */
+	  config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
+
+	  FluidModel->SetLaminarViscosityModel(config);
+	  FluidModel->SetThermalConductivityModel(config);
   }
   
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);

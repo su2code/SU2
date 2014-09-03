@@ -349,7 +349,7 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
 
 
 /*!
- * \brief types of fluid model
+ * \brief types of viscosity model
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
@@ -359,6 +359,18 @@ enum ENUM_VISCOSITYMODEL {
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("COSTANT_VISCOSITY", CONSTANT_VISCOSITY)
 ("SUTHERLAND", SUTHERLAND);
+
+/*!
+ * \brief types of thermal conductivity model
+ */
+enum ENUM_CONDUCTIVITYMODEL {
+	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
+	CONSTANT_PRANDTL = 1
+};
+
+static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
+("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
 
 /*!
  * \brief types of spatial discretizations

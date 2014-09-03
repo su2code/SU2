@@ -55,10 +55,11 @@ double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 dPdrho_e, 				/*!< \brief DpDd_e. */
 			 dPde_rho, 				/*!< \brief DpDe_d. */
 			 dTdrho_e, 				/*!< \brief DTDd_e. */
-			 dTde_rho; 				/*!< \brief DTDe_d. */
+			 dTde_rho, 				/*!< \brief DTDe_d. */
+             Cp;                    /*!< \brief Specific Heat Capacity at constant pressure. */
 
-CViscosityModel *DynamicViscosity;	              /*!< \brief Viscosity */
-CThermalConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity */
+CViscosityModel *LaminarViscosity;	          /*!< \brief Laminar Viscosity */
+CConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity */
 
 public:
 
@@ -108,6 +109,11 @@ public:
 		double GetSoundSpeed2 ();
 
 		/*!
+		 * \brief Get fluid specific heat at constant pressure.
+		 */
+		double GetCp ();
+
+		/*!
 		 * \brief Get fluid dynamic viscosity
 		 */
 
@@ -117,7 +123,7 @@ public:
 		 * \brief Get fluid thermal conductivity
 		 */
 
-		double GetThermalConductivity (double par1, double par2);
+		double GetThermalConductivity (double T, double rho, double mu, double cp);
 
 		/*!
 		 * \brief Get fluid pressure partial derivative.
@@ -162,7 +168,7 @@ public:
 		/*!
 		 * \brief Set viscosity model.
 		 */
-		void SetViscosityModel (CConfig *config);
+		void SetLaminarViscosityModel (CConfig *config);
 
 		/*!
 		 * \brief Set thermal conductivity model.

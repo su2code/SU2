@@ -332,6 +332,10 @@ inline void CVariable::Setdmudrho_T(double dmudrho_T) { }
 
 inline void CVariable::SetdmudT_rho(double dmudT_rho) { }
 
+inline void CVariable::Setdktdrho_T(double dktdrho_T) { }
+
+inline void CVariable::SetdktdT_rho(double dktdT_rho) { }
+
 inline bool CVariable::SetPressure(double Gamma) { return false; }
 
 inline bool CVariable::SetPressure(CConfig *config) { return false; }
@@ -401,6 +405,8 @@ inline void CVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) 
 inline void CVariable::SetEddyViscosity(double eddy_visc) { }
 
 inline void CVariable::SetEddyViscosityInc(double eddy_visc) { }
+
+inline void CVariable::SetThermalConductivity(double thermalConductivity) { }
 
 inline void CVariable::SetVorticity(void) { }
 
@@ -661,12 +667,18 @@ inline double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5];
 
 inline double CNSVariable::GetLaminarViscosityInc(void) { return Primitive[nDim+3]; }
 
+inline double CNSVariable::GetThermalConductivity(void) { return Primitive[nDim+7]; }
+
 inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 
 inline double CNSVariable::GetStrainMag(void) { return StrainMag; }
 
 inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
     Primitive[nDim+5] = laminarViscosity;
+}
+
+inline void CNSVariable::SetThermalConductivity(double thermalConductivity) {
+    Primitive[nDim+7] = thermalConductivity;
 }
 
 inline void CNSVariable::SetdTdrho_e(double dTdrho_e) {  
@@ -683,6 +695,14 @@ inline void CNSVariable::Setdmudrho_T(double dmudrho_T) {
 
 inline void CNSVariable::SetdmudT_rho(double dmudT_rho) { 
    Secondary[5] = dmudT_rho; 
+}
+
+inline void CNSVariable::Setdktdrho_T(double dktdrho_T) {  
+   Secondary[6] = dktdrho_T; 
+}
+
+inline void CNSVariable::SetdktdT_rho(double dktdT_rho) { 
+   Secondary[7] = dktdT_rho; 
 }
 
 inline void CNSVariable::SetLaminarViscosityInc(double val_laminar_viscosity_inc) { Primitive[nDim+3] = val_laminar_viscosity_inc; }

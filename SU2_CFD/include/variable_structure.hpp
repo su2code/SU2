@@ -1138,12 +1138,22 @@ public:
      /*!
    	 * \brief A virtual member.
    	 */
-      virtual void Setdmudrho_T(double Setdmudrho_T);
+      virtual void Setdmudrho_T(double dmudrho_T);
 
      /*!
       * \brief A virtual member.
       */
-      virtual void SetdmudT_rho(double SetdmudT_rho);
+      virtual void SetdmudT_rho(double dmudT_rho);
+
+    /*!
+     * \brief A virtual member.
+     */
+     virtual void Setdktdrho_T(double dktdrho_T);
+
+    /*!
+     * \brief A virtual member.
+     */
+     virtual void SetdktdT_rho(double dktdT_rho);
 
 	/*!
 	 * \brief A virtual member.
@@ -1394,6 +1404,12 @@ public:
 	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
 	 */		
 	virtual void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetThermalConductivity(double thermalConductivity);
 
 	/*!
 	 * \brief A virtual member.
@@ -2490,6 +2506,11 @@ public:
 	void SetLaminarViscosityInc(double val_laminar_viscosity_inc);
 
 	/*!
+	 * \brief Set the laminar viscosity.
+	 */
+	void SetThermalConductivity(double thermalConductivity);
+
+	/*!
 	 * \brief Set the vorticity value.
 	 */
 	void SetVorticity(void);
@@ -2522,6 +2543,12 @@ public:
 	 * \return Value of the laminar viscosity of the incompressible flow.
 	 */
 	double GetLaminarViscosityInc(void);
+
+	/*!
+	 * \brief Get the thermal conductivity of the flow.
+	 * \return Value of the laminar viscosity of the flow.
+	 */
+	double GetThermalConductivity(void);
 
 	/*!
 	 * \brief Get the eddy viscosity of the flow.
@@ -2576,12 +2603,22 @@ public:
      /*!
       * \brief Set the derivative of laminar viscosity with respect to density (at constant temperature).
       */
-    void Setdmudrho_T(double Setdmudrho_T);
+    void Setdmudrho_T(double dmudrho_T);
 
    /*!
     * \brief Set the derivative of laminar viscosity with respect to temperature (at constant density).
     */
-    void SetdmudT_rho(double SetdmudT_rho);
+    void SetdmudT_rho(double dmudT_rho);
+
+   /*!
+    * \brief Set the derivative of thermal conductivity with respect to density (at constant temperature).
+    */
+    void Setdktdrho_T(double dktdrho_T);
+
+   /*!
+    * \brief Set the derivative of thermal conductivity with respect to temperature (at constant density).
+    */
+    void SetdktdT_rho(double dktdT_rho);
 
 	/*!
 	 * \brief Set all the primitive variables for compressible flows
