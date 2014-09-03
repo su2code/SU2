@@ -70,7 +70,8 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 		/*--- Initialization of the structure of the whole Jacobian ---*/
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
@@ -307,7 +308,7 @@ void CLinEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 		LinSysRes.SetBlock_Zero(iPoint);
 	}
 	
-	/*--- Inicialize the jacobian matrices ---*/
+	/*--- Inicialize the Jacobian matrices ---*/
 	if (config->GetKind_TimeIntScheme_LinFlow() == EULER_IMPLICIT)
 		Jacobian.SetValZero();
 }

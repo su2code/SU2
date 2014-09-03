@@ -22,7 +22,7 @@
 
 #pragma once
 
-inline double CSysSolve::sign(const double & x, const double & y) const {
+inline double CSysSolve::Sign(const double & x, const double & y) const {
   if (y == 0.0)
     return 0.0;
   else {

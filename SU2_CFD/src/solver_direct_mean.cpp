@@ -224,16 +224,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       Jacobian_j[iVar] = new double [nVar];
     }
     
-    if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
     
   } else {
-    if (rank == MASTER_NODE) cout << "Explicit scheme. No jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
   }
   
   /*--- Define some auxiliary vectors for computing flow variable gradients by least squares ---*/
@@ -2723,7 +2724,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  /*--- Initialize the jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit) Jacobian.SetValZero();
   
@@ -2976,7 +2977,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     }
     
-    /*--- Compute residuals, and jacobians ---*/
+    /*--- Compute residuals, and Jacobians ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
@@ -3220,7 +3221,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
-    /*--- Set implicit jacobians ---*/
+    /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -4258,84 +4259,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
   
-//  CSysSolve system;
-//  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  /*--- Solve or smooth the linear system ---*/
   
-  /*--- Solve the linear system using a Krylov subspace method ---*/
-  
-  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-      || config->GetKind_Linear_Solver() == RFGMRES) {
-
-    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-    
-    CPreconditioner* precond = NULL;
-    switch (config->GetKind_Linear_Solver_Prec()) {
-      case JACOBI:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-        break;
-      case ILU:
-        Jacobian.BuildILUPreconditioner();
-        precond = new CILUPreconditioner(Jacobian, geometry, config);
-        break;
-      case LU_SGS:
-        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-        break;
-      case LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CLineletPreconditioner(Jacobian, geometry, config);
-        break;
-    }
-    
-    CSysSolve system;
-    switch (config->GetKind_Linear_Solver()) {
-      case BCGSTAB:
-        IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-        break;
-      case FGMRES:
-        IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-        break;
-      case RFGMRES:
-        IterLinSol = 0;
-        while (IterLinSol < config->GetLinear_Solver_Iter()) {
-          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-          IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-          if (LinSysRes.norm() < SolverTol) break;
-          SolverTol = SolverTol*(1.0/LinSysRes.norm());
-        }
-        break;
-    }
-    
-    /*--- Dealocate memory of the Krylov subspace method ---*/
-    
-    delete mat_vec;
-    delete precond;
-    
-  }
-  
-  /*--- Smooth the linear system. ---*/
-
-  else {
-    switch (config->GetKind_Linear_Solver()) {
-      case SMOOTHER_LUSGS:
-        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-      case SMOOTHER_JACOBI:
-        Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-      case SMOOTHER_ILU:
-        Jacobian.BuildILUPreconditioner();
-        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-      case SMOOTHER_LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-        IterLinSol = 1;
-    }
-  }
+  CSysSolve system;
+  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- The the number of iterations of the linear solver ---*/
   
@@ -5620,7 +5547,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       
       if (implicit) {
         
-        /*--- Initialize jacobian ---*/
+        /*--- Initialize Jacobian ---*/
         
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++)
@@ -5824,7 +5751,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       
       if (implicit) {
         
-        /*--- Initialize jacobian ---*/
+        /*--- Initialize Jacobian ---*/
         
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++)
@@ -5853,7 +5780,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
             DubDu[nVar-1][iDim+1] = 0.5*ProjVelocity_b*UnitNormal[iDim] ;
           }
           
-          /*--- Compute flux jacobian in state b ---*/
+          /*--- Compute flux Jacobian in state b ---*/
           
           numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
           
@@ -5863,7 +5790,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
               Jacobian_b[nVar-1][iDim+1] += 0.5 * ProjVelocity_b * UnitNormal[iDim];
           }
           
-          /*--- Compute numerical flux jacobian at node i ---*/
+          /*--- Compute numerical flux Jacobian at node i ---*/
           
           for(iVar = 0; iVar < nVar; iVar++)
             for(jVar = 0; jVar < nVar; jVar++)
@@ -6579,7 +6506,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
               }
 
 
-               /*--- Compute flux jacobian in state b ---*/
+               /*--- Compute flux Jacobian in state b ---*/
 //             cout << Enthalpy_b << " " << Chi_b<< " " << Kappa_b <<" "<< endl;
               conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
 /// check ALE
@@ -6595,7 +6522,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                   Jacobian_b[nVar-1][iDim+1] += 0.5 * ProjVelocity_b * UnitNormal[iDim];
               }
 
-               /*--- Compute numerical flux jacobian at node i ---*/
+               /*--- Compute numerical flux Jacobian at node i ---*/
 
               for(iVar=0; iVar<nVar; iVar++)
               {
@@ -8970,17 +8897,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Jacobian_j[iVar] = new double [nVar];
     }
     /*--- Initialization of the structure of the whole Jacobian ---*/
-    if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
     
   } else {
     if (rank == MASTER_NODE)
-      cout << "Explicit scheme. No jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+      cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
   }
   
   /*--- Define some auxiliary vectors for computing flow variable gradients by least squares ---*/
@@ -9447,7 +9375,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)) { SetPrimitive_Limiter(geometry, config); }
   
-  /*--- Initialize the jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit) Jacobian.SetValZero();
   
