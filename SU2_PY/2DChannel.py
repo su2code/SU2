@@ -3,7 +3,7 @@
 ## \file 2DChannel.py
 #  \brief Python script for creating grid for freesurface channels.
 #  \author F. Palacios
-#  \version 3.2.0 "eagle"
+#  \version 3.2.1 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
