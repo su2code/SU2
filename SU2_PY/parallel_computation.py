@@ -3,7 +3,7 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.0 "eagle"
+#  \version 3.2.1 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -53,7 +53,7 @@ def main():
         raise Exception("No config file provided. Use -f flag")
     
     if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.0, use -n flag instead \n")
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.1, use -n flag instead \n")
         sys.exit()
 
     parallel_computation( options.filename    ,

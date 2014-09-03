@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -224,16 +224,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       Jacobian_j[iVar] = new double [nVar];
     }
     
-    if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
     
   } else {
-    if (rank == MASTER_NODE) cout << "Explicit scheme. No jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
   }
   
   /*--- Define some auxiliary vectors for computing flow variable gradients by least squares ---*/
@@ -2655,7 +2656,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool engine           = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
-  
+  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
   if (engine) { GetNacelle_Properties(geometry, config, iMesh, Output); }
@@ -2696,11 +2698,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS){
     	SetPrimitive_Gradient_GG(geometry, config);
-    	SetSecondary_Gradient_GG(geometry, config);
+    	if (compressible && !ideal_gas) SetSecondary_Gradient_GG(geometry, config);
     }
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
     	SetPrimitive_Gradient_LS(geometry, config);
-    	SetSecondary_Gradient_LS(geometry, config);
+    	if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
     }
 
     
@@ -2708,7 +2710,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     if ((limiter) && (iMesh == MESH_0)){
     	SetPrimitive_Limiter(geometry, config);
-    	SetSecondary_Limiter(geometry, config);
+    	if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
     }
     
   }
@@ -2723,7 +2725,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     }
   }
   
-  /*--- Initialize the jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit) Jacobian.SetValZero();
   
@@ -2976,7 +2978,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     }
     
-    /*--- Compute residuals, and jacobians ---*/
+    /*--- Compute residuals, and Jacobians ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
     
@@ -3220,7 +3222,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
     
-    /*--- Set implicit jacobians ---*/
+    /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
@@ -4258,84 +4260,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     }
   }
   
-//  CSysSolve system;
-//  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  /*--- Solve or smooth the linear system ---*/
   
-  /*--- Solve the linear system using a Krylov subspace method ---*/
-  
-  if (config->GetKind_Linear_Solver() == BCGSTAB || config->GetKind_Linear_Solver() == FGMRES
-      || config->GetKind_Linear_Solver() == RFGMRES) {
-
-    CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-    
-    CPreconditioner* precond = NULL;
-    switch (config->GetKind_Linear_Solver_Prec()) {
-      case JACOBI:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-        break;
-      case ILU:
-        Jacobian.BuildILUPreconditioner();
-        precond = new CILUPreconditioner(Jacobian, geometry, config);
-        break;
-      case LU_SGS:
-        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-        break;
-      case LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CLineletPreconditioner(Jacobian, geometry, config);
-        break;
-    }
-    
-    CSysSolve system;
-    switch (config->GetKind_Linear_Solver()) {
-      case BCGSTAB:
-        IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-        break;
-      case FGMRES:
-        IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-        break;
-      case RFGMRES:
-        IterLinSol = 0;
-        while (IterLinSol < config->GetLinear_Solver_Iter()) {
-          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-          IterLinSol += system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
-          if (LinSysRes.norm() < SolverTol) break;
-          SolverTol = SolverTol*(1.0/LinSysRes.norm());
-        }
-        break;
-    }
-    
-    /*--- Dealocate memory of the Krylov subspace method ---*/
-    
-    delete mat_vec;
-    delete precond;
-    
-  }
-  
-  /*--- Smooth the linear system. ---*/
-
-  else {
-    switch (config->GetKind_Linear_Solver()) {
-      case SMOOTHER_LUSGS:
-        Jacobian.ComputeLU_SGSPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-      case SMOOTHER_JACOBI:
-        Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeJacobiPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-      case SMOOTHER_ILU:
-        Jacobian.BuildILUPreconditioner();
-        Jacobian.ComputeILUPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-      case SMOOTHER_LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        Jacobian.ComputeLineletPreconditioner(LinSysRes, LinSysSol, geometry, config);
-        break;
-        IterLinSol = 1;
-    }
-  }
+  CSysSolve system;
+  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- The the number of iterations of the linear solver ---*/
   
@@ -5399,7 +5327,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   bool Update_AoA = false;
   double Target_CL, AoA_inc, AoA, Eps_Factor = 1e2;
   double DampingFactor = config->GetDamp_Fixed_CL();
-  double Beta = config->GetAoS();
+  double Beta = config->GetAoS()*PI_NUMBER/180.0;
   double Vel_Infty[3], Vel_Infty_Mag;
   
   int rank = MASTER_NODE;
@@ -5422,7 +5350,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Cauchy_Counter = 0;
       for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
         Cauchy_Serie[iCounter] = 0.0;
-      AoA_old = config->GetAoA();
+      AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     }
     
     /*--- Check on the level of convergence in the lift coefficient. ---*/
@@ -5472,7 +5400,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Retrieve the old AoA. ---*/
     
-    AoA_old = config->GetAoA();
+    AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
     /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
     
@@ -5483,7 +5411,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     if (iMesh == MESH_0)
       AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
     else
-      AoA = config->GetAoA();
+      AoA = config->GetAoA()*PI_NUMBER/180.0;
     
     /*--- Update the freestream velocity vector at the farfield ---*/
     
@@ -5519,7 +5447,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     if (iMesh == MESH_0) {
       for (iDim = 0; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-      config->SetAoA(AoA);
+      config->SetAoA(AoA*180.0/PI_NUMBER);
     }
     
     /*--- Reset the local cauchy criteria ---*/
@@ -5538,11 +5466,134 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << " Target CL: " << config->GetTarget_CL();
     cout << ", Current CL: " << Total_CLift;
-    cout << ", Current AoA: " << config->GetAoA()*180.0/PI_NUMBER << " deg" << endl;
+    cout << ", Current AoA: " << config->GetAoA() << " deg" << endl;
     cout << "-------------------------------------------------------------------------" << endl;
   }
   
 }
+
+#ifndef CHECK_FLATPLATE_SST
+
+void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+  
+  unsigned short iDim, iVar, jVar, jDim;
+  unsigned long iPoint, iVertex;
+  double Pressure = 0.0, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3],
+  ProjGridVel = 0.0, a2, phi, turb_ke = 0.0;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement  = config->GetGrid_Movement();
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+      
+      /*--- Get the pressure ---*/
+      
+      if (compressible)                   Pressure = node[iPoint]->GetPressure();
+      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
+      
+      /*--- Add the kinetic energy correction ---*/
+      
+      if (tkeNeeded) {
+        turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+        Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
+      }
+      
+      /*--- Compute the residual ---*/
+      
+      Residual[0] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
+      
+      if (compressible || freesurface) {
+        Residual[nVar-1] = 0.0;
+      }
+      
+      /*--- Adjustment to energy equation due to grid motion ---*/
+      
+      if (grid_movement) {
+        ProjGridVel = 0.0;
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
+        Residual[nVar-1] = Pressure*ProjGridVel;
+      }
+      
+      /*--- Add value to the residual ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Form Jacobians for implicit computations ---*/
+      
+      if (implicit) {
+        
+        /*--- Initialize Jacobian ---*/
+        
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+        
+        if (compressible)  {
+          a2 = Gamma-1.0;
+          phi = 0.5*a2*node[iPoint]->GetVelocity2();
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Jacobian_i[0][iVar] = 0.0;
+            Jacobian_i[nDim+1][iVar] = 0.0;
+          }
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
+            for (jDim = 0; jDim < nDim; jDim++)
+              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
+            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
+          }
+          if (grid_movement) {
+            ProjGridVel = 0.0;
+            GridVel = geometry->node[iPoint]->GetGridVel();
+            for (iDim = 0; iDim < nDim; iDim++)
+              ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
+            Jacobian_i[nDim+1][0] = phi*ProjGridVel;
+            for (jDim = 0; jDim < nDim; jDim++)
+              Jacobian_i[nDim+1][jDim+1] = -a2*node[iPoint]->GetVelocity(jDim)*ProjGridVel;
+            Jacobian_i[nDim+1][nDim+1] = a2*ProjGridVel;
+          }
+          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+          
+        }
+        if (incompressible || freesurface)  {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][0] = -Normal[iDim];
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        }
+        
+      }
+    }
+  }
+  
+}
+
+#else
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
@@ -5701,7 +5752,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       
       if (implicit) {
         
-        /*--- Initialize jacobian ---*/
+        /*--- Initialize Jacobian ---*/
         
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++)
@@ -5730,7 +5781,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
             DubDu[nVar-1][iDim+1] = 0.5*ProjVelocity_b*UnitNormal[iDim] ;
           }
           
-          /*--- Compute flux jacobian in state b ---*/
+          /*--- Compute flux Jacobian in state b ---*/
           
           numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, NormalArea, 1, Jacobian_b);
           
@@ -5740,7 +5791,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
               Jacobian_b[nVar-1][iDim+1] += 0.5 * ProjVelocity_b * UnitNormal[iDim];
           }
           
-          /*--- Compute numerical flux jacobian at node i ---*/
+          /*--- Compute numerical flux Jacobian at node i ---*/
           
           for(iVar = 0; iVar < nVar; iVar++)
             for(jVar = 0; jVar < nVar; jVar++)
@@ -5779,6 +5830,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   
 }
 
+#endif
 
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -6491,7 +6543,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
               }
 
 
-               /*--- Compute flux jacobian in state b ---*/
+               /*--- Compute flux Jacobian in state b ---*/
 //             cout << Enthalpy_b << " " << Chi_b<< " " << Kappa_b <<" "<< endl;
               conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
 /// check ALE
@@ -6507,7 +6559,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                   Jacobian_b[nVar-1][iDim+1] += 0.5 * ProjVelocity_b * UnitNormal[iDim];
               }
 
-               /*--- Compute numerical flux jacobian at node i ---*/
+               /*--- Compute numerical flux Jacobian at node i ---*/
 
               for(iVar=0; iVar<nVar; iVar++)
               {
@@ -8882,17 +8934,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Jacobian_j[iVar] = new double [nVar];
     }
     /*--- Initialization of the structure of the whole Jacobian ---*/
-    if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
     
   } else {
     if (rank == MASTER_NODE)
-      cout << "Explicit scheme. No jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+      cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
   }
   
   /*--- Define some auxiliary vectors for computing flow variable gradients by least squares ---*/
@@ -9294,7 +9347,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool tkeNeeded            = (turb_model == SST);
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_NacelleInflow() != 0) || (config->GetnMarker_NacelleExhaust() != 0));
-  
+  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
+
   /*--- Compute nacelle inflow and exhaust properties ---*/
   
   if (engine) GetNacelle_Properties(geometry, config, iMesh, Output);
@@ -9347,11 +9401,11 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS){
 	  SetPrimitive_Gradient_GG(geometry, config);
-	  SetSecondary_Gradient_GG(geometry, config);
+	  if (compressible && !ideal_gas) SetSecondary_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES){
 	  SetPrimitive_Gradient_LS(geometry, config);
-	  SetSecondary_Gradient_LS(geometry, config);
+	  if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
   }
   
   /*--- Compute the limiter in case we need it in the turbulence model
@@ -9359,7 +9413,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)) { SetPrimitive_Limiter(geometry, config); }
   
-  /*--- Initialize the jacobian matrices ---*/
+  /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit) Jacobian.SetValZero();
   

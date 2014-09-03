@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.0 "eagle"
+ * \version 3.2.1 "eagle"
  *
  * Copyright (C) 2012 Aerospace Design Laboratory
  *
@@ -189,14 +189,15 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
       cout << "Initialize Jacobian structure. MG level: " << iMesh <<"." << endl;
 		Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
     
 	} else {
 		if (rank == MASTER_NODE)
-			cout << "Explicit scheme. No jacobian structure (Euler). MG level: "
+			cout << "Explicit scheme. No Jacobian structure (Euler). MG level: "
            << iMesh <<"." << endl;
 	}
   
@@ -2156,7 +2157,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   if (center)
     SetMax_Eigenvalue(geometry, config);
   
-	/*--- Initialize the jacobian matrices ---*/
+	/*--- Initialize the Jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
   
   /*--- Error message ---*/
@@ -3091,21 +3092,26 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 	bool adjoint = config->GetAdjoint();
   
 	/*--- Set maximum residual to zero ---*/
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		SetRes_RMS(iVar, 0.0);
 		SetRes_Max(iVar, 0.0, 0);
 	}
   
 	/*--- Build implicit system ---*/
+  
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
 		/*--- Read the residual ---*/
+    
 		local_Res_TruncError = node[iPoint]->GetResTruncError();
     
 		/*--- Read the volume ---*/
+    
 		Vol = geometry->node[iPoint]->GetVolume();
     
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
+    
 		Delta = Vol / node[iPoint]->GetDelta_Time();
     Jacobian.AddVal2Diag(iPoint, Delta);
     if (Delta != Delta) {
@@ -3113,6 +3119,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
     }
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar + iVar;
 			LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
@@ -3123,6 +3130,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 	}
   
 	/*--- Initialize residual and solution at the ghost points ---*/
+  
 	for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar + iVar;
@@ -3131,44 +3139,13 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		}
 	}
   
-	/*--- Solve the linear system (Krylov subspace methods) ---*/
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
-    Jacobian.BuildILUPreconditioner();
-    precond = new CILUPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
-    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CLineletPreconditioner(Jacobian, geometry, config);
-  }
+  /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  if (config->GetKind_Linear_Solver() == BCGSTAB)
-    IterLinSol = system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond,
-                                config->GetLinear_Solver_Error(),
-                                config->GetLinear_Solver_Iter(), false);
-  else if (config->GetKind_Linear_Solver() == FGMRES)
-    IterLinSol = system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond,
-                               config->GetLinear_Solver_Error(),
-                               config->GetLinear_Solver_Iter(), false);
-  
-  /*--- The the number of iterations of the linear solver ---*/
-  SetIterLinSolver(IterLinSol);
-  
-  /*--- dealocate memory ---*/
-  delete mat_vec;
-  delete precond;
+  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
 	/*--- Update solution (system written in terms of increments) ---*/
+  
 	if (!adjoint) {
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -3178,9 +3155,11 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 	}
   
 	/*--- MPI solution ---*/
+  
 	Set_MPI_Solution(geometry, config);
   
 	/*--- Compute the root mean square residual ---*/
+  
 	SetResidual_RMS(geometry, config);
   
 }
@@ -5115,17 +5094,18 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- Initialization of the structure of the global Jacobian ---*/
 		if (rank == MASTER_NODE)
-      cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: " << iMesh <<"." << endl;
+      cout << "Initialize Jacobian structure (TNE2 Navier-Stokes). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
-    if (config->GetKind_Linear_Solver_Prec() == LINELET) {
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
       if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
     }
     
 	} else {
 		if (rank == MASTER_NODE)
-			cout << "Explicit scheme. No jacobian structure (TNE2 Navier-Stokes). MG level: "
+			cout << "Explicit scheme. No Jacobian structure (TNE2 Navier-Stokes). MG level: "
            << iMesh <<"." << endl;
 	}
   
@@ -5531,7 +5511,7 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   if (center)
     SetMax_Eigenvalue(geometry, config);
   
-	/*--- Initialize the jacobian matrices ---*/
+	/*--- Initialize the Jacobian matrices ---*/
 	if (implicit) Jacobian.SetValZero();
   
 }
@@ -6679,7 +6659,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
         for (iVar = 0; iVar < nVar; iVar++)
           for (jVar = 0; jVar < nVar; jVar++)
             if (Jacobian_i[iVar][jVar] != Jacobian_i[iVar][jVar])
-              cout << "NaN in isothermal jacobian" << endl;
+              cout << "NaN in isothermal Jacobian" << endl;
       }
     }
   }
