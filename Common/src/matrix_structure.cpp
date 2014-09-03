@@ -25,7 +25,7 @@
 CSysMatrix::CSysMatrix(void) {
   
   /*--- Array initialization ---*/
-  
+
   matrix            = NULL;
   row_ptr           = NULL;
   col_ind           = NULL;

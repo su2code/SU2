@@ -3707,6 +3707,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<<endl;
               cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
               break;
+            case SMOOTHER_JACOBI:
+              cout << "A Jacobi method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case SMOOTHER_ILU:
+              cout << "A ILU0 method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case SMOOTHER_LUSGS:
+              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
+            case SMOOTHER_LINELET:
+              cout << "A Linelet method is used for smoothing the linear system." << endl;
+              cout << "Relaxation coefficient: "<< Linear_Solver_Relax <<"."<<endl;
+              break;
           }
           break;
       }
@@ -3717,9 +3733,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case EULER_IMPLICIT:
           cout << "Euler implicit method for the flow equations." << endl;
           switch (Kind_Linear_Solver) {
-            case LU_SGS:
-              cout << "A LU - symmetric Gauss-Seidel iteration is used for solving the linear system." << endl;
-              break;
             case BCGSTAB:
               cout << "BCGSTAB is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<<endl;

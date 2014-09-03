@@ -63,14 +63,14 @@ double CGalerkin_FEA::ShapeFunc_Triangle(double Xi, double Eta, double CoordCorn
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1];
   ad[0][1] = -xs[0][1];
   ad[1][0] = -xs[1][0];
   ad[1][1] = xs[0][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
   
@@ -126,14 +126,14 @@ double CGalerkin_FEA::ShapeFunc_Rectangle(double Xi, double Eta, double CoordCor
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1];
   ad[0][1] = -xs[0][1];
   ad[1][0] = -xs[1][0];
   ad[1][1] = xs[0][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
   
@@ -189,7 +189,7 @@ double CGalerkin_FEA::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -201,7 +201,7 @@ double CGalerkin_FEA::ShapeFunc_Tetra(double Xi, double Eta, double Zeta, double
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   
@@ -263,7 +263,7 @@ double CGalerkin_FEA::ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -275,7 +275,7 @@ double CGalerkin_FEA::ShapeFunc_Wedge(double Xi, double Eta, double Zeta, double
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   
@@ -337,7 +337,7 @@ double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -349,7 +349,7 @@ double CGalerkin_FEA::ShapeFunc_Pyram(double Xi, double Eta, double Zeta, double
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   
@@ -412,7 +412,7 @@ double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double 
     }
   }
   
-  /*--- Adjoint to jacobian ---*/
+  /*--- Adjoint to Jacobian ---*/
   
   ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
   ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
@@ -424,7 +424,7 @@ double CGalerkin_FEA::ShapeFunc_Hexa(double Xi, double Eta, double Zeta, double 
   ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
   ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
   
-  /*--- Determinant of jacobian ---*/
+  /*--- Determinant of Jacobian ---*/
   
   xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
   

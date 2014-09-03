@@ -121,7 +121,7 @@ void CCentJST_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanEnthalpy = 0.5*(Enthalpy_j+Enthalpy_i);
 	MeanEnergy = 0.5*(Energy_j+Energy_i);
   
-	/*--- Compute projected inviscid jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
+	/*--- Compute projected inviscid Jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
 	GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
 	GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   
@@ -246,7 +246,7 @@ void CCentLax_LinFlow::ComputeResidual (double *val_resconv, double *val_resvisc
 	MeanEnthalpy = 0.5*(Enthalpy_i + Enthalpy_j);
 	MeanEnergy = 0.5*(Energy_i + Energy_j);
   
-	/*--- Compute projected inviscid jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
+	/*--- Compute projected inviscid Jacobian (scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal) ---*/
 	GetInviscidProjJac(Velocity_i, &Energy_i, Normal, 0.5, Jacobian_i);
 	GetInviscidProjJac(Velocity_j, &Energy_j, Normal, 0.5, Jacobian_j);
   

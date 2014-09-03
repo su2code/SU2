@@ -95,7 +95,7 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
       }
       
       /*--- Initialization of the structure of the whole Jacobian ---*/
-      if (rank == MASTER_NODE) cout << "Initialize jacobian structure (Adj. Level Set). MG level: 0." << endl;
+      if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Adj. Level Set). MG level: 0." << endl;
       Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
       if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
@@ -965,7 +965,8 @@ void CAdjLevelSetSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-	unsigned long iPoint;
+  
+	unsigned long iPoint, IterLinSol;
 	double Delta = 0.0, Vol;
 	
 	/*--- Set maximum residual to zero ---*/
@@ -1002,45 +1003,23 @@ void CAdjLevelSetSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **
         LinSysSol[iPoint] = 0.0;
     }
 	
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
-  
-  CPreconditioner* precond = NULL;
-  if (config->GetKind_Linear_Solver_Prec() == JACOBI) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CJacobiPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == ILU) {
-    Jacobian.BuildILUPreconditioner();
-    precond = new CILUPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LU_SGS) {
-    precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
-  }
-  else if (config->GetKind_Linear_Solver_Prec() == LINELET) {
-    Jacobian.BuildJacobiPreconditioner();
-    precond = new CLineletPreconditioner(Jacobian, geometry, config);
-  }
+  /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
-  if (config->GetKind_Linear_Solver() == BCGSTAB)
-    system.BCGSTAB(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                   config->GetLinear_Solver_Iter(), false);
-  else if (config->GetKind_Linear_Solver() == FGMRES)
-    system.FGMRES(LinSysRes, LinSysSol, *mat_vec, *precond, config->GetLinear_Solver_Error(),
-                 config->GetLinear_Solver_Iter(), false);
-  
-  delete mat_vec;
-  delete precond;
+  IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 	
 	/*--- Update solution (system written in terms of increments), be careful with the update of the
 	 scalar equations which includes the density ---*/
+  
 	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
 		node[iPoint]->AddSolution(0, config->GetLinear_Solver_Relax()*LinSysSol[iPoint]);
     
     /*--- MPI solution ---*/
+  
     Set_MPI_Solution(geometry, config);
     
     /*--- Compute the root mean square residual ---*/
+  
     SetResidual_RMS(geometry, config);
   
 }
