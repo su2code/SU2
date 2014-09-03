@@ -58,7 +58,7 @@ CEulerVariable::CEulerVariable(double val_density, double *val_velocity, double 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+8; nPrimVarGrad = nDim+4;
+  if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
     else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
   }
@@ -214,7 +214,7 @@ CEulerVariable::CEulerVariable(double *val_solution, unsigned short val_nDim, un
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+8; nPrimVarGrad = nDim+4;
+  if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
     else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
   }
@@ -640,6 +640,8 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   double cp = FluidModel->GetCp();
   double th_cond = FluidModel->GetThermalConductivity(temperature, density, lam_visc, cp);
   SetThermalConductivity(th_cond);
+
+  SetSpecificHeatCp(cp);
   
   return RightVol;
   

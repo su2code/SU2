@@ -408,6 +408,8 @@ inline void CVariable::SetEddyViscosityInc(double eddy_visc) { }
 
 inline void CVariable::SetThermalConductivity(double thermalConductivity) { }
 
+inline void CVariable::SetSpecificHeatCp(double Cp) { }
+
 inline void CVariable::SetVorticity(void) { }
 
 inline void CVariable::SetStrainMag(void) { }
@@ -679,6 +681,10 @@ inline void CNSVariable::SetLaminarViscosity(double laminarViscosity) {
 
 inline void CNSVariable::SetThermalConductivity(double thermalConductivity) {
     Primitive[nDim+7] = thermalConductivity;
+}
+
+inline void CNSVariable::SetSpecificHeatCp(double Cp) {
+    Primitive[nDim+8] = Cp;
 }
 
 inline void CNSVariable::SetdTdrho_e(double dTdrho_e) {  
