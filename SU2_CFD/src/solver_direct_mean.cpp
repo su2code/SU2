@@ -137,7 +137,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (incompressible) { nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nVar = nDim+2; nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nVar = nDim+2;
-    nPrimVar = nDim+7; nPrimVarGrad = nDim+4;
+    nPrimVar = nDim+8; nPrimVarGrad = nDim+4;
     nSecondaryVar = 2; nSecondaryVarGrad = 2;
   }
   
