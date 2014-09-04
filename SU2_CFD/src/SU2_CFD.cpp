@@ -45,6 +45,9 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   
+  // haha!
+  throw(2)
+  
   bool StopCalc = false;
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned long ExtIter = 0;
