@@ -46,7 +46,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   // haha!
-  throw(1)
+  throw(2)
   
   bool StopCalc = false;
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
