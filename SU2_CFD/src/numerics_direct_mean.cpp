@@ -1592,7 +1592,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(double *val_residual, double **val_Jac
 		GetPMatrix_inv(invP_Tensor, &RoeDensity, RoeVelocity, &RoeSoundSpeed,&RoeChi , &RoeKappa, UnitNormal);
 
 		/*--- Jacobians of the inviscid flux, scaled by
-     0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+        0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
 		GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, Normal, 0.5, val_Jacobian_i);
 
 		GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, Normal, 0.5, val_Jacobian_j);

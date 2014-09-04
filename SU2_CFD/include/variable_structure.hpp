@@ -936,7 +936,13 @@ public:
    * \return Value of the thermal conductivity (translational/rotational)
    */
   virtual double GetThermalConductivity(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the specific heat at constant P
+   */
+   virtual double GetSpecificHeatCp(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the thermal conductivity (vibrational)
@@ -2566,8 +2572,14 @@ public:
 	 * \return The eddy viscosity of the flow.
 	 */
 	double GetEddyViscosity(void);
-  
-  /*!
+
+	/*!
+	 * \brief Get the specific heat at constant P of the flow.
+	 * \return Value of the specific heat at constant P  of the flow.
+	 */
+	double GetSpecificHeatCp(void);
+
+    /*!
 	 * \brief Get the eddy viscosity of the flow.
 	 * \return The eddy viscosity of the flow.
 	 */
@@ -3882,7 +3894,7 @@ public:
 	 * \return Value of the laminar viscosity of the flow.
 	 */
 	double GetThermalConductivity(void);
-  
+
   /*!
 	 * \brief Get the vib-el. thermal conductivity of the flow.
 	 * \return Value of the laminar viscosity of the flow.

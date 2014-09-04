@@ -1907,7 +1907,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     if (viscous) {
       
-    	if (ideal_gas) {
+    	//if (ideal_gas) {
         
     		/*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
@@ -1943,12 +1943,12 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		config->SetPressure_FreeStream(Pressure_FreeStream);
     		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
         
-    	} else {
-    		FluidModel->SetLaminarViscosityModel(config);
-    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
-        config->SetViscosity_FreeStream(Viscosity_FreeStream);
-    		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-    	}
+//    	} else {
+//    		FluidModel->SetLaminarViscosityModel(config);
+//    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
+//            config->SetViscosity_FreeStream(Viscosity_FreeStream);
+//    		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+//    	}
       
       /*--- Turbulence quantities ---*/
       
@@ -6521,9 +6521,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
               conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
 /// check ALE
 
-
-
-
               if (grid_movement)
               {
                 Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
@@ -6586,6 +6583,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
           V_boundary[nDim+5] = node[iPoint]->GetLaminarViscosity();
           V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
+          V_boundary[nDim+7] = node[iPoint]->GetThermalConductivity();
+          V_boundary[nDim+8] = node[iPoint]->GetSpecificHeatCp();
 
         /*--- Set the normal vector and the coordinates ---*/
         visc_numerics->SetNormal(Normal);
@@ -6611,7 +6610,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
     }
   }
-// getchar();
+
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
   delete [] Velocity_e;
@@ -10271,6 +10270,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
   
   /*--- Retrieve the specified wall temperature ---*/
   
+  //TODO It is dimensional???
   Twall = config->GetIsothermal_Temperature(Marker_Tag);
   
   /*--- Loop over boundary points ---*/
@@ -10343,6 +10343,11 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       laminar_viscosity    = node[iPoint]->GetLaminarViscosity();
       eddy_viscosity       = node[iPoint]->GetEddyViscosity();
       thermal_conductivity = Cp * ( laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+
+      // work in progress on real-gases...
+      //thermal_conductivity = node[iPoint]->GetThermalConductivity();
+      //Cp = node[iPoint]->GetSpecificHeatCp();
+      //thermal_conductivity += Cp*eddy_viscosity/Prandtl_Turb;
       
       /*--- Apply a weak boundary condition for the energy equation.
        Compute the residual due to the prescribed heat flux. ---*/
