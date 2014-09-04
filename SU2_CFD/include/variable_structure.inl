@@ -248,6 +248,8 @@ inline double* CVariable::GetDiffusionCoeff(void) { return NULL; }
 
 inline double CVariable::GetThermalConductivity(void) { return 0; }
 
+inline double CVariable::GetSpecificHeatCp(void) { return 0; }
+
 inline double CVariable::GetThermalConductivity_ve(void) { return 0; }
 
 inline double CVariable::GetVorticity(unsigned short val_dim) { return 0; }
@@ -670,6 +672,8 @@ inline double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5];
 inline double CNSVariable::GetLaminarViscosityInc(void) { return Primitive[nDim+3]; }
 
 inline double CNSVariable::GetThermalConductivity(void) { return Primitive[nDim+7]; }
+
+inline double CNSVariable::GetSpecificHeatCp(void) { return Primitive[nDim+8]; }
 
 inline double CNSVariable::GetVorticity(unsigned short val_dim) { return Vorticity[val_dim]; }
 

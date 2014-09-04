@@ -32,7 +32,6 @@ CVanDerWaalsGas::CVanDerWaalsGas(double gamma, double R, double Pstar, double Ts
     a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
 	b = 1.0/8.0*Gas_Constant*Tstar/Pstar;
 
-
 }
 
 
