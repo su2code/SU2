@@ -1808,7 +1808,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   double Beta             = config->GetAoS()*PI_NUMBER/180.0;
-  double Gamma_Minus_One  = Gamma - 1.0;
   double Mach             = config->GetMach();
   double Reynolds         = config->GetReynolds();
   bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -4200,8 +4199,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   double Delta, *local_Res_TruncError, Vol;
   
-  double SolverTol = config->GetLinear_Solver_Error();
-  unsigned long MaxIter = config->GetLinear_Solver_Iter();
   bool adjoint = config->GetAdjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   

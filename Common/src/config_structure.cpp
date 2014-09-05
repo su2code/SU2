@@ -3269,7 +3269,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
         case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
         case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
-        case FFD_EDGE:              cout << "FFD (edge) <-> "; break;
         case SURFACE_FILE:          cout << "Surface file based deformation." ; break;
       }
 
@@ -3305,7 +3304,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
         if (Design_Variable[iDV] == FFD_CONTROL_SURFACE) nParamDV = 7;
         if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
-        if (Design_Variable[iDV] == FFD_EDGE) nParamDV = 10;
         if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
@@ -3324,8 +3322,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_ROTATION) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
-               (Design_Variable[iDV] == FFD_THICKNESS) ||
-               (Design_Variable[iDV] == FFD_EDGE))) cout << FFDTag[iDV];
+               (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
