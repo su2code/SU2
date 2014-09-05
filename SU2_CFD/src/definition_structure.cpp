@@ -877,15 +877,30 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
-      /*--- Compressible flow ---*/
-      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
-      for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-      
-      /*--- Definition of the boundary condition method ---*/
-      for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
-    }
+    	if(ideal_gas){
+
+			/*--- Compressible flow Ideal gas ---*/
+		  numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+		  for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+
+		  /*--- Definition of the boundary condition method ---*/
+		  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
+
+    	}else{
+
+    	/*--- Compressible flow Realgas ---*/
+		  numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGradCorrected_Flow(nDim, nVar_Flow, config);
+		  for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+
+		  /*--- Definition of the boundary condition method ---*/
+		  for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
+			numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CGeneralAvgGrad_Flow(nDim, nVar_Flow, config);
+
+    	}
+	}
     if (incompressible) {
       /*--- Incompressible flow, use artificial compressibility method ---*/
       numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
