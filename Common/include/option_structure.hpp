@@ -914,7 +914,6 @@ enum ENUM_PARAM {
   FFD_ROTATION = 13,		/*!< \brief Free form deformation for 3D design (rotation around a line). */
   FFD_CAMBER = 14,		/*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS = 15,		/*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_EDGE = 29,		/*!< \brief Free form deformation for 3D design (edge change). */
   PARABOLIC = 17,		/*!< \brief Parabolic airfoil definition as design variables. */
   OBSTACLE = 18,		        /*!< \brief Obstacle for free surface optimization. */
   STRETCH = 19,		        /*!< \brief Stretch one side of a channel. */
@@ -945,7 +944,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
-("FFD_EDGE", FFD_EDGE)
 ("PARABOLIC", PARABOLIC)
 ("OBSTACLE", OBSTACLE)
 ("STRETCH", STRETCH)
@@ -1788,7 +1786,6 @@ public:
         case FFD_ROTATION: nParamDV = 7; break;
         case FFD_CONTROL_SURFACE: nParamDV = 7; break;
         case FFD_CAMBER: nParamDV = 3; break;
-        case FFD_EDGE: nParamDV = 10; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
         default : {
@@ -1816,8 +1813,7 @@ public:
              (this->design_variable[iDV] == FFD_ROTATION) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
-             (this->design_variable[iDV] == FFD_THICKNESS) ||
-             (this->design_variable[iDV] == FFD_EDGE))) {
+             (this->design_variable[iDV] == FFD_THICKNESS))) {
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
