@@ -268,6 +268,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
   /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
+  /* DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution */
+  addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
   /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */

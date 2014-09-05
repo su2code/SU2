@@ -1909,7 +1909,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     if (viscous) {
       
-    	//if (ideal_gas) {
+    	if (config->GetKind_InitOption()== REYNOLDS) {
         
     		/*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
@@ -1945,12 +1945,12 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		config->SetPressure_FreeStream(Pressure_FreeStream);
     		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
         
-//    	} else {
-//    		FluidModel->SetLaminarViscosityModel(config);
-//    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
-//            config->SetViscosity_FreeStream(Viscosity_FreeStream);
-//    		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-//    	}
+    	} else {
+    		FluidModel->SetLaminarViscosityModel(config);
+    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
+            config->SetViscosity_FreeStream(Viscosity_FreeStream);
+    		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+    	}
       
       /*--- Turbulence quantities ---*/
       

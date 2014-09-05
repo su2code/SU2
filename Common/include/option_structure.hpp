@@ -333,6 +333,23 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS);
 
+
+/*!
+ * \brief types of initialization option
+ */
+
+enum ENUM_INIT_OPTION {
+	REYNOLDS = 0, /*!< \brief _____. */
+	TD_CONDITIONS = 1
+
+};
+
+static const map<string, ENUM_INIT_OPTION> InitOption_Map = CCreateMap<string, ENUM_INIT_OPTION>
+("REYNOLDS", REYNOLDS)
+("TD_CONDITIONS", TD_CONDITIONS);
+
+
+
 /*!
  * \brief types of initialization option
  */
