@@ -414,6 +414,8 @@ inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel
 
 inline unsigned short CConfig::GetKind_FreeStreamOption(void) {return Kind_FreeStreamOption; } 
 
+inline unsigned short CConfig::GetKind_InitOption(void) {return Kind_InitOption; }
+
 inline double CConfig::GetPressure_Critical(void) { return Pressure_Critical; }
 
 inline double CConfig::GetTemperature_Critical(void) { return Temperature_Critical; }

@@ -265,6 +265,7 @@ private:
 	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
 	Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
 	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
+	Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
@@ -2433,6 +2434,11 @@ public:
 	 */
 	unsigned short GetKind_FreeStreamOption(void);
 
+	/*!
+	 * \brief free stream option to initialize the solution
+	 * \return free stream option
+	 */
+	unsigned short GetKind_InitOption(void);
 	/*!
 	 * \brief Get the value of the critical pressure.
 	 * \return Critical pressure.
