@@ -3114,51 +3114,51 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       if (compressible) {
 
-//        Gradient_i = node[iPoint]->GetGradient_Secondary();
-//        Gradient_j = node[jPoint]->GetGradient_Secondary();
-//        if (limiter) {
-//          Limiter_i = node[iPoint]->GetLimiter_Secondary();
-//          Limiter_j = node[jPoint]->GetLimiter_Secondary();
-//        }
+        Gradient_i = node[iPoint]->GetGradient_Secondary();
+        Gradient_j = node[jPoint]->GetGradient_Secondary();
+        if (limiter) {
+          Limiter_i = node[iPoint]->GetLimiter_Secondary();
+          Limiter_j = node[jPoint]->GetLimiter_Secondary();
+        }
+
+        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+            Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+          }
+          if (limiter) {
+            Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+            Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+          }
+          else {
+            Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
+            Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
+          }
+        }
+
+
+//    	  double density_i = Primitive_i[0];
+//    	  double velocity2_i = 0.0;
+//    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+//    	      velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+//    	    }
+//    	  double staticEnergy_i = Primitive_i[nDim+3]-Primitive_i[nDim+1]/Primitive_i[0]-0.5*velocity2_i;
+//    	  FluidModel->SetTDState_rhoe(density_i, staticEnergy_i);
+//    	  Secondary_i[0]=FluidModel->GetdPdrho_e();
+//    	  Secondary_i[1]=FluidModel->GetdPde_rho();
 //
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-//          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-//          for (iDim = 0; iDim < nDim; iDim++) {
-//            Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-//            Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-//          }
-//          if (limiter) {
-//            Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-//            Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-//          }
-//          else {
-//            Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
-//            Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
-//          }
-//        }
-
-
-    	  double density_i = Primitive_i[0];
-    	  double velocity2_i = 0.0;
-    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    	      velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-    	    }
-    	  double staticEnergy_i = Primitive_i[nDim+3]-Primitive_i[nDim+1]/Primitive_i[0]-0.5*velocity2_i;
-    	  FluidModel->SetTDState_rhoe(density_i, staticEnergy_i);
-    	  Secondary_i[0]=FluidModel->GetdPdrho_e();
-    	  Secondary_i[1]=FluidModel->GetdPde_rho();
-
-    	  double density_j = Primitive_j[0];
-    	  double velocity2_j = 0.0;
-    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    	      velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
-    	    }
-    	  double staticEnergy_j = Primitive_j[nDim+3]-Primitive_j[nDim+1]/Primitive_j[0]-0.5*velocity2_j;
-    	  FluidModel->SetTDState_rhoe(density_i, staticEnergy_i);
-    	  Secondary_j[0]=FluidModel->GetdPdrho_e();
-    	  Secondary_j[1]=FluidModel->GetdPde_rho();
-
-
+//    	  double density_j = Primitive_j[0];
+//    	  double velocity2_j = 0.0;
+//    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+//    	      velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+//    	    }
+//    	  double staticEnergy_j = Primitive_j[nDim+3]-Primitive_j[nDim+1]/Primitive_j[0]-0.5*velocity2_j;
+//    	  FluidModel->SetTDState_rhoe(density_j, staticEnergy_j);
+//    	  Secondary_j[0]=FluidModel->GetdPdrho_e();
+//    	  Secondary_j[1]=FluidModel->GetdPde_rho();
+//
+//
       }
       
       /*--- Set conservative variables with reconstruction ---*/
