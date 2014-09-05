@@ -472,8 +472,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       Velocity2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-      Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-      Temperature = Pressure / ( Gas_Constant * Density);
+      double StaticEnergy= node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2;
+      FluidModel->SetTDState_rhoe(Density, StaticEnergy);
+      Pressure= FluidModel->GetPressure();
+      Temperature= FluidModel->GetTemperature();
       if ((Pressure < 0.0) || (Temperature < 0.0)) {
         Solution[0] = Density_Inf;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -9206,8 +9208,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Velocity2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-      Pressure    = Gamma_Minus_One*Density*(node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2);
-      Temperature = Pressure / ( Gas_Constant * Density);
+      double StaticEnergy= node[iPoint]->GetSolution(nDim+1)/Density-0.5*Velocity2;
+      FluidModel->SetTDState_rhoe(Density, StaticEnergy);
+      Pressure= FluidModel->GetPressure();
+      Temperature= FluidModel->GetTemperature();
       if ((Pressure < 0.0) || (Temperature < 0.0)) {
         Solution[0] = Density_Inf;
         for (iDim = 0; iDim < nDim; iDim++)
