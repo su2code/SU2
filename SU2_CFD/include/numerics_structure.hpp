@@ -1005,6 +1005,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
 	 * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
+	 * \param[in] val_eddy_conductivity - Value of the eddy conductivity.
 	 * \param[in] val_dist_ij - Distance between the points.
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[in] val_dS - Area of the face between two nodes.
@@ -1017,6 +1018,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
                           double val_laminar_viscosity,
                           double val_eddy_viscosity,
                           double val_thermal_conductivity,
+                          double val_eddy_conductivity,
                           double val_dist_ij,
                           double *val_normal, double val_dS,
                           double *val_Proj_Visc_Flux,
