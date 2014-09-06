@@ -2203,7 +2203,6 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 	double total_conductivity = val_thermal_conductivity + val_eddy_conductivity;
-	//double factor = total_viscosity*val_dS/(Density*val_dist_ij);
 	val_Proj_Jac_Tensor_i_P = new double[nVar][nVar];
 	val_Proj_Jac_Tensor_j_P = new double[nVar][nVar];
 	val_Jac_PC = new double[nVar][nVar];
@@ -2256,6 +2255,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
+				val_Proj_Jac_Tensor_j_P[iVar][jVar] *= val_dS;
 				val_Proj_Jac_Tensor_j_P[iVar][jVar] = -val_Proj_Jac_Tensor_i_P[iVar][jVar];
 
 	    /* 2D Jacobian: (T,vx,vy,rho) --> (u1,u2,u3,u4) */
