@@ -1138,7 +1138,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        
+// TODO (turb realgas) insert fluidmodel
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];

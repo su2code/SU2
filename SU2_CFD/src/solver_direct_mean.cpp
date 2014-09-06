@@ -5504,128 +5504,128 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   
 }
 
-#ifndef CHECK_FLATPLATE_SST
-
-void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  
-  unsigned short iDim, iVar, jVar, jDim;
-  unsigned long iPoint, iVertex;
-  double Pressure = 0.0, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3],
-  ProjGridVel = 0.0, a2, phi, turb_ke = 0.0;
-  
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool grid_movement  = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-  
-  /*--- Loop over all the vertices on this boundary marker ---*/
-  
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
-    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
-      
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-      
-      /*--- Get the pressure ---*/
-      
-      if (compressible)                   Pressure = node[iPoint]->GetPressure();
-      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
-      
-      /*--- Add the kinetic energy correction ---*/
-      
-      if (tkeNeeded) {
-        turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-        Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
-      }
-      
-      /*--- Compute the residual ---*/
-      
-      Residual[0] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
-      
-      if (compressible || freesurface) {
-        Residual[nVar-1] = 0.0;
-      }
-      
-      /*--- Adjustment to energy equation due to grid motion ---*/
-      
-      if (grid_movement) {
-        ProjGridVel = 0.0;
-        GridVel = geometry->node[iPoint]->GetGridVel();
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
-        Residual[nVar-1] = Pressure*ProjGridVel;
-      }
-      
-      /*--- Add value to the residual ---*/
-      
-      LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Form Jacobians for implicit computations ---*/
-      
-      if (implicit) {
-        
-        /*--- Initialize Jacobian ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        }
-        
-        if (compressible)  {
-          a2 = Gamma-1.0;
-          phi = 0.5*a2*node[iPoint]->GetVelocity2();
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Jacobian_i[0][iVar] = 0.0;
-            Jacobian_i[nDim+1][iVar] = 0.0;
-          }
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
-            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
-          }
-          if (grid_movement) {
-            ProjGridVel = 0.0;
-            GridVel = geometry->node[iPoint]->GetGridVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
-            Jacobian_i[nDim+1][0] = phi*ProjGridVel;
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_i[nDim+1][jDim+1] = -a2*node[iPoint]->GetVelocity(jDim)*ProjGridVel;
-            Jacobian_i[nDim+1][nDim+1] = a2*ProjGridVel;
-          }
-          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
-          
-        }
-        if (incompressible || freesurface)  {
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_i[iDim+1][0] = -Normal[iDim];
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        }
-        
-      }
-    }
-  }
-  
-}
-
-#else
+//#ifndef CHECK_FLATPLATE_SST
+//
+//void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
+//                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+//
+//  unsigned short iDim, iVar, jVar, jDim;
+//  unsigned long iPoint, iVertex;
+//  double Pressure = 0.0, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3],
+//  ProjGridVel = 0.0, a2, phi, turb_ke = 0.0;
+//
+//  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+//  bool grid_movement  = config->GetGrid_Movement();
+//  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+//  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+//  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+//  bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
+//
+//  /*--- Loop over all the vertices on this boundary marker ---*/
+//
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//
+//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//
+//    if (geometry->node[iPoint]->GetDomain()) {
+//
+//      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+//
+//      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+//
+//      Area = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+//      Area = sqrt (Area);
+//
+//      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+//
+//      /*--- Get the pressure ---*/
+//
+//      if (compressible)                   Pressure = node[iPoint]->GetPressure();
+//      if (incompressible || freesurface)  Pressure = node[iPoint]->GetPressureInc();
+//
+//      /*--- Add the kinetic energy correction ---*/
+//
+//      if (tkeNeeded) {
+//        turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+//        Pressure += (2.0/3.0)*node[iPoint]->GetDensity()*turb_ke;
+//      }
+//
+//      /*--- Compute the residual ---*/
+//
+//      Residual[0] = 0.0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area;
+//
+//      if (compressible || freesurface) {
+//        Residual[nVar-1] = 0.0;
+//      }
+//
+//      /*--- Adjustment to energy equation due to grid motion ---*/
+//
+//      if (grid_movement) {
+//        ProjGridVel = 0.0;
+//        GridVel = geometry->node[iPoint]->GetGridVel();
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
+//        Residual[nVar-1] = Pressure*ProjGridVel;
+//      }
+//
+//      /*--- Add value to the residual ---*/
+//
+//      LinSysRes.AddBlock(iPoint, Residual);
+//
+//      /*--- Form Jacobians for implicit computations ---*/
+//
+//      if (implicit) {
+//
+//        /*--- Initialize Jacobian ---*/
+//
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          for (jVar = 0; jVar < nVar; jVar++)
+//            Jacobian_i[iVar][jVar] = 0.0;
+//        }
+//
+//        if (compressible)  {
+//          a2 = Gamma-1.0;
+//          phi = 0.5*a2*node[iPoint]->GetVelocity2();
+//          for (iVar = 0; iVar < nVar; iVar++) {
+//            Jacobian_i[0][iVar] = 0.0;
+//            Jacobian_i[nDim+1][iVar] = 0.0;
+//          }
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            Jacobian_i[iDim+1][0] = -phi*Normal[iDim];
+//            for (jDim = 0; jDim < nDim; jDim++)
+//              Jacobian_i[iDim+1][jDim+1] = a2*node[iPoint]->GetVelocity(jDim)*Normal[iDim];
+//            Jacobian_i[iDim+1][nDim+1] = -a2*Normal[iDim];
+//          }
+//          if (grid_movement) {
+//            ProjGridVel = 0.0;
+//            GridVel = geometry->node[iPoint]->GetGridVel();
+//            for (iDim = 0; iDim < nDim; iDim++)
+//              ProjGridVel += GridVel[iDim]*UnitNormal[iDim]*Area;
+//            Jacobian_i[nDim+1][0] = phi*ProjGridVel;
+//            for (jDim = 0; jDim < nDim; jDim++)
+//              Jacobian_i[nDim+1][jDim+1] = -a2*node[iPoint]->GetVelocity(jDim)*ProjGridVel;
+//            Jacobian_i[nDim+1][nDim+1] = a2*ProjGridVel;
+//          }
+//          Jacobian.AddBlock(iPoint,iPoint,Jacobian_i);
+//
+//        }
+//        if (incompressible || freesurface)  {
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            Jacobian_i[iDim+1][0] = -Normal[iDim];
+//          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//        }
+//
+//      }
+//    }
+//  }
+//
+//}
+//
+//#else
 
 void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
@@ -5862,7 +5862,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   
 }
 
-#endif
+//#endif
 
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
