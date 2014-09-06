@@ -2305,6 +2305,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
+				val_Proj_Jac_Tensor_j_P[iVar][jVar] *= val_dS;
 				val_Proj_Jac_Tensor_j_P[iVar][jVar] = -val_Proj_Jac_Tensor_i_P[iVar][jVar];
 
 	    /* 3D Jacobian: (T,vx,vy,vz,rho) --> (u1,u2,u3,u4,u5) */
