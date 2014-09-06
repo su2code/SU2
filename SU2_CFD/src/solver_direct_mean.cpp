@@ -3136,8 +3136,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
             Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
           }
         }
-
-
+// evaluate derivative in a TD consistent way
+//
 //    	  double density_i = Primitive_i[0];
 //    	  double velocity2_i = 0.0;
 //    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -6251,7 +6251,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
 
-            case TOTAL_CONDITIONS_PT: case TOTAL_SUPERSONIC_INFLOW:
+            case TOTAL_CONDITIONS_PT: //case TOTAL_SUPERSONIC_INFLOW:
                 /*--- Retrieve the specified total conditions for this boundary. ---*/
 
                 if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -6274,19 +6274,22 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 /* --- Compute the boundary state u_e --- */
 
-                if(config->GetKind_Data_Riemann(Marker_Tag) == TOTAL_CONDITIONS_PT){
+//                if(config->GetKind_Data_Riemann(Marker_Tag) == TOTAL_CONDITIONS_PT){
                 	Velocity2_e = Velocity2_i;
 
                 	for (iDim = 0; iDim < nDim; iDim++) {
                 		Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
                 	}
-                }else{
-                	Velocity2_e = 0.0;
-                	for (iDim = 0; iDim < nDim; iDim++) {
-						Velocity_e[iDim] = Flow_Dir[iDim]/config->GetVelocity_Ref();
-						Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-                		}
-                }
+
+//                }else{
+//                	Velocity2_e = 0.0;
+//                	for (iDim = 0; iDim < nDim; iDim++) {
+//						Velocity_e[iDim] = Flow_Dir[iDim]/config->GetVelocity_Ref();
+//						Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+//                		}
+//                }
+
+
                 StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 //                cout << StaticEnthalpy_e << " "<< Entropy_e << endl;
 
