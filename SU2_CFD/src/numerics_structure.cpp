@@ -2248,10 +2248,10 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 		double etax = pow(val_normal[0],2)/val_dist_ij;
 		double etay = pow(val_normal[1],2)/val_dist_ij;
-		val_Proj_Jac_Tensor_i_P[3][0] += total_conductivity*etax; //- val_normal[0]*dmudT_rho*...;
+		val_Proj_Jac_Tensor_i_P[3][0] += total_conductivity*etax; //- val_normal[0]*dktdT_rho*...;
 		val_Proj_Jac_Tensor_i_P[3][1] += 1.0/2.0*val_Proj_Visc_Flux[1];
 		val_Proj_Jac_Tensor_i_P[3][2] += 1.0/2.0*val_Proj_Visc_Flux[2];
-		val_Proj_Jac_Tensor_i_P[3][3] += total_conductivity*etay; //- val_normal[1]*dmudT_rho*...;
+		val_Proj_Jac_Tensor_i_P[3][3] += total_conductivity*etay; //- val_normal[1]*dktdT_rho*...;
 
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
