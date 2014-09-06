@@ -2166,6 +2166,243 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 }
 
 void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
+									double *val_Mean_SecVar,
+									double val_laminar_viscosity,
+									double val_eddy_viscosity,
+									double val_thermal_conductivity,
+									double val_dist_ij,
+									double *val_normal, double val_dS,
+									double *val_Proj_Visc_Flux,
+									double **val_Proj_Jac_Tensor_i,
+									double **val_Proj_Jac_Tensor_j) {
+
+	/* Viscous flux Jacobians for arbitrary equations of state */
+
+	// order of primitives: T,vx,vy,vz,P,rho,h,c,MuLam,MuEddy,kt,Cp
+	// order of secondary: dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho
+
+	unsigned short iDim, iVar, jVar;
+
+	double theta = 0.0, sqvel = 0.0, proj_viscousflux_vel = 0.0;
+
+	for (iDim = 0; iDim < nDim; iDim++) {
+		theta += val_normal[iDim]*val_normal[iDim];
+		sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
+		proj_viscousflux_vel += val_Proj_Visc_Flux[iDim+1]*val_Mean_PrimVar[iDim+1];
+	}
+
+	double vx = val_Mean_PrimVar[1];
+	double vy = val_Mean_PrimVar[2];
+	double vz = val_Mean_PrimVar[3];
+	double rho = val_Mean_PrimVar[nDim+2];
+	double P = val_Mean_PrimVar[nDim+1];
+	double dmudrho_T = val_Mean_SecVar[4];
+	double dmudT_rho = val_Mean_SecVar[5];
+	double dktdrho_T = val_Mean_SecVar[6];
+	double dktdT_rho = val_Mean_SecVar[7];
+
+	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+	//double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
+	//double factor = total_viscosity*val_dS/(Density*val_dist_ij);
+	//double val_Jac_PC = new double[nVar][nVar];
+
+	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+		for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+			val_Proj_Jac_Tensor_i[iVar][jVar] = 0.0;
+			val_Proj_Jac_Tensor_j[iVar][jVar] = 0.0;
+			//val_Jac_PC[iVar][jVar] = 0.0;
+		}
+	}
+
+	if (nDim == 2) {
+
+	    /* 2D Jacobian: (Fv1,Fv2,Fv3,Fv4) --> (T,vx,vy,rho) */
+
+		double thetax = theta + val_normal[0]*val_normal[0]/3.0;
+		double thetay = theta + val_normal[1]*val_normal[1]/3.0;
+
+		double etaz = val_normal[0]*val_normal[1]/3.0;
+
+		double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz;
+		double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay;
+
+		val_Proj_Jac_Tensor_i[0][0] = 0.0;
+		val_Proj_Jac_Tensor_i[0][1] = 0.0;
+		val_Proj_Jac_Tensor_i[0][2] = 0.0;
+		val_Proj_Jac_Tensor_i[0][3] = 0.0;
+
+		val_Proj_Jac_Tensor_i[1][0] = 0.0;
+		val_Proj_Jac_Tensor_i[1][1] = 0.0;
+		val_Proj_Jac_Tensor_i[1][2] = 0.0;
+		val_Proj_Jac_Tensor_i[1][3] = 0.0;
+
+		val_Proj_Jac_Tensor_i[2][0] = 0.0;
+		val_Proj_Jac_Tensor_i[2][1] = 0.0;
+		val_Proj_Jac_Tensor_i[2][2] = 0.0;
+		val_Proj_Jac_Tensor_i[2][3] = 0.0;
+
+		val_Proj_Jac_Tensor_i[3][0] = 0.0;
+		val_Proj_Jac_Tensor_i[3][1] = 0.0;
+		val_Proj_Jac_Tensor_i[3][2] = 0.0;
+		val_Proj_Jac_Tensor_i[3][3] = 0.0;
+
+		for (iVar = 0; iVar < nVar; iVar++)
+			for (jVar = 0; jVar < nVar; jVar++)
+				val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+
+	    /* 2D Jacobian: (T,vx,vy,rho) --> (u1,u2,u3,u4) */
+
+	    /* 2D Jacobian: (Fv1,Fv2,Fv3,Fv4) --> (u1,u2,u3,u4) */
+
+	}
+	else {
+
+	    /* 3D Jacobian: (Fv1,Fv2,Fv3,Fv4,Fv5) --> (T,vx,vy,vz,rho) */
+
+		double thetax = theta + val_normal[0]*val_normal[0]/3.0;
+		double thetay = theta + val_normal[1]*val_normal[1]/3.0;
+		double thetaz = theta + val_normal[2]*val_normal[2]/3.0;
+
+		double etax = val_normal[1]*val_normal[2]/3.0;
+		double etay = val_normal[0]*val_normal[2]/3.0;
+		double etaz = val_normal[0]*val_normal[1]/3.0;
+
+		double pix = val_Mean_PrimVar[1]*thetax + val_Mean_PrimVar[2]*etaz   + val_Mean_PrimVar[3]*etay;
+		double piy = val_Mean_PrimVar[1]*etaz   + val_Mean_PrimVar[2]*thetay + val_Mean_PrimVar[3]*etax;
+		double piz = val_Mean_PrimVar[1]*etay   + val_Mean_PrimVar[2]*etax   + val_Mean_PrimVar[3]*thetaz;
+
+		val_Proj_Jac_Tensor_i[0][0] = 0.0;
+		val_Proj_Jac_Tensor_i[0][1] = 0.0;
+		val_Proj_Jac_Tensor_i[0][2] = 0.0;
+		val_Proj_Jac_Tensor_i[0][3] = 0.0;
+		val_Proj_Jac_Tensor_i[0][4] = 0.0;
+
+		val_Proj_Jac_Tensor_i[1][0] = 0.0;
+		val_Proj_Jac_Tensor_i[1][1] = 0.0;
+		val_Proj_Jac_Tensor_i[1][2] = 0.0;
+		val_Proj_Jac_Tensor_i[1][3] = 0.0;
+		val_Proj_Jac_Tensor_i[1][4] = 0.0;
+
+		val_Proj_Jac_Tensor_i[2][0] = 0.0;
+		val_Proj_Jac_Tensor_i[2][1] = 0.0;
+		val_Proj_Jac_Tensor_i[2][2] = 0.0;
+		val_Proj_Jac_Tensor_i[2][3] = 0.0;
+		val_Proj_Jac_Tensor_i[2][4] = 0.0;
+
+		val_Proj_Jac_Tensor_i[3][0] = 0.0;
+		val_Proj_Jac_Tensor_i[3][1] = 0.0;
+		val_Proj_Jac_Tensor_i[3][2] = 0.0;
+		val_Proj_Jac_Tensor_i[3][3] = 0.0;
+		val_Proj_Jac_Tensor_i[3][4] = 0.0;
+
+		val_Proj_Jac_Tensor_i[4][0] = 0.0;
+		val_Proj_Jac_Tensor_i[4][1] = 0.0;
+		val_Proj_Jac_Tensor_i[4][2] = 0.0;
+		val_Proj_Jac_Tensor_i[4][3] = 0.0;
+		val_Proj_Jac_Tensor_i[4][4] = 0.0;
+
+		for (iVar = 0; iVar < nVar; iVar++)
+			for (jVar = 0; jVar < nVar; jVar++)
+				val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+
+	    /* 3D Jacobian: (T,vx,vy,vz,rho) --> (u1,u2,u3,u4,u5) */
+		//GetPrimitive2Conservative (val_Mean_PrimVar, val_Mean_SecVar, val_Jac_PC);
+
+	    /* 3D Jacobian: (Fv1,Fv2,Fv3,Fv4,Fv5) --> (u1,u2,u3,u4,u5) */
+
+	}
+
+}
+
+void CNumerics::GetPrimitive2Conservative (double *val_Mean_PrimVar, double *val_Mean_SecVar, double **val_Jac_PC) {
+
+	unsigned short iVar, jVar, iDim;
+
+	// order of primitives: T,vx,vy,vz,P,rho,h,c,MuLam,MuEddy,kt,Cp
+	// order of secondary: dPdrho_e, dPde_rho, dTdrho_e, dTde_rho, dmudrho_T, dmudT_rho, dktdrho_T, dktdT_rho
+
+	double vx = val_Mean_PrimVar[1];
+	double vy = val_Mean_PrimVar[2];
+	double vz = val_Mean_PrimVar[3];
+	double rho = val_Mean_PrimVar[nDim+2];
+	double P = val_Mean_PrimVar[nDim+1];
+	double e = val_Mean_PrimVar[nDim+3] - P/rho;
+	double dTdrho_e = val_Mean_SecVar[2];
+	double dTde_rho = val_Mean_SecVar[3];
+
+	double sqvel = 0.0;
+
+	for (iDim = 0; iDim < nDim; iDim++) {
+		sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
+	}
+
+  /*--- Initialize the Jacobian matrix ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_Jac_PC[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*--- Primitives to conservatives Jacobian matrix : (T,vx,vy,vz,rho) --> (u1,u2,u3,u4,u5) ---*/
+  if (nDim == 2) {
+
+	val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;
+	val_Jac_PC[0][1] = -1/rho*dTde_rho*vx;
+	val_Jac_PC[0][2] = -1/rho*dTde_rho*vy;
+	val_Jac_PC[0][3] = 1/rho*dTde_rho;
+
+	val_Jac_PC[1][0] = -vx*vx;
+	val_Jac_PC[1][1] = 1/rho;
+	val_Jac_PC[1][2] = 0.0;
+	val_Jac_PC[1][3] = 0.0;
+
+	val_Jac_PC[2][0] = -vy*vy;
+	val_Jac_PC[2][1] = 0.0;
+	val_Jac_PC[2][2] = 1/rho;
+	val_Jac_PC[2][3] = 0.0;
+
+	val_Jac_PC[3][0] = 1.0;
+	val_Jac_PC[3][1] = 0.0;
+	val_Jac_PC[3][2] = 0.0;
+	val_Jac_PC[3][3] = 0.0;
+
+  }
+  else {
+
+	val_Jac_PC[0][0] = dTdrho_e - e/rho*dTde_rho + 0.5*dTde_rho*sqvel/rho;
+	val_Jac_PC[0][1] = -1/rho*dTde_rho*vx;
+	val_Jac_PC[0][2] = -1/rho*dTde_rho*vy;
+	val_Jac_PC[0][3] = -1/rho*dTde_rho*vz;
+	val_Jac_PC[0][4] = 1/rho*dTde_rho;
+
+	val_Jac_PC[1][0] = -vx*vx;
+	val_Jac_PC[1][1] = 1/rho;
+	val_Jac_PC[1][2] = 0.0;
+	val_Jac_PC[1][3] = 0.0;
+	val_Jac_PC[1][4] = 0.0;
+
+	val_Jac_PC[2][0] = -vy*vy;
+	val_Jac_PC[2][1] = 0.0;
+	val_Jac_PC[2][2] = 1/rho;
+	val_Jac_PC[2][3] = 0.0;
+	val_Jac_PC[2][4] = 0.0;
+
+	val_Jac_PC[3][0] = -vz*vz;
+	val_Jac_PC[3][1] = 0.0;
+	val_Jac_PC[3][2] = 0.0;
+	val_Jac_PC[3][3] = 1/rho;
+	val_Jac_PC[3][4] = 0.0;
+
+	val_Jac_PC[4][0] = 1.0;
+	val_Jac_PC[4][1] = 0.0;
+	val_Jac_PC[4][2] = 0.0;
+	val_Jac_PC[4][3] = 0.0;
+	val_Jac_PC[4][4] = 0.0;
+
+  }
+}
+
+void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
                                    double *val_diffusion_coeff,
                                    double val_laminar_viscosity,
                                    double val_thermal_conductivity,
