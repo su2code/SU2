@@ -680,80 +680,6 @@ double CVolumetricMovement::ShapeFunc_Rectangle(double Xi, double Eta, double Co
   
 }
 
-double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  double a0, a1, a2, c0, c1, c2, xsj;
-  double ss[3], xs[3][3], ad[3][3];
-  double s0[8] = {-0.5, 0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5};
-  double s1[8] = {-0.5,-0.5, 0.5, 0.5,-0.5,-0.5,0.5, 0.5};
-  double s2[8] = {-0.5,-0.5,-0.5,-0.5, 0.5, 0.5,0.5, 0.5};
-  
-  ss[0] = Xi;
-  ss[1] = Eta;
-  ss[2] = Mu;
-
-  /*--- Shape functions ---*/
-  
-  for (i = 0; i < 8; i++) {
-    a0 = 0.5+s0[i]*ss[0]; // shape function in xi-direction
-    a1 = 0.5+s1[i]*ss[1]; // shape function in eta-direction
-    a2 = 0.5+s2[i]*ss[2]; // shape function in mu-direction
-    DShapeFunction[i][0] = s0[i]*a1*a2; // dN/d xi
-    DShapeFunction[i][1] = s1[i]*a0*a2; // dN/d eta
-    DShapeFunction[i][2] = s2[i]*a0*a1; // dN/d mu
-    DShapeFunction[i][3] = a0*a1*a2; // actual shape function N
-  }
-  
-  /*--- Jacobian transformation ---*/
-   
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 8; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
-  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
-  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
-  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
-  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
-  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
-  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
-  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
-  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
-  
-  /*--- Jacobian inverse ---*/
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 8; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
-    c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d mu
-  }
-  
-  return xsj;
-  
-}
-
 double CVolumetricMovement::ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
   
   int i, j, k;
@@ -831,6 +757,7 @@ double CVolumetricMovement::ShapeFunc_Pyram(double Xi, double Eta, double Mu, do
   double xs[3][3], ad[3][3];
   
   /*--- Shape functions ---*/
+  
   double Den = 4.0*(1.0 - Mu);
   
   DShapeFunction[0][3] = (-Xi+Eta+Mu-1.0)*(-Xi-Eta+Mu-1.0)/Den;
@@ -973,6 +900,80 @@ double CVolumetricMovement::ShapeFunc_Wedge(double Xi, double Eta, double Mu, do
   /*--- Derivatives with repect to global coordinates ---*/
   
   for (k = 0; k < 6; k++) {
+    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
+    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
+    c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
+    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
+    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
+    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d mu
+  }
+  
+  return xsj;
+  
+}
+
+double CVolumetricMovement::ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]) {
+  
+  int i, j, k;
+  double a0, a1, a2, c0, c1, c2, xsj;
+  double ss[3], xs[3][3], ad[3][3];
+  double s0[8] = {-0.5, 0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5};
+  double s1[8] = {-0.5,-0.5, 0.5, 0.5,-0.5,-0.5,0.5, 0.5};
+  double s2[8] = {-0.5,-0.5,-0.5,-0.5, 0.5, 0.5,0.5, 0.5};
+  
+  ss[0] = Xi;
+  ss[1] = Eta;
+  ss[2] = Mu;
+  
+  /*--- Shape functions ---*/
+  
+  for (i = 0; i < 8; i++) {
+    a0 = 0.5+s0[i]*ss[0]; // shape function in xi-direction
+    a1 = 0.5+s1[i]*ss[1]; // shape function in eta-direction
+    a2 = 0.5+s2[i]*ss[2]; // shape function in mu-direction
+    DShapeFunction[i][0] = s0[i]*a1*a2; // dN/d xi
+    DShapeFunction[i][1] = s1[i]*a0*a2; // dN/d eta
+    DShapeFunction[i][2] = s2[i]*a0*a1; // dN/d mu
+    DShapeFunction[i][3] = a0*a1*a2; // actual shape function N
+  }
+  
+  /*--- Jacobian transformation ---*/
+  
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 3; j++) {
+      xs[i][j] = 0.0;
+      for (k = 0; k < 8; k++) {
+        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
+      }
+    }
+  }
+  
+  /*--- Adjoint to Jacobian ---*/
+  
+  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
+  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
+  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
+  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
+  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
+  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
+  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
+  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
+  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
+  
+  /*--- Determinant of Jacobian ---*/
+  
+  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
+  
+  /*--- Jacobian inverse ---*/
+  for (i = 0; i < 3; i++) {
+    for (j = 0; j < 3; j++) {
+      xs[i][j] = ad[i][j]/xsj;
+    }
+  }
+  
+  /*--- Derivatives with repect to global coordinates ---*/
+  
+  for (k = 0; k < 8; k++) {
     c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
     c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
     c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
