@@ -47,6 +47,8 @@ CConstantViscosity::CConstantViscosity(double mu_const) : CViscosityModel() {
   /*--- Attributes initialization ---*/
 
 	Mu = mu_const;
+	dmudrho_T = 0.0;
+	dmudT_rho = 0.0;
 
 }
 
@@ -75,11 +77,16 @@ CSutherland::~CSutherland(void) { }
 void CSutherland::SetViscosity(double T, double rho) {
 
 	Mu = Mu_ref*pow((T/T_ref),(3.0/2.0))*((T_ref + S)/(T + S));
-	dmudrho_T = 0.0;
-	dmudT_rho = 0.0;
 
 }
 
+void CSutherland::SetDerViscosity(double T, double rho)  {
+
+	dmudrho_T = 0.0;
+	dmudT_rho = Mu_ref*( (3.0/2.0)*pow((T/T_ref),(1.0/2.0))*((T_ref + S)/(T + S))
+			    -pow((T/T_ref),(3.0/2.0))*(T_ref + S)/(T + S)/(T + S) );
+
+}
 
 /* ------------------------------------------------- */
 /* ---------- Thermal Conductivity Models ---------- */
@@ -105,6 +112,8 @@ CConstantConductivity::CConstantConductivity(double kt_const) : CConductivityMod
   /*--- Attributes initialization ---*/
 
 	Kt = kt_const;
+	dktdrho_T = 0.0;
+	dktdT_rho = 0.0;
 
 }
 
@@ -124,8 +133,13 @@ CConstantPrandtl::CConstantPrandtl(double pr_const) : CConductivityModel() {
 void CConstantPrandtl::SetConductivity(double T, double rho, double mu, double cp) {
 
 	Kt = mu*cp/Pr_const;
-	dktdrho_T = 0.0;
-	dktdT_rho = 0.0;
+
+}
+
+void CConstantPrandtl::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {
+
+	dktdrho_T = dmudrho_T*cp/Pr_const;
+	dktdT_rho = dmudT_rho*cp/Pr_const;
 
 }
 

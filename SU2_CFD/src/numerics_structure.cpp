@@ -2166,6 +2166,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 }
 
 void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
+									double **val_gradprimvar,
 									double *val_Mean_SecVar,
 									double val_laminar_viscosity,
 									double val_eddy_viscosity,
@@ -2203,9 +2204,16 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 	double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
 	double total_conductivity = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
-	val_Proj_Jac_Tensor_i_P = new double[nVar][nVar];
-	val_Proj_Jac_Tensor_j_P = new double[nVar][nVar];
-	val_Jac_PC = new double[nVar][nVar];
+
+	val_Proj_Jac_Tensor_i_P = new double* [nVar];
+	val_Proj_Jac_Tensor_j_P = new double* [nVar];
+	val_Jac_PC = new double* [nVar];
+
+	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+		val_Proj_Jac_Tensor_i_P[iVar] = new double [nVar];
+		val_Proj_Jac_Tensor_j_P[iVar] = new double [nVar];
+		val_Jac_PC[iVar] = new double [nVar];
+	}
 
 	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
 		for (unsigned short jVar = 0; jVar < nVar; jVar++) {
@@ -2248,15 +2256,15 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 
 		double etax = pow(val_normal[0],2)/val_dist_ij;
 		double etay = pow(val_normal[1],2)/val_dist_ij;
-		val_Proj_Jac_Tensor_i_P[3][0] += total_conductivity*etax; //- val_normal[0]*dktdT_rho*...;
+		val_Proj_Jac_Tensor_i_P[3][0] += total_conductivity*etax - val_normal[0]*dktdT_rho*val_gradprimvar[0][0];
 		val_Proj_Jac_Tensor_i_P[3][1] += 1.0/2.0*val_Proj_Visc_Flux[1];
 		val_Proj_Jac_Tensor_i_P[3][2] += 1.0/2.0*val_Proj_Visc_Flux[2];
-		val_Proj_Jac_Tensor_i_P[3][3] += total_conductivity*etay; //- val_normal[1]*dktdT_rho*...;
+		val_Proj_Jac_Tensor_i_P[3][3] += total_conductivity*etay - val_normal[1]*dktdT_rho*val_gradprimvar[0][1];
 
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				val_Proj_Jac_Tensor_j_P[iVar][jVar] *= val_dS;
-				val_Proj_Jac_Tensor_j_P[iVar][jVar] = -val_Proj_Jac_Tensor_i_P[iVar][jVar];
+				//val_Proj_Jac_Tensor_j_P[iVar][jVar] = -val_Proj_Jac_Tensor_i_P[iVar][jVar];
 
 	    /* 2D Jacobian: (T,vx,vy,rho) --> (u1,u2,u3,u4) */
 		GetPrimitive2Conservative (val_Mean_PrimVar, val_Mean_SecVar, val_Jac_PC);
@@ -2265,8 +2273,12 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
 		for (iVar = 0; iVar < nVar; iVar++)
 			for (jVar = 0; jVar < nVar; jVar++)
 				for (unsigned short kVar = 0; kVar < nVar; kVar++)
-					val_Proj_Jac_Tensor_i[iVar][jVar] += val_Proj_Jac_Tensor_i_P[iVar][kVar]*val_Jac_PC[kVar][jVar],
-					val_Proj_Jac_Tensor_j[iVar][jVar] += val_Proj_Jac_Tensor_j_P[iVar][kVar]*val_Jac_PC[kVar][jVar];
+					val_Proj_Jac_Tensor_i[iVar][jVar] += val_Proj_Jac_Tensor_i_P[iVar][kVar]*val_Jac_PC[kVar][jVar];
+					//val_Proj_Jac_Tensor_j[iVar][jVar] += val_Proj_Jac_Tensor_j_P[iVar][kVar]*val_Jac_PC[kVar][jVar];
+
+		for (iVar = 0; iVar < nVar; iVar++)
+			for (jVar = 0; jVar < nVar; jVar++)
+				val_Proj_Jac_Tensor_j_P[iVar][jVar] = -val_Proj_Jac_Tensor_i_P[iVar][jVar];
 
 	}
 	else {

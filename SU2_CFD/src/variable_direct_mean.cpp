@@ -628,20 +628,16 @@ bool CNSVariable::SetPrimVar_Compressible(double eddy_visc, double turb_ke, CFlu
   
   /*--- Set laminar viscosity ---*/
   
-  double lam_visc = FluidModel->GetLaminarViscosity(temperature, density);
-  SetLaminarViscosity(lam_visc);
+  SetLaminarViscosity(FluidModel->GetLaminarViscosity());
   
   /*--- Set eddy viscosity ---*/
   
   SetEddyViscosity(eddy_visc);
 
   /*--- Set thermal conductivity ---*/
+  SetThermalConductivity(FluidModel->GetThermalConductivity());
 
-  double cp = FluidModel->GetCp();
-  double th_cond = FluidModel->GetThermalConductivity(temperature, density, lam_visc, cp);
-  SetThermalConductivity(th_cond);
-
-  SetSpecificHeatCp(cp);
+  SetSpecificHeatCp(FluidModel->GetCp());
   
   return RightVol;
   

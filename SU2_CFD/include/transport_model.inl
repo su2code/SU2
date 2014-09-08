@@ -26,8 +26,10 @@ inline double CViscosityModel::GetViscosity() { return Mu; }
 inline double CViscosityModel::Getdmudrho_T () { return dmudrho_T; }
 inline double CViscosityModel::GetdmudT_rho() { return dmudT_rho; }
 inline void CViscosityModel::SetViscosity(double T, double rho) {}
+inline void CViscosityModel::SetDerViscosity(double T, double rho) {}
 
 inline double CConductivityModel::GetConductivity() { return Kt; }
 inline double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
 inline double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
 inline void CConductivityModel::SetConductivity(double T, double rho, double mu, double cp) {}
+inline void CConductivityModel::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {}

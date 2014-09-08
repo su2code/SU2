@@ -1001,6 +1001,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	/*!
 	 * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
 	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+	 * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
 	 * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
 	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
 	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
@@ -1014,6 +1015,7 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
 	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
 	 */
 	void GetViscousProjJacs(double *val_Mean_PrimVar,
+						  double **val_gradprimvar,
 						  double *val_Mean_SecVar,
                           double val_laminar_viscosity,
                           double val_eddy_viscosity,
@@ -3098,6 +3100,7 @@ class CGeneralAvgGrad_Flow : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar;	   /*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,				   /*!< \brief Mean primitive variables. */
+	*Mean_SecVar,        				   /*!< \brief Mean secondary variables. */
 	*PrimVar_i, *PrimVar_j,				   /*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,					   /*!< \brief Mean value of the gradient. */
 	Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
@@ -3456,7 +3459,8 @@ class CGeneralAvgGradCorrected_Flow : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar;		/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
-	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
+	*Mean_SecVar,			        		/*!< \brief Mean primitive variables. */
+	*PrimVar_i, *PrimVar_j,			    	/*!< \brief Primitives variables at point i and 1. */
 	*Edge_Vector,									/*!< \brief Vector form point i to point j. */
 	**Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,	/*!< \brief Mean value of the gradient. */
 	Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
