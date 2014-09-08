@@ -1917,20 +1917,26 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		if (grid_movement) Velocity_Reynolds = config->GetMach_Motion()*Mach2Vel_FreeStream;
     		else Velocity_Reynolds = ModVel_FreeStream;
         
+
+
+    		/*change of measurement system, hard coded value working only with STANDAR AIR model*/
+    		if (config->GetKind_FluidModel() == STANDARD_AIR){
+				if (config->GetSystemMeasurements() == SI) {
+								config->SetMu_RefND(1.716E-5);
+								config->SetMu_SND(110.4);
+								config->SetMu_Temperature_RefND(273.15);
+				}
+				if (config->GetSystemMeasurements() == US) {
+								config->SetMu_RefND(3.62E-7);
+								config->SetMu_SND(198.72);
+								config->SetMu_Temperature_RefND(518.7);
+				}
+    		}
+
     		/*--- For viscous flows, pressure will be computed from a density
          that is found from the Reynolds number. The viscosity is computed
          from the dimensional version of Sutherland's law ---*/
-        
-    		if (config->GetSystemMeasurements() == SI) {
-    			config->SetMu_RefND(1.716E-5);
-    			config->SetMu_SND(110.4);
-    			config->SetMu_Temperature_RefND(273.15);
-    		}
-    		if (config->GetSystemMeasurements() == US) {
-    			config->SetMu_RefND(3.62E-7);
-    			config->SetMu_SND(198.72);
-    			config->SetMu_Temperature_RefND(518.7);
-    		}
+
         
     		FluidModel->SetLaminarViscosityModel(config);
         
