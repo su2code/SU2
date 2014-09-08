@@ -256,6 +256,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
     double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
     double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
     unsigned short iDim, iVar, jVar;
+    
 //    double MassMatrix_Elem_2D [6][6] =
 //    {{ 2, 0, 1, 0, 1, 0 },
 //      { 0, 2, 0, 1, 0, 1 },
@@ -281,6 +282,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
     double Density = config->GetMaterialDensity();
     
     /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
+    
     if (config->GetUnsteady_Simulation() == TIME_STEPPING) Time_Num = config->GetDelta_UnstTimeND();
     else Time_Num = 1.0;
     if (config->GetUnsteady_Simulation() == STEADY) Time_Num = 1.0;
@@ -292,9 +294,11 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
     for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       
       /*--- Get node numbers and their coordinate vectors ---*/
+      
       Point_0 = geometry->elem[iElem]->GetNode(0);	Coord_0 = geometry->node[Point_0]->GetCoord();
       Point_1 = geometry->elem[iElem]->GetNode(1);	Coord_1 = geometry->node[Point_1]->GetCoord();
       Point_2 = geometry->elem[iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+      
       if (nDim == 3) { Point_3 = geometry->elem[iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord(); }
       
       if (nDim == 2) {
@@ -302,10 +306,14 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
           a[iDim] = Coord_0[iDim]-Coord_2[iDim];
           b[iDim] = Coord_1[iDim]-Coord_2[iDim];
         }
+        
         /*--- Compute element area ---*/
+        
         Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+        
       }
       if (nDim == 3) {
+        
         for (iDim = 0; iDim < nDim; iDim++) {
           a[iDim] = Coord_0[iDim]-Coord_2[iDim];
           b[iDim] = Coord_1[iDim]-Coord_2[iDim];
@@ -314,19 +322,21 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
         d[0] = a[1]*b[2]-a[2]*b[1];
         d[1] = -(a[0]*b[2]-a[2]*b[0]);
         d[2] = a[0]*b[1]-a[1]*b[0];
+        
         /*--- Compute element volume ---*/
+        
         Volume_Local = fabs(c[0]*d[0] + c[1]*d[1] + c[2]*d[2])/6.0;
+        
       }
       
-      /*----------------------------------------------------------------*/
       /*--- Block contributions to the Jacobian (includes time step) ---*/
-      /*----------------------------------------------------------------*/
       
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nVar; jVar++)
           StiffMatrix_Node[iVar][jVar] = 0.0;
       
       /*--- Diagonal value identity matrix ---*/
+      
       if (nDim == 2) {
         StiffMatrix_Node[0][0] = 1.0/Time_Num;
         StiffMatrix_Node[1][1] = 1.0/Time_Num;
@@ -338,6 +348,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
       }
       
       /*--- Diagonal value ---*/
+      
       if (nDim == 2) {
         StiffMatrix_Node[2][2] = Density*(2.0/12.0)*(Area_Local/Time_Num);
         StiffMatrix_Node[3][3] = Density*(2.0/12.0)*(Area_Local/Time_Num);
@@ -353,6 +364,7 @@ void CFEASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container
       if (nDim == 3) Jacobian.AddBlock(Point_3, Point_3, StiffMatrix_Node);
       
       /*--- Off Diagonal value ---*/
+      
       if (nDim == 2) {
         StiffMatrix_Node[2][2] = Density*(1.0/12.0)*(Area_Local/Time_Num);
         StiffMatrix_Node[3][3] = Density*(1.0/12.0)*(Area_Local/Time_Num);
@@ -492,8 +504,6 @@ void CFEASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_containe
       
       for (iVar = 0; iVar < nNodes; iVar++) {
         for (jVar = 0; jVar < nNodes; jVar++) {
-          
-          
           for (iDim = 0; iDim < nVar; iDim++) {
             for (jDim = 0; jDim < nVar; jDim++) {
               StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nDim)+iDim][(jVar*nDim)+jDim];
@@ -551,12 +561,6 @@ void CFEASolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_containe
     }
     
 	}
-  
-  /*--- Deallocate memory and exit ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete StiffMatrix_Node[iVar];
-  delete [] StiffMatrix_Node;
   
 }
 
@@ -683,7 +687,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
       
     }
     
-    /*--- Steady simulation ---*/
+    /*--- Unsteady simulation ---*/
 
     else {
       
@@ -1089,7 +1093,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
 
 void CFEASolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
                                       unsigned short iMesh, unsigned short RunTime_EqSystem) {
-	
+	 
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3 = 0;
 	double a[3], b[3], c[3], d[3], Area_Local = 0.0, Volume_Local = 0.0, Time_Num;
 	double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
