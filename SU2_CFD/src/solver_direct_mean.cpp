@@ -6597,20 +6597,19 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Viscous contribution ---*/
       if (viscous) {
 
-         /*--- Primitive variables, using the derived quantities ---*/
-            V_boundary[0] = Temperature_b;
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_boundary[iDim+1] = Velocity_b[iDim];
-            V_boundary[nDim+1] = Pressure_b;
-            V_boundary[nDim+2] = Density_b;
-            V_boundary[nDim+3] = Enthalpy_b;
+        /*--- Primitive variables, using the derived quantities ---*/
+        V_boundary[0] = Temperature_b;
+        for (iDim = 0; iDim < nDim; iDim++)
+        	V_boundary[iDim+1] = Velocity_b[iDim];
+        V_boundary[nDim+1] = Pressure_b;
+        V_boundary[nDim+2] = Density_b;
+        V_boundary[nDim+3] = Enthalpy_b;
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
-
-          V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
-          V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
-          V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
-          V_boundary[nDim+8] = FluidModel->GetCp();
+        V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
+        V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
+        V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
+        V_boundary[nDim+8] = FluidModel->GetCp();
 
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -6671,6 +6670,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] u_e;
   delete [] u_b;
   delete [] dw;
+  delete [] S_boundary;
 
   for (iVar = 0; iVar < nVar; iVar++)
   {
