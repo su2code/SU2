@@ -508,6 +508,10 @@ inline double CSolver::GetMin_Delta_Time(unsigned short val_Species) { return 0.
 inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry **solver1_geometry, CConfig *solver1_config, 
 										  CSolver ***solver2_solution, CGeometry **solver2_geometry, CConfig *solver2_config) {};
 
+inline CFluidModel* CSolver::GetFluidModel(void) { return 0.0}
+
+inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
+
 inline double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline double CEulerSolver::GetModVelocity_Inf(void) { 
