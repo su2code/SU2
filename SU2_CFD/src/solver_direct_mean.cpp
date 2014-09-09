@@ -1956,6 +1956,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
             config->SetViscosity_FreeStream(Viscosity_FreeStream);
     		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
+
     	}
       
       /*--- Turbulence quantities ---*/
@@ -6176,15 +6177,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
 /// Doesn't work for ALE
 
-
   Normal = new double[nDim];
 
   Velocity_i = new double[nDim];
   Velocity_b = new double[nDim];
   Velocity_e = new double[nDim];
 
-
-  V_boundary = new double[nPrimVar];
   Lambda_i = new double[nVar];
   u_i = new double[nVar];
   u_e = new double[nVar];
@@ -6201,6 +6199,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+	V_boundary= GetCharacPrimVar(val_marker, iVertex);
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
@@ -6273,7 +6273,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 FluidModel->SetTDState_PT(P_Total, T_Total);
 
-
                 Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
 
                 Entropy_e = FluidModel->GetEntropy();
@@ -6313,7 +6312,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 break;
 
-
             case DENSITY_VELOCITY:
 
                 /*--- Retrieve the specified density and velocity magnitude ---*/
@@ -6337,7 +6335,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 break;
 
-
             case STATIC_PRESSURE:
 
                 Pressure_e = config->GetRiemann_Var1(Marker_Tag);
@@ -6347,9 +6344,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
                 FluidModel->SetTDState_Prho(Pressure_e, Density_e);
 
-//                cout << Marker_Tag << endl;
-
-//                getchar();
                 Velocity2_e = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++) {
                   Velocity_e[iDim] = Velocity_i[iDim];
@@ -6382,7 +6376,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 					Velocity_e[iDim] = Mach[iDim]*FluidModel->GetSoundSpeed();
 					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
 					}
-
 
 				Density_e = FluidModel->GetDensity();
 				StaticEnergy_e = FluidModel->GetStaticEnergy();
@@ -6618,7 +6611,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         V_boundary[nDim+8] = FluidModel->GetCp();
 
         /*--- Set the normal vector and the coordinates ---*/
-
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
@@ -6670,7 +6662,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] Velocity_b;
   delete [] Velocity_i;
 
-  delete [] V_boundary;
+//  delete [] V_boundary;
   delete [] Lambda_i;
   delete [] u_i;
   delete [] u_e;
