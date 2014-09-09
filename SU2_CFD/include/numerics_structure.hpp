@@ -997,7 +997,46 @@ void GetViscousProjFlux(double *val_primvar, double **val_gradprimvar,
                           double *val_Proj_Visc_Flux,
                           double **val_Proj_Jac_Tensor_i,
                           double **val_Proj_Jac_Tensor_j);
-  
+
+	/*!
+	 * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
+	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+	 * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+	 * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
+	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
+	 * \param[in] val_heat_capacity_cp - Value of the specific heat at constant pressure.
+	 * \param[in] val_dist_ij - Distance between the points.
+	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+	 * \param[in] val_dS - Area of the face between two nodes.
+	 * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+	 * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+	 * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+	 */
+	void GetViscousProjJacs(double *val_Mean_PrimVar,
+						  double **val_gradprimvar,
+						  double *val_Mean_SecVar,
+                          double val_laminar_viscosity,
+                          double val_eddy_viscosity,
+                          double val_thermal_conductivity,
+                          double val_heat_capacity_cp,
+                          double val_dist_ij,
+                          double *val_normal, double val_dS,
+                          double *val_Proj_Visc_Flux,
+                          double **val_Proj_Jac_Tensor_i,
+                          double **val_Proj_Jac_Tensor_j);
+
+	/*!
+	 * \brief Mapping between primitives variables P and conservatives variables C.
+	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+	 * \param[in] val_Mean_PrimVar - Mean Value of the secondary variables.
+	 * \param[out] val_Jac_PC - Pointer to the Jacobian dPdC.
+	 */
+	void GetPrimitive2Conservative (double *val_Mean_PrimVar,
+										double *val_Mean_SecVar,
+										double **val_Jac_PC);
+
     /*!
 	 * \brief TSL-Approximation of Viscous NS Jacobians.
 	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
@@ -3061,6 +3100,7 @@ class CGeneralAvgGrad_Flow : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar;	   /*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,				   /*!< \brief Mean primitive variables. */
+	*Mean_SecVar,        				   /*!< \brief Mean secondary variables. */
 	*PrimVar_i, *PrimVar_j,				   /*!< \brief Primitives variables at point i and 1. */
 	**Mean_GradPrimVar,					   /*!< \brief Mean value of the gradient. */
 	Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
@@ -3419,7 +3459,8 @@ class CGeneralAvgGradCorrected_Flow : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar;		/*!< \brief Iterators in dimension an variable. */
 	double *Mean_PrimVar,					/*!< \brief Mean primitive variables. */
-	*PrimVar_i, *PrimVar_j,				/*!< \brief Primitives variables at point i and 1. */
+	*Mean_SecVar,			        		/*!< \brief Mean primitive variables. */
+	*PrimVar_i, *PrimVar_j,			    	/*!< \brief Primitives variables at point i and 1. */
 	*Edge_Vector,									/*!< \brief Vector form point i to point j. */
 	**Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,	/*!< \brief Mean value of the gradient. */
 	Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */

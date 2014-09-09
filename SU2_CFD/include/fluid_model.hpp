@@ -56,10 +56,16 @@ double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 dPde_rho, 				/*!< \brief DpDe_d. */
 			 dTdrho_e, 				/*!< \brief DTDd_e. */
 			 dTde_rho, 				/*!< \brief DTDe_d. */
-             Cp;                    /*!< \brief Specific Heat Capacity at constant pressure. */
+             Cp,                    /*!< \brief Specific Heat Capacity at constant pressure. */
+			 Mu,					/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dmudrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dmudT_rho,				/*!< \brief Specific Heat Capacity at constant pressure. */
+		     Kt,					/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dktdrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
+		     dktdT_rho;				/*!< \brief Specific Heat Capacity at constant pressure. */
 
-CViscosityModel *LaminarViscosity;	          /*!< \brief Laminar Viscosity */
-CConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity */
+CViscosityModel *LaminarViscosity;	          /*!< \brief Laminar Viscosity Model */
+CConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity Model */
 
 public:
 
@@ -117,13 +123,13 @@ public:
 		 * \brief Get fluid dynamic viscosity
 		 */
 
-		double GetLaminarViscosity (double T, double rho);
+		double GetLaminarViscosity ();
 
 		/*!
 		 * \brief Get fluid thermal conductivity
 		 */
 
-		double GetThermalConductivity (double T, double rho, double mu, double cp);
+		double GetThermalConductivity ();
 
 		/*!
 		 * \brief Get fluid pressure partial derivative.

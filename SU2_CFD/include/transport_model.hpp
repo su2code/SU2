@@ -84,6 +84,10 @@ public:
 		 */
 		virtual	 void SetViscosity(double T, double rho);
 
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		virtual	 void SetDerViscosity(double T, double rho);
 
 };
 
@@ -153,6 +157,11 @@ public:
 		 */
 		void SetViscosity(double T, double rho);
 
+		/*!
+		 * \brief Set Viscosity Derivatives.
+		 */
+		void SetDerViscosity(double T, double rho);
+
 };
 
 
@@ -200,6 +209,10 @@ public:
 		 */
 		virtual	 void SetConductivity(double T, double rho, double mu, double cp);
 
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		virtual	 void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 
 };
 
@@ -265,6 +278,11 @@ public:
 		 * \brief par2 -> Mu.
 		 */
 		void SetConductivity(double T, double rho, double mu, double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 
 };
 
