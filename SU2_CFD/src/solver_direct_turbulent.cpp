@@ -961,7 +961,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 
-CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
+CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   double Density_Inf, Viscosity_Inf, Factor_nu_Inf, dull_val, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
@@ -1085,7 +1085,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
-    double Density, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
+    double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
     double Temperature, Temperature_Dim, Pressure;
     double Temperature_Ref = config->GetTemperature_Ref();
     double Viscosity_Ref   = config->GetViscosity_Ref();
@@ -1138,27 +1138,33 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-// TODO (turb realgas) insert fluidmodel
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> Solution[0];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> U[0] >> U[1] >> U[2] >> U[3] >> U[4] >> Solution[0];
           
           Density = U[0];
           if (nDim == 2)
-            Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]));
+        	  StaticEnergy = U[3]/U[0] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]*U[0]);
+//            Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]));
           else
-            Pressure = Gamma_Minus_One*(U[4] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2.0*U[0]));
+        	  StaticEnergy = U[4]/U[0] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3] )/(2.0*U[0]*U[0]);
+//        	  Pressure = Gamma_Minus_One*(U[4] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2.0*U[0]));
+
+//          Temperature = Pressure/(Gas_Constant*Density);
+
           
-          Temperature = Pressure/(Gas_Constant*Density);
+//          Temperature_Dim = Temperature*Temperature_Ref;
           
+//          if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
+//          if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
+
           /*--- Calculate viscosity from a non-dim. Sutherland's Law ---*/
-          Temperature_Dim = Temperature*Temperature_Ref;
           
-          if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
-          if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
-          Laminar_Viscosity = Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S));
-          Laminar_Viscosity = Laminar_Viscosity/Viscosity_Ref;
-          
+//          Laminar_Viscosity = Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S));
+//          Laminar_Viscosity = Laminar_Viscosity/Viscosity_Ref;
+
+          FluidModel->SetTDState_rhoe(Density, StaticEnergy);
+          Laminar_Viscosity = FluidModel->GetLaminarViscosity();
           nu     = Laminar_Viscosity/Density;
           nu_hat = Solution[0];
           Ji     = nu_hat/nu;
