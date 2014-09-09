@@ -1940,7 +1940,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
     		FluidModel->SetLaminarViscosityModel(config);
         
-    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
+    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
     		config->SetViscosity_FreeStream(Viscosity_FreeStream);
         
         
@@ -1953,7 +1953,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
     	} else {
     		FluidModel->SetLaminarViscosityModel(config);
-    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity(Temperature_FreeStream, Density_FreeStream);
+    		Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
             config->SetViscosity_FreeStream(Viscosity_FreeStream);
     		Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
     	}
@@ -6163,7 +6163,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   double ProjGridVel, ProjVelocity_i, ProjVelocity_b;
   double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
 
-  double *V_boundary, *V_domain;
+  double *V_boundary, *V_domain, *S_boundary, *S_domain;
 
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -6603,28 +6603,49 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Viscous contribution ---*/
       if (viscous) {
 
-         /*--- Primitive variables, using the derived quantities ---*/
-            V_boundary[0] = Temperature_b;
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_boundary[iDim+1] = Velocity_b[iDim];
-            V_boundary[nDim+1] = Pressure_b;
-            V_boundary[nDim+2] = Density_b;
-            V_boundary[nDim+3] = Enthalpy_b;
+        /*--- Primitive variables, using the derived quantities ---*/
+        V_boundary[0] = Temperature_b;
+        for (iDim = 0; iDim < nDim; iDim++)
+        	V_boundary[iDim+1] = Velocity_b[iDim];
+        V_boundary[nDim+1] = Pressure_b;
+        V_boundary[nDim+2] = Density_b;
+        V_boundary[nDim+3] = Enthalpy_b;
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
-
-          V_boundary[nDim+5] = node[iPoint]->GetLaminarViscosity();
-          V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
-          V_boundary[nDim+7] = node[iPoint]->GetThermalConductivity();
-          V_boundary[nDim+8] = node[iPoint]->GetSpecificHeatCp();
+        V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
+        V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
+        V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
+        V_boundary[nDim+8] = FluidModel->GetCp();
 
         /*--- Set the normal vector and the coordinates ---*/
+
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
         /*--- Primitive variables, and gradient ---*/
         visc_numerics->SetPrimitive(V_domain, V_boundary);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+        /*--- Secondary variables ---*/
+        S_domain = node[iPoint]->GetSecondary();
+
+        /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+        S_boundary = new double[8];
+    	S_boundary[0]= FluidModel->GetdPdrho_e();
+    	S_boundary[1]= FluidModel->GetdPde_rho();
+
+    	S_boundary[2]= FluidModel->GetdTdrho_e();
+    	S_boundary[3]= FluidModel->GetdTde_rho();
+
+        /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+    	S_boundary[4]= FluidModel->Getdmudrho_T();
+    	S_boundary[5]= FluidModel->GetdmudT_rho();
+
+    	S_boundary[6]= FluidModel->Getdktdrho_T();
+    	S_boundary[7]= FluidModel->GetdktdT_rho();
+
+        visc_numerics->SetSecondary(S_domain, S_boundary);
 
         /*--- Turbulent kinetic energy ---*/
         if (config->GetKind_Turb_Model() == SST)
@@ -6655,6 +6676,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] u_e;
   delete [] u_b;
   delete [] dw;
+  delete [] S_boundary;
 
   for (iVar = 0; iVar < nVar; iVar++)
   {
@@ -9658,6 +9680,7 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     /*--- Primitive variables, and gradient ---*/
     
     numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
+    numerics->SetSecondary(node[iPoint]->GetSecondary(), node[jPoint]->GetSecondary());
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[jPoint]->GetGradient_Primitive());
     
     /*--- Turbulent kinetic energy ---*/
