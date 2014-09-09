@@ -191,6 +191,12 @@ public:
   virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
+	 * \brief Compute the pressure at the infinity.
+	 * \return Value of the pressure at the infinity.
+	 */
+  virtual CFluidModel* GetFluidModel(void);
+
+  	/*!
 	 * \brief Get number of linear solver iterations.
 	 * \return Number of linear solver iterations.
 	 */
@@ -2089,7 +2095,8 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
 public:
-    
+
+
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -2157,6 +2164,13 @@ public:
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
 	/*!
+	 * \brief Compute the pressure at the infinity.
+	 * \return Value of the pressure at the infinity.
+	 */
+	CFluidModel* GetFluidModel(void);
+
+
+    /*!
 	 * \brief Compute the density at the infinity.
 	 * \return Value of the density at the infinity.
 	 */
@@ -2179,7 +2193,7 @@ public:
 	 * \return Value of the pressure at the infinity.
 	 */
 	double GetPressure_Inf(void);
-    
+
 	/*!
 	 * \brief Compute the density multiply by velocity at the infinity.
 	 * \param[in] val_dim - Index of the velocity vector.
@@ -3448,7 +3462,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+	CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel);
     
 	/*!
 	 * \brief Destructor of the class.
