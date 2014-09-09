@@ -5105,7 +5105,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
   if (Adjoint) coeff = CFLRedCoeff_AdjFlow;
   else coeff = 1.0;
 
-  if ((val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
+  if ((CFLRamp[0] != 1.0) && (val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
 
     for (iCFL = 0; iCFL <= nMultiLevel; iCFL++)
         CFL[iCFL] *= CFLRamp[0];
