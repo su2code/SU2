@@ -2161,12 +2161,12 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar, double val_laminar_
 		val_Proj_Jac_Tensor_i[4][3] += factor*val_Proj_Visc_Flux[3];
 		val_Proj_Jac_Tensor_j[4][3] += factor*val_Proj_Visc_Flux[3];
 
-		for (iVar = 0; iVar < nVar; iVar++) {
-			for (jVar = 0; jVar < nVar; jVar++) {
-				cout << val_Proj_Jac_Tensor_i[iVar][jVar] << " " << val_Proj_Jac_Tensor_j[iVar][jVar] << endl;
-			}
-		}
-        getchar();
+//		for (iVar = 0; iVar < nVar; iVar++) {
+//			for (jVar = 0; jVar < nVar; jVar++) {
+//				cout << val_Proj_Jac_Tensor_i[iVar][jVar] << " " << val_Proj_Jac_Tensor_j[iVar][jVar] << endl;
+//			}
+//		}
+//        getchar();
 
 	}
 
