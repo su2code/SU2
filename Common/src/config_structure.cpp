@@ -1243,6 +1243,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
       (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+    nMultiLevel = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
@@ -5104,7 +5105,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
   if (Adjoint) coeff = CFLRedCoeff_AdjFlow;
   else coeff = 1.0;
 
-  if ((val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
+  if ((CFLRamp[0] != 1.0) && (val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
 
     for (iCFL = 0; iCFL <= nMultiLevel; iCFL++)
         CFL[iCFL] *= CFLRamp[0];
