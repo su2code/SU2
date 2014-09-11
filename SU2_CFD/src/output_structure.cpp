@@ -4921,7 +4921,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible || freesurface) cout << "   Res[Press]";
-            else cout << "      Res[Rho]";
+            else cout << "      Res[Rho]",cout << "     Res[RhoE]";
             
             switch (config[val_iZone]->GetKind_Turb_Model()){
               case SA:	cout << "       Res[nu]"; break;
@@ -5097,8 +5097,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           cout.setf(ios::fixed,ios::floatfield);
           
           if (incompressible || freesurface) cout.width(13);
-          else  cout.width(14);
-          cout << log10(residual_flow[0]);
+//         else  cout.width(14);
+//         cout << log10(residual_flow[0]);
+          else  cout.width(14),
+                 cout << log10(residual_flow[0]),
+                 cout.width(14);
+          if ( nDim==2 ) cout << log10(residual_flow[3]);
+          if ( nDim==3 ) cout << log10(residual_flow[4]);
           
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
