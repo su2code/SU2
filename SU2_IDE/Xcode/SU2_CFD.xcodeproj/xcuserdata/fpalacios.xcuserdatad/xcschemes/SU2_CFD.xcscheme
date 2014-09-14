@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/linear_elasticity"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/cont_adj_incomp_navierstokes/cylinder"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "beam.cfg"
+            argument = "lam_incomp_cylinder.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
