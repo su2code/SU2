@@ -1928,7 +1928,7 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
 }
 
 
-void CNumerics::GetViscousArtCompProjFlux(double *val_primvar, double **val_gradprimvar, double *val_normal, double val_laminar_viscosity,
+void CNumerics::GetViscousArtCompProjFlux(double **val_gradprimvar, double *val_normal, double val_laminar_viscosity,
 		double val_eddy_viscosity) {
 	unsigned short iVar, iDim;
 	double total_viscosity;
