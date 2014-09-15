@@ -1810,7 +1810,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
   double Beta             = config->GetAoS()*PI_NUMBER/180.0;
-  double Gamma_Minus_One  = Gamma - 1.0;
   double Mach             = config->GetMach();
   double Reynolds         = config->GetReynolds();
   bool compressible       = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1826,68 +1825,78 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool ideal_gas       = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   
   if (compressible) {
-
+    
     /*--- Compute the Free Stream velocity, using the Mach number ---*/
     
     Pressure_FreeStream = config->GetPressure_FreeStream();
-	Density_FreeStream  = config->GetDensity_FreeStream();
-	Temperature_FreeStream  = config->GetTemperature_FreeStream();
-	switch (config->GetKind_FluidModel()) {
-
-	case STANDARD_AIR:
-		if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-		else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(53.3533);
-
-		FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
-			if(fs_temperature){
-				FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-				Density_FreeStream = FluidModel->GetDensity();
-			}else {
-				FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
-				Temperature_FreeStream = FluidModel->GetTemperature();
-			}
-			break;
-
-	case IDEAL_GAS:
-		FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
-		if(fs_temperature){
-			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-			Density_FreeStream = FluidModel->GetDensity();
-		}else {
-			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
-			Temperature_FreeStream = FluidModel->GetTemperature();
-		}
-		break;
-
-	case VW_GAS:
-		FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical());
-		if(fs_temperature){
-			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-			Density_FreeStream = FluidModel->GetDensity();
-		} else {
-
-			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
-			Temperature_FreeStream = FluidModel->GetTemperature();
-
-		}
-		break;
-
-	case PR_GAS:
-		FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical(), config->GetAcentric_Factor());
-		if(fs_temperature){
-			FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
-			Density_FreeStream = FluidModel->GetDensity();
-		} else {
-			FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
-			Temperature_FreeStream = FluidModel->GetTemperature();
-
-		}
-		break;
-	}
-
-	Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
-
-	/*--- Compute the Free Stream velocity, using the Mach number ---*/
+    Density_FreeStream  = config->GetDensity_FreeStream();
+    Temperature_FreeStream  = config->GetTemperature_FreeStream();
+    
+    switch (config->GetKind_FluidModel()) {
+        
+      case STANDARD_AIR:
+        if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
+        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(53.3533);
+        
+        FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
+        if(fs_temperature) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+        }
+        break;
+        
+      case IDEAL_GAS:
+        FluidModel = new CIdealGas(Gamma, config->GetGas_Constant());
+        if(fs_temperature) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+        }
+        break;
+        
+      case VW_GAS:
+        FluidModel = new CVanDerWaalsGas(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical());
+        if(fs_temperature) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+        }
+        break;
+        
+      case PR_GAS:
+        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(), config->GetTemperature_Critical(), config->GetAcentric_Factor());
+        if(fs_temperature) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+        }
+        break;
+    }
+    
+    Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
+    
+    /*--- Compute the Free Stream velocity, using the Mach number ---*/
     
     if (nDim == 2) {
       config->GetVelocity_FreeStream()[0] = cos(Alpha)*Mach*Mach2Vel_FreeStream;
@@ -1903,10 +1912,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
     ModVel_FreeStream = 0;
     for (iDim = 0; iDim < nDim; iDim++)
-      ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
+    ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
     ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
     
-
     if (viscous) {
       
     	if (config->GetKind_InitOption()== REYNOLDS) {
@@ -2122,6 +2130,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
 	  FluidModel->SetLaminarViscosityModel(config);
 	  FluidModel->SetThermalConductivityModel(config);
+
   }
   
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
@@ -2312,7 +2321,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     cout << "Magnitude: "	 << config->GetModVel_FreeStreamND() << endl;
     
     if (compressible)
-      cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
+    cout << "Free-stream total energy per unit mass (non-dim): " << config->GetEnergy_FreeStreamND() << endl;
     
     if (viscous) {
       cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
@@ -4239,8 +4248,6 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   double Delta, *local_Res_TruncError, Vol;
   
-  double SolverTol = config->GetLinear_Solver_Error();
-  unsigned long MaxIter = config->GetLinear_Solver_Iter();
   bool adjoint = config->GetAdjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   

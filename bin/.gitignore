@@ -1,3 +1,0 @@
-# Do not track compiled execuatables or installed python scripts
-SU2*
-*.py
