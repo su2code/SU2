@@ -6184,7 +6184,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 Pressure_e = config->GetRiemann_Var1(Marker_Tag);
                 Pressure_e /= config->GetPressure_Ref();
 
-                Density_e = Density_i;
+                Density_e = Density_i;	
 
                 FluidModel->SetTDState_Prho(Pressure_e, Density_e);
 
@@ -6329,47 +6329,9 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             }
         }
 
-//       cout << u_e[2]<< " "<< u_i[2] <<" "<< u_b[2] << endl;
-//        /*--- Primitive variables, using the derived quantities ---*/
-//
-//        V_boundary[nDim+2] = u_b[0];
-//        double v2 = 0;
-//        for (iDim = 0; iDim < nDim; iDim++){
-//        	V_boundary[iDim+1] = u_b[iDim]/u_b[0];
-//        	v2 += V_boundary[iDim+1]*V_boundary[iDim+1];
-//        }
-//        double e_b = u_b[nVar-1]/u_b[0] - 0.5*v2;
-//        FluidModel->SetTDState_rhoe(u_b[0], e_b);
-//        V_boundary[0] = FluidModel->GetTemperature() ;
-//        V_boundary[nDim+1] = FluidModel->GetPressure();
-//        V_boundary[nDim+3] = u_b[nVar-1]/u_b[0] + V_boundary[nDim+1]/u_b[0];
-//        V_boundary[nDim+4] = FluidModel->GetSoundSpeed();
-////        cout <<  V_boundary[0] << " "<<  V_boundary[1] << " "<<  V_boundary[2] << " "<<  V_boundary[3] << " "<<  V_boundary[4] << " "<< V_boundary[5] << " "<< Marker_Tag << " "<< endl;
-//
-//
-//        /*--- Set various quantities in the solver class ---*/
-//        conv_numerics->SetPrimitive(V_domain, V_boundary);
-//
-//        if (grid_movement)
-//          conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-//
-//        /*--- Compute the residual using an upwind scheme ---*/
-//        conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//
-//        /*--- Update residual value ---*/
-//        LinSysRes.AddBlock(iPoint, Residual);
-//
-//        /*--- Jacobian contribution for implicit integration ---*/
-//        if (implicit)
-//          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-//        for (iVar = 0; iVar < nVar; iVar++){
-//        	cout << u_i[iVar] <<" "<< u_b[iVar]<<" "<< u_e[iVar] << endl;
-//        }
 
         /*--- Compute the thermodynamic state in u_b ---*/
         Density_b = u_b[0];
-//        cout << u_b[0] << endl;
 
         Velocity2_b = 0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -6439,7 +6401,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                 Jacobian_b[nVar-1][0] += 0.5*ProjGridVel*ProjGridVel;
 
                 for (iDim = 0; iDim < nDim; iDim++)
-                  Jacobian_b[nVar-1][iDim+1] += 0.5 * ProjVelocity_b * UnitNormal[iDim];
+                  Jacobian_b[nVar-1][iDim+1] -= ProjVelocity_b * UnitNormal[iDim];
               }
 
                /*--- Compute numerical flux Jacobian at node i ---*/
