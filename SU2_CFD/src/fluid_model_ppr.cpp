@@ -114,7 +114,7 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-    Z= max(B, 1.01);
+    Z= max(B, 1.1);
 	DZ= 1.0;
 	do{
 		F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
@@ -145,7 +145,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	double dv = 1.0;
 	double toll =1e-9;
 
-	Temperature = h*Gamma_Minus_One/Gas_Constant/Gamma;
+	Temperature = 1.1*h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(Temperature) + s/Gas_Constant);
 	Pressure = Temperature*Gas_Constant / (v - b) - a*alpha2(Temperature) / ( v*v + 2*b*v - b*b);
 	Density =1/v;
