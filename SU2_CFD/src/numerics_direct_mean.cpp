@@ -1656,23 +1656,15 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 	RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
 	s = RoeChi + RoeKappaStaticEnthalpy;
 	D = s*s*delta_rho*delta_rho + delta_p*delta_p;
+    delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
+    err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
 
-	// The below tolerance works well for both dimensional and dimensionless cases.
-	// Anyway to be checked upon different test cases.
-	double tol = 1.0e-01;
 
-	if (s > tol && D > tol) {
-//
-//		RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
-//		delta_rhoStaticEnergy = Density_j*StaticEnergy_j - Density_i*StaticEnergy_i;
-//
-//		err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
-////		s = RoeChi + RoeKappaStaticEnthalpy;
-////		D = s*s*delta_rho*delta_rho + delta_p*delta_p;
-//
-//		RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
-//		RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
-//
+	if ((D - delta_p*err_P)>1e-6) {
+
+		RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
+		RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
+
 	}
 
 	RoeSoundSpeed = sqrt(RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel));
