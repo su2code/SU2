@@ -1254,6 +1254,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == HEAT_EQUATION) ||
       (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+    nMultiLevel = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
   }
@@ -3280,7 +3281,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
         case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
         case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
-        case FFD_EDGE:              cout << "FFD (edge) <-> "; break;
         case SURFACE_FILE:          cout << "Surface file based deformation." ; break;
       }
 
@@ -3316,7 +3316,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Design_Variable[iDV] == FFD_ROTATION) nParamDV = 7;
         if (Design_Variable[iDV] == FFD_CONTROL_SURFACE) nParamDV = 7;
         if (Design_Variable[iDV] == FFD_CAMBER) nParamDV = 3;
-        if (Design_Variable[iDV] == FFD_EDGE) nParamDV = 10;
         if (Design_Variable[iDV] == FFD_THICKNESS) nParamDV = 3;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
@@ -3335,8 +3334,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_ROTATION) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
-               (Design_Variable[iDV] == FFD_THICKNESS) ||
-               (Design_Variable[iDV] == FFD_EDGE))) cout << FFDTag[iDV];
+               (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
@@ -5118,7 +5116,7 @@ void CConfig::UpdateCFL(unsigned long val_iter) {
   if (Adjoint) coeff = CFLRedCoeff_AdjFlow;
   else coeff = 1.0;
 
-  if ((val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
+  if ((CFLRamp[0] != 1.0) && (val_iter % int(CFLRamp[1]) == 0 ) && (val_iter != 0) && (CFL[0] < CFLRamp[2]*coeff)) {
 
     for (iCFL = 0; iCFL <= nMultiLevel; iCFL++)
         CFL[iCFL] *= CFLRamp[0];

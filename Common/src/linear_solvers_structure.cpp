@@ -81,6 +81,7 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
   threshold for re-orthogonalization ---*/
   double nrm = dotProd(w[i+1],w[i+1]);
   double thr = nrm*reorth;
+  
   if (nrm <= 0.0) {
     /*--- The norm of w[i+1] < 0.0 ---*/
     cerr << "CSysSolve::modGramSchmidt: dotProd(w[i+1],w[i+1]) < 0.0" << endl;
