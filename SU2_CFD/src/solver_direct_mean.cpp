@@ -5522,7 +5522,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
   
 }
-//
+
 //#ifndef CHECK_FLATPLATE_SST
 //
 //void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
