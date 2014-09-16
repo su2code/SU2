@@ -3062,7 +3062,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
-  
+
   UnitNormal = new double[nDim];
   Velocity = new double[nDim];
   Psi      = new double[nVar];
@@ -3070,14 +3070,17 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     if (geometry->node[iPoint]->GetDomain()) {
+      
       Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
       Coord = geometry->node[iPoint]->GetCoord();
       
       /*--- Create a copy of the adjoint solution ---*/
+      
       Psi_Aux = node[iPoint]->GetSolution();
       for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
       
       /*--- Flow solution ---*/
+      
       U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
       
       Area = 0;
@@ -3096,6 +3099,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
         
         /*--- Compute projections ---*/
+        
         ProjVel = 0.0; vn = 0.0, phin = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           ProjVel -= Velocity[iDim]*Normal[iDim];
@@ -3104,6 +3108,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         }
         
         /*--- Grid Movement ---*/
+        
         if (grid_movement) {
           double ProjGridVel = 0.0;
           double *GridVel = geometry->node[iPoint]->GetGridVel();
@@ -3114,10 +3119,12 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         }
         
         /*--- Introduce the boundary condition ---*/
+        
         for (iDim = 0; iDim < nDim; iDim++)
           Psi[iDim+1] -= phin * UnitNormal[iDim];
         
         /*--- Inner products after introducing BC (Psi has changed) ---*/
+        
         phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
         for (iDim = 0; iDim < nDim; iDim++) {
           phis1 -= Normal[iDim]*Psi[iDim+1];
@@ -3125,12 +3132,14 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         }
         
         /*--- Flux of the Euler wall ---*/
+        
         Residual[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
         for (iDim = 0; iDim < nDim; iDim++)
           Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
         Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
         
         /*--- Grid Movement ---*/
+        
         if (grid_movement) {
           double ProjGridVel = 0.0;
           double *GridVel = geometry->node[iPoint]->GetGridVel();
@@ -3152,15 +3161,18 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           Velocity[iDim] = U[iDim+1] / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
         
         /*--- Compute projections ---*/
+        
         phin = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           phin += Psi[iDim+1]*UnitNormal[iDim];
         
         /*--- Introduce the boundary condition ---*/
+        
         for (iDim = 0; iDim < nDim; iDim++)
           Psi[iDim+1] -= phin * UnitNormal[iDim];
         
         /*--- Inner products after introducing BC (Psi has changed) ---*/
+        
         phis1 = 0.0; phis2 = Psi[0] * (BetaInc2 / DensityInc);
         for (iDim = 0; iDim < nDim; iDim++) {
           phis1 -= Normal[iDim]*Psi[iDim+1];
@@ -3168,6 +3180,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         }
         
         /*--- Flux of the Euler wall ---*/
+        
         Residual[0] = phis1;
         for (iDim = 0; iDim < nDim; iDim++)
           Residual[iDim+1] = - phis2 * Normal[iDim];
@@ -3175,6 +3188,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
       }
       
       /*--- Update residual ---*/
+      
       LinSysRes.SubtractBlock(iPoint, Residual);
       
       /*--- Implicit stuff ---*/
@@ -3183,12 +3197,14 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         if (compressible) {
           
           /*--- Adjoint density ---*/
+          
           Jacobian_ii[0][0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
           Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
           
           /*--- Adjoint velocities ---*/
+          
           for (iDim = 0; iDim < nDim; iDim++) {
             Jacobian_ii[iDim+1][0] = -Normal[iDim];
             for (jDim = 0; jDim < nDim; jDim++)
@@ -3198,12 +3214,14 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           }
           
           /*--- Adjoint energy ---*/
+          
           Jacobian_ii[nVar-1][0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             Jacobian_ii[nVar-1][iDim+1] = 0.0;
           Jacobian_ii[nVar-1][nVar-1] = ProjVel;
           
           /*--- Contribution from grid movement ---*/
+          
           if (grid_movement) {
             double ProjGridVel = 0.0;
             double *GridVel = geometry->node[iPoint]->GetGridVel();
@@ -3219,11 +3237,13 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         if (incompressible || freesurface) {
           
           /*--- Adjoint density ---*/
+          
           Jacobian_ii[0][0] = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
             Jacobian_ii[0][iDim+1] = - Normal[iDim];
           
           /*--- Adjoint velocities ---*/
+          
           for (iDim = 0; iDim < nDim; iDim++) {
             Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc) ;
             for (jDim = 0; jDim < nDim; jDim++)
@@ -3232,8 +3252,12 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           
         }
         
+         /*--- Update jacobian ---*/
+        
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+        
       }
+
     }
   }
   
@@ -4782,20 +4806,23 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
                                     solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity());
       numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),
                                  solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosity());
-    }
-    if (incompressible || freesurface) {
-      numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(),
-                              solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
-      numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(),
-                                    solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc());
-      numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(),
-                                 solver_container[FLOW_SOL]->node[jPoint]->GetEddyViscosityInc());
+      
     }
     
-    /*--- Compute residual in a non-conservative way, and update ---*/
+    /*--- Note that the viscous term is self-adjoint... we will reuse the direct solution
+     subroutines changing the value of the gradients. ---*/
+
+    if (incompressible || freesurface) {
+
+      numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(),
+                             solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive());
+
+    }
+    
+    /*--- Compute residual ---*/
     
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-    
+
     /*--- Update adjoint viscous residual ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual_i);

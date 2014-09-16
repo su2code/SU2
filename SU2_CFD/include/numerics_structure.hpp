@@ -865,7 +865,7 @@ public:
 	 * \param[in] val_eddy_viscosity - Eddy viscosity.
 	 */
     
-	void GetViscousArtCompProjFlux(double *val_primvar, double **val_gradprimvar,
+	void GetViscousArtCompProjFlux(double **val_gradprimvar,
                                  double *val_normal,
                                  double val_laminar_viscosity,
                                  double val_eddy_viscosity);
@@ -3032,9 +3032,7 @@ public:
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
-	double *Mean_PrimVar,				/*!< \brief Mean primitive variables. */
-	*PrimVar_i, *PrimVar_j,			/*!< \brief Primitives variables at point i and 1. */
-	**Mean_GradPrimVar,					/*!< \brief Mean value of the gradient. */
+	double **Mean_GradPrimVar,					/*!< \brief Mean value of the gradient. */
 	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
 	*ProjFlux,		/*!< \brief Projection of the viscous fluxes. */
 	dist_ij;							/*!< \brief Length of the edge and face. */
@@ -3254,11 +3252,13 @@ public:
  */
 class CAvgGradArtComp_AdjFlow : public CNumerics {
 private:
-	double *Velocity_i;	/*!< \brief Auxiliary vector for storing the velocity of point i. */
-	double *Velocity_j;	/*!< \brief Auxiliary vector for storing the velocity of point j. */
-	double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
-    bool implicit;
-    
+	unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
+	double **Mean_GradPsiVar,					/*!< \brief Mean value of the gradient. */
+	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
+	*ProjFlux,		/*!< \brief Projection of the viscous fluxes. */
+	dist_ij;							/*!< \brief Length of the edge and face. */
+	bool implicit;				/*!< \brief Implicit calculus. */
+  
 public:
     
 	/*!
@@ -3339,8 +3339,7 @@ public:
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
 	unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
-	double *Mean_PrimVar,				/*!< \brief Mean primitive variables. */
-	*PrimVar_i, *PrimVar_j,			/*!< \brief Primitives variables at point i and 1. */
+	double *PrimVar_i, *PrimVar_j,			/*!< \brief Primitives variables at point i and 1. */
 	*Edge_Vector,								/*!< \brief Vector form point i to point j. */
 	**Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,	/*!< \brief Mean value of the gradient. */
 	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,			/*!< \brief Mean value of the viscosity. */
@@ -3673,21 +3672,20 @@ public:
  * \class CAvgGradCorrectedArtComp_AdjFlow
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
- * \author A. Bueno.
+ * \author F.Palacios
  * \version 3.2.1 "eagle"
  */
 class CAvgGradCorrectedArtComp_AdjFlow : public CNumerics {
 private:
-	double *Velocity_i;	/*!< \brief Auxiliary vector for storing the velocity of point i. */
-	double *Velocity_j;	/*!< \brief Auxiliary vector for storing the velocity of point j. */
-	double *Mean_Velocity;
-	double **Mean_GradPsiVar;	/*!< \brief Counter for dimensions of the problem. */
-	double *Edge_Vector;	/*!< \brief Vector going from node 0 to node 1. */
-	double *Proj_Mean_GradPsiVar_Edge;	/*!< \brief Projection of Mean_GradPsiVar onto Edge_Vector. */
-	double *Mean_GradPsiE;	/*!< \brief Counter for dimensions of the problem. */
-	double **Mean_GradPhi;	/*!< \brief Counter for dimensions of the problem. */
-    bool implicit;
-    
+	unsigned short iDim, iVar, jVar;	/*!< \brief Iterators in dimension an variable. */
+	double *PsiVar_i, *PsiVar_j,			/*!< \brief Primitives variables at point i and 1. */
+	*Edge_Vector,								/*!< \brief Vector form point i to point j. */
+	**Mean_GradPsiVar, *Proj_Mean_GradPsiVar_Edge,	/*!< \brief Mean value of the gradient. */
+	Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,			/*!< \brief Mean value of the viscosity. */
+	dist_ij_2,					/*!< \brief Length of the edge and face. */
+	*ProjFlux;	/*!< \brief Projection of the viscous fluxes. */
+	bool implicit;			/*!< \brief Implicit calculus. */
+
 public:
     
 	/*!
