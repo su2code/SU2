@@ -1227,6 +1227,7 @@ void CUpwRoe_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i
 	}
 	RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
 	RoeSoundSpeed = sqrt((Gamma-1)*(RoeEnthalpy-0.5*sq_vel));
+
   
 	/*--- Compute ProjFlux_i ---*/
 	GetInviscidProjFlux(&Density_i, Velocity_i, &Pressure_i, &Enthalpy_i, Normal, ProjFlux_i);
@@ -1660,7 +1661,7 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
     err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
 
 
-	if ((D - delta_p*err_P)>1e-6) {
+	if ((D - delta_p*err_P)>1e-6 && (delta_rho/Density_i)>1e-3) {
 
 		RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
 		RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
@@ -1668,7 +1669,6 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 	}
 
 	RoeSoundSpeed = sqrt(RoeChi + RoeKappa*(RoeEnthalpy-0.5*sq_vel));
-
 }
 
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
