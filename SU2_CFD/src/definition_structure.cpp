@@ -130,8 +130,8 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       
       /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
       
-      int fn, nbases, nzones, file_type;
-      int cell_dim, phys_dim;
+      int fn, nbases = 0, nzones = 0, file_type;
+      int cell_dim = 0, phys_dim = 0;
       char basename[CGNS_STRING_SIZE];
       
       /*--- Check whether the supplied file is truly a CGNS file. ---*/
@@ -147,12 +147,12 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
        is the specific index number for this file and will be
        repeatedly used in the function calls. ---*/
       
-      if ( cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn) ) cg_error_exit();
+      if (cg_open(val_mesh_filename.c_str(),CG_MODE_READ,&fn)) cg_error_exit();
       
       /*--- Get the number of databases. This is the highest node
        in the CGNS heirarchy. ---*/
       
-      if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+      if (cg_nbases(fn,&nbases)) cg_error_exit();
       
       /*--- Check if there is more than one database. Throw an
        error if there is because this reader can currently
@@ -166,15 +166,18 @@ unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
       }
       
       /*--- Read the databases. Note that the indexing starts at 1. ---*/
+      
       for ( int i = 1; i <= nbases; i++ ) {
         
-        if ( cg_base_read(fn, i, basename, &cell_dim, &phys_dim) ) cg_error_exit();
+        if (cg_base_read(fn,i,basename,&cell_dim,&phys_dim)) cg_error_exit();
         
         /*--- Get the number of zones for this base. ---*/
         
-        if ( cg_nzones(fn, i, &nzones) ) cg_error_exit();
+        if (cg_nzones(fn, i, &nzones)) cg_error_exit();
         
       }
+      
+      /*--- Set the problem dimension as read from the CGNS file ---*/
       
       nDim = cell_dim;
       
