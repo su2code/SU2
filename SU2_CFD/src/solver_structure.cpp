@@ -181,8 +181,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   
   for (iVar = 0; iVar < nVar; iVar++)
-//    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
-    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar])));
+    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+//    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar])));
   
   delete [] sbuf_residual;
   delete [] rbuf_residual;
