@@ -3687,25 +3687,18 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   /*--- Local variables and initialization ---*/
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  unsigned short VTK_Type, iMarker, iChar, iCount = 0;
-  unsigned long Point_Surface, iElem_Surface, iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0,
-  vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], vnodes_tetra[4], vnodes_hexa[8], vnodes_wedge[6], vnodes_pyramid[5], dummy, GlobalIndex;
-  char cstr[MAX_STRING_SIZE];
-  double Coord_2D[2], Coord_3D[3];
-  string::size_type position;
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  unsigned short VTK_Type, iMarker;
+  unsigned long iPoint = 0, ielem_div = 0, ielem = 0, GlobalIndex;
   int rank = MASTER_NODE, size = SINGLE_NODE;
-  bool domain_flag = false;
-  bool found_transform = false;
   nZone = val_nZone;
   
   /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
   unsigned long vnodes_cgns[8];
   double Coord_cgns[3];
-  int fn, nbases, nzones, ngrids, ncoords, nsections, file_type;
+  int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0, file_type;
   int *vertices = NULL, *cells = NULL, nMarkers = 0, *boundVerts = NULL, npe;
   int interiorElems = 0, boundaryElems = 0, totalVerts = 0, prevVerts = 0;
-  int cell_dim, phys_dim, nbndry, parent_flag;
+  int cell_dim = 0, phys_dim = 0, nbndry, parent_flag;
   char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
   char coordname[CGNS_STRING_SIZE];
   cgsize_t* cgsize; cgsize = new cgsize_t[3];
@@ -3971,7 +3964,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             elemTypeVTK[j-1][s-1] = 5;
             break;
           case QUAD_4:
-            currentElem      = "Rectangle";
+            currentElem      = "Quadrilateral";
             elemTypeVTK[j-1][s-1] = 9;
             break;
           case TETRA_4:
@@ -3983,7 +3976,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             elemTypeVTK[j-1][s-1] = 12;
             break;
           case PENTA_6:
-            currentElem      = "Wedge";
+            currentElem      = "Prism";
             elemTypeVTK[j-1][s-1] = 13;
             break;
           case PYRA_5:
@@ -4011,7 +4004,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             exit(0);
             break;
         }
-        
         
         /*--- Check if the elements in this section are part
          of the internal domain or are part of the boundary
@@ -4049,7 +4041,6 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
               break;
           }
         }
-        
         
         if (elemTypeVTK[j-1][s-1] == -1) {
           /*--- In case of mixed data type, allocate place for 8 nodes maximum
@@ -4330,12 +4321,15 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
     fclose( SU2File );
     cout << "Successfully wrote the SU2 mesh file." << endl;
     
-    
   }
   
   /*--- Load the data from the CGNS file into SU2 memory. ---*/
   
+  if (rank == MASTER_NODE)
+    cout << endl << "Loading CGNS data into SU2 data structures..." << endl;
+  
   /*--- Read the dimension of the problem ---*/
+  
   nDim = cell_dim;
   if (rank == MASTER_NODE) {
     if (nDim == 2) cout << "Two dimensional problem." << endl;
@@ -4343,11 +4337,13 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   }
   
   /*--- Read the information about inner elements ---*/
+  
   nElem = interiorElems;
-  cout << nElem << " inner elements." << endl;
+  cout << nElem << " interior elements." << endl;
   Global_nElem = nElem;
   
   /*--- Allocate space for elements ---*/
+  
   elem = new CPrimalGrid*[nElem];
   
   /*--- Loop over all the volumetric elements ---*/
