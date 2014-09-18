@@ -2792,22 +2792,17 @@ CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned sho
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Incompressible flow, primitive variables nDim+1, (P,vx,vy,vz) ---*/
-  PrimVar_i = new double [nVar];
-  PrimVar_j = new double [nVar];
-  Mean_PrimVar = new double [nVar];
+  
   Mean_GradPrimVar = new double* [nVar];
   
   /*--- Incompressible flow, gradient primitive variables nDim+1, (P,vx,vy,vz) ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     Mean_GradPrimVar[iVar] = new double [nDim];
   
 }
 
 CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {
-  
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-  delete [] Mean_PrimVar;
   
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Mean_GradPrimVar[iVar];
@@ -2819,6 +2814,7 @@ void CAvgGradArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
                                            double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
+  
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
@@ -2827,34 +2823,33 @@ void CAvgGradArtComp_Flow::ComputeResidual(double *val_residual, double **val_Ja
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
   
-  /*--- Conversion to Primitive Variables ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    PrimVar_i[iVar] = V_i[iVar];
-    PrimVar_j[iVar] = V_j[iVar];
-    Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
-  }
-  
   /*--- Laminar and Eddy viscosity ---*/
+  
   Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
   Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   
   /*--- Mean Viscosities ---*/
+  
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   
   /*--- Mean gradient approximation ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
   
   /*--- Get projected flux tensor ---*/
-  GetViscousArtCompProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  
+  GetViscousArtCompProjFlux(Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   
   /*--- Update viscous residual ---*/
+  
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = Proj_Flux_Tensor[iVar];
   
   /*--- Implicit part ---*/
+  
   if (implicit) {
     
     dist_ij = 0.0;
@@ -3001,7 +2996,6 @@ CAvgGradCorrectedArtComp_Flow::CAvgGradCorrectedArtComp_Flow(unsigned short val_
   
   PrimVar_i = new double [nVar];
   PrimVar_j = new double [nVar];
-  Mean_PrimVar = new double [nVar];
   Proj_Mean_GradPrimVar_Edge = new double [nVar];
   Edge_Vector = new double [nDim];
   
@@ -3015,11 +3009,10 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
   
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-  delete [] Mean_PrimVar;
   delete [] Proj_Mean_GradPrimVar_Edge;
   delete [] Edge_Vector;
   
-  for (iVar = 0; iVar < nDim+1; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++)
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
   
@@ -3028,6 +3021,7 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
 void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
+  
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
@@ -3040,7 +3034,6 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
   for (iVar = 0; iVar < nVar; iVar++) {
     PrimVar_i[iVar] = V_i[iVar];
     PrimVar_j[iVar] = V_j[iVar];
-    Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   
   /*--- Laminar and Eddy viscosity ---*/
@@ -3079,7 +3072,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(double *val_residual, double
   
   /*--- Get projected flux tensor ---*/
   
-  GetViscousArtCompProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  GetViscousArtCompProjFlux(Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   
   /*--- Update viscous residual ---*/
   
