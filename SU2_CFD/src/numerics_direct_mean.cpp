@@ -1661,7 +1661,7 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
     err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
 
 
-//	if ((D - delta_p*err_P)>1e-6){// && (delta_rho/Density_i)>1e-3) {
+//	if ((D - delta_p*err_P)>1e-6 && (delta_rho/Density_i)>5e-2) {
 //
 //		RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
 //		RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
@@ -2770,9 +2770,9 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned sho
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Compressible flow, primitive variables nDim+3, (vx,vy,vz,P,rho,h) ---*/
-  PrimVar_i = new double [nDim+3];
-  PrimVar_j = new double [nDim+3];
-  Mean_PrimVar = new double [nDim+3];
+  PrimVar_i = new double [nDim+4];
+  PrimVar_j = new double [nDim+4];
+  Mean_PrimVar = new double [nDim+4];
   Mean_SecVar = new double [2];
   
   /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
@@ -2807,9 +2807,9 @@ void CGeneralAvgGrad_Flow::ComputeResidual(double *val_residual, double **val_Ja
     UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Mean primitive variables ---*/
-  for (iVar = 0; iVar < nDim+3; iVar++) {
-    PrimVar_i[iVar] = V_i[iVar+1];
-    PrimVar_j[iVar] = V_j[iVar+1];
+  for (iVar = 0; iVar < nDim+4; iVar++) {
+    PrimVar_i[iVar] = V_i[iVar];
+    PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   
@@ -3187,9 +3187,9 @@ CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Compressible flow, primitive variables nDim+3, (vx,vy,vz,P,rho,h) ---*/
-  PrimVar_i = new double [nDim+3];
-  PrimVar_j = new double [nDim+3];
-  Mean_PrimVar = new double [nDim+3];
+  PrimVar_i = new double [nDim+4];
+  PrimVar_j = new double [nDim+4];
+  Mean_PrimVar = new double [nDim+4];
   Mean_SecVar = new double [2];
   
   /*--- Compressible flow, primitive gradient variables nDim+1, (T,vx,vy,vz) ---*/
@@ -3244,9 +3244,9 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(double *val_residual, double
   Thermal_Conductivity_i = V_i[nDim+7]; Thermal_Conductivity_j = V_j[nDim+7];
   Cp_i = V_i[nDim+8]; Cp_j = V_j[nDim+8];
   
-  for (iVar = 0; iVar < nDim+3; iVar++) {
-    PrimVar_i[iVar] = V_i[iVar+1];
-    PrimVar_j[iVar] = V_j[iVar+1];
+  for (iVar = 0; iVar < nDim+4; iVar++) {
+    PrimVar_i[iVar] = V_i[iVar];
+    PrimVar_j[iVar] = V_j[iVar];
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   
