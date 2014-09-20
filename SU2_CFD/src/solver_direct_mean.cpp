@@ -7707,10 +7707,12 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
   }
   
 #else
-  int rank, jProcessor;
-  MPI_Status status;
-  MPI_Request send_req, recv_req;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
+//  int rank, jProcessor;
+//  MPI_Status status;
+//  MPI_Request send_req, recv_req;
+//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
   double *Buffer_Send_V = new double [nPrimVar];
@@ -7744,8 +7746,9 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           
           for (iVar = 0; iVar < nPrimVar; iVar++)
             Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
-          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
-          MPI_Wait(&send_req,&status);
+          MPI::COMM_WORLD.Bsend(Buffer_Send_V, nPrimVar, MPI::DOUBLE, jProcessor, iPoint);
+//          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
+//          MPI_Wait(&send_req,&status);
         }
         
       }
@@ -7772,8 +7775,9 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         /*--- We only receive the information that belong to other boundary ---*/
         
         if (jProcessor != rank) {
-          MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req);
-          MPI_Wait(&recv_req,&status);
+          MPI::COMM_WORLD.Recv(Buffer_Receive_V, nPrimVar, MPI::DOUBLE, jProcessor, jPoint);
+//          MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req);
+//          MPI_Wait(&recv_req,&status);
         }
         else {
           for (iVar = 0; iVar < nPrimVar; iVar++)
