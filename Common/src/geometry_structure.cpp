@@ -6113,6 +6113,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
   unsigned short nMarker_NearfieldBound = config->GetnMarker_NearFieldBound();
   
   if (nMarker_NearfieldBound != 0) {
+    
 #ifndef HAVE_MPI
     
     unsigned short iMarker, jMarker;
@@ -6174,6 +6175,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     
     /*--- Compute the number of vertex that have nearfield boundary condition
      without including the ghost nodes ---*/
+    
     nLocalVertex_NearField = 0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -6185,6 +6187,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     Buffer_Send_nVertex[0] = nLocalVertex_NearField;
     
     /*--- Send Near-Field vertex information --*/
+    
     MPI_Allreduce(&nLocalVertex_NearField, &nGlobalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -6205,6 +6208,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     }
     
     /*--- Copy coordinates and point to the auxiliar vector --*/
+    
     nLocalVertex_NearField = 0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -6222,6 +6226,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
     MPI_Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
     
     /*--- Compute the closest point to a Near-Field boundary point ---*/
+    
     maxdist_local = 0.0;
     maxdist_global = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -6232,14 +6237,17 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
           if (node[iPoint]->GetDomain()) {
             
             /*--- Coordinates of the boundary point ---*/
+            
             Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
             
             /*--- Loop over all the boundaries to find the pair ---*/
+            
             for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
               for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
                 jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_NearField+jVertex];
                 
                 /*--- Compute the distance ---*/
+                
                 dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
                   Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
                   dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
@@ -6252,6 +6260,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
               }
             
             /*--- Store the value of the pair ---*/
+            
             maxdist_local = max(maxdist_local, mindist);
             vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
             
