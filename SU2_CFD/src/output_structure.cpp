@@ -6601,7 +6601,6 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             AngleDouble = FixAzimuthalLine - 0.1;
           
           AngleInt = (short) floor(AngleDouble + 0.5);
-          cout << AngleInt << endl;
           
           if (AngleInt >= 0) AzimuthalAngle[nVertex_NearField] = AngleInt;
           else AzimuthalAngle[nVertex_NearField] = 180 + AngleInt;
