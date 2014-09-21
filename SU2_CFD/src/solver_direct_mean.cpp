@@ -3103,6 +3103,41 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
       }
 
+
+      double density_i = Primitive_i[nDim+2];
+	  double temperature_i = Primitive_i[0];
+      double velocity2_i = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      	  		  velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+	  }
+
+      FluidModel->SetTDState_rhoT(density_i, temperature_i);
+
+      Primitive_i[nDim+1]= FluidModel->GetPressure();
+	  Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
+	  Primitive_i[nDim+4]= FluidModel->GetSoundSpeed();
+	  Secondary_i[0]=FluidModel->GetdPdrho_e();
+	  Secondary_i[1]=FluidModel->GetdPde_rho();
+
+
+
+	  double density_j = Primitive_j[nDim+2];
+	  double temperature_j = Primitive_j[0];
+	  double velocity2_j = 0.0;
+	  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+	      velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+	  }
+
+	  FluidModel->SetTDState_rhoT(density_j, temperature_j);
+
+	  Primitive_j[nDim+1]= FluidModel->GetPressure();
+	  Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
+	  Primitive_j[nDim+4]=FluidModel->GetSoundSpeed();
+	  Secondary_j[0]=FluidModel->GetdPdrho_e();
+	  Secondary_j[1]=FluidModel->GetdPde_rho();
+
+
+
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
        first-order approximation, but this is typically only active
@@ -3120,66 +3155,50 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       if (neg_density_i || neg_pressure_i) {
         for (iVar = 0; iVar < nVar; iVar++)
           Primitive_i[iVar] = V_i[iVar];
+        Secondary_i[0] = S_i[0];
+		Secondary_i[1] = S_i[1];
         counter_local++;
       }
       if (neg_density_j || neg_pressure_j) {
         for (iVar = 0; iVar < nVar; iVar++)
           Primitive_j[iVar] = V_j[iVar];
+        Secondary_j[0] = S_j[0];
+		Secondary_j[1] = S_j[1];
         counter_local++;
       }
 
-      /*--- If compressible, compute 2nd order reconstruction for the secondary variables ---*/
-
-      if (compressible) {
-
-        Gradient_i = node[iPoint]->GetGradient_Secondary();
-        Gradient_j = node[jPoint]->GetGradient_Secondary();
-        if (limiter) {
-          Limiter_i = node[iPoint]->GetLimiter_Secondary();
-          Limiter_j = node[jPoint]->GetLimiter_Secondary();
-        }
-
-        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
-            Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
-          }
-          if (limiter) {
-            Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-            Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
-          }
-          else {
-            Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
-            Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
-          }
-        }
-
-// evaluate derivative in a TD consistent way
+//      /*--- If compressible, compute 2nd order reconstruction for the secondary variables ---*/
 //
-//    	  double density_i = Primitive_i[0];
-//    	  double velocity2_i = 0.0;
-//    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-//    	      velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-//    	    }
-//    	  double staticEnergy_i = Primitive_i[nDim+3]-Primitive_i[nDim+1]/Primitive_i[0]-0.5*velocity2_i;
-//    	  FluidModel->SetTDState_rhoe(density_i, staticEnergy_i);
-//    	  Secondary_i[0]=FluidModel->GetdPdrho_e();
-//    	  Secondary_i[1]=FluidModel->GetdPde_rho();
+//      if (compressible) {
 //
-//    	  double density_j = Primitive_j[0];
-//    	  double velocity2_j = 0.0;
-//    	    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-//    	      velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
-//    	    }
-//    	  double staticEnergy_j = Primitive_j[nDim+3]-Primitive_j[nDim+1]/Primitive_j[0]-0.5*velocity2_j;
-//    	  FluidModel->SetTDState_rhoe(density_j, staticEnergy_j);
-//    	  Secondary_j[0]=FluidModel->GetdPdrho_e();
-//    	  Secondary_j[1]=FluidModel->GetdPde_rho();
+//        Gradient_i = node[iPoint]->GetGradient_Secondary();
+//        Gradient_j = node[jPoint]->GetGradient_Secondary();
+//        if (limiter) {
+//          Limiter_i = node[iPoint]->GetLimiter_Secondary();
+//          Limiter_j = node[jPoint]->GetLimiter_Secondary();
+//        }
+//
+//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+//          Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+//          for (iDim = 0; iDim < nDim; iDim++) {
+//            Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+//            Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+//          }
+//          if (limiter) {
+//            Secondary_i[iVar] = S_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+//            Secondary_j[iVar] = S_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+//          }
+//          else {
+//            Secondary_i[iVar] = S_i[iVar] + Project_Grad_i;
+//            Secondary_j[iVar] = S_j[iVar] + Project_Grad_j;
+//          }
+//        }
 //
 //
-
-      }
+//
+//
+//
+//      }
 
       /*--- Set conservative variables with reconstruction ---*/
 
