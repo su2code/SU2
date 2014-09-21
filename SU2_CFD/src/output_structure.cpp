@@ -6378,6 +6378,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 #ifndef HAVE_MPI
   
   /*--- Compute the total number of points on the near-field ---*/
+  
   nVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -6385,13 +6386,16 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Face_Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Coord = geometry->node[iPoint]->GetCoord();
+        
         /*--- Using Face_Normal(z), and Coord(z) we identify only a surface,
          note that there are 2 NEARFIELD_BOUNDARY surfaces ---*/
+        
         if ((Face_Normal[nDim-1] > 0.0) && (Coord[nDim-1] < 0.0)) nVertex_NearField ++;
       }
   
   /*--- Create an array with all the coordinates, points, pressures, face area,
    equivalent area, and nearfield weight ---*/
+  
   Xcoord = new double[nVertex_NearField];
   Ycoord = new double[nVertex_NearField];
   Zcoord = new double[nVertex_NearField];
@@ -6406,6 +6410,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   Weight = new double[nVertex_NearField];
   
   /*--- Copy the boundary information to an array ---*/
+  
   nVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -6435,7 +6440,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
             /*--- Compute the Azimuthal angle (resolution of degress in the Azimuthal angle)---*/
             
             double AngleDouble; short AngleInt;
-            AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+            AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
             
             /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
             
@@ -6470,6 +6475,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   
   /*--- Compute the total number of points of the near-field ghost nodes ---*/
+  
   nLocalVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -6486,6 +6492,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   Buffer_Send_nVertex[0] = nLocalVertex_NearField;
   
   /*--- Send Near-Field vertex information --*/
+  
   MPI_Allreduce(&nLocalVertex_NearField, &nVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&nLocalVertex_NearField, &MaxLocalVertex_NearField, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   MPI_Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
@@ -6518,6 +6525,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   }
   
   /*--- Copy coordinates, index points, and pressures to the auxiliar vector --*/
+  
   nLocalVertex_NearField = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
@@ -6539,6 +6547,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       }
   
   /*--- Send all the information --*/
+  
   MPI_Gather(Buffer_Send_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, Buffer_Receive_Xcoord, nBuffer_Xcoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, Buffer_Receive_Ycoord, nBuffer_Ycoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Gather(Buffer_Send_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, Buffer_Receive_Zcoord, nBuffer_Zcoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -6582,13 +6591,14 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           /*--- Compute the Azimuthal angle ---*/
           
           double AngleDouble; short AngleInt;
-          AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+          AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
           
           /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
           
           double FixAzimuthalLine = config->GetFixAzimuthalLine();
           
-          if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
+          if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1))
+            AngleDouble = FixAzimuthalLine - 0.1;
           
           AngleInt = (short) floor(AngleDouble + 0.5);
           
@@ -6637,6 +6647,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     PhiAngleList.resize( IterPhiAngleList - PhiAngleList.begin() );
     
     /*--- Create vectors and distribute the values among the different PhiAngle queues ---*/
+    
     vector<vector<double> > Xcoord_PhiAngle; Xcoord_PhiAngle.resize(PhiAngleList.size());
     vector<vector<double> > Ycoord_PhiAngle; Ycoord_PhiAngle.resize(PhiAngleList.size());
     vector<vector<double> > Zcoord_PhiAngle; Zcoord_PhiAngle.resize(PhiAngleList.size());
@@ -6650,6 +6661,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     vector<vector<double> > Weight_PhiAngle; Weight_PhiAngle.resize(PhiAngleList.size());
     
     /*--- Distribute the values among the different PhiAngles ---*/
+    
     for (iVertex = 0; iVertex < nVertex_NearField; iVertex++)
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         if (AzimuthalAngle[iVertex] == PhiAngleList[iPhiAngle]) {
@@ -6667,6 +6679,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         }
     
     /*--- Order the arrays (x Coordinate, Pressure, Point, and Domain) ---*/
+    
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++)
         for (jVertex = 0; jVertex < Xcoord_PhiAngle[iPhiAngle].size() - 1 - iVertex; jVertex++)
@@ -6682,6 +6695,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     
     
     /*--- Check that all the azimuth lists have the same size ---*/
+    
     unsigned short nVertex = Xcoord_PhiAngle[0].size();
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       unsigned short nVertex_aux = Xcoord_PhiAngle[iPhiAngle].size();
@@ -6690,6 +6704,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     }
     
     /*--- Compute equivalent area distribution at each azimuth angle ---*/
+    
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_PhiAngle[iPhiAngle][0] = 0.0;
       for (iVertex = 1; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
@@ -6713,6 +6728,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     }
     
     /*--- Create a file with the equivalent area distribution at each azimuthal angle ---*/
+    
     NearFieldEA_file.precision(15);
     NearFieldEA_file.open("NearFieldEA.plt", ios::out);
     NearFieldEA_file << "TITLE = \"Nearfield Equivalent Area at each azimuthal angle \"" << endl;
@@ -6775,6 +6791,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           js >> data;
           
           /*--- The first element in the table is the coordinate ---*/
+          
           if (iter != 0) row.push_back(data);
           iter++;
         }
@@ -6787,9 +6804,11 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     }
     
     /*--- Divide by the number of Phi angles in the nearfield ---*/
+    
     double PhiFactor = 1.0/double(PhiAngleList.size());
     
     /*--- Evaluate the objective function ---*/
+    
     InverseDesign = 0;
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
@@ -6804,6 +6823,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       }
     
     /*--- Evaluate the weight of the nearfield pressure (adjoint input) ---*/
+    
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
       for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++) {
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
@@ -6820,6 +6840,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       }
     
     /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
+    
     EquivArea_file.precision(15);
     EquivArea_file.open("nearfield_flow.plt", ios::out);
     EquivArea_file << "TITLE = \"SU2 Equivalent area computation at each azimuthal angle \"" << endl;
@@ -6841,6 +6862,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     EquivArea_file.close();
     
     /*--- Write Weight file for adjoint computation ---*/
+    
     FuncGrad_file.precision(15);
     FuncGrad_file.open("WeightNF.dat", ios::out);
     
@@ -6859,6 +6881,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     FuncGrad_file.close();
     
     /*--- Delete structures ---*/
+    
     delete [] Xcoord; delete [] Ycoord; delete [] Zcoord;
     delete [] AzimuthalAngle; delete [] IdPoint; delete [] IdDomain;
     delete [] Pressure; delete [] FaceArea;
@@ -6870,14 +6893,17 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 #ifndef HAVE_MPI
   
   /*--- Store the value of the NearField coefficient ---*/
+  
   solver_container->SetTotal_CEquivArea(InverseDesign);
   
 #else
   
   /*--- Send the value of the NearField coefficient to all the processors ---*/
+  
   MPI_Bcast(&InverseDesign, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   
   /*--- Store the value of the NearField coefficient ---*/
+  
   solver_container->SetTotal_CEquivArea(InverseDesign);
   
 #endif
