@@ -1651,7 +1651,9 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 	delta_rho = Density_j - Density_i;
 	delta_p = Pressure_j - Pressure_i;
 	RoeKappa = 0.5*(Kappa_i + Kappa_j);
+	RoeKappa = (Kappa_i + Kappa_j + 4*RoeKappa)/6;
 	RoeChi = 0.5*(Chi_i + Chi_j);
+	RoeChi = (Chi_i + Chi_j + 4*RoeChi)/6;
 	// /* It works only using the hat values*/
 
 	RoeKappaStaticEnthalpy = 0.5*(StaticEnthalpy_i*Kappa_i + StaticEnthalpy_j*Kappa_j);
@@ -1661,7 +1663,7 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
     err_P = delta_p - RoeChi*delta_rho - RoeKappa*delta_rhoStaticEnergy;
 
 
-	if ((D - delta_p*err_P)>1e-6 && (delta_rho/Density_i)>3e-2) {
+	if ((D - delta_p*err_P)>1e-6 && (delta_rho/Density_i)>5e-2) {
 
 		RoeKappa = (D*RoeKappa)/(D - delta_p*err_P);
 		RoeChi = (D*RoeChi+ s*s*delta_rho*err_P)/(D - delta_p*err_P);
