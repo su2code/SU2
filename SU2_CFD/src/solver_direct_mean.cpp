@@ -3103,40 +3103,42 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
       }
 
-
-      double density_i = Primitive_i[nDim+2];
-	  double temperature_i = Primitive_i[0];
-      double velocity2_i = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      	  		  velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-	  }
-
-      FluidModel->SetTDState_rhoT(density_i, temperature_i);
-
-      Primitive_i[nDim+1]= FluidModel->GetPressure();
-	  Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
-	  Primitive_i[nDim+4]= FluidModel->GetSoundSpeed();
-	  Secondary_i[0]=FluidModel->GetdPdrho_e();
-	  Secondary_i[1]=FluidModel->GetdPde_rho();
+      if(compressible) {
 
 
+		  double density_i = Primitive_i[nDim+2];
+		  double temperature_i = Primitive_i[0];
+		  double velocity2_i = 0.0;
+		  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+					  velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+		  }
 
-	  double density_j = Primitive_j[nDim+2];
-	  double temperature_j = Primitive_j[0];
-	  double velocity2_j = 0.0;
-	  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-	      velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
-	  }
+		  FluidModel->SetTDState_rhoT(density_i, temperature_i);
 
-	  FluidModel->SetTDState_rhoT(density_j, temperature_j);
-
-	  Primitive_j[nDim+1]= FluidModel->GetPressure();
-	  Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
-	  Primitive_j[nDim+4]=FluidModel->GetSoundSpeed();
-	  Secondary_j[0]=FluidModel->GetdPdrho_e();
-	  Secondary_j[1]=FluidModel->GetdPde_rho();
+		  Primitive_i[nDim+1]= FluidModel->GetPressure();
+		  Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
+		  Primitive_i[nDim+4]= FluidModel->GetSoundSpeed();
+		  Secondary_i[0]=FluidModel->GetdPdrho_e();
+		  Secondary_i[1]=FluidModel->GetdPde_rho();
 
 
+
+		  double density_j = Primitive_j[nDim+2];
+		  double temperature_j = Primitive_j[0];
+		  double velocity2_j = 0.0;
+		  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+			  velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+		  }
+
+		  FluidModel->SetTDState_rhoT(density_j, temperature_j);
+
+		  Primitive_j[nDim+1]= FluidModel->GetPressure();
+		  Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
+		  Primitive_j[nDim+4]=FluidModel->GetSoundSpeed();
+		  Secondary_j[0]=FluidModel->GetdPdrho_e();
+		  Secondary_j[1]=FluidModel->GetdPde_rho();
+
+      }
 
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
@@ -3155,16 +3157,20 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       if (neg_density_i || neg_pressure_i) {
         for (iVar = 0; iVar < nVar; iVar++)
           Primitive_i[iVar] = V_i[iVar];
-        Secondary_i[0] = S_i[0];
-		Secondary_i[1] = S_i[1];
+        if(compressible){
+			Secondary_i[0] = S_i[0];
+			Secondary_i[1] = S_i[1];
+        }
         counter_local++;
       }
       if (neg_density_j || neg_pressure_j) {
         for (iVar = 0; iVar < nVar; iVar++)
           Primitive_j[iVar] = V_j[iVar];
-        Secondary_j[0] = S_j[0];
-		Secondary_j[1] = S_j[1];
-        counter_local++;
+        if (compressible){
+        	Secondary_j[0] = S_j[0];
+        	Secondary_j[1] = S_j[1];
+        }
+		counter_local++;
       }
 
 //      /*--- If compressible, compute 2nd order reconstruction for the secondary variables ---*/
