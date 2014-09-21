@@ -3271,7 +3271,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   
   unsigned long iVertex, iPoint, jPoint;
   unsigned short iDim, iVar;
-  double *U_i, *U_j;
+  double *V_i, *V_j;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -3297,16 +3297,9 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
       
       /*--- Conservative variables w/o reconstruction ---*/
       
-      U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-      U_j = solver_container[FLOW_SOL]->node[jPoint]->GetSolution();
-      numerics->SetConservative(U_i, U_j);
-      
-      /*--- SoundSpeed enthalpy and lambda variables w/o reconstruction ---*/
-      
-      numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(),
-                              solver_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
-      numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
-                            solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
+      V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+      numerics->SetPrimitive(V_i, V_j);
       
       /*--- Set face vector, and area ---*/
       
@@ -3327,10 +3320,11 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   }
   
 #else
+  
   int rank, jProcessor;
-  MPI_Status status;
+  MPI_Status send_stat[1], recv_stat[1];
+  MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Request send_req, recv_req;
   
   bool compute;
   double *Buffer_Send_Psi = new double[nVar];
@@ -3363,8 +3357,13 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
           
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req);
-          MPI_Wait(&send_req,&status);
+          
+          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+
+          /*--- Wait for this set of non-blocking comm. to complete ---*/
+          
+          MPI_Waitall(1, send_req, send_stat);
+          
         }
         
       }
@@ -3393,8 +3392,11 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
         
         if (jProcessor != rank) {
           
-          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req);
-          MPI_Wait(&recv_req,&status);
+          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+          
+          /*--- Wait for the this set of non-blocking recv's to complete ---*/
+          
+          MPI_Waitall(1, recv_req, recv_stat);
           
         } else {
           for (iVar = 0; iVar < nVar; iVar++)
@@ -3414,16 +3416,9 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
         
         /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
         
-        U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-        U_j = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-        numerics->SetConservative(U_i, U_j);
-        
-        /*--- SoundSpeed enthalpy and lambda variables w/o reconstruction (the same at both points) ---*/
-        
-        numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(),
-                                solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed());
-        numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
-                              solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy());
+        V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+        numerics->SetPrimitive(V_i, V_j);
         
         /*--- Set Normal ---*/
         
@@ -3460,7 +3455,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   
   unsigned long iVertex, iPoint, jPoint, Pin, Pout;
   unsigned short iDim, iVar;
-  double *U_i, *U_j, *IntBoundary_Jump;
+  double *V_i, *V_j, *IntBoundary_Jump;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -3535,16 +3530,9 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
       
       /*--- Conservative variables w/o reconstruction ---*/
       
-      U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-      U_j = solver_container[FLOW_SOL]->node[jPoint]->GetSolution();
-      numerics->SetConservative(U_i, U_j);
-      
-      /*--- SoundSpeed enthalpy and lambda variables w/o reconstruction ---*/
-      
-      numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(),
-                              solver_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
-      numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
-                            solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
+      V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+      numerics->SetPrimitive(V_i, V_j);
       
       /*--- Set Normal ---*/
       
@@ -3569,8 +3557,8 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   
 #else
   int rank, jProcessor;
-  MPI_Status status;
-  MPI_Request send_req, recv_req;
+  MPI_Status send_stat[1], recv_stat[1];
+  MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
@@ -3604,8 +3592,11 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
           
-          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD,&send_req);
-          MPI_Wait(&send_req,&status);
+          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+          
+          /*--- Wait for this set of non-blocking comm. to complete ---*/
+          
+          MPI_Waitall(1, send_req, send_stat);
           
         }
         
@@ -3635,8 +3626,11 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         
         if (jProcessor != rank) {
           
-          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req);
-          MPI_Wait(&recv_req,&status);
+          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+          
+          /*--- Wait for the this set of non-blocking recv's to complete ---*/
+          
+          MPI_Waitall(1, recv_req, recv_stat);
           
         } else {
           for (iVar = 0; iVar < nVar; iVar++)
@@ -3694,16 +3688,9 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         
         /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
         
-        U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-        U_j = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-        numerics->SetConservative(U_i, U_j);
-        
-        /*--- SoundSpeed enthalpy and lambda variables w/o reconstruction (the same at both points) ---*/
-        
-        numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(),
-                                solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed());
-        numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
-                              solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy());
+        V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+        numerics->SetPrimitive(V_i, V_j);
         
         /*--- Set Normal ---*/
         
