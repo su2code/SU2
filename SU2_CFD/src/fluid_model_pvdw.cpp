@@ -63,7 +63,7 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
 	A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-    Z= max(B, 1.1);
+    Z= max(B, 0.99);
 	DZ= 1.0;
 	do{
 		F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
@@ -91,7 +91,7 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
     double v, T, dv, f, f1;
     double toll = 1e-9;
 
-    T = 1.1*h*Gamma_Minus_One/Gas_Constant/Gamma;
+    T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 	do{
 		f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;

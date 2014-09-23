@@ -145,7 +145,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	double dv = 1.0;
 	double toll =1e-9;
 
-	Temperature = 1.1*h*Gamma_Minus_One/Gas_Constant/Gamma;
+	Temperature = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(Temperature) + s/Gas_Constant);
 	Pressure = Temperature*Gas_Constant / (v - b) - a*alpha2(Temperature) / ( v*v + 2*b*v - b*b);
 	Density =1/v;
