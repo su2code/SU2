@@ -234,8 +234,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] += Solution_Coarse[iVar];
     
-    for (iVar = 0; iVar < nVar; iVar++)
-      sol_coarse->node[Point_Coarse]->SetSolution_Old(Solution);
+    sol_coarse->node[Point_Coarse]->SetSolution_Old(Solution);
     
   }
   
