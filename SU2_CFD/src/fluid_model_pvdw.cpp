@@ -25,12 +25,14 @@
 CVanDerWaalsGas::CVanDerWaalsGas() : CIdealGas() {
 	a = 0.0;
 	b = 0.0;
+
 }
 
 
 CVanDerWaalsGas::CVanDerWaalsGas(double gamma, double R, double Pstar, double Tstar): CIdealGas(gamma, R) {
     a = 27.0/64.0*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
 	b = 1.0/8.0*Gas_Constant*Tstar/Pstar;
+	Zed = 1.0;
 
 }
 
@@ -54,16 +56,19 @@ void CVanDerWaalsGas::SetTDState_rhoe (double rho, double e ) {
 
     SoundSpeed2 = dPdrho_e + Pressure/(Density*Density)*dPde_rho;
 
+    Zed = Pressure/(Gas_Constant*Temperature*Density);
 }
 
 
 void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
-	double toll= 1e-9;
+	double toll= 1e-4;
 	double A, B, Z, DZ, F, F1;
 	A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-    Z= max(B, 0.99);
+//    Z= max(B, 0.99);
+	Z= Zed;
+//	cout << Z << endl;
 	DZ= 1.0;
 	do{
 		F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
@@ -71,7 +76,14 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
 		DZ = F/F1;
 		Z-= DZ;
 	}while(DZ>toll);
-	Density = P/(Z*Gas_Constant*T);
+
+
+	// check if the solution is physical otherwise uses previous point  solution
+	if (Z <= 1.01 && Z >= 0.05)
+		Zed = Z;
+
+
+	Density = P/(Zed*Gas_Constant*T);
 
     double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
 	SetTDState_rhoe(Density, e);
@@ -88,24 +100,32 @@ void CVanDerWaalsGas::SetTDState_Prho (double P, double rho ) {
 
 void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
 
-    double v, T, dv, f, f1;
-    double toll = 1e-9;
+    double v, T, P, rho, dv, f, f1, Z;
+    double toll = 1e-4;
 
     T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
-    v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
+    v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
+//    T= Temperature;
+//    v= 1/Density;
 	do{
 		f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;
 		f1= 1/(v-b);
 		dv= f/f1;
-		v-= dv;
+		v-= 0.7*dv;
 		T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
 	}while(abs(dv) > toll);
 
-	Density = 1/v;
-	Temperature = T;
-    Pressure = Gas_Constant*Temperature*Density / (1 - Density*b) - a*Density*Density;
-
-    SetTDState_Prho(Pressure, Density);
+	rho = 1/v;
+    P = Gas_Constant*T*rho / (1 - rho*b) - a*rho*rho;
+    Z = P/(Gas_Constant*T*rho);
+//    cout << Z << " " << v << " "<< f <<endl;
+	// check if the solution is physical otherwise uses previous solution
+	if (Z <= 1.0001 && Z >= 0.05){
+		Zed = Z;
+        SetTDState_rhoT(rho, T);
+	}else{
+		SetTDState_rhoT(Density, Temperature);
+	}
 
 }
 

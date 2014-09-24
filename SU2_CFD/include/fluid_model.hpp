@@ -339,7 +339,7 @@ class CVanDerWaalsGas : public CIdealGas {
 
 protected:
 	double
-			a, b;   					/*!< \brief Parameters for the Dimensionless Equation. */
+			a, b, Zed;   					/*!< \brief Parameters for the Dimensionless Equation. */
 
 public:
 
@@ -422,8 +422,9 @@ class CPengRobinson : public CIdealGas {
 protected:
 	double  a, 						/*!< \brief model parameter. */
     		b, 						/*!< \brief model parameter. */
-	        k, 						/*!< \brief model parameter (computed with acentric factor). */
-			TstarCrit;				/*!< \brief Critical temperature. */
+    		k, 						/*!< \brief model parameter (computed with acentric factor). */
+    		Zed, 						/*!< \brief compressibility factor. */
+    		TstarCrit;				/*!< \brief Critical temperature. */
 
 private:
 
