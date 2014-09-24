@@ -35,6 +35,7 @@ CPengRobinson::CPengRobinson(double gamma, double R, double Pstar, double Tstar,
 	a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
 	b = 0.0778*Gas_Constant*Tstar/Pstar;
 	TstarCrit = Tstar;
+	Zed=1.0;
 
 	if (w <= 0.49)
         k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
@@ -109,7 +110,7 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 }
 
 void CPengRobinson::SetTDState_PT (double P, double T ) {
-	double toll= 1e-9;
+	double toll= 1e-4;
 	double A, B, Z, DZ, F, F1;
 	double rho, fv, e;
 	double sqrt2=sqrt(2);
@@ -153,7 +154,7 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	double T, P, rho, Z;
 	double f, f1, v;
 	double dv = 1.0;
-	double toll =1e-9;
+	double toll =1e-4;
 
 	A = Gas_Constant / Gamma_Minus_One;
 
