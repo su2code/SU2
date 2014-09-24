@@ -93,6 +93,8 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
     dTde_rho = 1/Cv;
 
+    Zed = Pressure/(Gas_Constant*Temperature*Density);
+
 
 //DTDd_e = Gamma_Minus_One/Gas_Constant*a;
 //
@@ -114,7 +116,8 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-    Z= max(B, 1.1);
+//    Z= max(B, 0.99);
+	Z = Zed;
 	DZ= 1.0;
 	do{
 		F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
@@ -123,7 +126,13 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 		Z-= DZ;
 	}while(DZ>toll);
 
-	rho= P/(Z*Gas_Constant*T);
+
+	// check if the solution is phisical
+	if (Z <= 1.0001 && Z >= 0.05)
+	    Zed = Z;
+
+
+	rho= P/(Zed*Gas_Constant*T);
 	fv = atanh( rho * b * sqrt2/(1 + rho*b));
 
     e = T*Gas_Constant/Gamma_Minus_One + a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit))*sqrt(T) - a*(k+1)*(k+1)*fv/(b*sqrt2);
@@ -141,35 +150,43 @@ void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 void CPengRobinson::SetTDState_hs (double h, double s ){
 
 	double fv, A, B, C, sqrt2=sqrt(2);
+	double T, P, rho, Z;
 	double f, f1, v;
 	double dv = 1.0;
 	double toll =1e-9;
 
-	Temperature = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
-	v = exp(-1/Gamma_Minus_One*log(Temperature) + s/Gas_Constant);
-	Pressure = Temperature*Gas_Constant / (v - b) - a*alpha2(Temperature) / ( v*v + 2*b*v - b*b);
-	Density =1/v;
+	A = Gas_Constant / Gamma_Minus_One;
+
+	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
+	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
+	P = T*Gas_Constant / (v - b) - a*alpha2(T) / ( v*v + 2*b*v - b*b);
+	rho =1/v;
 
 	do{
-		fv = atanh( Density * b * sqrt2/(1 + Density*b));
-		A = Gas_Constant / Gamma_Minus_One;
+		fv = atanh( rho * b * sqrt2/(1 + rho*b));
 		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + Pressure/Density;
-		Temperature = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-		Temperature *= Temperature;
+		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+		T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+		T *= T;
 
-		f = A*log(Temperature) + Gas_Constant*log(1/Density -b) - a*sqrt(alpha2(Temperature)) *k*fv/(b*sqrt2*sqrt(Temperature*TstarCrit)) - s;
-		f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(Temperature)) *k/(sqrt(Temperature*TstarCrit)*(v*v - b*b - 2*v*b));
+		f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+		f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
 		dv= f/f1;
 		v-= dv;
-		Density = 1/v;
-		Pressure = Density*Temperature*Gas_Constant / (1 - Density*b) - a*alpha2(Temperature) / ( 1/Density/Density + 2*b/Density - b*b );
+		rho = 1/v;
+		P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
 
 	}while(abs(dv) > toll);
 
-	double e = Temperature*Gas_Constant/Gamma_Minus_One + a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit))*sqrt(Temperature) - a*(k+1)*(k+1)*fv/(b*sqrt2);
-	SetTDState_rhoe(Density, e);
 
+    Z = P/(Gas_Constant*T*rho);
+	// check if the solution is physical otherwise uses previous solution
+	if (Z <= 1.0001 && Z >= 0.05){
+		Zed = Z;
+        SetTDState_rhoT(rho, T);
+	}else{
+		SetTDState_rhoT(Density, Temperature);
+	}
 
 }
 
