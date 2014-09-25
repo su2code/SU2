@@ -113,10 +113,16 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	ifstream restart_file;
 
 	char *cstr = new char [mesh_filename.size()+1];
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-		cout << "There is no flow restart file!!" << endl;
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!!" << endl;
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -149,10 +155,16 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	ifstream restart_file;
 	
 	char *cstr = new char [mesh_filename.size()+1];
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-		cout << "There is no flow restart file!!" << endl;
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!!" << endl;
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -222,6 +234,10 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	string copy, mesh_filename;
 	ifstream restart_file;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   /*--- Get the adjoint solution file name ---*/
 	mesh_filename = config->GetSolution_AdjFileName();
@@ -229,7 +245,8 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
-		cout << "There is no adjoint restart file!!" << endl;
+	  if (rank == MASTER_NODE)
+	    cout << "There is no adjoint restart file!!" << endl;
 		exit(1); }
 	
   /*--- Read the header of the file ---*/
@@ -296,7 +313,11 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 
 	string mesh_filename, copy;
 	ifstream restart_file;
-	
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	char buffer[50], cstr[MAX_STRING_SIZE];
 	mesh_filename = config->GetSolution_AdjFileName();
 	copy.assign(mesh_filename);
@@ -325,7 +346,8 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config){
 	restart_file.open(cstr, ios::in);
 	
 	if (restart_file.fail()) {
-		cout << "There is no flow restart file!!" << endl;
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!!" << endl;
 		exit(1); }
 	
 	for(iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){

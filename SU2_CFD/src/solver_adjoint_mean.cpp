@@ -222,7 +222,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      if (rank == MASTER_NODE)
+        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
       exit(1);
     }
     
@@ -4598,7 +4599,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      if (rank == MASTER_NODE)
+        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
       exit(1);
     }
     

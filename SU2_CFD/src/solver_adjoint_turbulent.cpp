@@ -122,7 +122,8 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+		  if (rank == MASTER_NODE)
+		    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
 			exit(1);
 		}
     
