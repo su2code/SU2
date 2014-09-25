@@ -200,7 +200,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
   /* CONFIG_CATEGORY: FluidModel */
-
+  /* DESCRIPTION: Fluid model */
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
 
@@ -228,7 +228,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
    /*--- Options related to Viscosity Model ---*/
-
+  /* DESCRIPTION: model of the viscosity */
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
 
   /*--- Options related to Costant Viscosity Model ---*/
@@ -788,7 +788,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Output the rind layers in the solution files */
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
-  addBoolOption("1D_OUTPUT", Wrt_1D_Output, false);
+  addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
 
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   /*--- Options related to dynamic meshes ---*/
