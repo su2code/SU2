@@ -2403,7 +2403,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
   
   /*--- Sort the points that must be sended and delete repeated points, note
-   that the sortering should be done with the global point (not the local) ---*/
+   that the sorting should be done with the global point (not the local) ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     sort( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
     it = unique( SendDomainLocal[iDomain].begin(), SendDomainLocal[iDomain].end());
@@ -2411,7 +2411,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
   
   /*--- Sort the points that must be received and delete repeated points, note
-   that the sortering should be done with the global point (not the local) ---*/
+   that the sorting should be done with the global point (not the local) ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     sort( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
     it = unique( ReceivedDomainLocal[iDomain].begin(), ReceivedDomainLocal[iDomain].end());
@@ -11039,6 +11039,7 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   vector<double> Xcoord, Ycoord, Zcoord, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
@@ -11051,6 +11052,7 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   AoA = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
   
   /*--- Translate to the origin ---*/
+  
   Xcoord_Trailing = Xcoord_Airfoil[0];
   Ycoord_Trailing = Ycoord_Airfoil[0];
   Zcoord_Trailing = Zcoord_Airfoil[0];
@@ -11062,6 +11064,7 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   }
   
   /*--- Rotate the airfoil ---*/
+  
   ValCos = cos(AoA*PI_NUMBER/180.0);
   ValSin = sin(AoA*PI_NUMBER/180.0);
   
@@ -11075,6 +11078,7 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
+  
   for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
     Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
     Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
@@ -11106,6 +11110,7 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   }
   
   /*--- Order the arrays using the X component ---*/
+  
   for (iVertex = 0; iVertex < Xcoord.size(); iVertex++) {
     for (jVertex = 0; jVertex < Xcoord.size() - 1 - iVertex; jVertex++) {
       if (Xcoord[jVertex] > Xcoord[jVertex+1]) {
@@ -11122,11 +11127,13 @@ double CBoundaryGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_N
   Z2coord.resize(n+1);
   SetSpline(Xcoord, Zcoord, n, zp1, zpn, Z2coord);
   
-  /*--- Compute the max thickness --*/
+  /*--- Compute the thickness (we add a fabs because we can not guarantee the
+   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+  
   MaxThickness_Value = 0.0; MaxThickness_Location = 0.0;
   for (iVertex = 0; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
     if (Zcoord_Normal[iVertex] < 0.0) {
-      Thickness = fabs(Zcoord_Airfoil_[iVertex]) + fabs(GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
+      Thickness = fabs(Zcoord_Airfoil_[iVertex] - GetSpline(Xcoord, Zcoord, Z2coord, n, Xcoord_Airfoil_[iVertex]));
       if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; MaxThickness_Location = Xcoord_Airfoil_[iVertex]; }
     }
   }
@@ -11182,6 +11189,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Z2coord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
@@ -11195,6 +11203,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   Chord = MaxDistance;
   
   /*--- Translate to the origin ---*/
+  
   Xcoord_Trailing = Xcoord_Airfoil[0];
   Ycoord_Trailing = Ycoord_Airfoil[0];
   Zcoord_Trailing = Zcoord_Airfoil[0];
@@ -11206,6 +11215,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   }
   
   /*--- Rotate the airfoil ---*/
+  
   ValCos = cos(AoA*PI_NUMBER/180.0);
   ValSin = sin(AoA*PI_NUMBER/180.0);
   
@@ -11218,6 +11228,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
+  
   for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
     Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
     Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
@@ -11254,6 +11265,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   }
   
   /*--- Order the arrays using the X component ---*/
+  
   for (iVertex = 0; iVertex < Xcoord_Upper.size(); iVertex++) {
     for (jVertex = 0; jVertex < Xcoord_Upper.size() - 1 - iVertex; jVertex++) {
       if (Xcoord_Upper[jVertex] > Xcoord_Upper[jVertex+1]) {
@@ -11265,6 +11277,7 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   }
   
   /*--- Order the arrays using the X component ---*/
+  
   for (iVertex = 0; iVertex < Xcoord_Lower.size(); iVertex++) {
     for (jVertex = 0; jVertex < Xcoord_Lower.size() - 1 - iVertex; jVertex++) {
       if (Xcoord_Lower[jVertex] > Xcoord_Lower[jVertex+1]) {
@@ -11287,10 +11300,12 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
   Z2coord_Lower.resize(n_Lower+1);
   SetSpline(Xcoord_Lower, Zcoord_Lower, n_Lower, zp1, zpn, Z2coord_Lower);
   
-  /*--- Compute thickness location ---*/
+  /*--- Compute the thickness (we add a fabs because we can not guarantee the
+   right sorting of the points and the upper and/or lower part of the airfoil is not well defined) ---*/
+  
   Thickness_Location = - Chord*(1.0-Location);
   
-  Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location)) + fabs(GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
+  Thickness_Value = fabs(GetSpline(Xcoord_Upper, Zcoord_Upper, Z2coord_Upper, n_Upper, Thickness_Location) - GetSpline(Xcoord_Lower, Zcoord_Lower, Z2coord_Lower, n_Lower, Thickness_Location));
   
   return Thickness_Value;
   
@@ -11298,12 +11313,13 @@ double CBoundaryGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Norm
 
 double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex;
-  double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Area_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
+  double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Area_Value = 0.0, Area_Value_Upper = 0.0, Area_Value_Lower = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue;
   vector<double> Xcoord_Upper, Ycoord_Upper, Zcoord_Upper, Xcoord_Lower, Ycoord_Lower, Zcoord_Lower, Z2coord, Xcoord_Normal, Ycoord_Normal, Zcoord_Normal, Xcoord_Airfoil_, Ycoord_Airfoil_, Zcoord_Airfoil_;
   unsigned long Trailing_Point, Leading_Point;
   double MaxDistance, Distance, AoA;
   
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
@@ -11316,6 +11332,7 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
   AoA = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
   
   /*--- Translate to the origin ---*/
+  
   Xcoord_Trailing = Xcoord_Airfoil[0];
   Ycoord_Trailing = Ycoord_Airfoil[0];
   Zcoord_Trailing = Zcoord_Airfoil[0];
@@ -11327,6 +11344,7 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
   }
   
   /*--- Rotate the airfoil ---*/
+  
   ValCos = cos(AoA*PI_NUMBER/180.0);
   ValSin = sin(AoA*PI_NUMBER/180.0);
   
@@ -11340,6 +11358,7 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
+  
   for (iVertex = 1; iVertex < Xcoord_Airfoil_.size(); iVertex++) {
     Tangent[0] = Xcoord_Airfoil_[iVertex] - Xcoord_Airfoil_[iVertex-1];
     Tangent[1] = Ycoord_Airfoil_[iVertex] - Ycoord_Airfoil_[iVertex-1];
@@ -11376,6 +11395,7 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
   }
   
   /*--- Order the arrays using the X component ---*/
+  
   for (iVertex = 0; iVertex < Xcoord_Upper.size(); iVertex++) {
     for (jVertex = 0; jVertex < Xcoord_Upper.size() - 1 - iVertex; jVertex++) {
       if (Xcoord_Upper[jVertex] > Xcoord_Upper[jVertex+1]) {
@@ -11387,6 +11407,7 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
   }
   
   /*--- Order the arrays using the X component ---*/
+  
   for (iVertex = 0; iVertex < Xcoord_Lower.size(); iVertex++) {
     for (jVertex = 0; jVertex < Xcoord_Lower.size() - 1 - iVertex; jVertex++) {
       if (Xcoord_Lower[jVertex] > Xcoord_Lower[jVertex+1]) {
@@ -11398,12 +11419,17 @@ double CBoundaryGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, u
   }
   
   /*--- Compute total area ---*/
-  Area_Value = 0.0;
-  for (iVertex = 0; iVertex < Xcoord_Upper.size()-1; iVertex++)
-    Area_Value += fabs((Xcoord_Upper[iVertex+1] - Xcoord_Upper[iVertex]) * 0.5*(Zcoord_Upper[iVertex+1] + Zcoord_Upper[iVertex]));
-  for (iVertex = 0; iVertex < Xcoord_Lower.size()-1; iVertex++)
-    Area_Value += fabs((Xcoord_Lower[iVertex+1] - Xcoord_Lower[iVertex]) * 0.5*(Zcoord_Lower[iVertex+1] + Zcoord_Lower[iVertex]));
   
+  Area_Value = 0.0;
+  Area_Value_Upper = 0.0;
+  Area_Value_Lower = 0.0;
+
+  for (iVertex = 0; iVertex < Xcoord_Upper.size()-1; iVertex++)
+    Area_Value_Upper += (Xcoord_Upper[iVertex+1] - Xcoord_Upper[iVertex]) * 0.5*(Zcoord_Upper[iVertex+1] + Zcoord_Upper[iVertex]);
+  for (iVertex = 0; iVertex < Xcoord_Lower.size()-1; iVertex++)
+    Area_Value_Lower += (Xcoord_Lower[iVertex+1] - Xcoord_Lower[iVertex]) * 0.5*(Zcoord_Lower[iVertex+1] + Zcoord_Lower[iVertex]);
+  
+  Area_Value = fabs(Area_Value_Upper - Area_Value_Lower);
   return Area_Value;
   
 }
