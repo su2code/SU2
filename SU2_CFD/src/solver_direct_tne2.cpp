@@ -298,8 +298,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     /*--- Open the restart file, throw an error if this fails ---*/
 		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
-			cout << "There is no flow restart file!! " << filename.data()
-           << "."<< endl;
+		  if (rank == MASTER_NODE)
+		    cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
 			exit(1);
 		}
     
@@ -4837,7 +4837,8 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
   
 	/*--- In case there is no file ---*/
 	if (restart_file.fail()) {
-		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
 		exit(1);
 	}
   
@@ -5233,7 +5234,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+		  if (rank == MASTER_NODE)
+		    cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
 			exit(1);
 		}
     
