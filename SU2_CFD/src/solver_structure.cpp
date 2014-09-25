@@ -1757,7 +1757,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- In case there is no file ---*/
   if (solution_file.fail()) {
-    cout << "There is no SU2 restart file!!" << endl;
+    if (rank == MASTER_NODE)
+      cout << "There is no SU2 restart file!!" << endl;
     exit(1);
   }
   
