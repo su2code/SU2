@@ -136,7 +136,8 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 		restart_file.open(cstr, ios::in);
         
 		if (restart_file.fail()) {
-			cout << "There is no wave restart file!!" << endl;
+		  if (rank == MASTER_NODE)
+		    cout << "There is no wave restart file!!" << endl;
 			exit(1);
 		}
 		unsigned long index;
@@ -768,7 +769,8 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   
   /*--- In case there is no file ---*/
   if (restart_file.fail()) {
-    cout << "There is no wave restart file!!" << endl;
+    if (rank == MASTER_NODE)
+      cout << "There is no wave restart file!!" << endl;
     exit(1);
   }
   
