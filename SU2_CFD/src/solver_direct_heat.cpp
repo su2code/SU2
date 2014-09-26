@@ -110,7 +110,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	} else {
     
     cout << "Heat restart file not currently configured!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
 		ifstream restart_file;
@@ -121,7 +121,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
     
 		if (restart_file.fail()) {
 			cout << "There is no Heat restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		unsigned long index;
 		string text_line;

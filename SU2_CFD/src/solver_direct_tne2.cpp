@@ -298,9 +298,9 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
     /*--- Open the restart file, throw an error if this fails ---*/
 		restart_file.open(filename.data(), ios::in);
 		if (restart_file.fail()) {
-			cout << "There is no flow restart file!! " << filename.data()
-           << "."<< endl;
-			exit(1);
+		  if (rank == MASTER_NODE)
+		    cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+			exit(EXIT_FAILURE);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -4837,8 +4837,9 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
   
 	/*--- In case there is no file ---*/
 	if (restart_file.fail()) {
-		cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-		exit(1);
+	  if (rank == MASTER_NODE)
+	    cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+		exit(EXIT_FAILURE);
 	}
   
 	/*--- In case this is a parallel simulation, we need to perform the
@@ -5233,8 +5234,9 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-			exit(1);
+		  if (rank == MASTER_NODE)
+		    cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+			exit(EXIT_FAILURE);
 		}
     
 		/*--- In case this is a parallel simulation, we need to perform the
@@ -6393,7 +6395,7 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       
       if (catalytic) {
         cout << "NEED TO IMPLEMENT CATALYTIC BOUNDARIES IN HEATFLUX!!!" << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
       }
       else {
         
@@ -6500,7 +6502,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   
   if (ionization) {
     cout << "BC_ISOTHERMAL: NEED TO TAKE A CLOSER LOOK AT THE JACOBIAN W/ IONIZATION" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
 	/*--- Identify the boundary ---*/

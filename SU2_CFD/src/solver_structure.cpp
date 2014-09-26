@@ -1340,7 +1340,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, double Cl, doubl
       printf("\n\n   !!! Error !!!\n");
       printf("Grid movement kind Aeroelastic is only available in 2 dimensions.");
       printf("Now exiting...\n\n");
-      exit(0);
+      exit(EXIT_FAILURE);
     }
   }
   
@@ -1511,7 +1511,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- In case there is no restart file ---*/
   if (restart_file.fail()) {
     cout << "SU2 flow file " << filename << " not found" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Output the file name to the console. ---*/
@@ -1757,8 +1757,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- In case there is no file ---*/
   if (solution_file.fail()) {
-    cout << "There is no SU2 restart file!!" << endl;
-    exit(1);
+    if (rank == MASTER_NODE)
+      cout << "There is no SU2 restart file!!" << endl;
+    exit(EXIT_FAILURE);
   }
   
   /*--- Output the file name to the console. ---*/

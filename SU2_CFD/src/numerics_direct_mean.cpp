@@ -3318,7 +3318,7 @@ void CSourceWindGust::ComputeResidual(double *val_residual, double **val_Jacobia
   } else {
     cout << "ERROR: You should only be in the gust source term in two dimensions" << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
 	MPI_Finalize();

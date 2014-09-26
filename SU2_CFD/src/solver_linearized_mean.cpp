@@ -125,7 +125,7 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
     /*--- In case there is no file ---*/
 		if (restart_file.fail()) {
 			cout << "There is no linearized restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}    
     
     /*--- In case this is a parallel simulation, we need to perform the 
