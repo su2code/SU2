@@ -246,9 +246,10 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, unsigned long Iteration, double monitor) {
   
   unsigned short iCounter;
-  
+  int rank = MASTER_NODE;
+
 #ifdef HAVE_MPI
-  int size, rank;
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -256,9 +257,11 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 	bool Already_Converged = Convergence;
 	
   /*--- Cauchi based convergence criteria ---*/
+  
 	if (config->GetConvCriteria() == CAUCHY) {
     
     /*--- Initialize at the fist iteration ---*/
+    
 		if (Iteration  == 0) {
 			Cauchy_Value = 0.0;
 			Cauchy_Counter = 0;
@@ -293,13 +296,16 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 	}
   
   /*--- Residual based convergence criteria ---*/
+  
   if (config->GetConvCriteria() == RESIDUAL) {
     
     /*--- Compute the initial value ---*/
+    
     if (Iteration == config->GetStartConv_Iter() ) InitResidual = monitor;
     if (monitor > InitResidual) InitResidual = monitor;
     
     /*--- Check the convergence ---*/
+    
     if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
         (monitor <= config->GetMinLogResidual())) Convergence = true;
     else Convergence = false;
@@ -308,6 +314,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   /*--- Do not apply any convergence criteria of the number
    of iterations is less than a particular value ---*/
+  
 	if (Iteration < config->GetStartConv_Iter()) {
 		Convergence = false;
 		Convergence_OneShot = false;
@@ -318,6 +325,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   
   
   /*--- Apply the same convergence criteria to all the processors ---*/
+  
 #ifdef HAVE_MPI
   
   unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
@@ -325,11 +333,13 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
   
   /*--- Convergence criteria ---*/
+  
   sbuf_conv[0] = Convergence;
   MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
 
   /*-- Compute global convergence criteria in the master node --*/
+  
   sbuf_conv[0] = 0;
   if (rank == MASTER_NODE) {
     if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
@@ -347,17 +357,19 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #endif
   
 	/*--- Stop the simulation in case a nan appears, do not save the solution ---*/
+  
 	if (monitor != monitor) {
     
-#ifndef HAVE_MPI
-    cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
-		exit(1);
-#else
     if (rank == MASTER_NODE)
-      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!!" << endl;
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Abort(MPI_COMM_WORLD,1);
-#endif  
+      cout << "\n !!! Error: NaNs detected in solution. Now exiting... !!! \n" << endl;
+    
+#ifndef HAVE_MPI
+		exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+#endif
+    
 	}
   
 #ifdef HAVE_MPI

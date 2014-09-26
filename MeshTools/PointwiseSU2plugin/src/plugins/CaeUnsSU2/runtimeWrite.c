@@ -58,7 +58,7 @@ elemType2Int(PWGM_ENUM_ELEMTYPE type)
 
 //------------------------------------------------
 static int
-countElements(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model) 
+countElements(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
 // count global total number of elements
 {
 
@@ -76,9 +76,9 @@ countElements(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
 		    // count all elements across all blocks
 		    while ( PWGM_HBLOCK_ISVALID(hBlk) ) {
 			      // add element count for block
-			      eTotCnt += PwBlkElementCount(hBlk, &eCounts); 
+			      eTotCnt += PwBlkElementCount(hBlk, &eCounts);
 			      // increment block
-			      hBlk = PwModEnumBlocks(model, ++iBlk);         
+			      hBlk = PwModEnumBlocks(model, ++iBlk);
 		    }
 
 	  } // if valid data
@@ -94,10 +94,10 @@ writeElemData(CAEP_RTITEM *pRti, PWGM_ELEMDATA *pElemData, PWP_UINT32 *eTotCnt)
 {
 	  // check for valid data
     if ( pRti && pElemData ) {
-		
+
 		    // element local index
         PWP_UINT32 ii;
-        
+
         // write element type
         fprintf( pRti->fp, "%2i ",
                  elemType2Int(pElemData->type) );
@@ -109,8 +109,8 @@ writeElemData(CAEP_RTITEM *pRti, PWGM_ELEMDATA *pElemData, PWP_UINT32 *eTotCnt)
         }
 
 		    // check for valid pointer before writing element count
-		    if (0 != eTotCnt) {  
-			      // write global element id 
+		    if (0 != eTotCnt) {
+			      // write global element id
 			      // eTotCnt resides in writeBlocks()
 			      fprintf( pRti->fp, " %4lu",
 				            (unsigned long)((*eTotCnt)++) );
@@ -120,7 +120,7 @@ writeElemData(CAEP_RTITEM *pRti, PWGM_ELEMDATA *pElemData, PWP_UINT32 *eTotCnt)
         fputs("\n", pRti->fp);
 
     } // if valid data
-	
+
 }
 
 //------------------------------------------------
@@ -135,7 +135,7 @@ writeBlock(CAEP_RTITEM *pRti, PWGM_HBLOCK hBlk, PWP_UINT32 *eTotCnt)
     if (pRti && PWGM_HBLOCK_ISVALID(hBlk)) {
 
         PWGM_ELEMDATA   eData ;     // element data bin
-		    PWGM_ELEMCOUNTS eCounts ;		// elemet count bin, dummy variable
+		    PWGM_ELEMCOUNTS eCounts ;		// element count bin, dummy variable
         PWP_UINT32      eCnt = PwBlkElementCount(hBlk, &eCounts); // local element count;
 
 		    // being major step, initialize substeps
@@ -183,7 +183,7 @@ writeBlocks(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
           // write number of elements
           fprintf( pRti->fp, "NELEM= %lu\n",
                   (unsigned long)eTotCnt );
-		
+
 	        // reset counts
           cnt     = 0;
 	        eTotCnt = 0;
@@ -192,7 +192,7 @@ writeBlocks(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
           while ( writeBlock(pRti, PwModEnumBlocks(model, cnt++) , &eTotCnt ) ) {
 		          // sneaky while loop ...
               // writeBlock() will break loop on user abort
-          } 
+          }
 
       } // if aborted
 
@@ -221,9 +221,9 @@ writeVertex(CAEP_RTITEM *pRti, PWGM_HVERTEX vertex)
         if ( CAEPU_RT_DIM_3D(pRti) ) {  // check dimension...
             fprintf( pRti->fp,
                      "%#*.*g %#*.*g %#*.*g %4lu\n",
-                     spac, prec, VertData.x, 
+                     spac, prec, VertData.x,
                      spac, prec, VertData.y,
-                     spac, prec, VertData.z, 
+                     spac, prec, VertData.z,
                     (unsigned long)VertData.i );
         } // if 3D print
 
@@ -231,7 +231,7 @@ writeVertex(CAEP_RTITEM *pRti, PWGM_HVERTEX vertex)
         else {
             fprintf( pRti->fp,
                      "%#*.*g %#*.*g %4lu\n",
-                     spac, prec, VertData.x, 
+                     spac, prec, VertData.x,
                      spac, prec, VertData.y,
                     (unsigned long)VertData.i );
         } // if 2D print
@@ -274,8 +274,13 @@ writeVertices(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
             while ( writeVertex(pRti, PwModEnumVertices(model, cnt++)) ) {
                 // sneaky while loop ...
                 // writeVertex() will break loop on user abort
+
+                // increment step
+                if (!caeuProgressIncr(pRti)) {
+                  break;
+                }
             }
-			
+
 	          // end steps
 	          caeuProgressEndStep(pRti);
 
@@ -293,7 +298,7 @@ writeCondData(CAEP_RTITEM *pRti, PWGM_CONDDATA *pCondData)
     // check for valid data
     if (pRti && pCondData) {
         // print Marker NameTag
-        fprintf( pRti->fp, "MARKER_TAG= %s\n", 
+        fprintf( pRti->fp, "MARKER_TAG= %s\n",
 				         pCondData->name );
     }
 }
@@ -315,14 +320,14 @@ writeDomain(CAEP_RTITEM *pRti, PWGM_HDOMAIN hDom)
         PWGM_CONDDATA CondData;									// condition data (names and stuff)
 
         // Check if marker exists for this domain
-        if ( PwDomCondition(hDom, &CondData) ) { 
+        if ( PwDomCondition(hDom, &CondData) ) {
 
 		        // write marker top level info
             writeCondData(pRti, &CondData);
 
 		        // initialize progress step
-		        if (caeuProgressBeginStep(pRti, eCnt)) { 
-            
+		        if (caeuProgressBeginStep(pRti, eCnt)) {
+
 			          // Write Number of Marker Elements
 			          fprintf( pRti->fp, "MARKER_ELEMS= %lu\n",
 				                (unsigned long)eCnt );
@@ -366,12 +371,12 @@ writeDomains(CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model)
 
 		    // marker counter
         PWP_UINT32 cnt = PwModDomainCount(model);
-        
+
         // comment header
         fputs("% \n% Boundary elements \n% \n", pRti->fp);
 
         // number of markers
-        fprintf( pRti->fp, "NMARK= %lu\n", 
+        fprintf( pRti->fp, "NMARK= %lu\n",
                 (unsigned long)cnt );
 
 		    // reset counter
@@ -399,7 +404,7 @@ runtimeWrite( CAEP_RTITEM *pRti, PWGM_HGRIDMODEL model,
 
     // check for valid data
     if (pRti && model) {
-      
+
         // step information
         PWP_UINT32 nBlk     = PwModBlockCount(model);       // number of blocks
         PWP_UINT32 nDom     = PwModDomainCount(model);      // number of domains

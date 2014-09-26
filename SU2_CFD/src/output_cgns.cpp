@@ -532,7 +532,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
         
       default:
         cout << "Error: Unrecognized equation type \n"; 
-        exit(0); break;
+        exit(EXIT_FAILURE); break;
 		}
 	}	
   

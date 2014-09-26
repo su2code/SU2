@@ -399,8 +399,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
-      cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(1);
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -8392,6 +8393,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   ifstream restart_file;
   
   string restart_filename = config->GetSolution_FlowFileName();
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   
   /*--- Modify file name for an unsteady restart ---*/
   if (dual_time)
@@ -8400,8 +8405,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   /*--- Open the restart file, and throw an error if this fails. ---*/
   restart_file.open(restart_filename.data(), ios::in);
   if (restart_file.fail()) {
-    cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(1);
+    if (rank == MASTER_NODE)
+      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
   }
   
   /*--- In case this is a parallel simulation, we need to perform the
@@ -9141,8 +9147,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
-      cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(1);
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
