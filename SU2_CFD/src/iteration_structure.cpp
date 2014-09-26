@@ -833,7 +833,7 @@ void SetWind_GustField(CConfig *config_container, CGeometry **geometry_container
   if (L <= 0.0 && Gust_Type != VORTEX) {
     cout << "ERROR: The gust length needs to be positive" << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -967,7 +967,7 @@ void InitializeVortexDistribution(unsigned long &nVortex, vector<double>& x0, ve
   if (file.fail()) {
     cout << "There is no vortex data file!!" << endl;
     cout << "Press any key to exit..." << endl;
-    cin.get(); exit(1);
+    cin.get(); exit(EXIT_FAILURE);
   }
   
   // Ignore line containing the header

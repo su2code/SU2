@@ -401,7 +401,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (restart_file.fail()) {
       if (rank == MASTER_NODE)
         cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -8407,7 +8407,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- In case this is a parallel simulation, we need to perform the
@@ -9149,7 +9149,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     if (restart_file.fail()) {
       if (rank == MASTER_NODE)
         cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the

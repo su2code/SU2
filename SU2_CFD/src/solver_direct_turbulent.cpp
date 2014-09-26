@@ -1107,7 +1107,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       cout << "There is no turbulent restart file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -2168,7 +2168,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- In case this is a parallel simulation, we need to perform the
@@ -2417,7 +2417,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       cout << "There is no turbulent restart file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -3146,7 +3146,7 @@ CTurbMLSolver::CTurbMLSolver(CGeometry *geometry, CConfig *config, unsigned shor
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       cout << "There is no turbulent restart file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -3794,7 +3794,7 @@ void CTurbMLSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- In case this is a parallel simulation, we need to perform the

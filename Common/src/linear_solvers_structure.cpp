@@ -74,33 +74,81 @@ void CSysSolve::SolveReduced(const int & n, const vector<vector<double> > & Hsbg
 
 void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSysVector> & w) {
   
+  bool Convergence = true;
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
   /*--- Parameter for reorthonormalization ---*/
+  
   static const double reorth = 0.98;
   
   /*--- get the norm of the vector being orthogonalized, and find the
   threshold for re-orthogonalization ---*/
+  
   double nrm = dotProd(w[i+1],w[i+1]);
   double thr = nrm*reorth;
   
-  if (nrm <= 0.0) {
-    /*--- The norm of w[i+1] < 0.0 ---*/
-    cerr << "CSysSolve::modGramSchmidt: dotProd(w[i+1],w[i+1]) < 0.0" << endl;
-    throw(-1);
+  /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
+
+  if ((nrm <= 0.0) || (nrm != nrm)) Convergence = false;
+  
+  /*--- Synchronization point to check the convergence of the solver ---*/
+
+#ifdef HAVE_MPI
+  
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+  
+  /*--- Convergence criteria ---*/
+  
+  sbuf_conv[0] = Convergence;
+  MPI_Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  /*-- Compute global convergence criteria in the master node --*/
+  
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
   }
-  else if (nrm != nrm) {
-    /*--- This is intended to catch if nrm = NaN, but some optimizations
-     may mess it up (according to posts on stackoverflow.com) ---*/
-    cerr << "CSysSolve::modGramSchmidt: w[i+1] = NaN" << endl;
-    throw(-1);
+  
+  MPI_Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  
+  if (sbuf_conv[0] == 1) Convergence = true;
+  else Convergence = false;
+  
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+  
+#endif
+  
+  if (!Convergence) {
+    if (rank == MASTER_NODE)
+      cout << "\n !!! Error: The FGMRES solver has diverged. Now exiting... !!! \n" << endl;
+#ifndef HAVE_MPI
+		exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+#endif
   }
   
   /*--- Begin main Gram-Schmidt loop ---*/
+  
   for (int k = 0; k < i+1; k++) {
     double prod = dotProd(w[i+1],w[k]);
     Hsbg[k][i] = prod;
     w[i+1].Plus_AX(-prod, w[k]);
     
     /*--- Check if reorthogonalization is necessary ---*/
+    
     if (prod*prod > thr) {
       prod = dotProd(w[i+1],w[k]);
       Hsbg[k][i] += prod;
@@ -108,21 +156,33 @@ void CSysSolve::ModGramSchmidt(int i, vector<vector<double> > & Hsbg, vector<CSy
     }
     
     /*--- Update the norm and check its size ---*/
+    
     nrm -= Hsbg[k][i]*Hsbg[k][i];
     if (nrm < 0.0) nrm = 0.0;
     thr = nrm*reorth;
   }
   
   /*--- Test the resulting vector ---*/
+  
   nrm = w[i+1].norm();
   Hsbg[i+1][i] = nrm;
-  if (nrm <= 0.0) {
-    /*--- w[i+1] is a linear combination of the w[0:i] ---*/
-    cerr << "CSysSolve::modGramSchmidt: w[i+1] linearly dependent on w[0:i]" << endl;
-    throw(-1);
-  }
+  
+//  if (nrm <= 0.0) {
+//    
+//    /*--- w[i+1] is a linear combination of the w[0:i] ---*/
+//    
+//    cerr << "The FGMRES linear solver has diverged" << endl;
+//#ifndef HAVE_MPI
+//    exit(EXIT_FAILURE);
+//#else
+//    MPI_Abort(MPI_COMM_WORLD,1);
+//    MPI_Finalize();
+//#endif
+//    
+//  }
   
   /*--- Scale the resulting vector ---*/
+  
   w[i+1] /= nrm;
 }
 
@@ -153,7 +213,7 @@ int rank = 0;
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -260,7 +320,7 @@ int rank = 0;
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -272,7 +332,7 @@ int rank = 0;
   if (m > 1000) {
     if (rank == 0) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -411,7 +471,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();

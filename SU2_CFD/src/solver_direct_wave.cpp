@@ -126,7 +126,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	} else {
     
     cout << "Wave restart file not currently configured!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
 		ifstream restart_file;
@@ -138,7 +138,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 		if (restart_file.fail()) {
 		  if (rank == MASTER_NODE)
 		    cout << "There is no wave restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		unsigned long index;
 		string text_line;
@@ -771,7 +771,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no wave restart file!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Read the restart file ---*/

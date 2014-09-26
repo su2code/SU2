@@ -164,7 +164,7 @@ long CGeometry::FindEdge(unsigned long first_point, unsigned long second_point) 
   else {
     cout << "\n\n   !!! Error !!!\n" << endl;
     cout <<"Can't find the edge that connects "<< first_point <<" and "<< second_point <<"."<< endl;
-    exit(1);
+    exit(EXIT_FAILURE);
     return -1;
   }
 }
@@ -1125,7 +1125,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     default:
       cout << "Unrecognized mesh format specified!!" << endl;
 #ifndef HAVE_MPI
-      exit(1);
+      exit(EXIT_FAILURE);
 #else
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
@@ -2878,7 +2878,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CPhysicalGeometry)!! " << cstr << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -3409,7 +3409,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
       else {
         cout << "NPOIN improperly specified!!" << endl;
 #ifndef HAVE_MPI
-        exit(1);
+        exit(EXIT_FAILURE);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
@@ -3497,7 +3497,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
                 if (nDim == 3) {
                   cout << "Please remove line boundary conditions from the mesh file!" << endl;
 #ifndef HAVE_MPI
-                  exit(1);
+                  exit(EXIT_FAILURE);
 #else
                   MPI_Abort(MPI_COMM_WORLD,1);
                   MPI_Finalize();
@@ -3623,7 +3623,7 @@ void CPhysicalGeometry::Read_SU2_Format(CConfig *config, string val_mesh_filenam
           if (iIndex != iPeriodic) {
             cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
 #ifndef HAVE_MPI
-            exit(1);
+            exit(EXIT_FAILURE);
 #else
             MPI_Abort(MPI_COMM_WORLD,1);
             MPI_Finalize();
@@ -3738,7 +3738,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
     printf( "\n\n   !!! Error !!!\n" );
     printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
     printf( " Now exiting...\n\n");
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Open the CGNS file for reading. The value of fn returned
@@ -3759,7 +3759,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
     printf("\n\n   !!! Error !!!\n" );
     printf("CGNS reader currently incapable of handling more than 1 database.");
     printf("Now exiting...\n\n");
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Read the databases. Note that the indexing starts at 1. ---*/
@@ -3780,7 +3780,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
       printf("\n\n   !!! Error !!!\n" );
       printf("CGNS reader currently incapable of handling more than 1 zone.");
       printf("Now exiting...\n\n");
-      exit(0);
+      exit(EXIT_FAILURE);
     }
     
     /*--- Initialize some data structures for  all zones. ---*/
@@ -3838,7 +3838,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
         printf("\n\n   !!! Error !!!\n" );
         printf("CGNS reader currently handles only 1 grid per zone.");
         printf("Now exiting...\n\n");
-        exit(0);
+        exit(EXIT_FAILURE);
       }
       
       if ( cg_ncoords( fn, i, j, &ncoords) ) cg_error_exit();
@@ -3989,7 +3989,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             printf(" Section %d, npe=%d\n", s, npe);
             printf(" startE %d, endE %d\n", startE, endE);
             printf( " Now exiting...\n\n");
-            exit(0);
+            exit(EXIT_FAILURE);
             break;
           case MIXED:
             currentElem      = "Mixed";
@@ -4001,7 +4001,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
             printf(" Section %d\n", s);
             printf(" startE %d, endE %d\n", startE, endE);
             printf( " Now exiting...\n\n");
-            exit(0);
+            exit(EXIT_FAILURE);
             break;
         }
         
@@ -4557,7 +4557,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
                 if (nDim == 3) {
                   cout << "Please remove line boundary conditions from the mesh file!" << endl;
 #ifndef HAVE_MPI
-                  exit(1);
+                  exit(EXIT_FAILURE);
 #else
                   MPI_Abort(MPI_COMM_WORLD,1);
                   MPI_Finalize();
@@ -4653,7 +4653,7 @@ void CPhysicalGeometry::Read_CGNS_Format(CConfig *config, string val_mesh_filena
   cout << "To use CGNS, remove the -DNO_CGNS directive ";
   cout << "from the makefile and supply the correct path";
   cout << " to the CGNS library." << endl;
-  exit(1);
+  exit(EXIT_FAILURE);
 #endif
   
 }
@@ -4708,7 +4708,7 @@ void CPhysicalGeometry::Read_NETCDF_Format(CConfig *config, string val_mesh_file
   mesh_file.open(cstr, ios::in);
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CPhysicalGeometry)!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   while (getline (mesh_file, text_line)) {
@@ -5917,7 +5917,7 @@ void CPhysicalGeometry::SetBoundVolume(void) {
       }
       if (!CheckVol) {
         cout << "The surface element ("<< iMarker <<", "<< iElem_Surface << ") doesn't have an associated volume element." << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
       }
     }
 }
@@ -7910,7 +7910,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   eptr  = new idx_t[ne+1];
   if (nparts < 2) {
     cout << "The number of domains must be greater than 1!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   iElem_Triangle = 0; iElem_Tetrahedron = 0;
@@ -10368,7 +10368,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
   if (mesh_file.fail()) {
     cout << "There is no geometry file (CBoundaryGeometry)!" << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
@@ -10462,7 +10462,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
       else {
         cout << "NPOIN improperly specified!!" << endl;
 #ifndef HAVE_MPI
-        exit(1);
+        exit(EXIT_FAILURE);
 #else
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
@@ -10623,7 +10623,7 @@ CBoundaryGeometry::CBoundaryGeometry(CConfig *config, string val_mesh_filename, 
           if (iIndex != iPeriodic) {
             cout << "PERIODIC_INDEX out of order in SU2 file!!" << endl;
 #ifndef HAVE_MPI
-            exit(1);
+            exit(EXIT_FAILURE);
 #else
             MPI_Abort(MPI_COMM_WORLD,1);
             MPI_Finalize();
@@ -11465,7 +11465,7 @@ double CBoundaryGeometry::Compute_Volume(CConfig *config, bool original_surface)
   
   MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
   MinXCoord = -1E6; MaxXCoord = 1E6;
-  dPlane = (MaxPlane - MinPlane)/double(nPlane-1);
+  dPlane = fabs((MaxPlane - MinPlane)/double(nPlane-1));
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
@@ -12276,7 +12276,7 @@ void CMultiGridQueue::AddCV(unsigned long val_new_point, unsigned short val_numb
   /*--- Basic check ---*/
   if (val_new_point > nPoint) {
     cout << "The index of the CV is greater than the size of the priority list." << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Resize the list ---*/
@@ -12302,14 +12302,14 @@ void CMultiGridQueue::RemoveCV(unsigned long val_remove_point) {
   /*--- Basic check ---*/
   if (val_remove_point > nPoint) {
     cout << "The index of the CV is greater than the size of the priority list." << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Find priority of the Control Volume ---*/
   short Number_Neighbors = Priority[val_remove_point];
   if (Number_Neighbors == -1) {
     cout << "The CV "<< val_remove_point <<" is not in the priority list. (RemoveCV)" << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Find the point in the queue ---*/
@@ -12359,7 +12359,7 @@ void CMultiGridQueue::IncrPriorityCV(unsigned long val_incr_point) {
   short Number_Neighbors = Priority[val_incr_point];
   if (Number_Neighbors == -1) {
     cout << "The CV "<< val_incr_point <<" is not in the priority list. (IncrPriorityCV)" << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Remove the control volume ---*/
@@ -12376,7 +12376,7 @@ void CMultiGridQueue::RedPriorityCV(unsigned long val_red_point) {
   short Number_Neighbors = Priority[val_red_point];
   if (Number_Neighbors == -1) {
     cout << "The CV "<< val_red_point <<" is not in the priority list. (RedPriorityCV)" << endl;
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   
   if (Number_Neighbors != 0) {
