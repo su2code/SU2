@@ -1981,9 +1981,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     
-    EA_IntLimit[0] = EA_IntLimit[0]/12;
-    EA_IntLimit[1] = EA_IntLimit[1]/12;
-    EA_IntLimit[2] = EA_IntLimit[2]/12;
+    EA_IntLimit[0] = EA_IntLimit[0]/12.0;
+    EA_IntLimit[1] = EA_IntLimit[1]/12.0;
+    EA_IntLimit[2] = EA_IntLimit[2]/12.0;
 
   }
 
