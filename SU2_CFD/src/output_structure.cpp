@@ -1111,7 +1111,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       break;
     default:
       cout << "Error: Unrecognized element type \n";
-      exit(0); break;
+      exit(EXIT_FAILURE); break;
   }
   
   /*--- Merge the connectivity in serial or parallel. ---*/
@@ -1482,7 +1482,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         break;
       default:
         cout << "Error: Unrecognized element type \n";
-        exit(0); break;
+        exit(EXIT_FAILURE); break;
     }
   }
   
@@ -1535,7 +1535,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       break;
     default:
       cout << "Error: Unrecognized element type \n";
-      exit(0); break;
+      exit(EXIT_FAILURE); break;
   }
   
   /*--- Merge the connectivity in serial or parallel. ---*/
@@ -1896,7 +1896,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         break;
       default:
         cout << "Error: Unrecognized element type \n";
-        exit(0); break;
+        exit(EXIT_FAILURE); break;
     }
   }
   
