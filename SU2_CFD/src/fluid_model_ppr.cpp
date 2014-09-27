@@ -110,13 +110,13 @@ void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 }
 
 void CPengRobinson::SetTDState_PT (double P, double T ) {
-	double toll= 1e-4;
+	double toll= 1e-6;
 	double A, B, Z, DZ, F, F1;
 	double rho, fv, e;
 	double sqrt2=sqrt(2);
 	unsigned short nmax = 20, count=0;
 
-
+//	cout <<"Before  "<< P <<" "<< T <<endl;
 
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
@@ -147,6 +147,9 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 
     e = T*Gas_Constant/Gamma_Minus_One + a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit))*sqrt(T) - a*(k+1)*(k+1)*fv/(b*sqrt2);
 	SetTDState_rhoe(rho, e);
+
+//	cout <<"After  "<< Pressure <<" "<< Temperature <<endl;
+
 }
 
 void CPengRobinson::SetTDState_Prho (double P, double rho ) {
@@ -160,41 +163,43 @@ void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 void CPengRobinson::SetTDState_hs (double h, double s ){
 
 	double fv, A, B, C, sqrt2=sqrt(2);
-	double T, P, rho, Z;
-	double f, f1, v;
+	double T, P, rho;
+	double f, v;
 	double dv = 1.0;
-	double x1,x2,fx1,fx2;
-	double toll = 1e-9, FACTOR=0.2;
-	unsigned short nmax = 100, iter, NTRY=10, ITMAX=100;
-	const double EPS =1e-8;
-	double ai,bi,ci,di,ei,fai,fbi,fci,pi,qi,ri,si,tol1,xm;
+	double x1,x2, xmid, dx, fx1,fx2, fmid,rtb;
+	double toll = 1e-6, FACTOR=0.2;
+	unsigned short count=0, NTRY=10, ITMAX=40;
 
-	 cout <<"Before  "<< h <<" "<< s <<endl;
+//	 cout <<"Before  "<< h <<" "<< s <<endl;
 
 	A = Gas_Constant / Gamma_Minus_One;
 
 	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-	rho =1/v;
-	fv = atanh( rho * b * sqrt2/(1 + rho*b));
-	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-	T *= T;
-//	P = T*Gas_Constant / (v - b) - a*alpha2(T) / ( v*v + 2*b*v - b*b);
-
-
-
 	if(Zed<0.9999){
 		x1 = Zed*v;
 		x2 = v;
 
 	}else{
-		x1 = 0.5*v;
+		x1 = 0.2*v;
 		x2 = v;
 	}
 
+	rho =1/x1;
+	P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
+	fv = atanh( rho * b * sqrt2/(1 + rho*b));
+	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+	T *= T;
 	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+	rho =1/x2;
+	P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
+	fv = atanh( rho * b * sqrt2/(1 + rho*b));
+	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+	T *= T;
 	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
 	// zbrac algorithm NR
@@ -203,103 +208,68 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 		if (fx1*fx2 > 0.0){
 			if (fabs(fx1) < fabs(fx2)){
 				x1 += FACTOR*(x1-x2);
-				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			}else{
-				x2 += FACTOR*(x2-x1);
-				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			}
-		}
-	}
-
-	// zbrent algorithm NR
-
-	ai = x1;
-	bi = x2;
-	ci = x2;
-	fai = A*log(T) + Gas_Constant*log(ai - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-	fbi = A*log(T) + Gas_Constant*log(bi - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-
-	if ((fai > 0.0 && fbi > 0.0) || (fai < 0.0 && fbi < 0.0)){
-			throw("Root must be bracketed in zbrent");
-			SetTDState_rhoT(Density, Temperature);
-	}
-		fci=fbi;
-		for (iter=0;iter<ITMAX;iter++) {
-			if ((fbi > 0.0 && fci > 0.0) || (fbi < 0.0 && fci < 0.0)) {
-				ci=a;
-				fci=fai;
-				ei=di=bi-ai;
-			}
-			if (abs(fci) < abs(fbi)) {
-				ai=bi;
-				bi=ci;
-				ci=ai;
-				fai=fbi;
-				fbi=fci;
-				fci=fai;
-			}
-			tol1=2.0*EPS*abs(bi)+0.5*toll;
-			xm=0.5*(ci-bi);
-			if (abs(xm) <= tol1 || fbi == 0.0){
-				v = bi;
-				rho = 1/bi;
+				rho =1/x1;
+				P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
 				fv = atanh( rho * b * sqrt2/(1 + rho*b));
 				B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
 				C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
 				T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
 				T *= T;
+				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			}else{
-				if (abs(ei) >= tol1 && abs(fai) > abs(fbi)) {
-					s=fbi/fai;
-					if (ai == ci) {
-						pi=2.0*xm*si;
-						qi=1.0-si;
-					} else {
-						qi=fai/fci;
-						ri=fbi/fci;
-						pi=si*(2.0*xm*qi*(qi-ri)-(bi-ai)*(ri-1.0));
-						qi=(qi-1.0)*(ri-1.0)*(si-1.0);
-					}
-					if (pi > 0.0) qi = -qi;
-					pi=abs(pi);
-					double min1=3.0*xm*qi-abs(tol1*qi);
-					double min2=abs(ei*qi);
-					if (2.0*pi < (min1 < min2 ? min1 : min2)) {
-						ei=di;
-						di=pi/qi;
-					} else {
-						di=xm;
-						ei=di;
-					}
-				} else {
-					di=xm;
-					ei=di;
-				}
-				ai=bi;
-				fai=fbi;
-				if (abs(di) > tol1)
-					bi += di;
-				else
-					if (xm >= 0.0 )
-						bi += fabs(tol1);
-					else
-						bi -= fabs(tol1);
-			rho = 1/bi;
+				x2 += FACTOR*(x2-x1);
+				P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
+				fv = atanh( rho * b * sqrt2/(1 + rho*b));
+				B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+				C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+				T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+				T *= T;
+				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			}
+		}
+	}
+
+	  // rtbis algorithm NR
+
+		f=fx1;
+		fmid=fx2;
+		if (f*fmid >= 0.0){
+			cout<< "Root must be bracketed for bisection in rtbis"<<endl;
+			SetTDState_rhoT(Density, Temperature);
+		}
+		rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+		do{
+			xmid=rtb+(dx *= 0.5);
+			rho =1/xmid;
+			P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
 			fv = atanh( rho * b * sqrt2/(1 + rho*b));
 			B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
 			C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
 			T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
 			T *= T;
-			fbi=A*log(T) + Gas_Constant*log(bi - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			if (fmid <= 0.0) rtb=xmid;
+			count++;
+		}while(abs(dx/x1) > toll && count<ITMAX);
 
-
-			}
-
-			if (iter == ITMAX)
-				throw("Maximum number of iterations exceeded in zbrent");
+		v = xmid;
+		if(count==ITMAX){
+			cout <<"Too many bisections in rtbis" <<endl;
 		}
+
+
+		rho = 1/v;
+		rho =1/xmid;
+		P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
+		fv = atanh( rho * b * sqrt2/(1 + rho*b));
+		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+		T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+		T *= T;
+
 		SetTDState_rhoT(rho, T);
-		cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy <<endl;
+
+//		cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< count<<endl;
 
 //	A = Gas_Constant / Gamma_Minus_One;
 //

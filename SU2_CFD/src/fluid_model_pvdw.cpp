@@ -131,7 +131,7 @@ void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
     	x2 = v;
     }
     fx1 = log(x1-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
-    fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
+    fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x2)/Gas_Constant/(1/Gamma_Minus_One+ x2/(x2-b)))/Gamma_Minus_One;
 
     // zbrac algorithm NR
 
