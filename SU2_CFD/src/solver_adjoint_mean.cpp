@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -3557,6 +3557,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   delete[] Normal;
   
 #else
+  
   int rank, jProcessor;
   MPI_Status send_stat[1], recv_stat[1];
   MPI_Request send_req[1], recv_req[1];
@@ -3633,7 +3634,8 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           
           MPI_Waitall(1, recv_req, recv_stat);
           
-        } else {
+        }
+        else {
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
         }

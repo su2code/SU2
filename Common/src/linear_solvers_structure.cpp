@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author Current Development: Stanford University.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -468,6 +468,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 #endif
   
   /*--- Check the subspace size ---*/
+  
   if (m < 1) {
     if (rank == 0) cerr << "CSysSolve::BCGSTAB: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
@@ -489,6 +490,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   CSysVector A_x(b);
   
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
+  
 	mat_vec(x,A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
   double norm_r = r.norm();
@@ -499,12 +501,15 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   }
 	
 	/*--- Initialization ---*/
+  
   double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
 	
   /*--- Set the norm to the initial initial residual value ---*/
+  
   norm0 = norm_r;
   
   /*--- Output header information including initial residual ---*/
+  
   int i = 0;
   if ((monitoring) && (rank == 0)) {
     WriteHeader("BCGSTAB", tol, norm_r);
@@ -512,45 +517,57 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   }
 	
   /*---  Loop over all search directions ---*/
+  
   for (i = 0; i < m; i++) {
 		
 		/*--- Compute rho_prime ---*/
+    
 		rho_prime = rho;
 		
 		/*--- Compute rho_i ---*/
+    
 		rho = dotProd(r, r_0);
 		
 		/*--- Compute beta ---*/
+    
 		beta = (rho / rho_prime) * (alpha /omega);
 		
 		/*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
+    
 		double beta_omega = -beta*omega;
 		p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
 		p.Plus_AX(1.0, r);
 		
 		/*--- Preconditioning step ---*/
+    
 		precond(p, phat);
 		mat_vec(phat, v);
     
 		/*--- Calculate step-length alpha ---*/
+    
     double r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
     
 		/*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
+    
 		s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
 		
 		/*--- Preconditioning step ---*/
+    
 		precond(s, shat);
 		mat_vec(shat, t);
     
 		/*--- Calculate step-length omega ---*/
+    
     omega = dotProd(t, s) / dotProd(t, t);
     
 		/*--- Update solution and residual: ---*/
+    
     x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
 		r.Equals_AX_Plus_BY(1.0, s, -omega, t);
     
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+    
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
     if (((monitoring) && (rank == 0)) && ((i+1) % 5 == 0) && (rank == 0)) WriteHistory(i+1, norm_r, norm0);

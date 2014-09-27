@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  */
 class CIntegration {
 protected:
@@ -313,7 +313,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -485,7 +485,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
