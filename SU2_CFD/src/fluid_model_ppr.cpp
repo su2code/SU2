@@ -114,22 +114,31 @@ void CPengRobinson::SetTDState_PT (double P, double T ) {
 	double A, B, Z, DZ, F, F1;
 	double rho, fv, e;
 	double sqrt2=sqrt(2);
+	unsigned short nmax = 20, count=0;
+
+
+
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-//    Z= max(B, 0.99);
-	Z = Zed;
+	if(Zed > 0.1)
+			Z=min(Zed, 0.99);
+		else
+			Z=0.99;
 	DZ= 1.0;
 	do{
 		F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
 		F1 = 3*Z*Z + 2*Z*(B - 1.0) + (A - 2*B - 3*B*B);
 		DZ = F/F1;
 		Z-= DZ;
-	}while(DZ>toll);
+	}while(abs(DZ)>toll && count < nmax);
 
-
-	// check if the solution is phisical
-	if (Z <= 1.0001 && Z >= 0.05)
+	if (count == nmax){
+		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<<endl;
+		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<<endl;
+	}
+	// check if the solution is physical otherwise uses previous point  solution
+	if (Z <= 1.0001 && Z >= 0.05 && count < nmax)
 	    Zed = Z;
 
 
@@ -154,40 +163,176 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 	double T, P, rho, Z;
 	double f, f1, v;
 	double dv = 1.0;
-	double toll =1e-4;
+	double x1,x2,fx1,fx2;
+	double toll = 1e-9, FACTOR=0.2;
+	unsigned short nmax = 100, iter, NTRY=10, ITMAX=100;
+	const double EPS =1e-8;
+	double ai,bi,ci,di,ei,fai,fbi,fci,pi,qi,ri,si,tol1,xm;
+
+	 cout <<"Before  "<< h <<" "<< s <<endl;
 
 	A = Gas_Constant / Gamma_Minus_One;
 
 	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-	P = T*Gas_Constant / (v - b) - a*alpha2(T) / ( v*v + 2*b*v - b*b);
 	rho =1/v;
-
-	do{
-		fv = atanh( rho * b * sqrt2/(1 + rho*b));
-		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-		T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-		T *= T;
-
-		f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-		f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
-		dv= f/f1;
-		v-= dv;
-		rho = 1/v;
-		P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-
-	}while(abs(dv) > toll);
+	fv = atanh( rho * b * sqrt2/(1 + rho*b));
+	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+	T *= T;
+//	P = T*Gas_Constant / (v - b) - a*alpha2(T) / ( v*v + 2*b*v - b*b);
 
 
-    Z = P/(Gas_Constant*T*rho);
-	// check if the solution is physical otherwise uses previous solution
-	if (Z <= 1.0001 && Z >= 0.05){
-		Zed = Z;
-        SetTDState_rhoT(rho, T);
+
+	if(Zed<0.9999){
+		x1 = Zed*v;
+		x2 = v;
+
 	}else{
-		SetTDState_rhoT(Density, Temperature);
+		x1 = 0.5*v;
+		x2 = v;
 	}
+
+	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+
+	// zbrac algorithm NR
+
+	for (int j=1;j<=NTRY;j++) {
+		if (fx1*fx2 > 0.0){
+			if (fabs(fx1) < fabs(fx2)){
+				x1 += FACTOR*(x1-x2);
+				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			}else{
+				x2 += FACTOR*(x2-x1);
+				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			}
+		}
+	}
+
+	// zbrent algorithm NR
+
+	ai = x1;
+	bi = x2;
+	ci = x2;
+	fai = A*log(T) + Gas_Constant*log(ai - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+	fbi = A*log(T) + Gas_Constant*log(bi - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+
+	if ((fai > 0.0 && fbi > 0.0) || (fai < 0.0 && fbi < 0.0)){
+			throw("Root must be bracketed in zbrent");
+			SetTDState_rhoT(Density, Temperature);
+	}
+		fci=fbi;
+		for (iter=0;iter<ITMAX;iter++) {
+			if ((fbi > 0.0 && fci > 0.0) || (fbi < 0.0 && fci < 0.0)) {
+				ci=a;
+				fci=fai;
+				ei=di=bi-ai;
+			}
+			if (abs(fci) < abs(fbi)) {
+				ai=bi;
+				bi=ci;
+				ci=ai;
+				fai=fbi;
+				fbi=fci;
+				fci=fai;
+			}
+			tol1=2.0*EPS*abs(bi)+0.5*toll;
+			xm=0.5*(ci-bi);
+			if (abs(xm) <= tol1 || fbi == 0.0){
+				v = bi;
+				rho = 1/bi;
+				fv = atanh( rho * b * sqrt2/(1 + rho*b));
+				B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+				C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+				T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+				T *= T;
+			}else{
+				if (abs(ei) >= tol1 && abs(fai) > abs(fbi)) {
+					s=fbi/fai;
+					if (ai == ci) {
+						pi=2.0*xm*si;
+						qi=1.0-si;
+					} else {
+						qi=fai/fci;
+						ri=fbi/fci;
+						pi=si*(2.0*xm*qi*(qi-ri)-(bi-ai)*(ri-1.0));
+						qi=(qi-1.0)*(ri-1.0)*(si-1.0);
+					}
+					if (pi > 0.0) qi = -qi;
+					pi=abs(pi);
+					double min1=3.0*xm*qi-abs(tol1*qi);
+					double min2=abs(ei*qi);
+					if (2.0*pi < (min1 < min2 ? min1 : min2)) {
+						ei=di;
+						di=pi/qi;
+					} else {
+						di=xm;
+						ei=di;
+					}
+				} else {
+					di=xm;
+					ei=di;
+				}
+				ai=bi;
+				fai=fbi;
+				if (abs(di) > tol1)
+					bi += di;
+				else
+					if (xm >= 0.0 )
+						bi += fabs(tol1);
+					else
+						bi -= fabs(tol1);
+			rho = 1/bi;
+			fv = atanh( rho * b * sqrt2/(1 + rho*b));
+			B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+			C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+			T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+			T *= T;
+			fbi=A*log(T) + Gas_Constant*log(bi - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+
+
+			}
+
+			if (iter == ITMAX)
+				throw("Maximum number of iterations exceeded in zbrent");
+		}
+		SetTDState_rhoT(rho, T);
+		cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy <<endl;
+
+//	A = Gas_Constant / Gamma_Minus_One;
+//
+//	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
+//	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
+//	P = T*Gas_Constant / (v - b) - a*alpha2(T) / ( v*v + 2*b*v - b*b);
+//	rho =1/v;
+//
+//	do{
+//		fv = atanh( rho * b * sqrt2/(1 + rho*b));
+//		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
+//		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
+//		T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+//		T *= T;
+//
+//		f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+//		f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
+//		dv= f/f1;
+//		v-= dv;
+//		rho = 1/v;
+//		P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
+//
+//	}while(abs(dv) > toll);
+//
+//
+//    Z = P/(Gas_Constant*T*rho);
+//	// check if the solution is physical otherwise uses previous solution
+//	if (Z <= 1.0001 && Z >= 0.05){
+//		Zed = Z;
+//        SetTDState_rhoT(rho, T);
+//	}else{
+//		SetTDState_rhoT(Density, Temperature);
+//	}
 
 }
 

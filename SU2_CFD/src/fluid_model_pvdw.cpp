@@ -22,6 +22,7 @@
 
 #include "../include/fluid_model.hpp"
 
+
 CVanDerWaalsGas::CVanDerWaalsGas() : CIdealGas() {
 	a = 0.0;
 	b = 0.0;
@@ -61,25 +62,35 @@ void CVanDerWaalsGas::SetTDState_rhoe (double rho, double e ) {
 
 
 void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
-	double toll= 1e-4;
+	double toll= 1e-5;
+	unsigned short nmax = 20, count=0;
 	double A, B, Z, DZ, F, F1;
 	A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
 //    Z= max(B, 0.99);
-	Z= Zed;
-//	cout << Z << endl;
+
+//	cout <<"Before  "<< P <<" "<< T <<endl;
+	if(Zed > 0.1)
+		Z=min(Zed, 0.99);
+	else
+		Z=0.99;
 	DZ= 1.0;
 	do{
 		F = Z*Z*Z - Z*Z*(B+1.0) + Z*A - A*B;
 		F1 = 3*Z*Z - 2*Z*(B+1.0) + A;
 		DZ = F/F1;
-		Z-= DZ;
-	}while(DZ>toll);
+		Z-= 0.7*DZ;
+		count++;
+	}while(abs(DZ)>toll && count < nmax);
 
+	if (count == nmax){
+		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<<endl;
+		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<<endl;
+	}
 
 	// check if the solution is physical otherwise uses previous point  solution
-	if (Z <= 1.01 && Z >= 0.05)
+	if (Z <= 1.01 && Z >= 0.05 && count < nmax)
 		Zed = Z;
 
 
@@ -87,6 +98,8 @@ void CVanDerWaalsGas::SetTDState_PT (double P, double T ) {
 
     double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
 	SetTDState_rhoe(Density, e);
+
+//	cout <<"After  "<< Pressure <<" "<< Temperature <<endl;
 
 }
 
@@ -100,32 +113,82 @@ void CVanDerWaalsGas::SetTDState_Prho (double P, double rho ) {
 
 void CVanDerWaalsGas::SetTDState_hs (double h, double s ){
 
-    double v, T, P, rho, dv, f, f1, Z;
-    double toll = 1e-4;
+    double v, T, P, rho, dv, f,fmid,rtb, f1, Z;
+    double x1,x2,xmid,dx,fx1,fx2;
+    double toll = 1e-5, FACTOR=0.2;
+    unsigned short count=0,nmax = 10, iter, NTRY=10, ITMAX=30;
+
+//    cout <<"Before  "<< h <<" "<< s <<endl;
 
     T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-//    T= Temperature;
-//    v= 1/Density;
-	do{
-		f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;
-		f1= 1/(v-b);
-		dv= f/f1;
-		v-= 0.7*dv;
-		T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
-	}while(abs(dv) > toll);
+    if(Zed<0.9999){
+    	x1 = Zed*v;
+    	x2 = v;
 
-	rho = 1/v;
-    P = Gas_Constant*T*rho / (1 - rho*b) - a*rho*rho;
-    Z = P/(Gas_Constant*T*rho);
-//    cout << Z << " " << v << " "<< f <<endl;
-	// check if the solution is physical otherwise uses previous solution
-	if (Z <= 1.0001 && Z >= 0.05){
-		Zed = Z;
-        SetTDState_rhoT(rho, T);
-	}else{
+    }else{
+    	x1 = 0.5*v;
+    	x2 = v;
+    }
+    fx1 = log(x1-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
+    fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
+
+    // zbrac algorithm NR
+
+    for (int j=1;j<=NTRY;j++) {
+    	if (fx1*fx2 > 0.0){
+    		if (fabs(fx1) < fabs(fx2)){
+    			x1 += FACTOR*(x1-x2);
+    			fx1 = log(x1-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
+    		}else{
+    			x2 += FACTOR*(x2-x1);
+    			fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x2)/Gas_Constant/(1/Gamma_Minus_One+ x2/(x2-b)))/Gamma_Minus_One;
+    			}
+    	}
+    }
+
+
+    // rtbis algorithm NR
+
+	f=fx1;
+	fmid=fx2;
+	if (f*fmid >= 0.0){
+		cout<< "Root must be bracketed for bisection in rtbis"<<endl;
 		SetTDState_rhoT(Density, Temperature);
 	}
+	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+	do{
+		xmid=rtb+(dx *= 0.5);
+		fmid= log(xmid-b) - s/Gas_Constant + log((h+ 2*a/xmid)/Gas_Constant/(1/Gamma_Minus_One+ xmid/(xmid-b)))/Gamma_Minus_One;
+		if (fmid <= 0.0) rtb=xmid;
+		count++;
+		}while(abs(dx/x1) > toll && count<ITMAX);
+
+		v = xmid;
+		if(count==ITMAX){
+			cout <<"Too many bisections in rtbis" <<endl;
+		}
+
+
+	rho = 1/v;
+	T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
+	SetTDState_rhoT(rho, T);
+//	cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy<<" "<< fmid <<" "<< f<< " "<< count<<endl;
+
+
+//	T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
+//	do{
+//		f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;
+//		f1= 1.0/(v-b);
+//		dv= f/f1;
+//		v-= 1.0*dv;
+//		T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
+//		count++;
+//	}while(abs(dv/v) > toll && count < nmax);
+
+
+
+
 
 }
 
