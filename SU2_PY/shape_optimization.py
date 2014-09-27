@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \version 3.2.2 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -62,7 +62,7 @@ def main():
     options.gradient    = options.gradient.upper()
     
     if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.1, use -n flag instead \n")
+        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.2, use -n flag instead \n")
         sys.exit()
     
     shape_optimization( options.filename    ,
