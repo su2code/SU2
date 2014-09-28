@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -130,7 +130,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
     
 		if (restart_file.fail()) {
 			cout << "There is no fea restart file!!" << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
     
     /*--- In case this is a parallel simulation, we need to perform the

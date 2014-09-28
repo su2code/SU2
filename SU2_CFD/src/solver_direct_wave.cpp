@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -126,7 +126,7 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	} else {
     
     cout << "Wave restart file not currently configured!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
 		ifstream restart_file;
@@ -136,8 +136,9 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 		restart_file.open(cstr, ios::in);
         
 		if (restart_file.fail()) {
-			cout << "There is no wave restart file!!" << endl;
-			exit(1);
+		  if (rank == MASTER_NODE)
+		    cout << "There is no wave restart file!!" << endl;
+			exit(EXIT_FAILURE);
 		}
 		unsigned long index;
 		string text_line;
@@ -768,8 +769,9 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   
   /*--- In case there is no file ---*/
   if (restart_file.fail()) {
-    cout << "There is no wave restart file!!" << endl;
-    exit(1);
+    if (rank == MASTER_NODE)
+      cout << "There is no wave restart file!!" << endl;
+    exit(EXIT_FAILURE);
   }
   
   /*--- Read the restart file ---*/

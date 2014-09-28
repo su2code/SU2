@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -528,7 +528,7 @@ void CNumerics::GetInviscidProjJac(double *val_U, double *val_V,
   
   if (nDim == 2) {
     cout << "ERROR!!!  Inviscid Projected Jacobian only implemented for 3D flows!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Rename for convenience ---*/
@@ -918,7 +918,7 @@ void CNumerics::GetPMatrix(double *U, double *V, double *val_dPdU,
 	if(nDim == 2) {
 		cout << "P matrix not implemented for 2-D Flows!!" << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
 	MPI_Finalize();
@@ -1195,7 +1195,7 @@ void CNumerics::GetPMatrix_inv(double *U, double *V, double *val_dPdU,
 	if(nDim == 2) {
 		cout << "InvP matrix not implemented for 2D flows!!!!" << endl;
 #ifndef HAVE_MPI
-    exit(1);
+    exit(EXIT_FAILURE);
 #else
 	MPI_Abort(MPI_COMM_WORLD,1);
 	MPI_Finalize();
@@ -1892,7 +1892,7 @@ void CNumerics::GetViscousProjFlux(double *val_primvar,
     }
     if (ionization) {
       cout << "GetViscProjFlux -- NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     /*--- Shear stress related terms ---*/
     Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
@@ -2124,7 +2124,7 @@ void CNumerics::GetViscousProjJacs(double *val_Mean_PrimVar,
   
   if (nDim == 2) {
     cout << "Viscous Proj Jacobian not available in 2D!!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
 	}
   
   /*--- Initialize the Jacobian matrices ---*/

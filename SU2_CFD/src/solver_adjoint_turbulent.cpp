@@ -2,7 +2,7 @@
  * \file solution_adjoint_turbulent.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -122,8 +122,9 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
     
 		/*--- In case there is no file ---*/
 		if (restart_file.fail()) {
-			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			exit(1);
+		  if (rank == MASTER_NODE)
+		    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+			exit(EXIT_FAILURE);
 		}
     
     /*--- In case this is a parallel simulation, we need to perform the

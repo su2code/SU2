@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -2391,7 +2391,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     else {
       
       cout << "There are not FFD boxes in the mesh file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
       
     }
     
@@ -2428,7 +2428,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
         cout << endl << "There is not FFD box definition in the mesh file," << endl;
         cout << "run DV_KIND=FFD_SETTING first !!" << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
         
       }
       
@@ -2529,7 +2529,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     else {
       
       cout << "There are not FFD boxes in the mesh file!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
       
     }
     
@@ -4999,7 +4999,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   /*--- Throw error if there is no file ---*/
   if (motion_file.fail()) {
     cout << "There is no mesh motion file!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Read in and store the new mesh node locations ---*/ 
@@ -5271,7 +5271,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
     cout << "There is no airfoil file!! "<< endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
   scanf ("%s", AirfoilFormat);
@@ -5502,7 +5502,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	mesh_file.open(cstr, ios::in);
 	if (mesh_file.fail()) {
 		cout << "There is no geometry file (ReadFFDInfo)!!" << endl;
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
 	while (getline (mesh_file, text_line)) {
