@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1111,7 +1111,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       break;
     default:
       cout << "Error: Unrecognized element type \n";
-      exit(0); break;
+      exit(EXIT_FAILURE); break;
   }
   
   /*--- Merge the connectivity in serial or parallel. ---*/
@@ -1482,7 +1482,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         break;
       default:
         cout << "Error: Unrecognized element type \n";
-        exit(0); break;
+        exit(EXIT_FAILURE); break;
     }
   }
   
@@ -1535,7 +1535,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
       break;
     default:
       cout << "Error: Unrecognized element type \n";
-      exit(0); break;
+      exit(EXIT_FAILURE); break;
   }
   
   /*--- Merge the connectivity in serial or parallel. ---*/
@@ -1896,7 +1896,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         break;
       default:
         cout << "Error: Unrecognized element type \n";
-        exit(0); break;
+        exit(EXIT_FAILURE); break;
     }
   }
   

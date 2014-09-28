@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -200,7 +200,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
   /* CONFIG_CATEGORY: FluidModel */
-
+  /* DESCRIPTION: Fluid model */
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
 
@@ -228,7 +228,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
    /*--- Options related to Viscosity Model ---*/
-
+  /* DESCRIPTION: model of the viscosity */
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
 
   /*--- Options related to Costant Viscosity Model ---*/
@@ -788,7 +788,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Output the rind layers in the solution files */
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /* DESCRIPTION: Output averaged stagnation pressure on specified exit marker. */
-  addBoolOption("1D_OUTPUT", Wrt_1D_Output, false);
+  addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
 
   /* CONFIG_CATEGORY: Dynamic mesh definition */
   /*--- Options related to dynamic meshes ---*/
@@ -1109,7 +1109,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 
   if (case_file.fail()) {
     cout << "There is no configuration file!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   string errorString;
@@ -1168,7 +1168,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
   if (errorString.size() != 0){
 //    SU2MPI::PrintAndFinalize(errorString);
     cout << errorString << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Set the default values for all of the options that weren't set
@@ -1204,7 +1204,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_SU2 != SU2_PRT) && (Kind_SU2 != SU2_CFD) && (Kind_SU2 != SU2_SOL)) {
     if (Mesh_FileFormat == CGNS) {
       cout << "This software is not prepared for CGNS, please switch to SU2" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1266,7 +1266,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_GridMovement[iZone] = NO_MOVEMENT;
     if (Grid_Movement == true) {
       cout << "GRID_MOVEMENT = YES but no type provided in GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1301,7 +1301,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /*--- Make sure that there aren't more than one rigid motion or
@@ -1310,12 +1310,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == ROTATING_FRAME) &&
       (nGridMovement > 1)) {
     cout << "Can not support more than one rotating frame in GRID_MOVEMENT_KIND!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /*--- In case the grid movement parameters have not been declared in the
@@ -1334,7 +1334,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nMotion_Origin_X != nGridMovement)) {
       cout << "Length of MOTION_ORIGIN_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1345,7 +1345,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nMotion_Origin_Y != nGridMovement)) {
       cout << "Length of MOTION_ORIGIN_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1356,7 +1356,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nMotion_Origin_Z != nGridMovement)) {
       cout << "Length of MOTION_ORIGIN_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1367,7 +1367,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nMoveMotion_Origin != nGridMovement)) {
       cout << "Length of MOVE_MOTION_ORIGIN must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1380,7 +1380,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nTranslation_Rate_X != nGridMovement)) {
       cout << "Length of TRANSLATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1391,7 +1391,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nTranslation_Rate_Y != nGridMovement)) {
       cout << "Length of TRANSLATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1402,7 +1402,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nTranslation_Rate_Z != nGridMovement)) {
       cout << "Length of TRANSLATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1415,7 +1415,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nRotation_Rate_X != nGridMovement)) {
       cout << "Length of ROTATION_RATE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1426,7 +1426,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nRotation_Rate_Y != nGridMovement)) {
       cout << "Length of ROTATION_RATE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1437,7 +1437,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nRotation_Rate_Z != nGridMovement)) {
       cout << "Length of ROTATION_RATE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1450,7 +1450,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Omega_X != nGridMovement)) {
       cout << "Length of PITCHING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1461,7 +1461,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Omega_Y != nGridMovement)) {
       cout << "Length of PITCHING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1472,7 +1472,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Omega_Z != nGridMovement)) {
       cout << "Length of PITCHING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1485,7 +1485,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Ampl_X != nGridMovement)) {
       cout << "Length of PITCHING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1496,7 +1496,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Ampl_Y != nGridMovement)) {
       cout << "Length of PITCHING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1507,7 +1507,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Ampl_Z != nGridMovement)) {
       cout << "Length of PITCHING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1520,7 +1520,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Phase_X != nGridMovement)) {
       cout << "Length of PITCHING_PHASE_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1531,7 +1531,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Phase_Y != nGridMovement)) {
       cout << "Length of PITCHING_PHASE_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1542,7 +1542,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPitching_Phase_Z != nGridMovement)) {
       cout << "Length of PITCHING_PHASE_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1555,7 +1555,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPlunging_Omega_X != nGridMovement)) {
       cout << "Length of PLUNGING_OMEGA_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1566,7 +1566,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPlunging_Omega_Y != nGridMovement)) {
       cout << "Length of PLUNGING_OMEGA_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1577,7 +1577,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPlunging_Omega_Z != nGridMovement)) {
       cout << "Length of PLUNGING_OMEGA_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1590,7 +1590,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPlunging_Ampl_X != nGridMovement)) {
       cout << "Length of PLUNGING_AMPL_X must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1601,7 +1601,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPlunging_Ampl_Y != nGridMovement)) {
       cout << "Length of PLUNGING_AMPL_Y must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1612,7 +1612,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   } else {
     if (Grid_Movement && (nPlunging_Ampl_Z != nGridMovement)) {
       cout << "Length of PLUNGING_AMPL_Z must match GRID_MOVEMENT_KIND!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1679,7 +1679,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
     cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (RefOriginMoment_X == NULL) {
@@ -1699,7 +1699,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     else if (nRefOriginMoment_X != nMarker_Monitoring) {
       cout << "ERROR: Length of REF_ORIGIN_MOMENT_X must match number of Monitoring Markers!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1720,7 +1720,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     else if (nRefOriginMoment_Y != nMarker_Monitoring) {
       cout << "ERROR: Length of REF_ORIGIN_MOMENT_Y must match number of Monitoring Markers!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1741,7 +1741,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     else if (nRefOriginMoment_Z != nMarker_Monitoring) {
       cout << "ERROR: Length of REF_ORIGIN_MOMENT_Z must match number of Monitoring Markers!!" << endl;
-      exit(1);
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -1945,7 +1945,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
     cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /*--- Set a flag for viscous simulations ---*/
@@ -1981,9 +1981,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     
-    EA_IntLimit[0] = EA_IntLimit[0]/12;
-    EA_IntLimit[1] = EA_IntLimit[1]/12;
-    EA_IntLimit[2] = EA_IntLimit[2]/12;
+    EA_IntLimit[0] = EA_IntLimit[0]/12.0;
+    EA_IntLimit[1] = EA_IntLimit[1]/12.0;
+    EA_IntLimit[2] = EA_IntLimit[2]/12.0;
 
   }
 
@@ -3017,7 +3017,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
 
-  cout << "|                             Release 3.2.1 \"eagle\"                     |" << endl;
+  cout << "|                             Release 3.2.2 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
@@ -4641,7 +4641,7 @@ unsigned short CConfig::GetMarker_CfgFile_TagBound(string val_marker) {
       return iMarker_Config;
 
   cout <<"The configuration file doesn't have any definition for marker "<< val_marker <<"!!" << endl;
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 unsigned short CConfig::GetMarker_CfgFile_KindBC(string val_marker) {
@@ -5000,7 +5000,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   /*--- Check that a positive value iteration is requested (for now). ---*/
   if (val_iter < 0) {
     cout << "Requesting a negative iteration number for the restart file!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   /*--- Append iteration number for unsteady cases ---*/
@@ -5554,7 +5554,7 @@ double CConfig::GetIsothermal_Temperature(string val_marker) {
       (nMarker_Isothermal*nMarker_IsothermalNonCatalytic          != 0) ||
       (nMarker_IsothermalCatalytic*nMarker_IsothermalNonCatalytic != 0)   ) {
     cout << "Mixed catalytic boundaries not supported!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (nMarker_Isothermal > 0) {
@@ -5582,7 +5582,7 @@ double CConfig::GetWall_HeatFlux(string val_marker) {
       (nMarker_HeatFlux*nMarker_HeatFluxNonCatalytic          != 0) ||
       (nMarker_HeatFluxCatalytic*nMarker_HeatFluxNonCatalytic != 0)) {
     cout << "Mixed catalytic boundaries not supported!!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (nMarker_HeatFlux > 0) {

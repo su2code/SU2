@@ -2,7 +2,7 @@
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \version 3.2.2 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -766,7 +766,7 @@ void CTNE2EulerVariable::CalcdPdU(double *V, CConfig *config, double *val_dPdU) 
   
   if (val_dPdU == NULL) {
     cout << "ERROR: CalcdPdU - Array dPdU not allocated!" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Determine the number of heavy species ---*/
@@ -1036,7 +1036,7 @@ void CTNE2EulerVariable::CalcdTdU(double *V, CConfig *config,
   }
   if (ionization) {
     cout << "CTNE2Variable: NEED TO IMPLEMENT dTdU for IONIZED MIX" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Momentum derivatives ---*/
@@ -1766,7 +1766,7 @@ void CTNE2NSVariable ::SetThermalConductivity(CConfig *config) {
   
   if (ionization) {
     cout << "SetThermalConductivity: NEEDS REVISION w/ IONIZATION" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   
   /*--- Acquire gas parameters from CConfig ---*/
