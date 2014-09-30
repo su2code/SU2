@@ -50,6 +50,8 @@ using namespace std;
  */
 class CConfig {
 private:
+  long SA_Source_Print;
+  
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
@@ -910,6 +912,8 @@ public:
    */
 	void SetPointersNull(void);
 
+  long GetSA_Source_Print(void);
+  
 	/*!
 	 * \brief breaks an input line from the config file into a set of tokens
 	 * \param[in] str - the input line string
@@ -925,7 +929,7 @@ public:
 	 * \return <code>TRUE</code> if this is a Python config option for design; otherwise <code>FALSE</code>.
 	 */
 //	bool GetPython_Option(string & option_name);
-
+  
 	/*!
 	 * \brief Get reference origin for moment computation.
      * \param[in] val_marker - the marker we are monitoring.

@@ -22,6 +22,8 @@
 
 #pragma once
 
+inline long CConfig::GetSA_Source_Print(void){return SA_Source_Print;}
+
 inline void CConfig::SetFanFace_Mach(unsigned short val_imarker, double val_fanface_mach) { FanFace_Mach[val_imarker] = val_fanface_mach; }
 
 inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_fanface_pressure) { FanFace_Pressure[val_imarker] = val_fanface_pressure; }
