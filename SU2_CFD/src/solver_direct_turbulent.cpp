@@ -1311,6 +1311,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Compute the source term ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
+    if (config->GetSA_Source_Print() == iPoint){
+      cout << "Residual at point " << iPoint << " = " << Residual[0];
+    }
+    
     unsigned long idx = 0;
     unsigned long base = 0;
     if (config->GetExtraOutput()) {
