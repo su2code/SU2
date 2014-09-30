@@ -433,6 +433,12 @@ private:
 	    */
 	    double  alpha2 (double T);
 
+
+	   /*!
+		* \brief Internal model parameter.
+		*/
+		double  T_v_h (double v, double h);
+
 public:
 
 	    /*!

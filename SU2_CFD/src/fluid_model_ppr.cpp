@@ -53,6 +53,17 @@ double CPengRobinson::alpha2(double T){
 	return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
 }
 
+double CPengRobinson::T_v_h(double v, double h){
+	double fv, A,B,C,T;
+	double sqrt2=sqrt(2.0);
+	fv = atanh( b/v* sqrt2/(1 + b/v));
+	A = Gas_Constant*(1 / Gamma_Minus_One + v/(v-b)) - v*k*k*a/TstarCrit/(v*v +2*b*v -b*b);
+	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit)) + 2*v*a*(k*k + k)/sqrt(TstarCrit)/(v*v +2*b*v -b*b);
+	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h  - v*(k+1)*(k+1)*a/(v*v +2*b*v -b*b);
+	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
+	return T*T;
+}
+
 void CPengRobinson::SetTDState_rhoe (double rho, double e ) {
 
     double DpDd_T, DpDT_d,DeDd_T, Cv;
@@ -162,20 +173,22 @@ void CPengRobinson::SetTDState_Prho (double P, double rho ) {
 
 void CPengRobinson::SetTDState_hs (double h, double s ){
 
-	double fv, A, B, C, sqrt2=sqrt(2);
-	double T, P, rho;
-	double f, v;
+	double T,fv,sqrt2=sqrt(2.0),A;
+	double f,f1, v;
 	double dv = 1.0;
 	double x1,x2, xmid, dx, fx1,fx2, fmid,rtb;
-	double toll = 1e-6, FACTOR=0.2;
-	unsigned short count=0, NTRY=10, ITMAX=40;
+	double toll = 1e-9, FACTOR=0.2;
+	double cons_s,cons_h;
+	unsigned short countrtb=0, countnw = 0, NTRY=10, ITMAX=100, ITMAXNW=150;
 
 //	 cout <<"Before  "<< h <<" "<< s <<endl;
 
-	A = Gas_Constant / Gamma_Minus_One;
 
+	A = Gas_Constant/ Gamma_Minus_One;
 	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
 	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
+
+
 	if(Zed<0.9999){
 		x1 = Zed*v;
 		x2 = v;
@@ -185,21 +198,12 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 		x2 = v;
 	}
 
-	rho =1/x1;
-	P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-	fv = atanh( rho * b * sqrt2/(1 + rho*b));
-	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-	T *= T;
+
+	T = T_v_h(x1,h);
+	fv = atanh( b/x1* sqrt2/(1 + b/x1));
 	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-	rho =1/x2;
-	P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-	fv = atanh( rho * b * sqrt2/(1 + rho*b));
-	B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-	C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-	T *= T;
+	T = T_v_h(x2,h);
+	fv = atanh( b/x2* sqrt2/(1 + b/x2));
 	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
 	// zbrac algorithm NR
@@ -208,22 +212,13 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 		if (fx1*fx2 > 0.0){
 			if (fabs(fx1) < fabs(fx2)){
 				x1 += FACTOR*(x1-x2);
-				rho =1/x1;
-				P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-				fv = atanh( rho * b * sqrt2/(1 + rho*b));
-				B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-				C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-				T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-				T *= T;
+				T = T_v_h(x1,h);
+				fv = atanh( b/x1* sqrt2/(1 + b/x1));
 				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			}else{
 				x2 += FACTOR*(x2-x1);
-				P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-				fv = atanh( rho * b * sqrt2/(1 + rho*b));
-				B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-				C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-				T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-				T *= T;
+				T = T_v_h(x2,h);
+				fv = atanh( b/x2* sqrt2/(1 + b/x2));
 				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			}
 		}
@@ -240,69 +235,52 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 		rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
 		do{
 			xmid=rtb+(dx *= 0.5);
-			rho =1/xmid;
-			P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-			fv = atanh( rho * b * sqrt2/(1 + rho*b));
-			B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-			C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-			T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-			T *= T;
+			T = T_v_h(xmid,h);
+			fv = atanh( b/xmid* sqrt2/(1 + b/xmid));
 			fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+//			cout<< fmid/x2<<" "<< fmid <<" "<< x2 <<endl;
 			if (fmid <= 0.0) rtb=xmid;
-			count++;
-		}while(abs(dx/x1) > toll && count<ITMAX);
+			countrtb++;
+		}while(abs(fmid) > toll && countrtb<ITMAX);
 
 		v = xmid;
-		if(count==ITMAX){
+		if(countrtb==ITMAX){
 			cout <<"Too many bisections in rtbis" <<endl;
+//			do{
+//					fv = atanh( b/v* sqrt2/(1 + b/v));
+//					T=T_v_h(v,h);
+//					f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+//					f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
+//					dv= f/f1;
+//					v-= dv;
+//					countnw++;
+//			}while(abs(f/x2) > toll && countnw<ITMAXNW);
+//
+//		}else{
+
+			T=T_v_h(v,h);
+
+
+
 		}
 
+	SetTDState_rhoT(1/v, T);
+	// consistency check
+	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
+	cons_s= abs((Entropy-s)/s);
 
-		rho = 1/v;
-		rho =1/xmid;
-		P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-		fv = atanh( rho * b * sqrt2/(1 + rho*b));
-		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-		T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-		T *= T;
+	if(cons_h >1e-3 or cons_s >1e-3){
+		cout<< "TD consistency not verified in hs call"<<endl;
+			 cout <<"Before  "<< h <<" "<< s <<endl;
+			 cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<<endl;
+			 getchar();
+	}
 
-		SetTDState_rhoT(rho, T);
+//	 cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<<endl;
 
-//		cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< count<<endl;
 
-//	A = Gas_Constant / Gamma_Minus_One;
-//
-//	T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
-//	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-//	P = T*Gas_Constant / (v - b) - a*alpha2(T) / ( v*v + 2*b*v - b*b);
-//	rho =1/v;
-//
-//	do{
-//		fv = atanh( rho * b * sqrt2/(1 + rho*b));
-//		B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
-//		C = - a*(k+1)*(k+1)*fv/(b*sqrt2) - h + P/rho;
-//		T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A); /// Only positive root considered
-//		T *= T;
-//
-//		f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-//		f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
-//		dv= f/f1;
-//		v-= dv;
-//		rho = 1/v;
-//		P = rho*T*Gas_Constant / (1 - rho*b) - a*alpha2(T) / ( 1/rho/rho + 2*b/rho - b*b );
-//
-//	}while(abs(dv) > toll);
-//
-//
-//    Z = P/(Gas_Constant*T*rho);
-//	// check if the solution is physical otherwise uses previous solution
-//	if (Z <= 1.0001 && Z >= 0.05){
-//		Zed = Z;
-//        SetTDState_rhoT(rho, T);
-//	}else{
-//		SetTDState_rhoT(Density, Temperature);
-//	}
+
+
 
 }
 
