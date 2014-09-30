@@ -50,6 +50,9 @@ using namespace std;
  */
 class CConfig {
 private:
+  
+  long SA_Source_Print;
+  
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
@@ -926,6 +929,8 @@ public:
 	 */
 //	bool GetPython_Option(string & option_name);
 
+  long GetSA_Source_Print(void);
+  
 	/*!
 	 * \brief Get reference origin for moment computation.
      * \param[in] val_marker - the marker we are monitoring.
