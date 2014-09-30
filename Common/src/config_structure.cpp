@@ -173,6 +173,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Problem Definition */
   /*--- Options related to problem definition and partitioning ---*/
 
+  /* DESCRIPTION: Print the value of the Spalart-Allmaras source term at a given node location */
   addLongOption("SA_SOURCE_PRINT",SA_Source_Print, -1);
   
   /* DESCRIPTION: Adjoint type */
