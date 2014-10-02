@@ -35,10 +35,12 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   
   /*--- Surface based array initialization ---*/
   
-  Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL;
+  Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL; Surface_CSideForce_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
   
-  Surface_CLift = NULL; Surface_CDrag = NULL;
+  Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
   
   /*--- Rotorcraft simulation array initialization ---*/
@@ -100,9 +102,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
-  Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL;
+  
+  Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL; Surface_CSideForce_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
-  Surface_CLift = NULL; Surface_CDrag = NULL;
+  
+  Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
   
   ForceInviscid = NULL; MomentInviscid = NULL;
@@ -302,16 +308,25 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CFx_Inv           = new double[nMarker];
   CFy_Inv           = new double[nMarker];
   CFz_Inv           = new double[nMarker];
-  Surface_CLift_Inv = new double[config->GetnMarker_Monitoring()];
-  Surface_CDrag_Inv = new double[config->GetnMarker_Monitoring()];
-  Surface_CMx_Inv   = new double[config->GetnMarker_Monitoring()];
-  Surface_CMy_Inv   = new double[config->GetnMarker_Monitoring()];
-  Surface_CMz_Inv   = new double[config->GetnMarker_Monitoring()];
-  Surface_CLift     = new double[config->GetnMarker_Monitoring()];
-  Surface_CDrag     = new double[config->GetnMarker_Monitoring()];
-  Surface_CMx       = new double[config->GetnMarker_Monitoring()];
-  Surface_CMy       = new double[config->GetnMarker_Monitoring()];
-  Surface_CMz       = new double[config->GetnMarker_Monitoring()];
+  
+  Surface_CLift_Inv      = new double[config->GetnMarker_Monitoring()];
+  Surface_CDrag_Inv      = new double[config->GetnMarker_Monitoring()];
+  Surface_CSideForce_Inv = new double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CLift          = new double[config->GetnMarker_Monitoring()];
+  Surface_CDrag          = new double[config->GetnMarker_Monitoring()];
+  Surface_CSideForce     = new double[config->GetnMarker_Monitoring()];
+  Surface_CFx            = new double[config->GetnMarker_Monitoring()];
+  Surface_CFy            = new double[config->GetnMarker_Monitoring()];
+  Surface_CFz            = new double[config->GetnMarker_Monitoring()];
+  Surface_CMx            = new double[config->GetnMarker_Monitoring()];
+  Surface_CMy            = new double[config->GetnMarker_Monitoring()];
+  Surface_CMz            = new double[config->GetnMarker_Monitoring()];
   
   /*--- Rotorcraft coefficients ---*/
   
@@ -525,11 +540,19 @@ CEulerSolver::~CEulerSolver(void) {
   if (CFz_Inv != NULL)           delete [] CFz_Inv;
   if (Surface_CLift_Inv != NULL) delete[] Surface_CLift_Inv;
   if (Surface_CDrag_Inv != NULL) delete[] Surface_CDrag_Inv;
+  if (Surface_CSideForce_Inv != NULL) delete[] Surface_CSideForce_Inv;
+  if (Surface_CFx_Inv != NULL)  delete [] Surface_CFx_Inv;
+  if (Surface_CFy_Inv != NULL)  delete [] Surface_CFy_Inv;
+  if (Surface_CFz_Inv != NULL)  delete [] Surface_CFz_Inv;
   if (Surface_CMx_Inv != NULL)  delete [] Surface_CMx_Inv;
   if (Surface_CMy_Inv != NULL)  delete [] Surface_CMy_Inv;
   if (Surface_CMz_Inv != NULL)  delete [] Surface_CMz_Inv;
   if (Surface_CLift != NULL)    delete [] Surface_CLift;
   if (Surface_CDrag != NULL)    delete [] Surface_CDrag;
+  if (Surface_CSideForce != NULL) delete [] Surface_CSideForce;
+  if (Surface_CFx != NULL)      delete [] Surface_CFx;
+  if (Surface_CFy != NULL)      delete [] Surface_CFy;
+  if (Surface_CFz != NULL)      delete [] Surface_CFz;
   if (Surface_CMx != NULL)      delete [] Surface_CMx;
   if (Surface_CMy != NULL)      delete [] Surface_CMy;
   if (Surface_CMz != NULL)      delete [] Surface_CMz;
@@ -3852,16 +3875,24 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CNearFieldOF_Inv = 0.0;
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CLift_Inv[iMarker_Monitoring] = 0.0;
-    Surface_CDrag_Inv[iMarker_Monitoring] = 0.0;
-    Surface_CMx_Inv[iMarker_Monitoring]   = 0.0;
-    Surface_CMy_Inv[iMarker_Monitoring]   = 0.0;
-    Surface_CMz_Inv[iMarker_Monitoring]   = 0.0;
-    Surface_CLift[iMarker_Monitoring]     = 0.0;
-    Surface_CDrag[iMarker_Monitoring]     = 0.0;
-    Surface_CMx[iMarker_Monitoring]       = 0.0;
-    Surface_CMy[iMarker_Monitoring]       = 0.0;
-    Surface_CMz[iMarker_Monitoring]       = 0.0;
+    Surface_CLift_Inv[iMarker_Monitoring]      = 0.0;
+    Surface_CDrag_Inv[iMarker_Monitoring]      = 0.0;
+    Surface_CSideForce_Inv[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CFy_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CFz_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CMx_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CMy_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CLift[iMarker_Monitoring]          = 0.0;
+    Surface_CDrag[iMarker_Monitoring]          = 0.0;
+    Surface_CSideForce[iMarker_Monitoring]     = 0.0;
+    Surface_CFx[iMarker_Monitoring]            = 0.0;
+    Surface_CFy[iMarker_Monitoring]            = 0.0;
+    Surface_CFz[iMarker_Monitoring]            = 0.0;
+    Surface_CMx[iMarker_Monitoring]            = 0.0;
+    Surface_CMy[iMarker_Monitoring]            = 0.0;
+    Surface_CMz[iMarker_Monitoring]            = 0.0;
   }
   
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
@@ -4004,11 +4035,15 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
           Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
-            Surface_CLift_Inv[iMarker_Monitoring] += CLift_Inv[iMarker];
-            Surface_CDrag_Inv[iMarker_Monitoring] += CDrag_Inv[iMarker];
-            Surface_CMx_Inv[iMarker_Monitoring]   += CMx_Inv[iMarker];
-            Surface_CMy_Inv[iMarker_Monitoring]   += CMy_Inv[iMarker];
-            Surface_CMz_Inv[iMarker_Monitoring]   += CMz_Inv[iMarker];
+            Surface_CLift_Inv[iMarker_Monitoring]      += CLift_Inv[iMarker];
+            Surface_CDrag_Inv[iMarker_Monitoring]      += CDrag_Inv[iMarker];
+            Surface_CSideForce_Inv[iMarker_Monitoring] += CSideForce_Inv[iMarker];
+            Surface_CFx_Inv[iMarker_Monitoring]        += CFx_Inv[iMarker];
+            Surface_CFy_Inv[iMarker_Monitoring]        += CFy_Inv[iMarker];
+            Surface_CFz_Inv[iMarker_Monitoring]        += CFz_Inv[iMarker];
+            Surface_CMx_Inv[iMarker_Monitoring]        += CMx_Inv[iMarker];
+            Surface_CMy_Inv[iMarker_Monitoring]        += CMy_Inv[iMarker];
+            Surface_CMz_Inv[iMarker_Monitoring]        += CMz_Inv[iMarker];
           }
         }
         
@@ -4054,39 +4089,64 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
   
-  double *MySurface_CLift_Inv = NULL;
-  double *MySurface_CDrag_Inv = NULL;
-  double *MySurface_CMx_Inv   = NULL;
-  double *MySurface_CMy_Inv   = NULL;
-  double *MySurface_CMz_Inv   = NULL;
+  double *MySurface_CLift_Inv      = NULL;
+  double *MySurface_CDrag_Inv      = NULL;
+  double *MySurface_CSideForce_Inv = NULL;
+  double *MySurface_CFx_Inv        = NULL;
+  double *MySurface_CFy_Inv        = NULL;
+  double *MySurface_CFz_Inv        = NULL;
+  double *MySurface_CMx_Inv        = NULL;
+  double *MySurface_CMy_Inv        = NULL;
+  double *MySurface_CMz_Inv        = NULL;
   
-  MySurface_CLift_Inv = new double[config->GetnMarker_Monitoring()];
-  MySurface_CDrag_Inv = new double[config->GetnMarker_Monitoring()];
-  MySurface_CMx_Inv   = new double[config->GetnMarker_Monitoring()];
-  MySurface_CMy_Inv   = new double[config->GetnMarker_Monitoring()];
-  MySurface_CMz_Inv   = new double[config->GetnMarker_Monitoring()];
+  MySurface_CLift_Inv      = new double[config->GetnMarker_Monitoring()];
+  MySurface_CDrag_Inv      = new double[config->GetnMarker_Monitoring()];
+  MySurface_CSideForce_Inv = new double[config->GetnMarker_Monitoring()];
+  MySurface_CFx_Inv        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CFy_Inv        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CFz_Inv        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CMx_Inv        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CMy_Inv        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CMz_Inv        = new double[config->GetnMarker_Monitoring()];
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    MySurface_CLift_Inv[iMarker_Monitoring] = Surface_CLift_Inv[iMarker_Monitoring];
-    MySurface_CDrag_Inv[iMarker_Monitoring] = Surface_CDrag_Inv[iMarker_Monitoring];
-    MySurface_CMx_Inv[iMarker_Monitoring]   = Surface_CMx_Inv[iMarker_Monitoring];
-    MySurface_CMy_Inv[iMarker_Monitoring]   = Surface_CMy_Inv[iMarker_Monitoring];
-    MySurface_CMz_Inv[iMarker_Monitoring]   = Surface_CMz_Inv[iMarker_Monitoring];
-    Surface_CLift_Inv[iMarker_Monitoring]   = 0.0;
-    Surface_CDrag_Inv[iMarker_Monitoring]   = 0.0;
-    Surface_CMx_Inv[iMarker_Monitoring]     = 0.0;
-    Surface_CMy_Inv[iMarker_Monitoring]     = 0.0;
-    Surface_CMz_Inv[iMarker_Monitoring]     = 0.0;
+    MySurface_CLift_Inv[iMarker_Monitoring]      = Surface_CLift_Inv[iMarker_Monitoring];
+    MySurface_CDrag_Inv[iMarker_Monitoring]      = Surface_CDrag_Inv[iMarker_Monitoring];
+    MySurface_CSideForce_Inv[iMarker_Monitoring] = Surface_CSideForce_Inv[iMarker_Monitoring];
+    MySurface_CFx_Inv[iMarker_Monitoring]        = Surface_CFx_Inv[iMarker_Monitoring];
+    MySurface_CFy_Inv[iMarker_Monitoring]        = Surface_CFy_Inv[iMarker_Monitoring];
+    MySurface_CFz_Inv[iMarker_Monitoring]        = Surface_CFz_Inv[iMarker_Monitoring];
+    MySurface_CMx_Inv[iMarker_Monitoring]        = Surface_CMx_Inv[iMarker_Monitoring];
+    MySurface_CMy_Inv[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
+    MySurface_CMz_Inv[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
+    
+    Surface_CLift_Inv[iMarker_Monitoring]      = 0.0;
+    Surface_CDrag_Inv[iMarker_Monitoring]      = 0.0;
+    Surface_CSideForce_Inv[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CFy_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CFz_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CMx_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CMy_Inv[iMarker_Monitoring]        = 0.0;
+    Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
   }
   
   MPI_Allreduce(MySurface_CLift_Inv, Surface_CLift_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CDrag_Inv, Surface_CDrag_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CSideForce_Inv, Surface_CSideForce_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CFx_Inv, Surface_CFx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CFy_Inv, Surface_CFy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CFz_Inv, Surface_CFz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CMx_Inv, Surface_CMx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CMy_Inv, Surface_CMy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
   delete [] MySurface_CLift_Inv;
   delete [] MySurface_CDrag_Inv;
+  delete [] MySurface_CSideForce_Inv;
+  delete [] MySurface_CFx_Inv;
+  delete [] MySurface_CFy_Inv;
+  delete [] MySurface_CFz_Inv;
   delete [] MySurface_CMx_Inv;
   delete [] MySurface_CMy_Inv;
   delete [] MySurface_CMz_Inv;
@@ -4112,11 +4172,15 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CLift[iMarker_Monitoring]     = Surface_CLift_Inv[iMarker_Monitoring];
-    Surface_CDrag[iMarker_Monitoring]     = Surface_CDrag_Inv[iMarker_Monitoring];
-    Surface_CMx[iMarker_Monitoring]       = Surface_CMx_Inv[iMarker_Monitoring];
-    Surface_CMy[iMarker_Monitoring]       = Surface_CMy_Inv[iMarker_Monitoring];
-    Surface_CMz[iMarker_Monitoring]       = Surface_CMz_Inv[iMarker_Monitoring];
+    Surface_CLift[iMarker_Monitoring]      = Surface_CLift_Inv[iMarker_Monitoring];
+    Surface_CDrag[iMarker_Monitoring]      = Surface_CDrag_Inv[iMarker_Monitoring];
+    Surface_CSideForce[iMarker_Monitoring] = Surface_CSideForce_Inv[iMarker_Monitoring];
+    Surface_CFx[iMarker_Monitoring]        = Surface_CFx_Inv[iMarker_Monitoring];
+    Surface_CFy[iMarker_Monitoring]        = Surface_CFy_Inv[iMarker_Monitoring];
+    Surface_CFz[iMarker_Monitoring]        = Surface_CFz_Inv[iMarker_Monitoring];
+    Surface_CMx[iMarker_Monitoring]        = Surface_CMx_Inv[iMarker_Monitoring];
+    Surface_CMy[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
+    Surface_CMz[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
   }
   
 }
@@ -8771,6 +8835,10 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   CFz_Visc = NULL;
   Surface_CLift_Visc = NULL;
   Surface_CDrag_Visc = NULL;
+  Surface_CSideForce_Visc = NULL;
+  Surface_CFx_Visc = NULL;
+  Surface_CFy_Visc = NULL;
+  Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;
   Surface_CMy_Visc = NULL;
   Surface_CMz_Visc = NULL;
@@ -8812,6 +8880,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CFz_Visc = NULL;
   Surface_CLift_Visc = NULL;
   Surface_CDrag_Visc = NULL;
+  Surface_CSideForce_Visc = NULL;
+  Surface_CFx_Visc = NULL;
+  Surface_CFy_Visc = NULL;
+  Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;
   Surface_CMy_Visc = NULL;
   Surface_CMz_Visc = NULL;
@@ -9028,16 +9100,24 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CFy_Inv        = new double[nMarker];
   CFz_Inv        = new double[nMarker];
   
-  Surface_CLift_Inv= new double[config->GetnMarker_Monitoring()];
-  Surface_CDrag_Inv= new double[config->GetnMarker_Monitoring()];
-  Surface_CMx_Inv  = new double[config->GetnMarker_Monitoring()];
-  Surface_CMy_Inv  = new double[config->GetnMarker_Monitoring()];
-  Surface_CMz_Inv  = new double[config->GetnMarker_Monitoring()];
-  Surface_CLift    = new double[config->GetnMarker_Monitoring()];
-  Surface_CDrag    = new double[config->GetnMarker_Monitoring()];
-  Surface_CMx      = new double[config->GetnMarker_Monitoring()];
-  Surface_CMy      = new double[config->GetnMarker_Monitoring()];
-  Surface_CMz      = new double[config->GetnMarker_Monitoring()];
+  Surface_CLift_Inv      = new double[config->GetnMarker_Monitoring()];
+  Surface_CDrag_Inv      = new double[config->GetnMarker_Monitoring()];
+  Surface_CSideForce_Inv = new double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Inv        = new double[config->GetnMarker_Monitoring()];
+  Surface_CLift          = new double[config->GetnMarker_Monitoring()];
+  Surface_CDrag          = new double[config->GetnMarker_Monitoring()];
+  Surface_CSideForce     = new double[config->GetnMarker_Monitoring()];
+  Surface_CFx            = new double[config->GetnMarker_Monitoring()];
+  Surface_CFy            = new double[config->GetnMarker_Monitoring()];
+  Surface_CFz            = new double[config->GetnMarker_Monitoring()];
+  Surface_CMx            = new double[config->GetnMarker_Monitoring()];
+  Surface_CMy            = new double[config->GetnMarker_Monitoring()];
+  Surface_CMz            = new double[config->GetnMarker_Monitoring()];
   
   /*--- Rotational coefficients ---*/
   CMerit_Inv = new double[nMarker];
@@ -9083,11 +9163,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Heat_Visc       = new double[nMarker];
   MaxHeatFlux_Visc   = new double[nMarker];
   
-  Surface_CLift_Visc = new double[config->GetnMarker_Monitoring()];
-  Surface_CDrag_Visc = new double[config->GetnMarker_Monitoring()];
-  Surface_CMx_Visc = new double[config->GetnMarker_Monitoring()];
-  Surface_CMy_Visc = new double[config->GetnMarker_Monitoring()];
-  Surface_CMz_Visc = new double[config->GetnMarker_Monitoring()];
+  Surface_CLift_Visc      = new double[config->GetnMarker_Monitoring()];
+  Surface_CDrag_Visc      = new double[config->GetnMarker_Monitoring()];
+  Surface_CSideForce_Visc = new double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Visc        = new double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Visc        = new double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Visc        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Visc        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Visc        = new double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Visc        = new double[config->GetnMarker_Monitoring()];
   
   /*--- Read farfield conditions from config ---*/
   Density_Inf   = config->GetDensity_FreeStreamND();
@@ -9288,11 +9372,15 @@ CNSSolver::~CNSSolver(void) {
   if (ForceViscous != NULL)    delete [] ForceViscous;
   if (MomentViscous != NULL)   delete [] MomentViscous;
   
-  if (Surface_CLift_Visc != NULL) delete [] Surface_CLift_Visc;
-  if (Surface_CDrag_Visc != NULL) delete [] Surface_CDrag_Visc;
-  if (Surface_CMx_Visc != NULL)   delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)   delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)   delete [] Surface_CMz_Visc;
+  if (Surface_CLift_Visc != NULL)      delete [] Surface_CLift_Visc;
+  if (Surface_CDrag_Visc != NULL)      delete [] Surface_CDrag_Visc;
+  if (Surface_CSideForce_Visc != NULL) delete [] Surface_CSideForce_Visc;
+  if (Surface_CFx_Visc != NULL)        delete [] Surface_CFx_Visc;
+  if (Surface_CFy_Visc != NULL)        delete [] Surface_CFy_Visc;
+  if (Surface_CFz_Visc != NULL)        delete [] Surface_CFz_Visc;
+  if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
+  if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
+  if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -9713,11 +9801,15 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_HeatFlux_Visc = 0.0;      AllBound_MaxHeatFlux_Visc = 0.0;
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CLift_Visc[iMarker_Monitoring] = 0.0;
-    Surface_CDrag_Visc[iMarker_Monitoring] = 0.0;
-    Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMy_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CLift_Visc[iMarker_Monitoring]      = 0.0;
+    Surface_CDrag_Visc[iMarker_Monitoring]      = 0.0;
+    Surface_CSideForce_Visc[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CFy_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CFz_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CMx_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CMy_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CMz_Visc[iMarker_Monitoring]        = 0.0;
   }
   
   /*--- Loop over the Navier-Stokes markers ---*/
@@ -9902,11 +9994,15 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
           Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (Marker_Tag == Monitoring_Tag) {
-            Surface_CLift_Visc[iMarker_Monitoring] += CLift_Visc[iMarker];
-            Surface_CDrag_Visc[iMarker_Monitoring] += CDrag_Visc[iMarker];
-            Surface_CMx_Visc[iMarker_Monitoring]   += CMx_Visc[iMarker];
-            Surface_CMy_Visc[iMarker_Monitoring]   += CMy_Visc[iMarker];
-            Surface_CMz_Visc[iMarker_Monitoring]   += CMz_Visc[iMarker];
+            Surface_CLift_Visc[iMarker_Monitoring]      += CLift_Visc[iMarker];
+            Surface_CDrag_Visc[iMarker_Monitoring]      += CDrag_Visc[iMarker];
+            Surface_CSideForce_Visc[iMarker_Monitoring] += CSideForce_Visc[iMarker];
+            Surface_CFx_Visc[iMarker_Monitoring]        += CFx_Visc[iMarker];
+            Surface_CFy_Visc[iMarker_Monitoring]        += CFy_Visc[iMarker];
+            Surface_CFz_Visc[iMarker_Monitoring]        += CFz_Visc[iMarker];
+            Surface_CMx_Visc[iMarker_Monitoring]        += CMx_Visc[iMarker];
+            Surface_CMy_Visc[iMarker_Monitoring]        += CMy_Visc[iMarker];
+            Surface_CMz_Visc[iMarker_Monitoring]        += CMz_Visc[iMarker];
           }
         }
         
@@ -9960,39 +10056,65 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_MaxHeatFlux_Visc = pow(AllBound_MaxHeatFlux_Visc, 1.0/MaxNorm);
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
-  double *MySurface_CLift_Visc = NULL;
-  double *MySurface_CDrag_Visc = NULL;
-  double *MySurface_CMx_Visc   = NULL;
-  double *MySurface_CMy_Visc   = NULL;
-  double *MySurface_CMz_Visc   = NULL;
+  double *MySurface_CLift_Visc      = NULL;
+  double *MySurface_CDrag_Visc      = NULL;
+  double *MySurface_CSideForce_Visc = NULL;
+  double *MySurface_CFx_Visc        = NULL;
+  double *MySurface_CFy_Visc        = NULL;
+  double *MySurface_CFz_Visc        = NULL;
+  double *MySurface_CMx_Visc        = NULL;
+  double *MySurface_CMy_Visc        = NULL;
+  double *MySurface_CMz_Visc        = NULL;
   
-  MySurface_CLift_Visc = new double[config->GetnMarker_Monitoring()];
-  MySurface_CDrag_Visc = new double[config->GetnMarker_Monitoring()];
-  MySurface_CMx_Visc   = new double[config->GetnMarker_Monitoring()];
-  MySurface_CMy_Visc   = new double[config->GetnMarker_Monitoring()];
-  MySurface_CMz_Visc   = new double[config->GetnMarker_Monitoring()];
+  MySurface_CLift_Visc      = new double[config->GetnMarker_Monitoring()];
+  MySurface_CDrag_Visc      = new double[config->GetnMarker_Monitoring()];
+  MySurface_CSideForce_Visc = new double[config->GetnMarker_Monitoring()];
+  MySurface_CFx_Visc        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CFy_Visc        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CFz_Visc        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CMx_Visc        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CMy_Visc        = new double[config->GetnMarker_Monitoring()];
+  MySurface_CMz_Visc        = new double[config->GetnMarker_Monitoring()];
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    MySurface_CLift_Visc[iMarker_Monitoring] = Surface_CLift_Visc[iMarker_Monitoring];
-    MySurface_CDrag_Visc[iMarker_Monitoring] = Surface_CDrag_Visc[iMarker_Monitoring];
-    MySurface_CMx_Visc[iMarker_Monitoring]   = Surface_CMx_Visc[iMarker_Monitoring];
-    MySurface_CMy_Visc[iMarker_Monitoring]   = Surface_CMy_Visc[iMarker_Monitoring];
-    MySurface_CMz_Visc[iMarker_Monitoring]   = Surface_CMz_Visc[iMarker_Monitoring];
-    Surface_CLift_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CDrag_Visc[iMarker_Monitoring]   = 0.0;
-    Surface_CMx_Visc[iMarker_Monitoring]     = 0.0;
-    Surface_CMy_Visc[iMarker_Monitoring]     = 0.0;
-    Surface_CMz_Visc[iMarker_Monitoring]     = 0.0;
+    
+    MySurface_CLift_Visc[iMarker_Monitoring]      = Surface_CLift_Visc[iMarker_Monitoring];
+    MySurface_CDrag_Visc[iMarker_Monitoring]      = Surface_CDrag_Visc[iMarker_Monitoring];
+    MySurface_CSideForce_Visc[iMarker_Monitoring] = Surface_CSideForce_Visc[iMarker_Monitoring];
+    MySurface_CFx_Visc[iMarker_Monitoring]        = Surface_CFx_Visc[iMarker_Monitoring];
+    MySurface_CFy_Visc[iMarker_Monitoring]        = Surface_CFy_Visc[iMarker_Monitoring];
+    MySurface_CFz_Visc[iMarker_Monitoring]        = Surface_CFz_Visc[iMarker_Monitoring];
+    MySurface_CMx_Visc[iMarker_Monitoring]        = Surface_CMx_Visc[iMarker_Monitoring];
+    MySurface_CMy_Visc[iMarker_Monitoring]        = Surface_CMy_Visc[iMarker_Monitoring];
+    MySurface_CMz_Visc[iMarker_Monitoring]        = Surface_CMz_Visc[iMarker_Monitoring];
+    
+    Surface_CLift_Visc[iMarker_Monitoring]      = 0.0;
+    Surface_CDrag_Visc[iMarker_Monitoring]      = 0.0;
+    Surface_CSideForce_Visc[iMarker_Monitoring] = 0.0;
+    Surface_CFx_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CFy_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CFz_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CMx_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CMy_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_CMz_Visc[iMarker_Monitoring]        = 0.0;
   }
   
   MPI_Allreduce(MySurface_CLift_Visc, Surface_CLift_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CDrag_Visc, Surface_CDrag_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CSideForce_Visc, Surface_CSideForce_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CFx_Visc, Surface_CFx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CFy_Visc, Surface_CFy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MySurface_CFz_Visc, Surface_CFz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
   delete [] MySurface_CLift_Visc;
   delete [] MySurface_CDrag_Visc;
+  delete [] MySurface_CSideForce_Visc;
+  delete [] MySurface_CFx_Visc;
+  delete [] MySurface_CFy_Visc;
+  delete [] MySurface_CFz_Visc;
   delete [] MySurface_CMx_Visc;
   delete [] MySurface_CMy_Visc;
   delete [] MySurface_CMz_Visc;
@@ -10020,11 +10142,15 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Surface_CLift[iMarker_Monitoring]     += Surface_CLift_Visc[iMarker_Monitoring];
-    Surface_CDrag[iMarker_Monitoring]     += Surface_CDrag_Visc[iMarker_Monitoring];
-    Surface_CMx[iMarker_Monitoring]       += Surface_CMx_Visc[iMarker_Monitoring];
-    Surface_CMy[iMarker_Monitoring]       += Surface_CMy_Visc[iMarker_Monitoring];
-    Surface_CMz[iMarker_Monitoring]       += Surface_CMz_Visc[iMarker_Monitoring];
+    Surface_CLift[iMarker_Monitoring]      += Surface_CLift_Visc[iMarker_Monitoring];
+    Surface_CDrag[iMarker_Monitoring]      += Surface_CDrag_Visc[iMarker_Monitoring];
+    Surface_CSideForce[iMarker_Monitoring] += Surface_CSideForce_Visc[iMarker_Monitoring];
+    Surface_CFx[iMarker_Monitoring]        += Surface_CFx_Visc[iMarker_Monitoring];
+    Surface_CFy[iMarker_Monitoring]        += Surface_CFy_Visc[iMarker_Monitoring];
+    Surface_CFz[iMarker_Monitoring]        += Surface_CFz_Visc[iMarker_Monitoring];
+    Surface_CMx[iMarker_Monitoring]        += Surface_CMx_Visc[iMarker_Monitoring];
+    Surface_CMy[iMarker_Monitoring]        += Surface_CMy_Visc[iMarker_Monitoring];
+    Surface_CMz[iMarker_Monitoring]        += Surface_CMz_Visc[iMarker_Monitoring];
   }
   
 }
