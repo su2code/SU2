@@ -3299,7 +3299,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
       /*--- Conservative variables w/o reconstruction ---*/
       
       V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+      V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       numerics->SetPrimitive(V_i, V_j);
       
       /*--- Set face vector, and area ---*/
@@ -3418,7 +3418,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
         /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
         
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         numerics->SetPrimitive(V_i, V_j);
         
         /*--- Set Normal ---*/
@@ -3532,7 +3532,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
       /*--- Conservative variables w/o reconstruction ---*/
       
       V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+      V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       numerics->SetPrimitive(V_i, V_j);
       
       /*--- Set Normal ---*/
@@ -3692,7 +3692,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
         
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         numerics->SetPrimitive(V_i, V_j);
         
         /*--- Set Normal ---*/
