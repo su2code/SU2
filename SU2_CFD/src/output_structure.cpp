@@ -4066,6 +4066,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
     monitoring_coeff += ",\"CLift_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CDrag_"  + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CSideForce_" + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CFx_"    + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CFy_"    + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CFz_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMx_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMy_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
@@ -4285,6 +4289,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     *aeroelastic_pitch  = NULL,
     *Surface_CLift      = NULL,
     *Surface_CDrag      = NULL,
+    *Surface_CSideForce = NULL,
+    *Surface_CFx        = NULL,
+    *Surface_CFy        = NULL,
+    *Surface_CFz        = NULL,
     *Surface_CMx        = NULL,
     *Surface_CMy        = NULL,
     *Surface_CMz        = NULL;
@@ -4342,6 +4350,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     aeroelastic_pitch  = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4409,6 +4421,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
             Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
             Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
+            Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+            Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
+            Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
+            Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
             Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
             Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
             Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
@@ -4691,6 +4707,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                   strcat(monitoring_coeff, surface_coeff);
                 }
                 sprintf(surface_coeff, ", %12.10f",Surface_CDrag[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CSideForce[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CFx[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CFy[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CFz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CMx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
@@ -5347,6 +5371,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       
       delete [] Surface_CLift;
       delete [] Surface_CDrag;
+      delete [] Surface_CSideForce;
+      delete [] Surface_CFx;
+      delete [] Surface_CFy;
+      delete [] Surface_CFz;
       delete [] Surface_CMx;
       delete [] Surface_CMy;
       delete [] Surface_CMz;
