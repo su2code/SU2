@@ -58,6 +58,7 @@ private:
   double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
+	long ConvEquation;	/*!< \brief Equation to apply convergence to. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
 	bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -1040,6 +1041,12 @@ public:
 	 * \return Ratio of density for a free surface problem.
 	 */
 	double GetRatioDensity(void);
+	
+	/*!
+	* \brief Get the equation to which to apply convergence criteria.
+	* \return Convergence equation number.
+	*/
+        long GetConv_Equation(void);
 
 	/*!
 	 * \brief Get the ratio of viscosity for a free surface problem.
