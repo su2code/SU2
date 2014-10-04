@@ -28,6 +28,8 @@ inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_
 
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
+inline long CConfig::GetConv_Equation(void) { return ConvEquation; }
+
 inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
