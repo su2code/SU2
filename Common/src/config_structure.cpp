@@ -529,7 +529,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
-
+  
+  /* DESCRIPTION: Equation to apply convergence criteria to */
+  addLongOption("CONV_EQUATION", ConvEquation, 0);
   /* DESCRIPTION: Convergence criteria */
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
