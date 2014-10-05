@@ -48,10 +48,9 @@ using namespace std;
  * \author F. Palacios.
  * \version 3.2.3 "eagle"
  */
-
 class CConfig {
 private:
-	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
+	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -261,17 +260,10 @@ private:
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-<<<<<<< HEAD
 	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
 	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
 	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
 	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
-=======
-	unsigned short Kind_Solver,/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. \n SYNTAX: PHYSICAL_PROBLEM = DIRECT \ingroup Config */
-  Kind_FluidModel,/*!<\brief Kind of the Fluid Model: Ideal or Van der Walls, .... .\n  SYNTAX: FLUID_MODEL = STANDARD_AIR \ingroup Config */
-	Kind_ViscosityModel,  /*!< \brief Kind of the Viscosity Model \n SYNTAX: VISCOSITY_MODEL = SUTHERLAND \ingroup Config */
-	Kind_FreeStreamOption, /*!< \brief Kind of free stream option to choose if initializing with density or temperature. \n SYNTAX: FREESTREAM_OPTION = TEMPERATURE_FS \ingroup Config */
->>>>>>> more doxygen comments added
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
