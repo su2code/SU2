@@ -48,9 +48,10 @@ using namespace std;
  * \author F. Palacios.
  * \version 3.2.2 "eagle"
  */
+
 class CConfig {
 private:
-	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
+	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -101,7 +102,10 @@ private:
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
+  /*!\brief Kind of adjoint function.
+   *
+   * SYNTAX: "REGIME_TYPE = COMPRESSIBLE".\ingroup Config */
+  unsigned short Kind_Regime;
 	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
 	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
 	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
