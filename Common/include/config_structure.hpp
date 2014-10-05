@@ -102,15 +102,12 @@ private:
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  /*!\brief Kind of adjoint function.
-   *
-   * SYNTAX: "REGIME_TYPE = COMPRESSIBLE".\ingroup Config */
-  unsigned short Kind_Regime;
-	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
-	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
-	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
-	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
-	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
+  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. \n SYNTAX: REGIME_TYPE = COMPRESSIBLE.\ingroup Config */
+	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. \n SYNTAX: OBJECTIVE_FUNCTION = DRAG_COEFFICIENT \ingroup Config */
+	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique.  \n SYNTAX: SENS_SMOOTHING = NO_SMOOTH  \ingroup Config */
+	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint)  \n SYNTAX: CONTINUOUS_EQNS = EULER_EQNS \ingroup Config */
+	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). \n SYNTAX: DISCRETE_EQNS NONE_EQNS \ingroup Config  */
+	unsigned short *Design_Variable; /*!< \brief Kind of design variable.  \n SYNTAX:  \ingroup Config */
 	double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
 	FreeSurface_Thickness,  /*!< \brief Thickness of the interfase for a free surface problem. */
@@ -263,10 +260,10 @@ private:
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
-	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
-	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
-	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
+	unsigned short Kind_Solver,/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. \n SYNTAX: PHYSICAL_PROBLEM = DIRECT \ingroup Config */
+  Kind_FluidModel,/*!<\brief Kind of the Fluid Model: Ideal or Van der Walls, .... .\n  SYNTAX: FLUID_MODEL = STANDARD_AIR \ingroup Config */
+	Kind_ViscosityModel,  /*!< \brief Kind of the Viscosity Model \n SYNTAX: VISCOSITY_MODEL = SUTHERLAND \ingroup Config */
+	Kind_FreeStreamOption, /*!< \brief Kind of free stream option to choose if initializing with density or temperature. \n SYNTAX: FREESTREAM_OPTION = TEMPERATURE_FS \ingroup Config */
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
