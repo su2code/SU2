@@ -4133,7 +4133,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[nVar-1] = Psi_domain[nVar-1];
           Psi_outlet[0] = 0.5*Psi_outlet[nVar-1]*Velocity2;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Psi_outlet[0] += Psi_outlet[nVar-1]*a1*Velocity[iDim]*UnitNormal[iDim]*(Vn-Ubn);
+            Psi_outlet[0]   += Psi_outlet[nVar-1]*a1*Velocity[iDim]*UnitNormal[iDim]*(Vn-Ubn);
             Psi_outlet[iDim+1] = -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim]*(Vn-Ubn) + Velocity[iDim]);
           }
           
@@ -4186,6 +4186,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Psi_outlet[0] = -coeff*Psi_outlet[1];
         
       }
+
       /*--- For mass_flow objective function add B.C. contribution ---*/
       if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)
         Psi_outlet[0]+=1;
