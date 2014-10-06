@@ -5935,9 +5935,16 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         Cp_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         
         /*--- Coordinates and pressure value ---*/
-        
-        for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-          Cp_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+      
+        if (config->GetSystemMeasurements() == SI) {
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            Cp_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+          }
+        }
+        if (config->GetSystemMeasurements() == US) {
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            Cp_File << Xcoord_Airfoil[iVertex]*12.0 <<" "<< Ycoord_Airfoil[iVertex]*12.0 <<" "<< Zcoord_Airfoil[iVertex]*12.0 <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+          }
         }
         
         /*--- Basic conectivity ---*/
