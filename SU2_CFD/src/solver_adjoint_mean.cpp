@@ -1167,7 +1167,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
   unsigned long iVertex, iPoint, iPointNearField, nPointNearField = 0;
   double factor = 1.0, AngleDouble, data, aux, *IntBound_Vector, *coord, sq_vel, *FlowSolution, WeightSB, MinDist = 1E6, Dist, DerivativeOF = 0.0, *Normal, Area, UnitNormal[3], velocity[3], Energy, Rho, sqvel, proj_vel, phi, a1, a2;
   double **A, **M, **AM, *b;
-  short iPhiAngle = 0, IndexNF_inv[180], iColumn;
+  short AngleInt = 0, IndexNF_inv[180], iColumn;
   ifstream index_file;
   string text_line;
   vector<vector<double> > NearFieldWeight;
@@ -1208,6 +1208,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
       istringstream is(line);
       
       /*--- The first row provides the azimuthal angle ---*/
+      
       if (nPointNearField == 0) {
         is >> data; // The first column is related with the coordinate
         while (is.good()) { is >> data; IndexNF.push_back(int(data)); }
@@ -1222,10 +1223,11 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     }
     
     /*--- Note tha the first row is the azimuthal angle ---*/
+    
     nPointNearField = nPointNearField - 1;
     
-    for (iPhiAngle = 0; iPhiAngle < 180; iPhiAngle++)
-      IndexNF_inv[iPhiAngle] = -1;
+    for (AngleInt = 0; AngleInt < 180; AngleInt++)
+      IndexNF_inv[AngleInt] = -1;
     
     for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
       IndexNF_inv[IndexNF[iIndex]] = iIndex;
@@ -1256,13 +1258,16 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
           DerivativeOF = 0.0;
           
           /*--- Just in case the functional depend also on the surface pressure ---*/
+          
           WeightSB = 1.0-config->GetWeightCd();
           
           double AoA, XcoordRot = 0.0, YcoordRot = 0.0, ZcoordRot = 0.0;
           
           if (nDim == 2) XcoordRot = coord[0];
           if (nDim == 3) {
+            
             /*--- Rotate the nearfield cylinder  ---*/
+            
             AoA = -(config->GetAoA()*PI_NUMBER/180.0);
             XcoordRot = coord[0]*cos(AoA) - coord[2]*sin(AoA);
             YcoordRot = coord[1];
@@ -1272,12 +1277,13 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
           switch (config->GetKind_ObjFunc()) {
             case EQUIVALENT_AREA :
               
-              if (nDim == 2) iPhiAngle = 0;
+              if (nDim == 2) AngleInt = 0;
+              
               if (nDim == 3) {
                 
                 /*--- Compute the azimuthal angle of the iPoint ---*/
                 
-                AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+                AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
                 
                 /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
                 
@@ -1285,24 +1291,25 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
                 
                 if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
                 
-                iPhiAngle = (short) floor(AngleDouble + 0.5);
-                if (iPhiAngle < 0) iPhiAngle = 180 + iPhiAngle;
+                AngleInt = (short) floor(AngleDouble + 0.5);
+                if (AngleInt < 0) AngleInt = 180 + AngleInt;
+                
               }
               
-              if (iPhiAngle <= 60) {
-                iColumn = IndexNF_inv[iPhiAngle];
+              if (AngleInt <= 60) {
+                iColumn = IndexNF_inv[AngleInt];
                 
                 /*--- An azimuthal angle is not defined... this happens with MG levels ---*/
                 
                 if (iColumn < 0.0) {
-                  if (IndexNF_inv[iPhiAngle+1] > 0) { iColumn = IndexNF_inv[iPhiAngle+1]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-1] > 0) { iColumn = IndexNF_inv[iPhiAngle-1]; goto end; }
-                  if (IndexNF_inv[iPhiAngle+2] > 0) { iColumn = IndexNF_inv[iPhiAngle+2]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-2] > 0) { iColumn = IndexNF_inv[iPhiAngle-2]; goto end; }
-                  if (IndexNF_inv[iPhiAngle+3] > 0) { iColumn = IndexNF_inv[iPhiAngle+3]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-3] > 0) { iColumn = IndexNF_inv[iPhiAngle-3]; goto end; }
-                  if (IndexNF_inv[iPhiAngle+4] > 0) { iColumn = IndexNF_inv[iPhiAngle+4]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-4] > 0) { iColumn = IndexNF_inv[iPhiAngle-4]; goto end; }
+                  if (IndexNF_inv[AngleInt+1] > 0) { iColumn = IndexNF_inv[AngleInt+1]; goto end; }
+                  if (IndexNF_inv[AngleInt-1] > 0) { iColumn = IndexNF_inv[AngleInt-1]; goto end; }
+                  if (IndexNF_inv[AngleInt+2] > 0) { iColumn = IndexNF_inv[AngleInt+2]; goto end; }
+                  if (IndexNF_inv[AngleInt-2] > 0) { iColumn = IndexNF_inv[AngleInt-2]; goto end; }
+                  if (IndexNF_inv[AngleInt+3] > 0) { iColumn = IndexNF_inv[AngleInt+3]; goto end; }
+                  if (IndexNF_inv[AngleInt-3] > 0) { iColumn = IndexNF_inv[AngleInt-3]; goto end; }
+                  if (IndexNF_inv[AngleInt+4] > 0) { iColumn = IndexNF_inv[AngleInt+4]; goto end; }
+                  if (IndexNF_inv[AngleInt-4] > 0) { iColumn = IndexNF_inv[AngleInt-4]; goto end; }
                 }
                 
               end:
