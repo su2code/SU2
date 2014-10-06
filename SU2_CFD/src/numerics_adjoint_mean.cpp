@@ -516,12 +516,14 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
                                     CConfig *config) {
   
 	/*--- Mean Values ---*/
+  
 	MeanPsiRho =  0.5*(Psi_i[0]+Psi_j[0]);
 	for (iDim = 0; iDim < nDim; iDim++)
 		MeanPhi[iDim] =  0.5*(Psi_i[iDim+1]+Psi_j[iDim+1]);
 	MeanPsiE =  0.5*(Psi_i[nVar-1]+Psi_j[nVar-1]);
   
 	/*--- Point i convective residual evaluation ---*/
+  
 	ProjVelocity_i = 0; ProjPhi = 0; ProjPhi_Vel = 0; sq_vel = 0; Area = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1] / U_i[0];
@@ -541,6 +543,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	val_resconv_i[nVar-1] = ProjVelocity_i*MeanPsiE + Gamma_Minus_One*phis1;
   
 	/*--- Flux contributions due to grid movement at point i ---*/
+  
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -552,6 +555,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	}
   
 	/*--- Jacobians of the inviscid flux ---*/
+  
 	if (implicit) {
 		val_Jacobian_ii[0][0] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++)
@@ -574,6 +578,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 				val_Jacobian_ij[iVar][jVar] = val_Jacobian_ii[iVar][jVar];
     
 		/*--- Jacobian contributions due to grid movement at point i ---*/
+    
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -587,6 +592,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
   
   
 	/*--- Point j convective residual evaluation ---*/
+  
 	ProjVelocity_j = 0; ProjPhi_Vel = 0; sq_vel = 0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_j[iDim] = U_j[iDim+1] / U_j[0];
@@ -604,6 +610,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	val_resconv_j[nVar-1] = -(ProjVelocity_j*MeanPsiE + Gamma_Minus_One*phis1);
   
 	/*--- Flux contributions due to grid motion at point j ---*/
+  
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++)
@@ -615,6 +622,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	}
   
 	/*--- Jacobians of the inviscid flux ---*/
+  
 	if (implicit) {
 		val_Jacobian_jj[0][0] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++)
@@ -637,6 +645,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 				val_Jacobian_ji[iVar][jVar] = val_Jacobian_jj[iVar][jVar];
     
 		/*--- Jacobian contributions due to grid motion at point j ---*/
+    
 		if (grid_movement) {
 			double ProjGridVel = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
@@ -649,12 +658,14 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	}
   
 	/*--- Computes differences btw. variables and Laplacians ---*/
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
 		Diff_Psi[iVar]  = Psi_i[iVar]-Psi_j[iVar];
 	}
 
 	/*--- Adjustment to projected velocity due to grid motion ---*/
+  
 	if (grid_movement) {
 		double ProjGridVel = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -665,6 +676,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	}
   
 	/*--- Compute the spectral radius and stretching factor ---*/
+  
 	Local_Lambda_i = (fabs(ProjVelocity_i)+SoundSpeed_i*Area);
 	Local_Lambda_j = (fabs(ProjVelocity_j)+SoundSpeed_j*Area);
 	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
@@ -679,6 +691,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 	Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
     
 	/*--- Compute viscous residual 1st- & 3rd-order dissipation ---*/
+  
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Residual = (Epsilon_2*Diff_Psi[iVar]-Epsilon_4*Diff_Lapl[iVar])*StretchingFactor*MeanLambda;
 		val_resvisc_i[iVar] = -Residual;
@@ -690,6 +703,7 @@ void CCentJST_AdjFlow::ComputeResidual (double *val_resconv_i, double *val_resvi
 			val_Jacobian_jj[iVar][iVar] -= Epsilon_2 + double(Neighbor_j+1)*Epsilon_4*StretchingFactor*MeanLambda;
 		}
 	}
+  
 }
 
 CCentJSTArtComp_AdjFlow::CCentJSTArtComp_AdjFlow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
