@@ -1985,6 +1985,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
     
+    Section_Location[0] = Section_Location[0]/12.0;
+    Section_Location[1] = Section_Location[1]/12.0;
+    
   }
 
   /*--- Reacting flows initialization ---*/
