@@ -748,6 +748,19 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MASS_FLOW_RATE", MASS_FLOW_RATE);
 
 /*!
+ * \brief types of residual criteria equations
+ */
+
+enum ENUM_RESIDUAL {
+	RHO = 1, 	      /*!< \brief Rho equation residual criteria equation. */
+	RHO_ENERGY = 2 	      /*!< \brief RhoE equation residual criteria equation. */
+};
+
+static const map<string, ENUM_RESIDUAL> Residual_Map = CCreateMap<string, ENUM_RESIDUAL>
+("RHO", RHO)
+("RHO_ENERGY", RHO_ENERGY);
+
+/*!
  * \brief types of Continuous equations
  */
 enum ENUM_CONTINUOUS_EQNS {
