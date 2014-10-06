@@ -28,8 +28,6 @@ inline void CConfig::SetFanFace_Pressure(unsigned short val_imarker, double val_
 
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
-inline long CConfig::GetConv_Equation(void) { return ConvEquation; }
-
 inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
@@ -905,6 +903,8 @@ inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_Fi
 inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_FileName; }
 
 inline string CConfig::GetSurfLinCoeff_FileName(void) { return SurfLinCoeff_FileName; }
+
+inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
 
 inline unsigned short CConfig::GetCauchy_Func_Flow(void) { return Cauchy_Func_Flow; }
 
