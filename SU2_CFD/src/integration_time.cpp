@@ -655,21 +655,12 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-			  if(config->GetConv_Equation() == 0) {
-			   (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-			  }
-			  else if(config->GetConv_Equation() == 1) {
-			    if (nDim == 2 ) {
-			     (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
-			    }
-			    else {
-			     (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
-			    }
-			  }
-			  else {
-			   (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-			  }
-			}
+    	  if(config->GetResidual_Func_Flow() == RHO) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
+    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY) {
+    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
+    		  else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
+    	  }
+      }
       
       break;
       
@@ -689,21 +680,12 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-			  if(config->GetConv_Equation() == 0) {
-			   (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-			  }
-			  else if(config->GetConv_Equation() == 1) {
-			    if (nDim == 2 ) {
-			     (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
-			    }
-			    else {
-			     (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
-			    }
-			  }
-			  else {
-			   (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-			  }
-			}
+    	  if(config->GetResidual_Func_Flow() == RHO) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
+    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY) {
+    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
+    		  else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
+    	  }
+      }
       
       break;
       
@@ -720,21 +702,12 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-			  if(config->GetConv_Equation() == 0) {
-			   (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
-			  }
-			  else if(config->GetConv_Equation() == 1) {
-			    if (nDim == 2 ) {
-			     (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
-			    }
-			    else {
-			     (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(4));
-			    }
-			  }
-			  else {
-			   (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
-			  }
-			}
+    	  if(config->GetResidual_Func_Flow() == RHO) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
+    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY) {
+    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
+    		  else (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(4));
+    	  }
+      }
       
       break;
       
@@ -754,21 +727,12 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-			  if(config->GetConv_Equation() == 0) {
-			   (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(0));
-			  }
-			  else if(config->GetConv_Equation() == 1) {
-			    if (nDim == 2 ) {
-			     (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(3));
-			    }
-			    else {
-			     (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(4));
-			    }
-			  }
-			  else {
-			   (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(0));
-			  }
-			}
+    	  if(config->GetResidual_Func_Flow() == RHO) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(0));
+    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY) {
+    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(3));
+    		  else (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(4));
+    	  }
+      }
       
       break;
       
