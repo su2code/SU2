@@ -226,26 +226,26 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 
 	  // rtbis algorithm NR
 
-		f=fx1;
-		fmid=fx2;
-		if (f*fmid >= 0.0){
-			cout<< "Root must be bracketed for bisection in rtbis"<<endl;
-			SetTDState_rhoT(Density, Temperature);
-		}
-		rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
-		do{
-			xmid=rtb+(dx *= 0.5);
-			T = T_v_h(xmid,h);
-			fv = atanh( b/xmid* sqrt2/(1 + b/xmid));
-			fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+	f=fx1;
+	fmid=fx2;
+	if (f*fmid >= 0.0){
+		cout<< "Root must be bracketed for bisection in rtbis"<<endl;
+		SetTDState_rhoT(Density, Temperature);
+	}
+	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+	do{
+		xmid=rtb+(dx *= 0.5);
+		T = T_v_h(xmid,h);
+		fv = atanh( b/xmid* sqrt2/(1 + b/xmid));
+		fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 //			cout<< fmid/x2<<" "<< fmid <<" "<< x2 <<endl;
-			if (fmid <= 0.0) rtb=xmid;
-			countrtb++;
-		}while(abs(fmid) > toll && countrtb<ITMAX);
+		if (fmid <= 0.0) rtb=xmid;
+		countrtb++;
+	}while(abs(fmid) > toll && countrtb<ITMAX);
 
-		v = xmid;
-		if(countrtb==ITMAX){
-			cout <<"Too many bisections in rtbis" <<endl;
+	v = xmid;
+	if(countrtb==ITMAX){
+		cout <<"Too many bisections in rtbis" <<endl;
 //			do{
 //					fv = atanh( b/v* sqrt2/(1 + b/v));
 //					T=T_v_h(v,h);
@@ -257,19 +257,19 @@ void CPengRobinson::SetTDState_hs (double h, double s ){
 //			}while(abs(f/x2) > toll && countnw<ITMAXNW);
 //
 //		}else{
+	}
+	if(v!=v){
+		cout <<"not physical solution found, h and s input " << h << " "<< s <<endl;
+		SetTDState_rhoT(Density, Temperature);
+	}
 
-			T=T_v_h(v,h);
-
-
-
-		}
-
+	T=T_v_h(v,h);
 	SetTDState_rhoT(1/v, T);
 	// consistency check
 	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
 	cons_s= abs((Entropy-s)/s);
 
-	if(cons_h >1e-3 or cons_s >1e-3){
+	if(cons_h >1e-4 or cons_s >1e-4){
 		cout<< "TD consistency not verified in hs call"<<endl;
 			 cout <<"Before  "<< h <<" "<< s <<endl;
 			 cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<<endl;
