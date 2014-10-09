@@ -1858,7 +1858,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
       case STANDARD_AIR:
         if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(53.3533);
+        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
         
         FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
         if(fs_temperature) {
