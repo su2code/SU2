@@ -54,14 +54,12 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   
   
-#ifdef HAVE_MPI
-  void *buffer, *old_buffer;
-	int bufsize;
-	bufsize = 3000000;
-  
   /*--- MPI initialization, and buffer setting ---*/
+
+#ifdef HAVE_MPI
+  int buf[BUFSIZE], *bptr, bl;
   MPI_Init(&argc,&argv);
-  MPI_Buffer_attach(buffer, bufsize);
+  MPI_Buffer_attach( buf, BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -540,8 +538,7 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Barrier(MPI_COMM_WORLD);
-  old_buffer = buffer;
-  MPI::Detach_buffer(old_buffer);
+  MPI_Buffer_detach(&bptr,&bl);
   MPI_Finalize();
 #endif
   
