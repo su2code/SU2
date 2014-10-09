@@ -3566,7 +3566,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1];
+  MPI_Status send_stat[1], recv_stat[1], status;
   MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
@@ -3601,11 +3601,13 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
           
-          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+          MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+          
+//          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
           
           /*--- Wait for this set of non-blocking comm. to complete ---*/
           
-          MPI_Waitall(1, send_req, send_stat);
+//          MPI_Waitall(1, send_req, send_stat);
           
         }
         
@@ -3635,11 +3637,13 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         
         if (jProcessor != rank) {
           
-          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+          MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+          
+//          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
           
           /*--- Wait for the this set of non-blocking recv's to complete ---*/
           
-          MPI_Waitall(1, recv_req, recv_stat);
+//          MPI_Waitall(1, recv_req, recv_stat);
           
         }
         else {
