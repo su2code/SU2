@@ -5,19 +5,19 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>368B274D-9965-4069-A87C-16EEB2A755E7</string>
+	<string>4EFC02A1-0C65-4D95-970F-418C37E2138D</string>
 	<key>IDESourceControlProjectName</key>
 	<string>SU2_DOT</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>E33A4FE7-9A14-43C6-8CAC-F4C12EE8B41A</key>
+		<key>E87E904B-CB91-4D0D-980D-0E42C007AE53</key>
 		<string>https://github.com/su2code/SU2.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>SU2_IDE/Xcode/SU2_DOT.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>E33A4FE7-9A14-43C6-8CAC-F4C12EE8B41A</key>
+		<key>E87E904B-CB91-4D0D-980D-0E42C007AE53</key>
 		<string>../../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
@@ -25,14 +25,14 @@
 	<key>IDESourceControlProjectVersion</key>
 	<integer>110</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>E33A4FE7-9A14-43C6-8CAC-F4C12EE8B41A</string>
+	<string>E87E904B-CB91-4D0D-980D-0E42C007AE53</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>E33A4FE7-9A14-43C6-8CAC-F4C12EE8B41A</string>
+			<string>E87E904B-CB91-4D0D-980D-0E42C007AE53</string>
 			<key>IDESourceControlWCCName</key>
 			<string>trunk</string>
 		</dict>

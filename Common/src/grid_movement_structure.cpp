@@ -3357,11 +3357,11 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 					x = coord[0]; y = coord[1]; z = coord[2];
 					
 					double factor = 0.0; 
-					if ( z < config->GetParamDV(iDV, 3) )
+					if ( y < config->GetParamDV(iDV, 2) )
 						factor = 0.0;
-					if (( z >= config->GetParamDV(iDV, 3)) && ( z <= config->GetParamDV(iDV, 6)) )
-						factor = (z-config->GetParamDV(iDV, 3)) / (config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3));
-					if ( z > config->GetParamDV(iDV, 6) )
+					if (( y >= config->GetParamDV(iDV, 2)) && ( y <= config->GetParamDV(iDV, 5)) )
+						factor = (y-config->GetParamDV(iDV, 2)) / (config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2));
+					if ( y > config->GetParamDV(iDV, 5) )
 						factor = 1.0;
 					
 					cosT = cos(theta*factor); 
