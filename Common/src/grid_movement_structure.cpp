@@ -5762,18 +5762,26 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           
 				}
         
+#ifdef HAVE_MPI
+        if (config->GetKind_SU2() == SU2_PRT)
+          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfacePoints[iFFDBox] <<"."<<endl;
+#endif
+        
         nSurfacePoints[iFFDBox] = my_nSurfPoints;
         nSurfPoints = 0;
+        
 #ifdef HAVE_MPI
-        if (config->GetKind_SU2() != SU2_PRT)
+        if (config->GetKind_SU2() != SU2_PRT) {
           MPI_Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        else
-          nSurfPoints = my_nSurfPoints;
+          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
+        }
+        else nSurfPoints = my_nSurfPoints;
 #else
 				nSurfPoints = my_nSurfPoints;
+        if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
 #endif
 				
-				if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
+				
         
 			}
 			
