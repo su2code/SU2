@@ -1961,7 +1961,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Re-scale the length based parameters. The US system uses feet, 
    but SU2 assumes that the grid is in inches ---*/
   
-  if (SystemMeasurements == US) {
+  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
 
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
       RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
@@ -1984,6 +1984,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
+    
+    Section_Location[0] = Section_Location[0]/12.0;
+    Section_Location[1] = Section_Location[1]/12.0;
     
   }
 
