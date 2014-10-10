@@ -57,9 +57,9 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
 
 #ifdef HAVE_MPI
-  int buf[BUFSIZE], *bptr, bl;
+  int *bptr, bl;
   MPI_Init(&argc,&argv);
-  MPI_Buffer_attach( buf, BUFSIZE );
+  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
