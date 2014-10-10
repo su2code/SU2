@@ -1858,7 +1858,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
       case STANDARD_AIR:
         if (config->GetSystemMeasurements() == SI) config->SetGas_Constant(287.058);
-        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(53.3533);
+        else if (config->GetSystemMeasurements() == US) config->SetGas_Constant(1716.49);
         
         FluidModel = new CIdealGas(1.4, config->GetGas_Constant());
         if(fs_temperature) {
@@ -7774,7 +7774,7 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1];
+  MPI_Status send_stat[1], recv_stat[1], status;
   MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
@@ -7811,11 +7811,13 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
           for (iVar = 0; iVar < nPrimVar; iVar++)
             Buffer_Send_V[iVar] = node[iPoint]->GetPrimitive(iVar);
           
-          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-          
-          /*--- Wait for this set of non-blocking comm. to complete ---*/
-          
-          MPI_Waitall(1, send_req, send_stat);
+          MPI_Bsend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+
+//          MPI_Isend(Buffer_Send_V, nPrimVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+
+//          /*--- Wait for this set of non-blocking comm. to complete ---*/
+//
+//          MPI_Waitall(1, send_req, send_stat);
           
         }
         
@@ -7843,12 +7845,14 @@ void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_c
         /*--- We only receive the information that belong to other boundary ---*/
         
         if (jProcessor != rank) {
-          
-          MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-          
+
+          MPI_Recv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+
+ //         MPI_Irecv(Buffer_Receive_V, nPrimVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+
           /*--- Wait for the this set of non-blocking recv's to complete ---*/
 
-          MPI_Waitall(1, recv_req, recv_stat);
+//          MPI_Waitall(1, recv_req, recv_stat);
           
         }
         else {
