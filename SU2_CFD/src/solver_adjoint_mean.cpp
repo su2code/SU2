@@ -2286,7 +2286,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
   
-  if (config->GetSystemMeasurements() == US) scale = 144.0;
+  if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
   else scale = 1.0;
   
   /*--- Initialize sensitivities to zero ---*/
@@ -2418,7 +2418,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
-          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex] * Area * scale;
+          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex];
           
         }
       }
@@ -5039,7 +5039,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   double Prandtl_Lam  = config->GetPrandtl_Lam();
   
-  if (config->GetSystemMeasurements() == US) scale = 144.0;
+  if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
   else scale = 1.0;
   
   /*--- Compute gradient of the grid velocity, if applicable ---*/
@@ -5298,7 +5298,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
-          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex] * Area * scale;
+          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex];
           
         }
       }
