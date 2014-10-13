@@ -529,13 +529,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
-
+  
   /* DESCRIPTION: Convergence criteria */
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  /* DESCRIPTION: Flow functional for the Residual criteria */
+  addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO);
   /* DESCRIPTION: Iteration number to begin convergence monitoring */
   addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
   /* DESCRIPTION: Number of elements to apply the criteria */

@@ -395,6 +395,7 @@ private:
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
+	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
 	double Cauchy_Eps,	/*!< \brief Epsilon used for the convergence. */
 	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
@@ -3726,6 +3727,12 @@ public:
 	 * \return Name of the file with the appropriate objective function extension.
 	 */
   string GetObjFunc_Extension(string val_filename);
+  
+        /*!
+  	 * \brief Get functional that is going to be used to evaluate the residual flow convergence.
+  	 * \return Functional that is going to be used to evaluate the residual flow convergence.
+  	 */
+  	unsigned short GetResidual_Func_Flow(void);
 
 	/*!
 	 * \brief Get functional that is going to be used to evaluate the flow convergence.
