@@ -639,15 +639,19 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration,
                                                       double *monitor) {
   
+  const unsigned short nDim = geometry[FinestMesh]->GetnDim();
+  
   switch (RunTime_EqSystem) {
       
     case RUNTIME_FLOW_SYS:
       
       /*--- Calculate the inviscid and viscous forces ---*/
+      
       solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Viscous_Forces(geometry[FinestMesh], config);
       
       /*--- Evaluate convergence monitor ---*/
+      
       if (config->GetConvCriteria() == CAUCHY) {
         if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CDrag();
         if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CLift();
@@ -655,9 +659,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if(config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
+    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
+    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
     		  else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
     	  }
       }
@@ -667,22 +671,25 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
     case RUNTIME_ADJFLOW_SYS:
       
       /*--- Calculate the inviscid and viscous sensitivities ---*/
+      
       solver_container[FinestMesh][ADJFLOW_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       solver_container[FinestMesh][ADJFLOW_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
       /*--- Smooth the inviscid and viscous sensitivities ---*/
+      
       if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJFLOW_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJFLOW_SOL][CONV_BOUND_TERM], config);
       
       /*--- Evaluate convergence monitor ---*/
+      
       if (config->GetConvCriteria() == CAUCHY) {
         if (config->GetCauchy_Func_AdjFlow() == SENS_GEOMETRY) (*monitor) = solver_container[FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
         if (config->GetCauchy_Func_AdjFlow() == SENS_MACH) (*monitor) = solver_container[FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if(config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
+    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
+    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
     		  else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
     	  }
       }
@@ -692,19 +699,21 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
     case RUNTIME_TNE2_SYS:
       
       /*--- Calculate the inviscid and viscous forces ---*/
+      
       solver_container[FinestMesh][TNE2_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][TNE2_SOL]->Viscous_Forces(geometry[FinestMesh], config);
       
       /*--- Evaluate convergence monitor ---*/
+      
       if (config->GetConvCriteria() == CAUCHY) {
         if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CDrag();
         if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CLift();
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if(config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
-    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
+    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
+    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
     		  else (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(4));
     	  }
       }
@@ -714,22 +723,25 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
     case RUNTIME_ADJTNE2_SYS:
       
       /*--- Calculate the inviscid and viscous sensitivities ---*/
+      
       solver_container[FinestMesh][ADJTNE2_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
       solver_container[FinestMesh][ADJTNE2_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
       
       /*--- Smooth the inviscid and viscous sensitivities ---*/
+      
       if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJTNE2_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
       
       /*--- Evaluate convergence monitor ---*/
+      
       if (config->GetConvCriteria() == CAUCHY) {
         if (config->GetCauchy_Func_AdjFlow() == SENS_GEOMETRY) (*monitor) = solver_container[FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
         if (config->GetCauchy_Func_AdjFlow() == SENS_MACH) (*monitor) = solver_container[FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if(config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(0));
-    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(3));
+    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(0));
+    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(3));
     		  else (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(4));
     	  }
       }
@@ -739,25 +751,28 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
     case RUNTIME_LINFLOW_SYS:
       
       /*--- Calculate the inviscid and viscous forces ---*/
+      
       solver_container[FinestMesh][LINFLOW_SOL]->Inviscid_DeltaForces(geometry[FinestMesh], solver_container[FinestMesh], config);
       solver_container[FinestMesh][LINFLOW_SOL]->Viscous_DeltaForces(geometry[FinestMesh], config);
       
       /*--- Evaluate convergence monitor ---*/
+      
       if (config->GetConvCriteria() == CAUCHY) {
         if (config->GetCauchy_Func_LinFlow() == DELTA_DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][LINFLOW_SOL]->GetTotal_CDeltaDrag();
         if (config->GetCauchy_Func_LinFlow() == DELTA_LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][LINFLOW_SOL]->GetTotal_CDeltaLift();
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-    	  if(config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(0));
-    	  else if(config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2 ) (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(3));
+    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(0));
+    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(3));
     		  else (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(4));
     	  }
       }
       
       break;
   }
+  
 }
 
 CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(config) { }
