@@ -7376,6 +7376,7 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
 }
 
 void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   double Pressure, P_Fan, Velocity[3], Velocity2, Entropy, Target_FanFace_Mach = 0.0, Density, Energy,
@@ -7392,33 +7393,42 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
   double *Normal = new double[nDim];
   
   /*--- Retrieve the specified target fan face mach in the nacelle. ---*/
+  
   Target_FanFace_Mach = config->GetFanFace_Mach_Target(Marker_Tag);
   
   /*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
+  
   P_Fan_old = config->GetFanFace_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
   M_Fan_old = config->GetFanFace_Mach(Marker_Tag);
   
   /*--- Compute the Pressure increment ---*/
+  
   P_Fan_inc = ((M_Fan_old/Target_FanFace_Mach) - 1.0) * config->GetPressure_FreeStreamND();
   
   /*--- Estimate the new fan face pressure ---*/
+  
   P_Fan = (1.0 - DampingFactor)*P_Fan_old + DampingFactor * (P_Fan_old + P_Fan_inc);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     /*--- Allocate the value at the outlet ---*/
+    
     V_inflow = GetCharacPrimVar(val_marker, iVertex);
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Index of the closest interior node ---*/
+      
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
@@ -7431,6 +7441,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Current solution at this boundary node ---*/
+      
       V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Subsonic nacelle inflow: there is one incoming characteristic,
@@ -7440,6 +7451,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
        Compute the entropy and the acoustic variable. These
        riemann invariants, as well as the tangential velocity components,
        are extrapolated. ---*/
+      
       Density = V_domain[nDim+2];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -7454,6 +7466,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
       Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
       
       /*--- Compute the new fictious state at the outlet ---*/
+      
       Density    = pow(P_Fan/Entropy,1.0/Gamma);
       Pressure   = P_Fan;
       SoundSpeed = sqrt(Gamma*P_Fan/Density);
@@ -7468,6 +7481,7 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
       if (tkeNeeded) Energy += GetTke_Inf();
       
       /*--- Conservative variables, using the derived quantities ---*/
+      
       V_inflow[0] = Pressure / ( Gas_Constant * Density);
       for (iDim = 0; iDim < nDim; iDim++)
         V_inflow[iDim+1] = Velocity[iDim];
@@ -7476,41 +7490,51 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
       V_inflow[nDim+3] = Energy + Pressure/Density;
       
       /*--- Set various quantities in the solver class ---*/
+      
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_inflow);
       
       /*--- Compute the residual using an upwind scheme ---*/
+      
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
+      
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
+      
       if (viscous) {
         
         /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
         V_inflow[nDim+5] = node[iPoint]->GetLaminarViscosity();
         V_inflow[nDim+6] = node[iPoint]->GetEddyViscosity();
         
         /*--- Set the normal vector and the coordinates ---*/
+        
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
         /*--- Primitive variables, and gradient ---*/
+        
         visc_numerics->SetPrimitive(V_domain, V_inflow);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
         /*--- Turbulent kinetic energy ---*/
+        
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
         /*--- Compute and update residual ---*/
+        
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         LinSysRes.SubtractBlock(iPoint, Residual);
         
         /*--- Jacobian contribution for implicit integration ---*/
+        
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
@@ -7524,11 +7548,11 @@ void CEulerSolver::BC_Nacelle_Inflow(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   double P_Exhaust, T_Exhaust, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
   double *V_exhaust, *V_domain;
-  
   double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
@@ -7538,20 +7562,25 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
   double *Normal = new double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     /*--- Allocate the value at the exhaust ---*/
+    
     V_exhaust = GetCharacPrimVar(val_marker, iVertex);
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
     if (geometry->node[iPoint]->GetDomain()) {
       
       /*--- Index of the closest interior node ---*/
+      
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
@@ -7564,6 +7593,7 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
         UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Current solution at this boundary node ---*/
+      
       V_domain = node[iPoint]->GetPrimitive();
       
       /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
@@ -7571,14 +7601,17 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
        The outgoing Riemann invariant provides the final piece of info. ---*/
       
       /*--- Retrieve the specified total conditions for this inlet. ---*/
+      
       P_Exhaust  = config->GetNozzle_Ptotal(Marker_Tag);
       T_Exhaust  = config->GetNozzle_Ttotal(Marker_Tag);
       
       /*--- Non-dim. the inputs if necessary. ---*/
+      
       P_Exhaust /= config->GetPressure_Ref();
       T_Exhaust /= config->GetTemperature_Ref();
       
       /*--- Store primitives and set some variables for clarity. ---*/
+      
       Density = V_domain[nDim+2];
       Velocity2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -7592,30 +7625,36 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Compute the acoustic Riemann invariant that is extrapolated
        from the domain interior. ---*/
+      
       Riemann   = 2.0*sqrt(SoundSpeed2)/Gamma_Minus_One;
       for (iDim = 0; iDim < nDim; iDim++)
         Riemann += Velocity[iDim]*UnitNormal[iDim];
       
       /*--- Total speed of sound ---*/
+      
       SoundSpeed_Exhaust2 = Gamma_Minus_One*(H_Exhaust - (Energy + Pressure/Density)+0.5*Velocity2) + SoundSpeed2;
       
       /*--- The flow direction is defined by the surface normal ---*/
+      
       for (iDim = 0; iDim < nDim; iDim++)
         Flow_Dir[iDim] = -UnitNormal[iDim];
       
       /*--- Dot product of normal and flow direction. This should
        be negative due to outward facing boundary normal convention. ---*/
+      
       alpha = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         alpha += UnitNormal[iDim]*Flow_Dir[iDim];
       
       /*--- Coefficients in the quadratic equation for the velocity ---*/
+      
       aa =  1.0 + 0.5*Gamma_Minus_One*alpha*alpha;
       bb = -1.0*Gamma_Minus_One*alpha*Riemann;
       cc =  0.5*Gamma_Minus_One*Riemann*Riemann - 2.0*SoundSpeed_Exhaust2/Gamma_Minus_One;
       
       /*--- Solve quadratic equation for velocity magnitude. Value must
        be positive, so the choice of root is clear. ---*/
+      
       dd = bb*bb - 4.0*aa*cc;
       dd = sqrt(max(0.0,dd));
       Vel_Mag   = (-bb + dd)/(2.0*aa);
@@ -7623,9 +7662,11 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
       Velocity2 = Vel_Mag*Vel_Mag;
       
       /*--- Compute speed of sound from total speed of sound eqn. ---*/
+      
       SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
       
       /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
+      
       Mach2 = Velocity2/SoundSpeed2;
       Mach2 = min(1.0,Mach2);
       Velocity2   = Mach2*SoundSpeed2;
@@ -7633,23 +7674,29 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
       SoundSpeed2 = SoundSpeed_Exhaust2 - 0.5*Gamma_Minus_One*Velocity2;
       
       /*--- Compute new velocity vector at the inlet ---*/
+      
       for (iDim = 0; iDim < nDim; iDim++)
         Velocity[iDim] = Vel_Mag*Flow_Dir[iDim];
       
       /*--- Static temperature from the speed of sound relation ---*/
+      
       Temperature = SoundSpeed2/(Gamma*Gas_Constant);
       
       /*--- Static pressure using isentropic relation at a point ---*/
+      
       Pressure = P_Exhaust*pow((Temperature/T_Exhaust),Gamma/Gamma_Minus_One);
       
       /*--- Density at the inlet from the gas law ---*/
+      
       Density = Pressure/(Gas_Constant*Temperature);
       
       /*--- Using pressure, density, & velocity, compute the energy ---*/
+      
       Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
       if (tkeNeeded) Energy += GetTke_Inf();
       
       /*--- Primitive variables, using the derived quantities ---*/
+      
       V_exhaust[0] = Temperature;
       for (iDim = 0; iDim < nDim; iDim++)
         V_exhaust[iDim+1] = Velocity[iDim];
@@ -7658,41 +7705,51 @@ void CEulerSolver::BC_Nacelle_Exhaust(CGeometry *geometry, CSolver **solver_cont
       V_exhaust[nDim+3] = Energy + Pressure/Density;
       
       /*--- Set various quantities in the solver class ---*/
+      
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_exhaust);
       
       /*--- Compute the residual using an upwind scheme ---*/
+      
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
+      
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
       /*--- Viscous contribution ---*/
+      
       if (viscous) {
         
         /*--- Set laminar and eddy viscosity at the infinity ---*/
+        
         V_exhaust[nDim+5] = node[iPoint]->GetLaminarViscosity();
         V_exhaust[nDim+6] = node[iPoint]->GetEddyViscosity();
         
         /*--- Set the normal vector and the coordinates ---*/
+        
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
         
         /*--- Primitive variables, and gradient ---*/
+        
         visc_numerics->SetPrimitive(V_domain, V_exhaust);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
         /*--- Turbulent kinetic energy ---*/
+        
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
         /*--- Compute and update residual ---*/
+        
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         LinSysRes.SubtractBlock(iPoint, Residual);
         
         /*--- Jacobian contribution for implicit integration ---*/
+        
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
