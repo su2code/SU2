@@ -907,6 +907,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  /* DESCRIPTION: Equivalent area scaling factor */
+  addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1E-7);
 
 	/* CONFIG_CATEGORY: Reacting Flow */
   /*--- Options related to the reacting gas mixtures ---*/

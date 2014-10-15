@@ -54,6 +54,7 @@ private:
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
@@ -995,6 +996,13 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
+  
+  /*!
+	 * \brief Get the integration limits for the equivalent area computation.
+	 * \param[in] index - 0 means x_min, and 1 means x_max.
+	 * \return Integration limits for the equivalent area computation.
+	 */
+	double GetEA_ScaleFactor(void);
 
   /*!
 	 * \brief Get the limit value for the adjoint variables.
