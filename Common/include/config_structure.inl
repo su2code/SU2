@@ -62,6 +62,8 @@ inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index
 
 inline double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
 
+inline double CConfig::GetEA_ScaleFactor(void) { return EA_ScaleFactor; }
+
 inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }

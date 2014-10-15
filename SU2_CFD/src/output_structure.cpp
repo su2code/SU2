@@ -6397,7 +6397,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
   unsigned short nDim = geometry->GetnDim();
   double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
-  double ScaleFactor = 1E-6; // The EA Obj. Func. should be ~ force based Obj. Func.
+  double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
 
   int rank = MESH_0;
   
@@ -6863,7 +6863,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           
         if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
         
-        InverseDesign += ScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
+        InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
         
       }
     
@@ -6882,7 +6882,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 
           if ((percentage < 0.1) || (Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
           
-          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += ScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
+          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
         }
       }
     
