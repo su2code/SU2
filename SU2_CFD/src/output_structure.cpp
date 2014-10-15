@@ -6397,7 +6397,8 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
   unsigned short nDim = geometry->GetnDim();
   double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
-  
+  double ScaleFactor = 1E-6; // The EA Obj. Func. should be ~ force based Obj. Func.
+
   int rank = MESH_0;
   
   Mach  = config->GetMach();
@@ -6858,9 +6859,11 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
         
         double Difference = EquivArea_PhiAngle[iPhiAngle][iVertex]-TargetArea_PhiAngle[iPhiAngle][iVertex];
-        if ((Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
+        double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][iVertex]);
+          
+        if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
         
-        InverseDesign += PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
+        InverseDesign += ScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
         
       }
     
@@ -6875,9 +6878,11 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
           
           double Difference = EquivArea_PhiAngle[iPhiAngle][jVertex]-TargetArea_PhiAngle[iPhiAngle][jVertex];
-          if ((Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
+          double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][jVertex]);
+
+          if ((percentage < 0.1) || (Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
           
-          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
+          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += ScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
         }
       }
     
