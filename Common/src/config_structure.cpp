@@ -571,13 +571,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Jacobi implicit smoothing of the correction */
   addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
   /* DESCRIPTION: Damping factor for the residual restriction */
-  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
+  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
   /* DESCRIPTION: Damping factor for the correction prolongation */
-  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
-  /* DESCRIPTION: Maximum number of children in the agglomeration stage */
-  addUnsignedShortOption("MAX_CHILDREN", MaxChildren, 500);
-  /* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
-  addDoubleOption("MAX_DIMENSION", MaxDimension, 0.1);
+  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
 
   /* CONFIG_CATEGORY: Spatial Discretization */
   /*--- Options related to the spatial discretization ---*/
@@ -3821,8 +3817,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
       if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
-      cout << "Max. number of children in the agglomeration stage: " << MaxChildren <<"."<<endl;
-      cout << "Max. length of an agglom. elem. (compared with the domain): " << MaxDimension <<"."<<endl;
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<<endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<<endl;
     }

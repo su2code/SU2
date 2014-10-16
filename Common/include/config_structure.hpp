@@ -244,8 +244,6 @@ private:
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
-	unsigned short MaxChildren;		/*!< \brief Maximum number of children. */
-	double MaxDimension;			/*!< \brief Maximum dimension of the aglomerated element compared with the whole domain. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
@@ -978,12 +976,6 @@ public:
 	void SetRefOriginMoment_Z(unsigned short val_marker, double val_origin);
 
 	/*!
-	 * \brief Get maximum number of children in the agglomeration process.
-	 * \return Maximum number of children.
-	 */
-	unsigned short GetMaxChildren(void);
-
-	/*!
 	 * \brief Get index of the upper and lower horizontal plane.
 	 * \param[in] index - 0 means upper surface, and 1 means lower surface.
 	 * \return Index of the upper and lower surface.
@@ -1037,12 +1029,6 @@ public:
 	 *         and it will use and interpolation.
 	 */
 	unsigned short GetAxis_Orientation(void);
-
-	/*!
-	 * \brief Get the maximum dimension of the agglomerated element compared with the whole domain.
-	 * \return Maximum dimension of the agglomerated element.
-	 */
-	double GetMaxDimension(void);
 
 	/*!
 	 * \brief Get the ratio of density for a free surface problem.

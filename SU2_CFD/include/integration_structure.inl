@@ -43,7 +43,7 @@ inline void CIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolve
 																											CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem, unsigned long Iteration, 
 																											double *monitor) { }
 	
-inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config) { }
+inline void CIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh) { }
 
 inline void CIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver **sol_fine, CSolver **sol_coarse,
 												  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) { }
@@ -59,7 +59,7 @@ inline void CIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem
 inline void CIntegration::SetResidual_Term(CGeometry *geometry, CSolver *flow) { }
 
 inline void CIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
-										  CConfig *config) { }
+										  CConfig *config, unsigned short iMesh) { }
 
 inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
