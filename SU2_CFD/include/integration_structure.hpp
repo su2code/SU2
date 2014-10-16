@@ -203,7 +203,7 @@ public:
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config);
+	virtual void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief A virtual member.
@@ -269,7 +269,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
-								 CConfig *config);
+								 CConfig *config, unsigned short iMesh);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -424,7 +424,7 @@ public:
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config);
+	void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief Compute truncation error in the coarse grid using the fine grid information. 
@@ -478,7 +478,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
-						 CConfig *config);
+						 CConfig *config, unsigned short iMesh);
 };
 
 /*! 
