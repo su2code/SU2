@@ -3991,7 +3991,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   double Pressure, P_Exit, Velocity[3], Velocity2, Enthalpy;
   double Density, Energy, Height;
-  double Vn, SoundSpeed, Mach_Exit, Ubn, a1, LevelSet, Density_Outlet = 0.0;
+  double Vn, SoundSpeed, Mach_Exit, Ubn, a1, LevelSet, Vn_Exit,Riemann,Entropy,Density_Outlet = 0.0;
   double Area, UnitNormal[3];
   double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   
@@ -4082,12 +4082,21 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
           
         } else {
-          
+          /*--- Compute Riemann constant ---*/
+          Entropy = Pressure*pow(1.0/Density,Gamma);
+          Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
           /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
           
-          Vn = 0.0; Ubn = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Vn += Velocity[iDim]*UnitNormal[iDim];
+          /*--- Compute the new fictious state at the outlet ---*/
+          Density    = pow(P_Exit/Entropy,1.0/Gamma);
+          Pressure   = P_Exit;
+          SoundSpeed = sqrt(Gamma*P_Exit/Density);
+          Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+          Velocity2  = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+          }
           
           /*--- Extra boundary term for grid movement ---*/
           
@@ -4101,7 +4110,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           
           /*--- Shorthand for repeated term in the boundary conditions ---*/
           
-          a1 = Gamma*(P_Exit/(Density*Gamma_Minus_One))/(Vn-Ubn);
+          //a1 = Gamma*(P_Exit/(Density*Gamma_Minus_One))/(Vn-Ubn);
+          a1 = sqrt(Gamma*P_Exit/Density)/(Gamma_Minus_One*(Vn-Ubn));
           
           /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
           
