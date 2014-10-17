@@ -970,8 +970,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case NO_CENTERED : cout << "No centered scheme." << endl; break;
           case LAX :
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM]       = new CCentLax_TNE2(nDim,nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] =
+                  new CCentLax_TNE2(nDim,nVar_TNE2, nPrimVar_TNE2,
+                                    nPrimVarGrad_TNE2, config     );
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2,
+                                   nPrimVarGrad_TNE2, config       );
             }
             break;
           default : cout << "Centered scheme not implemented." << endl; exit(1); break;
@@ -984,36 +988,41 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
           case ROE:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] =
+                  new CUpwRoe_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                   nPrimVarGrad_TNE2, config      );
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwRoe_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2,
+                                   nPrimVarGrad_TNE2, config       );
             }
             break;
             
           case MSW:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwMSW_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] =
+                  new CUpwMSW_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                   nPrimVarGrad_TNE2, config      );
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwMSW_TNE2(nDim, nVar_TNE2,  nPrimVar_TNE2,
+                                   nPrimVarGrad_TNE2, config       );
             }
             break;
             
           case AUSM:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] =
+                  new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwAUSM_TNE2(nDim, nVar_TNE2, config);
             }
             break;
             
           case AUSMPWPLUS:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwAUSMPWplus_TNE2(nDim, nVar_TNE2, config);
-              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwAUSMPWplus_TNE2(nDim, nVar_TNE2, config);
-            }
-            break;
-            
-          case TURKEL:
-            for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              //                numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwRoe_Turkel_TNE2(nDim, nVar_TNE2, config);
-              //                numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_Turkel_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_TERM] =
+                  new CUpwAUSMPWplus_TNE2(nDim, nVar_TNE2, config);
+              numerics_container[iMGlevel][TNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwAUSMPWplus_TNE2(nDim, nVar_TNE2, config);
             }
             break;
             
@@ -1040,19 +1049,29 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case AVG_GRAD :
         /*--- Compressible TNE2 ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM]       = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM]       =
+              new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                nPrimVarGrad_TNE2, config      );
+          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] =
+              new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                nPrimVarGrad_TNE2, config      );
         }
         break;
       case AVG_GRAD_CORRECTED :
         /*--- Compressible TNE2 ---*/
-        numerics_container[MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+        numerics_container[MESH_0][TNE2_SOL][VISC_TERM] =
+            new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                       nPrimVarGrad_TNE2, config      );
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][VISC_TERM] =
+              new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                         nPrimVarGrad_TNE2, config      );
         }
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][VISC_BOUND_TERM] =
+             new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                                        nPrimVarGrad_TNE2, config      );
         }
         break;
       case GALERKIN :
@@ -1070,7 +1089,9 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       case PIECEWISE_CONSTANT :
         
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] =
+              new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                               nPrimVarGrad_TNE2, config      );
         }
         
         break;
@@ -1449,31 +1470,50 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         break;
       case SPACE_CENTERED :
         switch (config->GetKind_Centered_AdjTNE2()) {
-          case NO_CENTERED : cout << "No centered scheme." << endl; break;
-          case LAX : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config); break;
-          case JST : numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] = new CCentJST_AdjTNE2(nDim, nVar_Adj_TNE2, config); break;
-          default : cout << "Centered scheme not implemented." << endl; exit(1); break;
+          case NO_CENTERED :
+            cout << "No centered scheme." << endl;
+            break;
+          case LAX :
+            numerics_container[MESH_0][ADJTNE2_SOL][CONV_TERM] =
+                new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                     nPrimVarGrad_Adj_TNE2, config); break;
+          default :
+            cout << "Centered scheme not implemented." << endl;
+            exit(1);
+            break;
         }
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] =
+          new CCentLax_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                               nPrimVarGrad_Adj_TNE2, config);
         
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] =
+              new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                  nPrimVarGrad_Adj_TNE2, config          );
         break;
       case SPACE_UPWIND :
         switch (config->GetKind_Upwind_AdjTNE2()) {
           case NO_UPWIND : cout << "No upwind scheme." << endl; break;
           case ROE:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] =
+                  new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                      nPrimVarGrad_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwRoe_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                      nPrimVarGrad_Adj_TNE2, config);
             }
             break;
           case SW:
             for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] = new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
-              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] = new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_TERM] =
+                  new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                     nPrimVarGrad_Adj_TNE2, config          );
+              numerics_container[iMGlevel][ADJTNE2_SOL][CONV_BOUND_TERM] =
+                  new CUpwSW_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                     nPrimVarGrad_Adj_TNE2, config          );
             }
             break;
           default : cout << "Upwind scheme not implemented." << endl; exit(1); break;
@@ -1491,17 +1531,23 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         break;
       case AVG_GRAD :
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] =
+              new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] =
+              new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
         }
         break;
         
       case AVG_GRAD_CORRECTED :
-        numerics_container[MESH_0][ADJTNE2_SOL][VISC_TERM] = new CAvgGradCorrected_AdjTNE2(nDim, nVar_Adj_TNE2, config);
-        numerics_container[MESH_0][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+        numerics_container[MESH_0][ADJTNE2_SOL][VISC_TERM] =
+            new CAvgGradCorrected_AdjTNE2(nDim, nVar_Adj_TNE2, config);
+        numerics_container[MESH_0][ADJTNE2_SOL][VISC_BOUND_TERM] =
+            new CAvgGrad_AdjTNE2(nDim, nVar_Adj_TNE2, config);
         for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_Flow, config);
-          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjTNE2(nDim, nVar_Adj_Flow, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_TERM] =
+              new CAvgGrad_AdjTNE2(nDim, nVar_Adj_Flow, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][VISC_BOUND_TERM] =
+              new CAvgGrad_AdjTNE2(nDim, nVar_Adj_Flow, config);
         }
         break;
         
@@ -1516,9 +1562,12 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
         break;
       case PIECEWISE_CONSTANT :
         for (iMGlevel = 0; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
-          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-          
-          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_SECOND_TERM] = new CSource_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2, nPrimVarGrad_Adj_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_FIRST_TERM] =
+              new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2,
+                               nPrimVarGrad_TNE2, config);
+          numerics_container[iMGlevel][ADJTNE2_SOL][SOURCE_SECOND_TERM] =
+              new CSource_AdjTNE2(nDim, nVar_Adj_TNE2, nPrimVar_Adj_TNE2,
+                                  nPrimVarGrad_Adj_TNE2, config);
         }
         break;
       default :

@@ -207,6 +207,7 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
       }
     }
   }
+  
 }
 
 CUpwSW_AdjTNE2::CUpwSW_AdjTNE2(unsigned short val_nDim,
@@ -231,17 +232,19 @@ CUpwSW_AdjTNE2::CUpwSW_AdjTNE2(unsigned short val_nDim,
   DiffPsi    = new double[nVar];
   Lambda_i   = new double[nVar];
   Lambda_j   = new double[nVar];
-  Ai     = new double* [nVar];
-  Aj     = new double* [nVar];
-  P      = new double* [nVar];
-  invP   = new double* [nVar];
-  PLPinv = new double* [nVar];
+  Pi      = new double* [nVar];
+  Pj      = new double* [nVar];
+  invPi   = new double* [nVar];
+  invPj   = new double* [nVar];
+  PLPinvi = new double* [nVar];
+  PLPinvj = new double* [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Ai[iVar]     = new double [nVar];
-    Aj[iVar]     = new double [nVar];
-    P[iVar]      = new double [nVar];
-    invP[iVar]   = new double [nVar];
-    PLPinv[iVar] = new double [nVar];
+    Pi[iVar]      = new double [nVar];
+    Pj[iVar]      = new double [nVar];
+    invPi[iVar]   = new double [nVar];
+    invPj[iVar]   = new double [nVar];
+    PLPinvi[iVar] = new double [nVar];
+    PLPinvj[iVar] = new double [nVar];
   }
   
 }
@@ -253,15 +256,19 @@ CUpwSW_AdjTNE2::~CUpwSW_AdjTNE2(void) {
 	delete [] Lambda_i;
   delete [] Lambda_j;
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    delete [] Ai[iVar];
-    delete [] Aj[iVar];
-    delete [] P[iVar];
-    delete [] invP[iVar];
-    delete [] PLPinv[iVar];
+    delete [] Pi[iVar];
+    delete [] Pj[iVar];
+    delete [] invPi[iVar];
+    delete [] invPj[iVar];
+    delete [] PLPinvi[iVar];
+    delete [] PLPinvj[iVar];
   }
-  delete [] P;
-  delete [] invP;
-  delete [] PLPinv;
+  delete [] Pi;
+  delete [] Pj;
+  delete [] invPi;
+  delete [] invPj;
+  delete [] PLPinvi;
+  delete [] PLPinvj;
 }
 
 void CUpwSW_AdjTNE2::ComputeResidual (double *val_residual_i,
@@ -271,16 +278,17 @@ void CUpwSW_AdjTNE2::ComputeResidual (double *val_residual_i,
                                       double **val_Jacobian_ji,
                                       double **val_Jacobian_jj,
                                       CConfig *config) {
-  
+
   unsigned short iDim, iVar, jVar, kVar;
-  double Area, ProjVel_i, ProjVel_j;
+  double uni, unj;
   
-  /*--- Roe flux: Fij = (Fi + Fj)/2 - 1/2*P|Lam|P^-1 * (Uj - Ui) ---*/
-  // Notes:
-  // 1) Non-conservative method, so for Fij -> Fi = A_i*Psi_i & Fj = A_i*Psi_j
-  //    and Fji -> Fi = A_j*Psi_i & Fj = A_j*Psi_j
-  // 2) Linear upwinding, so eigenvalue & eigenvector decomposition can be
-  //    calculated using interface ij state (mean variables)
+  /*--- Steger-Warming Flux Vector Splitting Method ---*/
+  //
+  // Phi^c = Psi^T (A^c \cdot n)
+  // \hat{Phi}^c = Psi_i^T (Ai^c \cdot n)^+ + Psi_j^T (Aj^c \cdot n)
+  //
+  // Where A+/- = P (Lambda+/-) Pinv
+
   
   /*--- Initialize the residuals (and Jacobians) ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -305,108 +313,262 @@ void CUpwSW_AdjTNE2::ComputeResidual (double *val_residual_i,
   for (iDim = 0; iDim < nDim; iDim++)
     UnitNormal[iDim] = Normal[iDim]/Area;
   CreateBasis(UnitNormal);
+
   
-  /*--- Calculate inviscid projected Jacobians ---*/
-  GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 1.0, Ai);
-  GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 1.0, Aj);
+  /*---+++ Calculate the i->j flux +++---*/
   
-  /*--- Inviscid portion of the flux, A^T*Psi ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
-      val_residual_i[iVar] +=  0.5*Ai[jVar][iVar]*(Psi_i[jVar]+Psi_j[jVar]);
-      val_residual_j[iVar] += -0.5*Aj[jVar][iVar]*(Psi_i[jVar]+Psi_j[jVar]);
-    }
-  }
   
-  for (iVar = 0; iVar < nVar; iVar++)
-    DiffPsi[iVar] = Psi_j[iVar] - Psi_i[iVar];
-  
-  ProjVel_i = 0.0;
-  ProjVel_j = 0.0;
+  /*--- Calculate auxiliary quantities ---*/
+  uni = 0; unj = 0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    ProjVel_i += V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
-    ProjVel_j += V_j[VEL_INDEX+iDim]*UnitNormal[iDim];
+    uni += V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
+    unj += V_j[VEL_INDEX+iDim]*UnitNormal[iDim];
   }
   
-  /*--- Calculate eigenvalues of the i & j states ---*/
+  /*--- Calculate the eigenvalues ---*/
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++) {
-    Lambda_i[iVar] = ProjVel_i;
-    Lambda_j[iVar] = ProjVel_j;
+    Lambda_i[iVar] = uni;
+    Lambda_j[iVar] = unj;
   }
-  Lambda_i[nSpecies+nDim-1] = ProjVel_i + V_i[A_INDEX];
-  Lambda_j[nSpecies+nDim-1] = ProjVel_j + V_j[A_INDEX];
-  Lambda_i[nSpecies+nDim]   = ProjVel_i - V_i[A_INDEX];
-  Lambda_j[nSpecies+nDim]   = ProjVel_j - V_j[A_INDEX];
-  Lambda_i[nSpecies+nDim+1] = ProjVel_i;
-  Lambda_j[nSpecies+nDim+1] = ProjVel_j;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Lambda_i[iVar] = fabs(Lambda_i[iVar]);
-    Lambda_j[iVar] = fabs(Lambda_j[iVar]);
-  }
+  Lambda_i[nSpecies+nDim-1] = uni + V_i[A_INDEX];
+  Lambda_j[nSpecies+nDim-1] = unj + V_j[A_INDEX];
+  Lambda_i[nSpecies+nDim]   = uni - V_i[A_INDEX];
+  Lambda_j[nSpecies+nDim]   = unj - V_j[A_INDEX];
+  Lambda_i[nSpecies+nDim+1] = uni;
+  Lambda_j[nSpecies+nDim+1] = unj;
   
   /*--- Calculate left and right eigenvector matrices ---*/
-  GetPMatrix(U_i, V_i, dPdU_i, UnitNormal, l, m, P);
-  GetPMatrix_inv(U_i, V_i, dPdU_i, UnitNormal, l, m, invP);
-  
-  /*--- Calculate eigenvalue/eigenvector decomposition for i ---*/
+  GetPMatrix    (U_i, V_i, dPdU_i, UnitNormal, l, m, Pi   );
+  GetPMatrix_inv(U_i, V_i, dPdU_i, UnitNormal, l, m, invPi);
+  GetPMatrix    (U_j, V_j, dPdU_j, UnitNormal, l, m, Pj   );
+  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invPj);
+
+  /*--- Calculate Ai+ and Aj- ---*/
   // |PLPinv| = P x |Lambda| x inverse P
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      PLPinv[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++)
-        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_i[kVar]*invP[kVar][jVar];
-    }
-  }
-  
-  /*--- Calculate the 'viscous' portion of the flux at i ---*/
-  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
-      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
-  
-  /*--- Populate Jacobian matrices ---*/
-  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
-  //       Only multiply PLP by area to properly account for integration.
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
-        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+      PLPinvi[iVar][jVar] = 0.0;
+      PLPinvj[iVar][jVar] = 0.0;
+      for (kVar = 0; kVar < nVar; kVar++) {
+        PLPinvi[iVar][jVar] += Pi[iVar][kVar]
+                             * (Lambda_i[kVar] + fabs(Lambda_i[kVar]))
+                             * invPi[kVar][jVar];
+        PLPinvj[iVar][jVar] += Pj[iVar][kVar]
+                             * (Lambda_j[kVar] - fabs(Lambda_j[kVar]))
+                             * invPj[kVar][jVar];
       }
     }
   }
   
-  /*--- Calculate left and right eigenvector matrices for j ---*/
-  GetPMatrix(U_j, V_j, dPdU_j, UnitNormal, l, m, P);
-  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invP);
+  /*--- Populate the flux residual: Ai+^T Psi_i + Aj-^T Psi_j ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual_i[iVar] = 0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_residual_i[iVar] += (PLPinvi[jVar][iVar]*Psi_i[jVar] +
+                               PLPinvj[jVar][iVar]*Psi_j[jVar]  )*Area;
+    }
+  }
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ii[iVar][jVar] = PLPinvi[jVar][iVar]*Area;
+        val_Jacobian_ij[iVar][jVar] = PLPinvj[jVar][iVar]*Area;
+      }
+  }
   
-  /*--- Calculate eigenvalue/eigenvector decomposition for i ---*/
+  
+  /*---+++ Calculate the j->i flux +++---*/
+  
+  
+  /*--- Reverse the direction of the normal vector ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    UnitNormal[iDim] = -UnitNormal[iDim];
+    uni = -uni;
+    unj = -unj;
+  }
+  CreateBasis(UnitNormal);
+  
+  /*--- Calculate the eigenvalues ---*/
+  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++) {
+    Lambda_i[iVar] = uni;
+    Lambda_j[iVar] = unj;
+  }
+  Lambda_i[nSpecies+nDim-1] = uni + V_i[A_INDEX];
+  Lambda_j[nSpecies+nDim-1] = unj + V_j[A_INDEX];
+  Lambda_i[nSpecies+nDim]   = uni - V_i[A_INDEX];
+  Lambda_j[nSpecies+nDim]   = unj - V_j[A_INDEX];
+  Lambda_i[nSpecies+nDim+1] = uni;
+  Lambda_j[nSpecies+nDim+1] = unj;
+  
+  /*--- Calculate left and right eigenvector matrices ---*/
+  GetPMatrix    (U_i, V_i, dPdU_i, UnitNormal, l, m, Pi   );
+  GetPMatrix_inv(U_i, V_i, dPdU_i, UnitNormal, l, m, invPi);
+  GetPMatrix    (U_j, V_j, dPdU_j, UnitNormal, l, m, Pj   );
+  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invPj);
+  
+  /*--- Calculate Aj+ and Ai- ---*/
   // |PLPinv| = P x |Lambda| x inverse P
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
-      PLPinv[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < nVar; kVar++)
-        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_j[kVar]*invP[kVar][jVar];
-    }
-  }
-  
-  /*--- Calculate the 'viscous' portion of the flux at j ---*/
-  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
-      val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
-  
-  /*--- Populate Jacobian matrices ---*/
-  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
-  //       Only multiply PLP by area to properly account for integration.
-  if (implicit) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
-        val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+      PLPinvi[iVar][jVar] = 0.0;
+      PLPinvj[iVar][jVar] = 0.0;
+      for (kVar = 0; kVar < nVar; kVar++) {
+        PLPinvi[iVar][jVar] += Pi[iVar][kVar]
+                             * (Lambda_i[kVar] - fabs(Lambda_i[kVar]))
+                             * invPi[kVar][jVar];
+        PLPinvj[iVar][jVar] += Pj[iVar][kVar]
+                             * (Lambda_j[kVar] + fabs(Lambda_j[kVar]))
+                             * invPj[kVar][jVar];
       }
     }
   }
+  
+  /*--- Populate the flux residual: Aj+^T Psi_j + Ai-^T Psi_i ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual_j[iVar] = 0;
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_residual_j[iVar] += (PLPinvj[jVar][iVar]*Psi_j[jVar] +
+                               PLPinvi[jVar][iVar]*Psi_i[jVar]  )*Area;
+    }
+  }
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ji[iVar][jVar] = PLPinvi[jVar][iVar]*Area;
+        val_Jacobian_jj[iVar][jVar] = PLPinvj[jVar][iVar]*Area;
+      }
+  }
+  
+  
+  ////////////////// OLD //////////////////
+//  unsigned short iDim, iVar, jVar, kVar;
+//  double Area, ProjVel_i, ProjVel_j;
+//
+//  /*--- Initialize the residuals (and Jacobians) ---*/
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    val_residual_i[iVar] = 0.0;
+//    val_residual_j[iVar] = 0.0;
+//  }
+//  if (implicit) {
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_ii[iVar][jVar] = 0.0;
+//        val_Jacobian_ij[iVar][jVar] = 0.0;
+//        val_Jacobian_ji[iVar][jVar] = 0.0;
+//        val_Jacobian_jj[iVar][jVar] = 0.0;
+//      }
+//  }
+//  
+//  /*--- Calculate geometric quantities ---*/
+//  Area = 0.0;
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    Area += Normal[iDim]*Normal[iDim];
+//  Area = sqrt(Area);
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    UnitNormal[iDim] = Normal[iDim]/Area;
+//  CreateBasis(UnitNormal);
+//  
+//  /*--- Calculate inviscid projected Jacobians ---*/
+//  GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 1.0, Ai);
+//  GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 1.0, Aj);
+//  
+//  /*--- Inviscid portion of the flux, A^T*Psi ---*/
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      val_residual_i[iVar] +=  0.5*Ai[jVar][iVar]*(Psi_i[jVar]+Psi_j[jVar]);
+//      val_residual_j[iVar] += -0.5*Aj[jVar][iVar]*(Psi_i[jVar]+Psi_j[jVar]);
+//    }
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    DiffPsi[iVar] = Psi_j[iVar] - Psi_i[iVar];
+//  
+//  ProjVel_i = 0.0;
+//  ProjVel_j = 0.0;
+//  for (iDim = 0; iDim < nDim; iDim++) {
+//    ProjVel_i += V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
+//    ProjVel_j += V_j[VEL_INDEX+iDim]*UnitNormal[iDim];
+//  }
+//  
+//  /*--- Calculate eigenvalues of the i & j states ---*/
+//  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++) {
+//    Lambda_i[iVar] = ProjVel_i;
+//    Lambda_j[iVar] = ProjVel_j;
+//  }
+//  Lambda_i[nSpecies+nDim-1] = ProjVel_i + V_i[A_INDEX];
+//  Lambda_j[nSpecies+nDim-1] = ProjVel_j + V_j[A_INDEX];
+//  Lambda_i[nSpecies+nDim]   = ProjVel_i - V_i[A_INDEX];
+//  Lambda_j[nSpecies+nDim]   = ProjVel_j - V_j[A_INDEX];
+//  Lambda_i[nSpecies+nDim+1] = ProjVel_i;
+//  Lambda_j[nSpecies+nDim+1] = ProjVel_j;
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    Lambda_i[iVar] = fabs(Lambda_i[iVar]);
+//    Lambda_j[iVar] = fabs(Lambda_j[iVar]);
+//  }
+//  
+//  /*--- Calculate left and right eigenvector matrices ---*/
+//  GetPMatrix(U_i, V_i, dPdU_i, UnitNormal, l, m, P);
+//  GetPMatrix_inv(U_i, V_i, dPdU_i, UnitNormal, l, m, invP);
+//  
+//  /*--- Calculate eigenvalue/eigenvector decomposition for i ---*/
+//  // |PLPinv| = P x |Lambda| x inverse P
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      PLPinv[iVar][jVar] = 0.0;
+//      for (kVar = 0; kVar < nVar; kVar++)
+//        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_i[kVar]*invP[kVar][jVar];
+//    }
+//  }
+//  
+//  /*--- Calculate the 'viscous' portion of the flux at i ---*/
+//  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+//  
+//  /*--- Populate Jacobian matrices ---*/
+//  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
+//  //       Only multiply PLP by area to properly account for integration.
+//  if (implicit) {
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+//        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+//      }
+//    }
+//  }
+//  
+//  /*--- Calculate left and right eigenvector matrices for j ---*/
+//  GetPMatrix(U_j, V_j, dPdU_j, UnitNormal, l, m, P);
+//  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invP);
+//  
+//  /*--- Calculate eigenvalue/eigenvector decomposition for i ---*/
+//  // |PLPinv| = P x |Lambda| x inverse P
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      PLPinv[iVar][jVar] = 0.0;
+//      for (kVar = 0; kVar < nVar; kVar++)
+//        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda_j[kVar]*invP[kVar][jVar];
+//    }
+//  }
+//  
+//  /*--- Calculate the 'viscous' portion of the flux at j ---*/
+//  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    for (jVar = 0; jVar < nVar; jVar++)
+//      val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+//  
+//  /*--- Populate Jacobian matrices ---*/
+//  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
+//  //       Only multiply PLP by area to properly account for integration.
+//  if (implicit) {
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+//        val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+//      }
+//    }
+//  }
 }
 
 
@@ -903,7 +1065,7 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     UnitNormal[iDim] = Normal[iDim]/Area;
     theta += UnitNormal[iDim]*UnitNormal[iDim];
   }
-  if (iDim == 2) {
+  if (nDim == 2) {
     thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
     thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
     etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
@@ -997,7 +1159,7 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
   /*--- Calculate auxiliary quantities ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      dYdrs[iSpecies][jSpecies] = 0.0;
+      dYdrs[iSpecies][jSpecies]  = 0.0;
       dJddrs[iSpecies][jSpecies] = 0.0;
     }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1190,17 +1352,17 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
       }
       val_Jacobian_ij[iSpecies][nSpecies+nDim] += -mu_i/rho_i*(u2_i*theta/dij - un_i*un_i/(3*dij))*Area;
     }
-    if (iDim == 2) {
+    if (nDim == 2) {
       // x-momentum
       val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
       val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
-      val_Jacobian_ij[nSpecies][nSpecies+3]   += mu_i/(rho_i*dij) *
+      val_Jacobian_ij[nSpecies][nSpecies+2]   += mu_i/(rho_i*dij) *
                                                  (vel_i[0]*theta +
                                                   un_i*UnitNormal[0]/3.0)*Area;
       // y-momentum
       val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
       val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
-      val_Jacobian_ij[nSpecies+1][nSpecies+3] += mu_i/(rho_i*dij) *
+      val_Jacobian_ij[nSpecies+1][nSpecies+2] += mu_i/(rho_i*dij) *
                                                  (vel_i[1]*theta +
                                                   un_i*UnitNormal[1]/3.0)*Area;
     } else {
@@ -1354,7 +1516,7 @@ void CAvgGrad_AdjTNE2::ComputeResidual(double *val_residual_i,
     }
     
     /*--- Jacobian from k = 2 viscous flux ---*/
-    if (iDim == 2) {
+    if (nDim == 2) {
       // x-momentum
       val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
       val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
@@ -1520,7 +1682,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
   double mu_i, mu_j, ktr_i, ktr_j, kve_i, kve_j, *D_i, *D_j;
   double rho, rho_i, rho_j, un, Ys;
   double GdotPhi, GPsiEdotVel, GPsiEdotn, GPsiEvedotn;
-  double dij, dist_ij_2, theta, thetax, thetay, thetaz, etax, etay, etaz;
+  double dij, theta, thetax, thetay, thetaz, etax, etay, etaz;
   
   /*--- Initialize residuals ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1548,12 +1710,18 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     UnitNormal[iDim] = Normal[iDim]/Area;
     theta += UnitNormal[iDim]*UnitNormal[iDim];
   }
-  thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
-  thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
-  thetaz = theta + (UnitNormal[2]*UnitNormal[2])/3.0;
-  etax   = UnitNormal[1]*UnitNormal[2]/3.0;
-  etay   = UnitNormal[0]*UnitNormal[2]/3.0;
-  etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+  if (nDim == 2) {
+    thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
+    thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
+    etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+  } else {
+    thetax = theta + (UnitNormal[0]*UnitNormal[0])/3.0;
+    thetay = theta + (UnitNormal[1]*UnitNormal[1])/3.0;
+    thetaz = theta + (UnitNormal[2]*UnitNormal[2])/3.0;
+    etax   = UnitNormal[1]*UnitNormal[2]/3.0;
+    etay   = UnitNormal[0]*UnitNormal[2]/3.0;
+    etaz   = UnitNormal[0]*UnitNormal[1]/3.0;
+  }
   
   /*--- Get flow state (Rename for convenience) ---*/
   D_i   = Diffusion_Coeff_i;
@@ -1578,38 +1746,42 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
   }
   
   /*--- Compute vector going from iPoint to jPoint ---*/
-	dist_ij_2 = 0.0;
+	dij = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+		dij += Edge_Vector[iDim]*Edge_Vector[iDim];
 	}
+  dij = sqrt(dij);
   
 	/*--- Mean gradient approximation ---*/
   // Note: Projection of the mean gradient in the direction of the edge, weiss correction
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Proj_Mean_GPsi[iVar] = 0.0;
 		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GPsi[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] + PsiVar_Grad_j[iVar][iDim]);
+			Mean_GPsi[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] +
+                                   PsiVar_Grad_j[iVar][iDim]  );
 			Proj_Mean_GPsi[iVar] += Mean_GPsi[iVar][iDim]*Edge_Vector[iDim];
 		}
 		for (iDim = 0; iDim < nDim; iDim++)
-			Mean_GPsi[iVar][iDim] -= (Proj_Mean_GPsi[iVar] - (Psi_j[iVar]-Psi_i[iVar]))*Edge_Vector[iDim]/dist_ij_2;
+			Mean_GPsi[iVar][iDim] -= (Proj_Mean_GPsi[iVar]     -
+                                (Psi_j[iVar]-Psi_i[iVar]) )
+                             * Edge_Vector[iDim]/(dij*dij);
 	}
   
   /*--- Assign mean gradients ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       Mean_GradPsirs[iSpecies][iDim] = Mean_GPsi[iSpecies][iDim];
-    Mean_GradPsiE[iDim]   = Mean_GPsi[nSpecies+nDim][iDim];
-    Mean_GradPsiEve[iDim] = Mean_GPsi[nSpecies+nDim+1][iDim];
+    Mean_GradPsiE[iDim]              = Mean_GPsi[nSpecies+nDim][iDim];
+    Mean_GradPsiEve[iDim]            = Mean_GPsi[nSpecies+nDim+1][iDim];
 		for (jDim = 0; jDim < nDim; jDim++)
-      Mean_GradPhi[iDim][jDim] =  Mean_GPsi[nSpecies+iDim][jDim];
+      Mean_GradPhi[iDim][jDim]       =  Mean_GPsi[nSpecies+iDim][jDim];
   }
   
   /*--- Calculate auxiliary quantities for SigmaPhi ---*/
-  GdotPhi     = 0.0;
+  GdotPhi = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    GdotPhi     += Mean_GradPhi[iDim][iDim];
+    GdotPhi += Mean_GradPhi[iDim][iDim];
   
   /*--- Project mean gradient of PsiRs, PsiE & PsiEve into normal ---*/
   GPsiEdotn   = 0.0;
@@ -1633,7 +1805,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       SigmaPhi[iDim][jDim] += Mean_GradPhi[iDim][jDim] +
-      Mean_GradPhi[jDim][iDim];
+                              Mean_GradPhi[jDim][iDim];
     }
     SigmaPhi[iDim][iDim]  -= 2.0/3.0*GdotPhi;
   }
@@ -1645,7 +1817,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
   /*--- Calculate auxiliary quantities ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      dYdrs[iSpecies][jSpecies] = 0.0;
+      dYdrs[iSpecies][jSpecies]  = 0.0;
       dJddrs[iSpecies][jSpecies] = 0.0;
     }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1664,7 +1836,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     Ys = V_i[RHOS_INDEX+iSpecies]/rho_i;
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       dJddrs[iSpecies][jSpecies] = -rho_i*D_i[iSpecies]*dYdrs[iSpecies][jSpecies]
-      + Ys*DdYk[jSpecies];
+                                 + Ys*DdYk[jSpecies];
     }
   }
   
@@ -1672,9 +1844,9 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
       val_residual_i[iSpecies] +=
-      GPsirsdotn[jSpecies]*(-dJddrs[jSpecies][iSpecies])
-      + GPsiEdotn           *(-dJddrs[jSpecies][iSpecies])*hs_i[jSpecies]
-      + GPsiEvedotn         *(-dJddrs[jSpecies][iSpecies])*eve_i[jSpecies];
+          GPsirsdotn[jSpecies]*(-dJddrs[jSpecies][iSpecies])
+        + GPsiEdotn           *(-dJddrs[jSpecies][iSpecies])*hs_i[jSpecies]
+        + GPsiEvedotn         *(-dJddrs[jSpecies][iSpecies])*eve_i[jSpecies];
     }
   }
   
@@ -1693,7 +1865,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
   for (iDim = 0; iDim < nDim; iDim++) {
     for (jDim = 0; jDim < nDim; jDim++) {
       SigmaPsiE[iDim][jDim] += Mean_GradPsiE[iDim]*vel_i[jDim] +
-      Mean_GradPsiE[jDim]*vel_i[iDim];
+                               Mean_GradPsiE[jDim]*vel_i[iDim];
     }
     SigmaPsiE[iDim][iDim] -= 2.0/3.0*GPsiEdotVel;
   }
@@ -1703,7 +1875,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     for (jDim = 0; jDim < nDim; jDim++) {
       val_residual_i[nSpecies+iDim] += mu_i/rho_i*(SigmaPhi[iDim][jDim] +
                                                    SigmaPsiE[iDim][jDim]  )
-      * Normal[jDim];
+                                     * Normal[jDim];
     }
   }
   
@@ -1737,24 +1909,44 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     }
     
     /*--- Jacobian from k = 2 viscous flux ---*/
-    // x-momentum
-    val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
-    val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
-    val_Jacobian_ij[nSpecies][nSpecies+2]   += mu_i/(rho_i*dij) * etay   * Area;
-    val_Jacobian_ij[nSpecies][nSpecies+3]   += mu_i/(rho_i*dij) *
-    (vel_i[0]*theta+un*UnitNormal[0]/3.0)*Area;
-    // y-momentum
-    val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
-    val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
-    val_Jacobian_ij[nSpecies+1][nSpecies+2] += mu_i/(rho_i*dij) * etax   * Area;
-    val_Jacobian_ij[nSpecies+1][nSpecies+3] += mu_i/(rho_i*dij) *
-    (vel_i[1]*theta+un*UnitNormal[1]/3.0)*Area;
-    // z-momentum
-    val_Jacobian_ij[nSpecies+2][nSpecies]   += mu_i/(rho_i*dij) * etay   * Area;
-    val_Jacobian_ij[nSpecies+2][nSpecies+1] += mu_i/(rho_i*dij) * etax   * Area;
-    val_Jacobian_ij[nSpecies+2][nSpecies+2] += mu_i/(rho_i*dij) * thetaz * Area;
-    val_Jacobian_ij[nSpecies+2][nSpecies+3] += mu_i/(rho_i*dij) *
-    (vel_i[2]*theta+un*UnitNormal[2]/3.0)*Area;
+    
+    if (nDim == 2) {
+      // x-momentum
+      val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+2]   += mu_i/(rho_i*dij) *
+                                                 (vel_i[0]*theta +
+                                                  un*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+2] += mu_i/(rho_i*dij) *
+                                                 (vel_i[1]*theta +
+                                                  un*UnitNormal[1]/3.0)*Area;
+      
+    } else {
+      // x-momentum
+      val_Jacobian_ij[nSpecies][nSpecies]     += mu_i/(rho_i*dij) * thetax * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+1]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+2]   += mu_i/(rho_i*dij) * etay   * Area;
+      val_Jacobian_ij[nSpecies][nSpecies+3]   += mu_i/(rho_i*dij) *
+                                                 (vel_i[0]*theta +
+                                                  un*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_ij[nSpecies+1][nSpecies]   += mu_i/(rho_i*dij) * etaz   * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+1] += mu_i/(rho_i*dij) * thetay * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+2] += mu_i/(rho_i*dij) * etax   * Area;
+      val_Jacobian_ij[nSpecies+1][nSpecies+3] += mu_i/(rho_i*dij) *
+                                                 (vel_i[1]*theta +
+                                                  un*UnitNormal[1]/3.0)*Area;
+      // z-momentum
+      val_Jacobian_ij[nSpecies+2][nSpecies]   += mu_i/(rho_i*dij) * etay   * Area;
+      val_Jacobian_ij[nSpecies+2][nSpecies+1] += mu_i/(rho_i*dij) * etax   * Area;
+      val_Jacobian_ij[nSpecies+2][nSpecies+2] += mu_i/(rho_i*dij) * thetaz * Area;
+      val_Jacobian_ij[nSpecies+2][nSpecies+3] += mu_i/(rho_i*dij) *
+                                                 (vel_i[2]*theta +
+                                                  un*UnitNormal[2]/3.0)*Area;
+    }
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1837,7 +2029,7 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     for (jDim = 0; jDim < nDim; jDim++) {
       val_residual_j[nSpecies+iDim] += mu_j/rho_j*(SigmaPhi[iDim][jDim] +
                                                    SigmaPsiE[iDim][jDim]  )
-      * Normal[jDim];
+                                     * Normal[jDim];
     }
   }
   
@@ -1875,24 +2067,42 @@ void CAvgGradCorrected_AdjTNE2::ComputeResidual(double *val_residual_i,
     
     
     /*--- Jacobian from k = 2 viscous flux ---*/
-    // x-momentum
-    val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
-    val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
-    val_Jacobian_jj[nSpecies][nSpecies+2]   += mu_j/(rho_j*dij) * etay   * Area;
-    val_Jacobian_jj[nSpecies][nSpecies+3]   += mu_j/(rho_j*dij) *
-    (vel_j[0]*theta+un*UnitNormal[0]/3.0)*Area;
-    // y-momentum
-    val_Jacobian_jj[nSpecies+1][nSpecies]   += mu_j/(rho_j*dij) * etaz   * Area;
-    val_Jacobian_jj[nSpecies+1][nSpecies+1] += mu_j/(rho_j*dij) * thetay * Area;
-    val_Jacobian_jj[nSpecies+1][nSpecies+2] += mu_j/(rho_j*dij) * etax   * Area;
-    val_Jacobian_jj[nSpecies+1][nSpecies+3] += mu_j/(rho_j*dij) *
-    (vel_j[1]*theta+un*UnitNormal[1]/3.0)*Area;
-    // z-momentum
-    val_Jacobian_jj[nSpecies+2][nSpecies]   += mu_j/(rho_j*dij) * etay   * Area;
-    val_Jacobian_jj[nSpecies+2][nSpecies+1] += mu_j/(rho_j*dij) * etax   * Area;
-    val_Jacobian_jj[nSpecies+2][nSpecies+2] += mu_j/(rho_j*dij) * thetaz * Area;
-    val_Jacobian_jj[nSpecies+2][nSpecies+3] += mu_j/(rho_j*dij) *
-    (vel_j[2]*theta+un*UnitNormal[2]/3.0)*Area;
+    if (nDim == 2) {
+      // x-momentum
+      val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+2]   += mu_j/(rho_j*dij) *
+                                                 (vel_j[0]*theta +
+                                                  un*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_jj[nSpecies+1][nSpecies]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+1] += mu_j/(rho_j*dij) * thetay * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+2] += mu_j/(rho_j*dij) *
+                                                 (vel_j[1]*theta +
+                                                  un*UnitNormal[1]/3.0)*Area;
+    } else {
+      // x-momentum
+      val_Jacobian_jj[nSpecies][nSpecies]     += mu_j/(rho_j*dij) * thetax * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+1]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+2]   += mu_j/(rho_j*dij) * etay   * Area;
+      val_Jacobian_jj[nSpecies][nSpecies+3]   += mu_j/(rho_j*dij) *
+                                                 (vel_j[0]*theta +
+                                                  un*UnitNormal[0]/3.0)*Area;
+      // y-momentum
+      val_Jacobian_jj[nSpecies+1][nSpecies]   += mu_j/(rho_j*dij) * etaz   * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+1] += mu_j/(rho_j*dij) * thetay * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+2] += mu_j/(rho_j*dij) * etax   * Area;
+      val_Jacobian_jj[nSpecies+1][nSpecies+3] += mu_j/(rho_j*dij) *
+                                                 (vel_j[1]*theta +
+                                                  un*UnitNormal[1]/3.0)*Area;
+      // z-momentum
+      val_Jacobian_jj[nSpecies+2][nSpecies]   += mu_j/(rho_j*dij) * etay   * Area;
+      val_Jacobian_jj[nSpecies+2][nSpecies+1] += mu_j/(rho_j*dij) * etax   * Area;
+      val_Jacobian_jj[nSpecies+2][nSpecies+2] += mu_j/(rho_j*dij) * thetaz * Area;
+      val_Jacobian_jj[nSpecies+2][nSpecies+3] += mu_j/(rho_j*dij) *
+                                                 (vel_j[2]*theta +
+                                                  un*UnitNormal[2]/3.0)*Area;
+    }
     
     /*--- Jacobian from k = 3 viscous flux ---*/
     for (iVar = 0; iVar < nVar; iVar++)

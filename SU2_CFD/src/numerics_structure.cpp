@@ -2455,6 +2455,8 @@ void CNumerics::CreateBasis(double *val_Normal) {
     for (iDim = 0; iDim < nDim; iDim++)
       modl += l[iDim]*l[iDim];
     modl = sqrt(modl);
+    for (iDim = 0; iDim < nDim; iDim++)
+      l[iDim] = l[iDim]/modl;
     
   } else {
     /*--- Define l as a vector in the plane normal to the supplied vector ---*/

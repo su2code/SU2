@@ -5514,8 +5514,8 @@ private:
   double *DiffPsi;
   double *UnitNormal;
   double *Lambda_i, *Lambda_j;
-  double **P, **invP, **PLPinv;
-  double **Ai, **Aj;
+  double **Pi, **invPi, **PLPinvi;
+  double **Pj, **invPj, **PLPinvj;
   
   //  CVariable *var;
   

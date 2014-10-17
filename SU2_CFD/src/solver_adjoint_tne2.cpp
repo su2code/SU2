@@ -1368,6 +1368,18 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji,
                               Jacobian_jj, config);
     
+    ///// DEBUG /////
+//    if (iEdge == 12) {
+//      cout << "Res i: " << endl;
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        cout << Res_Conv_i[iVar] << endl;
+//      cout << endl << "Res j: " << endl;
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        cout << Res_Conv_j[iVar] << endl;
+//      cin.get();
+//    }
+    ///// DEBUG /////
+    
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       if ((Res_Conv_i[iVar] != Res_Conv_i[iVar]) ||
@@ -1455,7 +1467,7 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     U_j = solver_container[TNE2_SOL]->node[jPoint]->GetSolution();
     V_i = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
     V_j = solver_container[TNE2_SOL]->node[jPoint]->GetPrimVar();
-    numerics->SetPrimitive(V_i, V_j);
+    numerics->SetPrimitive   (V_i, V_j);
     numerics->SetConservative(U_i, U_j);
     
     /*--- Pass supplementary information to CNumerics ---*/
@@ -1515,18 +1527,17 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
                               Jacobian_ji, Jacobian_jj, config);
     
-    /*--- Error checking ---*/
-//    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-//      if (Residual_i[iVar] != Residual_i[iVar]) {
-//        cout << "NaN in Convective Residual" << endl;
-//      }
-//      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-//        if (Jacobian_ii[iVar][jVar] != Jacobian_ii[iVar][jVar])
-//          cout << "NaN in Convective Jacobian i" << endl;
-//        if (Jacobian_jj[iVar][jVar] != Jacobian_jj[iVar][jVar])
-//          cout << "NaN in Convective Jacobian j" << endl;
-//      }
+    ///// DEBUG /////
+//    if (iEdge == 0) {
+//      cout << "Res i: " << endl;
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        cout << Residual_i[iVar] << endl;
+//      cout << endl << "Res j: " << endl;
+//      for (iVar = 0; iVar < nVar; iVar++)
+//        cout << Residual_j[iVar] << endl;
+//      cin.get();
 //    }
+    ///// DEBUG /////
     
 		/*--- Add and Subtract Residual ---*/
     LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -1631,20 +1642,20 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Take the transpose of the source Jacobian matrix ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+        Jacobian_j[iVar][jVar] = Jacobian_i[jVar][iVar];
     
     /*--- Compute the adjoint source term residual (dQ/dU^T * Psi) ---*/
     for (iVar = 0; iVar < nVar; iVar ++) {
       Residual[iVar] = 0.0;
       for (jVar = 0; jVar < nVar; jVar++) {
-        Residual[iVar] += Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
+        Residual[iVar] += Jacobian_j[iVar][jVar] * node[iPoint]->GetSolution(jVar);
       }
     }
     
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
 
     
     /*--- Compute vibrational relaxation source terms ---*/
@@ -1664,20 +1675,20 @@ void CAdjTNE2EulerSolver::Source_Residual(CGeometry *geometry,
     /*--- Take the transpose of the source Jacobian matrix ---*/
     for (iVar = 0; iVar < nVar; iVar++)
       for (jVar = 0; jVar < nVar; jVar++)
-        Jacobian_ii[iVar][jVar] = Jacobian_i[jVar][iVar];
+        Jacobian_j[iVar][jVar] = Jacobian_i[jVar][iVar];
     
     /*--- Compute the adjoint source term residual (dQ/dU^T * Psi) ---*/
     for (iVar = 0; iVar < nVar; iVar ++) {
       Residual[iVar] = 0.0;
       for (jVar = 0; jVar < nVar; jVar++) {
-        Residual[iVar] = Jacobian_ii[iVar][jVar] * node[iPoint]->GetSolution(jVar);
+        Residual[iVar] = Jacobian_j[iVar][jVar] * node[iPoint]->GetSolution(jVar);
       }
     }
     
     /*--- Subtract Residual (and Jacobian) ---*/
     LinSysRes.SubtractBlock(iPoint, Residual);
     if (implicit)
-      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_j);
 
   }
 }
@@ -2040,121 +2051,121 @@ void CAdjTNE2EulerSolver::Inviscid_Sensitivity(CGeometry *geometry,
   }
   
   /*--- Farfield Sensitivity (Mach, AoA, Press, Temp) ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    
-    if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
-      
-      Sens_Mach[iMarker]  = 0.0;
-      Sens_AoA[iMarker]   = 0.0;
-      Sens_Press[iMarker] = 0.0;
-      Sens_Temp[iMarker]  = 0.0;
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          Psi      = node[iPoint]->GetSolution();
-          U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
-          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
-          dPdU     = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
-          Normal   = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Mach_Inf = config->GetMach_FreeStreamND();
-          
-          rho = V[RHO_INDEX];
-          rhou = U[nSpecies];
-          rhov = U[nSpecies+1];
-          if (nDim == 2) {
-            rhow   = 0.0;
-            rhoE   = U[nSpecies+nDim];
-            rhoEve = U[nSpecies+nDim+1];
-          }
-          else {
-            rhow   = U[nSpecies+2];
-            rhoE   = U[nSpecies+nDim];
-            rhoEve = U[nSpecies+nDim+1];
-          }
-          p = V[P_INDEX];
-          H = V[H_INDEX];
-          
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
-          for (iDim = 0; iDim < nDim; iDim++)
-            UnitNormal[iDim] = -Normal[iDim]/Area;
-          
-          /*--- Get the inviscid projected Jacobian ---*/
-          numerics->GetInviscidProjJac(U, V, dPdU, UnitNormal, 1.0, Jacobian_j);
-          
-          /*--- Take the transpose & integrate over dual-face area ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            for (jVar = 0; jVar < nVar; jVar++)
-              Jacobian_jj[iVar][jVar] = Jacobian_j[jVar][iVar]*Area;
-          
-          
-          /*--- Mach number sensitivity ---*/
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            USens[iSpecies] = 0.0;
-          USens[nSpecies]   = rhou/Mach_Inf;
-          USens[nSpecies+1] = rhov/Mach_Inf;
-          if (nDim == 2)
-            USens[nSpecies+2] = Gamma*Mach_Inf*p;
-          else {
-            USens[nSpecies+2] = rhow/Mach_Inf;
-            USens[nSpecies+3] = Gamma*Mach_Inf*p; }
-          for (iVar = 0; iVar < nVar; iVar++) {
-            for (jVar = 0; jVar < nVar; jVar++) {
-              Sens_Mach[iMarker] += Psi[iVar]*Jacobian_j[jVar][iVar]*USens[jVar];
-            }
-          }
-          
-          /*--- AoA sensitivity ---*/
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            USens[iSpecies] = 0.0;
-          if (nDim == 2) {
-            USens[nSpecies]   = -rhov;
-            USens[nSpecies+1] = rhou;
-            USens[nSpecies+2] = 0.0;
-          } else {
-            USens[nSpecies]   = -rhow;
-            USens[nSpecies+1] = 0.0;
-            USens[nSpecies+2] = rhou;
-            USens[nSpecies+3] = 0.0;
-          }
-          for (iVar = 0; iVar < nVar; iVar++) {
-            for (jVar = 0; jVar < nVar; jVar++) {
-              Sens_AoA[iMarker] += Psi[iVar]*Jacobian_j[jVar][iVar]*USens[jVar];
-            }
-          }
-          
-//          /*--- Pressure sensitivity ---*/
-//          USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
-//          if (nDim == 2) { USens[3] = rE/p; }
-//          else { USens[3] = rw/p; USens[4] = rE/p; }
-//          for (iPos = 0; iPos < nVar; iPos++) {
-//            for (jPos = 0; jPos < nVar; jPos++) {
-//              Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//    
+//    if (config->GetMarker_All_Boundary(iMarker) == FAR_FIELD) {
+//      
+//      Sens_Mach[iMarker]  = 0.0;
+//      Sens_AoA[iMarker]   = 0.0;
+//      Sens_Press[iMarker] = 0.0;
+//      Sens_Temp[iMarker]  = 0.0;
+//      
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//        
+//        if (geometry->node[iPoint]->GetDomain()) {
+//          Psi      = node[iPoint]->GetSolution();
+//          U        = solver_container[TNE2_SOL]->node[iPoint]->GetSolution();
+//          V        = solver_container[TNE2_SOL]->node[iPoint]->GetPrimVar();
+//          dPdU     = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
+//          Normal   = geometry->vertex[iMarker][iVertex]->GetNormal();
+//          Mach_Inf = config->GetMach_FreeStreamND();
+//          
+//          rho = V[RHO_INDEX];
+//          rhou = U[nSpecies];
+//          rhov = U[nSpecies+1];
+//          if (nDim == 2) {
+//            rhow   = 0.0;
+//            rhoE   = U[nSpecies+nDim];
+//            rhoEve = U[nSpecies+nDim+1];
+//          }
+//          else {
+//            rhow   = U[nSpecies+2];
+//            rhoE   = U[nSpecies+nDim];
+//            rhoEve = U[nSpecies+nDim+1];
+//          }
+//          p = V[P_INDEX];
+//          H = V[H_INDEX];
+//          
+//          Area = 0.0;
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            Area += Normal[iDim]*Normal[iDim];
+//          Area = sqrt(Area);
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            UnitNormal[iDim] = -Normal[iDim]/Area;
+//          
+//          /*--- Get the inviscid projected Jacobian ---*/
+//          numerics->GetInviscidProjJac(U, V, dPdU, UnitNormal, 1.0, Jacobian_j);
+//          
+//          /*--- Take the transpose & integrate over dual-face area ---*/
+//          for (iVar = 0; iVar < nVar; iVar++)
+//            for (jVar = 0; jVar < nVar; jVar++)
+//              Jacobian_jj[iVar][jVar] = Jacobian_j[jVar][iVar]*Area;
+//          
+//          
+//          /*--- Mach number sensitivity ---*/
+//          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//            USens[iSpecies] = 0.0;
+//          USens[nSpecies]   = rhou/Mach_Inf;
+//          USens[nSpecies+1] = rhov/Mach_Inf;
+//          if (nDim == 2)
+//            USens[nSpecies+2] = Gamma*Mach_Inf*p;
+//          else {
+//            USens[nSpecies+2] = rhow/Mach_Inf;
+//            USens[nSpecies+3] = Gamma*Mach_Inf*p; }
+//          for (iVar = 0; iVar < nVar; iVar++) {
+//            for (jVar = 0; jVar < nVar; jVar++) {
+//              Sens_Mach[iMarker] += Psi[iVar]*Jacobian_j[jVar][iVar]*USens[jVar];
 //            }
 //          }
 //          
-//          /*--- Temperature sensitivity ---*/
-//          T = p/(r*Gas_Constant);
-//          USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
-//          if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
-//          else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
-//          for (iPos = 0; iPos < nVar; iPos++) {
-//            for (jPos = 0; jPos < nVar; jPos++) {
-//              Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+//          /*--- AoA sensitivity ---*/
+//          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//            USens[iSpecies] = 0.0;
+//          if (nDim == 2) {
+//            USens[nSpecies]   = -rhov;
+//            USens[nSpecies+1] = rhou;
+//            USens[nSpecies+2] = 0.0;
+//          } else {
+//            USens[nSpecies]   = -rhow;
+//            USens[nSpecies+1] = 0.0;
+//            USens[nSpecies+2] = rhou;
+//            USens[nSpecies+3] = 0.0;
+//          }
+//          for (iVar = 0; iVar < nVar; iVar++) {
+//            for (jVar = 0; jVar < nVar; jVar++) {
+//              Sens_AoA[iMarker] += Psi[iVar]*Jacobian_j[jVar][iVar]*USens[jVar];
 //            }
 //          }
-        }
-      }
-      Total_Sens_Mach -= Sens_Mach[iMarker];
-      Total_Sens_AoA -= Sens_AoA[iMarker];
-      Total_Sens_Press -= Sens_Press[iMarker];
-      Total_Sens_Temp -= Sens_Temp[iMarker];
-    }
-  }
+//          
+////          /*--- Pressure sensitivity ---*/
+////          USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
+////          if (nDim == 2) { USens[3] = rE/p; }
+////          else { USens[3] = rw/p; USens[4] = rE/p; }
+////          for (iPos = 0; iPos < nVar; iPos++) {
+////            for (jPos = 0; jPos < nVar; jPos++) {
+////              Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+////            }
+////          }
+////          
+////          /*--- Temperature sensitivity ---*/
+////          T = p/(r*Gas_Constant);
+////          USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
+////          if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+////          else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+////          for (iPos = 0; iPos < nVar; iPos++) {
+////            for (jPos = 0; jPos < nVar; jPos++) {
+////              Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+////            }
+////          }
+//        }
+//      }
+//      Total_Sens_Mach -= Sens_Mach[iMarker];
+//      Total_Sens_AoA -= Sens_AoA[iMarker];
+//      Total_Sens_Press -= Sens_Press[iMarker];
+//      Total_Sens_Temp -= Sens_Temp[iMarker];
+//    }
+//  }
   
   /*--- Explicit contribution from objective function quantity ---*/
 //  for (iMarker = 0; iMarker < nMarker; iMarker++) {

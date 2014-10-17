@@ -2859,7 +2859,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		Delta = Vol / node[iPoint]->GetDelta_Time();
     Jacobian.AddVal2Diag(iPoint, Delta);
     if (Delta != Delta) {
-      cout << "NaN in Timestep" << endl;
+      cout << "NaN in Timestep: " << node[iPoint]->GetDelta_Time() << endl;
     }
     
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -3081,12 +3081,6 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			for (iVar = 0; iVar < nPrimVarGrad; iVar++)
 				PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
       
-      /*--- Modify species density to mass fraction ---*/
-      
-//      rho_j = node[jPoint]->GetPrimVar(RHO_INDEX);
-//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-//        PrimVar_j[RHOS_INDEX+iSpecies] = PrimVar_j[RHOS_INDEX+iSpecies]/rho_j;
-      
 			weight = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++)
 				weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -3108,7 +3102,8 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
         
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
-            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim]) *
+                                   (PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
       }
       
     }
@@ -5133,6 +5128,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     Mvec_Inf[1] = sin(Beta)*Mach_Inf;
     Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach_Inf;
   }
+  
   
   /*--- Create a CVariable that stores the free-stream values ---*/
   node_infty = new CTNE2NSVariable(Pressure_Inf, MassFrac_Inf,
