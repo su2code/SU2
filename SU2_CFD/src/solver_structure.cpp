@@ -171,8 +171,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #else
   
-  int nProcessor, iProcessor;
+  int nProcessor, iProcessor, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   double *sbuf_residual, *rbuf_residual;
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
