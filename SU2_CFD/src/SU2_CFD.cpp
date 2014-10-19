@@ -405,10 +405,9 @@ MPI_Barrier(MPI_COMM_WORLD);
     
     UsedTime = (StopTime - StartTime);
     
-    /*--- For specific applications, evaluate and plot the equivalent area or flow rate. ---*/
+    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
     
-    if ((config_container[ZONE_0]->GetKind_Solver() == EULER) &&
-        (config_container[ZONE_0]->GetEquivArea() == YES)) {
+    if (config_container[ZONE_0]->GetEquivArea() == YES) {
       output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }

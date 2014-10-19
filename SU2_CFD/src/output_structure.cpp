@@ -4891,7 +4891,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES:
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
             <<", located at point "<< solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
@@ -4918,7 +4918,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case TNE2_EULER :  case TNE2_NAVIER_STOKES:
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0))
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0))
             <<", located at point "<< solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max(0) << "." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -4933,7 +4933,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case RANS : case FLUID_STRUCTURE_RANS:
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
             <<", located at point "<< solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
@@ -4956,7 +4956,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+            else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
+            
             break;
             
           case WAVE_EQUATION :
@@ -4984,7 +4986,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case ADJ_EULER :              case ADJ_NAVIER_STOKES :
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
             <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0) << "." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -5002,7 +5004,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case ADJ_RANS :
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
             <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0) << "." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -5028,7 +5030,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case ADJ_TNE2_EULER :              case ADJ_TNE2_NAVIER_STOKES :
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0))
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0))
             <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0) << "." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -5090,7 +5092,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             cout.width(15); cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else if (equiv_area) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15);
+          else if (equiv_area) { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); cout.width(15);
             cout.precision(4);
             cout.setf(ios::scientific,ios::floatfield);
             cout << Total_CNearFieldOF; }
@@ -5132,13 +5134,18 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
-          if (rotating_frame  && nDim == 3 ) {
+          if (rotating_frame && nDim == 3 ) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << Total_CT; cout.width(15);
             cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
+          else if (equiv_area) { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); cout.width(15);
+            cout.precision(4);
+            cout.setf(ios::scientific,ios::floatfield);
+            cout << Total_CNearFieldOF; }
           else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
+          
           if (aeroelastic) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.

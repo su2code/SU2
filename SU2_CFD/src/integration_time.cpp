@@ -111,6 +111,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+  
   for (iPreSmooth = 0; iPreSmooth < config[iZone]->GetMG_PreSmooth(iMesh); iPreSmooth++) {
     
     switch (config[iZone]->GetKind_TimeIntScheme()) {
@@ -118,31 +119,39 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
       case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
     
     /*--- Time and space integration ---*/
+    
     for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
       
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
+      
       solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
       
       if (iRKStep == 0) {
         
         /*--- Set the old solution ---*/
+        
         solver_container[iZone][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iMesh]);
         
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
+        
         solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, Iteration);
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
+        
         Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
         
       }
       
       /*--- Space integration ---*/
+      
       Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
       
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      
       Time_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
       
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
+      
       solver_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh);
       
     }

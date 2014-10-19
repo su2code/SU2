@@ -43,6 +43,7 @@ void MeanFlowIteration(COutput *output, CIntegration ***integration_container, C
 #endif
   
   /*--- Set the initial condition ---*/
+  
   for (iZone = 0; iZone < nZone; iZone++)
     solver_container[iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
   
@@ -232,6 +233,7 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
 #endif
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
+  
 	for (iZone = 0; iZone < nZone; iZone++) {
 		if (((grid_movement && ExtIter == 0) || config_container[ZONE_0]->GetUnsteady_Simulation()) && !time_spectral) {
       int Direct_Iter = int(config_container[iZone]->GetUnst_AdjointIter()) - int(ExtIter) - 1;
@@ -254,8 +256,11 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
       /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
       
       if (rank == MASTER_NODE && iZone == ZONE_0)
-				cout << " Single iteration of the direct solver to store flow data." << endl;
+				cout << "Begin direct solver to store flow data (single iteration)." << endl;
       
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+        cout << "Compute residuals to check the convergence of the direct problem." << endl;
+
 			integration_container[iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, 0, iZone);
       
@@ -276,6 +281,12 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
         }
         
 			}
+      
+      /*--- Output the residual (visualization purpouses to identify if
+       the direct solution is converged)---*/
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+        cout << "log10[Maximum residual]: " << log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_Max(0))
+        <<", located at point "<< solver_container[iZone][MESH_0][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
       
 			/*--- Compute gradients of the flow variables, this is necessary for sensitivity computation,
 			 note that in the direct Euler problem we are not computing the gradients of the primitive variables ---*/
@@ -307,8 +318,12 @@ void AdjMeanFlowIteration(COutput *output, CIntegration ***integration_container
         
       }
       
+      if (rank == MASTER_NODE && iZone == ZONE_0)
+        cout << "End direct solver, begin adjoint problem." << endl;
+
 		}
     
+
 		/*--- Set the value of the internal iteration ---*/
     
 		IntIter = ExtIter;
@@ -469,7 +484,7 @@ void AdjTNE2Iteration(COutput *output, CIntegration ***integration_container,
       
       /*--- Perform one iteration of the gov. eqns. to store data ---*/
       if (rank == MASTER_NODE && iZone == ZONE_0)
-				cout << " Single iteration of the direct solver to store flow data...";
+				cout << "Single iteration of the direct solver to store flow data...";
 			integration_container[iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container,
                                                                   solver_container,
                                                                   numerics_container,

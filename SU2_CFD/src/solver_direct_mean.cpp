@@ -4200,6 +4200,7 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   }
   
   /*--- Update the solution ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
@@ -4219,9 +4220,11 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   }
   
   /*--- MPI solution ---*/
+  
   Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
+  
   SetResidual_RMS(geometry, config);
   
   
@@ -4240,6 +4243,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Update the solution ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
@@ -4259,9 +4263,11 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- MPI solution ---*/
+  
   Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
+  
   SetResidual_RMS(geometry, config);
   
 }

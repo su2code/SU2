@@ -2684,6 +2684,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       nVertex = geometry->nVertex[iMarker];
       
       /*--- Allocate the linear system ---*/
+      
       A = new double* [nVertex];
       b = new double [nVertex];
       ArchLength = new double [nVertex];
@@ -2692,6 +2693,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Initialization ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
         b[iVertex] = 0.0; ArchLength[iVertex] = 0.0;
         for (jVertex = 0; jVertex < nVertex; jVertex++)
@@ -2699,6 +2701,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Set the arch length ---*/
+      
       ArchLength[0] = 0.0;
       for (iVertex = 1; iVertex < nVertex; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex-1]->GetNode();
@@ -2710,6 +2713,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Remove the trailing edge effect ---*/
+      
       double MinPosSens = 0.0; double MinNegSens = 0.0;
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
         Sens = CSensitivity[iMarker][iVertex];
@@ -2729,11 +2733,13 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Set the right hand side of the system ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
         b[iVertex] = CSensitivity[iMarker][iVertex];
       }
       
       /*--- Set the mass matrix ---*/
+      
       double Coeff = 0.0, BackDiff = 0.0, ForwDiff = 0.0, CentDiff = 0.0;
       double epsilon = 5E-5;
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
@@ -2767,22 +2773,26 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Add the gradient value in the main diagonal ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++)
         A[iVertex][iVertex] += 1.0;
       
       /*--- Dirichlet boundary condition ---*/
+      
       unsigned long iVertex = int(nVertex/2);
       A[iVertex][iVertex] = 1.0;
       A[iVertex][iVertex+1] = 0.0;
       A[iVertex][iVertex-1] = 0.0;
       
-      Gauss_Elimination(A, b, nVertex);
+      Gauss_Elimination(A, b, (unsigned short)nVertex);
       
       /*--- Set the new value of the sensitiviy ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++)
         CSensitivity[iMarker][iVertex] = b[iVertex];
       
       /*--- Deallocate the linear system ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++)
         delete [] A[iVertex];
       delete [] A;
