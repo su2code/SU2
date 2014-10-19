@@ -158,8 +158,16 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
 #ifndef HAVE_MPI
   
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++) {
+    
+    if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
+      cout << "\n !!! Error: There is a NaN in the residual. Now exiting... !!! \n" << endl;
+      exit(EXIT_FAILURE);
+    }
+
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
+    
+  }
   
 #else
   
@@ -170,6 +178,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned long *sbuf_point, *rbuf_point, Local_nPointDomain, Global_nPointDomain;
   
   /*--- Set the L2 Norm residual in all the processors ---*/
+  
   sbuf_residual  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
   rbuf_residual  = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = 0.0;
   
@@ -180,8 +189,22 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   
-  for (iVar = 0; iVar < nVar; iVar++)
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    
+    if (rbuf_residual(iVar) != rbuf_residual(iVar)) {
+      
+      if (rank == MASTER_NODE)
+        cout << "\n !!! Error: There is a NaN in the residual. Now exiting... !!! \n" << endl;
+      
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      
+    }
+    
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+    
+  }
   
   delete [] sbuf_residual;
   delete [] rbuf_residual;
