@@ -5964,11 +5964,11 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         ofstream Cp_File;
         if (iSection == 0) {
-          Cp_File.open("Cp_Sections.plt", ios::out);
+          Cp_File.open("Cp_Sections.dat", ios::out);
           Cp_File << "TITLE = \"Airfoil sections\"" << endl;
           Cp_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Cp\"" << endl;
         }
-        else Cp_File.open("Cp_Sections.plt", ios::app);
+        else Cp_File.open("Cp_Sections.dat", ios::app);
         
         Cp_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         
@@ -6027,12 +6027,12 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         ofstream Load_File;
         if (iSection == 0) {
-          Load_File.open("Load_Distribution.plt", ios::out);
+          Load_File.open("Load_Distribution.dat", ios::out);
           Load_File << "TITLE = \"Load distribution\"" << endl;
           Load_File << "VARIABLES = \"Y\",\"C<sub>L</sub>\",\"C<sub>D</sub>\",\"C<supb>My</sub>\"" << endl;
           Load_File << "ZONE T=\"Wing load distribution\", NODES= "<< nSection << ", ELEMENTS= " << nSection-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         }
-        else Load_File.open("Load_Distribution.plt", ios::app);
+        else Load_File.open("Load_Distribution.dat", ios::app);
         
         /*--- Coordinates and pressure value ---*/
         
@@ -6784,26 +6784,34 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      NearFieldEA_file << "VARIABLES = \"X Coordinate (ft)\"";
+      NearFieldEA_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\"";
     else
-      NearFieldEA_file << "VARIABLES = \"X Coordinate (m)\"";
+      NearFieldEA_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\"";
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       if (config->GetSystemMeasurements() == US)
-        NearFieldEA_file << ", \"Equivalent Area (ft), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
       else
-        NearFieldEA_file << ", \"Equivalent Area (m), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
     }
     
     NearFieldEA_file << endl;
     for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
+      
       double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
       double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
-      NearFieldEA_file << scientific << XcoordRot - XcoordRot_init;
+      
+      if (config->GetSystemMeasurements() == US)
+        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+      else
+        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
+      
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
         NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
+      
       NearFieldEA_file << endl;
+      
     }
     NearFieldEA_file.close();
     
@@ -6826,6 +6834,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     else {
       
       /*--- skip header lines ---*/
+      
       string line;
       getline(TargetEA_file, line);
       getline(TargetEA_file, line);
@@ -6847,10 +6856,11 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           double data;
           js >> data;
           
-          /*--- The first element in the table is the coordinate ---*/
+          /*--- The first element in the table is the coordinate (in or m)---*/
           
           if (iter != 0) row.push_back(data);
           iter++;
+          
         }
         TargetArea_PhiAngle_Trans.push_back(row);
       }
@@ -6858,6 +6868,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
+      
     }
     
     /*--- Divide by the number of Phi angles in the nearfield ---*/
@@ -6907,9 +6918,9 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
     if (config->GetSystemMeasurements() == US)
-      EquivArea_file << "VARIABLES = \"X Coordinate\",\"Equivalent Area (ft^2)\",\"Target Equivalent Area (ft^2)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
     else
-      EquivArea_file << "VARIABLES = \"X Coordinate\",\"Equivalent Area (m^2)\",\"Target Equivalent Area (m^2)\",\"Cp\"" << endl;
+      EquivArea_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
 
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_file << fixed << "ZONE T= \"Azimuthal angle " << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
