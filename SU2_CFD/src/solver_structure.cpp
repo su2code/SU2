@@ -193,7 +193,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
   for (iVar = 0; iVar < nVar; iVar++) {
     
-    if (rbuf_residual(iVar) != rbuf_residual(iVar)) {
+    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
       
       if (rank == MASTER_NODE)
         cout << "\n !!! Error: There is a NaN in the residual. Now exiting... !!! \n" << endl;
