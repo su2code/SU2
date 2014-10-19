@@ -373,7 +373,9 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   SetVelocity();   // Computes velocity and velocity^2
   double density = GetDensity();
   double staticEnergy = GetEnergy()-0.5*Velocity2;
-  /* check will be moved inside fluid model plus error description strings*/
+  
+  /*--- Check will be moved inside fluid model plus error description strings ---*/
+  
   FluidModel->SetTDState_rhoe(density, staticEnergy);
   
   check_dens = SetDensity();
