@@ -159,7 +159,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 #ifndef HAVE_MPI
   
   for (iVar = 0; iVar < nVar; iVar++)
-    SetRes_RMS(iVar, max(EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/geometry->GetnPoint())));
   
 #else
   
@@ -181,7 +181,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   
   for (iVar = 0; iVar < nVar; iVar++)
-    SetRes_RMS(iVar, max(EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
   
   delete [] sbuf_residual;
   delete [] rbuf_residual;
@@ -1147,32 +1147,38 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, double *PressureLaplacia
   
 }
 
-void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned long nVar) {
-  unsigned long jVar, kVar, iVar;
+void CSolver::Gauss_Elimination(double** A, double* rhs, unsigned short nVar) {
+  
+  short iVar, jVar, kVar;
   double weight, aux;
   
   if (nVar == 1)
-    rhs[0] /= (A[0][0]+EPS*EPS);
+    rhs[0] /= A[0][0];
   else {
+    
     /*--- Transform system in Upper Matrix ---*/
-    for (iVar = 1; iVar < nVar; iVar++) {
+    
+    for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
-        weight = A[iVar][jVar]/(A[jVar][jVar]+EPS*EPS);
-        for (kVar = jVar; kVar < nVar; kVar++)
+        weight = A[iVar][jVar]/A[jVar][jVar];
+        for (kVar = jVar; kVar < (short)nVar; kVar++)
           A[iVar][kVar] -= weight*A[jVar][kVar];
         rhs[iVar] -= weight*rhs[jVar];
       }
     }
+    
     /*--- Backwards substitution ---*/
-    rhs[nVar-1] = rhs[nVar-1]/(A[nVar-1][nVar-1]+EPS*EPS);
-    for (short iVar = nVar-2; iVar >= 0; iVar--) {
+    
+    rhs[nVar-1] = rhs[nVar-1]/A[nVar-1][nVar-1];
+    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
       aux = 0;
-      for (jVar = iVar+1; jVar < nVar; jVar++)
+      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
         aux += A[iVar][jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux)/(A[iVar][iVar]+EPS*EPS);
+      rhs[iVar] = (rhs[iVar]-aux)/A[iVar][iVar];
       if (iVar == 0) break;
     }
   }
+  
 }
 
 void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long ExtIter) {

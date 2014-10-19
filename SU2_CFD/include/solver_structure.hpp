@@ -1875,7 +1875,7 @@ public:
 	 * \param[in] rhs - Right hand side.
 	 * \param[in] nVar - Number of variables.
 	 */
-	void Gauss_Elimination(double** A, double* rhs, unsigned long nVar);
+	void Gauss_Elimination(double** A, double* rhs, unsigned short nVar);
     
   /*!
   * \brief Get the number of Species present in the flow.
