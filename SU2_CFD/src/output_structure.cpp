@@ -4865,24 +4865,24 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           switch (config[val_iZone]->GetKind_Solver()) {
             case EULER :                  case NAVIER_STOKES:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES:
-              cout << endl << " Min Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+              cout << endl << "Min Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
               ". Max Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".";
               break;
               
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
             case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-              cout << endl << " Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
+              cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
               break;
           }
         }
         else {
           if (flow) {
-            cout << endl << " Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
-            ". Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-            ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+            cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+            ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
+            ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
           else {
-            cout << endl << " Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+            cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
         }
         
@@ -6780,12 +6780,19 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     /*--- Create a file with the equivalent area distribution at each azimuthal angle ---*/
     
     NearFieldEA_file.precision(15);
-    NearFieldEA_file.open("NearFieldEA.plt", ios::out);
-    NearFieldEA_file << "TITLE = \"Nearfield Equivalent Area at each azimuthal angle \"" << endl;
-    NearFieldEA_file << "VARIABLES = \"Coord (local to the near-field cylinder)\"";
+    NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
+    NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
+    
+    if (config->GetSystemMeasurements() == US)
+      NearFieldEA_file << "VARIABLES = \"X Coordinate (ft)\"";
+    else
+      NearFieldEA_file << "VARIABLES = \"X Coordinate (m)\"";
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      NearFieldEA_file << ", \"Equivalent Area, Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+      if (config->GetSystemMeasurements() == US)
+        NearFieldEA_file << ", \"Equivalent Area (ft), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+      else
+        NearFieldEA_file << ", \"Equivalent Area (m), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
     }
     
     NearFieldEA_file << endl;
@@ -6896,10 +6903,14 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
     
     EquivArea_file.precision(15);
-    EquivArea_file.open("nearfield_flow.plt", ios::out);
-    EquivArea_file << "TITLE = \"SU2 Equivalent area computation at each azimuthal angle \"" << endl;
-    EquivArea_file << "VARIABLES = \"Coord (local to the near-field cylinder)\",\"Equivalent area\",\"Target equivalent area\",\"NearField weight\",\"Pressure coefficient\"" << endl;
+    EquivArea_file.open("nearfield_flow.dat", ios::out);
+    EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
     
+    if (config->GetSystemMeasurements() == US)
+      EquivArea_file << "VARIABLES = \"X Coordinate\",\"Equivalent Area (ft^2)\",\"Target Equivalent Area (ft^2)\",\"Cp\"" << endl;
+    else
+      EquivArea_file << "VARIABLES = \"X Coordinate\",\"Equivalent Area (m^2)\",\"Target Equivalent Area (m^2)\",\"Cp\"" << endl;
+
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_file << fixed << "ZONE T= \"Azimuthal angle " << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
@@ -6907,9 +6918,13 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
         double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
         
-        EquivArea_file << scientific << XcoordRot - XcoordRot_init << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << NearFieldWeight_PhiAngle[iPhiAngle][iVertex] << ", " <<
-        (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
+        if (config->GetSystemMeasurements() == US)
+          EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+        else
+          EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
+
+        EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
+        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
       }
     }
     
