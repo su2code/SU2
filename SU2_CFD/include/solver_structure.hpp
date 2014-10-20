@@ -76,6 +76,7 @@ protected:
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
   unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
+  double **Point_Max_Coord; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
 	double *Solution,		/*!< \brief Auxiliary nVar vector. */
 	*Solution_i,				/*!< \brief Auxiliary nVar vector for storing the solution at point i. */
 	*Solution_j;				/*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -294,8 +295,10 @@ public:
 	 * \brief Adds the maximal residual, this is useful for the convergence history.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+   * \param[in] val_point - Value of the point index for the max residual.
+   * \param[in] val_coord - Location (x,y,z) of the max residual point.
 	 */
-	void AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point);
+	void AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point, double* val_coord);
     
 	/*!
 	 * \brief Get the maximal residual, this is useful for the convergence history.
@@ -310,7 +313,14 @@ public:
 	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
 	 */
 	unsigned long GetPoint_Max(unsigned short val_var);
-    
+  
+  /*!
+   * \brief Get the location of the maximal residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the location (x,y,z) of the biggest residual for the variable <i>val_var</i>.
+   */
+  double* GetPoint_Max_Coord(unsigned short val_var);
+  
 	/*!
 	 * \brief Set Value of the residual if there is a grid movement.
 	 * \param[in] geometry - Geometrical definition of the problem.

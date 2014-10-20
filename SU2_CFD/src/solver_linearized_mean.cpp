@@ -52,7 +52,16 @@ CLinEulerSolver::CLinEulerSolver(CGeometry *geometry, CConfig *config) : CSolver
 	Residual = new double[nVar];	Residual_RMS = new double[nVar];  
 	Residual_i = new double[nVar]; Residual_j = new double[nVar];
 	Res_Conv = new double[nVar];	Res_Visc = new double[nVar]; Res_Sour = new double[nVar];
-  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+  Residual_Max = new double[nVar];
+  
+  /*--- Define some structures for locating max residuals ---*/
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
 
 	/*--- Define some auxiliar vector related with the solution ---*/
 	Solution   = new double[nVar];
@@ -288,7 +297,7 @@ void CLinEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 			for (iVar = 0; iVar < nVar; iVar++) {
 				node[iPoint]->AddSolution(iVar, -(Residual[iVar]+Res_TruncError[iVar])*Delta*RK_AlphaCoeff);
 				AddRes_RMS(iVar, Residual[iVar]*Residual[iVar]);
-        AddRes_Max(iVar, fabs(Residual[iVar]), geometry->node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Residual[iVar]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 			}
 		}
 	
