@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-## \file shape_optimization.py
-#  \brief Python script for writing a list of Hicks-Henne bumps for SU2.
-#  \author T. Economon, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 2.0.1
+## \file set_ffd_design_var.py.py
+#  \brief Python script for automatically generating a list of FFD variables.
+#  \author T. Economon, F. Palacios,
+#   Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
+#  \version 3.2.3
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -53,8 +54,6 @@ options.marker = str(options.marker)
 options.scale  = float(options.scale)
 options.dim  = int(options.dimension)
 
-
-
 if options.dim == 3:
   
   print " "
@@ -63,12 +62,12 @@ if options.dim == 3:
   iVariable = 0
   dvList = "DEFINITION_DV= "
   for kIndex in range(options.kOrder):
-    for jIndex in range(options.jOrder-1):
+    for jIndex in range(options.jOrder):
       for iIndex in range(options.iOrder):
         iVariable = iVariable + 1
         dvList = dvList + "( 7, " + str(options.scale) + " | " + options.marker + " | "
-        dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex+1) + ", " + str(kIndex) + ", 0.0, 0.0, 1.0 )"
-        if iVariable < (options.iOrder*(options.jOrder-1)*options.kOrder):
+        dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(kIndex) + ", 0.0, 0.0, 1.0 )"
+        if iVariable < (options.iOrder*(options.jOrder)*options.kOrder):
           dvList = dvList + "; "
 
 
@@ -79,19 +78,19 @@ if options.dim == 3:
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
-  for jIndex in range(options.jOrder-1):
+  for jIndex in range(options.jOrder):
     for iIndex in range(options.iOrder):
       iVariable = iVariable + 1
       dvList = dvList + "( 11, " + str(options.scale) + " | " + options.marker + " | "
-      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex+1) + " )"
+      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
       dvList = dvList + "; "
   iVariable = 0
-  for jIndex in range(options.jOrder-1):
+  for jIndex in range(options.jOrder):
     for iIndex in range(options.iOrder):
       iVariable = iVariable + 1
       dvList = dvList + "( 12, " + str(options.scale) + " | " + options.marker + " | "
-      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex+1) + " )"
-      if iVariable < (options.iOrder*(options.jOrder-1)):
+      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + " )"
+      if iVariable < (options.iOrder*(options.jOrder)):
         dvList = dvList + "; "
 
   print dvList
