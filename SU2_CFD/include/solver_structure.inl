@@ -476,15 +476,20 @@ inline double CSolver::GetRes_RMS(unsigned short val_var) { return Residual_RMS[
 
 inline void CSolver::SetRes_Max(unsigned short val_var, double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
 
-inline void CSolver::AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point) { 
+inline void CSolver::AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point, double* val_coord) {
   if (val_residual > Residual_Max[val_var]) {
   Residual_Max[val_var] = val_residual;
-  Point_Max[val_var] = val_point; }
+  Point_Max[val_var] = val_point;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+  }
 }
 
 inline double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
+
+inline double* CSolver::GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }
 
 inline void CSolver::Set_OldSolution(CGeometry *geometry) {
 	for(unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
