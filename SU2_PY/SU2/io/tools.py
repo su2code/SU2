@@ -703,7 +703,7 @@ def get_optFileFormat(plot_format,special_cases=None):
 def get_extension(output_format):
     
     if (output_format == "PARAVIEW")        : return ".csv"
-    if (output_format == "TECPLOT")         : return ".plt"
+    if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  

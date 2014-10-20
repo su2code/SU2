@@ -245,9 +245,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
           if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
-
+          
           /*--- If US system, the output should be in inches ---*/
-
+          
           if (config->GetSystemMeasurements() == US) {
             Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
             Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
@@ -857,7 +857,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
         Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
         
         /*--- If US system, the output should be in inches ---*/
-
+        
         if (config->GetSystemMeasurements() == US) {
           Coords[iDim][jPoint] *= 12.0;
         }
@@ -893,7 +893,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0, periodicNodes = 0;
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
-
+  
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
@@ -905,27 +905,27 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   if (Wrt_Halo) {
     nLocalPoint = geometry->GetnPoint();
   } else {
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      RecvFrom = abs(SendRecv)-1;
-      /*--- Checking for less than or equal to the rank, because there may
-       be some periodic halo nodes that send info to the same rank. ---*/
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                      (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        if (isPeriodic) Local_Halo[iPoint] = false;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        SendRecv = config->GetMarker_All_SendRecv(iMarker);
+        RecvFrom = abs(SendRecv)-1;
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
       }
     }
-  }
-  
-  /*--- Sum total number of nodes that belong to the domain ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (Local_Halo[iPoint] == false)
-      nLocalPoint++;
+    
+    /*--- Sum total number of nodes that belong to the domain ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      if (Local_Halo[iPoint] == false)
+        nLocalPoint++;
   }
   Buffer_Send_nPoin[0] = nLocalPoint;
   
@@ -1144,7 +1144,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       }
     }
   }
-
+  
   /*--- Allocate a temporary array for the connectivity ---*/
   Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
   
@@ -1153,7 +1153,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   jNode = 0; jElem = 0; nElem_Total = 0; bool isHalo;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
-
+      
       /*--- Check if this is a halo node. ---*/
       isHalo = false;
       for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
@@ -1178,7 +1178,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       }
     }
   }
-
+  
   delete [] Local_Halo;
   
 #else
@@ -1272,7 +1272,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   /*--- Communicate the global index values of all added periodic nodes. ---*/
   unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
   unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[nProcessor*maxAddedPeriodic];
-
+  
   for(iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
     Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
   }
@@ -1290,7 +1290,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
    choose to keep only the halo cells from the higher rank processor. Here,
    we are also choosing to keep periodic nodes that were part of the original
    domain. We will check the communicated list of added periodic points. ---*/
-
+  
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
@@ -2255,7 +2255,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           }
         }
         else { for (iVar = 0; iVar < nVar_Second; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-
+        
         if (solver[ThirdIndex]->node[iPoint]->GetLimiter() != NULL) {
           for (iVar = 0; iVar < nVar_Third; iVar++) {
             Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter(iVar);
@@ -2263,7 +2263,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           }
         }
         else { for (iVar = 0; iVar < nVar_Third; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-
+        
       }
       
       /*--- Residual (first, second and third system of equations) ---*/
@@ -2488,7 +2488,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Local variables needed for merging with MPI ---*/
   unsigned short CurrentIndex;
-
+  
   int SendRecv, RecvFrom;
   
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
@@ -2532,9 +2532,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
   }
   Buffer_Send_nPoint[0] = nLocalPoint;
-
+  
   /*--- Each processor sends its local number of nodes to the master. ---*/
-
+  
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
   
   MPI_Barrier(MPI_COMM_WORLD);
@@ -2547,7 +2547,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   double *Buffer_Send_Var = new double[MaxLocalPoint];
   double *Buffer_Recv_Var = NULL;
- 
+  
   double *Buffer_Send_Res = new double[MaxLocalPoint];
   double *Buffer_Recv_Res = NULL;
   
@@ -2837,41 +2837,41 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
   }
-
+  
   /*--- Communicate Mach---*/
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-
+    
     /*--- Loop over this partition to collect the current variable ---*/
     jPoint = 0;
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
+      
       /*--- Check for halos & write only if requested ---*/
-
+      
       if (!Local_Halo[iPoint] || Wrt_Halo) {
-
+        
         /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
         if (compressible) {
-        	Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-        	          solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+          Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+          solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
         }
         if (incompressible || freesurface) {
-        	Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-        	          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
+          Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
+          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
         }
         jPoint++;
       }
     }
-
+    
     /*--- Gather the data on the master node. ---*/
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
+    
     /*--- The master node unpacks and sorts this variable by global index ---*/
     if (rank == MASTER_NODE) {
       jPoint = 0; iVar = iVar_MachMean;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-
+          
           /*--- Get global index, then loop over each variable and store ---*/
           iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
           Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
@@ -4034,10 +4034,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     strcat(cstr,buffer);
   }
   
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY))  sprintf (buffer, ".plt");
-  if ((config->GetOutput_FileFormat() == CGNS_SOL) ||
-      (config->GetOutput_FileFormat() == PARAVIEW))  sprintf (buffer, ".csv");
+  if (config->GetOutput_FileFormat() == TECPLOT) sprintf (buffer, ".dat");
+  else if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
+  else if ((config->GetOutput_FileFormat() == CGNS_SOL) ||
+           (config->GetOutput_FileFormat() == PARAVIEW))  sprintf (buffer, ".csv");
   strcat(cstr,buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -4183,15 +4183,15 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-
-	int rank;
+  
+  int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MASTER_NODE;
 #endif
   
-  /*--- If 1-D outputs requested, calculated them. Requires info from all nodes, 
+  /*--- If 1-D outputs requested, calculated them. Requires info from all nodes,
    Get area-averaged and flux-averaged values at the specified surface ---*/
   
   if (output_1d) {
@@ -5737,7 +5737,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
-
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
@@ -5753,7 +5753,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     
     /*--- Loop over the vertices to compute the output ---*/
     
-  
+    
     if (Out1D == YES) {
       
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -5769,7 +5769,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
-
+          
           Coord = geometry->node[iPoint]->GetCoord();
           
           if (compressible){
@@ -5792,7 +5792,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
           Velocity2 = solver_container->node[iPoint]->GetVelocity2();
           Temperature = solver_container->node[iPoint]->GetTemperature();
-
+          
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
           Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
           
@@ -5857,7 +5857,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   solver_container->SetOneD_Mach(AverageMach);
   solver_container->SetOneD_Temp(AverageTemperature);
   solver_container->SetOneD_MassFlowRate(MassFlowRate);
-
+  
   solver_container->SetOneD_FluxAvgPress(PressureRef);
   solver_container->SetOneD_FluxAvgDensity(DensityRef);
   solver_container->SetOneD_FluxAvgVelocity(VelocityRef);
@@ -5973,7 +5973,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         Cp_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         
         /*--- Coordinates and pressure value ---*/
-      
+        
         if (config->GetSystemMeasurements() == SI) {
           for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
             Cp_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
@@ -6405,7 +6405,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   unsigned short nDim = geometry->GetnDim();
   double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
   double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
-
+  
   int rank = MESH_0;
   
   Mach  = config->GetMach();
@@ -6885,7 +6885,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         
         double Difference = EquivArea_PhiAngle[iPhiAngle][iVertex]-TargetArea_PhiAngle[iPhiAngle][iVertex];
         double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][iVertex]);
-          
+        
         if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
         
         InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
@@ -6904,7 +6904,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           
           double Difference = EquivArea_PhiAngle[iPhiAngle][jVertex]-TargetArea_PhiAngle[iPhiAngle][jVertex];
           double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][jVertex]);
-
+          
           if ((percentage < 0.1) || (Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
           
           NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
@@ -6921,7 +6921,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       EquivArea_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
     else
       EquivArea_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
-
+    
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_file << fixed << "ZONE T= \"Azimuthal angle " << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
       for (iVertex = 0; iVertex < Xcoord_PhiAngle[iPhiAngle].size(); iVertex++) {
@@ -6933,7 +6933,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
         else
           EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
-
+        
         EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
         << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
       }
