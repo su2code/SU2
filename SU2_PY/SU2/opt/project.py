@@ -456,7 +456,7 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        su2util.write_plot('history_project.plt',output_format,results_plot)
+        su2util.write_plot('history_project.dat',output_format,results_plot)
         
         
     def save(self):
