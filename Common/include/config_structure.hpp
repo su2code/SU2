@@ -58,7 +58,7 @@ private:
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
-	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
+	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the numerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
