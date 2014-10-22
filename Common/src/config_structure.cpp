@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for reading the config file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -419,6 +419,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringDoubleListOption("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
   /* DESCRIPTION: Engine subsonic intake region */
   addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
+  default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
+  default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+  /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
+  addDoubleArrayOption("SUBSONIC_NACELLE_BOX", 6, Subsonic_Nacelle_Box, default_vec_6d);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addInletFixedOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
@@ -529,13 +533,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* CONFIG_CATEGORY: Convergence*/
   /*--- Options related to convergence ---*/
-
+  
   /* DESCRIPTION: Convergence criteria */
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
+  /* DESCRIPTION: Flow functional for the Residual criteria */
+  addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
   /* DESCRIPTION: Iteration number to begin convergence monitoring */
   addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
   /* DESCRIPTION: Number of elements to apply the criteria */
@@ -569,13 +575,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Jacobi implicit smoothing of the correction */
   addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
   /* DESCRIPTION: Damping factor for the residual restriction */
-  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.9);
+  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
   /* DESCRIPTION: Damping factor for the correction prolongation */
-  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.9);
-  /* DESCRIPTION: Maximum number of children in the agglomeration stage */
-  addUnsignedShortOption("MAX_CHILDREN", MaxChildren, 500);
-  /* DESCRIPTION: Maximum length of an agglomerated element (relative to the domain) */
-  addDoubleOption("MAX_DIMENSION", MaxDimension, 0.1);
+  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
 
   /* CONFIG_CATEGORY: Spatial Discretization */
   /*--- Options related to the spatial discretization ---*/
@@ -687,9 +689,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("DISCRETE_EQNS", Discrete_Eqns, DiscreteEqns_Map, NONE_EQNS);
   /* DESCRIPTION: Adjoint frozen viscosity */
   addBoolOption("FROZEN_VISC", Frozen_Visc, true);
-  /* DESCRIPTION:  */
-  addDoubleOption("CTE_VISCOUS_DRAG", CteViscDrag, 0.0);
-  /* DESCRIPTION:  */
+   /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /* DESCRIPTION: Remove sharp edges from the sensitivity evaluation */
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
@@ -905,6 +905,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  /* DESCRIPTION: Equivalent area scaling factor */
+  addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1E-7);
 
 	/* CONFIG_CATEGORY: Reacting Flow */
   /*--- Options related to the reacting gas mixtures ---*/
@@ -1961,7 +1963,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Re-scale the length based parameters. The US system uses feet, 
    but SU2 assumes that the grid is in inches ---*/
   
-  if (SystemMeasurements == US) {
+  if ((SystemMeasurements == US) && (Kind_SU2 == SU2_CFD)) {
 
     for (iMarker = 0; iMarker < nMarker_Monitoring; iMarker++) {
       RefOriginMoment_X[iMarker] = RefOriginMoment_X[iMarker]/12.0;
@@ -1984,7 +1986,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
-
+    
+    Section_Location[0] = Section_Location[0]/12.0;
+    Section_Location[1] = Section_Location[1]/12.0;
+    
   }
 
   /*--- Reacting flows initialization ---*/
@@ -3017,7 +3022,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_SOL: cout << "|  |_____/   \\____/  |____|   Suite (Solution Exporting Code)           |" << endl; break;
   }
 
-  cout << "|                             Release 3.2.2 \"eagle\"                     |" << endl;
+  cout << "|                             Release 3.2.3 \"eagle\"                     |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).       |" << endl;
   cout << "| SU2 is distributed in the hope that it will be useful,                |" << endl;
@@ -3814,8 +3819,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (MGCycle == 0) cout << "V Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
       if (MGCycle == 1) cout << "W Multigrid Cycle, with " << nMultiLevel << " multigrid levels."<< endl;
 
-      cout << "Max. number of children in the agglomeration stage: " << MaxChildren <<"."<<endl;
-      cout << "Max. length of an agglom. elem. (compared with the domain): " << MaxDimension <<"."<<endl;
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<<endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<<endl;
     }
@@ -4853,6 +4856,7 @@ CConfig::~CConfig(void)
 
   if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
+  if (Subsonic_Nacelle_Box!=NULL)    delete[] Subsonic_Nacelle_Box ;
   if (DV_Value!=NULL)    delete[] DV_Value;
   if (Design_Variable!=NULL)    delete[] Design_Variable;
   if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;

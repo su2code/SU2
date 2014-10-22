@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -245,9 +245,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           Buffer_Send_Coord_x[nVertex_Surface] = geometry->node[iPoint]->GetCoord(0);
           Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
           if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
-
+          
           /*--- If US system, the output should be in inches ---*/
-
+          
           if (config->GetSystemMeasurements() == US) {
             Buffer_Send_Coord_x[nVertex_Surface] *= 12.0;
             Buffer_Send_Coord_y[nVertex_Surface] *= 12.0;
@@ -857,7 +857,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
         Coords[iDim][jPoint] = geometry->node[iPoint]->GetCoord(iDim);
         
         /*--- If US system, the output should be in inches ---*/
-
+        
         if (config->GetSystemMeasurements() == US) {
           Coords[iDim][jPoint] *= 12.0;
         }
@@ -893,7 +893,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0, periodicNodes = 0;
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
-
+  
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
@@ -905,27 +905,27 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   if (Wrt_Halo) {
     nLocalPoint = geometry->GetnPoint();
   } else {
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      RecvFrom = abs(SendRecv)-1;
-      /*--- Checking for less than or equal to the rank, because there may
-       be some periodic halo nodes that send info to the same rank. ---*/
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                      (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        if (isPeriodic) Local_Halo[iPoint] = false;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        SendRecv = config->GetMarker_All_SendRecv(iMarker);
+        RecvFrom = abs(SendRecv)-1;
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
       }
     }
-  }
-  
-  /*--- Sum total number of nodes that belong to the domain ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    if (Local_Halo[iPoint] == false)
-      nLocalPoint++;
+    
+    /*--- Sum total number of nodes that belong to the domain ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      if (Local_Halo[iPoint] == false)
+        nLocalPoint++;
   }
   Buffer_Send_nPoin[0] = nLocalPoint;
   
@@ -1144,7 +1144,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       }
     }
   }
-
+  
   /*--- Allocate a temporary array for the connectivity ---*/
   Conn_Elem = new int[nLocalElem*NODES_PER_ELEMENT];
   
@@ -1153,7 +1153,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   jNode = 0; jElem = 0; nElem_Total = 0; bool isHalo;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     if(geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
-
+      
       /*--- Check if this is a halo node. ---*/
       isHalo = false;
       for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
@@ -1178,7 +1178,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
       }
     }
   }
-
+  
   delete [] Local_Halo;
   
 #else
@@ -1272,7 +1272,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   /*--- Communicate the global index values of all added periodic nodes. ---*/
   unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
   unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[nProcessor*maxAddedPeriodic];
-
+  
   for(iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
     Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
   }
@@ -1290,7 +1290,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
    choose to keep only the halo cells from the higher rank processor. Here,
    we are also choosing to keep periodic nodes that were part of the original
    domain. We will check the communicated list of added periodic points. ---*/
-
+  
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
@@ -2255,7 +2255,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           }
         }
         else { for (iVar = 0; iVar < nVar_Second; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-
+        
         if (solver[ThirdIndex]->node[iPoint]->GetLimiter() != NULL) {
           for (iVar = 0; iVar < nVar_Third; iVar++) {
             Data[jVar][jPoint] = solver[ThirdIndex]->node[iPoint]->GetLimiter(iVar);
@@ -2263,7 +2263,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           }
         }
         else { for (iVar = 0; iVar < nVar_Third; iVar++) { Data[jVar][jPoint] = 0.0; jVar++; } }
-
+        
       }
       
       /*--- Residual (first, second and third system of equations) ---*/
@@ -2488,7 +2488,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   /*--- Local variables needed for merging with MPI ---*/
   unsigned short CurrentIndex;
-
+  
   int SendRecv, RecvFrom;
   
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
@@ -2532,9 +2532,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     
   }
   Buffer_Send_nPoint[0] = nLocalPoint;
-
+  
   /*--- Each processor sends its local number of nodes to the master. ---*/
-
+  
   if (rank == MASTER_NODE) Buffer_Recv_nPoint = new unsigned long[nProcessor];
   
   MPI_Barrier(MPI_COMM_WORLD);
@@ -2547,7 +2547,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   
   double *Buffer_Send_Var = new double[MaxLocalPoint];
   double *Buffer_Recv_Var = NULL;
- 
+  
   double *Buffer_Send_Res = new double[MaxLocalPoint];
   double *Buffer_Recv_Res = NULL;
   
@@ -2837,41 +2837,41 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
   }
-
+  
   /*--- Communicate Mach---*/
   if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-
+    
     /*--- Loop over this partition to collect the current variable ---*/
     jPoint = 0;
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
+      
       /*--- Check for halos & write only if requested ---*/
-
+      
       if (!Local_Halo[iPoint] || Wrt_Halo) {
-
+        
         /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
         if (compressible) {
-        	Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-        	          solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+          Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+          solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
         }
         if (incompressible || freesurface) {
-        	Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-        	          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
+          Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
+          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
         }
         jPoint++;
       }
     }
-
+    
     /*--- Gather the data on the master node. ---*/
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
+    
     /*--- The master node unpacks and sorts this variable by global index ---*/
     if (rank == MASTER_NODE) {
       jPoint = 0; iVar = iVar_MachMean;
       for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
         for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-
+          
           /*--- Get global index, then loop over each variable and store ---*/
           iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
           Data[iVar][iGlobal_Index]   = Buffer_Recv_Var[jPoint];
@@ -4034,10 +4034,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     strcat(cstr,buffer);
   }
   
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY))  sprintf (buffer, ".plt");
-  if ((config->GetOutput_FileFormat() == CGNS_SOL) ||
-      (config->GetOutput_FileFormat() == PARAVIEW))  sprintf (buffer, ".csv");
+  if (config->GetOutput_FileFormat() == TECPLOT) sprintf (buffer, ".dat");
+  else if (config->GetOutput_FileFormat() == TECPLOT_BINARY)  sprintf (buffer, ".plt");
+  else if ((config->GetOutput_FileFormat() == CGNS_SOL) ||
+           (config->GetOutput_FileFormat() == PARAVIEW))  sprintf (buffer, ".csv");
   strcat(cstr,buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -4066,6 +4066,10 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
     monitoring_coeff += ",\"CLift_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CDrag_"  + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CSideForce_" + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CFx_"    + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CFy_"    + Monitoring_Tag + "\"";
+    monitoring_coeff += ",\"CFz_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMx_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMy_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
@@ -4179,15 +4183,15 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-
-	int rank;
+  
+  int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
   rank = MASTER_NODE;
 #endif
   
-  /*--- If 1-D outputs requested, calculated them. Requires info from all nodes, 
+  /*--- If 1-D outputs requested, calculated them. Requires info from all nodes,
    Get area-averaged and flux-averaged values at the specified surface ---*/
   
   if (output_1d) {
@@ -4212,10 +4216,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     adj_turb_resid[1000], resid_aux[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
     heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000], end[1000];
     char oneD_outputs[1000];
-    double dummy = 0.0;
+    double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker, iMarker_Monitoring;
     
-    unsigned long LinSolvIter = 0;
+    unsigned long LinSolvIter = 0, iPointMaxResid;
     double timeiter = timeused/double(iExtIter+1);
     
     unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
@@ -4285,6 +4289,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     *aeroelastic_pitch  = NULL,
     *Surface_CLift      = NULL,
     *Surface_CDrag      = NULL,
+    *Surface_CSideForce = NULL,
+    *Surface_CFx        = NULL,
+    *Surface_CFy        = NULL,
+    *Surface_CFz        = NULL,
     *Surface_CMx        = NULL,
     *Surface_CMy        = NULL,
     *Surface_CMz        = NULL;
@@ -4342,6 +4350,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     aeroelastic_pitch  = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CLift      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CDrag      = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSideForce = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMx        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMy        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4409,6 +4421,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
             Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
             Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
+            Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+            Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
+            Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
+            Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
             Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
             Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
             Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
@@ -4692,6 +4708,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                 }
                 sprintf(surface_coeff, ", %12.10f",Surface_CDrag[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CSideForce[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CFx[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CFy[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
+                sprintf(surface_coeff, ", %12.10f",Surface_CFz[iMarker_Monitoring]);
+                strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CMx[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
                 sprintf(surface_coeff, ", %12.10f",Surface_CMy[iMarker_Monitoring]);
@@ -4841,24 +4865,24 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           switch (config[val_iZone]->GetKind_Solver()) {
             case EULER :                  case NAVIER_STOKES:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES:
-              cout << endl << " Min Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+              cout << endl << "Min Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
               ". Max Delta Time: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".";
               break;
               
             case TNE2_EULER: case TNE2_NAVIER_STOKES:
             case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-              cout << endl << " Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
+              cout << endl << "Min Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMin_Delta_Time()<< ". Max Delta Time: " << solver_container[val_iZone][MESH_0][TNE2_SOL]->GetMax_Delta_Time() << ".";
               break;
           }
         }
         else {
           if (flow) {
-            cout << endl << " Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
-            ". Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-            ". Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+            cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+            ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() <<
+            ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
           else {
-            cout << endl << " Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+            cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
           }
         }
         
@@ -4867,8 +4891,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES:
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
-            <<", located at point "<< solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
+            cout <<   ")." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)
@@ -4894,8 +4922,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case TNE2_EULER :  case TNE2_NAVIER_STOKES:
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0))
-            <<", located at point "<< solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max(0) << "." << endl;
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max_Coord(0);
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0)) << "." << endl;
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
+            cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
@@ -4909,8 +4941,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case RANS : case FLUID_STRUCTURE_RANS:
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0))
-            <<", located at point "<< solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0) << "." << endl;
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
+            cout <<   ")." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)
@@ -4932,7 +4968,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
+            else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
+            
             break;
             
           case WAVE_EQUATION :
@@ -4960,8 +4998,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case ADJ_EULER :              case ADJ_NAVIER_STOKES :
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
-            <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0) << "." << endl;
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
+            cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
@@ -4978,8 +5020,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case ADJ_RANS :
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0))
-            <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0) << "." << endl;
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
+            cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
@@ -5004,8 +5050,12 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           case ADJ_TNE2_EULER :              case ADJ_TNE2_NAVIER_STOKES :
             
             /*--- Visualize the maximum residual ---*/
-            cout << endl << " Maximum residual: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0))
-            <<", located at point "<< solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0) << "." << endl;
+            iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max_Coord(0);
+            cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0)) << "." << endl;
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
+            cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
@@ -5066,7 +5116,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             cout.width(15); cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else if (equiv_area) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CDrag; cout.width(15);
+          else if (equiv_area) { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); cout.width(15);
             cout.precision(4);
             cout.setf(ios::scientific,ios::floatfield);
             cout << Total_CNearFieldOF; }
@@ -5108,13 +5158,18 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
-          if (rotating_frame  && nDim == 3 ) {
+          if (rotating_frame && nDim == 3 ) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << Total_CT; cout.width(15);
             cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
+          else if (equiv_area) { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); cout.width(15);
+            cout.precision(4);
+            cout.setf(ios::scientific,ios::floatfield);
+            cout << Total_CNearFieldOF; }
           else { cout.width(15); cout << min(10000.0,max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0,max(-10000.0, Total_CDrag)); }
+          
           if (aeroelastic) {
             cout.setf(ios::scientific,ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -5347,6 +5402,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
       
       delete [] Surface_CLift;
       delete [] Surface_CDrag;
+      delete [] Surface_CSideForce;
+      delete [] Surface_CFx;
+      delete [] Surface_CFy;
+      delete [] Surface_CFz;
       delete [] Surface_CMx;
       delete [] Surface_CMy;
       delete [] Surface_CMz;
@@ -5702,7 +5761,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   SumPressure = 0.0, SumStagPressure = 0.0, SumArea = 0.0, SumMach = 0.0, SumTemperature = 0.0, SumForUref = 0.0, SumRhoU = 0.0, SumEnthalpy = 0.0,// sum of (local value ) * (dA) (integral)
   AveragePressure = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
-
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
@@ -5718,7 +5777,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     
     /*--- Loop over the vertices to compute the output ---*/
     
-  
+    
     if (Out1D == YES) {
       
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -5734,7 +5793,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitaryNormal[iDim] = -Normal[iDim]/Area;
-
+          
           Coord = geometry->node[iPoint]->GetCoord();
           
           if (compressible){
@@ -5757,7 +5816,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
           Velocity2 = solver_container->node[iPoint]->GetVelocity2();
           Temperature = solver_container->node[iPoint]->GetTemperature();
-
+          
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
           Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),(Gamma/(Gamma-1.0)));
           
@@ -5822,7 +5881,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   solver_container->SetOneD_Mach(AverageMach);
   solver_container->SetOneD_Temp(AverageTemperature);
   solver_container->SetOneD_MassFlowRate(MassFlowRate);
-
+  
   solver_container->SetOneD_FluxAvgPress(PressureRef);
   solver_container->SetOneD_FluxAvgDensity(DensityRef);
   solver_container->SetOneD_FluxAvgVelocity(VelocityRef);
@@ -5834,8 +5893,8 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
   short iSection, nSection;
   unsigned long iVertex, iPoint;
-  double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *Pressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
-  MomentInviscid[3], MomentDist[3], RefDensity, RefAreaCoeff, Pressure_Inf, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;;
+  double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
+  MomentInviscid[3], MomentDist[3], RefDensity, RefPressure, RefAreaCoeff, Pressure_Inf, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;
   vector<double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
   string Marker_Tag, Slice_Filename, Slice_Ext;
   ofstream Cp_File;
@@ -5848,7 +5907,32 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
   Plane_P0 = new double [3];
   Plane_Normal = new double [3];
-  Pressure = new double [geometry->GetnPoint()];
+  CPressure = new double[geometry->GetnPoint()];
+  
+  /*--- Compute some reference quantities and necessary values ---*/
+  RefDensity = solver_container->GetDensity_Inf();
+  RefPressure = solver_container->GetPressure_Inf();
+  RefAreaCoeff = config->GetRefAreaCoeff();
+  Velocity_Inf = solver_container->GetVelocity_Inf();
+  Pressure_Inf = solver_container->GetPressure_Inf();
+  Gamma = config->GetGamma();
+  Origin = config->GetRefOriginMoment(0);
+  RefLengthMoment  = config->GetRefLengthMoment();
+  Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  Beta             = config->GetAoS()*PI_NUMBER/180.0;
+  
+  if (grid_movement) {
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+      RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5860,8 +5944,12 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
     /*--- Copy the pressure to an auxiliar structure ---*/
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      if (compressible)   Pressure[iPoint] = solver_container->node[iPoint]->GetPressure();
-      if (incompressible || freesurface) Pressure[iPoint] = solver_container->node[iPoint]->GetPressureInc();
+      if (compressible) {
+        CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
+      }
+      if (incompressible || freesurface) {
+        CPressure[iPoint] = (solver_container->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff;
+      }
     }
     
     nSection = config->GetnSections();
@@ -5880,11 +5968,13 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       Plane_Normal[config->GetAxis_Orientation()] = 1.0;
       Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/double(nSection-1);
       
-      /*--- Compute the airfoil sections ---*/
+      /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
-      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection, MinXCoord, MaxXCoord, Pressure,
-                                       Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
-                                       Pressure_Airfoil, true, config);
+      geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, iSection,
+                                       MinXCoord, MaxXCoord, CPressure,
+                                       Xcoord_Airfoil, Ycoord_Airfoil,
+                                       Zcoord_Airfoil, Pressure_Airfoil, true,
+                                       config);
       
       if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
         cout << "Please check the config file, the section "<< iSection+1 <<" has not been detected." << endl;
@@ -5898,18 +5988,25 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         ofstream Cp_File;
         if (iSection == 0) {
-          Cp_File.open("Cp_Sections.plt", ios::out);
+          Cp_File.open("Cp_Sections.dat", ios::out);
           Cp_File << "TITLE = \"Airfoil sections\"" << endl;
-          Cp_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Pressure\"" << endl;
+          Cp_File << "VARIABLES = \"X\",\"Y\",\"Z\",\"Cp\"" << endl;
         }
-        else Cp_File.open("Cp_Sections.plt", ios::app);
+        else Cp_File.open("Cp_Sections.dat", ios::app);
         
         Cp_File << "ZONE T=\"SECTION_"<< (iSection+1) << "\", NODES= "<< Xcoord_Airfoil.size() << ", ELEMENTS= " << Xcoord_Airfoil.size()-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         
         /*--- Coordinates and pressure value ---*/
         
-        for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-          Cp_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+        if (config->GetSystemMeasurements() == SI) {
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            Cp_File << Xcoord_Airfoil[iVertex] <<" "<< Ycoord_Airfoil[iVertex] <<" "<< Zcoord_Airfoil[iVertex] <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+          }
+        }
+        if (config->GetSystemMeasurements() == US) {
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            Cp_File << Xcoord_Airfoil[iVertex]*12.0 <<" "<< Ycoord_Airfoil[iVertex]*12.0 <<" "<< Zcoord_Airfoil[iVertex]*12.0 <<" "<< Pressure_Airfoil[iVertex] <<  endl;
+          }
         }
         
         /*--- Basic conectivity ---*/
@@ -5923,35 +6020,11 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         /*--- Compute load distribution ---*/
         
-        RefDensity = solver_container->GetDensity_Inf();
-        RefAreaCoeff = config->GetRefAreaCoeff();
-        Velocity_Inf = solver_container->GetVelocity_Inf();
-        Pressure_Inf = solver_container->GetPressure_Inf();
-        Gamma = config->GetGamma();
-        Origin = config->GetRefOriginMoment(0);
-        RefLengthMoment  = config->GetRefLengthMoment();
-        Alpha            = config->GetAoA()*PI_NUMBER/180.0;
-        Beta             = config->GetAoS()*PI_NUMBER/180.0;
-        
-        if (grid_movement) {
-          Gas_Constant = config->GetGas_ConstantND();
-          Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-          Mach_Motion = config->GetMach_Motion();
-          RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-        }
-        else {
-          double RefVel2 = 0.0;
-          for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-            RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-        }
-        
-        factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
-        
         ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0;
         
         for (iVertex = 0; iVertex < Xcoord_Airfoil.size()-1; iVertex++) {
           
-          NDPressure = (0.5*(Pressure_Airfoil[iVertex]+Pressure_Airfoil[iVertex+1])-Pressure_Inf)*factor;
+          NDPressure = 0.5*(Pressure_Airfoil[iVertex]+Pressure_Airfoil[iVertex+1]);
           
           Force[0] = -(Zcoord_Airfoil[iVertex+1] - Zcoord_Airfoil[iVertex])*NDPressure;
           Force[1] = 0.0;
@@ -5978,12 +6051,12 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         ofstream Load_File;
         if (iSection == 0) {
-          Load_File.open("Load_Distribution.plt", ios::out);
+          Load_File.open("Load_Distribution.dat", ios::out);
           Load_File << "TITLE = \"Load distribution\"" << endl;
           Load_File << "VARIABLES = \"Y\",\"C<sub>L</sub>\",\"C<sub>D</sub>\",\"C<supb>My</sub>\"" << endl;
           Load_File << "ZONE T=\"Wing load distribution\", NODES= "<< nSection << ", ELEMENTS= " << nSection-1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
         }
-        else Load_File.open("Load_Distribution.plt", ios::app);
+        else Load_File.open("Load_Distribution.dat", ios::app);
         
         /*--- Coordinates and pressure value ---*/
         
@@ -6011,7 +6084,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
   delete [] Plane_P0;
   delete [] Plane_Normal;
-  delete [] Pressure;
+  delete [] CPressure;
   
 }
 
@@ -6355,6 +6428,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
   unsigned short nDim = geometry->GetnDim();
   double AoA = -(config->GetAoA()*PI_NUMBER/180.0);
+  double EAScaleFactor = config->GetEA_ScaleFactor(); // The EA Obj. Func. should be ~ force based Obj. Func.
   
   int rank = MESH_0;
   
@@ -6730,23 +6804,38 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     /*--- Create a file with the equivalent area distribution at each azimuthal angle ---*/
     
     NearFieldEA_file.precision(15);
-    NearFieldEA_file.open("NearFieldEA.plt", ios::out);
-    NearFieldEA_file << "TITLE = \"Nearfield Equivalent Area at each azimuthal angle \"" << endl;
-    NearFieldEA_file << "VARIABLES = \"Coord (local to the near-field cylinder)\"";
+    NearFieldEA_file.open("Equivalent_Area.dat", ios::out);
+    NearFieldEA_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
+    
+    if (config->GetSystemMeasurements() == US)
+      NearFieldEA_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\"";
+    else
+      NearFieldEA_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\"";
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
-      NearFieldEA_file << ", \"Equivalent Area, Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+      if (config->GetSystemMeasurements() == US)
+        NearFieldEA_file << ", \"Equivalent Area (ft<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
+      else
+        NearFieldEA_file << ", \"Equivalent Area (m<sup>2</sup>), Phi= " << PhiAngleList[iPhiAngle] << " deg.\"";
     }
     
     NearFieldEA_file << endl;
     for (iVertex = 0; iVertex < EquivArea_PhiAngle[0].size(); iVertex++) {
+      
       double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
       double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
-      NearFieldEA_file << scientific << XcoordRot - XcoordRot_init;
+      
+      if (config->GetSystemMeasurements() == US)
+        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+      else
+        NearFieldEA_file << scientific << (XcoordRot - XcoordRot_init);
+      
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
         NearFieldEA_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex];
       }
+      
       NearFieldEA_file << endl;
+      
     }
     NearFieldEA_file.close();
     
@@ -6769,6 +6858,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
     else {
       
       /*--- skip header lines ---*/
+      
       string line;
       getline(TargetEA_file, line);
       getline(TargetEA_file, line);
@@ -6790,10 +6880,11 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           double data;
           js >> data;
           
-          /*--- The first element in the table is the coordinate ---*/
+          /*--- The first element in the table is the coordinate (in or m)---*/
           
           if (iter != 0) row.push_back(data);
           iter++;
+          
         }
         TargetArea_PhiAngle_Trans.push_back(row);
       }
@@ -6801,6 +6892,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
       for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++)
         for (iVertex = 0; iVertex < EquivArea_PhiAngle[iPhiAngle].size(); iVertex++)
           TargetArea_PhiAngle[iPhiAngle][iVertex] = TargetArea_PhiAngle_Trans[iVertex][iPhiAngle];
+      
     }
     
     /*--- Divide by the number of Phi angles in the nearfield ---*/
@@ -6816,9 +6908,11 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         Coord_i = Xcoord_PhiAngle[iPhiAngle][iVertex];
         
         double Difference = EquivArea_PhiAngle[iPhiAngle][iVertex]-TargetArea_PhiAngle[iPhiAngle][iVertex];
-        if ((Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
+        double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][iVertex]);
         
-        InverseDesign += PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
+        if ((percentage < 0.1) || (Coord_i < XCoordBegin_OF) || (Coord_i > XCoordEnd_OF)) Difference = 0.0;
+        
+        InverseDesign += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*Difference*Difference;
         
       }
     
@@ -6833,18 +6927,24 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
           Weight_PhiAngle[iPhiAngle][iVertex] = 1.0;
           
           double Difference = EquivArea_PhiAngle[iPhiAngle][jVertex]-TargetArea_PhiAngle[iPhiAngle][jVertex];
-          if ((Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
+          double percentage = fabs(Difference)*100/fabs(TargetArea_PhiAngle[iPhiAngle][jVertex]);
           
-          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
+          if ((percentage < 0.1) || (Coord_j < XCoordBegin_OF) || (Coord_j > XCoordEnd_OF)) Difference = 0.0;
+          
+          NearFieldWeight_PhiAngle[iPhiAngle][iVertex] += EAScaleFactor*PhiFactor*Weight_PhiAngle[iPhiAngle][iVertex]*2.0*Difference*factor*sqrt(Coord_j-Coord_i);
         }
       }
     
     /*--- Write the Nearfield pressure at each Azimuthal PhiAngle ---*/
     
     EquivArea_file.precision(15);
-    EquivArea_file.open("nearfield_flow.plt", ios::out);
-    EquivArea_file << "TITLE = \"SU2 Equivalent area computation at each azimuthal angle \"" << endl;
-    EquivArea_file << "VARIABLES = \"Coord (local to the near-field cylinder)\",\"Equivalent area\",\"Target equivalent area\",\"NearField weight\",\"Pressure coefficient\"" << endl;
+    EquivArea_file.open("nearfield_flow.dat", ios::out);
+    EquivArea_file << "TITLE = \"Equivalent Area evaluation at each azimuthal angle\"" << endl;
+    
+    if (config->GetSystemMeasurements() == US)
+      EquivArea_file << "VARIABLES = \"Height (in) at radial distance "<< R_Plane*12.0 << " (cylindrical coordinate system)\",\"Equivalent Area (ft<sup>2</sup>)\",\"Target Equivalent Area (ft<sup>2</sup>)\",\"Cp\"" << endl;
+    else
+      EquivArea_file << "VARIABLES = \"Height (m) at radial distance "<< R_Plane << " (cylindrical coordinate system)\",\"Equivalent Area (m<sup>2</sup>)\",\"Target Equivalent Area (m<sup>2</sup>)\",\"Cp\"" << endl;
     
     for (iPhiAngle = 0; iPhiAngle < PhiAngleList.size(); iPhiAngle++) {
       EquivArea_file << fixed << "ZONE T= \"Azimuthal angle " << PhiAngleList[iPhiAngle] << " deg.\"" << endl;
@@ -6853,9 +6953,13 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
         double XcoordRot = Xcoord_PhiAngle[0][iVertex]*cos(AoA) - Zcoord_PhiAngle[0][iVertex]*sin(AoA);
         double XcoordRot_init = Xcoord_PhiAngle[0][0]*cos(AoA) - Zcoord_PhiAngle[0][0]*sin(AoA);
         
-        EquivArea_file << scientific << XcoordRot - XcoordRot_init << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
-        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << NearFieldWeight_PhiAngle[iPhiAngle][iVertex] << ", " <<
-        (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
+        if (config->GetSystemMeasurements() == US)
+          EquivArea_file << scientific << (XcoordRot - XcoordRot_init) * 12.0;
+        else
+          EquivArea_file << scientific << (XcoordRot - XcoordRot_init);
+        
+        EquivArea_file << scientific << ", " << EquivArea_PhiAngle[iPhiAngle][iVertex]
+        << ", " << TargetArea_PhiAngle[iPhiAngle][iVertex] << ", " << (Pressure_PhiAngle[iPhiAngle][iVertex]-Pressure_Inf)/Pressure_Inf << endl;
       }
     }
     

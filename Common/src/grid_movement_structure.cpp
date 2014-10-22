@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -1707,6 +1707,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 
 	/*--- Set to zero displacements of all the points that are not going to be moved
 	 except the surfaces ---*/
+  
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		Coord = geometry->node[iPoint]->GetCoord();
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -1718,6 +1719,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 			}
 		}
 	}
+  
 }
 
 void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
@@ -3357,11 +3359,11 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 					x = coord[0]; y = coord[1]; z = coord[2];
 					
 					double factor = 0.0; 
-					if ( z < config->GetParamDV(iDV, 3) )
+					if ( y < config->GetParamDV(iDV, 2) )
 						factor = 0.0;
-					if (( z >= config->GetParamDV(iDV, 3)) && ( z <= config->GetParamDV(iDV, 6)) )
-						factor = (z-config->GetParamDV(iDV, 3)) / (config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3));
-					if ( z > config->GetParamDV(iDV, 6) )
+					if (( y >= config->GetParamDV(iDV, 2)) && ( y <= config->GetParamDV(iDV, 5)) )
+						factor = (y-config->GetParamDV(iDV, 2)) / (config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2));
+					if ( y > config->GetParamDV(iDV, 5) )
 						factor = 1.0;
 					
 					cosT = cos(theta*factor); 
@@ -5762,18 +5764,26 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           
 				}
         
+#ifdef HAVE_MPI
+        if (config->GetKind_SU2() == SU2_PRT)
+          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfacePoints[iFFDBox] <<"."<<endl;
+#endif
+        
         nSurfacePoints[iFFDBox] = my_nSurfPoints;
         nSurfPoints = 0;
+        
 #ifdef HAVE_MPI
-        if (config->GetKind_SU2() != SU2_PRT)
+        if (config->GetKind_SU2() != SU2_PRT) {
           MPI_Allreduce(&my_nSurfPoints, &nSurfPoints, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-        else
-          nSurfPoints = my_nSurfPoints;
+          if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
+        }
+        else nSurfPoints = my_nSurfPoints;
 #else
 				nSurfPoints = my_nSurfPoints;
+        if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
 #endif
 				
-				if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<<endl;
+				
         
 			}
 			

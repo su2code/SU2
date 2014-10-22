@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.2 "eagle"
+#  \version 3.2.3 "eagle"
 #
 # Stanford University Unstructured (SU2) Code
 # Copyright (C) 2012 Aerospace Design Laboratory
@@ -456,7 +456,7 @@ class Project(object):
         results_plot.update(functions)
         results_plot.update(history.get('DIRECT',{}))
         
-        su2util.write_plot('history_project.plt',output_format,results_plot)
+        su2util.write_plot('history_project.dat',output_format,results_plot)
         
         
     def save(self):

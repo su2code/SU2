@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	unsigned short iMarker, iDim, iDV, iFFDBox, nZone = 1;
 	unsigned long iVertex, iPoint;
 	double delta_eps, my_Gradient, Gradient, *Normal, dS, *VarCoord, Sensitivity,
-  MeshScale, dalpha[3], deps[3], dalpha_deps;
+  dalpha[3], deps[3], dalpha_deps;
 	char *cstr;
 	ofstream Gradient_file, Jacobian_file;
 	bool *UpdatePoint, Comma;
@@ -289,10 +289,12 @@ int main(int argc, char *argv[]) {
 			cout << "Evaluate functional gradient using the continuous adjoint strategy." << endl;
 		
     /*--- Load the delta change in the design variable (finite difference step). ---*/
+    
 		delta_eps = config->GetDV_Value(iDV);
     my_Gradient = 0.0; Gradient = 0.0;
       
       /*--- Reset update points ---*/
+    
       for (iPoint = 0; iPoint < boundary->GetnPoint(); iPoint++)
         UpdatePoint[iPoint] = true;
       
@@ -306,7 +308,6 @@ int main(int argc, char *argv[]) {
 							Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
 							VarCoord = boundary->vertex[iMarker][iVertex]->GetVarCoord();
 							Sensitivity = boundary->vertex[iMarker][iVertex]->GetAuxVar();
-              MeshScale = config->GetMesh_Scale_Change();
               
 							dS = 0.0; 
 							for (iDim = 0; iDim < boundary->GetnDim(); iDim++) {
@@ -322,11 +323,12 @@ int main(int argc, char *argv[]) {
 							}
 							
               /*--- Store the geometric sensitivity for this DV (rows) & this node (column) ---*/
+              
               if (size == SINGLE_NODE) {
                 Jacobian_file  << ", " << dalpha_deps;
               }
               
-							my_Gradient += MeshScale*Sensitivity*dalpha_deps;
+							my_Gradient += Sensitivity*dalpha_deps;
 							UpdatePoint[iPoint] = false;
 						}
 					}
@@ -410,6 +412,7 @@ int main(int argc, char *argv[]) {
     }
 		
     /*--- End the line for the current DV in the geometric Jacobian file ---*/
+    
     if (size == SINGLE_NODE) Jacobian_file << endl;
 	}
 	
@@ -423,10 +426,12 @@ int main(int argc, char *argv[]) {
 	
 #ifdef HAVE_MPI
 	/*--- Finalize MPI parallelization ---*/
+  
 	MPI_Finalize();
 #endif
 	
 	/*--- End solver ---*/
+  
 	if (rank == MASTER_NODE) 
 	  cout << endl <<"------------------------- Exit Success (SU2_DOT) ------------------------" << endl << endl;
 	

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -100,6 +100,7 @@ enum SU2_COMPONENT {
   SU2_SOL = 7	/*!< \brief Running the SU2_SOL software. */
 };
 
+const unsigned int BUFSIZE = 3000000;		/*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		/*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_MARKER = 5000;	/*!< \brief Maximum number of markers. */
 const unsigned int MAX_NUMBER_PERIODIC = 10;	/*!< \brief Maximum number of periodic boundary conditions. */
@@ -746,6 +747,19 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE);
+
+/*!
+ * \brief types of residual criteria equations
+ */
+
+enum ENUM_RESIDUAL {
+	RHO_RESIDUAL = 1, 	      /*!< \brief Rho equation residual criteria equation. */
+	RHO_ENERGY_RESIDUAL = 2 	      /*!< \brief RhoE equation residual criteria equation. */
+};
+
+static const map<string, ENUM_RESIDUAL> Residual_Map = CCreateMap<string, ENUM_RESIDUAL>
+("RHO", RHO_RESIDUAL)
+("RHO_ENERGY", RHO_ENERGY_RESIDUAL);
 
 /*!
  * \brief types of Continuous equations

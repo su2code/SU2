@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -46,7 +46,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  */
 class CConfig {
 private:
@@ -54,8 +54,10 @@ private:
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
+	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
+  double* Subsonic_Nacelle_Box; /*!< \brief Coordinates of the box subsonic region */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -93,18 +95,17 @@ private:
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
-	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
   double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;	/*!< \brief Kind of adjoint function. */
-	unsigned short Kind_ObjFunc;	/*!< \brief Kind of objective function. */
-	unsigned short Kind_SensSmooth;	/*!< \brief Kind of sensitivity smoothing technique. */
-	unsigned short Continuous_Eqns;	/*!< \brief Which equations to treat continuously (Hybrid adjoint) */
-	unsigned short Discrete_Eqns;	/*!< \brief Which equations to treat discretely (Hybrid adjoint). */
+  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. \n SYNTAX: REGIME_TYPE = COMPRESSIBLE.\ingroup Config */
+  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. \n SYNTAX: OBJECTIVE_FUNCTION = DRAG_COEFFICIENT \ingroup Config */
+  unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique.  \n SYNTAX: SENS_SMOOTHING = NO_SMOOTH  \ingroup Config */
+  unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)  \n SYNTAX: CONTINUOUS_EQNS = EULER_EQNS \ingroup Config */
+  unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). \n SYNTAX: DISCRETE_EQNS NONE_EQNS \ingroup Config  */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
 	double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
@@ -243,8 +244,6 @@ private:
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
-	unsigned short MaxChildren;		/*!< \brief Maximum number of children. */
-	double MaxDimension;			/*!< \brief Maximum dimension of the aglomerated element compared with the whole domain. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
@@ -395,6 +394,7 @@ private:
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
+	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
 	double Cauchy_Eps,	/*!< \brief Epsilon used for the convergence. */
 	Cauchy_Eps_OneShot,	/*!< \brief Epsilon used for the one shot method convergence. */
@@ -976,12 +976,6 @@ public:
 	void SetRefOriginMoment_Z(unsigned short val_marker, double val_origin);
 
 	/*!
-	 * \brief Get maximum number of children in the agglomeration process.
-	 * \return Maximum number of children.
-	 */
-	unsigned short GetMaxChildren(void);
-
-	/*!
 	 * \brief Get index of the upper and lower horizontal plane.
 	 * \param[in] index - 0 means upper surface, and 1 means lower surface.
 	 * \return Index of the upper and lower surface.
@@ -994,6 +988,13 @@ public:
 	 * \return Integration limits for the equivalent area computation.
 	 */
 	double GetEA_IntLimit(unsigned short index);
+  
+  /*!
+	 * \brief Get the integration limits for the equivalent area computation.
+	 * \param[in] index - 0 means x_min, and 1 means x_max.
+	 * \return Integration limits for the equivalent area computation.
+	 */
+	double GetEA_ScaleFactor(void);
 
   /*!
 	 * \brief Get the limit value for the adjoint variables.
@@ -1007,6 +1008,12 @@ public:
 	 */
 	double *GetHold_GridFixed_Coord(void);
 
+  /*!
+   * \brief Get the the coordinates where of the box where a subsonic region is imposed.
+   * \return Coordinates where of the box where the grid is going to be a subsonic region.
+   */
+  double *GetSubsonic_Nacelle_Box(void);
+  
 	/*!
 	 * \brief Get the power of the dual volume in the grid adaptation sensor.
 	 * \return Power of the dual volume in the grid adaptation sensor.
@@ -1028,12 +1035,6 @@ public:
 	 *         and it will use and interpolation.
 	 */
 	unsigned short GetAxis_Orientation(void);
-
-	/*!
-	 * \brief Get the maximum dimension of the agglomerated element compared with the whole domain.
-	 * \return Maximum dimension of the agglomerated element.
-	 */
-	double GetMaxDimension(void);
 
 	/*!
 	 * \brief Get the ratio of density for a free surface problem.
@@ -3726,6 +3727,12 @@ public:
 	 * \return Name of the file with the appropriate objective function extension.
 	 */
   string GetObjFunc_Extension(string val_filename);
+  
+        /*!
+  	 * \brief Get functional that is going to be used to evaluate the residual flow convergence.
+  	 * \return Functional that is going to be used to evaluate the residual flow convergence.
+  	 */
+  	unsigned short GetResidual_Func_Flow(void);
 
 	/*!
 	 * \brief Get functional that is going to be used to evaluate the flow convergence.
@@ -4282,12 +4289,6 @@ public:
 	 * \return Value of the weight of the drag coefficient in the Sonic Boom optimization.
 	 */
 	double GetWeightCd(void);
-
-	/*!
-	 * \brief Value of ther constant viscous drag for Cl/Cd computation.
-	 * \return Value of ther constant viscous drag for Cl/Cd computation.
-	 */
-	double GetCteViscDrag(void);
 
   /*!
 	 * \brief Value of the azimuthal line to fix due to a misalignments of the nearfield.

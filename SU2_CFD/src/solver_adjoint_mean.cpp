@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -93,6 +93,11 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
   Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
   Point_Max = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   Residual_i = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
   Residual_j = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]    = 0.0;
   Res_Conv_i = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv_i[iVar]    = 0.0;
@@ -1167,7 +1172,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
   unsigned long iVertex, iPoint, iPointNearField, nPointNearField = 0;
   double factor = 1.0, AngleDouble, data, aux, *IntBound_Vector, *coord, sq_vel, *FlowSolution, WeightSB, MinDist = 1E6, Dist, DerivativeOF = 0.0, *Normal, Area, UnitNormal[3], velocity[3], Energy, Rho, sqvel, proj_vel, phi, a1, a2;
   double **A, **M, **AM, *b;
-  short iPhiAngle = 0, IndexNF_inv[180], iColumn;
+  short AngleInt = 0, IndexNF_inv[180], iColumn;
   ifstream index_file;
   string text_line;
   vector<vector<double> > NearFieldWeight;
@@ -1208,6 +1213,7 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
       istringstream is(line);
       
       /*--- The first row provides the azimuthal angle ---*/
+      
       if (nPointNearField == 0) {
         is >> data; // The first column is related with the coordinate
         while (is.good()) { is >> data; IndexNF.push_back(int(data)); }
@@ -1222,10 +1228,11 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     }
     
     /*--- Note tha the first row is the azimuthal angle ---*/
+    
     nPointNearField = nPointNearField - 1;
     
-    for (iPhiAngle = 0; iPhiAngle < 180; iPhiAngle++)
-      IndexNF_inv[iPhiAngle] = -1;
+    for (AngleInt = 0; AngleInt < 180; AngleInt++)
+      IndexNF_inv[AngleInt] = -1;
     
     for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
       IndexNF_inv[IndexNF[iIndex]] = iIndex;
@@ -1256,13 +1263,16 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
           DerivativeOF = 0.0;
           
           /*--- Just in case the functional depend also on the surface pressure ---*/
+          
           WeightSB = 1.0-config->GetWeightCd();
           
           double AoA, XcoordRot = 0.0, YcoordRot = 0.0, ZcoordRot = 0.0;
           
           if (nDim == 2) XcoordRot = coord[0];
           if (nDim == 3) {
+            
             /*--- Rotate the nearfield cylinder  ---*/
+            
             AoA = -(config->GetAoA()*PI_NUMBER/180.0);
             XcoordRot = coord[0]*cos(AoA) - coord[2]*sin(AoA);
             YcoordRot = coord[1];
@@ -1272,12 +1282,13 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
           switch (config->GetKind_ObjFunc()) {
             case EQUIVALENT_AREA :
               
-              if (nDim == 2) iPhiAngle = 0;
+              if (nDim == 2) AngleInt = 0;
+              
               if (nDim == 3) {
                 
                 /*--- Compute the azimuthal angle of the iPoint ---*/
                 
-                AngleDouble = atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER;
+                AngleDouble = fabs(atan(-YcoordRot/ZcoordRot)*180.0/PI_NUMBER);
                 
                 /*--- Fix an azimuthal line due to misalignments of the near-field ---*/
                 
@@ -1285,24 +1296,25 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
                 
                 if ((AngleDouble >= FixAzimuthalLine - 0.1) && (AngleDouble <= FixAzimuthalLine + 0.1)) AngleDouble = FixAzimuthalLine - 0.1;
                 
-                iPhiAngle = (short) floor(AngleDouble + 0.5);
-                if (iPhiAngle < 0) iPhiAngle = 180 + iPhiAngle;
+                AngleInt = (short) floor(AngleDouble + 0.5);
+                if (AngleInt < 0) AngleInt = 180 + AngleInt;
+                
               }
               
-              if (iPhiAngle <= 60) {
-                iColumn = IndexNF_inv[iPhiAngle];
+              if (AngleInt <= 60) {
+                iColumn = IndexNF_inv[AngleInt];
                 
                 /*--- An azimuthal angle is not defined... this happens with MG levels ---*/
                 
                 if (iColumn < 0.0) {
-                  if (IndexNF_inv[iPhiAngle+1] > 0) { iColumn = IndexNF_inv[iPhiAngle+1]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-1] > 0) { iColumn = IndexNF_inv[iPhiAngle-1]; goto end; }
-                  if (IndexNF_inv[iPhiAngle+2] > 0) { iColumn = IndexNF_inv[iPhiAngle+2]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-2] > 0) { iColumn = IndexNF_inv[iPhiAngle-2]; goto end; }
-                  if (IndexNF_inv[iPhiAngle+3] > 0) { iColumn = IndexNF_inv[iPhiAngle+3]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-3] > 0) { iColumn = IndexNF_inv[iPhiAngle-3]; goto end; }
-                  if (IndexNF_inv[iPhiAngle+4] > 0) { iColumn = IndexNF_inv[iPhiAngle+4]; goto end; }
-                  if (IndexNF_inv[iPhiAngle-4] > 0) { iColumn = IndexNF_inv[iPhiAngle-4]; goto end; }
+                  if (IndexNF_inv[AngleInt+1] > 0) { iColumn = IndexNF_inv[AngleInt+1]; goto end; }
+                  if (IndexNF_inv[AngleInt-1] > 0) { iColumn = IndexNF_inv[AngleInt-1]; goto end; }
+                  if (IndexNF_inv[AngleInt+2] > 0) { iColumn = IndexNF_inv[AngleInt+2]; goto end; }
+                  if (IndexNF_inv[AngleInt-2] > 0) { iColumn = IndexNF_inv[AngleInt-2]; goto end; }
+                  if (IndexNF_inv[AngleInt+3] > 0) { iColumn = IndexNF_inv[AngleInt+3]; goto end; }
+                  if (IndexNF_inv[AngleInt-3] > 0) { iColumn = IndexNF_inv[AngleInt-3]; goto end; }
+                  if (IndexNF_inv[AngleInt+4] > 0) { iColumn = IndexNF_inv[AngleInt+4]; goto end; }
+                  if (IndexNF_inv[AngleInt-4] > 0) { iColumn = IndexNF_inv[AngleInt-4]; goto end; }
                 }
                 
               end:
@@ -1626,7 +1638,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+  if (Output && (ErrorCounter >= 50) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
@@ -2137,7 +2149,7 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
       Res = Residual[iVar] + Res_TruncError[iVar];
       node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
       AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
     
   }
@@ -2172,7 +2184,7 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       Res = local_Residual[iVar] + local_Res_TruncError[iVar];
       node[iPoint]->AddSolution(iVar, -Res*Delta);
       AddRes_RMS(iVar, Res*Res);
-      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
     
   }
@@ -2223,7 +2235,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
     }
     
   }
@@ -2269,7 +2281,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
   ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
   LevelSet, Target_LevelSet, eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
-  dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3];
+  dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
   
   USens = new double[nVar];
   
@@ -2278,6 +2290,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
+  
+  if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
+  else scale = 1.0;
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -2393,7 +2408,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           /*--- Compute sensitivity for each surface point ---*/
           
-          CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area;
+          CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area * scale;
           
           /*--- Change the sign of the sensitivity if the normal has been flipped --*/
           
@@ -2408,7 +2423,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
-          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex] * Area;
+          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex];
           
         }
       }
@@ -2674,6 +2689,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       nVertex = geometry->nVertex[iMarker];
       
       /*--- Allocate the linear system ---*/
+      
       A = new double* [nVertex];
       b = new double [nVertex];
       ArchLength = new double [nVertex];
@@ -2682,6 +2698,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Initialization ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
         b[iVertex] = 0.0; ArchLength[iVertex] = 0.0;
         for (jVertex = 0; jVertex < nVertex; jVertex++)
@@ -2689,6 +2706,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Set the arch length ---*/
+      
       ArchLength[0] = 0.0;
       for (iVertex = 1; iVertex < nVertex; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex-1]->GetNode();
@@ -2700,6 +2718,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Remove the trailing edge effect ---*/
+      
       double MinPosSens = 0.0; double MinNegSens = 0.0;
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
         Sens = CSensitivity[iMarker][iVertex];
@@ -2719,11 +2738,13 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Set the right hand side of the system ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
         b[iVertex] = CSensitivity[iMarker][iVertex];
       }
       
       /*--- Set the mass matrix ---*/
+      
       double Coeff = 0.0, BackDiff = 0.0, ForwDiff = 0.0, CentDiff = 0.0;
       double epsilon = 5E-5;
       for (iVertex = 0; iVertex < nVertex; iVertex++) {
@@ -2757,22 +2778,26 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       }
       
       /*--- Add the gradient value in the main diagonal ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++)
         A[iVertex][iVertex] += 1.0;
       
       /*--- Dirichlet boundary condition ---*/
+      
       unsigned long iVertex = int(nVertex/2);
       A[iVertex][iVertex] = 1.0;
       A[iVertex][iVertex+1] = 0.0;
       A[iVertex][iVertex-1] = 0.0;
       
-      Gauss_Elimination(A, b, nVertex);
+      Gauss_Elimination(A, b, (unsigned short)nVertex);
       
       /*--- Set the new value of the sensitiviy ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++)
         CSensitivity[iMarker][iVertex] = b[iVertex];
       
       /*--- Deallocate the linear system ---*/
+      
       for (iVertex = 0; iVertex < nVertex; iVertex++)
         delete [] A[iVertex];
       delete [] A;
@@ -3299,7 +3324,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
       /*--- Conservative variables w/o reconstruction ---*/
       
       V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+      V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       numerics->SetPrimitive(V_i, V_j);
       
       /*--- Set face vector, and area ---*/
@@ -3418,7 +3443,7 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
         /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
         
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         numerics->SetPrimitive(V_i, V_j);
         
         /*--- Set Normal ---*/
@@ -3532,7 +3557,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
       /*--- Conservative variables w/o reconstruction ---*/
       
       V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+      V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       numerics->SetPrimitive(V_i, V_j);
       
       /*--- Set Normal ---*/
@@ -3559,7 +3584,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
 #else
   
   int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1];
+  MPI_Status send_stat[1], recv_stat[1], status;
   MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
@@ -3594,11 +3619,13 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
           for (iVar = 0; iVar < nVar; iVar++)
             Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
           
-          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
+          MPI_Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
+          
+//          MPI_Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
           
           /*--- Wait for this set of non-blocking comm. to complete ---*/
           
-          MPI_Waitall(1, send_req, send_stat);
+//          MPI_Waitall(1, send_req, send_stat);
           
         }
         
@@ -3628,11 +3655,13 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         
         if (jProcessor != rank) {
           
-          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
+          MPI_Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
+          
+//          MPI_Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
           
           /*--- Wait for the this set of non-blocking recv's to complete ---*/
           
-          MPI_Waitall(1, recv_req, recv_stat);
+//          MPI_Waitall(1, recv_req, recv_stat);
           
         }
         else {
@@ -3692,7 +3721,7 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
         /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
         
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-        V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+        V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         numerics->SetPrimitive(V_i, V_j);
         
         /*--- Set Normal ---*/
@@ -4469,7 +4498,11 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Define some auxiliary arrays related to the residual ---*/
   
   Point_Max    = new unsigned long[nVar]; for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
-  
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   Residual     = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]     = 0.0;
   Residual_RMS = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
   Residual_Max = new double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
@@ -4757,7 +4790,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
   MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (Output && (ErrorCounter >= 10) && (rank == MASTER_NODE) && (iMesh == MESH_0))
+  if (Output && (ErrorCounter >= 50) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
@@ -4993,7 +5026,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
   double *d = NULL, **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, div_phi, *Normal = NULL, Area,
-  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps;
+  normal_grad_psi5, normal_grad_T, sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet, temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v, psi5_tau_partial, psi5_tau_grad_vel, source_v_1, source_v_2, Density, Pressure = 0.0, div_vel, val_turb_ke, vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3], CrossProduct[3], delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}}, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru,dp_drv, dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, D[3][3], Dd[3], Mach_Inf, eps, scale = 1.0;
   
   double *USens = new double[nVar];
   double *UnitNormal = new double[nDim];
@@ -5024,6 +5057,9 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   double Gas_Constant = config->GetGas_ConstantND();
   double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   double Prandtl_Lam  = config->GetPrandtl_Lam();
+  
+  if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
+  else scale = 1.0;
   
   /*--- Compute gradient of the grid velocity, if applicable ---*/
   
@@ -5266,8 +5302,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           /*--- Compute sensitivity for each surface point ---*/
           
-          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area;
-          
+          CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area * scale;
+            
           /*--- Change the sign of the sensitivity if the normal has been flipped --*/
 
           if (geometry->node[iPoint]->GetFlip_Orientation())
@@ -5281,7 +5317,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
-          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex]*Area;
+          Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex];
           
         }
       }
