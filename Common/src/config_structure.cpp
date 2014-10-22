@@ -393,14 +393,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    velocity_y, velocity_z, ... ), i.e. primitive variables specified. */
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
-  /* DESCRIPTION: Outlet boundary marker(s)
-   Format: ( outlet marker, back pressure (static), ... ) */
+  /*!\par MARKER_OUTLET
+   *  DESCRIPTION: Outlet boundary marker(s)\n
+   Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
-  /* DESCRIPTION: Isothermal wall boundary marker(s)
-   Format: ( isothermal marker, wall temperature (static), ... ) */
+  /*!\par MARKER_ISOTHERMAL
+   * DESCRIPTION: Isothermal wall boundary marker(s)\n
+   * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
-  /* DESCRIPTION: Isothermal wall boundary marker(s)
-   Format: ( isothermal marker, wall temperature (static), ... ) */
+  /*!\par MARKER_ISOTHERMAL_NONCATALYTIC
+   *  DESCRIPTION: Isothermal wall boundary marker(s)\n
+   Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config */
   addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
   /* DESCRIPTION: Isothermal wall boundary marker(s)
    Format: ( isothermal marker, wall temperature (static), ... ) */

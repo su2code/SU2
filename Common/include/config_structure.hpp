@@ -101,11 +101,11 @@ private:
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
-  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. \n SYNTAX: REGIME_TYPE = COMPRESSIBLE.\ingroup Config */
-  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. \n SYNTAX: OBJECTIVE_FUNCTION = DRAG_COEFFICIENT \ingroup Config */
-  unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique.  \n SYNTAX: SENS_SMOOTHING = NO_SMOOTH  \ingroup Config */
-  unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)  \n SYNTAX: CONTINUOUS_EQNS = EULER_EQNS \ingroup Config */
-  unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). \n SYNTAX: DISCRETE_EQNS NONE_EQNS \ingroup Config  */
+  unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
+  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
+  unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
+  unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
 	double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
 	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
@@ -259,7 +259,7 @@ private:
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc. */
+	unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
 	Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
 	Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
 	Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
@@ -405,7 +405,7 @@ private:
 	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
-	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems). */
+	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
@@ -541,14 +541,14 @@ private:
 	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
 	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
 	ModVel_FreeStreamND,     /*!< \brief Total density of the fluid.  */
-	Density_FreeStream,     /*!< \brief Total density of the fluid.  */
+	Density_FreeStream,     /*!< \brief Total density of the fluid. */
 	Viscosity_FreeStream,     /*!< \brief Total density of the fluid.  */
 	Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
 	Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
 	TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
-	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid.  */
+	Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   *MassFrac_FreeStream, /*!< \brief Mixture mass fractions of the fluid. */
@@ -556,13 +556,13 @@ private:
 	Prandtl_Turb,     /*!< \brief Turbulent Prandtl number for the gas.  */
 	Length_Ref,       /*!< \brief Reference length for non-dimensionalization. */
 	Mesh_Scale_Change,       /*!< \brief Conversion factor from grid units to meters. */
-	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization. */
-	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization. */
-	Density_Ref,      /*!< \brief Reference density for non-dimensionalization. */
-	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization. */
+	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
+	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
+	Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
+	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
-	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
-	Energy_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
+	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization.*/
+	Energy_Ref,    /*!< \brief Reference energy for non-dimensionalization. */
 	Wall_Temperature,    /*!< \brief Temperature at an isotropic wall in Kelvin. */
 	Omega_Ref,        /*!< \brief Reference angular velocity for non-dimensionalization. */
 	Force_Ref,        /*!< \brief Reference body force for non-dimensionalization. */
