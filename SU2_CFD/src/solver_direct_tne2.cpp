@@ -2,7 +2,7 @@
  * \file solution_direct_tne2.cpp
  * \brief Main subrotuines for solving flows in thermochemical nonequilibrium.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * Copyright (C) 2012 Aerospace Design Laboratory
  *
@@ -120,8 +120,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar] = 0.0;
 	Residual_Max  = new double[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar] = 0.0;
-	Point_Max = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]    = 0;
 	Residual_i = new double[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]   = 0.0;
 	Residual_j = new double[nVar];
@@ -132,6 +130,16 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config,
   for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]     = 0.0;
 	Res_Sour = new double[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]     = 0.0;
+  
+  /*--- Define some structures for locating max residuals ---*/
+  
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   
 	/*--- Define some auxiliary vectors related to the solution ---*/
 	Solution   = new double[nVar];
@@ -2047,7 +2055,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     if (viscous) {
       cout << "Reynolds number (non-dim): " << config->GetReynolds() <<". Re length: " << config->GetLength_Reynolds();
       if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " in." << endl;
+      else if (config->GetSystemMeasurements() == US) cout << " ft." << endl;
     }
     if (gravity) {
       cout << "Froude number (non-dim): " << Froude << endl;
@@ -2955,7 +2963,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 						CMx_Inv[iMarker]          = 0.0;
 						CMy_Inv[iMarker]          = 0.0;
 						CMz_Inv[iMarker]          = MomentInviscid[2];
-						CEff_Inv[iMarker]         = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+						CEff_Inv[iMarker]         = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+EPS);
 						CFx_Inv[iMarker]          = ForceInviscid[0];
 						CFy_Inv[iMarker]          = ForceInviscid[1];
 						CFz_Inv[iMarker]          = 0.0;
@@ -2975,7 +2983,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 						CMx_Inv[iMarker] = MomentInviscid[0];
 						CMy_Inv[iMarker] = MomentInviscid[1];
 						CMz_Inv[iMarker] = MomentInviscid[2];
-						CEff_Inv[iMarker] = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+						CEff_Inv[iMarker] = CLift_Inv[iMarker]/(CDrag_Inv[iMarker]+EPS);
 						CFx_Inv[iMarker] = ForceInviscid[0];
 						CFy_Inv[iMarker] = ForceInviscid[1];
 						CFz_Inv[iMarker] = ForceInviscid[2];
@@ -3019,7 +3027,7 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&MyAllBound_CDrag_Inv, &AllBound_CDrag_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CLift_Inv, &AllBound_CLift_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CSideForce_Inv, &AllBound_CSideForce_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
+  AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + EPS);
   MPI_Allreduce(&MyAllBound_CMx_Inv, &AllBound_CMx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CMy_Inv, &AllBound_CMy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -3068,7 +3076,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
     
@@ -3125,7 +3133,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 			LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-			AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+			AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
 	}
   
@@ -5029,8 +5037,6 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
 	Residual_Max  = new double[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-	Point_Max  = new unsigned long[nVar];
-  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]  = 0;
 	Residual_i    = new double[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]    = 0.0;
 	Residual_j    = new double[nVar];
@@ -5041,6 +5047,15 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
 	Res_Sour      = new double[nVar];
   for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
+  
+  /*--- Define some structures for locating max residuals ---*/
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   
 	/*--- Define some auxiliary vectors related to the solution ---*/
 	Solution   = new double[nVar];

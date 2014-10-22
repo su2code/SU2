@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -56,17 +56,17 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
-inline unsigned short CConfig::GetMaxChildren(void) { return MaxChildren; }
-
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
 
 inline double CConfig::GetEA_IntLimit(unsigned short index) { return EA_IntLimit[index]; }
+
+inline double CConfig::GetEA_ScaleFactor(void) { return EA_ScaleFactor; }
 
 inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
-inline double CConfig::GetMaxDimension(void) { return MaxDimension; }
+inline double *CConfig::GetSubsonic_Nacelle_Box(void) { return Subsonic_Nacelle_Box; }
 
 inline double CConfig::GetRatioDensity(void) { return RatioDensity; }
 
@@ -904,6 +904,8 @@ inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_File
 
 inline string CConfig::GetSurfLinCoeff_FileName(void) { return SurfLinCoeff_FileName; }
 
+inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
+
 inline unsigned short CConfig::GetCauchy_Func_Flow(void) { return Cauchy_Func_Flow; }
 
 inline unsigned short CConfig::GetCauchy_Func_AdjFlow(void) { return Cauchy_Func_AdjFlow; }
@@ -951,8 +953,6 @@ inline double CConfig::GetDamp_Correc_Prolong(void) { return Damp_Correc_Prolong
 inline double CConfig::GetPosition_Plane(void) { return Position_Plane; }
 
 inline double CConfig::GetWeightCd(void) { return WeightCd; }
-
-inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 
 inline double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 

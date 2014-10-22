@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of Computational Fluid Dynamics Code (SU2_CFD).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -54,9 +54,12 @@ int main(int argc, char *argv[]) {
   int size = SINGLE_NODE;
   
   
-#ifdef HAVE_MPI
   /*--- MPI initialization, and buffer setting ---*/
+
+#ifdef HAVE_MPI
+  int *bptr, bl;
   MPI_Init(&argc,&argv);
+  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -402,10 +405,9 @@ MPI_Barrier(MPI_COMM_WORLD);
     
     UsedTime = (StopTime - StartTime);
     
-    /*--- For specific applications, evaluate and plot the equivalent area or flow rate. ---*/
+    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
     
-    if ((config_container[ZONE_0]->GetKind_Solver() == EULER) &&
-        (config_container[ZONE_0]->GetEquivArea() == YES)) {
+    if (config_container[ZONE_0]->GetEquivArea() == YES) {
       output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
@@ -535,6 +537,7 @@ MPI_Barrier(MPI_COMM_WORLD);
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Buffer_detach(&bptr,&bl);
   MPI_Finalize();
 #endif
   

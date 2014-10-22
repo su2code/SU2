@@ -3,7 +3,7 @@
 ## \file parse_config.py
 #  \brief Builds a worksheet of all SU2.cpp options
 #  \author Aniket Aranake, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.2 "eagle"
+#  \version 3.2.3 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #

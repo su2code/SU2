@@ -2,7 +2,7 @@
  * \file solution_adjoint_turbulent.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -50,6 +50,11 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	Residual   = new double [nVar]; Residual_RMS = new double[nVar];
 	Residual_i = new double [nVar]; Residual_j = new double [nVar];
 	Residual_Max = new double [nVar]; Point_Max = new unsigned long[nVar];
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   
 	Solution   = new double [nVar];
 	Solution_i = new double [nVar];
@@ -828,7 +833,7 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 			LinSysRes[total_index] = -LinSysRes[total_index];
 			LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
     
 	}

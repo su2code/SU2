@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -112,6 +112,14 @@ inline double CSolver::GetCDrag_Inv(unsigned short val_marker) { return 0; }
 inline double CSolver::GetSurface_CLift(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetSurface_CDrag(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CSideForce(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CFx(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CFy(unsigned short val_marker) { return 0; }
+
+inline double CSolver::GetSurface_CFz(unsigned short val_marker) { return 0; }
 
 inline double CSolver::GetSurface_CMx(unsigned short val_marker) { return 0; }
 
@@ -468,15 +476,20 @@ inline double CSolver::GetRes_RMS(unsigned short val_var) { return Residual_RMS[
 
 inline void CSolver::SetRes_Max(unsigned short val_var, double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
 
-inline void CSolver::AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point) { 
+inline void CSolver::AddRes_Max(unsigned short val_var, double val_residual, unsigned long val_point, double* val_coord) {
   if (val_residual > Residual_Max[val_var]) {
   Residual_Max[val_var] = val_residual;
-  Point_Max[val_var] = val_point; }
+  Point_Max[val_var] = val_point;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+  }
 }
 
 inline double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
+
+inline double* CSolver::GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }
 
 inline void CSolver::Set_OldSolution(CGeometry *geometry) {
 	for(unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
@@ -544,6 +557,14 @@ inline double CEulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDr
 inline double CEulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
 
 inline double CEulerSolver::GetSurface_CDrag(unsigned short val_marker) { return Surface_CDrag[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CSideForce(unsigned short val_marker) { return Surface_CSideForce[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CFx(unsigned short val_marker) { return Surface_CFx[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CFy(unsigned short val_marker) { return Surface_CFy[val_marker]; }
+
+inline double CEulerSolver::GetSurface_CFz(unsigned short val_marker) { return Surface_CFz[val_marker]; }
 
 inline double CEulerSolver::GetSurface_CMx(unsigned short val_marker) { return Surface_CMx[val_marker]; }
 

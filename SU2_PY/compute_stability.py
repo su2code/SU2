@@ -3,7 +3,7 @@
 ## \file compute_stability.py
 #  \brief Python script for performing the shape optimization.
 #  \author Francisco Palacios, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.2 "eagle"
+#  \version 3.2.3 "eagle"
 #
 # SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
 #
@@ -42,7 +42,7 @@ options.partitions = int( options.partitions )
 options.iterations = int( options.iterations )
 
 if options.oldpartitions != "oldpartitions":
-  print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.2, use -n flag instead \n")
+  print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.3, use -n flag instead \n")
   sys.exit()
 
 # load config, start state

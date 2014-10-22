@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -26,7 +26,7 @@ CWaveSolver::CWaveSolver(void) : CSolver() { }
 
 CWaveSolver::CWaveSolver(CGeometry *geometry, 
                              CConfig *config) : CSolver() {
-	unsigned short nMarker, iVar, nLineLets;
+	unsigned short nMarker, iDim, iVar, nLineLets;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -43,10 +43,18 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	Residual     = new double[nVar]; Residual_RMS = new double[nVar];
 	Solution     = new double[nVar];
   Res_Sour     = new double[nVar];
-  Residual_Max = new double[nVar]; Point_Max = new unsigned long[nVar];
+  Residual_Max = new double[nVar];
   
-
-	/*--- Point to point stiffness matrix (only for triangles)---*/	
+  /*--- Define some structures for locating max residuals ---*/
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+  
+	/*--- Point to point stiffness matrix (only for triangles)---*/
 	StiffMatrix_Elem = new double*[nDim+1];
 	for (iVar = 0; iVar < nDim+1; iVar++) {
 		StiffMatrix_Elem[iVar] = new double [nDim+1];
@@ -612,7 +620,7 @@ void CWaveSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 			total_index = iPoint*nVar+iVar;
 			LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex());
+            AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
 	}
     

@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
@@ -42,7 +42,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  */
 class CIntegration {
 protected:
@@ -203,7 +203,7 @@ public:
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config);
+	virtual void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief A virtual member.
@@ -269,7 +269,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
-								 CConfig *config);
+								 CConfig *config, unsigned short iMesh);
 	
 	/*! 
 	 * \brief A virtual member.
@@ -313,7 +313,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -424,7 +424,7 @@ public:
 	 * \param[in] geo_fine - Geometrical definition of the fine grid.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config);
+	void SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine, CConfig *config, unsigned short iMesh);
 
 	/*! 
 	 * \brief Compute truncation error in the coarse grid using the fine grid information. 
@@ -478,14 +478,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
-						 CConfig *config);
+						 CConfig *config, unsigned short iMesh);
 };
 
 /*! 
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 3.2.2 "eagle"
+ * \version 3.2.3 "eagle"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
