@@ -4894,8 +4894,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << "," << Coord[1];
-            if (nDim == 3) cout << "," << Coord[2];
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
@@ -4925,8 +4925,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << "," << Coord[1];
-            if (nDim == 3) cout << "," << Coord[2];
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -4944,8 +4944,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << "," << Coord[1];
-            if (nDim == 3) cout << "," << Coord[2];
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
@@ -5001,8 +5001,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << "," << Coord[1];
-            if (nDim == 3) cout << "," << Coord[2];
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -5023,8 +5023,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << "," << Coord[1];
-            if (nDim == 3) cout << "," << Coord[2];
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
@@ -5053,8 +5053,8 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << "," << Coord[1];
-            if (nDim == 3) cout << "," << Coord[2];
+            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";

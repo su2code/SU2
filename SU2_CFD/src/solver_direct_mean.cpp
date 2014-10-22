@@ -2355,6 +2355,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+  
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar, iDim;
   double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, XCoord, YCoord,
@@ -2364,12 +2365,14 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   unsigned short nDim = geometry[MESH_0]->GetnDim();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool aeroelastic = config->GetAeroelastic_Simulation();
-  bool gravity     = (config->GetGravityForce() == YES);
+  bool gravity = (config->GetGravityForce() == YES);
+  bool engine_intake = config->GetEngine_Intake();
   
   /*--- Set the location and value of the free-surface ---*/
   
@@ -2380,10 +2383,12 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         
         /*--- Set initial boundary condition at iter 0 ---*/
+        
         if ((ExtIter == 0) && (!restart)) {
           
           /*--- Compute the level set value in all the MG levels (basic case, distance to
            the Y/Z plane, and interpolate the solution to the coarse levels ---*/
+          
           if (iMesh == MESH_0) {
             XCoord = geometry[iMesh]->node[iPoint]->GetCoord(0);
             YCoord = geometry[iMesh]->node[iPoint]->GetCoord(1);
@@ -2407,6 +2412,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           }
           
           /*--- Compute the flow solution using the level set value. ---*/
+          
           epsilon = config->GetFreeSurface_Thickness();
           Heaviside = 0.0;
           if (LevelSet < -epsilon) Heaviside = 1.0;
@@ -2414,16 +2420,19 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           if (LevelSet > epsilon) Heaviside = 0.0;
           
           /*--- Set the value of the incompressible density for free surface flows (density ratio g/l) ---*/
+          
           lambda = config->GetRatioDensity();
           DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetDensityInc(DensityInc);
           
           /*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
+          
           lambda = config->GetRatioViscosity();
           ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetLaminarViscosityInc(ViscosityInc);
           
           /*--- Update solution with the new pressure ---*/
+          
           yFreeSurface = config->GetFreeSurface_Zero();
           PressFreeSurface = solver_container[iMesh][FLOW_SOL]->GetPressure_Inf();
           DensityFreeSurface = solver_container[iMesh][FLOW_SOL]->GetDensity_Inf();
@@ -2434,6 +2443,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Pressure);
           
           /*--- Update solution with the new velocity ---*/
+          
           Velx = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(0);
           Vely = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(1);
           RhoVelx = Velx * Density; RhoVely = Vely * Density;
@@ -2450,24 +2460,28 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
       
       /*--- Set the MPI communication ---*/
+      
       solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
       solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+      
     }
     
   }
   
   /*--- Set the pressure value in simulations with gravity ---*/
   
-  if (!freesurface && gravity) {
+  if (incompressible && gravity ) {
     
     for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
       
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         
         /*--- Set initial boundary condition at iter 0 ---*/
+        
         if ((ExtIter == 0) && (!restart)) {
           
           /*--- Update solution with the new pressure ---*/
+          
           PressRef = solver_container[iMesh][FLOW_SOL]->GetPressure_Inf();
           Density = solver_container[iMesh][FLOW_SOL]->GetDensity_Inf();
           yCoordRef = 0.0;
@@ -2480,22 +2494,27 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
       
       /*--- Set the MPI communication ---*/
+      
       solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
       solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
+      
     }
     
   }
   
-  /*--- Set subsonic initial condition for Engine intakes ---*/
+  /*--- Set subsonic initial condition for engine intakes ---*/
   
-  if (config->GetEngine_Intake()) {
+  if (engine_intake) {
     
     /*--- Set initial boundary condition at iteration 0 ---*/
+    
     if ((ExtIter == 0) && (!restart)) {
       
-      double *Coord;
-      double Velocity_FreeStream[3] = {0.0, 0.0, 0.0}, Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStream, Density_FreeStream, Pressure_FreeStream, Density_FreeStreamND, Pressure_FreeStreamND, ModVel_FreeStreamND, Energy_FreeStreamND, ModVel_FreeStream, T_ref = 0.0, S = 0.0, Mu_ref = 0.0;
-
+      double Velocity_FreeStream[3] = {0.0, 0.0, 0.0}, Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStream,
+      Density_FreeStream, Pressure_FreeStream, Density_FreeStreamND, Pressure_FreeStreamND, ModVel_FreeStreamND,
+      Energy_FreeStreamND, ModVel_FreeStream, T_ref = 0.0, S = 0.0, Mu_ref = 0.0, *Coord, MinCoordValues[3],
+      MaxCoordValues[3], *Subsonic_Nacelle_Box;
+      
       double Mach = 0.40;
       double Alpha = config->GetAoA()*PI_NUMBER/180.0;
       double Beta  = config->GetAoS()*PI_NUMBER/180.0;
@@ -2543,10 +2562,15 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           Energy_FreeStreamND = Pressure_FreeStreamND/(Density_FreeStreamND*Gamma_Minus_One)+0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
           
           Coord = geometry[iMesh]->node[iPoint]->GetCoord();
-
-          if (((Coord[0] >= 16.0) && (Coord[0] <= 20.0)) &&
-              ((Coord[1] >= 0.0) && (Coord[1] <= 0.7)) &&
-              ((Coord[2] >= 2.5) && (Coord[2] <= 4.0))) {
+          
+          Subsonic_Nacelle_Box = config->GetSubsonic_Nacelle_Box();
+          
+          MinCoordValues[0] = Subsonic_Nacelle_Box[0]; MinCoordValues[1] = Subsonic_Nacelle_Box[1]; MinCoordValues[2] = Subsonic_Nacelle_Box[2];
+          MaxCoordValues[0] = Subsonic_Nacelle_Box[3]; MaxCoordValues[1] = Subsonic_Nacelle_Box[4]; MaxCoordValues[2] = Subsonic_Nacelle_Box[5];
+          
+          if (((Coord[0] >= MinCoordValues[0]) && (Coord[0] <= MaxCoordValues[0])) &&
+              ((Coord[1] >= MinCoordValues[1]) && (Coord[1] <= MaxCoordValues[1])) &&
+              ((Coord[2] >= MinCoordValues[2]) && (Coord[2] <= MaxCoordValues[2]))) {
             
             solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Density_FreeStreamND);
             for (iDim = 0; iDim < nDim; iDim++)
@@ -2557,11 +2581,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
             for (iDim = 0; iDim < nDim; iDim++)
               solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(iDim+1, Velocity_FreeStreamND[iDim]);
             solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution_Old(nVar-1, Energy_FreeStreamND);
+            
           }
           
         }
         
         /*--- Set the MPI communication ---*/
+        
         solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
         solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
         
@@ -2575,6 +2601,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
    all the multigrid levels, this is important with the dual time strategy ---*/
   
   if (restart && (ExtIter == 0)) {
+    
     Solution = new double[nVar];
     for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -2595,7 +2622,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     delete [] Solution;
     
     /*--- Interpolate the turblence variable also, if needed ---*/
+    
     if (rans) {
+      
       unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
       Solution = new double[nVar_Turb];
       for (iMesh = 1; iMesh <= config->GetMGLevels(); iMesh++) {
@@ -2617,8 +2646,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
       delete [] Solution;
     }
+    
   }
-  
   
   /*--- The value of the solution for the first iteration of the dual time ---*/
   
@@ -2626,6 +2655,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
     /*--- Push back the initial condition to previous solution containers
      for a 1st-order restart or when simply intitializing to freestream. ---*/
+    
     for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
@@ -2641,6 +2671,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
+      
       solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, int(config->GetUnst_RestartIter()-1));
       
       /*--- Load an additional restart file for the turbulence model ---*/
@@ -2648,6 +2679,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, int(config->GetUnst_RestartIter()-1));
       
       /*--- Push back this new solution to time level N. ---*/
+      
       for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
@@ -2660,12 +2692,15 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   }
   
   if (aeroelastic) {
+    
     /*--- Reset the plunge and pitch value for the new unsteady step. ---*/
+    
     unsigned short iMarker_Monitoring;
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
       config->SetAeroelastic_pitch(iMarker_Monitoring,0.0);
       config->SetAeroelastic_plunge(iMarker_Monitoring,0.0);
     }
+    
   }
   
 }
@@ -3992,7 +4027,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
           if (Boundary != NEARFIELD_BOUNDARY) {
             CDrag_Inv[iMarker]  =  ForceInviscid[0]*cos(Alpha) + ForceInviscid[1]*sin(Alpha);
             CLift_Inv[iMarker]  = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[1]*cos(Alpha);
-            CEff_Inv[iMarker]   = CLift_Inv[iMarker] / (CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+            CEff_Inv[iMarker]   = CLift_Inv[iMarker] / (CDrag_Inv[iMarker]+EPS);
             CMz_Inv[iMarker]    = MomentInviscid[2];
             CFx_Inv[iMarker]    = ForceInviscid[0];
             CFy_Inv[iMarker]    = ForceInviscid[1];
@@ -4007,7 +4042,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
             CDrag_Inv[iMarker]      =  ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta);
             CLift_Inv[iMarker]      = -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha);
             CSideForce_Inv[iMarker] = -ForceInviscid[0]*sin(Beta)*cos(Alpha) + ForceInviscid[1]*cos(Beta) - ForceInviscid[2]*sin(Beta)*sin(Alpha);
-            CEff_Inv[iMarker]       = CLift_Inv[iMarker] / (CDrag_Inv[iMarker]+config->GetCteViscDrag()+EPS);
+            CEff_Inv[iMarker]       = CLift_Inv[iMarker] / (CDrag_Inv[iMarker]+EPS);
             CMx_Inv[iMarker]        = MomentInviscid[0];
             CMy_Inv[iMarker]        = MomentInviscid[1];
             CMz_Inv[iMarker]        = MomentInviscid[2];
@@ -4034,7 +4069,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
         AllBound_CQ_Inv           += CQ_Inv[iMarker];
         AllBound_CNearFieldOF_Inv += CNearFieldOF_Inv[iMarker];
         
-        AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
+        AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + EPS);
         AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
         
         /*--- Compute the coefficients per surface ---*/
@@ -4083,7 +4118,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&MyAllBound_CDrag_Inv, &AllBound_CDrag_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CLift_Inv, &AllBound_CLift_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CSideForce_Inv, &AllBound_CSideForce_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + config->GetCteViscDrag() + EPS);
+  AllBound_CEff_Inv = AllBound_CLift_Inv / (AllBound_CDrag_Inv + EPS);
   MPI_Allreduce(&MyAllBound_CMx_Inv, &AllBound_CMx_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CMy_Inv, &AllBound_CMy_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CMz_Inv, &AllBound_CMz_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -4166,7 +4201,7 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
   Total_CDrag         = AllBound_CDrag_Inv;
   Total_CLift         = AllBound_CLift_Inv;
   Total_CSideForce    = AllBound_CSideForce_Inv;
-  Total_CEff          = Total_CLift / (Total_CDrag + config->GetCteViscDrag() + EPS);
+  Total_CEff          = Total_CLift / (Total_CDrag + EPS);
   Total_CMx           = AllBound_CMx_Inv;
   Total_CMy           = AllBound_CMy_Inv;
   Total_CMz           = AllBound_CMz_Inv;
