@@ -1024,7 +1024,6 @@ void CAdjTNE2EulerSolver::SetForceProj_Vector(CGeometry *geometry,
 #endif
   
 	/*--- Compute coefficients needed for objective function evaluation. ---*/
-	C_d += config->GetCteViscDrag();
 	double C_p    = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 	double invCD  = 1.0 / C_d;
 	double CLCD2  = C_l / (C_d*C_d);

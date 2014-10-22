@@ -66,6 +66,8 @@ inline double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
+inline double *CConfig::GetSubsonic_Nacelle_Box(void) { return Subsonic_Nacelle_Box; }
+
 inline double CConfig::GetRatioDensity(void) { return RatioDensity; }
 
 inline double CConfig::GetFreeSurface_Thickness(void) { return FreeSurface_Thickness; }
@@ -951,8 +953,6 @@ inline double CConfig::GetDamp_Correc_Prolong(void) { return Damp_Correc_Prolong
 inline double CConfig::GetPosition_Plane(void) { return Position_Plane; }
 
 inline double CConfig::GetWeightCd(void) { return WeightCd; }
-
-inline double CConfig::GetCteViscDrag(void) { return CteViscDrag; }
 
 inline double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 

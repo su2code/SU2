@@ -1707,6 +1707,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 
 	/*--- Set to zero displacements of all the points that are not going to be moved
 	 except the surfaces ---*/
+  
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		Coord = geometry->node[iPoint]->GetCoord();
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -1718,6 +1719,7 @@ void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *c
 			}
 		}
 	}
+  
 }
 
 void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,

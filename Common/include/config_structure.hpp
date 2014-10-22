@@ -57,6 +57,7 @@ private:
 	double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   double AdjointLimit; /*!< \brief Adjoint variable limit */
+  double* Subsonic_Nacelle_Box; /*!< \brief Coordinates of the box subsonic region */
 	double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
 	unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -94,7 +95,6 @@ private:
 	double WeightCd; /*!< \brief Weight of the drag coefficient. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
-	double CteViscDrag;		/*!< \brief Constant value of the viscous drag. */
   double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
 	double *DV_Value;		/*!< \brief Previous value of the design variable. */
 	double LimiterCoeff;				/*!< \brief Limiter coefficient */
@@ -1008,6 +1008,12 @@ public:
 	 */
 	double *GetHold_GridFixed_Coord(void);
 
+  /*!
+   * \brief Get the the coordinates where of the box where a subsonic region is imposed.
+   * \return Coordinates where of the box where the grid is going to be a subsonic region.
+   */
+  double *GetSubsonic_Nacelle_Box(void);
+  
 	/*!
 	 * \brief Get the power of the dual volume in the grid adaptation sensor.
 	 * \return Power of the dual volume in the grid adaptation sensor.
@@ -4283,12 +4289,6 @@ public:
 	 * \return Value of the weight of the drag coefficient in the Sonic Boom optimization.
 	 */
 	double GetWeightCd(void);
-
-	/*!
-	 * \brief Value of ther constant viscous drag for Cl/Cd computation.
-	 * \return Value of ther constant viscous drag for Cl/Cd computation.
-	 */
-	double GetCteViscDrag(void);
 
   /*!
 	 * \brief Value of the azimuthal line to fix due to a misalignments of the nearfield.
