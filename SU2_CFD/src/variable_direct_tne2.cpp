@@ -1162,12 +1162,12 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
                                       double *val_dTvedU, double *val_eves,
                                       double *val_Cvves) {
   
-  bool ionization, nonphys, nrconvg, converr;
+  bool ionization, errT, errTve, NRconvg, Bconvg, nonPhys;
 	unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
-  double rho, rhoE, rhoEve, rhoE_f, rhoE_ref, rhoEve_t;
+  double rho, rhoE, rhoEve, rhoE_f, rhoE_ref, rhoEve_min, rhoEve_max, rhoEve_t;
   double Ru, sqvel, rhoCvtr, rhoCvve;
   double Tve, Tve2, Tve_o;
-  double f, df, tol;
+  double f, df, NRtol, Btol, scale;
   double Tmin, Tmax, Tvemin, Tvemax;
   double radical2;
   double *xi, *Ms, *hf, *Tref;
@@ -1176,16 +1176,32 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   // U:  [rho1, ..., rhoNs, rhou, rhov, rhow, rhoe, rhoeve]^T
   // V: [rho1, ..., rhoNs, T, Tve, u, v, w, P, rho, h, a, rhoCvtr, rhoCvve]^T
   
-  converr = false;
+  /*--- Set booleans ---*/
+  errT    = false;
+  errTve  = false;
+  nonPhys = false;
   
-  /*--- Read from config ---*/
+  /*--- Set temperature clipping values ---*/
+  Tmin   = 50.0;
+  Tvemin = 50.0;
+  Tmax   = 8E4;
+  Tvemax = 8E4;
+  
+  /*--- Set temperature algorithm paramters ---*/
+  NRtol    = 1.0E-4;    // Tolerance for the Newton-Raphson method
+  Btol     = 1.0E-4;    // Tolerance for the Bisection method
+  maxNIter = 18;        // Maximum Newton-Raphson iterations
+  maxBIter = 32;        // Maximum Bisection method iterations
+  scale    = 0.5;       // Scaling factor for Newton-Raphson step
+  
+  /*--- Read parameters from config ---*/
   xi         = config->GetRotationModes();      // Rotational modes of energy storage
   Ms         = config->GetMolar_Mass();         // Species molar mass
   Tref       = config->GetRefTemperature();     // Thermodynamic reference temperature [K]
   hf         = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
   ionization = config->GetIonization();
   
-  /*--- Rename for convenience ---*/
+  /*--- Rename variables for convenience ---*/
   Ru     = UNIVERSAL_GAS_CONSTANT;    // Universal gas constant [J/(kmol*K)]
   rhoE   = U[nSpecies+nDim];          // Density * energy [J/m3]
   rhoEve = U[nSpecies+nDim+1];        // Density * energy_ve [J/m3]
@@ -1194,38 +1210,39 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
   
-  /*--- Species & mixture density ---*/
+  
+  /*--- Assign species & mixture density ---*/
+  // Note: if any species densities are < 0, these values are re-assigned
+  //       in the primitive AND conserved vectors to ensure positive density
   V[RHO_INDEX] = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
-      U[iSpecies] = 1E-20;
-      converr = true;
+      U[iSpecies]            = 1E-20;
+      nonPhys                = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
-    V[RHO_INDEX] += U[iSpecies];
+    V[RHO_INDEX]            += U[iSpecies];
   }
   
-  /*--- Mixture velocity ---*/
+  
+  /*--- Assign mixture velocity ---*/
   sqvel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     V[VEL_INDEX+iDim] = U[nSpecies+iDim]/V[RHO_INDEX];
-    sqvel += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+    sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
   
   
-  /*--- T-R Temperature ---*/
-  // Set temperature clipping values
-  Tmin = 50.0;
-  Tmax = 8E4;
+  /*--- Translational-Rotational Temperature ---*/
   
   // Rename for convenience
-  rho      = V[RHO_INDEX];
+  rho = V[RHO_INDEX];
+  
+  // Determine properties of the mixture at the current state
   rhoE_f   = 0.0;
   rhoE_ref = 0.0;
   rhoCvtr  = 0.0;
-  
-  // Calculate mixture properties
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
     rhoCvtr  += U[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
     rhoE_ref += U[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * Tref[iSpecies];
@@ -1236,130 +1253,136 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   V[T_INDEX] = (rhoE - rhoEve - rhoE_f + rhoE_ref - 0.5*rho*sqvel) / rhoCvtr;
   V[RHOCVTR_INDEX] = rhoCvtr;
   
-  // Error checking
+  // Determine if the temperature lies within the acceptable range
   if (V[T_INDEX] < Tmin) {
     V[T_INDEX] = Tmin;
-    converr = true;
-//    cout << "T < Tmin" << endl;
-  }
-  if (V[T_INDEX] > Tmax){
+    nonPhys = true;
+    errT    = true;
+  } else if (V[T_INDEX] > Tmax){
     V[T_INDEX] = Tmax;
-    converr = true;
-//    cout << "T > Tmax" << endl;
+    nonPhys = true;
+    errT    = true;
   }
   
-  Tve = V[T_INDEX];
-  V[TVE_INDEX] = V[T_INDEX];
   
-  /*--- V-E Temperature ---*/
-  // Set temperature clipping values
-  Tvemin = 50.0;
-  Tvemax = 8E4;
-  
-  // Set tolerance for Newton-Raphson method
-  tol     = 1.0E-4;
-  maxNIter = 15;
-  maxBIter = 35;
+  /*--- Vibrational-Electronic Temperature ---*/
   
   // Check for non-physical solutions
-  nonphys = false;
-  V[TVE_INDEX] = Tvemin;
-  rhoEve_t = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
-  if (rhoEve < rhoEve_t) {
-    nonphys = true;
-    converr = true;
+  rhoEve_min = 0.0;
+  rhoEve_max = 0.0;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    rhoEve_min += U[iSpecies]*CalcEve(config, Tvemin, iSpecies);
+    rhoEve_max += U[iSpecies]*CalcEve(config, Tvemax, iSpecies);
+  }
+  if (rhoEve < rhoEve_min) {
+    errTve       = true;
+    nonPhys      = true;
     V[TVE_INDEX] = Tvemin;
-//    cout << "Tve < Tve min" << endl;
-  }
-  
-  V[TVE_INDEX] = Tvemax;
-  rhoEve_t = 0.0;
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    rhoEve_t += U[iSpecies]*CalcEve(config, V[TVE_INDEX], iSpecies);
-  if (rhoEve > rhoEve_t) {
-    nonphys = true;
-    converr = true;
+  } else if (rhoEve > rhoEve_max) {
+    errTve       = true;
+    nonPhys      = true;
     V[TVE_INDEX] = Tvemax;
-//    cout << "Tve > Tve max" << endl;
-  }
-  
-  // Initialize trial values of Tve for Newton-Raphson method
-//  Tve   = V[TVE_INDEX];
-//  Tve_o = V[TVE_INDEX];
-  Tve   = V[T_INDEX];
-  Tve_o = V[T_INDEX];
-
-  // Newton-Raphson
-  if (!nonphys) {
-    nrconvg = false;
-    for (iIter = 0; iIter < maxNIter; iIter++) {
-      rhoEve_t     = 0.0;
-      rhoCvve      = 0.0;
-      V[TVE_INDEX] = Tve;
-      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-        val_eves[iSpecies] = CalcEve(config, V[TVE_INDEX], iSpecies);
-        val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
-        rhoEve_t += U[iSpecies] * val_eves[iSpecies];
-        rhoCvve  += U[iSpecies] * val_Cvves[iSpecies];
-      }
-      
-      // Find the root
-      f  = rhoEve - rhoEve_t;
-      df = -rhoCvve;
-      Tve2 = Tve - (f/df)*0.5;
-      
-      // Check for non-physical conditions
-      if ((Tve2 != Tve2) || (Tve2 < 0)) {
-        nonphys = true;
-        break;
-      }
-      // Check for convergence
-      if (fabs(Tve2-Tve) < tol) {
-        nrconvg = true;
-        break;
-      }
-      // Update guess and iterate
-      Tve = Tve2;
-    }
+  } else {
     
-    // If converged, load in to the solution
-    if (nrconvg == true)
-      V[TVE_INDEX] = Tve;
+    /*--- Execute a Newton-Raphson root-finding method to find Tve ---*/
+    // Initialize to the translational-rotational temperature
+    Tve   = V[T_INDEX];
     
+    // Execute the root-finding method
+//    NRconvg = false;
+//    for (iIter = 0; iIter < maxNIter; iIter++) {
+//      rhoEve_t = 0.0;
+//      rhoCvve  = 0.0;
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        val_eves[iSpecies]  = CalcEve(config, Tve, iSpecies);
+//        val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+//        rhoEve_t += U[iSpecies]*val_eves[iSpecies];
+//        rhoCvve  += U[iSpecies]*val_Cvves[iSpecies];
+//      }
+//      
+//      // Find the root
+//      f  = U[nSpecies+nDim+1] - rhoEve_t;
+//      df = -rhoCvve;
+//      Tve2 = Tve - (f/df)*scale;
+//      
+//      // Check for nonphysical steps
+//      if ((Tve2 < Tvemin) || (Tve2 > Tvemax))
+//        break;
+////      if (Tve2 < Tvemin)
+////        Tve2 = Tvemin;
+////      else if (Tve2 > Tvemax)
+////        Tve2 = Tvemax;
+//      
+//      // Check for convergence
+//      if (fabs(Tve2 - Tve) < NRtol) {
+//        NRconvg = true;
+//        break;
+//      } else {
+//        Tve = Tve2;
+//      }
+//    }
+    
+    // If the Newton-Raphson method has converged, assign the value of Tve.
+    // Otherwise, execute a bisection root-finding method
+    if (NRconvg)
+      V[TVE_INDEX] = Tve;
     else {
       
-      // Bisection method
+      // Assign the bounds
       Tve_o = Tvemin;
       Tve2  = Tvemax;
       
+      // Execute the root-finding method
+      Bconvg = false;
       for (iIter = 0; iIter < maxBIter; iIter++) {
-        Tve = (Tve_o+Tve2)/2.0;
-        V[TVE_INDEX] = Tve;
+        Tve      = (Tve_o+Tve2)/2.0;
         rhoEve_t = 0.0;
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-          val_eves[iSpecies] = CalcEve(config, V[TVE_INDEX], iSpecies);
-          rhoEve_t += U[iSpecies] * val_eves[iSpecies];
+          val_eves[iSpecies] = CalcEve(config, Tve, iSpecies);
+          rhoEve_t          += U[iSpecies] * val_eves[iSpecies];
         }
         
-        if (fabs(rhoEve_t - rhoEve) < tol) {
+        if (fabs(rhoEve_t - U[nSpecies+nDim+1]) < Btol) {
           V[TVE_INDEX] = Tve;
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
+            val_Cvves[iSpecies] = CalcCvve(Tve, config, iSpecies);
+          Bconvg = true;
           break;
         } else {
           if (rhoEve_t > rhoEve) Tve2 = Tve;
           else                  Tve_o = Tve;
         }
       }
+      
+      // If absolutely no convergence, then assign to the TR temperature
+      if (!Bconvg) {
+        V[TVE_INDEX] = V[T_INDEX];
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+          val_eves[iSpecies]  = CalcEve(config, V[TVE_INDEX], iSpecies);
+          val_Cvves[iSpecies] = CalcCvve(V[TVE_INDEX], config, iSpecies);
+        }
+      }
     }
   }
   
   /*--- Set mixture rhoCvve ---*/
-  V[RHOCVVE_INDEX] = 0.0;
+  rhoCvve = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-  V[RHOCVVE_INDEX] += U[iSpecies]*val_Cvves[iSpecies];
+    rhoCvve += U[iSpecies]*val_Cvves[iSpecies];
+  V[RHOCVVE_INDEX] = rhoCvve;
+  
+  
+  /*--- If there are clipped temperatures, correct the energy terms ---*/
+//  if (errT) {
+//    U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
+//                       - rhoE_ref + 0.5*rho*sqvel;
+//  }
+//  if (errTve) {
+//    U[nSpecies+nDim]   = rhoCvtr*V[T_INDEX] + rhoCvve*V[TVE_INDEX] + rhoE_f
+//                       - rhoE_ref + 0.5*rho*sqvel;
+//    U[nSpecies+nDim+1] = rhoCvve*V[TVE_INDEX];
+//  }
+  
   
   /*--- Pressure ---*/
   V[P_INDEX] = 0.0;
@@ -1370,7 +1393,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
 
   if (V[P_INDEX] < 0.0) {
     V[P_INDEX] = 1E-20;
-    converr = true;
+    nonPhys = true;
   }
   
   /*--- Partial derivatives of pressure and temperature ---*/
@@ -1390,26 +1413,15 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   V[A_INDEX] = sqrt(radical2);
   
   if (radical2 < 0.0) {
-//    unsigned short iVar;
-    converr = true;
+    nonPhys = true;
     V[A_INDEX] = EPS;
-//    cout << "Soundspeed NaN" << endl;
-//    for (iVar = 0; iVar < nVar; iVar++)
-//      cout << "dPdU[" << iVar << "]: " << val_dPdU[iVar] << endl;
   }
   
   
   /*--- Enthalpy ---*/
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
   
-//  unsigned short iVar;
-//  for (iVar = 0; iVar < nPrimVar; iVar++)
-//    cout << "V[" << iVar << "]: " << V[iVar] << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << "dPdU[" << iVar << "]: " << val_dPdU[iVar] << endl;
-//  cin.get();
-  
-  return converr;
+  return nonPhys;
 }
 
 void CTNE2EulerVariable::Prim2ConsVar(CConfig *config, double *V, double *U) {
