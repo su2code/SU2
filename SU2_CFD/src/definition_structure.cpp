@@ -1248,7 +1248,7 @@ void Numerics_Preprocessing(CNumerics ****numerics_container,
       
       /*--- Incompressible flow, use artificial compressibility method ---*/
       
-      numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
+      numerics_container[MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
       numerics_container[MESH_0][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_AdjFlow(nDim, nVar_Adj_Flow, config);
 
       for (iMGlevel = 1; iMGlevel <= config->GetMGLevels(); iMGlevel++) {
