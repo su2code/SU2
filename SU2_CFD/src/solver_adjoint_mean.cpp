@@ -3079,8 +3079,9 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint;
-  double *Normal, *U, *Psi_Aux, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal, *Coord;
-  double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2, DensityInc = 0.0, BetaInc2 = 0.0;
+  double *Normal, *U, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal, *Coord,
+  *V_domain, *V_sym, *Psi_domain, *Psi_sym;;
+  double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2, NormalAdjVel;
   unsigned short iDim, iVar, jDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -3089,35 +3090,34 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
 
+  Normal = new double[nDim];
   UnitNormal = new double[nDim];
   Velocity = new double[nDim];
   Psi      = new double[nVar];
+  Psi_domain = new double[nVar];
+  Psi_sym = new double[nVar];
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       Coord = geometry->node[iPoint]->GetCoord();
-      
-      /*--- Create a copy of the adjoint solution ---*/
-      
-      Psi_Aux = node[iPoint]->GetSolution();
-      for (iVar = 0; iVar < nVar; iVar++) Psi[iVar] = Psi_Aux[iVar];
-      
-      /*--- Flow solution ---*/
-      
-      U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
       
       Area = 0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt(Area);
       
       for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim]   = -Normal[iDim]/Area;
+        UnitNormal[iDim] = -Normal[iDim]/Area;
       
       if (compressible) {
         
+        /*--- Flow solution ---*/
+        
+        U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+
         for (iDim = 0; iDim < nDim; iDim++)
           Velocity[iDim] = U[iDim+1] / U[0];
         
@@ -3159,10 +3159,10 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Flux of the Euler wall ---*/
         
-        Residual[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
+        Residual_i[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
-        Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
+          Residual_i[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
+        Residual_i[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
         
         /*--- Grid Movement ---*/
         
@@ -3171,53 +3171,61 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           double *GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel -= GridVel[iDim]*Normal[iDim];
-          Residual[0] -= ProjGridVel*Psi[0];
+          Residual_i[0] -= ProjGridVel*Psi[0];
           for (iDim = 0; iDim < nDim; iDim++)
-            Residual[iDim+1] -= ProjGridVel*Psi[iDim+1];
-          Residual[nVar-1] -= ProjGridVel*Psi[nVar-1];
+            Residual_i[iDim+1] -= ProjGridVel*Psi[iDim+1];
+          Residual_i[nVar-1] -= ProjGridVel*Psi[nVar-1];
         }
       }
       
       if (incompressible || freesurface) {
         
-        DensityInc = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-        BetaInc2 = solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2();
+        /*--- Set the normal vector ---*/
         
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = U[iDim+1] / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+        conv_numerics->SetNormal(Normal);
         
-        /*--- Compute projections ---*/
+        /*--- Retrieve solution at boundary node ---*/
         
-        phin = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          phin += Psi[iDim+1]*UnitNormal[iDim];
+        V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+        V_sym = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+        conv_numerics->SetPrimitive(V_domain, V_sym);
         
-        /*--- Introduce the boundary condition ---*/
+        /*--- Adjoint flow solution at the wall ---*/
         
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi[iDim+1] -= phin * UnitNormal[iDim];
-        
-        /*--- Inner products after introducing BC (Psi has changed) ---*/
-        
-        phis1 = 0.0; phis2 = Psi[0] * (BetaInc2 / DensityInc);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          phis1 -= Normal[iDim]*Psi[iDim+1];
-          phis2 += Velocity[iDim]*Psi[iDim+1];
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+          Psi_sym[iVar] = node[iPoint]->GetSolution(iVar);
         }
         
-        /*--- Flux of the Euler wall ---*/
+        /*--- Compute normal component of the adjoint velocity ---*/
         
-        Residual[0] = phis1;
+        NormalAdjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] = - phis2 * Normal[iDim];
+          NormalAdjVel += Psi_domain[iDim*1]*UnitNormal[iDim];
+
+        /*--- Remove the normal component ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Psi_domain[iDim*1] -= NormalAdjVel*UnitNormal[iDim];
+        
+        /*--- Set the value of the adjoint variables ---*/
+
+        conv_numerics->SetAdjointVar(Psi_domain, Psi_sym);
+        
+        /*--- Compute the upwind flux ---*/
+        
+        conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
         
       }
       
       /*--- Update residual ---*/
       
-      LinSysRes.SubtractBlock(iPoint, Residual);
+      LinSysRes.SubtractBlock(iPoint, Residual_i);
       
       /*--- Implicit stuff ---*/
+      
       if (implicit) {
         
         if (compressible) {
@@ -3260,24 +3268,6 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           }
         }
         
-        if (incompressible || freesurface) {
-          
-          /*--- Adjoint density ---*/
-          
-          Jacobian_ii[0][0] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[0][iDim+1] = - Normal[iDim];
-          
-          /*--- Adjoint velocities ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc) ;
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_ii[iDim+1][jDim+1] = - Normal[iDim] * Velocity[jDim];
-          }
-          
-        }
-        
          /*--- Update jacobian ---*/
         
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
@@ -3290,6 +3280,9 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   delete [] Velocity;
   delete [] UnitNormal;
   delete [] Psi;
+  delete [] Psi_domain;
+  delete [] Psi_sym;
+  delete [] Normal;
 }
 
 void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -4822,7 +4815,6 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Gradient and limiter of Adjoint Variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
-    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), node[jPoint]->GetLimiter());
 
     /*--- Viscosity and eddy viscosity---*/
     

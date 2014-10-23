@@ -2176,8 +2176,7 @@ void CAvgGradArtComp_AdjFlow::ComputeResidual(double *val_residual_i, double *va
   
   for (iVar = 0; iVar < nVar; iVar++)
     for (iDim = 0; iDim < nDim; iDim++)
-      Mean_GradPsiVar[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] + PsiVar_Grad_j[iVar][iDim])*
-      0.5*(PsiVar_Lim_i[iVar] + PsiVar_Lim_j[iVar]);
+      Mean_GradPsiVar[iVar][iDim] = 0.5*(PsiVar_Grad_i[iVar][iDim] + PsiVar_Grad_j[iVar][iDim]);
   
   /*--- Get projected flux tensor ---*/
   
