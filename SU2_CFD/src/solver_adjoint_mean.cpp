@@ -4819,10 +4819,11 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
                               solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
     numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     
-    /*--- Gradient of Adjoint Variables ---*/
+    /*--- Gradient and limiter of Adjoint Variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), node[jPoint]->GetGradient());
-    
+    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), node[jPoint]->GetLimiter());
+
     /*--- Viscosity and eddy viscosity---*/
     
     if (compressible) {
@@ -4886,6 +4887,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Gradient of adjoint variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
+    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 
     /*--- Set volume ---*/
     

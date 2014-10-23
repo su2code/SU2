@@ -751,7 +751,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
      (for non-conservative terms depending on gradients of flow adjoint vars.) ---*/
     PsiVar_Grad_i = solver_container[ADJFLOW_SOL]->node[iPoint]->GetGradient();
     numerics->SetAdjointVarGradient(PsiVar_Grad_i, NULL);
-    
+
     /*--- Set volume and distances to the surface ---*/
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
     numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
