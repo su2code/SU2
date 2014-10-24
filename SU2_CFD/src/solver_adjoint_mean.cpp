@@ -3203,12 +3203,12 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         
         NormalAdjVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          NormalAdjVel += Psi_domain[iDim*1]*UnitNormal[iDim];
+          NormalAdjVel += Psi_domain[iDim+1]*UnitNormal[iDim];
 
         /*--- Remove the normal component ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Psi_sym[iDim*1] -= NormalAdjVel*UnitNormal[iDim];
+          Psi_sym[iDim+1] -= NormalAdjVel*UnitNormal[iDim];
         
         /*--- Set the value of the adjoint variables ---*/
 
