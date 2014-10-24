@@ -2455,7 +2455,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW  ) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -4189,8 +4189,10 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       }
 
       /*--- For mass_flow objective function add B.C. contribution ---*/
-      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)
+      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE){
         Psi_outlet[0]+=1;
+      }
+
       
       /*--- Set the flow and adjoint states in the solver ---*/
       
