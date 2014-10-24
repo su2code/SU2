@@ -1089,12 +1089,12 @@ void CTNE2EulerVariable::CalcdTvedU(double *V, double *val_eves, CConfig *config
 
 bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
 
-  bool V_err, bkup;
+  bool nonPhys, bkup;
   unsigned short iVar;
   
   /*--- Convert conserved to primitive variables ---*/
-  V_err = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
-  if (V_err) {
+  nonPhys = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
+  if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
@@ -1102,7 +1102,7 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   
   SetVelocity2();
   
-  return !V_err;
+  return nonPhys;
   
 //	unsigned short iVar, iSpecies;
 //  bool check_dens, check_press, check_sos, check_temp, RightVol;
@@ -1289,7 +1289,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
     Tve   = V[T_INDEX];
     
     // Execute the root-finding method
-//    NRconvg = false;
+    NRconvg = false;
 //    for (iIter = 0; iIter < maxNIter; iIter++) {
 //      rhoEve_t = 0.0;
 //      rhoCvve  = 0.0;
@@ -2210,11 +2210,11 @@ void CTNE2NSVariable::SetVorticity(void) {
 
 bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
 
-  bool V_err, bkup;
+  bool nonPhys, bkup;
   unsigned short iVar;
   
-  V_err = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
-  if (V_err) {
+  nonPhys = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
+  if (nonPhys) {
     for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = Solution_Old[iVar];
     bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
@@ -2256,5 +2256,5 @@ bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
 //  cout << "kve: " << ThermalCond_ve << endl;
 //  cin.get();
  
-  return V_err;
+  return nonPhys;
 }

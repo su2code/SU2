@@ -2263,11 +2263,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         MassFrac_FreeStream = new double[nSpecies];
         for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
           MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
-//        MassFrac_FreeStream[0] = 0.78;
-//        MassFrac_FreeStream[1] = 0.19;
-//        MassFrac_FreeStream[2] = 0.01;
-//        MassFrac_FreeStream[3] = 0.01;
-//        MassFrac_FreeStream[4] = 0.01;
         
         /*--- Assign gas properties ---*/
         // Rotational modes of energy storage
