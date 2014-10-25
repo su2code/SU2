@@ -3079,9 +3079,9 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
                                    CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint;
-  double *Normal, *U, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal, *Coord,
-  *V_domain, *V_sym, *Psi_domain, *Psi_sym;;
-  double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2, NormalAdjVel;
+  double *Normal, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal, *Coord,
+  *V_domain, *V_sym, *Psi_domain, *Psi_sym, *Velocity, Enthalpy = 0.0,
+  sq_vel, phin, phis1, phis2, NormalAdjVel;
   unsigned short iDim, iVar, jDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -3093,11 +3093,11 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   Normal = new double[nDim];
   UnitNormal = new double[nDim];
   Velocity = new double[nDim];
-  Psi      = new double[nVar];
   Psi_domain = new double[nVar];
   Psi_sym = new double[nVar];
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     if (geometry->node[iPoint]->GetDomain()) {
@@ -3110,16 +3110,18 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
       Area = sqrt(Area);
       
       for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
+        UnitNormal[iDim]   = -Normal[iDim]/Area;
       
       if (compressible) {
         
-        /*--- Flow solution ---*/
+        /*--- Create a copy of the adjoint solution ---*/
         
-        U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+
+        /*--- Retrieve flow variables ---*/
 
         for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = U[iDim+1] / U[0];
+          Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
         
         Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
         sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
@@ -3130,7 +3132,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
         for (iDim = 0; iDim < nDim; iDim++) {
           ProjVel -= Velocity[iDim]*Normal[iDim];
           vn      += Velocity[iDim]*UnitNormal[iDim];
-          phin    += Psi[iDim+1]*UnitNormal[iDim];
+          phin    += Psi_domain[iDim+1]*UnitNormal[iDim];
         }
         
         /*--- Grid Movement ---*/
@@ -3141,28 +3143,28 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           for (iDim = 0; iDim < nDim; iDim++) {
             ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
           }
-          phin -= Psi[nVar-1]*ProjGridVel;
+          phin -= Psi_domain[nVar-1]*ProjGridVel;
         }
         
         /*--- Introduce the boundary condition ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Psi[iDim+1] -= phin * UnitNormal[iDim];
+          Psi_domain[iDim+1] -= phin * UnitNormal[iDim];
         
         /*--- Inner products after introducing BC (Psi has changed) ---*/
         
-        phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
+        phis1 = 0.0; phis2 = Psi_domain[0] + Enthalpy * Psi_domain[nVar-1];
         for (iDim = 0; iDim < nDim; iDim++) {
-          phis1 -= Normal[iDim]*Psi[iDim+1];
-          phis2 += Velocity[iDim]*Psi[iDim+1];
+          phis1 -= Normal[iDim]*Psi_domain[iDim+1];
+          phis2 += Velocity[iDim]*Psi_domain[iDim+1];
         }
         
         /*--- Flux of the Euler wall ---*/
         
-        Residual_i[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
+        Residual_i[0] = ProjVel * Psi_domain[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual_i[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
-        Residual_i[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
+          Residual_i[iDim+1] = ProjVel * Psi_domain[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
+        Residual_i[nVar-1] = ProjVel * Psi_domain[nVar-1] + phis1 * Gamma_Minus_One;
         
         /*--- Grid Movement ---*/
         
@@ -3171,11 +3173,12 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
           double *GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel -= GridVel[iDim]*Normal[iDim];
-          Residual_i[0] -= ProjGridVel*Psi[0];
+          Residual_i[0] -= ProjGridVel*Psi_domain[0];
           for (iDim = 0; iDim < nDim; iDim++)
-            Residual_i[iDim+1] -= ProjGridVel*Psi[iDim+1];
-          Residual_i[nVar-1] -= ProjGridVel*Psi[nVar-1];
+            Residual_i[iDim+1] -= ProjGridVel*Psi_domain[iDim+1];
+          Residual_i[nVar-1] -= ProjGridVel*Psi_domain[nVar-1];
         }
+        
       }
       
       if (incompressible || freesurface) {
@@ -3278,11 +3281,11 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   }
   
   delete [] Velocity;
-  delete [] UnitNormal;
-  delete [] Psi;
   delete [] Psi_domain;
   delete [] Psi_sym;
   delete [] Normal;
+  delete [] UnitNormal;
+  
 }
 
 void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
