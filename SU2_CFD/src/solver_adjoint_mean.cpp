@@ -4127,15 +4127,16 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /*--- Shorthand for repeated term in the boundary conditions ---*/
           
           //a1 = Gamma*(P_Exit/(Density*Gamma_Minus_One))/(Vn-Ubn);
-          a1 = sqrt(Gamma*P_Exit/Density)/(Gamma_Minus_One*(Vn-Ubn));
+
+          a1 = sqrt(Gamma*P_Exit/Density)/(Gamma_Minus_One);
           
           /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
           
           Psi_outlet[nVar-1] = Psi_domain[nVar-1];
           Psi_outlet[0] = 0.5*Psi_outlet[nVar-1]*Velocity2;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Psi_outlet[0]   += Psi_outlet[nVar-1]*a1*Velocity[iDim]*UnitNormal[iDim]*(Vn-Ubn);
-            Psi_outlet[iDim+1] = -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim]*(Vn-Ubn) + Velocity[iDim]);
+            Psi_outlet[0]   += Psi_outlet[nVar-1]*a1*Velocity[iDim]*UnitNormal[iDim];
+            Psi_outlet[iDim+1] = -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
           }
           
         }

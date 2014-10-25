@@ -4199,6 +4199,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                                      unsigned short val_iZone) {
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
+  bool output_massflow = (config[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;
@@ -4219,7 +4220,15 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
     }
   }
-  
+  if (output_massflow){
+    switch (config[val_iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
+      case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
+        SetMassFlowRate(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+    }
+  }
+
   /*--- Output using only the master node ---*/
   if (rank == MASTER_NODE) {
     
@@ -4275,18 +4284,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     bool output_per_surface = false;
     if(config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
 
-    bool output_massflow = (config[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE);
 
-    unsigned short iDim, iMarker_monitor;
-    unsigned long iVertex, iPoint;
-    double Vector[3];
 
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0;
-
     double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0;
     
@@ -4478,21 +4482,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
 
 
         if (output_massflow) {
-          Total_Mdot = 0.0;
-          for (iMarker = 0; iMarker< config[ZONE_0]->GetnMarker_Monitoring(); iMarker++) {
-            iMarker_monitor = config[val_iZone]->GetMarker_All_Monitoring(iMarker);
-
-            for (iVertex = 0; iVertex < geometry[val_iZone][FinestMesh]->nVertex[ iMarker_monitor ]; iVertex++) {
-              iPoint = geometry[val_iZone][FinestMesh]->vertex[iMarker_monitor][iVertex]->GetNode();
-
-              if (geometry[val_iZone][FinestMesh]->node[iPoint]->GetDomain()) {
-                geometry[val_iZone][FinestMesh]->vertex[iMarker_monitor][iVertex]->GetNormal(Vector);
-                for (iDim = 0; iDim < nDim; iDim++){
-                  Total_Mdot += Vector[iDim]*(solver_container[val_iZone][FinestMesh][FLOW_SOL]->node[iPoint]->GetSolution(iDim+1));
-                }
-              }
-            }
-          }
+          Total_Mdot = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
         }
 
         /*--- Flow Residuals ---*/
@@ -5802,6 +5792,36 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 #endif
     
   }
+}
+
+void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config){
+  unsigned short iDim, iMarker_monitor, iMarker;
+  unsigned long iVertex, iPoint;
+  double Vector[3],Total_Mdot=0.0;
+  unsigned short nDim = geometry->GetnDim();
+
+  for (iMarker = 0; iMarker< config->GetnMarker_Monitoring(); iMarker++) {
+    iMarker_monitor = config->GetMarker_All_Monitoring(iMarker);
+
+    for (iVertex = 0; iVertex < geometry->nVertex[ iMarker_monitor ]; iVertex++) {
+      iPoint = geometry->vertex[iMarker_monitor][iVertex]->GetNode();
+
+      if (geometry->node[iPoint]->GetDomain()) {
+        geometry->vertex[iMarker_monitor][iVertex]->GetNormal(Vector);
+        for (iDim = 0; iDim < nDim; iDim++){
+          Total_Mdot += Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Add AllBound information using all the nodes ---*/
+  double My_Total_Mdot    = Total_Mdot;    Total_Mdot = 0.0;
+  MPI_Allreduce(&My_Total_Mdot, &Total_Mdot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  /*--- Set the output: reusing same variable from OneDimensionalOutput code ---*/
+  solver_container->SetOneD_MassFlowRate(Total_Mdot);
 }
 
 void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
