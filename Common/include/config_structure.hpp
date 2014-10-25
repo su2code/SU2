@@ -48,9 +48,10 @@ using namespace std;
  * \author F. Palacios.
  * \version 3.2.3 "eagle"
  */
+
 class CConfig {
 private:
-	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component. */
+	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
 	unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	double MinLogResidual; /*!< \brief Minimum value of the log residual. */
