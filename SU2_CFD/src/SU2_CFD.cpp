@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
+
   /*--- Definition and of the containers for all possible zones. ---*/
   
   solver_container      = new CSolver***[nZone];
