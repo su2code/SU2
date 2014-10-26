@@ -5360,15 +5360,19 @@ void CEulerSolver::GetNacelle_Properties(CGeometry *geometry, CConfig *config, u
     
     cout << endl << "---------------------------- Engine properties --------------------------" << endl;
     for (iMarker_NacelleInflow = 0; iMarker_NacelleInflow < nMarker_NacelleInflow; iMarker_NacelleInflow++) {
-      cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow)
-      << "): MassFlow (kg/s): " << FanFace_MassFlow_Total[iMarker_NacelleInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref()
+      cout << "Nacelle inflow ("<< config->GetMarker_NacelleInflow(iMarker_NacelleInflow);
+      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
+      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
+      cout << FanFace_MassFlow_Total[iMarker_NacelleInflow] * config->GetDensity_Ref() * config->GetVelocity_Ref()
       << ", Mach: " << FanFace_Mach_Total[iMarker_NacelleInflow]
       << ", Area: " << FanFace_Area_Total[iMarker_NacelleInflow] <<"."<< endl;
     }
     
     for (iMarker_NacelleExhaust = 0; iMarker_NacelleExhaust < nMarker_NacelleExhaust; iMarker_NacelleExhaust++) {
-      cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust)
-      << "): MassFlow (kg/s): " << Exhaust_MassFlow_Total[iMarker_NacelleExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref()
+      cout << "Nacelle exhaust ("<< config->GetMarker_NacelleExhaust(iMarker_NacelleExhaust);
+      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
+      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (slug/s): ";
+      cout << Exhaust_MassFlow_Total[iMarker_NacelleExhaust] * config->GetDensity_Ref() * config->GetVelocity_Ref()
       << ", Area: " << Exhaust_Area_Total[iMarker_NacelleExhaust] <<"."<< endl;
     }
     cout << "-------------------------------------------------------------------------" << endl;
