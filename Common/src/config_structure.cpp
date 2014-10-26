@@ -472,7 +472,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("SUBSONIC_NACELLE_BOX", 6, Subsonic_Nacelle_Box, default_vec_6d);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  addInletFixedOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addExhaustOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -1169,6 +1169,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 
   /*--- Parse the configuration file and set the options ---*/
   while (getline (case_file,text_line)) {
+    
     if (err_count >= max_err_count){
       errorString.append("too many errors. Stopping parse");
 
@@ -1176,7 +1177,9 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
       cout << errorString << endl;
       throw(1);
     }
+    
     if (TokenizeString(text_line, option_name, option_value)) {
+      
       if (option_map.find(option_name) == option_map.end()){
         // See if it's a python option
           string newString;
@@ -1198,6 +1201,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
         err_count++;
         continue;
       }
+
 
       // New found option. Add it to the map, and delete from all options
       included_options.insert(pair<string,bool>(option_name, true));

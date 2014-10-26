@@ -844,6 +844,7 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   template <class Tenum>
+  
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                  double* & var1, double* & var2, double** & FlowDir){
     assert(option_map.find(name) == option_map.end());
@@ -852,11 +853,11 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addInletFixedOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
+  void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                       double* & Ttotal, double* & Ptotal){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string,bool>(name,true));
-    COptionBase* val = new COptionInletFixed(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal);
+    COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
