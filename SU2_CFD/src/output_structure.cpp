@@ -1933,7 +1933,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short nDim = geometry->GetnDim();
   double RefAreaCoeff = config->GetRefAreaCoeff();
   double Gamma = config->GetGamma();
-  double RefVel2;
+  double RefVel2, *Normal, Area;
   
   /*--- Set the non-dimensionalization ---*/
   if (flow) {
@@ -2192,7 +2192,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex);
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+          Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex)/Area;
         }
       }
   }
@@ -2206,7 +2210,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Sens[iPoint] = solver[ADJTNE2_SOL]->GetCSensitivity(iMarker,iVertex);
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+          Aux_Sens[iPoint] = solver[ADJTNE2_SOL]->GetCSensitivity(iMarker,iVertex)/Area;
         }
       }
   }
@@ -3389,7 +3397,11 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
         for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex);
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+          Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker,iVertex)/Area;
         }
       }
     
@@ -4894,7 +4906,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            cout <<"Max resid. point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
@@ -4925,7 +4937,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][TNE2_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            cout <<"Max resid. point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
@@ -4944,7 +4956,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            cout <<"Max resid. point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
@@ -5001,7 +5013,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            cout <<"Max resid. point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
@@ -5023,7 +5035,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            cout <<"Max resid. point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
@@ -5053,7 +5065,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetPoint_Max_Coord(0);
             cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJTNE2_SOL]->GetRes_Max(0)) << "." << endl;
-            cout <<"Max residual point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
+            cout <<"Max resid. point " << iPointMaxResid << " is located at (" << Coord[0] << ", " << Coord[1];
             if (nDim == 3) cout << ", " << Coord[2];
             cout <<   ")." << endl;
             
