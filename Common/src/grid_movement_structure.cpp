@@ -3004,7 +3004,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 																			unsigned short iDV, bool ResetDef) {
 	
 	double movement[3], Ampl;
-	unsigned short index[3];
+    unsigned short index[3], i, j;
 	string design_FFDBox;
   
 	design_FFDBox = config->GetFFDTag(iDV);
@@ -3018,15 +3018,42 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     /*--- Compute deformation ---*/
     
 		Ampl = config->GetDV_Value(iDV);
-		
-		index[0] = int(config->GetParamDV(iDV, 1));
-		index[1] = int(config->GetParamDV(iDV, 2)); 
-    index[2] = 0;
 
-		movement[0] = config->GetParamDV(iDV, 3)*Ampl;
-		movement[1] = config->GetParamDV(iDV, 4)*Ampl;
-		movement[2] = 0.0;
-		
+        movement[0] = config->GetParamDV(iDV, 4)*Ampl;
+        movement[1] = config->GetParamDV(iDV, 5)*Ampl;
+        movement[2] = 0.0;
+
+        index[0] = int(config->GetParamDV(iDV, 1));
+        index[1] = int(config->GetParamDV(iDV, 2));
+        index[2] = 0;
+
+        if ((int(config->GetParamDV(iDV, 1)) == -1) &&
+            (int(config->GetParamDV(iDV, 2)) != -1)) {
+          for (i = 0; i < FFDBox->GetlOrder(); i++) {
+            index[0] = i;
+            FFDBox->SetControlPoints(index, movement);
+          }
+        }
+
+        if ((int(config->GetParamDV(iDV, 1)) != -1) &&
+            (int(config->GetParamDV(iDV, 2)) == -1)) {
+          for (j = 0; j < FFDBox->GetmOrder(); j++) {
+            index[1] = j;
+            FFDBox->SetControlPoints(index, movement);
+          }
+        }
+
+        if ((int(config->GetParamDV(iDV, 1)) == -1) &&
+            (int(config->GetParamDV(iDV, 2)) == -1)) {
+          for (i = 0; i < FFDBox->GetlOrder(); i++) {
+            index[0] = i;
+            for (j = 0; j < FFDBox->GetmOrder(); j++) {
+              index[1] = j;
+              FFDBox->SetControlPoints(index, movement);
+            }
+          }
+        }
+
     /*--- Lower surface ---*/
     
 		FFDBox->SetControlPoints(index, movement);
