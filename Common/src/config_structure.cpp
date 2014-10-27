@@ -173,14 +173,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Problem Definition */
   /*--- Options related to problem definition and partitioning ---*/
 
-  /* DESCRIPTION: Adjoint type */
+  /*!\par REGIME_TYPE
+   *  DESCRIPTION: Adjoint type \ingroup Config*/
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
 
-  /* DESCRIPTION: Physical governing equations */
+  /*!\par PHYSICAL_PROBLEM
+   *  DESCRIPTION: Physical governing equations \n
+   *  Options: NONE (default),EULER, NAVIER_STOKES, RANS, POISSON_EQUATION, ADJ_EULER, ADJ_NAVIER_STOKES, ADJ_RANS, LIN_EULER,
+   LIN_NAVIER_STOKES, TNE2_EULER, TNE2_NAVIER_STOKES, ADJ_TNE2_EULER, ADJ_TNE2_NAVIER_STOKES, WAVE_EQUATION, HEAT_EQUATION ,LINEAR_ELASTICITY,
+   FLUID_STRUCTURE_EULER, FLUID_STRUCTURE_NAVIER_STOKES, FLUID_STRUCTURE_RANS, TEMPLATE_SOLVER
+   *  \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
-  /* DESCRIPTION: Mathematical problem */
+  /*!\par MATH_PROBLEM
+   *  DESCRIPTION: Mathematical problem
+   *  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM" , Adjoint, false , OneShot, false, Linearized, false, Restart_Flow, false);
-  /* DESCRIPTION: Specify turbulence model */
+  /*!\par KIND_TURB_MODEL
+   *  DESCRIPTION: Specify turbulence model
+   *  Options: SA, SST, ML, NONE (default) \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
   /* DESCRIPTION: Specify transition model */
@@ -192,9 +202,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Perform a low fidelity simulation */
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
-  /* DESCRIPTION: Restart solution from native solution file */
+  /*!\par RESTART_SOL
+   *  DESCRIPTION: Restart solution from native solution file
+   *  Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /* DESCRIPTION: Write a tecplot file for each partition */
+  /*!\par VISUALIZE_PART
+   *  DESCRIPTION: Write a tecplot file for each partition \ingroup Config*/
   addBoolOption("VISUALIZE_PART", Visualize_Partition, false);
   /* DESCRIPTION: System of measurements */
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
@@ -208,9 +221,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* CONFIG_CATEGORY: Freestream Conditions */
   /*--- Options related to freestream specification ---*/
 
-  /* DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) */
+  /*!\par GAS_CONSTANT
+   *  DESCRIPTION: Specific gas constant (287.058 J/kg*K (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAS_CONSTANT", Gas_Constant, 287.058);
-  /* DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) */
+  /*!\par GAMMA_VALUE
+   *  DESCRIPTION: Ratio of specific heats (1.4 (air), only for compressible flows) \ingroup Config*/
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
 
 
@@ -257,20 +272,26 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
   /* DESCRIPTION: Artifical compressibility factor  */
   addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 1.0);
-  /* DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) */
+  /*!\par MACH_NUMBER
+   *  DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values) \ingroup Config*/
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
-  /* DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) */
+  /*!\par FREESTREAM_PRESSURE
+   * DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
-  /* DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) */
+  /*!\par FREESTREAM_DENSITY
+   * DESCRIPTION: Free-stream density (1.2886 Kg/m^3 (air), 998.2 Kg/m^3 (water)) \ingroup Config*/
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
-  /* DESCRIPTION: Free-stream temperature (288.15 K by default) */
+  /*!\par FREESTREAM_TEMPERATURE
+   * DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
-  /* DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) */
+  /*!\par FREESTREAM_TEMPERATURE_VE
+   * DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
-  /* DESCRIPTION: Free-stream velocity (m/s) */
+  /*!\par FREESTREAM_VELOCITY
+   * DESCRIPTION: Free-stream velocity (m/s) */
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
@@ -284,7 +305,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
   addDoubleOption("SIDESLIP_ANGLE", AoS, 0.0);
-  /* DESCRIPTION: Angle of attack (degrees, only for compressible flows) */
+  /*!\par AOA
+   *  DESCRIPTION: Angle of attack (degrees, only for compressible flows) \ingroup Config*/
   addDoubleOption("AOA", AoA, 0.0);
   /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
@@ -299,42 +321,58 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   Length_Ref = 1.0; //<---- NOTE: this should be given an option or set as a const
 
-  /* DESCRIPTION: X Reference origin for moment computation */
+  /*!\par REF_ORIGIN_MOMENT_X
+   *  DESCRIPTION: X Reference origin for moment computation \ingroup Config*/
   addDoubleListOption("REF_ORIGIN_MOMENT_X", nRefOriginMoment_X, RefOriginMoment_X);
-  /* DESCRIPTION: Y Reference origin for moment computation */
+  /*!\par REF_ORIGIN_MOMENT_Y
+   * DESCRIPTION: Y Reference origin for moment computation \ingroup Config*/
   addDoubleListOption("REF_ORIGIN_MOMENT_Y", nRefOriginMoment_Y, RefOriginMoment_Y);
-  /* DESCRIPTION: Z Reference origin for moment computation */
+  /*!\par REF_ORIGIN_MOMENT_Z
+   * DESCRIPTION: Z Reference origin for moment computation \ingroup Config*/
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
-  /* DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) */
+  /*!\par REF_AREA
+   * DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
   addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
-  /* DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment */
+  /*!\par REF_LENGTH_MOMENT
+   * DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
-  /* DESCRIPTION: Reference element length for computing the slope limiter epsilon */
+  /*!\par REF_ELEM_LENGTH
+   * DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
   addDoubleOption("REF_ELEM_LENGTH", RefElemLength, 0.1);
-  /* DESCRIPTION: Reference coefficient for detecting sharp edges */
+  /*!\par REF_SHARP_EDGES
+   * DESCRIPTION: Reference coefficient for detecting sharp edges \ingroup Config*/
   addDoubleOption("REF_SHARP_EDGES", RefSharpEdges, 3.0);
-	/* DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  */
+	/*!\par REF_PRESSURE
+	 *  DESCRIPTION: Reference pressure (1.0 N/m^2 by default, only for compressible flows)  \ingroup Config*/
   addDoubleOption("REF_PRESSURE", Pressure_Ref, 1.0);
-	/* DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows) */
+	/* !\par REF_TEMPERATURE
+   *  DESCRIPTION: Reference temperature (1.0 K by default, only for compressible flows)  \ingroup Config*/
   addDoubleOption("REF_TEMPERATURE", Temperature_Ref, 1.0);
-	/* DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows) */
+	/* !\par REF_DENSITY
+   *  DESCRIPTION: Reference density (1.0 Kg/m^3 by default, only for compressible flows)  \ingroup Config*/
   addDoubleOption("REF_DENSITY", Density_Ref, 1.0);
-	/* DESCRIPTION: Reference velocity (incompressible only) */
+	/* !\par REF_VELOCITY
+   *  DESCRIPTION: Reference velocity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
-	/* DESCRIPTION: Reference viscosity (incompressible only) */
+	/* !\par REF_VISCOSITY
+   *  DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
 
 
   /* CONFIG_CATEGORY: Boundary Markers */
   /*--- Options related to various boundary markers ---*/
 
-  /* DESCRIPTION: Marker(s) of the surface in the surface flow solution file */
+  /*!\par MARKER_PLOTTING
+   *  DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
-  /* DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients */
+  /*!\par MARKER_MONITORING
+   *  DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
-  /* DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated */
+  /*!\par MARKER_DESIGNING
+   * DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
   addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
-  /* DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
+  /*!\par GEO_MARKER
+   * DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions */
   addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
   /* DESCRIPTION: Euler wall boundary marker(s) */
   addStringListOption("MARKER_EULER", nMarker_Euler, Marker_Euler);
@@ -365,10 +403,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
 
-  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
+  /*!\par MARKER_ACTDISK
+   * DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
-   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
+   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
   addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
                         Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
@@ -377,36 +416,43 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Inlet boundary type */
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
 
-  /* DESCRIPTION: Inlet boundary marker(s) with the following formats,
+  /*!\par MARKER_INLET
+   *  DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
    a unit vector.
    Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
-   a unit vector. */
+   a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 
   /* DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
-  /* DESCRIPTION: % Supersonic inlet boundary marker(s)
+  /*!\par MARKER_SUPERSONIC_INLET
+   *  DESCRIPTION: % Supersonic inlet boundary marker(s)
    Format: (inlet marker, temperature, static pressure, velocity_x,
-   velocity_y, velocity_z, ... ), i.e. primitive variables specified. */
+   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
-  /* DESCRIPTION: Outlet boundary marker(s)
-   Format: ( outlet marker, back pressure (static), ... ) */
+  /*!\par MARKER_OUTLET
+   *  DESCRIPTION: Outlet boundary marker(s)\n
+   Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
-  /* DESCRIPTION: Isothermal wall boundary marker(s)
-   Format: ( isothermal marker, wall temperature (static), ... ) */
+  /*!\par MARKER_ISOTHERMAL
+   * DESCRIPTION: Isothermal wall boundary marker(s)\n
+   * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
-  /* DESCRIPTION: Isothermal wall boundary marker(s)
-   Format: ( isothermal marker, wall temperature (static), ... ) */
+  /*!\par MARKER_ISOTHERMAL_NONCATALYTIC
+   *  DESCRIPTION: Isothermal wall boundary marker(s)\n
+   Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config */
   addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
-  /* DESCRIPTION: Isothermal wall boundary marker(s)
-   Format: ( isothermal marker, wall temperature (static), ... ) */
+  /*!\par MARKER_ISOTHERMAL_CATALYTIC
+   *  DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config */
   addStringDoubleListOption("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
-  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
-   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+  /*!\par MARKER_HEATFLUX
+   *  DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
@@ -414,8 +460,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) */
   addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
-  /* DESCRIPTION: Nacelle inflow boundary marker(s)
-   Format: ( nacelle inflow marker, fan face Mach, ... ) */
+  /*!\par MARKER_NACELLE_INFLOW
+   *  DESCRIPTION: Nacelle inflow boundary marker(s)
+   Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_NACELLE_INFLOW", nMarker_NacelleInflow, Marker_NacelleInflow, FanFace_Mach_Target);
   /* DESCRIPTION: Engine subsonic intake region */
   addBoolOption("SUBSONIC_NACELLE_INFLOW", Engine_Intake, false);
@@ -425,7 +472,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("SUBSONIC_NACELLE_BOX", 6, Subsonic_Nacelle_Box, default_vec_6d);
   /* DESCRIPTION: Nacelle exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
-  addInletFixedOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
+  addExhaustOption("MARKER_NACELLE_EXHAUST", nMarker_NacelleExhaust, Marker_NacelleExhaust, Nozzle_Ttotal, Nozzle_Ptotal);
   /* DESCRIPTION: Displacement boundary marker(s) */
   addStringDoubleListOption("MARKER_NORMAL_DISPL", nMarker_Displacement, Marker_Displacement, Displ_Value);
   /* DESCRIPTION: Load boundary marker(s) */
@@ -1122,6 +1169,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
 
   /*--- Parse the configuration file and set the options ---*/
   while (getline (case_file,text_line)) {
+    
     if (err_count >= max_err_count){
       errorString.append("too many errors. Stopping parse");
 
@@ -1129,7 +1177,9 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
       cout << errorString << endl;
       throw(1);
     }
+    
     if (TokenizeString(text_line, option_name, option_value)) {
+      
       if (option_map.find(option_name) == option_map.end()){
         // See if it's a python option
           string newString;
@@ -1151,6 +1201,7 @@ void CConfig::SetParsing(char case_filename[MAX_STRING_SIZE]) {
         err_count++;
         continue;
       }
+
 
       // New found option. Add it to the map, and delete from all options
       included_options.insert(pair<string,bool>(option_name, true));

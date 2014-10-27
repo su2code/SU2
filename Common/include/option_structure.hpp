@@ -1808,7 +1808,6 @@ public:
         }
       }
 
-      // ?? Not sure what's going on. Didn't touch it.
       for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
         ss << option_value[i] << " ";
@@ -1957,27 +1956,26 @@ public:
       this->flowdir[i] = new double[3];
     }
 
-    stringstream ss;
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[6*i]);
-      ss << option_value[6*i + 1] << " ";
-      if(!(ss >> this->ttotal[i])){
+      istringstream ss_1st(option_value[6*i + 1]);
+      if(!(ss_1st >> this->ttotal[i])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 2] << " ";
-      if(!(ss >> this->ptotal[i])){
+      istringstream ss_2nd(option_value[6*i + 2]);
+      if(!(ss_2nd >> this->ptotal[i])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 3] << " ";
-      if (!(ss >> this->flowdir[i][0])){
+      istringstream ss_3rd(option_value[6*i + 3]);
+      if (!(ss_3rd >> this->flowdir[i][0])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 4] << " ";
-      if (!(ss >> this->flowdir[i][1])){
+      istringstream ss_4th(option_value[6*i + 4]);
+      if (!(ss_4th >> this->flowdir[i][1])){
         return badValue(option_value, "inlet", this->name);
       }
-      ss << option_value[6*i + 5] << " ";
-      if (!(ss >> this->flowdir[i][2])){
+      istringstream ss_5th(option_value[6*i + 5]);
+      if (!(ss_5th >> this->flowdir[i][2])){
         return badValue(option_value, "inlet", this->name);
       }
     }
@@ -2052,7 +2050,6 @@ public:
       this->flowdir[i] = new double[3];
     }
 
-    stringstream ss;
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[7*i]);
         // Check to see if the enum value is in the map
@@ -2066,24 +2063,24 @@ public:
       Tenum val = this->m[option_value[7*i + 1]];
       this->field[i] = val;
 
-      ss << option_value[7*i + 2] << " ";
-      if(!(ss >> this->var1[i])){
+      istringstream ss_1st(option_value[7*i + 2]);
+      if(!(ss_1st >> this->var1[i])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 3] << " ";
-      if(!(ss >> this->var2[i])){
+      istringstream ss_2nd(option_value[7*i + 3]);
+      if(!(ss_2nd >> this->var2[i])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 4] << " ";
-      if (!(ss >> this->flowdir[i][0])){
+      istringstream ss_3rd(option_value[7*i + 4]);
+      if (!(ss_3rd >> this->flowdir[i][0])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 5] << " ";
-      if (!(ss >> this->flowdir[i][1])){
+      istringstream ss_4th(option_value[7*i + 5]);
+      if (!(ss_4th >> this->flowdir[i][1])){
         return badValue(option_value, "Riemann", this->name);
       }
-      ss << option_value[7*i + 6] << " ";
-      if (!(ss >> this->flowdir[i][2])){
+      istringstream ss_5th(option_value[7*i + 6]);
+      if (!(ss_5th >> this->flowdir[i][2])){
         return badValue(option_value, "Riemann", this->name);
       }
     }
@@ -2101,7 +2098,7 @@ public:
 };
 
 //Inlet condition where the input direction is assumed
-class COptionInletFixed : public COptionBase{
+class COptionExhaust : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
@@ -2109,11 +2106,12 @@ class COptionInletFixed : public COptionBase{
   double * & ptotal;
 
 public:
-  COptionInletFixed(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, double* & Ttotal, double* & Ptotal) : size(nMarker_Inlet), marker(Marker_Inlet), ttotal(Ttotal), ptotal(Ptotal){
+  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, double* & Ttotal, double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal){
     this->name = option_field_name;
   }
 
-  ~COptionInletFixed(){};
+  ~COptionExhaust(){};
+  
   string SetValue(vector<string> option_value){
 
     unsigned long totalVals = option_value.size();
@@ -2141,18 +2139,17 @@ public:
     this->marker = new string[nVals];
     this->ttotal = new double[nVals];
     this->ptotal = new double[nVals];
-    stringstream ss;
+
     for (int i = 0; i < nVals; i++){
       this->marker[i].assign(option_value[3*i]);
-      ss << option_value[3*i + 1] << " ";
-      if (!(ss >> this->ttotal[i])){
-        return badValue(option_value, "inlet fixed", this->name);
-      }
-      ss << option_value[3*i + 2] << " ";
-      if (!(ss >> this->ptotal[i])){
-        return badValue(option_value, "inlet fixed", this->name);
-      }
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> this->ttotal[i]))
+        return badValue(option_value, "exhaust fixed", this->name);
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> this->ptotal[i]))
+        return badValue(option_value, "exhaust fixed", this->name);
     }
+    
     return "";
   }
 
@@ -2162,6 +2159,7 @@ public:
     this->ptotal = NULL;
     this->size = 0; // There is no default value for list
   }
+  
 };
 
 class COptionPeriodic : public COptionBase{
@@ -2223,44 +2221,44 @@ public:
     }
 
     double deg2rad = PI_NUMBER/180.0;
-    stringstream ss;
+
     for (int i = 0; i < (nVals/2); i++){
       this->marker_bound[i].assign(option_value[mod_num*i]);
       this->marker_donor[i].assign(option_value[mod_num*i+1]);
-      ss << option_value[mod_num*i + 2] << " ";
-      if (!(ss >> this->rot_center[i][0])){
+      istringstream ss_1st(option_value[mod_num*i + 2]);
+      if (!(ss_1st >> this->rot_center[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 3] << " ";
-      if (!(ss >> this->rot_center[i][1])){
+      istringstream ss_2nd(option_value[mod_num*i + 3]);
+      if (!(ss_2nd >> this->rot_center[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 4] << " ";
-      if (!(ss >> this->rot_center[i][2])){
+      istringstream ss_3rd(option_value[mod_num*i + 4]);
+      if (!(ss_3rd >> this->rot_center[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 5] << " ";
-      if (!(ss >> this->rot_angles[i][0])){
+      istringstream ss_4th(option_value[mod_num*i + 5]);
+      if (!(ss_4th >> this->rot_angles[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 6] << " ";
-      if (!(ss >> this->rot_angles[i][1])){
+      istringstream ss_5th(option_value[mod_num*i + 6]);
+      if (!(ss_5th >> this->rot_angles[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 7] << " ";
-      if (!(ss >> this->rot_angles[i][2])){
+      istringstream ss_6th(option_value[mod_num*i + 7]);
+      if (!(ss_6th >> this->rot_angles[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 8] << " ";
-      if (!(ss >> this->translation[i][0])){
+      istringstream ss_7th(option_value[mod_num*i + 8]);
+      if (!(ss_7th >> this->translation[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 9] << " ";
-      if (!(ss >> this->translation[i][1])){
+      istringstream ss_8th(option_value[mod_num*i + 9]);
+      if (!(ss_8th >> this->translation[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*i + 10] << " ";
-      if (!(ss >> this->translation[i][2])){
+      istringstream ss_9th(option_value[mod_num*i + 10]);
+      if (!(ss_9th >> this->translation[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
       this->rot_angles[i][0] *= deg2rad;
@@ -2271,40 +2269,40 @@ public:
     for (unsigned long i = (nVals/2); i < nVals; i++){
       this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
       this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
-      ss << option_value[mod_num*(i-nVals/2) + 2] << " ";
-      if (!(ss >> this->rot_center[i][0])){
+      istringstream ss_1st(option_value[mod_num*(i-nVals/2) + 2]);
+      if (!(ss_1st >> this->rot_center[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 3] << " ";
-      if (!(ss >> this->rot_center[i][1])){
+      istringstream ss_2nd(option_value[mod_num*(i-nVals/2) + 3]);
+      if (!(ss_2nd >> this->rot_center[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 4] << " ";
-      if (!(ss >> this->rot_center[i][2])){
+      istringstream ss_3rd(option_value[mod_num*(i-nVals/2) + 4]);
+      if (!(ss_3rd >> this->rot_center[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 5] << " ";
-      if (!(ss >> this->rot_angles[i][0])){
+      istringstream ss_4th(option_value[mod_num*(i-nVals/2) + 5]);
+      if (!(ss_4th >> this->rot_angles[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 6] << " ";
-      if (!(ss >> this->rot_angles[i][1])){
+      istringstream ss_5th(option_value[mod_num*(i-nVals/2) + 6]);
+      if (!(ss_5th >> this->rot_angles[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 7] << " ";
-      if (!(ss >> this->rot_angles[i][2])){
+      istringstream ss_6th(option_value[mod_num*(i-nVals/2) + 7]);
+      if (!(ss_6th >> this->rot_angles[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 8] << " ";
-      if (!(ss >> this->translation[i][0])){
+      istringstream ss_7th(option_value[mod_num*(i-nVals/2) + 8]);
+      if (!(ss_7th >> this->translation[i][0])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 9] << " ";
-      if (!(ss >> this->translation[i][1])){
+      istringstream ss_8th(option_value[mod_num*(i-nVals/2) + 9]);
+      if (!(ss_8th >> this->translation[i][1])){
         return badValue(option_value, "periodic", this->name);
       }
-      ss << option_value[mod_num*(i-nVals/2) + 10] << " ";
-      if (!(ss >> this->translation[i][2])){
+      istringstream ss_9th(option_value[mod_num*(i-nVals/2) + 10]);
+      if (!(ss_9th >> this->translation[i][2])){
         return badValue(option_value, "periodic", this->name);
       }
       /*--- Mirror the rotational angles and translation vector (rotational
@@ -2400,36 +2398,36 @@ public:
     }
 
     string tname = "actuator disk";
-    stringstream ss;
+
     for (int i = 0; i < this->inlet_size; i++){
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
-      ss << option_value[mod_num*i + 2] << " ";
-      if (!(ss >> this->origin[i][0])){
+      istringstream ss_1st(option_value[mod_num*i + 2]);
+      if (!(ss_1st >> this->origin[i][0])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 3] << " ";
-      if (!(ss >> this->origin[i][1])){
+      istringstream ss_2nd(option_value[mod_num*i + 3]);
+      if (!(ss_2nd >> this->origin[i][1])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 4] << " ";
-      if (!(ss >> this->origin[i][2])){
+      istringstream ss_3rd(option_value[mod_num*i + 4]);
+      if (!(ss_3rd >> this->origin[i][2])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 5] << " ";
-      if (!(ss >> this->root_radius[i])){
+      istringstream ss_4th(option_value[mod_num*i + 5]);
+      if (!(ss_4th >> this->root_radius[i])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 6] << " ";
-      if (!(ss >> this->tip_radius[i])){
+      istringstream ss_5th(option_value[mod_num*i + 6]);
+      if (!(ss_5th >> this->tip_radius[i])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 7] << " ";
-      if (!(ss >> this->ct[i])){
+      istringstream ss_6th(option_value[mod_num*i + 7]);
+      if (!(ss_6th >> this->ct[i])){
         return badValue(option_value, tname, this->name);
       }
-      ss << option_value[mod_num*i + 8] << " ";
-      if (!(ss >> this->omega[i])){
+      istringstream ss_7th(option_value[mod_num*i + 8]);
+      if (!(ss_7th >> this->omega[i])){
         return badValue(option_value, tname, this->name);
       }
     }
