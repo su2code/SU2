@@ -1115,7 +1115,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
       Block_ij = GetBlock(iPoint, jPoint);
@@ -1128,7 +1128,7 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- Transform system in Upper Matrix ---*/
   
-  for (iPoint = 1; iPoint < nPoint; iPoint++) {
+  for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
     
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       
@@ -1165,13 +1165,13 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- Backwards substitution ---*/
   
-  InverseDiagonalBlock_ILUMatrix((nPoint-1), block_inverse);
-  MatrixVectorProduct(block_inverse, &prod[(nPoint-1)*nVar], aux_vector);
+  InverseDiagonalBlock_ILUMatrix((nPointDomain-1), block_inverse);
+  MatrixVectorProduct(block_inverse, &prod[(nPointDomain-1)*nVar], aux_vector);
   
   for (iVar = 0; iVar < nVar; iVar++)
-    prod[ (nPoint-1)*nVar + iVar] = aux_vector[iVar];
+    prod[ (nPointDomain-1)*nVar + iVar] = aux_vector[iVar];
   
-  for (iPoint = nPoint-2; iPoint >= 0; iPoint--) {
+  for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
     
     for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
     
