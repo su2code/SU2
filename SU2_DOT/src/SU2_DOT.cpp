@@ -403,6 +403,9 @@ int main(int argc, char *argv[]) {
 				case FREE_SURFACE :
 					if (iDV == 0) Gradient_file << "Free-Surface grad. using cont. adj."<< endl;
 					cout << "Free-surface gradient: "<< Gradient << "." << endl; break;
+				case MASS_FLOW_RATE :
+				  if (iDV == 0) Gradient_file << "Mass flow rate grad. using cont. adj."<< endl;
+				  cout << "Mass flow rate gradient: "<< Gradient << "." << endl; break;
 			}
 			
 			Gradient_file << Gradient << endl;
