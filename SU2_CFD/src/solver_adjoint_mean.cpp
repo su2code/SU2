@@ -1156,7 +1156,13 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[2] = 0.0; }
             break;
           case AVG_TOTAL_PRESSURE : break;
-          case MASS_FLOW_RATE : break;
+          case MASS_FLOW_RATE :
+            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
+              ForceProj_Vector[1] = 0.0;
+              ForceProj_Vector[2] = 0.0; }
+            break;
         }
         
         /*--- Store the force projection vector at this node ---*/
@@ -2449,7 +2455,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW ) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
