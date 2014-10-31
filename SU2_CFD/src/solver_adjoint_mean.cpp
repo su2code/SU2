@@ -2224,9 +2224,18 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
-    
-    Jacobian.AddVal2Diag(iPoint, Delta);
+    if (node[iPoint]->GetDelta_Time() != 0.0) {
+      Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
+      Jacobian.AddVal2Diag(iPoint, Delta);
+    }
+    else {
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
+    }
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     

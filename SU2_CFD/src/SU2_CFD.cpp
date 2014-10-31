@@ -22,25 +22,6 @@
 
 #include "../include/SU2_CFD.hpp"
 
-/*
- * Pseudocode:
- *  Initialize data structures
- *  Parse the input file and load settings
- *  Load in the geometry from the mesh
- *  Set up the solver structure for the particular PDE
- *  Set up the time integration scheme
- *  Set up the numerical methods for spatial integration
- *  Instantiate the output class
- *
- *  for (ExtIter = 0; ExtIter < MaxIter; ExtIter++) {
- *    Make an iteration (problem dependent)
- *    Check Convergence of the flow solution (problem dependent)
- *    Write convergence history
- *  }
- *  Write solution files
- *  Deallocate memory
- */
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
