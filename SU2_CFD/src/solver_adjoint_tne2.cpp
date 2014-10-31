@@ -3604,9 +3604,9 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                         unsigned short val_marker) {
   
   bool implicit, heat_flux_obj;
-  unsigned short iDim, iVar, jVar;
+  unsigned short iDim, iSpecies, iVar, jVar;
   unsigned long iPoint, iVertex, total_index;
-  double *dPdU, *d;
+  double *dPdU, *d, phin;
   double phi[3], Normal[3];
   
   /*--- Set booleans ---*/
@@ -3624,7 +3624,7 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
 		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 		if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Initialize the convective & viscous residuals to zero ---*/
+      /*--- Initialize the convective residuals to zero ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Res_Conv_i[iVar] = 0.0;
         if (implicit) {
@@ -3640,43 +3640,99 @@ void CAdjTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
       /*--- Get the force projection vector ---*/
       // Note: For force-based objective functions, this will be non-zero and
       //       for energy-based objectives, it will be zero.
-			d = node[iPoint]->GetForceProj_Vector();
-      for (iDim = 0; iDim < nDim; iDim++)
+      phin = 0.0;
+			d    = node[iPoint]->GetForceProj_Vector();
+      for (iDim = 0; iDim < nDim; iDim++) {
         phi[iDim] = d[iDim];
-      
+        phin += phi[iDim]*Normal[iDim];
+      }
+        
       /*--- Acquire flow quantities ---*/
       dPdU   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
       
-      /*--- Convective terms ---*/
-      // Energy
+      /*--- Propagate convective fluxes through the boundary ---*/
+      // NOTE: We are applying the no-slip boundary condition to the flux
+      
+      // Adjoint densities
+      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+        Res_Conv_i[iSpecies] = phin * dPdU[iSpecies];
+      
+      // Adjoint velocities (enforced strongly)
       for (iDim = 0; iDim < nDim; iDim++) {
-        Res_Conv_i[nSpecies+nDim]   += phi[iDim]*Normal[iDim]*dPdU[nSpecies+nDim];
-        Res_Conv_i[nSpecies+nDim+1] += phi[iDim]*Normal[iDim]*dPdU[nSpecies+nDim+1];
+        node[iPoint]->SetSolution_Old(nSpecies+iDim, phi[iDim]);
+        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+        node[iPoint]->SetVal_ResTruncError_Zero(nSpecies+iDim);
       }
       
-      /*--- Apply the residual ---*/
-      LinSysRes.AddBlock(iPoint, Res_Conv_i);
+      // Adjoint energy
+      Res_Conv_i[nSpecies+nDim] = dPdU[nSpecies+nDim] * phin;
+      
+      // Adjoint vib.-el. energy
+      Res_Conv_i[nSpecies+nDim+1] = dPdU[nSpecies+nDim+1]*phin;
+      
+      
+      /*--- Apply the residual to the linear system ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+      
       
       if (implicit) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Jacobian_ii[nSpecies+nDim][nSpecies+iDim]   = Normal[iDim]*dPdU[nSpecies+nDim];
-          Jacobian_ii[nSpecies+nDim+1][nSpecies+iDim] = Normal[iDim]*dPdU[nSpecies+nDim+1];
-        }
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+        
+        // Adjoint densities
+        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_ii[iSpecies][nSpecies+iDim] = dPdU[iSpecies]*Normal[iDim];
+        
+        // Adjoint velocities (enforced strongly)
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian.DeleteValsRowi(iPoint*nVar+(nSpecies+iDim));
+        
+        // Adjoint energy
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_ii[nSpecies+nDim][nSpecies+iDim] = dPdU[nSpecies+nDim]*Normal[iDim];
+        
+        // Adjoint vib.-el. energy
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_ii[nSpecies+nDim+1][nSpecies+iDim] = dPdU[nSpecies+nDim+1]*Normal[iDim];
+        
+        /*--- Apply the Jacobian to the linear system ---*/
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
       }
       
-      /*--- Impose adjoint velocity B.C. 'strongly' ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
-      node[iPoint]->SetVel_ResTruncError_Zero();
-			for (iDim = 0; iDim < nDim; iDim++)
-				node[iPoint]->SetSolution_Old(nSpecies+iDim, phi[iDim]);
-			if (implicit) {
-				for (iVar = 0; iVar < nDim; iVar++) {
-					total_index = iPoint*nVar+(nSpecies+iVar);
-					Jacobian.DeleteValsRowi(total_index);
-				}
-			}
+//      
+//      
+//      //
+//      // 10/31/14 - I THINK THERE MAY BE A BUG HERE.  NEED TO MULTIPLY BY \vec{d}??
+//      //
+//      
+//      // Energy
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        Res_Conv_i[nSpecies+nDim]   += phi[iDim]*Normal[iDim]*dPdU[nSpecies+nDim];
+//        Res_Conv_i[nSpecies+nDim+1] += phi[iDim]*Normal[iDim]*dPdU[nSpecies+nDim+1];
+//      }
+//      
+//      /*--- Apply the residual ---*/
+//      LinSysRes.AddBlock(iPoint, Res_Conv_i);
+//      
+//      if (implicit) {
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          Jacobian_ii[nSpecies+nDim][nSpecies+iDim]   = Normal[iDim]*dPdU[nSpecies+nDim];
+//          Jacobian_ii[nSpecies+nDim+1][nSpecies+iDim] = Normal[iDim]*dPdU[nSpecies+nDim+1];
+//        }
+//        Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+//      }
+//      
+//      /*--- Impose adjoint velocity B.C. 'strongly' ---*/
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        LinSysRes.SetBlock_Zero(iPoint, nSpecies+iDim);
+//      node[iPoint]->SetVel_ResTruncError_Zero();
+//			for (iDim = 0; iDim < nDim; iDim++)
+//				node[iPoint]->SetSolution_Old(nSpecies+iDim, phi[iDim]);
+//			if (implicit) {
+//				for (iVar = 0; iVar < nDim; iVar++) {
+//					total_index = iPoint*nVar+(nSpecies+iVar);
+//					Jacobian.DeleteValsRowi(total_index);
+//				}
+//			}
 		}
 	}
 }
@@ -3699,75 +3755,75 @@ void CAdjTNE2NSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
   BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics,
                    config, val_marker);
   
-  /*--- The adjoint species density boundary condition is: 
-   GPsi_rs \cdot n = -(GPsiE \cdot n)hs -(GPsiEve \cdot n)eves ---*/
-  
-  /*--- Determine the nature of the objective function ---*/
-  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
-                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
-                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
-  
-  /*--- Determine time-stepping algorithm ---*/
-  implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-  
-  /*--- Loop over all boundary points ---*/
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		if (geometry->node[iPoint]->GetDomain()) {
-      
-      if (!heat_flux_obj) {
-        
-        /*---+++ B.C. Enforcement Details +++---*/
-        // For force-based objectives with adiabatic wall b.c.'s:
-        // GPsiE \cdot n = 0, GPsiEve \cdot n = 0
-        //
-        // Use convective flux for the adjoint density equations to enforce
-        // GPsi_rs \cdot n = 0
-        /*---+++                          +++---*/
-        
-        /*--- Initialize the residual vector ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Conv_i[iVar] = 0.0;
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_ii[iVar][jVar] = 0.0;
-        }
-        
-        /*--- Normal vector for this vertex (negate for outward convention) ---*/
-        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        
-        /*--- Acquire flow quantities ---*/
-        dPdU   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
-        
-        /*--- Get the force projection vector ---*/
-        // Note: For force-based objective functions, this will be non-zero and
-        //       for energy-based objectives, it will be zero.
-        d = node[iPoint]->GetForceProj_Vector();
-        for (iDim = 0; iDim < nDim; iDim++)
-          phi[iDim] = d[iDim];
-        
-        /*--- Set the value of the residual ---*/
-        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Res_Conv_i[iSpecies] += dPdU[iSpecies]*phi[iDim]*Normal[iDim];
-        
-        /*--- Apply the residual to the linear system ---*/
-        LinSysRes.AddBlock(iPoint, Res_Conv_i);
-        
-        if (implicit) {
-          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-            for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[iSpecies][nSpecies+iDim] = dPdU[iSpecies]*Normal[iDim];
-          Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
-        }
-        
-      } else {
-        
-        cout << "WARNING: THERMAL OBJECTIVE FUNCTION NOT IMPLEMENTED IN HEATFLUX_NONCATALYTIC!!" << endl;
-        
-      }
-    }
-  }
+//  /*--- The adjoint species density boundary condition is: 
+//   GPsi_rs \cdot n = -(GPsiE \cdot n)hs -(GPsiEve \cdot n)eves ---*/
+//  
+//  /*--- Determine the nature of the objective function ---*/
+//  heat_flux_obj  = ((config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) ||
+//                    (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          ||
+//                    (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)          );
+//  
+//  /*--- Determine time-stepping algorithm ---*/
+//  implicit = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
+//  
+//  /*--- Loop over all boundary points ---*/
+//	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//		if (geometry->node[iPoint]->GetDomain()) {
+//      
+//      if (!heat_flux_obj) {
+//        
+//        /*---+++ B.C. Enforcement Details +++---*/
+//        // For force-based objectives with adiabatic wall b.c.'s:
+//        // GPsiE \cdot n = 0, GPsiEve \cdot n = 0
+//        //
+//        // Use convective flux for the adjoint density equations to enforce
+//        // GPsi_rs \cdot n = 0
+//        /*---+++                          +++---*/
+//        
+//        /*--- Initialize the residual vector ---*/
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          Res_Conv_i[iVar] = 0.0;
+//          for (jVar = 0; jVar < nVar; jVar++)
+//            Jacobian_ii[iVar][jVar] = 0.0;
+//        }
+//        
+//        /*--- Normal vector for this vertex (negate for outward convention) ---*/
+//        geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+//        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+//        
+//        /*--- Acquire flow quantities ---*/
+//        dPdU   = solver_container[TNE2_SOL]->node[iPoint]->GetdPdU();
+//        
+//        /*--- Get the force projection vector ---*/
+//        // Note: For force-based objective functions, this will be non-zero and
+//        //       for energy-based objectives, it will be zero.
+//        d = node[iPoint]->GetForceProj_Vector();
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          phi[iDim] = d[iDim];
+//        
+//        /*--- Set the value of the residual ---*/
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//          for (iDim = 0; iDim < nDim; iDim++)
+//            Res_Conv_i[iSpecies] += dPdU[iSpecies]*phi[iDim]*Normal[iDim];
+//        
+//        /*--- Apply the residual to the linear system ---*/
+//        LinSysRes.AddBlock(iPoint, Res_Conv_i);
+//        
+//        if (implicit) {
+//          for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+//            for (iDim = 0; iDim < nDim; iDim++)
+//              Jacobian_ii[iSpecies][nSpecies+iDim] = dPdU[iSpecies]*Normal[iDim];
+//          Jacobian.AddBlock(iPoint, iPoint, Jacobian_ii);
+//        }
+//        
+//      } else {
+//        
+//        cout << "WARNING: THERMAL OBJECTIVE FUNCTION NOT IMPLEMENTED IN HEATFLUX_NONCATALYTIC!!" << endl;
+//        
+//      }
+//    }
+//  }
 }
 
 void CAdjTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
