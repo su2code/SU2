@@ -9456,12 +9456,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   Global_nPointFine = Local_nPointFine;
 #endif
   
-  double Coeff = 1.0, CFL = 0.0;
+  double Coeff = 1.0, CFL = 0.0, factor = 1.5;
   
   if (iMesh != MESH_0) {
     if (nDim == 2) Coeff = pow(double(Global_nPointFine)/double(Global_nPointCoarse), 1./2.);
     if (nDim == 3) Coeff = pow(double(Global_nPointFine)/double(Global_nPointCoarse), 1./3.);
-    CFL = config->GetCFL(iMesh-1)/Coeff;
+    CFL = factor*config->GetCFL(iMesh-1)/Coeff;
     config->SetCFL(iMesh, CFL);
   }
   
@@ -9472,7 +9472,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
     config->SetMGLevels(iMesh-1);
   }
   else {
-    if (rank == MASTER_NODE) cout <<"MG level: "<< iMesh <<"-> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+    if (rank == MASTER_NODE) {
+      if (iMesh == 1) cout <<"MG level: "<< iMesh-1 <<"-> CVs: " << Global_nPointFine << ". Agglomeration rate 1/1.00. CFL "<< config->GetCFL(iMesh-1) <<"." << endl;
+      cout <<"MG level: "<< iMesh <<"-> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+    }
   }
   
 }
