@@ -1156,13 +1156,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[2] = 0.0; }
             break;
           case AVG_TOTAL_PRESSURE : break;
-          case MASS_FLOW_RATE :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0;
-              ForceProj_Vector[1] = 0.0;
-              ForceProj_Vector[2] = 0.0; }
-            break;
+          case MASS_FLOW_RATE : break;
         }
         
         /*--- Store the force projection vector at this node ---*/
@@ -2288,6 +2282,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 }
 
 void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+  
   unsigned long iVertex, iPoint, Neigh;
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
@@ -2454,7 +2449,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW ) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;
@@ -2690,6 +2685,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 #endif
   
   delete [] USens;
+  
 }
 
 void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -3838,100 +3834,6 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   delete [] Psi_domain; delete [] Psi_infty;
 }
 
-void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
-    CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint, Point_Normal;
-  double Velocity[3], bcn, phin, Area, UnitNormal[3],
-  ProjGridVel, *GridVel;
-  double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
-
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  Normal = new double[nDim];
-  Psi_domain = new double[nVar]; Psi_inlet = new double[nVar];
-
-  /*--- Loop over all the vertices on this boundary marker ---*/
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check that the node belongs to the domain (i.e., not a halo node) ---*/
-
-    if (geometry->node[iPoint]->GetDomain()) {
-
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-
-      /*--- Index of the closest interior node ---*/
-
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-      /*--- Allocate the value at the inlet ---*/
-
-      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Retrieve solution at the boundary node ---*/
-
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-
-      /*--- Adjoint flow solution at the boundary ---*/
-
-      for (iVar = 0; iVar < nVar; iVar++)
-        Psi_domain[iVar] = node[Point_Normal]->GetSolution(iVar);
-
-      /*--- Construct the flow & adjoint states at the inlet ---*/
-      /*--- Supersonic Inlet: All characteristic are exiting: using nearest neighbor to set value ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Psi_inlet[iVar] = Psi_domain[iVar];
-
-      /*--- Set the flow and adjoint states in the solver ---*/
-
-      conv_numerics->SetPrimitive(V_domain, V_inlet);
-      conv_numerics->SetAdjointVar(Psi_domain, Psi_inlet);
-
-      /*--- Grid Movement ---*/
-
-      if (grid_movement)
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
-
-      /*--- Compute the residual using an upwind scheme ---*/
-
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
-                                     Jacobian_ji, Jacobian_jj, config);
-
-      /*--- Add and Subtract Residual ---*/
-
-      LinSysRes.SubtractBlock(iPoint, Residual_i);
-
-      /*--- Implicit contribution to the residual ---*/
-
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-
-    }
-  }
-
-  /*--- Free locally allocated memory ---*/
-
-  delete [] Normal;
-  delete [] Psi_domain; delete [] Psi_inlet;
-}
-
 void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iVar, iDim;
@@ -4099,7 +4001,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   double Pressure, P_Exit, Velocity[3], Velocity2, Enthalpy;
   double Density, Energy, Height;
-  double Vn, SoundSpeed, Mach_Exit, Ubn, a1, LevelSet, Vn_Exit,Riemann,Entropy,Density_Outlet = 0.0;
+  double Vn, SoundSpeed, Mach_Exit, Ubn, a1, LevelSet, Density_Outlet = 0.0;
   double Area, UnitNormal[3];
   double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   
@@ -4190,21 +4092,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
           
         } else {
-          /*--- Compute Riemann constant ---*/
-          Entropy = Pressure*pow(1.0/Density,Gamma);
-          Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+          
           /*--- Compute (Vn - Ubn).n term for use in the BC. ---*/
           
-          /*--- Compute the new fictious state at the outlet ---*/
-          Density    = pow(P_Exit/Entropy,1.0/Gamma);
-          Pressure   = P_Exit;
-          SoundSpeed = sqrt(Gamma*P_Exit/Density);
-          Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-          Velocity2  = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-            Velocity2 += Velocity[iDim]*Velocity[iDim];
-          }
+          Vn = 0.0; Ubn = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Vn += Velocity[iDim]*UnitNormal[iDim];
           
           /*--- Extra boundary term for grid movement ---*/
           
@@ -4217,8 +4110,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
           
           /*--- Shorthand for repeated term in the boundary conditions ---*/
-          a1 = sqrt(Gamma*P_Exit/Density)/(Gamma_Minus_One);
-
+          
+          a1 = Gamma*(P_Exit/(Density*Gamma_Minus_One))/(Vn-Ubn);
           
           /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
           
@@ -4278,12 +4171,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Psi_outlet[0] = -coeff*Psi_outlet[1];
         
       }
-
-      /*--- For mass_flow objective function add B.C. contribution ---*/
-      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE){
-        Psi_outlet[0]+=1;
-      }
-
+      
       /*--- Set the flow and adjoint states in the solver ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -5451,7 +5339,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD or config->GetMarker_All_KindBC(iMarker) == INLET_FLOW or config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET or config->GetMarker_All_KindBC(iMarker) == NACELLE_INFLOW  ) {
+      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD) {
         
         Sens_Mach[iMarker]  = 0.0;
         Sens_AoA[iMarker]   = 0.0;

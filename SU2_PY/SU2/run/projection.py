@@ -99,7 +99,7 @@ def projection( config, step = 1e-3 ):
     data_plot = su2util.ordered_bunch()
     data_plot['VARIABLE']     = range(len(raw_gradients)) 
     data_plot['GRADIENT']     = raw_gradients             
-    data_plot['FINDIFF_STEP'] = step
+    data_plot['FINDIFF_STEP'] = step                       
     su2util.write_plot(grad_plotname,output_format,data_plot)
 
     # gradient output dictionary
