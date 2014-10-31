@@ -415,6 +415,27 @@ void CSysMatrix::AddVal2Diag(unsigned long block_i, double val_matrix) {
   
 }
 
+void CSysMatrix::SetVal2Diag(unsigned long block_i, double val_matrix) {
+  
+  unsigned long step = 0, iVar, jVar, index;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_i) {	// Only elements on the diagonal
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = val_matrix;
+      
+      break;
+    }
+  }
+  
+}
+
 void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
   unsigned long block_i = i/nVar;
@@ -1095,13 +1116,18 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
   unsigned long iPoint, iVar, jVar;
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       prod[(const unsigned int)(iPoint*nVar+iVar)] = 0.0;
       for (jVar = 0; jVar < nVar; jVar++)
-        prod[(const unsigned int)(iPoint*nVar+iVar)] += invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
+        prod[(const unsigned int)(iPoint*nVar+iVar)] +=
+        invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
     }
   }
+  
+  /*--- MPI Parallelization ---*/
+  
+  SendReceive_Solution(prod, geometry, config);
   
 }
 
@@ -1129,39 +1155,29 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   /*--- Transform system in Upper Matrix ---*/
   
   for (iPoint = 1; iPoint < nPointDomain; iPoint++) {
-    
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      
       jPoint = col_ind[index];
-      
-      if (jPoint < iPoint) {
-        
+      if ((jPoint < iPoint) && (jPoint < nPointDomain)) {
         Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
         InverseDiagonalBlock_ILUMatrix(jPoint, block_inverse);
         MatrixMatrixProduct(Block_ij, block_inverse, block_weight);
-        
         for (index_ = row_ptr[jPoint]; index_ < row_ptr[jPoint+1]; index_++) {
           kPoint = col_ind[index_];
-          Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
-          if (kPoint >= jPoint) {
-            MatrixMatrixProduct(Block_jk, block_weight, block);
-            SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+          if (kPoint < nPointDomain) {
+            Block_jk = GetBlock_ILUMatrix(jPoint, kPoint);
+            if (kPoint >= jPoint) {
+              MatrixMatrixProduct(Block_jk, block_weight, block);
+              SubtractBlock_ILUMatrix(iPoint, kPoint, block);
+            }
           }
         }
-        
         MatrixVectorProduct(block_weight, &prod[jPoint*nVar], aux_vector);
-        
         for (iVar = 0; iVar < nVar; iVar++)
           prod[iPoint*nVar+iVar] -= aux_vector[iVar];
         
       }
-      
     }
   }
-  
-  /*--- MPI Parallelization ---*/
-  
-  SendReceive_Solution(prod, geometry, config);
   
   /*--- Backwards substitution ---*/
   
@@ -1172,35 +1188,22 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
     prod[ (nPointDomain-1)*nVar + iVar] = aux_vector[iVar];
   
   for (iPoint = nPointDomain-2; iPoint >= 0; iPoint--) {
-    
     for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] = 0.0;
-    
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
-      
       jPoint = col_ind[index];
-      
-      
-      Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
-      
-      if (jPoint >= iPoint+1) {
-        
-        MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
-        
-        for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
-        
+      if (jPoint < nPointDomain) {
+        Block_ij = GetBlock_ILUMatrix(iPoint, jPoint);
+        if ((jPoint >= iPoint+1) && (jPoint < nPointDomain)) {
+          MatrixVectorProduct(Block_ij, &prod[jPoint*nVar], aux_vector);
+          for (iVar = 0; iVar < nVar; iVar++) sum_vector[iVar] += aux_vector[iVar];
+        }
       }
-      
     }
-    
     for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = (prod[iPoint*nVar+iVar]-sum_vector[iVar]);
-    
     InverseDiagonalBlock_ILUMatrix(iPoint, block_inverse);
     MatrixVectorProduct(block_inverse, &prod[iPoint*nVar], aux_vector);
-    
     for (iVar = 0; iVar < nVar; iVar++) prod[iPoint*nVar+iVar] = aux_vector[iVar];
-    
     if (iPoint == 0) break;
-    
   }
   
   /*--- MPI Parallelization ---*/
@@ -1226,7 +1229,7 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   /*--- MPI Parallelization ---*/
   
   SendReceive_Solution(prod, geometry, config);
-
+  
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
   for (iPoint = nPointDomain-1; (int)iPoint >= 0; iPoint--) {
@@ -1240,7 +1243,7 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
     for (iVar = 0; iVar < nVar; iVar++)
       prod[iPoint*nVar + iVar] = aux_vector[iVar]; // Assesing x_(1) = solution
   }
-
+  
   /*--- MPI Parallelization ---*/
   
   SendReceive_Solution(prod, geometry, config);
@@ -1254,93 +1257,118 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
   long iElemLoop;
   double *block;
   
-  /*--- Jacobi preconditioning if there is no linelet ---*/
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if (!LineletBool[iPoint]) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        prod[(const unsigned int)(iPoint*nVar+iVar)] = 0.0;
-        for (jVar = 0; jVar < nVar; jVar++)
-          prod[(const unsigned int)(iPoint*nVar+iVar)] +=
-          invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  if (size == SINGLE_NODE) {
+    
+    /*--- Jacobi preconditioning if there is no linelet ---*/
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if (!LineletBool[iPoint]) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          prod[(const unsigned int)(iPoint*nVar+iVar)] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            prod[(const unsigned int)(iPoint*nVar+iVar)] +=
+            invM[(const unsigned int)(iPoint*nVar*nVar+iVar*nVar+jVar)]*vec[(const unsigned int)(iPoint*nVar+jVar)];
+        }
       }
     }
+    
+    /*--- MPI Parallelization ---*/
+    
+    SendReceive_Solution(prod, geometry, config);
+    
+    /*--- Solve linelet using a Thomas' algorithm ---*/
+    
+    for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+      
+      nElem = LineletPoint[iLinelet].size();
+      
+      /*--- Copy vec vector to the new structure ---*/
+      
+      for (iElem = 0; iElem < nElem; iElem++) {
+        iPoint = LineletPoint[iLinelet][iElem];
+        for (iVar = 0; iVar < nVar; iVar++)
+          rVector[iElem][iVar] = vec[(const unsigned int)(iPoint*nVar+iVar)];
+      }
+      
+      /*--- Initialization (iElem = 0) ---*/
+      
+      iPoint = LineletPoint[iLinelet][0];
+      block = GetBlock(iPoint, iPoint);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        yVector[0][iVar] = rVector[0][iVar];
+        for (jVar = 0; jVar < nVar; jVar++)
+          UBlock[0][iVar*nVar+jVar] = block[iVar*nVar+jVar];
+      }
+      
+      /*--- Main loop (without iElem = 0) ---*/
+      
+      for (iElem = 1; iElem < nElem; iElem++) {
+        
+        im1Point = LineletPoint[iLinelet][iElem-1];
+        iPoint = LineletPoint[iLinelet][iElem];
+        
+        InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
+        block = GetBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
+        block = GetBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
+        block = GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
+        
+        /*--- Forward substituton ---*/
+        
+        GetMultBlockVector(LyVector, LBlock[iElem], yVector[iElem-1]);
+        GetSubsVector(yVector[iElem], rVector[iElem], LyVector);
+        
+      }
+      
+      /*--- Backward substituton ---*/
+      
+      im1Point = LineletPoint[iLinelet][nElem-1];
+      InverseBlock(UBlock[nElem-1], invUBlock[nElem-1]);
+      GetMultBlockVector(zVector[nElem-1], invUBlock[nElem-1], yVector[nElem-1]);
+      
+      for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
+        iPoint = LineletPoint[iLinelet][iElemLoop];
+        ip1Point = LineletPoint[iLinelet][iElemLoop+1];
+        block = GetBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
+        GetSubsVector(aux_vector, yVector[iElemLoop], FzVector);
+        GetMultBlockVector(zVector[iElemLoop], invUBlock[iElemLoop], aux_vector);
+      }
+      
+      /*--- Copy zVector to the prod vector ---*/
+      
+      for (iElem = 0; iElem < nElem; iElem++) {
+        iPoint = LineletPoint[iLinelet][iElem];
+        for (iVar = 0; iVar < nVar; iVar++)
+          prod[(const unsigned int)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
+      }
+      
+    }
+    
+    /*--- MPI Parallelization ---*/
+    
+    SendReceive_Solution(prod, geometry, config);
+    
   }
-  
-  /*--- MPI Parallelization ---*/
-  
-  SendReceive_Solution(prod, geometry, config);
-  
-  /*--- Solve linelet using a Thomas' algorithm ---*/
-  
-  for (iLinelet = 0; iLinelet < nLinelet; iLinelet++) {
+  else {
     
-    nElem = LineletPoint[iLinelet].size();
+    if (rank == MASTER_NODE) cout << "ERROR: Linelet not implemented in parallel." << endl;
     
-    /*--- Copy vec vector to the new structure ---*/
-    
-    for (iElem = 0; iElem < nElem; iElem++) {
-      iPoint = LineletPoint[iLinelet][iElem];
-      for (iVar = 0; iVar < nVar; iVar++)
-        rVector[iElem][iVar] = vec[(const unsigned int)(iPoint*nVar+iVar)];
-    }
-    
-    /*--- Initialization (iElem = 0) ---*/
-    
-    iPoint = LineletPoint[iLinelet][0];
-    block = GetBlock(iPoint, iPoint);
-    for (iVar = 0; iVar < nVar; iVar++) {
-      yVector[0][iVar] = rVector[0][iVar];
-      for (jVar = 0; jVar < nVar; jVar++)
-        UBlock[0][iVar*nVar+jVar] = block[iVar*nVar+jVar];
-    }
-    
-    /*--- Main loop (without iElem = 0) ---*/
-    
-    for (iElem = 1; iElem < nElem; iElem++) {
-      
-      im1Point = LineletPoint[iLinelet][iElem-1];
-      iPoint = LineletPoint[iLinelet][iElem];
-      
-      InverseBlock(UBlock[iElem-1], invUBlock[iElem-1]);
-      block = GetBlock(iPoint, im1Point); GetMultBlockBlock(LBlock[iElem], block, invUBlock[iElem-1]);
-      block = GetBlock(im1Point, iPoint); GetMultBlockBlock(LFBlock, LBlock[iElem], block);
-      block = GetBlock(iPoint, iPoint); GetSubsBlock(UBlock[iElem], block, LFBlock);
-      
-      /*--- Forward substituton ---*/
-      
-      GetMultBlockVector(LyVector, LBlock[iElem], yVector[iElem-1]);
-      GetSubsVector(yVector[iElem], rVector[iElem], LyVector);
-      
-    }
-    
-    /*--- Backward substituton ---*/
-    
-    im1Point = LineletPoint[iLinelet][nElem-1];
-    InverseBlock(UBlock[nElem-1], invUBlock[nElem-1]);
-    GetMultBlockVector(zVector[nElem-1], invUBlock[nElem-1], yVector[nElem-1]);
-    
-    for (iElemLoop = nElem-2; iElemLoop >= 0; iElemLoop--) {
-      iPoint = LineletPoint[iLinelet][iElemLoop];
-      ip1Point = LineletPoint[iLinelet][iElemLoop+1];
-      block = GetBlock(iPoint, ip1Point); GetMultBlockVector(FzVector, block, zVector[iElemLoop+1]);
-      GetSubsVector(aux_vector, yVector[iElemLoop], FzVector);
-      GetMultBlockVector(zVector[iElemLoop], invUBlock[iElemLoop], aux_vector);
-    }
-    
-    /*--- Copy zVector to the prod vector ---*/
-    
-    for (iElem = 0; iElem < nElem; iElem++) {
-      iPoint = LineletPoint[iLinelet][iElem];
-      for (iVar = 0; iVar < nVar; iVar++)
-        prod[(const unsigned int)(iPoint*nVar+iVar)] = zVector[iElem][iVar];
-    }
+#ifndef HAVE_MPI
+    exit(1);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
     
   }
-  
-  /*--- MPI Parallelization ---*/
-  
-  SendReceive_Solution(prod, geometry, config);
   
 }
 

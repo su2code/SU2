@@ -493,6 +493,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("UNSTEADY_SIMULATION", Unsteady_Simulation, Unsteady_Map, STEADY);
   /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid */
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
+  /* DESCRIPTION:  Max time step in local time stepping simulations */
+  addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   default_vec_3d[0] = 1.0; default_vec_3d[1] = 100.0; default_vec_3d[2] = 1.0;
   /* DESCRIPTION: CFL ramp (factor, number of iterations, CFL limit) */
   addDoubleArrayOption("CFL_RAMP", 3, CFLRamp, default_vec_3d);
@@ -759,8 +761,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MESH_SCALE_CHANGE", Mesh_Scale_Change, 1.0);
   /* DESCRIPTION: Write a new mesh converted to meters */
   addBoolOption("MESH_OUTPUT", Mesh_Output, false);
-  /* DESCRIPTION: Cuthill–McKee ordering algorithm */
-  addBoolOption("CUTHILL_MCKEE_ORDERING", CuthillMckee_Ordering, false);
   /* DESCRIPTION: Mesh output file */
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 

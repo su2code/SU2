@@ -5683,9 +5683,9 @@ void CPhysicalGeometry::SetPoint_Connectivity(void) {
 }
 
 void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
-  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem;
+  unsigned long iPoint, AdjPoint, AuxPoint, AddPoint, iElem, iNode, jNode;
   vector<unsigned long> Queue, AuxQueue, Result;
-  unsigned short Degree, MinDegree, iNode, jNode, iDim, iMarker;
+  unsigned short Degree, MinDegree, iDim, iMarker;
   bool *inQueue;
   
   inQueue = new bool [nPoint];
@@ -5721,29 +5721,35 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
       }
     }
     
-    /*--- Sort the auxiliar queue based on the number of neighbors ---*/
-    
-    for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-      for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
-        if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
-          AuxPoint = AuxQueue[jNode];
-          AuxQueue[jNode] = AuxQueue[jNode+1];
-          AuxQueue[jNode+1] = AuxPoint;
+    if (AuxQueue.size() != 0) {
+      
+      /*--- Sort the auxiliar queue based on the number of neighbors ---*/
+      
+      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
+        for (jNode = 0; jNode < AuxQueue.size() - 1 - iNode; jNode++) {
+          if (node[AuxQueue[jNode]]->GetnPoint() > node[AuxQueue[jNode+1]]->GetnPoint()) {
+            AuxPoint = AuxQueue[jNode];
+            AuxQueue[jNode] = AuxQueue[jNode+1];
+            AuxQueue[jNode+1] = AuxPoint;
+          }
         }
       }
-    }
-    
-    Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
-    for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
-      inQueue[AuxQueue[iNode]] = true;
+      
+      Queue.insert(Queue.end(), AuxQueue.begin(), AuxQueue.end());
+      for (iNode = 0; iNode < AuxQueue.size(); iNode++) {
+        inQueue[AuxQueue[iNode]] = true;
+      }
+      
     }
     
     /*--- Extract the first node from the queue and add it in the first free
      position. ---*/
     
-    AddPoint = Queue[0];
-    Result.push_back(Queue[0]);
-    Queue.erase (Queue.begin(), Queue.begin()+1);
+    if (Queue.size() != 0) {
+      AddPoint = Queue[0];
+      Result.push_back(Queue[0]);
+      Queue.erase (Queue.begin(), Queue.begin()+1);
+    }
     
     /*--- Add to the queue all the nodes adjacent in the increasing
      order of their degree, checking if the element is already
@@ -9722,12 +9728,13 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
 }
 
 void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
-  unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint;
-  unsigned short iChildren, iNode;
   
-  /*--- Set the point suronfding a point ---*/
+  unsigned long iFinePoint, iFinePoint_Neighbor, iParent, iCoarsePoint, iCoarsePoint_Complete;
+  unsigned short iChildren, iNode, nChildren;
   
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
+  /*--- Set the point surrounding a point ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
     for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
       iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
       for (iNode = 0; iNode < fine_grid->node[iFinePoint]->GetnPoint(); iNode ++) {
@@ -9736,6 +9743,58 @@ void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
         if (iParent != iCoarsePoint) node[iCoarsePoint]->SetPoint(iParent);
       }
     }
+  }
+  
+  /*--- Detect isolated points and merge them with its correct neighbor ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    
+    if (node[iCoarsePoint]->GetnPoint() == 1) {
+      
+      /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
+      
+      iCoarsePoint_Complete = node[iCoarsePoint]->GetPoint(0);
+      
+      /*--- Add the children to the connected control volume (and modify it parent indexing) ---*/
+      
+      nChildren = node[iCoarsePoint_Complete]->GetnChildren_CV();
+      
+      for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+        
+        /*--- Identify the child CV from the finest grid and added to the correct control volume ---*/
+        
+        iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
+        node[iCoarsePoint_Complete]->SetChildren_CV(nChildren, iFinePoint);
+        nChildren++;
+        
+        /*--- Set the parent CV of iFinePoint. Instead of using the original
+         (iCoarsePoint) one use the new one (iCoarsePoint_Complete) ---*/
+        
+        fine_grid->node[iFinePoint]->SetParent_CV(iCoarsePoint_Complete);
+        
+        
+      }
+      
+      /*--- Update the number of children control volumes ---*/
+      
+      node[iCoarsePoint_Complete]->SetnChildren_CV(nChildren);
+      node[iCoarsePoint]->SetnChildren_CV(0);
+      
+      /*--- Reset the point surrounding a point and recompute ---*/
+      
+      node[iCoarsePoint]->ResetPoint();
+      node[iCoarsePoint_Complete]->ResetPoint();
+      for (iChildren = 0; iChildren <  node[iCoarsePoint_Complete]->GetnChildren_CV(); iChildren ++) {
+        iFinePoint = node[iCoarsePoint_Complete]->GetChildren_CV(iChildren);
+        for (iNode = 0; iNode < fine_grid->node[iFinePoint]->GetnPoint(); iNode ++) {
+          iFinePoint_Neighbor = fine_grid->node[iFinePoint]->GetPoint(iNode);
+          iParent = fine_grid->node[iFinePoint_Neighbor]->GetParent_CV();
+          if (iParent != iCoarsePoint_Complete) node[iCoarsePoint_Complete]->SetPoint(iParent);
+        }
+      }
+      
+    }
+  }
   
   /*--- Set the number of neighbors variable, this is
    important for JST and multigrid in parallel ---*/
@@ -9973,16 +10032,8 @@ void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid,
     }
   delete[] Normal;
   
-  /*--- Check if there isn't any element with only one neighbor...
-   a CV that is inside another CV ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    if (node[iPoint]->GetnPoint() == 1) {
-      jPoint = node[iPoint]->GetPoint(0);
-      node[jPoint]->AddVolume(node[iPoint]->GetVolume());
-    }
-  }
-  
   /*--- Check if there is a normal with null area ---*/
+  
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
     NormalFace = edge[iEdge]->GetNormal();
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += NormalFace[iDim]*NormalFace[iDim];
