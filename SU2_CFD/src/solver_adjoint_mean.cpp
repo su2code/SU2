@@ -2224,7 +2224,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    if (node[iPoint]->GetDelta_Time() != 0.0) {
+    if (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time();
       Jacobian.AddVal2Diag(iPoint, Delta);
     }
