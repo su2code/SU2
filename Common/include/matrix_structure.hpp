@@ -188,6 +188,14 @@ public:
 	void AddVal2Diag(unsigned long block_i, double val_matrix);
   
   /*!
+   * \brief Sets the specified value to the diagonal of the (i,i) subblock
+   *        of the matrix-by-blocks structure.
+   * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
+   * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+   */
+  void SetVal2Diag(unsigned long block_i, double val_matrix);
+
+  /*!
 	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
 	 *        of the matrix-by-blocks structure.
 	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
