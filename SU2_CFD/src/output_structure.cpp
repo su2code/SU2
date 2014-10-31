@@ -4877,9 +4877,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           switch (config[val_iZone]->GetKind_Solver()) {
             case EULER :                  case NAVIER_STOKES: case RANS:
             case FLUID_STRUCTURE_EULER :  case FLUID_STRUCTURE_NAVIER_STOKES: case FLUID_STRUCTURE_RANS:
-              cout << endl << " Local time stepping summary:" << endl;
+              cout << endl << "Local time stepping summary:" << endl;
               for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetMGLevels(); iMesh++)
-                cout << " MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+                cout << "MG level: "<< iMesh << "-> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
                 ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                 ". Limit DT: " << config[val_iZone]->GetMax_DeltaTime() << "." << endl;
               break;
