@@ -3891,7 +3891,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
       /*--- Adjoint flow solution at the boundary ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+        Psi_domain[iVar] = node[Point_Normal]->GetSolution(iVar);
 
       /*--- Construct the flow & adjoint states at the inlet ---*/
       /*--- Supersonic Inlet: All characteristic are exiting: using nearest neighbor to set value ---*/
@@ -4284,10 +4284,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Psi_outlet[0]+=1;
       }
 
-      /*--- For mass_flow objective function add B.C. contribution ---*/
-      if (config->GetKind_ObjFunc() == MASS_FLOW_RATE){
-        Psi_outlet[0]+=1;
-      }
       /*--- Set the flow and adjoint states in the solver ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_outlet);
