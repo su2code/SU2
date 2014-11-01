@@ -96,8 +96,8 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           args           = (project,)     , 
                           bounds         = xb             ,
                           iter           = its            ,
-                          iprint         = 1              ,
-                          full_output    = 2              ,
+                          iprint         = 2              ,
+                          full_output    = True              ,
                           acc            = 1e-10          ,
                           epsilon        = 1.0e-06         )
     
@@ -114,9 +114,7 @@ def obj_f(x,project):
         su2:         minimize f(x), list[nobj]
         scipy_slsqp: minimize f(x), float
     """
-    
-    print ""
-    
+        
     obj = project.obj_f(x)
     
     obj = obj[0]
