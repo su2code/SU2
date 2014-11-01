@@ -1800,6 +1800,9 @@ void CAdjTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry,
     SetRes_Max(iVar, 0.0, 0);
   }
   
+  solver_container[TNE2_SOL]->SetTime_Step(geometry, solver_container,
+                                           config, 0, 0);
+  
 	/*--- Update the solution ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Vol = geometry->node[iPoint]->GetVolume();
@@ -1838,6 +1841,18 @@ void CAdjTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
+  
+  
+  /*--- Update the time-step from the flow solver ---*/
+  // NOTE: The flow state is the same, but if the CFL changes (via ramp
+  //       condition, etc.) then the time step will change, and needs to be
+  //       updated.  Also, the function prototype requires iMesh and Iteration,
+  //       Since we do not have access to these in this routine and they are
+  //       only used for Multi-grid convergence acceleration and dual-time
+  //       stepping, these parameters have been set to zero.
+  solver_container[TNE2_SOL]->SetTime_Step(geometry, solver_container,
+                                           config, 0, 0);
+  
   
 	/*--- Build implicit system ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -2731,6 +2746,8 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
   
 }
+
+
 
 void CAdjTNE2NSSolver::Viscous_Residual(CGeometry *geometry,
                                         CSolver **solver_container,
