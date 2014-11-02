@@ -104,6 +104,8 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   double Area, ProjVel;
   double MeanSoundSpeed;
   
+  double soundspeed_i, soundspeed_j;
+  
   /*--- Roe flux: Fij = (Fi + Fj)/2 - 1/2*P|Lam|P^-1 * (Uj - Ui) ---*/
   // Notes:
   // 1) Non-conservative method, so for Fij -> Fi = A_i*Psi_i & Fj = A_i*Psi_j
@@ -146,35 +148,80 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
     }
   }
   
-  /*--- Calculate mean variables ---*/
-  for (iVar = 0; iVar < nVar; iVar++)
-    MeanU[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
-  var->Cons2PrimVar(config, MeanU, MeanV, MeandPdU, MeandTdU,
-                    MeandTvedU, MeanEve, MeanCvve);
-  MeanSoundSpeed = MeanV[A_INDEX];
-  
+  CreateBasis(UnitNormal);
   for (iVar = 0; iVar < nVar; iVar++)
     DiffPsi[iVar] = Psi_j[iVar] - Psi_i[iVar];
   
+  
+  /*--- Calculate eigenvalues of state i ---*/
+  
+  soundspeed_i = V_i[A_INDEX];
   ProjVel = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    ProjVel += MeanV[VEL_INDEX+iDim]*UnitNormal[iDim];
-  
-  /*--- Calculate eigenvalues of the interface state, ij ---*/
+    ProjVel += V_i[VEL_INDEX+iDim];
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda[iVar] = ProjVel;
-  Lambda[nSpecies+nDim-1] = ProjVel + MeanSoundSpeed;
-  Lambda[nSpecies+nDim]   = ProjVel - MeanSoundSpeed;
+  Lambda[nSpecies+nDim-1] = ProjVel + soundspeed_i;
+  Lambda[nSpecies+nDim]   = ProjVel - soundspeed_i;
   Lambda[nSpecies+nDim+1] = ProjVel;
   for (iVar = 0; iVar < nVar; iVar++)
     Lambda[iVar] = fabs(Lambda[iVar]);
   
-  /*--- Calculate left and right eigenvector matrices ---*/
-  CreateBasis(UnitNormal);
-  GetPMatrix(MeanU, MeanV, MeandPdU, UnitNormal, l, m, P);
-  GetPMatrix_inv(MeanU, MeanV, MeandPdU, UnitNormal, l, m, invP);
+  // Calculate left and right eigenvector matrices
+  GetPMatrix(U_i, V_i, dPdU_i, UnitNormal, l, m, P);
+  GetPMatrix_inv(U_i, V_i, dPdU_i, UnitNormal, l, m, invP);
   
-  /*--- Calculate eigenvalue/eigenvector decomposition ---*/
+  // Calculate eigenvalue/eigenvector decomposition
+  // |PLPinv| = P x |Lambda| x inverse P
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      PLPinv[iVar][jVar] = 0.0;
+      for (kVar = 0; kVar < nVar; kVar++)
+        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda[kVar]*invP[kVar][jVar];
+    }
+  }
+  
+  // Calculate the 'viscous' portion of the flux
+  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+  
+  
+  // Populate Jacobian matrices
+  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
+  //       Only multiply PLP by area to properly account for integration.
+  if (implicit) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+      }
+    }
+  }
+  
+  
+  
+  /*--- Calculate eigenvalues of state j ---*/
+  
+  soundspeed_j = V_j[A_INDEX];
+  ProjVel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    ProjVel += V_j[VEL_INDEX+iDim];
+  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+    Lambda[iVar] = ProjVel;
+  Lambda[nSpecies+nDim-1] = ProjVel + soundspeed_j;
+  Lambda[nSpecies+nDim]   = ProjVel - soundspeed_j;
+  Lambda[nSpecies+nDim+1] = ProjVel;
+  for (iVar = 0; iVar < nVar; iVar++)
+    Lambda[iVar] = fabs(Lambda[iVar]);
+  
+  // Calculate left and right eigenvector matrices
+  GetPMatrix(U_j, V_j, dPdU_j, UnitNormal, l, m, P);
+  GetPMatrix_inv(U_j, V_j, dPdU_j, UnitNormal, l, m, invP);
+  
+  
+  // Calculate eigenvalue/eigenvector decomposition
   // |PLPinv| = P x |Lambda| x inverse P
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -186,13 +233,9 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   
   /*--- Calculate the 'viscous' portion of the flux ---*/
   // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nVar; jVar++) {
-      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
       val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
-    }
-  }
-  
   
   /*--- Populate Jacobian matrices ---*/
   // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
@@ -200,14 +243,76 @@ void CUpwRoe_AdjTNE2::ComputeResidual (double *val_residual_i,
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
-        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
-        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
         val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
         val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
       }
     }
   }
   
+//  ////////// OLD
+//  
+//  /*--- Calculate mean variables ---*/
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    MeanU[iVar] = 0.5*(U_i[iVar]+U_j[iVar]);
+//  var->Cons2PrimVar(config, MeanU, MeanV, MeandPdU, MeandTdU,
+//                    MeandTvedU, MeanEve, MeanCvve);
+//  MeanSoundSpeed = MeanV[A_INDEX];
+//  
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    DiffPsi[iVar] = Psi_j[iVar] - Psi_i[iVar];
+//  
+//  ProjVel = 0.0;
+//  for (iDim = 0; iDim < nDim; iDim++)
+//    ProjVel += MeanV[VEL_INDEX+iDim]*UnitNormal[iDim];
+//  
+//  /*--- Calculate eigenvalues of the interface state, ij ---*/
+//  for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
+//    Lambda[iVar] = ProjVel;
+//  Lambda[nSpecies+nDim-1] = ProjVel + MeanSoundSpeed;
+//  Lambda[nSpecies+nDim]   = ProjVel - MeanSoundSpeed;
+//  Lambda[nSpecies+nDim+1] = ProjVel;
+//  for (iVar = 0; iVar < nVar; iVar++)
+//    Lambda[iVar] = fabs(Lambda[iVar]);
+//  
+//  /*--- Calculate left and right eigenvector matrices ---*/
+//  CreateBasis(UnitNormal);
+//  GetPMatrix(MeanU, MeanV, MeandPdU, UnitNormal, l, m, P);
+//  GetPMatrix_inv(MeanU, MeanV, MeandPdU, UnitNormal, l, m, invP);
+//  
+//  /*--- Calculate eigenvalue/eigenvector decomposition ---*/
+//  // |PLPinv| = P x |Lambda| x inverse P
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      PLPinv[iVar][jVar] = 0.0;
+//      for (kVar = 0; kVar < nVar; kVar++)
+//        PLPinv[iVar][jVar] += P[iVar][kVar]*Lambda[kVar]*invP[kVar][jVar];
+//    }
+//  }
+//  
+//  /*--- Calculate the 'viscous' portion of the flux ---*/
+//  // 1/2*(P|Lam|P^-1)^T * (Uj - Ui)
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++) {
+//      val_residual_i[iVar] -= 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+//      val_residual_j[iVar] += 0.5*PLPinv[jVar][iVar]*(Psi_i[jVar]-Psi_j[jVar])*Area;
+//    }
+//  }
+//  
+//  
+//  /*--- Populate Jacobian matrices ---*/
+//  // Note: Ai/j calculated using 'Normal', but PLPinv computed using UnitNormal.
+//  //       Only multiply PLP by area to properly account for integration.
+//  if (implicit) {
+//    for (iVar = 0; iVar < nVar; iVar++) {
+//      for (jVar = 0; jVar < nVar; jVar++) {
+//        val_Jacobian_ii[iVar][jVar] = 0.5*Ai[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+//        val_Jacobian_ij[iVar][jVar] = 0.5*Ai[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+//        val_Jacobian_ji[iVar][jVar] = -0.5*Aj[jVar][iVar] + 0.5*PLPinv[jVar][iVar]*Area;
+//        val_Jacobian_jj[iVar][jVar] = -0.5*Aj[jVar][iVar] - 0.5*PLPinv[jVar][iVar]*Area;
+//      }
+//    }
+//  }
+//  ////////// OLD
 }
 
 CUpwSW_AdjTNE2::CUpwSW_AdjTNE2(unsigned short val_nDim,
