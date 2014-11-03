@@ -1233,7 +1233,8 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the direct problem may use different methods). ---*/
-  second_order = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
+  second_order = ((config->GetSpatialOrder() == SECOND_ORDER)        ||
+                  (config->GetSpatialOrder() == SECOND_ORDER_LIMITER)  );
   limiter      = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
   center       = (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED);
   center_jst   = (config->GetKind_Centered_AdjTNE2() == JST);
@@ -1368,18 +1369,6 @@ void CAdjTNE2EulerSolver::Centered_Residual(CGeometry *geometry,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji,
                               Jacobian_jj, config);
     
-    ///// DEBUG /////
-//    if (iEdge == 12) {
-//      cout << "Res i: " << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << Res_Conv_i[iVar] << endl;
-//      cout << endl << "Res j: " << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << Res_Conv_j[iVar] << endl;
-//      cin.get();
-//    }
-    ///// DEBUG /////
-    
     /*--- Error checking ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       if ((Res_Conv_i[iVar] != Res_Conv_i[iVar]) ||
@@ -1441,6 +1430,7 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     cout << "WARNING!!! Upwind_Residual: 2nd order accuracy not in place!" << endl;
   if (limiter)
     cout << "WARNING!!! Upwind_Residual: Limiter not in place!" << endl;
+  
   
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( solver_container[TNE2_SOL]->node[0]->GetRhosIndex()    );
@@ -1527,17 +1517,6 @@ void CAdjTNE2EulerSolver::Upwind_Residual(CGeometry *geometry,
     numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
                               Jacobian_ji, Jacobian_jj, config);
     
-    ///// DEBUG /////
-//    if (iEdge == 0) {
-//      cout << "Res i: " << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << Residual_i[iVar] << endl;
-//      cout << endl << "Res j: " << endl;
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        cout << Residual_j[iVar] << endl;
-//      cin.get();
-//    }
-    ///// DEBUG /////
     
 		/*--- Add and Subtract Residual ---*/
     LinSysRes.SubtractBlock(iPoint, Residual_i);
@@ -2403,7 +2382,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
   nPrimVar     = nSpecies+nDim+8;
   nPrimVarGrad = nSpecies+nDim+8;
   
-  /*--- Allocate teh CVariable array for each node in the mesh ---*/
+  /*--- Allocate the CVariable array for each node in the mesh ---*/
 	node = new CVariable*[nPoint];
   
 	/*--- Define some auxiliary arrays related to the residual ---*/
@@ -2532,33 +2511,35 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
     
 		/*--- Restart the solution from file information ---*/
 		mesh_filename = config->GetSolution_AdjFileName();
+    filename = config->GetObjFunc_Extension(mesh_filename);
     
-		/*--- Change the name, depending of the objective function ---*/
-		filename.assign(mesh_filename);
-		filename.erase (filename.end()-4, filename.end());
-		switch (config->GetKind_ObjFunc()) {
-      case DRAG_COEFFICIENT:        AdjExt = "_cd.dat";       break;
-      case LIFT_COEFFICIENT:        AdjExt = "_cl.dat";       break;
-      case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf.dat";      break;
-      case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress.dat"; break;
-      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat.dat";  break;
-      case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx.dat";      break;
-      case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy.dat";      break;
-      case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz.dat";      break;
-      case EFFICIENCY:              AdjExt = "_eff.dat";      break;
-      case EQUIVALENT_AREA:         AdjExt = "_ea.dat";       break;
-      case NEARFIELD_PRESSURE:      AdjExt = "_nfp.dat";      break;
-      case FORCE_X_COEFFICIENT:     AdjExt = "_cfx.dat";      break;
-      case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy.dat";      break;
-      case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz.dat";      break;
-      case THRUST_COEFFICIENT:      AdjExt = "_ct.dat";       break;
-      case TORQUE_COEFFICIENT:      AdjExt = "_cq.dat";       break;
-      case FIGURE_OF_MERIT:         AdjExt = "_merit.dat";    break;
-      case FREE_SURFACE:            AdjExt = "_fs.dat";       break;
-      case TOTAL_HEATFLUX:          AdjExt = "_totheat.dat";  break;
-      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat.dat";  break;
-		}
-		filename.append(AdjExt);
+//		/*--- Change the name, depending of the objective function ---*/
+//		filename.assign(mesh_filename);
+//		filename.erase (filename.end()-4, filename.end());
+//		switch (config->GetKind_ObjFunc()) {
+//      case DRAG_COEFFICIENT:        AdjExt = "_cd.dat";       break;
+//      case LIFT_COEFFICIENT:        AdjExt = "_cl.dat";       break;
+//      case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf.dat";      break;
+//      case INVERSE_DESIGN_PRESSURE: AdjExt = "_invpress.dat"; break;
+//      case INVERSE_DESIGN_HEATFLUX: AdjExt = "_invheat.dat";  break;
+//      case MOMENT_X_COEFFICIENT:    AdjExt = "_cmx.dat";      break;
+//      case MOMENT_Y_COEFFICIENT:    AdjExt = "_cmy.dat";      break;
+//      case MOMENT_Z_COEFFICIENT:    AdjExt = "_cmz.dat";      break;
+//      case EFFICIENCY:              AdjExt = "_eff.dat";      break;
+//      case EQUIVALENT_AREA:         AdjExt = "_ea.dat";       break;
+//      case NEARFIELD_PRESSURE:      AdjExt = "_nfp.dat";      break;
+//      case FORCE_X_COEFFICIENT:     AdjExt = "_cfx.dat";      break;
+//      case FORCE_Y_COEFFICIENT:     AdjExt = "_cfy.dat";      break;
+//      case FORCE_Z_COEFFICIENT:     AdjExt = "_cfz.dat";      break;
+//      case THRUST_COEFFICIENT:      AdjExt = "_ct.dat";       break;
+//      case TORQUE_COEFFICIENT:      AdjExt = "_cq.dat";       break;
+//      case FIGURE_OF_MERIT:         AdjExt = "_merit.dat";    break;
+//      case FREE_SURFACE:            AdjExt = "_fs.dat";       break;
+//      case TOTAL_HEATFLUX:          AdjExt = "_totheat.dat";  break;
+//      case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat.dat";  break;
+//		}
+//		filename.append(AdjExt);
+    
 		restart_file.open(filename.data(), ios::in);
     
 		/*--- In case there is no file ---*/
@@ -2601,7 +2582,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
         for (iVar = 0; iVar < nVar; iVar++)
           point_line >> Solution[iVar];
         
-				node[iPoint_Local] = new CAdjNSVariable(Solution, nDim, nVar, config);
+				node[iPoint_Local] = new CAdjTNE2NSVariable(Solution, nDim, nVar, config);
 			}
 			iPoint_Global++;
 		}
@@ -2610,7 +2591,7 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
 		for(iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-			node[iPoint] = new CAdjNSVariable(Solution, nDim, nVar, config);
+			node[iPoint] = new CAdjTNE2NSVariable(Solution, nDim, nVar, config);
 		}
     
 		/*--- Close the restart file ---*/
@@ -2619,6 +2600,10 @@ CAdjTNE2NSSolver::CAdjTNE2NSSolver(CGeometry *geometry,
 		/*--- Free memory needed for the transformation ---*/
 		delete [] Global2Local;
 	}
+  
+  /*--- Define solver parameters needed for execution of destructor ---*/
+  if (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED) space_centered = true;
+  else space_centered = false;
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -2671,7 +2656,8 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
   /*--- Retrieve information about the spatial and temporal integration for the
    adjoint equations (note that the flow problem may use different methods). ---*/
   implicit     = (config->GetKind_TimeIntScheme_AdjTNE2() == EULER_IMPLICIT);
-  second_order = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
+  second_order = ((config->GetSpatialOrder() == SECOND_ORDER)        ||
+                  (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
   limiter      = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
   center       = (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED);
   center_jst   = (config->GetKind_Centered_AdjTNE2() == JST);
@@ -2696,39 +2682,41 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
     
 	}
   
-  /*--- Compute gradients for upwind second-order reconstruction ---*/
-  if ((second_order) && (iMesh == MESH_0)) {
-		if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-		if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-    
-    /*--- Limiter computation ---*/
-		if (limiter) SetSolution_Limiter(geometry, config);
-	}
-  
   /*--- Artificial dissipation for centered schemes ---*/
   if (center) {
+    
+    /*--- Compute gradients for upwind second-order reconstruction ---*/
+    if ((second_order) && (iMesh == MESH_0)) {
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+        SetSolution_Gradient_GG(geometry, config);
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+        SetSolution_Gradient_LS(geometry, config);
+    }
+    
     if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+        SetSolution_Gradient_GG(geometry, config);
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+        SetSolution_Gradient_LS(geometry, config);
+    }
+  } else {
+  
+    /*--- Compute gradients for solution reconstruction and viscous term
+     (be careful, if an upwind strategy is used, then we compute the gradient twice) ---*/
+    switch (config->GetKind_Gradient_Method()) {
+      case GREEN_GAUSS :
+        SetSolution_Gradient_GG(geometry, config);
+        break;
+      case WEIGHTED_LEAST_SQUARES :
+        SetSolution_Gradient_LS(geometry, config);
+        break;
     }
   }
   
-	/*--- Compute gradients for solution reconstruction and viscous term
-   (be careful, if an upwind strategy is used, then we compute the gradient twice) ---*/
-	switch (config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS :
-      SetSolution_Gradient_GG(geometry, config);
-      if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()))
-        solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config);
-      break;
-    case WEIGHTED_LEAST_SQUARES :
-      SetSolution_Gradient_LS(geometry, config);
-      if ((config->GetKind_Solver() == ADJ_RANS) && (!config->GetFrozen_Visc()))
-        solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config);
-      break;
-	}
+  /*--- Limiter computation ---*/
+  if (limiter) SetSolution_Limiter(geometry, config);
   
 	/*--- Initialize the Jacobian for implicit integration ---*/
 	if (implicit) Jacobian.SetValZero();

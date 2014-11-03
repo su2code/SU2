@@ -3792,7 +3792,8 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjTNE2NSVariable(double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+	CAdjTNE2NSVariable(double *val_solution, unsigned short val_ndim,
+                     unsigned short val_nvar, CConfig *config);
   
 	/*!
 	 * \brief Destructor of the class.

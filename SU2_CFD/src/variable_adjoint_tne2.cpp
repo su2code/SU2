@@ -233,7 +233,7 @@ CAdjTNE2NSVariable::CAdjTNE2NSVariable(double *val_solution,
                                                                                 val_ndim,
                                                                                 val_nvar,
                                                                                 config) {
-  
+
 }
 
 CAdjTNE2NSVariable::~CAdjTNE2NSVariable(void) { }

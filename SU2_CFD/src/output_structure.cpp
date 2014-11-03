@@ -2260,11 +2260,16 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           break;
           
         case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
+          
+          
           Data[jVar][jPoint] = Aux_Sens[iPoint]; jVar++;
-          if (config->GetKind_ConvNumScheme() == SPACE_CENTERED)
-          { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetSensor(); jVar++; }
-          if (config->GetKind_ConvNumScheme() == SPACE_UPWIND)
-          { Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetLimiter(0); jVar++; }
+          if (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED) {
+            Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetSensor();
+            jVar++;
+          } else if (config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_UPWIND) {
+            Data[jVar][jPoint] = solver[ADJTNE2_SOL]->node[iPoint]->GetLimiter(0);
+            jVar++;
+          }
           break;
           
         case LINEAR_ELASTICITY:
