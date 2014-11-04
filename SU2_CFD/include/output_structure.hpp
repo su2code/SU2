@@ -82,7 +82,8 @@ class COutput {
 	double **residuals, **consv_vars;					// placeholders
 	double *p, *rho, *M, *Cp, *Cf, *Ch, *h, *yplus;		// placeholders 
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
-	bool wrote_base_file, wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
+	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
+  unsigned short wrote_base_file;
 
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   
