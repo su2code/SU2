@@ -1216,17 +1216,17 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   /*--- Send and Recv buffers ---*/
   
-  int *Buffer_Send_Elem = new int[nBuffer_Scalar];
-  int *Buffer_Recv_Elem = NULL;
+  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
+  unsigned long *Buffer_Recv_Elem = NULL;
   
-  int *Buffer_Send_Halo = new int[MaxLocalElem];
-  int *Buffer_Recv_Halo = NULL;
+  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
+  unsigned short *Buffer_Recv_Halo = NULL;
   
   /*--- Prepare the receive buffers on the master node only. ---*/
   
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new int[nProcessor*nBuffer_Scalar];
-    Buffer_Recv_Halo = new int[nProcessor*MaxLocalElem];
+    Buffer_Recv_Elem = new unsigned long[nProcessor*nBuffer_Scalar];
+    Buffer_Recv_Halo = new unsigned short[nProcessor*MaxLocalElem];
     Conn_Elem = new int[nProcessor*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
@@ -1350,7 +1350,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         /*--- Store the global index values directly. ---*/
         
         iPoint = geometry->elem[iElem]->GetNode(iNode);
-        Buffer_Send_Elem[jNode] = (int)geometry->node[iPoint]->GetGlobalIndex();
+        Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
         
         /*--- Check if this is a halo node. If so, flag this element
          as a halo cell. We will use this later to sort and remove
@@ -1371,8 +1371,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   /*--- Gather the element connectivity information. ---*/
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_INT, Buffer_Recv_Elem, nBuffer_Scalar, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_INT, Buffer_Recv_Halo, MaxLocalElem, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
   
@@ -1424,7 +1424,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
            use 1-based indexing.---*/
           
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
             kNode++;
           }
         }
@@ -1641,17 +1641,17 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   /*--- Send and Recv buffers ---*/
   
-  int *Buffer_Send_Elem = new int[nBuffer_Scalar];
-  int *Buffer_Recv_Elem = NULL;
+  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
+  unsigned long *Buffer_Recv_Elem = NULL;
   
-  int *Buffer_Send_Halo = new int[MaxLocalElem];
-  int *Buffer_Recv_Halo = NULL;
+  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
+  unsigned short *Buffer_Recv_Halo = NULL;
   
   /*--- Prepare the receive buffers on the master node only. ---*/
   
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Elem = new int[nProcessor*nBuffer_Scalar];
-    Buffer_Recv_Halo = new int[nProcessor*MaxLocalElem];
+    Buffer_Recv_Elem = new unsigned long[nProcessor*nBuffer_Scalar];
+    Buffer_Recv_Halo = new unsigned short[nProcessor*MaxLocalElem];
     Conn_Elem = new int[nProcessor*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
@@ -1777,7 +1777,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
             /*--- Store the global index values directly. ---*/
             
             iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-            Buffer_Send_Elem[jNode] = (int)geometry->node[iPoint]->GetGlobalIndex();
+            Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
             
             /*--- Check if this is a halo node. If so, flag this element
              as a halo cell. We will use this later to sort and remove
@@ -1797,8 +1797,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   /*--- Gather the element connectivity information. ---*/
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_INT, Buffer_Recv_Elem, nBuffer_Scalar, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_INT, Buffer_Recv_Halo, MaxLocalElem, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
   
@@ -1850,7 +1850,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
            use 1-based indexing.---*/
           
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
             kNode++;
           }
         }
@@ -4941,9 +4941,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)
-              cout << " There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
             if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
-              cout << " There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
+              cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
@@ -4991,9 +4991,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)
-              cout << " There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
             if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
-              cout << " There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
+              cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
@@ -5648,7 +5648,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
      output files. ---*/
     
 #ifdef HAVE_MPI
-    MPI_Bcast(&wrote_base_file, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
@@ -5787,7 +5787,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
      output files. ---*/
     
 #ifdef HAVE_MPI
-    MPI_Bcast(&wrote_base_file, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
