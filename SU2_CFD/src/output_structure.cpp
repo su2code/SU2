@@ -4023,6 +4023,7 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
+  bool output_massflow = (config->GetKind_ObjFunc()==MASS_FLOW_RATE);
   if(config->GetnMarker_Monitoring() > 1) output_per_surface = true;
   
   bool isothermal = false;
@@ -4072,6 +4073,8 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char oneD_outputs[]= ",\"Avg_TotalPress\",\"Avg_Mach\",\"Avg_Temperature\",\"MassFlowRate\",\"FluxAvg_Pressure\",\"FluxAvg_Density\",\"FluxAvg_Velocity\",\"FluxAvg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
+  char mass_flow_rate[] = ",\"MassFlowRate\"";
+
   
   /* Find the markers being monitored and create a header for them */
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -4132,11 +4135,13 @@ void COutput::SetHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
+      if (output_massflow)  ConvHist_file[0]<< mass_flow_rate;
       ConvHist_file[0] << end;
       if (freesurface) {
         ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
         ConvHist_file[0] << flow_resid << levelset_resid << end;
       }
+
       break;
       
     case TNE2_EULER : case TNE2_NAVIER_STOKES:
@@ -4194,6 +4199,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
                                      unsigned short val_iZone) {
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
+  bool output_massflow = (config[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;
@@ -4214,7 +4220,15 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         OneDimensionalOutput(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
     }
   }
-  
+  if (output_massflow){
+    switch (config[val_iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case FLUID_STRUCTURE_EULER:   case FLUID_STRUCTURE_NAVIER_STOKES:   case FLUID_STRUCTURE_RANS:
+      case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
+        SetMassFlowRate(solver_container[val_iZone][FinestMesh][FLOW_SOL], geometry[val_iZone][FinestMesh], config[val_iZone]);
+    }
+  }
+
   /*--- Output using only the master node ---*/
   if (rank == MASTER_NODE) {
     
@@ -4226,8 +4240,9 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], resid_aux[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
-    heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000], end[1000];
-    char oneD_outputs[1000];
+    heat_coeff[1000], fea_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000], end[1000],
+    oneD_outputs[1000], massflow_outputs[1000];
+
     double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker, iMarker_Monitoring;
     
@@ -4268,13 +4283,14 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
     
     bool output_per_surface = false;
     if(config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
-    
+
+
+
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
-    Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0;
-    
+    Total_CFEA = 0.0, Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0;
     double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0;
     
@@ -4388,7 +4404,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
         Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
         Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-        
+
         if (freesurface) {
           Total_CFreeSurface = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFreeSurface();
         }
@@ -4462,7 +4478,13 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
           OneD_FluxAvgEntalpy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_FluxAvgEntalpy();
           
         }
-        
+        /*--- Get Mass Flow at the Monitored Markers ---*/
+
+
+        if (output_massflow) {
+          Total_Mdot = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
+        }
+
         /*--- Flow Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Flow; iVar++)
@@ -4632,7 +4654,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
         
     }
     
-    /*--- Header frecuency ---*/
+    /*--- Header frequency ---*/
     
     bool Unsteady = ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                      (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -4759,6 +4781,10 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (output_1d) {
               sprintf( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
             }
+            if (output_massflow){
+              sprintf(massflow_outputs,", %12.10f", Total_Mdot);
+            }
+
             
             /*--- Transition residual ---*/
             if (transition){
@@ -5108,6 +5134,7 @@ void COutput::SetConvergence_History(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow) ConvHist_file[0] << massflow_outputs;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
@@ -5765,6 +5792,36 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
 #endif
     
   }
+}
+
+void COutput::SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config){
+  unsigned short iDim, iMarker_monitor, iMarker;
+  unsigned long iVertex, iPoint;
+  double Vector[3],Total_Mdot=0.0;
+  unsigned short nDim = geometry->GetnDim();
+
+  for (iMarker = 0; iMarker< config->GetnMarker_Monitoring(); iMarker++) {
+    iMarker_monitor = config->GetMarker_All_Monitoring(iMarker);
+
+    for (iVertex = 0; iVertex < geometry->nVertex[ iMarker_monitor ]; iVertex++) {
+      iPoint = geometry->vertex[iMarker_monitor][iVertex]->GetNode();
+
+      if (geometry->node[iPoint]->GetDomain()) {
+        geometry->vertex[iMarker_monitor][iVertex]->GetNormal(Vector);
+        for (iDim = 0; iDim < nDim; iDim++){
+          Total_Mdot += Vector[iDim]*(solver_container->node[iPoint]->GetSolution(iDim+1));
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Add AllBound information using all the nodes ---*/
+  double My_Total_Mdot    = Total_Mdot;    Total_Mdot = 0.0;
+  MPI_Allreduce(&My_Total_Mdot, &Total_Mdot, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  /*--- Set the output: reusing same variable from OneDimensionalOutput code ---*/
+  solver_container->SetOneD_MassFlowRate(Total_Mdot);
 }
 
 void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
