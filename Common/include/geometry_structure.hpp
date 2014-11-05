@@ -461,7 +461,15 @@ public:
 	 * \param[in] val_domain - Number of domains for parallelization purposes.		 
 	 */
 	virtual void SetSendReceive(CConfig *config);
-
+  
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_domain - Number of domains for parallelization purposes.
+	 */
+	virtual void SetBoundaries(CConfig *config);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.

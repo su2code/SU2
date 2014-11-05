@@ -112,17 +112,49 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
     
-#ifdef HAVE_MPI
     /*--- Change the name of the input-output files for a parallel computation ---*/
     config_container[iZone]->SetFileNameDomain(rank+1);
+    
+    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+    
+    CGeometry *geometry_aux = NULL;
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- Read the grid using the master node ---*/
+      
+      config_container[iZone]->SetKind_SU2(SU2_PRT);
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      config_container[iZone]->SetKind_SU2(SU2_CFD);
+      
+      /*--- Color the initial grid and set the send-receive domains ---*/
+      
+      geometry_aux->SetColorGrid(config_container[iZone]);
+      
+    }
+    
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
-        
-    /*--- Definition of the geometry class. Within this constructor, the
-     mesh file is read and the primal grid is stored (node coords, connectivity,
-     & boundary markers. MESH_0 is the index of the finest mesh. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    
+    /*--- Allocate the memory of the current domain, and
+     divide the grid between the nodes ---*/
+    
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
+    
+    /*--- Add the Send/Receive boundaries ---*/
+    
+    geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
+    
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
     
   }
   
