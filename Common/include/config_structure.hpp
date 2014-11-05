@@ -2638,6 +2638,12 @@ public:
 	 * \return Kind of the SU2 software component.
 	 */
 	unsigned short GetKind_SU2(void);
+  
+  /*!
+	 * \brief Get the kind of SU2 software component.
+	 * \return Kind of the SU2 software component.
+	 */
+	void SetKind_SU2(unsigned short val_kind_su2);
 
 	/*!
 	 * \brief Get the kind of the turbulence model.

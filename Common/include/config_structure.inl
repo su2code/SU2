@@ -32,6 +32,8 @@ inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
 
+inline void CConfig::SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
+
 inline bool CConfig::GetAdjoint(void) { return Adjoint; }
 
 inline bool CConfig::GetViscous(void) { return Viscous; }

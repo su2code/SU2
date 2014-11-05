@@ -1192,10 +1192,28 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
 }
 
+
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
-  unsigned long iter, nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemWedge = 0, nElemPyramid = 0, iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid, nVertexDomain[MAX_NUMBER_MARKER], iPoint, jPoint, iElem, jElem, iVertex, nBoundLine[MAX_NUMBER_MARKER], nBoundLineTotal = 0, iBoundLineTotal, nBoundTriangle[MAX_NUMBER_MARKER], nBoundTriangleTotal = 0, iBoundTriangleTotal, nBoundRectangle[MAX_NUMBER_MARKER], nBoundRectangleTotal = 0, iBoundRectangleTotal, ReceptorColor = 0, DonorColor = 0, Transformation, nTotalSendDomain_Periodic = 0, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic = 0, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic, *nReceivedDomain_Periodic, Buffer_Send_nPointTotal = 0, Buffer_Send_nPointDomainTotal = 0, Buffer_Send_nPointGhost = 0, Buffer_Send_nPointPeriodic = 0, Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemRectangle = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemWedge = 0, Buffer_Send_nElemPyramid = 0, Buffer_Send_nTotalSendDomain_Periodic = 0, Buffer_Send_nTotalReceivedDomain_Periodic = 0, *Buffer_Send_nSendDomain_Periodic = NULL, *Buffer_Send_nReceivedDomain_Periodic = NULL, Buffer_Send_nBoundLineTotal = 0, Buffer_Send_nBoundTriangleTotal = 0, Buffer_Send_nBoundRectangleTotal = 0, Buffer_Send_nVertexDomain[MAX_NUMBER_MARKER], Buffer_Send_nBoundLine[MAX_NUMBER_MARKER], Buffer_Send_nBoundTriangle[MAX_NUMBER_MARKER], Buffer_Send_nBoundRectangle[MAX_NUMBER_MARKER], *nElem_Color = NULL, **Elem_Color = NULL, Max_nElem_Color = 0, iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle;
-  unsigned short iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain, nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_Marker_All_SendRecv[MAX_NUMBER_MARKER], Buffer_Send_nPeriodic = 0;
+  unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
+  unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemRectangle = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemWedge = 0, nElemPyramid = 0;
+  unsigned long iElemTotal, iPointTotal, iPointGhost, iPointDomain, iPointPeriodic, iElemTriangle, iElemRectangle, iElemTetrahedron, iElemHexahedron, iElemWedge, iElemPyramid;
+  unsigned long nBoundLineTotal = 0, iBoundLineTotal;
+  unsigned long nBoundTriangleTotal = 0, iBoundTriangleTotal;
+  unsigned long nBoundRectangleTotal = 0, iBoundRectangleTotal;
+  unsigned long ReceptorColor = 0, DonorColor = 0, Transformation;
+  unsigned long *nElem_Color = NULL, **Elem_Color = NULL, Max_nElem_Color = 0;
+  unsigned long nTotalSendDomain_Periodic = 0, iTotalSendDomain_Periodic, nTotalReceivedDomain_Periodic = 0, iTotalReceivedDomain_Periodic, *nSendDomain_Periodic = NULL, *nReceivedDomain_Periodic = NULL;
+  unsigned long Buffer_Send_nPointTotal = 0, Buffer_Send_nPointDomainTotal = 0, Buffer_Send_nPointGhost = 0, Buffer_Send_nPointPeriodic = 0;
+  unsigned long Buffer_Send_nElemTotal, Buffer_Send_nElemTriangle = 0, Buffer_Send_nElemRectangle = 0, Buffer_Send_nElemTetrahedron = 0, Buffer_Send_nElemHexahedron = 0, Buffer_Send_nElemWedge = 0, Buffer_Send_nElemPyramid = 0;
+  unsigned long Buffer_Send_nTotalSendDomain_Periodic = 0, Buffer_Send_nTotalReceivedDomain_Periodic = 0, *Buffer_Send_nSendDomain_Periodic = NULL, *Buffer_Send_nReceivedDomain_Periodic = NULL;
+  unsigned long Buffer_Send_nBoundLineTotal = 0, Buffer_Send_nBoundTriangleTotal = 0, Buffer_Send_nBoundRectangleTotal = 0;
+  unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundRectangle;
+  
+  /*--- Need to double-check these shorts in case we go to nprocs > ~32,000 ---*/
+  unsigned short iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain;
+  unsigned short nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
+  
   bool *MarkerIn = NULL, **VertexIn = NULL, CheckDomain;
   long vnodes_local[8], *Global_to_Local_Point = NULL;
   char Marker_All_TagBound[MAX_NUMBER_MARKER][MAX_STRING_SIZE], Buffer_Send_Marker_All_TagBound[MAX_NUMBER_MARKER][MAX_STRING_SIZE];
@@ -1205,6 +1223,17 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  
+  /*--- Some dynamic arrays so we're not allocating too much on the stack ---*/
+  unsigned long *nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *Buffer_Send_nVertexDomain = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *Buffer_Send_nBoundLine = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *Buffer_Send_nBoundTriangle = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned long *Buffer_Send_nBoundRectangle = new unsigned long[MAX_NUMBER_MARKER];
+  unsigned short *Buffer_Send_Marker_All_SendRecv = new unsigned short[MAX_NUMBER_MARKER];
   
 #ifdef HAVE_MPI
   
@@ -2332,6 +2361,16 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] nSendDomain_Periodic;
   delete [] nReceivedDomain_Periodic;
   
+  delete [] nVertexDomain;
+  delete [] nBoundLine;
+  delete [] nBoundTriangle;
+  delete [] nBoundRectangle;
+  delete [] Buffer_Send_nVertexDomain;
+  delete [] Buffer_Send_nBoundLine;
+  delete [] Buffer_Send_nBoundTriangle;
+  delete [] Buffer_Send_nBoundRectangle;
+  delete [] Buffer_Send_Marker_All_SendRecv;
+  
 }
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
@@ -2507,10 +2546,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   unsigned long iElem_Bound, TotalElem, *nElem_Bound_Copy, iVertex_;
   string Grid_Marker;
-  unsigned short nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, jMarker, iMarker, iMarker_;
+  unsigned short iDomain, nDomain, iMarkersDomain, iLoop, *DomainCount, nMarker_Physical, Duplicate_SendReceive, *DomainSendCount, **DomainSendMarkers, *DomainReceiveCount, **DomainReceiveMarkers, nMarker_SendRecv, iMarker, iMarker_;
   CPrimalGrid*** bound_Copy;
-  short *Marker_All_SendRecv_Copy, jDomain, iDomain, iNewDomain, nNewDomain;
-  vector<short> NewDomain;
+  short *Marker_All_SendRecv_Copy;
   bool CheckStart;
   
   int rank = MASTER_NODE;
@@ -2533,34 +2571,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       nMarker_Physical++;
     }
   }
-  
-  /*--- Check that all the send received markers have a partner ---*/
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
-      
-      CheckStart = true;
-      iDomain = Marker_All_SendRecv[iMarker];
-      
-      for (jMarker = 0; jMarker < nMarker; jMarker++) {
-        if (bound[jMarker][0]->GetVTK_Type() == VERTEX) {
-          jDomain = Marker_All_SendRecv[jMarker];
-          if (iDomain == -jDomain) { CheckStart = false; break; }
-        }
-      }
-      
-      if (CheckStart) NewDomain.push_back(-iDomain);
-      
-    }
-  }
-  
-  nNewDomain = NewDomain.size();
-
-#ifdef HAVE_MPI
-  /*--- Finalize MPI parallelization ---*/
-	MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  
   
   /*--- Identify if there are markers that send/received with the same domain,
    they should be together---*/
@@ -2624,7 +2634,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   /*--- Create an structure to store the Send/Receive
    boundaries, because they require some reorganization ---*/
   
-  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive + nNewDomain;
+  nMarker_SendRecv = nMarker - nMarker_Physical - Duplicate_SendReceive;
   bound_Copy = new CPrimalGrid**[nMarker_Physical + nMarker_SendRecv];
   nElem_Bound_Copy = new unsigned long [nMarker_Physical + nMarker_SendRecv];
   Marker_All_SendRecv_Copy = new short [nMarker_Physical + nMarker_SendRecv];
@@ -2689,16 +2699,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       
     }
     
-    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
-      if (NewDomain[iNewDomain] == iDomain) {
-        iMarker_++;
-        nElem_Bound_Copy[iMarker_] = 0;
-        bound_Copy[iMarker_] = new CPrimalGrid*[1];
-        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
-        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
-      }
-    }
-    
     /*--- Compute the total number of elements (adding all the
      boundaries with the same Send/Receive ---*/
     
@@ -2713,6 +2713,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       iVertex_ = 0;
       nElem_Bound_Copy[iMarker_] = TotalElem;
       bound_Copy[iMarker_] = new CPrimalGrid*[TotalElem];
+      
     }
     
     for (iMarkersDomain = 0; iMarkersDomain < DomainReceiveCount[iDomain]; iMarkersDomain++) {
@@ -2725,16 +2726,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         iVertex_++;
       }
       
-    }
-    
-    for (iNewDomain = 0; iNewDomain < nNewDomain; iNewDomain++) {
-      if (NewDomain[iNewDomain] == -iDomain) {
-        iMarker_++;
-        nElem_Bound_Copy[iMarker_] = 0;
-        bound_Copy[iMarker_] = new CPrimalGrid*[1];
-        Marker_All_SendRecv_Copy[iMarker_] = NewDomain[iNewDomain];
-        bound_Copy[iMarker_][0] = new CVertexMPI(0, nDim);
-      }
     }
     
   }
@@ -2755,7 +2746,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     delete bound[iMarker];
   delete bound;
   
-
   /*--- Allocate the new bound variables, and set the number of markers ---*/
   
   bound = bound_Copy;
@@ -2764,8 +2754,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     nElem_Bound[iMarker] = nElem_Bound_Copy[iMarker];
   }
-  
-
   for (iMarker = nMarker_Physical; iMarker < nMarker; iMarker++) {
     Marker_All_SendRecv[iMarker] = Marker_All_SendRecv_Copy[iMarker];
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
@@ -7877,8 +7865,7 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   unsigned long iPoint, iElem, iElem_Triangle, iElem_Tetrahedron, nElem_Triangle,
   nElem_Tetrahedron, kPoint, jPoint, iVertex;
   unsigned short iMarker, iMaxColor = 0, iColor, MaxColor = 0, iNode, jNode;
-  idx_t ne = 0, nn, etype, numflag, nparts, edgecut;
-  idx_t *elmnts = NULL, *epart = NULL, *npart = NULL, *eptr = NULL;
+  idx_t ne = 0, nn, *elmnts = NULL, etype, *epart = NULL, *npart = NULL, numflag, nparts, edgecut, *eptr;
   int rank, size;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -7914,134 +7901,126 @@ void CPhysicalGeometry::SetColorGrid(CConfig *config) {
   epart = new idx_t [ne];
   npart = new idx_t [nn];
   eptr  = new idx_t[ne+1];
-  if (nparts < 2) {
-    cout << "The number of domains must be greater than 1!" << endl;
-    exit(EXIT_FAILURE);
-  }
   
-  iElem_Triangle = 0; iElem_Tetrahedron = 0;
-  for (iElem = 0; iElem < GetnElem(); iElem++) {
-    if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
-      elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
-      elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(1);
-      elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(2);
-      eptr[iElem_Triangle] = 3*iElem_Triangle;
-      iElem_Triangle++;
-    }
-    if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
-      elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
-      elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(1);
-      elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(2);
-      eptr[iElem_Triangle] = 3*iElem_Triangle;
-      iElem_Triangle++;
-      elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
-      elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(2);
-      elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(3);
-      eptr[iElem_Triangle] = 3*iElem_Triangle;
-      iElem_Triangle++;
-    }
-    if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(3);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-    }
-    if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(5);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(3);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(7);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(5);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(7);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(7);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(5);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(6);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(7);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(5);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-    }
-    if (elem[iElem]->GetVTK_Type() == PYRAMID) {
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(3);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-    }
-    if (elem[iElem]->GetVTK_Type() == WEDGE) {
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(4);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(2);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(3);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-      elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(3);
-      elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(4);
-      elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(5);
-      elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(2);
-      eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
-      iElem_Tetrahedron++;
-    }
-  }
-  /*--- Add final value to element pointer array ---*/
-  if (GetnDim() == 2) eptr[ne] = 3*ne;
-  else eptr[ne] = 4*ne;
-  
-  /*--- Set some options for METIS ---*/
-  
-  int options[METIS_NOPTIONS];
-  METIS_SetDefaultOptions(options);
-  options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
-  
-  /*--- Call METIS to partition the mesh ---*/
-  
-  METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
-  cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
-
-  /*--- Store the partitioning information for each node ---*/
+  /*--- Initialize the color vector ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint]->SetColor(npart[iPoint]);
+    node[iPoint]->SetColor(0);
   
-  /*--- Free memory and exit ---*/
+  if (nparts > 1) {
+    
+    iElem_Triangle = 0; iElem_Tetrahedron = 0;
+    for (iElem = 0; iElem < GetnElem(); iElem++) {
+      if (elem[iElem]->GetVTK_Type() == TRIANGLE) {
+        elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
+        elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(1);
+        elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(2);
+        eptr[iElem_Triangle] = 3*iElem_Triangle;
+        iElem_Triangle++;
+      }
+      if (elem[iElem]->GetVTK_Type() == RECTANGLE) {
+        elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
+        elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(1);
+        elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(2);
+        eptr[iElem_Triangle] = 3*iElem_Triangle;
+        iElem_Triangle++;
+        elmnts[3*iElem_Triangle+0]= elem[iElem]->GetNode(0);
+        elmnts[3*iElem_Triangle+1]= elem[iElem]->GetNode(2);
+        elmnts[3*iElem_Triangle+2]= elem[iElem]->GetNode(3);
+        eptr[iElem_Triangle] = 3*iElem_Triangle;
+        iElem_Triangle++;
+      }
+      if (elem[iElem]->GetVTK_Type() == TETRAHEDRON) {
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(3);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+      }
+      if (elem[iElem]->GetVTK_Type() == HEXAHEDRON) {
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(5);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(3);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(7);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(5);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(7);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(7);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(5);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(6);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(7);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(5);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+      }
+      if (elem[iElem]->GetVTK_Type() == PYRAMID) {
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(3);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+      }
+      if (elem[iElem]->GetVTK_Type() == WEDGE) {
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(1);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(4);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(2);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(0);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(2);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(3);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(4);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+        elmnts[4*iElem_Tetrahedron+0]= elem[iElem]->GetNode(3);
+        elmnts[4*iElem_Tetrahedron+1]= elem[iElem]->GetNode(4);
+        elmnts[4*iElem_Tetrahedron+2]= elem[iElem]->GetNode(5);
+        elmnts[4*iElem_Tetrahedron+3]= elem[iElem]->GetNode(2);
+        eptr[iElem_Tetrahedron] = 4*iElem_Tetrahedron;
+        iElem_Tetrahedron++;
+      }
+    }
+    /*--- Add final value to element pointer array ---*/
+    if (GetnDim() == 2) eptr[ne] = 3*ne;
+    else eptr[ne] = 4*ne;
+    
+    METIS_PartMeshNodal(&ne, &nn, eptr, elmnts, NULL, NULL, &nparts, NULL, NULL, &edgecut, epart, npart);
+    cout << "Finished partitioning using METIS. ("  << edgecut << " edge cuts)." << endl;
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      node[iPoint]->SetColor(npart[iPoint]);
+  }
   
   delete[] epart;
   delete[] npart;
   delete[] elmnts;
   delete[] eptr;
-
+  
 #endif
 #endif
   
