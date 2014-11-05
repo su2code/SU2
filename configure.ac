@@ -84,6 +84,12 @@ AC_ARG_WITH(CGNS-lib,
 AC_ARG_WITH(CGNS-include,
     	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]),
 	[with_CGNS_include=$withval], [with_CGNS_include="no"])
+AC_ARG_WITH(FluidProp-lib,
+    AS_HELP_STRING([--with-FluidProp-lib[=ARG]], [FluidProp library directory, ARG = path to libcFPapi.a]),
+    [with_FluidProp_lib=$withval], [with_FluidProp_lib="no"])
+AC_ARG_WITH(FluidProp-include,
+    AS_HELP_STRING([--with-FluidProp-include[=ARG]], [FluidProp include directory, ARG = path to fluidprop.h]),
+    [with_FluidProp_include=$withval], [with_FluidProp_include="no"])
 AC_ARG_WITH(Mutationpp-lib,
    	AS_HELP_STRING([--with-Mutationpp-lib[=ARG]], [Mutation++ library directory, ARG = path to libmutation++.dylib]),
 	[with_Mutationpp_lib=$withval], [with_Mutationpp_lib="no"])
@@ -234,7 +240,7 @@ then
 		fi
 	else
 		have_Jsoncpp="no"
-	fi
+	fi 
 fi
 
 if test "$have_Jsoncpp" != "no"
@@ -250,6 +256,50 @@ fi
 AC_SUBST([JSONCPP_CXX])
 AC_SUBST([JSONCPP_LD])
 
+
+##########################
+
+# check for lib
+FluidProplib=libcFPapi.a
+FluidPropheader=fluidprop.h
+have_FluidProp="no"
+
+if test "$with_FluidProp_lib" != "no"
+then
+AC_CHECK_FILE([$with_FluidProp_lib/$FluidProplib],[have_FluidProp="yes"],[have_FluidProp="no"])
+if test "$have_FluidProp" == "no"
+then
+AC_MSG_ERROR([FluidProp requested but library file $FluidProplib not found.])
+fi
+fi
+
+# check for header
+if test "$have_FluidProp" != "no"
+then
+if test "$with_FluidProp_include" != "no"
+then
+AC_CHECK_FILE([$with_FluidProp_include/$FluidPropheader],[have_FluidProp='yes'],[have_FluidProp='no'])
+if test "$have_FluidProp" == "no"
+then
+AC_MSG_ERROR([FluidProp requested but header file $FluidPropheader not found.])
+fi
+else
+have_FluidProp="no"
+fi
+fi
+
+if test "$have_FluidProp" != "no"
+then
+AM_CONDITIONAL(BUILD_FluidProp,true)
+FluidProp_CXX="-DHAVE_FluidProp -I"$with_FluidProp_include""
+FluidProp_LD="$with_FluidProp_lib"/$FluidProplib
+else
+AM_CONDITIONAL(BUILD_FluidProp,false)
+FluidProp_CXX=
+FluidProp_LD=
+fi
+AC_SUBST([FluidProp_CXX])
+AC_SUBST([FluidProp_LD])
 
 ########################### MPI
 

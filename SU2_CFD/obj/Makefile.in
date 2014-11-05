@@ -228,6 +228,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FluidProp_CXX = @FluidProp_CXX@
+FluidProp_LD = @FluidProp_LD@
 GREP = @GREP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -327,7 +329,8 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
         ../include/fluid_model.hpp \
         ../include/fluid_model.inl \
         ../include/fluidprop.h \
-         ../include/integration_structure.hpp \
+        ../include/size3264.h \
+        ../include/integration_structure.hpp \
 		../include/integration_structure.inl \
 		../include/iteration_structure.hpp \
 		../include/numerics_structure.hpp \
@@ -419,10 +422,14 @@ ___bin_SU2_CFD_SOURCES = ../include/definition_structure.hpp \
 # endif
 
 # if BUILD_JSONCPP
+# endif
+
+# if BUILD_FluidProp
 ___bin_SU2_CFD_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
+	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @FluidProp_CXX@ $(am__empty)
 ___bin_SU2_CFD_LDADD = ../../Common/lib/libSU2.a @su2_externals_LIBS@ \
-	@CGNS_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
+	@CGNS_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @FluidProp_LD@ \
+	$(am__empty)
 all: all-am
 
 .SUFFIXES:

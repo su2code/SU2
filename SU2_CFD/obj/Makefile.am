@@ -122,3 +122,9 @@ ___bin_SU2_CFD_LDADD += @MUTATIONPP_LD@
 ___bin_SU2_CFD_CXXFLAGS += @JSONCPP_CXX@
 ___bin_SU2_CFD_LDADD += @JSONCPP_LD@
 # endif
+
+# if BUILD_FluidProp
+___bin_SU2_CFD_CXXFLAGS += @FluidProp_CXX@
+___bin_SU2_CFD_LDADD += @FluidProp_LD@
+# endif
+

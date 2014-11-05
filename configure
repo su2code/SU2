@@ -639,6 +639,10 @@ BUILD_PRT_FALSE
 BUILD_PRT_TRUE
 BUILD_CFD_FALSE
 BUILD_CFD_TRUE
+FluidProp_LD
+FluidProp_CXX
+BUILD_FluidProp_FALSE
+BUILD_FluidProp_TRUE
 JSONCPP_LD
 JSONCPP_CXX
 BUILD_JSONCPP_FALSE
@@ -777,6 +781,8 @@ with_metis_cppflags
 with_MPI
 with_CGNS_lib
 with_CGNS_include
+with_FluidProp_lib
+with_FluidProp_include
 with_Mutationpp_lib
 with_Mutationpp_include
 with_Jsoncpp_lib
@@ -1445,6 +1451,12 @@ Optional Packages:
                           compiler
   --with-CGNS-lib=ARG     CGNS library directory, ARG = path to libcgns.a
   --with-CGNS-include=ARG CGNS include directory, ARG = path to cgnslib.h
+  --with-FluidProp-lib=ARG
+                          FluidProp library directory, ARG = path to
+                          libcFPapi.a
+  --with-FluidProp-include=ARG
+                          FluidProp include directory, ARG = path to
+                          fluidprop.h
   --with-Mutationpp-lib=ARG
                           Mutation++ library directory, ARG = path to
                           libmutation++.dylib
@@ -5533,6 +5545,22 @@ else
 fi
 
 
+# Check whether --with-FluidProp-lib was given.
+if test "${with_FluidProp_lib+set}" = set; then :
+  withval=$with_FluidProp_lib; with_FluidProp_lib=$withval
+else
+  with_FluidProp_lib="no"
+fi
+
+
+# Check whether --with-FluidProp-include was given.
+if test "${with_FluidProp_include+set}" = set; then :
+  withval=$with_FluidProp_include; with_FluidProp_include=$withval
+else
+  with_FluidProp_include="no"
+fi
+
+
 # Check whether --with-Mutationpp-lib was given.
 if test "${with_Mutationpp_lib+set}" = set; then :
   withval=$with_Mutationpp_lib; with_Mutationpp_lib=$withval
@@ -5921,6 +5949,108 @@ fi
 
 
 
+##########################
+
+# check for lib
+FluidProplib=libcFPapi.a
+FluidPropheader=fluidprop.h
+have_FluidProp="no"
+
+if test "$with_FluidProp_lib" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_FluidProp_lib/$FluidProplib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_FluidProp_lib/$FluidProplib" >&5
+$as_echo_n "checking for $with_FluidProp_lib/$FluidProplib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_FluidProp_lib/$FluidProplib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_FluidProp="yes"
+else
+  have_FluidProp="no"
+fi
+
+if test "$have_FluidProp" == "no"
+then
+as_fn_error $? "FluidProp requested but library file $FluidProplib not found." "$LINENO" 5
+fi
+fi
+
+# check for header
+if test "$have_FluidProp" != "no"
+then
+if test "$with_FluidProp_include" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_FluidProp_include/$FluidPropheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_FluidProp_include/$FluidPropheader" >&5
+$as_echo_n "checking for $with_FluidProp_include/$FluidPropheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_FluidProp_include/$FluidPropheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_FluidProp='yes'
+else
+  have_FluidProp='no'
+fi
+
+if test "$have_FluidProp" == "no"
+then
+as_fn_error $? "FluidProp requested but header file $FluidPropheader not found." "$LINENO" 5
+fi
+else
+have_FluidProp="no"
+fi
+fi
+
+if test "$have_FluidProp" != "no"
+then
+ if true; then
+  BUILD_FluidProp_TRUE=
+  BUILD_FluidProp_FALSE='#'
+else
+  BUILD_FluidProp_TRUE='#'
+  BUILD_FluidProp_FALSE=
+fi
+
+FluidProp_CXX="-DHAVE_FluidProp -I"$with_FluidProp_include""
+FluidProp_LD="$with_FluidProp_lib"/$FluidProplib
+else
+ if false; then
+  BUILD_FluidProp_TRUE=
+  BUILD_FluidProp_FALSE='#'
+else
+  BUILD_FluidProp_TRUE='#'
+  BUILD_FluidProp_FALSE=
+fi
+
+FluidProp_CXX=
+FluidProp_LD=
+fi
+
+
+
 ########################### MPI
 
 have_MPI="no"
@@ -6197,6 +6327,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_JSONCPP_TRUE}" && test -z "${BUILD_JSONCPP_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_JSONCPP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_FluidProp_TRUE}" && test -z "${BUILD_FluidProp_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_FluidProp\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_FluidProp_TRUE}" && test -z "${BUILD_FluidProp_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_FluidProp\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_CFD_TRUE}" && test -z "${BUILD_CFD_FALSE}"; then
