@@ -14,7 +14,7 @@ AC_DEFUN([CONFIGURE_PARMETIS],
 		 [enableparmetis=yes])
 
   # Trump --enable-parmetis with --disable-mpi
-  if (test "x$enablempi" = xno); then
+  if (test "x$with_MPI" = xno); then
     enableparmetis=no
   fi
 

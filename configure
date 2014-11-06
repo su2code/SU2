@@ -776,11 +776,6 @@ ac_user_opts='
 enable_option_checking
 enable_silent_rules
 enable_dependency_tracking
-enable_tecio
-enable_metis
-with_metis_cppflags
-enable_parmetis
-with_parmetis_cppflags
 with_MPI
 with_CGNS_lib
 with_CGNS_include
@@ -795,6 +790,11 @@ enable_MSH
 enable_DEF
 enable_SOL
 enable_GEO
+enable_tecio
+enable_metis
+with_metis_cppflags
+enable_parmetis
+with_parmetis_cppflags
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1433,10 +1433,6 @@ Optional Features:
                           do not reject slow dependency extractors
   --disable-dependency-tracking
                           speeds up one-time build
-  --enable-tecio          build with Tecplot TecIO API support (from source)
-  --enable-metis          build with Metis graph partitioning suppport
-  --disable-parmetis      build without Parmetis parallel graph partitioning
-                          suppport
   --disable-CFD           build the SU2_CFD executable (default = yes)
   --disable-PRT           build the SU2_PRT executable (default = yes)
   --disable-DOT           build the SU2_DOT executable (default = yes)
@@ -1444,14 +1440,14 @@ Optional Features:
   --disable-DEF           build the SU2_DEF executable (default = yes)
   --disable-SOL           build the SU2_SOL executable (default = yes)
   --disable-GEO           build the SU2_GEO executable (default = yes)
+  --enable-tecio          build with Tecplot TecIO API support (from source)
+  --enable-metis          build with Metis graph partitioning suppport
+  --disable-parmetis      build without Parmetis parallel graph partitioning
+                          suppport
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
-                          Specific METIS C Preprocessor flags to use
-  --with-parmetis-cppflags="..."
-                          Specific PARMETIS C Preprocessor flags to use
   --with-MPI=ARG          Build parallel version with MPI tools, ARG = MPI C++
                           compiler
   --with-CGNS-lib=ARG     CGNS library directory, ARG = path to libcgns.a
@@ -1466,6 +1462,10 @@ Optional Packages:
                           jsoncpp_SYS.a
   --with-Jsoncpp-include=ARG
                           Jsoncpp include directory, ARG = path to json.h
+  --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
+                          Specific METIS C Preprocessor flags to use
+  --with-parmetis-cppflags="..."
+                          Specific PARMETIS C Preprocessor flags to use
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -5265,6 +5265,111 @@ _ACEOF
 
 
 
+# optional bindings
+
+# Check whether --with-MPI was given.
+if test "${with_MPI+set}" = set; then :
+  withval=$with_MPI; with_MPI=$withval
+else
+  with_MPI="no"
+fi
+
+
+# Check whether --with-CGNS-lib was given.
+if test "${with_CGNS_lib+set}" = set; then :
+  withval=$with_CGNS_lib; with_CGNS_lib=$withval
+else
+  with_CGNS_lib="no"
+fi
+
+
+# Check whether --with-CGNS-include was given.
+if test "${with_CGNS_include+set}" = set; then :
+  withval=$with_CGNS_include; with_CGNS_include=$withval
+else
+  with_CGNS_include="no"
+fi
+
+
+# Check whether --with-Mutationpp-lib was given.
+if test "${with_Mutationpp_lib+set}" = set; then :
+  withval=$with_Mutationpp_lib; with_Mutationpp_lib=$withval
+else
+  with_Mutationpp_lib="no"
+fi
+
+
+# Check whether --with-Mutationpp-include was given.
+if test "${with_Mutationpp_include+set}" = set; then :
+  withval=$with_Mutationpp_include; with_Mutationpp_include=$withval
+else
+  with_Mutationpp_include="no"
+fi
+
+
+# Check whether --with-Jsoncpp-lib was given.
+if test "${with_Jsoncpp_lib+set}" = set; then :
+  withval=$with_Jsoncpp_lib; with_Jsoncpp_lib=$withval
+else
+  with_Jsoncpp_lib="no"
+fi
+
+
+# Check whether --with-Jsoncpp-include was given.
+if test "${with_Jsoncpp_include+set}" = set; then :
+  withval=$with_Jsoncpp_include; with_Jsoncpp_include=$withval
+else
+  with_Jsoncpp_include="no"
+fi
+
+# Check whether --enable-CFD was given.
+if test "${enable_CFD+set}" = set; then :
+  enableval=$enable_CFD; build_CFD=$enableval
+else
+  build_CFD="yes"
+fi
+
+# Check whether --enable-PRT was given.
+if test "${enable_PRT+set}" = set; then :
+  enableval=$enable_PRT; build_PRT=$enableval
+else
+  build_PRT="yes"
+fi
+
+# Check whether --enable-DOT was given.
+if test "${enable_DOT+set}" = set; then :
+  enableval=$enable_DOT; build_DOT=$enableval
+else
+  build_DOT="yes"
+fi
+
+# Check whether --enable-MSH was given.
+if test "${enable_MSH+set}" = set; then :
+  enableval=$enable_MSH; build_MSH=$enableval
+else
+  build_MSH="yes"
+fi
+
+# Check whether --enable-DEF was given.
+if test "${enable_DEF+set}" = set; then :
+  enableval=$enable_DEF; build_DEF=$enableval
+else
+  build_DEF="yes"
+fi
+
+# Check whether --enable-SOL was given.
+if test "${enable_SOL+set}" = set; then :
+  enableval=$enable_SOL; build_SOL=$enableval
+else
+  build_SOL="yes"
+fi
+
+# Check whether --enable-GEO was given.
+if test "${enable_GEO+set}" = set; then :
+  enableval=$enable_GEO; build_GEO=$enableval
+else
+  build_GEO="yes"
+fi
 
 
 # --------------------------------------------------------------
@@ -5528,7 +5633,7 @@ fi
 
 
   # Trump --enable-parmetis with --disable-mpi
-  if (test "x$enablempi" = xno); then
+  if (test "x$with_MPI" = xno); then
     enableparmetis=no
   fi
 
@@ -5585,114 +5690,6 @@ ac_config_files="$ac_config_files externals/parmetis/Makefile"
 
 
 
-
-
-
-# optional bindings
-
-# Check whether --with-MPI was given.
-if test "${with_MPI+set}" = set; then :
-  withval=$with_MPI; with_MPI=$withval
-else
-  with_MPI="no"
-fi
-
-
-# Check whether --with-CGNS-lib was given.
-if test "${with_CGNS_lib+set}" = set; then :
-  withval=$with_CGNS_lib; with_CGNS_lib=$withval
-else
-  with_CGNS_lib="no"
-fi
-
-
-# Check whether --with-CGNS-include was given.
-if test "${with_CGNS_include+set}" = set; then :
-  withval=$with_CGNS_include; with_CGNS_include=$withval
-else
-  with_CGNS_include="no"
-fi
-
-
-# Check whether --with-Mutationpp-lib was given.
-if test "${with_Mutationpp_lib+set}" = set; then :
-  withval=$with_Mutationpp_lib; with_Mutationpp_lib=$withval
-else
-  with_Mutationpp_lib="no"
-fi
-
-
-# Check whether --with-Mutationpp-include was given.
-if test "${with_Mutationpp_include+set}" = set; then :
-  withval=$with_Mutationpp_include; with_Mutationpp_include=$withval
-else
-  with_Mutationpp_include="no"
-fi
-
-
-# Check whether --with-Jsoncpp-lib was given.
-if test "${with_Jsoncpp_lib+set}" = set; then :
-  withval=$with_Jsoncpp_lib; with_Jsoncpp_lib=$withval
-else
-  with_Jsoncpp_lib="no"
-fi
-
-
-# Check whether --with-Jsoncpp-include was given.
-if test "${with_Jsoncpp_include+set}" = set; then :
-  withval=$with_Jsoncpp_include; with_Jsoncpp_include=$withval
-else
-  with_Jsoncpp_include="no"
-fi
-
-# Check whether --enable-CFD was given.
-if test "${enable_CFD+set}" = set; then :
-  enableval=$enable_CFD; build_CFD=$enableval
-else
-  build_CFD="yes"
-fi
-
-# Check whether --enable-PRT was given.
-if test "${enable_PRT+set}" = set; then :
-  enableval=$enable_PRT; build_PRT=$enableval
-else
-  build_PRT="yes"
-fi
-
-# Check whether --enable-DOT was given.
-if test "${enable_DOT+set}" = set; then :
-  enableval=$enable_DOT; build_DOT=$enableval
-else
-  build_DOT="yes"
-fi
-
-# Check whether --enable-MSH was given.
-if test "${enable_MSH+set}" = set; then :
-  enableval=$enable_MSH; build_MSH=$enableval
-else
-  build_MSH="yes"
-fi
-
-# Check whether --enable-DEF was given.
-if test "${enable_DEF+set}" = set; then :
-  enableval=$enable_DEF; build_DEF=$enableval
-else
-  build_DEF="yes"
-fi
-
-# Check whether --enable-SOL was given.
-if test "${enable_SOL+set}" = set; then :
-  enableval=$enable_SOL; build_SOL=$enableval
-else
-  build_SOL="yes"
-fi
-
-# Check whether --enable-GEO was given.
-if test "${enable_GEO+set}" = set; then :
-  enableval=$enable_GEO; build_GEO=$enableval
-else
-  build_GEO="yes"
-fi
 
 
 ##########################
