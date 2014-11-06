@@ -176,7 +176,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par REGIME_TYPE
    *  DESCRIPTION: Adjoint type \ingroup Config*/
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
-
+  
+  /* DESCRIPTION: Engine subsonic intake region */
+  addBoolOption("DEBUG_MODE",DebugMode, false);
+  
   /*!\par PHYSICAL_PROBLEM
    *  DESCRIPTION: Physical governing equations \n
    *  Options: NONE (default),EULER, NAVIER_STOKES, RANS, POISSON_EQUATION, ADJ_EULER, ADJ_NAVIER_STOKES, ADJ_RANS, LIN_EULER,

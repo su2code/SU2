@@ -37,7 +37,7 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   
   bool grid_movement  = config->GetGrid_Movement();
   bool adjoint = config->GetAdjoint();
-  
+
   char cstr[200], buffer[50];
   string filename;
   
