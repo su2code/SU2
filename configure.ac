@@ -69,6 +69,17 @@ fi
 AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
 AC_CONFIG_FILES([externals/metis/Makefile])
 
+# Parmetis
+CONFIGURE_PARMETIS
+if (test $enableparmetis = yes); then
+  su2_externals_INCLUDES="-DHAVE_PARMETIS $PARMETIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$PARMETIS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
+AC_CONFIG_FILES([externals/parmetis/Makefile])
+
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
@@ -303,6 +314,7 @@ Build Configuration Summary:
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $enablemetis
+    Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
