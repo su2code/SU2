@@ -3076,7 +3076,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
 void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
                                                                             unsigned short iDV, bool ResetDef) {
 
-    double movement[3], Ampl;
+    double movement[3], Ampl, x_o, y_o;
     unsigned short index[3], i, j;
     string design_FFDBox;
 
@@ -3091,6 +3091,8 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     /*--- Compute deformation ---*/
 
         Ampl = config->GetDV_Value(iDV);
+        x_o = config->GetParamDV(iDV, 1);
+        y_o = config->GetParamDV(iDV, 2);
 
         movement[0] = config->GetParamDV(iDV, 3)*Ampl;
         movement[1] = config->GetParamDV(iDV, 4)*Ampl;
