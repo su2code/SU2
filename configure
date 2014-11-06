@@ -653,6 +653,11 @@ BUILD_CGNS_FALSE
 BUILD_CGNS_TRUE
 su2_externals_LIBS
 su2_externals_INCLUDES
+BUILD_PARMETIS_FALSE
+BUILD_PARMETIS_TRUE
+SU2_PARMETIS_CPPFLAGS
+PARMETIS_LIB
+PARMETIS_INCLUDE
 BUILD_METIS_FALSE
 BUILD_METIS_TRUE
 SU2_METIS_CPPFLAGS
@@ -774,6 +779,8 @@ enable_dependency_tracking
 enable_tecio
 enable_metis
 with_metis_cppflags
+enable_parmetis
+with_parmetis_cppflags
 with_MPI
 with_CGNS_lib
 with_CGNS_include
@@ -1428,6 +1435,8 @@ Optional Features:
                           speeds up one-time build
   --enable-tecio          build with Tecplot TecIO API support (from source)
   --enable-metis          build with Metis graph partitioning suppport
+  --disable-parmetis      build without Parmetis parallel graph partitioning
+                          suppport
   --disable-CFD           build the SU2_CFD executable (default = yes)
   --disable-PRT           build the SU2_PRT executable (default = yes)
   --disable-DOT           build the SU2_DOT executable (default = yes)
@@ -1441,6 +1450,8 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
                           Specific METIS C Preprocessor flags to use
+  --with-parmetis-cppflags="..."
+                          Specific PARMETIS C Preprocessor flags to use
   --with-MPI=ARG          Build parallel version with MPI tools, ARG = MPI C++
                           compiler
   --with-CGNS-lib=ARG     CGNS library directory, ARG = path to libcgns.a
@@ -5502,6 +5513,76 @@ fi
 ac_config_files="$ac_config_files externals/metis/Makefile"
 
 
+# Parmetis
+
+  # Check whether --enable-parmetis was given.
+if test "${enable_parmetis+set}" = set; then :
+  enableval=$enable_parmetis; case "${enableval}" in
+		  yes)  enableparmetis=yes ;;
+		   no)  enableparmetis=no ;;
+ 		    *)  as_fn_error $? "bad value ${enableval} for --enable-parmetis" "$LINENO" 5 ;;
+		 esac
+else
+  enableparmetis=yes
+fi
+
+
+  # Trump --enable-parmetis with --disable-mpi
+  if (test "x$enablempi" = xno); then
+    enableparmetis=no
+  fi
+
+
+  # The PARMETIS API is distributed with SU2, so we don't have to guess
+  # where it might be installed...
+  if (test $enableparmetis = yes); then
+
+    # look for PARMETIS build cppflags by honoring the --with-parmetis-cppflags="..." flag,
+    # defaulting to nothing
+
+# Check whether --with-parmetis-cppflags was given.
+if test "${with_parmetis_cppflags+set}" = set; then :
+  withval=$with_parmetis_cppflags; SU2_PARMETIS_CPPFLAGS="$withval"
+else
+  SU2_PARMETIS_CPPFLAGS=""
+fi
+
+
+
+     PARMETIS_INCLUDE="-I\$(top_srcdir)/externals/parmetis/include"
+     PARMETIS_LIB="\$(top_builddir)/externals/parmetis/libparmetis.a"
+
+$as_echo "#define HAVE_PARMETIS 1" >>confdefs.h
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: <<< Configuring library with Parmetis support >>>" >&5
+$as_echo "<<< Configuring library with Parmetis support >>>" >&6; }
+  else
+     PARMETIS_INCLUDE=""
+     PARMETIS_LIB=""
+     enableparmetis=no
+  fi
+
+
+
+
+
+if (test $enableparmetis = yes); then
+  su2_externals_INCLUDES="-DHAVE_PARMETIS $PARMETIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$PARMETIS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+ if test x$enableparmetis = xyes; then
+  BUILD_PARMETIS_TRUE=
+  BUILD_PARMETIS_FALSE='#'
+else
+  BUILD_PARMETIS_TRUE='#'
+  BUILD_PARMETIS_FALSE=
+fi
+
+ac_config_files="$ac_config_files externals/parmetis/Makefile"
+
+
 
 
 
@@ -6175,6 +6256,10 @@ if test -z "${BUILD_METIS_TRUE}" && test -z "${BUILD_METIS_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_METIS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_PARMETIS_TRUE}" && test -z "${BUILD_PARMETIS_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_PARMETIS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${BUILD_CGNS_TRUE}" && test -z "${BUILD_CGNS_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CGNS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -6803,6 +6888,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "externals/tecio/Makefile") CONFIG_FILES="$CONFIG_FILES externals/tecio/Makefile" ;;
     "externals/metis/Makefile") CONFIG_FILES="$CONFIG_FILES externals/metis/Makefile" ;;
+    "externals/parmetis/Makefile") CONFIG_FILES="$CONFIG_FILES externals/parmetis/Makefile" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "externals/Makefile") CONFIG_FILES="$CONFIG_FILES externals/Makefile" ;;
     "Common/lib/Makefile") CONFIG_FILES="$CONFIG_FILES Common/lib/Makefile" ;;
@@ -7393,6 +7479,7 @@ Build Configuration Summary:
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $enablemetis
+    Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
@@ -7433,6 +7520,7 @@ Build Configuration Summary:
     CGNS support:         $have_CGNS
     MPI support:          $have_MPI
     Metis support:        $enablemetis
+    Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp

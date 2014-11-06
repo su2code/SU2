@@ -1,7 +1,7 @@
 # include paths - note that parmetis needs metis!
-pkg_cppflags  =
-pkg_cppflags += -I$(top_srcdir)/external/metis/GKlib \
-                -I$(top_srcdir)/external/metis/include \
+pkg_cppflags  = @SU2_METIS_CPPFLAGS@ @SU2_PARMETIS_CPPFLAGS@
+pkg_cppflags += -I$(top_srcdir)/externals/metis/GKlib \
+                -I$(top_srcdir)/externals/metis/include \
                 -I$(srcdir)/include \
                 -I$(srcdir)/libparmetis
 pkg_sources   = \
