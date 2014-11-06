@@ -9312,6 +9312,94 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   
   nPointDomain = Index_CoarseCV;
   
+  /*--- Check that there are no hanging nodes ---*/
+  
+  unsigned long iFinePoint, iFinePoint_Neighbor, iCoarsePoint, iCoarsePoint_Complete;
+  unsigned short iChildren;
+  
+  /*--- Find the point surrounding a point ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+      iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
+      for (iNode = 0; iNode < fine_grid->node[iFinePoint]->GetnPoint(); iNode ++) {
+        iFinePoint_Neighbor = fine_grid->node[iFinePoint]->GetPoint(iNode);
+        iParent = fine_grid->node[iFinePoint_Neighbor]->GetParent_CV();
+        if (iParent != iCoarsePoint) node[iCoarsePoint]->SetPoint(iParent);
+      }
+    }
+  }
+  
+  /*--- Detect isolated points and merge them with its correct neighbor ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    
+    if (node[iCoarsePoint]->GetnPoint() == 1) {
+      
+      /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
+      
+      iCoarsePoint_Complete = node[iCoarsePoint]->GetPoint(0);
+      
+      /*--- Add the children to the connected control volume (and modify it parent indexing).
+       Identify the child CV from the finest grid and added to the correct control volume.
+       Set the parent CV of iFinePoint. Instead of using the original
+       (iCoarsePoint) one use the new one (iCoarsePoint_Complete) ---*/
+      
+      nChildren = node[iCoarsePoint_Complete]->GetnChildren_CV();
+      
+      for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+        iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
+        node[iCoarsePoint_Complete]->SetChildren_CV(nChildren, iFinePoint);
+        nChildren++;
+        fine_grid->node[iFinePoint]->SetParent_CV(iCoarsePoint_Complete);
+      }
+      
+      /*--- Update the number of children control volumes ---*/
+      
+      node[iCoarsePoint_Complete]->SetnChildren_CV(nChildren);
+      node[iCoarsePoint]->SetnChildren_CV(0);
+      
+    }
+  }
+  
+  //  unsigned long iPointFree = nPointDomain-1;
+  //  iCoarsePoint = 0;
+  //
+  //  do {
+  //
+  //    if (node[iCoarsePoint]->GetnChildren_CV() == 0) {
+  //
+  //      while (node[iPointFree]->GetnChildren_CV() == 0) {
+  //        Index_CoarseCV--;
+  //        iPointFree--;
+  //      }
+  //
+  //      nChildren = node[iPointFree]->GetnChildren_CV();
+  //      for (iChildren = 0; iChildren <  nChildren; iChildren ++) {
+  //        iFinePoint = node[iPointFree]->GetChildren_CV(iChildren);
+  //        node[iCoarsePoint]->SetChildren_CV(iChildren, iFinePoint);
+  //        fine_grid->node[iFinePoint]->SetParent_CV(iCoarsePoint);
+  //      }
+  //      node[iCoarsePoint]->SetnChildren_CV(nChildren);
+  //      node[iPointFree]->SetnChildren_CV(0);
+  //
+  //      Index_CoarseCV--;
+  //      iPointFree--;
+  //
+  //    }
+  //
+  //    iCoarsePoint++;
+  //
+  //  } while ((iCoarsePoint-1) < Index_CoarseCV);
+  //
+  //  nPointDomain = Index_CoarseCV;
+  
+  /*--- Reset the point surrounding a point ---*/
+  
+  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
+    node[iCoarsePoint]->ResetPoint();
+  }
+  
   /*--- Dealing with MPI parallelization, the objective is that the received nodes must be agglomerated
    in the same way as the donor nodes. Send the node agglomeration information of the donor
    (parent and children), Sending only occurs with MPI ---*/
@@ -9443,8 +9531,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   nPoint = Index_CoarseCV;
   
   /*--- Console output with the summary of the agglomeration ---*/
-  
-  
   
   Local_nPointCoarse = nPoint;
   Local_nPointFine = fine_grid->GetnPoint();
@@ -9749,57 +9835,6 @@ void CMultiGridGeometry::SetPoint_Connectivity(CGeometry *fine_grid) {
     }
   }
   
-  /*--- Detect isolated points and merge them with its correct neighbor ---*/
-  
-  for (iCoarsePoint = 0; iCoarsePoint < nPointDomain; iCoarsePoint ++) {
-    
-    if (node[iCoarsePoint]->GetnPoint() == 1) {
-      
-      /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
-      
-      iCoarsePoint_Complete = node[iCoarsePoint]->GetPoint(0);
-      
-      /*--- Add the children to the connected control volume (and modify it parent indexing) ---*/
-      
-      nChildren = node[iCoarsePoint_Complete]->GetnChildren_CV();
-      
-      for (iChildren = 0; iChildren <  node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
-        
-        /*--- Identify the child CV from the finest grid and added to the correct control volume ---*/
-        
-        iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
-        node[iCoarsePoint_Complete]->SetChildren_CV(nChildren, iFinePoint);
-        nChildren++;
-        
-        /*--- Set the parent CV of iFinePoint. Instead of using the original
-         (iCoarsePoint) one use the new one (iCoarsePoint_Complete) ---*/
-        
-        fine_grid->node[iFinePoint]->SetParent_CV(iCoarsePoint_Complete);
-        
-        
-      }
-      
-      /*--- Update the number of children control volumes ---*/
-      
-      node[iCoarsePoint_Complete]->SetnChildren_CV(nChildren);
-      node[iCoarsePoint]->SetnChildren_CV(0);
-      
-      /*--- Reset the point surrounding a point and recompute ---*/
-      
-      node[iCoarsePoint]->ResetPoint();
-      node[iCoarsePoint_Complete]->ResetPoint();
-      for (iChildren = 0; iChildren <  node[iCoarsePoint_Complete]->GetnChildren_CV(); iChildren ++) {
-        iFinePoint = node[iCoarsePoint_Complete]->GetChildren_CV(iChildren);
-        for (iNode = 0; iNode < fine_grid->node[iFinePoint]->GetnPoint(); iNode ++) {
-          iFinePoint_Neighbor = fine_grid->node[iFinePoint]->GetPoint(iNode);
-          iParent = fine_grid->node[iFinePoint_Neighbor]->GetParent_CV();
-          if (iParent != iCoarsePoint_Complete) node[iCoarsePoint_Complete]->SetPoint(iParent);
-        }
-      }
-      
-    }
-  }
-  
   /*--- Set the number of neighbors variable, this is
    important for JST and multigrid in parallel ---*/
   
@@ -9982,7 +10017,7 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
 
 void CMultiGridGeometry::SetControlVolume(CConfig *config, CGeometry *fine_grid, unsigned short action) {
   
-  unsigned long iFinePoint,iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent, iPoint, jPoint;
+  unsigned long iFinePoint,iFinePoint_Neighbor, iCoarsePoint, iEdge, iParent;
   long FineEdge, CoarseEdge;
   unsigned short iChildren, iNode, iDim;
   bool change_face_orientation;

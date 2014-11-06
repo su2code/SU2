@@ -724,6 +724,11 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
+  /*--- Flags identifying the types of files to be written. ---*/
+  
+  bool Wrt_Vol = config->GetWrt_Vol_Sol();
+  bool Wrt_Srf = config->GetWrt_Srf_Sol();
+  
   /*--- Merge connectivity for each type of element (excluding halos). Note
    that we only need to merge the connectivity once, as it does not change
    during computation. Check whether the base file has been written. ---*/
@@ -732,43 +737,51 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     
     /*--- Merge volumetric grid. ---*/
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
-      cout <<"Merging volumetric triangle grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
-      cout <<"Merging volumetric rectangle grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
-      cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
-      cout <<"Merging volumetric hexahedron grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
-      cout <<"Merging volumetric wedge grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, WEDGE       );
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
-      cout <<"Merging volumetric pyramid grid connectivity." << endl;
-    MergeVolumetricConnectivity(config, geometry, PYRAMID     );
+    if (Wrt_Vol) {
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
+        cout <<"Merging volumetric triangle grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
+        cout <<"Merging volumetric rectangle grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, RECTANGLE   );
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
+        cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
+        cout <<"Merging volumetric hexahedron grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Wedg != 0))
+        cout <<"Merging volumetric wedge grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, WEDGE       );
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
+        cout <<"Merging volumetric pyramid grid connectivity." << endl;
+      MergeVolumetricConnectivity(config, geometry, PYRAMID     );
+      
+    }
     
     /*--- Merge surface grid. ---*/
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
-      cout <<"Merging surface line grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, LINE);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
-      cout <<"Merging surface triangle grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, TRIANGLE);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
-      cout <<"Merging surface rectangle grid connectivity." << endl;
-    MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+    if (Wrt_Srf) {
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Line != 0))
+        cout <<"Merging surface line grid connectivity." << endl;
+      MergeSurfaceConnectivity(config, geometry, LINE);
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundTria != 0))
+        cout <<"Merging surface triangle grid connectivity." << endl;
+      MergeSurfaceConnectivity(config, geometry, TRIANGLE);
+      
+      if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_BoundQuad != 0))
+        cout <<"Merging surface rectangle grid connectivity." << endl;
+      MergeSurfaceConnectivity(config, geometry, RECTANGLE);
+      
+    }
     
     /*--- Update total number of volume elements after merge. ---*/
     
@@ -5472,12 +5485,14 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
     /*--- Flags identifying the types of files to be written. ---*/
+    
     bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     
 #ifdef HAVE_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
+    
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
@@ -5552,7 +5567,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if (Wrt_Vol || Wrt_Rst)
+    if (Wrt_Vol || Wrt_Srf || Wrt_Rst)
       MergeSolution(config[iZone], geometry[iZone][MESH_0],
                     solver_container[iZone][MESH_0], iZone);
     
@@ -5633,7 +5648,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       }
       
       /*--- Release memory needed for merging the solution data. ---*/
-      if (((Wrt_Vol) || (Wrt_Srf)) && (FileFormat == TECPLOT ||
+      if ((Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT ||
                                        FileFormat == TECPLOT_BINARY ||
                                        FileFormat == PARAVIEW))
         DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
@@ -5688,7 +5703,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
-    if (Wrt_Vol || Wrt_Rst) {
+    if (Wrt_Vol || Wrt_Srf || Wrt_Rst) {
       if (rank == MASTER_NODE) cout <<"Merging solution." << endl;
       MergeBaselineSolution(config[iZone], geometry[iZone], solver[iZone], iZone);
     }

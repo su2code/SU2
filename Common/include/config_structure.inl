@@ -966,6 +966,8 @@ inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }
 
 inline bool CConfig::GetAxisymmetric(void) { return Axisymmetric; }
 
+inline bool CConfig::GetDebugMode(void) { return DebugMode; }
+
 inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 
 inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
