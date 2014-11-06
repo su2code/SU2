@@ -2836,6 +2836,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     node[iPoint]->SetMax_Lambda_Inv(0.0);
   
@@ -2843,6 +2844,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Point identification, Normal vector and area ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
@@ -2850,6 +2852,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     
     /*--- Mean Values ---*/
+    
     if (compressible) {
       Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
@@ -2879,6 +2882,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     }
     
     /*--- Adjustment for grid movement ---*/
+    
     if (grid_movement) {
       double *GridVel_i = geometry->node[iPoint]->GetGridVel();
       double *GridVel_j = geometry->node[jPoint]->GetGridVel();
@@ -2891,6 +2895,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     }
     
     /*--- Inviscid contribution ---*/
+    
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Inv(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
@@ -2898,15 +2903,18 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
   
   /*--- Loop boundary edges ---*/
+  
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       
       /*--- Point identification, Normal vector and area ---*/
+      
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
       
       /*--- Mean Values ---*/
+      
       if (compressible) {
         Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
@@ -2935,6 +2943,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Adjustment for grid movement ---*/
+      
       if (grid_movement) {
         double *GridVel = geometry->node[iPoint]->GetGridVel();
         ProjVel = 0.0;
@@ -2953,23 +2962,45 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
   
   /*--- Each element uses their own speed, steady state simulation ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
     Vol = geometry->node[iPoint]->GetVolume();
-    Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
-    Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-    Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-    Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
-    node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    
+    if (Vol != 0.0) {
+      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+      if (Local_Delta_Time > config->GetMax_DeltaTime())
+        Local_Delta_Time = config->GetMax_DeltaTime();
+      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    }
+    else {
+      node[iPoint]->SetDelta_Time(0.0);
+    }
+
   }
   
-  /*--- Check if there is any element with only one neighbor...
-   a CV that is inside another CV ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->node[iPoint]->GetnPoint() == 1)
-      node[iPoint]->SetDelta_Time(Min_Delta_Time);
-  }
+  /*--- Compute the max and the min dt (in parallel) ---*/
+  
+#ifdef HAVE_MPI
+  double rbuf_time, sbuf_time;
+  sbuf_time = Min_Delta_Time;
+  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  Min_Delta_Time = rbuf_time;
+  
+  sbuf_time = Max_Delta_Time;
+  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  Max_Delta_Time = rbuf_time;
+#endif
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+  
   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
 #ifdef HAVE_MPI
     double rbuf_time, sbuf_time;
@@ -2985,6 +3016,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- Recompute the unsteady time step for the dual time strategy
    if the unsteady CFL is diferent from 0 ---*/
+  
   if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
     Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
     
@@ -3000,13 +3032,11 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   }
   
   /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+  
   if (dual_time)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!implicit) {
         Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
-        /*--- Check if there is any element with only one neighbor...
-         a CV that is inside another CV ---*/
-        if (geometry->node[iPoint]->GetnPoint() == 1) Local_Delta_Time = 0.0;
         node[iPoint]->SetDelta_Time(Local_Delta_Time);
       }
     }
@@ -4345,17 +4375,26 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
-    Delta = Vol / node[iPoint]->GetDelta_Time();
-    
-    if (roe_turkel) {
-      SetPreconditioner(config, iPoint);
-      for (iVar = 0; iVar < nVar; iVar ++ )
-        for (jVar = 0; jVar < nVar; jVar ++ )
-          LowMach_Precontioner[iVar][jVar] = Delta*LowMach_Precontioner[iVar][jVar];
-      Jacobian.AddBlock(iPoint, iPoint, LowMach_Precontioner);
+    if (node[iPoint]->GetDelta_Time() != 0.0) {
+      Delta = Vol / node[iPoint]->GetDelta_Time();
+      if (roe_turkel) {
+        SetPreconditioner(config, iPoint);
+        for (iVar = 0; iVar < nVar; iVar ++ )
+          for (jVar = 0; jVar < nVar; jVar ++ )
+            LowMach_Precontioner[iVar][jVar] = Delta*LowMach_Precontioner[iVar][jVar];
+        Jacobian.AddBlock(iPoint, iPoint, LowMach_Precontioner);
+      }
+      else {
+        Jacobian.AddVal2Diag(iPoint, Delta);
+      }
     }
     else {
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      Jacobian.SetVal2Diag(iPoint, 1.0);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar + iVar;
+        LinSysRes[total_index] = 0.0;
+        local_Res_TruncError[iVar] = 0.0;
+      }
     }
     
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
@@ -9624,6 +9663,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 }
 
 void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
+  
   double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Mean_DensityInc,
   Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
@@ -9641,15 +9681,18 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
   
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     node[iPoint]->SetMax_Lambda_Inv(0.0);
     node[iPoint]->SetMax_Lambda_Visc(0.0);
   }
   
   /*--- Loop interior edges ---*/
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Point identification, Normal vector and area ---*/
+    
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
@@ -9657,6 +9700,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
     
     /*--- Mean Values ---*/
+    
     if (compressible) {
       Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
       Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() + node[jPoint]->GetSoundSpeed()) * Area;
@@ -9669,6 +9713,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     }
     
     /*--- Adjustment for grid movement ---*/
+    
     if (grid_movement) {
       double *GridVel_i = geometry->node[iPoint]->GetGridVel();
       double *GridVel_j = geometry->node[jPoint]->GetGridVel();
@@ -9681,11 +9726,13 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     }
     
     /*--- Inviscid contribution ---*/
+    
     Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Inv(Lambda);
     if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
     
     /*--- Viscous contribution ---*/
+    
     if (compressible) {
       Mean_LaminarVisc = 0.5*(node[iPoint]->GetLaminarViscosity() + node[jPoint]->GetLaminarViscosity());
       Mean_EddyVisc    = 0.5*(node[iPoint]->GetEddyViscosity() + node[jPoint]->GetEddyViscosity());
@@ -9707,15 +9754,18 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
   }
   
   /*--- Loop boundary edges ---*/
+  
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       
       /*--- Point identification, Normal vector and area ---*/
+      
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
       
       /*--- Mean Values ---*/
+      
       if (compressible) {
         Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
         Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
@@ -9728,6 +9778,7 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       }
       
       /*--- Adjustment for grid movement ---*/
+      
       if (grid_movement) {
         double *GridVel = geometry->node[iPoint]->GetGridVel();
         ProjVel = 0.0;
@@ -9737,12 +9788,14 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
       }
       
       /*--- Inviscid contribution ---*/
+      
       Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
       if (geometry->node[iPoint]->GetDomain()) {
         node[iPoint]->AddMax_Lambda_Inv(Lambda);
       }
       
       /*--- Viscous contribution ---*/
+      
       if (compressible) {
         Mean_LaminarVisc = node[iPoint]->GetLaminarViscosity();
         Mean_EddyVisc    = node[iPoint]->GetEddyViscosity();
@@ -9763,24 +9816,45 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     }
   }
   
-  /*--- Each element uses their own speed ---*/
+  /*--- Each element uses their own speed, steady state simulation ---*/
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
     Vol = geometry->node[iPoint]->GetVolume();
-    Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
-    Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
-    Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
-    Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
-    Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
-    Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
-    node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    
+    if (Vol != 0.0) {
+      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+      if (Local_Delta_Time > config->GetMax_DeltaTime())
+        Local_Delta_Time = config->GetMax_DeltaTime();
+      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    }
+    else {
+      node[iPoint]->SetDelta_Time(0.0);
+    }
+    
   }
   
-  /*--- Check if there is any element with only one neighbor...
-   a CV that is inside another CV ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    if (geometry->node[iPoint]->GetnPoint() == 1)
-      node[iPoint]->SetDelta_Time(Min_Delta_Time);
-  }
+  /*--- Compute the max and the min dt (in parallel) ---*/
+  
+#ifdef HAVE_MPI
+  double rbuf_time, sbuf_time;
+  sbuf_time = Min_Delta_Time;
+  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  Min_Delta_Time = rbuf_time;
+  
+  sbuf_time = Max_Delta_Time;
+  MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
+  Max_Delta_Time = rbuf_time;
+#endif
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
@@ -9817,9 +9891,6 @@ void CNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CC
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (!implicit) {
         Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
-        /*--- Check if there is any element with only one neighbor...
-         a CV that is inside another CV ---*/
-        if (geometry->node[iPoint]->GetnPoint() == 1) Local_Delta_Time = 0.0;
         node[iPoint]->SetDelta_Time(Local_Delta_Time);
       }
     }

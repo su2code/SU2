@@ -85,6 +85,7 @@ private:
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+	DebugMode, /*!< \brief Flag for debug mode */
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
@@ -243,6 +244,7 @@ private:
 	CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
 	CFLFineGrid,		/*!< \brief CFL of the finest grid. */
+  Max_DeltaTime,  		/*!< \brief Max delta time. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
@@ -579,7 +581,6 @@ private:
 	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
   double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
   ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
-  bool CuthillMckee_Ordering; /*!< \brief Cuthill–McKee ordering algorithm. */
 	bool Mesh_Output; /*!< \brief Flag to specify whether a new mesh should be written in the converted units. */
 	double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
@@ -1891,7 +1892,13 @@ public:
 	 * \return CFL number for unsteady simulations.
 	 */
 	double GetUnst_CFL(void);
-
+  
+  /*!
+   * \brief Get the Courant Friedrich Levi number for unsteady simulations.
+   * \return CFL number for unsteady simulations.
+   */
+  double GetMax_DeltaTime(void);
+  
 	/*!
 	 * \brief Get a parameter of the particular design variable.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
@@ -4125,6 +4132,12 @@ public:
 	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
 	 */
 	bool GetAxisymmetric(void);
+  
+  /*!
+	 * \brief Get information about the axisymmetric frame.
+	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
+	 */
+	bool GetDebugMode(void);
 
 	/*!
 	 * \brief Get information about there is a smoothing of the grid coordinates.
@@ -4381,12 +4394,6 @@ public:
 	 * \return <code>TRUE</code> if a conversion is requested; otherwise <code>FALSE</code>.
 	 */
 	bool GetCGNS_To_SU2(void);
-
-  /*!
-	 * \brief Get Cuthill–McKee ordering algorithm.
-	 * \return <code>TRUE</code> if the converted mesh should be written; otherwise <code>FALSE</code>.
-	 */
-	bool GetCuthillMckee_Ordering(void);
 
 	/*!
 	 * \brief Get information about whether a converted mesh should be written.

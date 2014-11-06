@@ -82,7 +82,8 @@ class COutput {
 	double **residuals, **consv_vars;					// placeholders
 	double *p, *rho, *M, *Cp, *Cf, *Ch, *h, *yplus;		// placeholders 
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
-	bool wrote_base_file, wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
+	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
+  unsigned short wrote_base_file;
 
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   
@@ -175,7 +176,16 @@ public:
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
   void OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config);
-	
+
+  /*!
+   * \brief Writes mass flow rate output at monitored marker.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   */
+  void SetMassFlowRate(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+
 	/*! 
 	 * \brief Create and write the file with the flow coefficient on the surface.
 	 * \param[in] config - Definition of the particular problem.
