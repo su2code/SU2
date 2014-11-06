@@ -39,52 +39,6 @@ AC_CHECK_SIZEOF(float)
 AC_CHECK_SIZEOF(double)
 AC_CHECK_SIZEOF(void *)
 
-
-
-# --------------------------------------------------------------
-# Build up contributed packages that we will build from source
-# --------------------------------------------------------------
-su2_externals_INCLUDES=""
-su2_externals_LIBS=""
-
-# Tecplot
-CONFIGURE_TECIO
-if (test $enabletecio = yes); then
-  su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
-else
-  su2_externals_INCLUDES="$su2_externals_INCLUDES"
-fi
-AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
-AC_CONFIG_FILES([externals/tecio/Makefile])
-
-# Metis
-CONFIGURE_METIS
-if (test $enablemetis = yes); then
-  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
-else
-  su2_externals_INCLUDES="$su2_externals_INCLUDES"
-fi
-AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
-AC_CONFIG_FILES([externals/metis/Makefile])
-
-# Parmetis
-CONFIGURE_PARMETIS
-if (test $enableparmetis = yes); then
-  su2_externals_INCLUDES="-DHAVE_PARMETIS $PARMETIS_INCLUDE $su2_externals_INCLUDES"
-  su2_externals_LIBS="$PARMETIS_LIB $su2_externals_LIBS"
-else
-  su2_externals_INCLUDES="$su2_externals_INCLUDES"
-fi
-AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
-AC_CONFIG_FILES([externals/parmetis/Makefile])
-
-
-AC_SUBST([su2_externals_INCLUDES])
-AC_SUBST([su2_externals_LIBS])
-
-
 # optional bindings
 AC_ARG_WITH(MPI,
     	AS_HELP_STRING([--with-MPI[=ARG]], [Build parallel version with MPI tools, ARG = MPI C++ compiler]),
@@ -128,6 +82,49 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+
+# --------------------------------------------------------------
+# Build up contributed packages that we will build from source
+# --------------------------------------------------------------
+su2_externals_INCLUDES=""
+su2_externals_LIBS=""
+
+# Tecplot
+CONFIGURE_TECIO
+if (test $enabletecio = yes); then
+  su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
+AC_CONFIG_FILES([externals/tecio/Makefile])
+
+# Metis
+CONFIGURE_METIS
+if (test $enablemetis = yes); then
+  su2_externals_INCLUDES="-DHAVE_METIS $METIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$METIS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_METIS, test x$enablemetis = xyes)
+AC_CONFIG_FILES([externals/metis/Makefile])
+
+# Parmetis
+CONFIGURE_PARMETIS
+if (test $enableparmetis = yes); then
+  su2_externals_INCLUDES="-DHAVE_PARMETIS $PARMETIS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$PARMETIS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
+AC_CONFIG_FILES([externals/parmetis/Makefile])
+
+
+AC_SUBST([su2_externals_INCLUDES])
+AC_SUBST([su2_externals_LIBS])
 
 ##########################
 
