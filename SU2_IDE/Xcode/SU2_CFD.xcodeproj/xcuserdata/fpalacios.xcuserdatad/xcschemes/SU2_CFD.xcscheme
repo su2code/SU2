@@ -44,7 +44,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/cont_adj_euler/oneram6"
+      customWorkingDirectory = "/Users/fpalacios/NACA0012_Euler"
       buildConfiguration = "Debug"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
@@ -60,7 +60,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "inv_ONERAM6.cfg"
+            argument = "inv_NACA0012.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
