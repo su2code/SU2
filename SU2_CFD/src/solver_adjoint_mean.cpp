@@ -3845,8 +3845,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  double Velocity[3], bcn, phin, Area, UnitNormal[3],
-  ProjGridVel, *GridVel;
+  double Area, UnitNormal[3];
   double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);

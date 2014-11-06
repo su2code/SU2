@@ -85,6 +85,7 @@ private:
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
+	DebugMode, /*!< \brief Flag for debug mode */
 	Show_Adj_Sens, /*!< \brief Flag for outputting sensitivities on exit */
   ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
 	bool Visualize_Partition;	/*!< \brief Flag to visualize each partition in the DDM. */
@@ -4131,6 +4132,12 @@ public:
 	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
 	 */
 	bool GetAxisymmetric(void);
+  
+  /*!
+	 * \brief Get information about the axisymmetric frame.
+	 * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
+	 */
+	bool GetDebugMode(void);
 
 	/*!
 	 * \brief Get information about there is a smoothing of the grid coordinates.
