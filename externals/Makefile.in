@@ -52,12 +52,13 @@ host_triplet = @host@
 target_triplet = @target@
 @BUILD_TECIO_TRUE@am__append_1 = tecio
 @BUILD_METIS_TRUE@am__append_2 = metis
+@BUILD_METIS_TRUE@@BUILD_PARMETIS_TRUE@am__append_3 = parmetis
 subdir = externals
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
-	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -96,7 +97,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = tecio metis
+DIST_SUBDIRS = tecio metis parmetis
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -174,12 +175,15 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
+PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
+SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
@@ -240,7 +244,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(am__append_1) $(am__append_2)
+SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3)
 all: all-recursive
 
 .SUFFIXES:

@@ -68,8 +68,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
-	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/tecio.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/parmetis.m4 \
+	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -253,12 +253,15 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PARMETIS_INCLUDE = @PARMETIS_INCLUDE@
+PARMETIS_LIB = @PARMETIS_LIB@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
+SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
