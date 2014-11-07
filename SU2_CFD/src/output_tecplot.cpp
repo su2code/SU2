@@ -432,35 +432,30 @@ void COutput::SetTecplot_ASCII(CConfig *config, CGeometry *geometry, CSolver **s
   
 }
 
-void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol) {
-  
-  /*--- Local variables and initialization ---*/
+void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
-  
   unsigned long iPoint, iElem, iNode;
   unsigned long *LocalIndex = NULL;
   bool *SurfacePoint = NULL;
-  
-  
   char cstr[200];
-  string filename;
-  
-  strcat(cstr, "mesh_out.plt");
+  ofstream Tecplot_File;
+
+  if (surf_sol) strcpy(cstr, "Surface_Grid.plt");
+  else strcpy(cstr, "Volumetric_Grid.plt");
   
   /*--- Open Tecplot ASCII file and write the header. ---*/
-  ofstream Tecplot_File;
-  Tecplot_File.open(cstr, ios::out);
-  Tecplot_File.precision(6);
-  if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
-  else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
   
-  if (nDim == 2) {
-    Tecplot_File << "VARIABLES = \"x\",\"y\"";
-  } else {
-    Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
+  if (new_file) {
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File.precision(6);
+    if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
+    else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
+    
+    if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\"";
+    else Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
   }
-  
+  else Tecplot_File.open(cstr, ios::out | ios::app);
   Tecplot_File << endl;
   
   /*--- If it's a surface output, print only the points
@@ -502,7 +497,9 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
   
   /*--- Write the header ---*/
   
-  Tecplot_File << "ZONE ";
+  Tecplot_File << "ZONE T= ";
+  if (new_file) Tecplot_File << "\"Original grid\", C=BLACK, ";
+  else Tecplot_File << "\"Deformed grid\", C=RED, ";
   
   if (nDim == 2) {
     if (surf_sol) Tecplot_File << "NODES= "<< nSurf_Poin <<", ELEMENTS= "<< nSurf_Elem <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
