@@ -26,7 +26,6 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-  unsigned short nZone = 1;
   char buffer_char[50], out_file[MAX_STRING_SIZE], in_file[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
@@ -41,7 +40,7 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
   CConfig **config                   = NULL;
-  CPhysicalGeometry **geometry       = NULL;
+  CGeometry **geometry               = NULL;
   CSurfaceMovement *surface_movement = NULL;
   CVolumetricMovement *grid_movement = NULL;
   COutput *output                    = NULL;
@@ -49,15 +48,16 @@ int main(int argc, char *argv[]) {
   /*--- Definition of the containers by zone (currently only one zone is
    allowed, but this can be extended if necessary). ---*/
   
-  config   = new CConfig*[1];
-  geometry = new CPhysicalGeometry*[1];
-  
+  config   = new CConfig*[SINGLE_ZONE];
+  geometry = new CGeometry*[SINGLE_ZONE];
+  output   = new COutput();
+
   /*--- Definition of the configuration class, and open the config file ---*/
   
-  if (argc == 2) config[ZONE_0] = new CConfig(argv[1], SU2_DEF, ZONE_0, nZone, 0, VERB_HIGH);
+  if (argc == 2) config[ZONE_0] = new CConfig(argv[1], SU2_DEF, ZONE_0, SINGLE_ZONE, 0, VERB_HIGH);
   else {
     strcpy (mesh_file, "default.cfg");
-    config[ZONE_0] = new CConfig(mesh_file, SU2_DEF, ZONE_0, nZone, 0, VERB_HIGH);
+    config[ZONE_0] = new CConfig(mesh_file, SU2_DEF, ZONE_0, SINGLE_ZONE, 0, VERB_HIGH);
   }
   
 #ifdef HAVE_MPI
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Definition of the geometry class ---*/
   
-  geometry[ZONE_0] = new CPhysicalGeometry(config[ZONE_0], ZONE_0, nZone);
+  geometry[ZONE_0] = new CPhysicalGeometry(config[ZONE_0], ZONE_0, SINGLE_ZONE);
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
   
@@ -113,18 +113,12 @@ int main(int argc, char *argv[]) {
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
   if (config[ZONE_0]->GetVisualize_Deformation()) {
-    
-    if (rank == MASTER_NODE) cout << "Writing an Tecplot file of the volumetric mesh." << endl;
-    if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
-    strcpy (out_file, "Volumetric_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetTecPlot(out_file, true);
-    
-    if (rank == MASTER_NODE) cout << "Writing an Tecplot file of the surface mesh." << endl;
-    if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
-    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundTecPlot(out_file, true, config[ZONE_0]);
-    
-    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
-    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
-    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, true, config[ZONE_0]);
+
+    output->SetMesh_Files(geometry, config, SINGLE_ZONE, true);
+
+//    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
+//    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
+//    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, true, config[ZONE_0]);
     
   }
   
@@ -174,24 +168,15 @@ int main(int argc, char *argv[]) {
     
     output = new COutput();
 
-    output->SetBaselineResult_Files(solver, geometry, config, iExtIter, nZone);
+    output->SetMesh_Files(geometry, config, SINGLE_ZONE, false);
     
-    if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the volumetric mesh." << endl;
-    if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
-    strcpy (out_file, "Volumetric_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetTecPlot(out_file, false);
-    
-    if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface mesh." << endl;
-    if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
-    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundTecPlot(out_file, false, config[ZONE_0]);
-
-    if (rank == MASTER_NODE) cout << "Writing a STL file of the surface mesh." << endl;
-    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
-    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, false, config[ZONE_0] );
-    
+//    if (rank == MASTER_NODE) cout << "Writing a STL file of the surface mesh." << endl;
+//    if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
+//    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, false, config[ZONE_0] );
     
   }
   
-  /*--- Write the new SU2 native mesh after deformation. ---*/
+  /*--- Write the new SU2 native mesh after deformation (one per MPI rank). ---*/
   
   if (rank == MASTER_NODE) cout << "Writing a SU2 file of the volumetric mesh." << endl;
   

@@ -424,6 +424,15 @@ public:
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
 
+  /*!
+	 * \brief A virtual member.
+   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
+   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
+
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.		 

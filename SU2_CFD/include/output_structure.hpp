@@ -130,15 +130,11 @@ public:
   
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetGrid_Files(CGeometry **geometry, CConfig **config,
-                               unsigned long iExtIter, unsigned short val_nZone);
+  void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file);
 
 	/*!
 	 * \brief Writes equivalent area.
@@ -317,8 +313,17 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
 	 */
-	void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
-  
+  void SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+
+  /*!
+	 * \brief Write a Paraview ASCII solution file.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+	 */
+	void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+
   /*!
 	 * \brief Write a Tecplot ASCII solution file.
 	 * \param[in] config - Definition of the particular problem.
@@ -334,7 +339,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol);
+  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
 
   /*!
 	 * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
