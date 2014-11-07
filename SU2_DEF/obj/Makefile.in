@@ -79,7 +79,12 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am____bin_SU2_DEF_OBJECTS = ../src/___bin_SU2_DEF-SU2_DEF.$(OBJEXT) \
-	../../SU2_CFD/src/___bin_SU2_DEF-output_structure.$(OBJEXT)
+	../../SU2_CFD/src/___bin_SU2_DEF-output_structure.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.$(OBJEXT) \
+	../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.$(OBJEXT)
 ___bin_SU2_DEF_OBJECTS = $(am____bin_SU2_DEF_OBJECTS)
 ___bin_SU2_DEF_DEPENDENCIES = ../../Common/lib/libSU2.a
 ___bin_SU2_DEF_LINK = $(CXXLD) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) \
@@ -262,7 +267,14 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 ___bin_SU2_DEF_SOURCES = ../include/SU2_DEF.hpp \
 		../src/SU2_DEF.cpp \
 		../../SU2_CFD/include/output_structure.hpp \
-		../../SU2_CFD/src/output_structure.cpp
+		../../SU2_CFD/src/output_structure.cpp \
+		../../SU2_CFD/src/output_cgns.cpp \
+		../../SU2_CFD/src/output_tecplot.cpp \
+		../../SU2_CFD/src/output_paraview.cpp \
+		../../SU2_CFD/include/solver_structure.hpp \
+                ../../SU2_CFD/src/solver_structure.cpp \
+                ../../SU2_CFD/include/variable_structure.hpp \
+                ../../SU2_CFD/src/variable_structure.cpp
 
 
 # always link to built dependencies from ./externals
@@ -369,6 +381,21 @@ clean-binPROGRAMS:
 ../../SU2_CFD/src/___bin_SU2_DEF-output_structure.$(OBJEXT):  \
 	../../SU2_CFD/src/$(am__dirstamp) \
 	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
+../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.$(OBJEXT):  \
+	../../SU2_CFD/src/$(am__dirstamp) \
+	../../SU2_CFD/src/$(DEPDIR)/$(am__dirstamp)
 ../bin/$(am__dirstamp):
 	@$(MKDIR_P) ../bin
 	@: > ../bin/$(am__dirstamp)
@@ -384,7 +411,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_DEF-SU2_DEF.Po@am__quote@
 
 .cpp.o:
@@ -430,6 +462,76 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_structure.obj `if test -f '../../SU2_CFD/src/output_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_structure.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.o: ../../SU2_CFD/src/output_cgns.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.o `test -f '../../SU2_CFD/src/output_cgns.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/output_cgns.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_cgns.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.o `test -f '../../SU2_CFD/src/output_cgns.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/output_cgns.cpp
+
+../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.obj: ../../SU2_CFD/src/output_cgns.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.obj `if test -f '../../SU2_CFD/src/output_cgns.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_cgns.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_cgns.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_cgns.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_cgns.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_cgns.obj `if test -f '../../SU2_CFD/src/output_cgns.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_cgns.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_cgns.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.o: ../../SU2_CFD/src/output_tecplot.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.o `test -f '../../SU2_CFD/src/output_tecplot.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/output_tecplot.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_tecplot.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.o `test -f '../../SU2_CFD/src/output_tecplot.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/output_tecplot.cpp
+
+../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.obj: ../../SU2_CFD/src/output_tecplot.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.obj `if test -f '../../SU2_CFD/src/output_tecplot.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_tecplot.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_tecplot.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_tecplot.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_tecplot.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_tecplot.obj `if test -f '../../SU2_CFD/src/output_tecplot.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_tecplot.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_tecplot.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.o: ../../SU2_CFD/src/output_paraview.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.o `test -f '../../SU2_CFD/src/output_paraview.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/output_paraview.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_paraview.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.o `test -f '../../SU2_CFD/src/output_paraview.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/output_paraview.cpp
+
+../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.obj: ../../SU2_CFD/src/output_paraview.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.obj `if test -f '../../SU2_CFD/src/output_paraview.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_paraview.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-output_paraview.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/output_paraview.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-output_paraview.obj `if test -f '../../SU2_CFD/src/output_paraview.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/output_paraview.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/output_paraview.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.o: ../../SU2_CFD/src/solver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.o `test -f '../../SU2_CFD/src/solver_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/solver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/solver_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.o `test -f '../../SU2_CFD/src/solver_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/solver_structure.cpp
+
+../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.obj: ../../SU2_CFD/src/solver_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.obj `if test -f '../../SU2_CFD/src/solver_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/solver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/solver_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-solver_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/solver_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-solver_structure.obj `if test -f '../../SU2_CFD/src/solver_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/solver_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/solver_structure.cpp'; fi`
+
+../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.o: ../../SU2_CFD/src/variable_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.o -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.o `test -f '../../SU2_CFD/src/variable_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/variable_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/variable_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.o `test -f '../../SU2_CFD/src/variable_structure.cpp' || echo '$(srcdir)/'`../../SU2_CFD/src/variable_structure.cpp
+
+../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.obj: ../../SU2_CFD/src/variable_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -MT ../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.obj -MD -MP -MF ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Tpo -c -o ../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.obj `if test -f '../../SU2_CFD/src/variable_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/variable_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/variable_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Tpo ../../SU2_CFD/src/$(DEPDIR)/___bin_SU2_DEF-variable_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../../SU2_CFD/src/variable_structure.cpp' object='../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_DEF_CXXFLAGS) $(CXXFLAGS) -c -o ../../SU2_CFD/src/___bin_SU2_DEF-variable_structure.obj `if test -f '../../SU2_CFD/src/variable_structure.cpp'; then $(CYGPATH_W) '../../SU2_CFD/src/variable_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../../SU2_CFD/src/variable_structure.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
