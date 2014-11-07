@@ -7670,7 +7670,7 @@ void CPhysicalGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], boo
   unsigned long iPoint, Total_nElem_Bound, iElem, *PointSurface = NULL, nPointSurface = 0;
   unsigned short Coord_i, iMarker;
   
-  /*--- It is important to do a renumering to don't add points
+  /*--- It is important to do a renumbering to don't add points
    that do not belong to the surfaces ---*/
   
   PointSurface = new unsigned long[nPoint];
