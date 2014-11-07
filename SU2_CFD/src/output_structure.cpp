@@ -733,8 +733,6 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
    that we only need to merge the connectivity once, as it does not change
    during computation. Check whether the base file has been written. ---*/
   
-  if (!wrote_base_file) {
-    
     /*--- Merge volumetric grid. ---*/
     
     if (Wrt_Vol) {
@@ -791,17 +789,7 @@ void COutput::MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned s
     /*--- Update total number of surface elements after merge. ---*/
     
     nSurf_Elem = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
-    
-    /*--- Write the connectivity to the base binary output file, then
-     clear the memory immediately for the rest of the computation. ---*/
-    
-    unsigned short FileFormat = config->GetOutput_FileFormat();
-    if (rank == MASTER_NODE && FileFormat == CGNS_SOL) {
-      SetCGNS_Connectivity(config, geometry, val_iZone);
-      DeallocateConnectivity(config, geometry, false);
-    }
-    
-  }
+
 }
 
 void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
@@ -5556,7 +5544,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
         if (!wrote_base_file || dynamic_mesh)
           DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
       } else if (FileFormat == TECPLOT_BINARY) {
-        SetTecplot_Mesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplot_MeshBinary(config[iZone], geometry[iZone][MESH_0], iZone);
         SetTecplot_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
         if (!wrote_base_file)
           DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
@@ -5578,6 +5566,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     if (rank == MASTER_NODE) {
       
       /*--- Write a native restart file ---*/
+      
       if (Wrt_Rst)
         SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] ,iZone);
       
@@ -5588,6 +5577,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
+            
             SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0],iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
@@ -5595,18 +5585,21 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT_BINARY:
             
             /*--- Write a Tecplot binary solution file ---*/
+            
             SetTecplot_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
           case CGNS_SOL:
             
             /*--- Write a CGNS solution file ---*/
+            
             SetCGNS_Solution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
+            
             SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
             break;
@@ -5624,6 +5617,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
+            
             SetTecplot_ASCII(config[iZone], geometry[iZone][MESH_0],solver_container[iZone][MESH_0] ,iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
@@ -5631,12 +5625,14 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
           case TECPLOT_BINARY:
             
             /*--- Write a Tecplot binary solution file ---*/
+            
             SetTecplot_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
             break;
             
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
+            
             SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
             break;
@@ -5648,6 +5644,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       }
       
       /*--- Release memory needed for merging the solution data. ---*/
+      
       if ((Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT ||
                                        FileFormat == TECPLOT_BINARY ||
                                        FileFormat == PARAVIEW))
@@ -5724,6 +5721,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
+            
             SetTecplot_ASCII(config[iZone], geometry[iZone], solver,iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone], false);
             break;
@@ -5731,19 +5729,22 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT_BINARY:
             
             /*--- Write a Tecplot binary solution file ---*/
-            SetTecplot_Mesh(config[iZone], geometry[iZone], iZone);
+            
+            SetTecplot_MeshBinary(config[iZone], geometry[iZone], iZone);
             SetTecplot_Solution(config[iZone], geometry[iZone], iZone);
             break;
             
           case CGNS_SOL:
             
             /*--- Write a CGNS solution file ---*/
+            
             SetCGNS_Solution(config[iZone], geometry[iZone], iZone);
             break;
             
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
+            
             SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone], false);
             break;
@@ -5763,6 +5764,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT:
             
             /*--- Write a Tecplot ASCII file ---*/
+            
             SetTecplot_ASCII(config[iZone], geometry[iZone],solver, iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone], true);
             break;
@@ -5770,6 +5772,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case TECPLOT_BINARY:
             
             /*--- Write a Tecplot binary solution file ---*/
+            
             SetTecplot_SurfaceMesh(config[iZone], geometry[iZone], iZone);
             SetTecplot_SurfaceSolution(config[iZone], geometry[iZone], iZone);
             break;
@@ -5777,6 +5780,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
           case PARAVIEW:
             
             /*--- Write a Paraview ASCII file ---*/
+            
             SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone], true);
             break;
@@ -5795,6 +5799,79 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
       
       if (Wrt_Vol || Wrt_Srf)
         DeallocateSolution(config[iZone], geometry[iZone]);
+    }
+    
+    /*--- Final broadcast (informing other procs that the base output
+     file was written) & barrier to sync up after master node writes
+     output files. ---*/
+    
+#ifdef HAVE_MPI
+    MPI_Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    
+  }
+}
+
+void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short iZone;
+  
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    
+    /*--- Flags identifying the types of files to be written. ---*/
+    
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    
+    /*--- Merge the node coordinates and connectivity if necessary. This
+     is only performed if a volume solution file is requested, and it
+     is active by default. ---*/
+    
+    if (Wrt_Vol || Wrt_Srf) {
+      if (rank == MASTER_NODE) cout <<"Merging grid connectivity." << endl;
+      MergeConnectivity(config[iZone], geometry[iZone], iZone);
+    }
+    
+    /*--- Merge coordinates of all grid nodes (excluding ghost points).
+     The grid coordinates are always merged and included first in the
+     restart files. ---*/
+    
+    MergeCoordinates(config[iZone], geometry[iZone]);
+    
+    /*--- Write restart, CGNS, Tecplot or Paraview files using the merged data.
+     This data lives only on the master, and these routines are currently
+     executed by the master proc alone (as if in serial). ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      if (Wrt_Vol) {
+        
+        if (rank == MASTER_NODE) cout <<"Writing volume solution file." << endl;
+        
+        /*--- Write a Tecplot ASCII file ---*/
+        
+        SetTecplot_MeshASCII(config[iZone], geometry[iZone], false, new_file);
+        DeallocateConnectivity(config[iZone], geometry[iZone], false);
+        
+      }
+      
+      if (Wrt_Srf) {
+        
+        if (rank == MASTER_NODE) cout <<"Writing surface solution file." << endl;
+        
+        /*--- Write a Tecplot ASCII file ---*/
+        
+        SetTecplot_MeshASCII(config[iZone], geometry[iZone], true, new_file);
+        DeallocateConnectivity(config[iZone], geometry[iZone], true);
+        
+      }
+      
     }
     
     /*--- Final broadcast (informing other procs that the base output
