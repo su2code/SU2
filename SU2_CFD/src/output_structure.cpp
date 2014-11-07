@@ -1001,7 +1001,7 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       
       /*--- If US system, the output should be in inches ---*/
       
-      if (config->GetSystemMeasurements() == US) {
+      if ((config->GetSystemMeasurements() == US) && (config->GetKind_SU2() != SU2_DEF)) {
         Buffer_Send_X[jPoint] *= 12.0;
         Buffer_Send_Y[jPoint] *= 12.0;
         if (nDim == 3) Buffer_Send_Z[jPoint] *= 12.0;
@@ -5852,7 +5852,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       
       if (Wrt_Vol) {
         
-        if (rank == MASTER_NODE) cout <<"Writing volume solution file." << endl;
+        if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
         
@@ -5863,7 +5863,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       
       if (Wrt_Srf) {
         
-        if (rank == MASTER_NODE) cout <<"Writing surface solution file." << endl;
+        if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
         
