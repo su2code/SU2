@@ -40,11 +40,12 @@ int main(int argc, char *argv[]) {
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-  CConfig **config = NULL;
-  CPhysicalGeometry **geometry = NULL;
+  CConfig **config                   = NULL;
+  CPhysicalGeometry **geometry       = NULL;
   CSurfaceMovement *surface_movement = NULL;
   CVolumetricMovement *grid_movement = NULL;
-  
+  COutput *output                    = NULL;
+
   /*--- Definition of the containers by zone (currently only one zone is
    allowed, but this can be extended if necessary). ---*/
   
@@ -166,9 +167,14 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << endl << "----------------------- Write deformed grid files -----------------------" << endl;
   
-  /*--- Output deformed grid for visualization, if requested (surface and volumetric) ---*/
+  /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel 
+   requires to move all the data to the master node---*/
   
   if (config[ZONE_0]->GetVisualize_Deformation()) {
+    
+    output = new COutput();
+
+    output->SetBaselineResult_Files(solver, geometry, config, iExtIter, nZone);
     
     if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the volumetric mesh." << endl;
     if (size > 1) sprintf (buffer_char, "_%d.plt", rank+1); else sprintf (buffer_char, ".plt");
@@ -181,6 +187,7 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Writing a STL file of the surface mesh." << endl;
     if (size > 1) sprintf (buffer_char, "_%d.stl", rank+1); else sprintf (buffer_char, ".stl");
     strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, false, config[ZONE_0] );
+    
     
   }
   
