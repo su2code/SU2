@@ -2682,42 +2682,60 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
     
 	}
   
-  /*--- Artificial dissipation for centered schemes ---*/
-  if (center) {
-    
-    /*--- Compute gradients for upwind second-order reconstruction ---*/
-    if ((second_order) && (iMesh == MESH_0)) {
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-        SetSolution_Gradient_GG(geometry, config);
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-        SetSolution_Gradient_LS(geometry, config);
-    }
-    
-    if ((center_jst) && (iMesh == MESH_0)) {
-      SetDissipation_Switch(geometry, config);
-      SetUndivided_Laplacian(geometry, config);
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-        SetSolution_Gradient_GG(geometry, config);
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-        SetSolution_Gradient_LS(geometry, config);
-    }
-  } else {
   
-    /*--- Compute gradients for solution reconstruction and viscous term
-     (be careful, if an upwind strategy is used, then we compute the gradient twice) ---*/
-    switch (config->GetKind_Gradient_Method()) {
-      case GREEN_GAUSS :
-        SetSolution_Gradient_GG(geometry, config);
-        break;
-      case WEIGHTED_LEAST_SQUARES :
-        SetSolution_Gradient_LS(geometry, config);
-        break;
-    }
+  switch (config->GetKind_Gradient_Method()) {
+    case GREEN_GAUSS:
+      SetSolution_Gradient_GG(geometry, config);
+      break;
+      
+    case WEIGHTED_LEAST_SQUARES:
+      SetSolution_Gradient_LS(geometry, config);
+      break;
   }
   
-  /*--- Limiter computation ---*/
-  if (limiter) SetSolution_Limiter(geometry, config);
+  Set_MPI_Solution_Gradient(geometry, config);
   
+  
+  
+  
+//  /*--- Artificial dissipation for centered schemes ---*/
+//  if (center) {
+//    
+//    /*--- Compute gradients for upwind second-order reconstruction ---*/
+//    if ((second_order) && (iMesh == MESH_0)) {
+//      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+//        SetSolution_Gradient_GG(geometry, config);
+//      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+//        SetSolution_Gradient_LS(geometry, config);
+//    }
+//    
+//    if ((center_jst) && (iMesh == MESH_0)) {
+//      SetDissipation_Switch(geometry, config);
+//      SetUndivided_Laplacian(geometry, config);
+//      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
+//        SetSolution_Gradient_GG(geometry, config);
+//      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
+//        SetSolution_Gradient_LS(geometry, config);
+//    }
+//  } else {
+//  
+//    /*--- Compute gradients for solution reconstruction and viscous term
+//     (be careful, if an upwind strategy is used, then we compute the gradient twice) ---*/
+//    switch (config->GetKind_Gradient_Method()) {
+//      case GREEN_GAUSS :
+//        SetSolution_Gradient_GG(geometry, config);
+//        break;
+//      case WEIGHTED_LEAST_SQUARES :
+//        SetSolution_Gradient_LS(geometry, config);
+//        break;
+//    }
+//  }
+  
+  /*--- Limiter computation ---*/
+  if (limiter) {
+    SetSolution_Limiter(geometry, config);
+    Set_MPI_Solution_Limiter(geometry, config);
+  }
 	/*--- Initialize the Jacobian for implicit integration ---*/
 	if (implicit) Jacobian.SetValZero();
   
@@ -3233,24 +3251,6 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             /*--- Sum the contribution from each of the sensitivities ---*/
             CSensitivity[iMarker][iVertex] = (B22+B31+B33+B34)*Area;
             
-            
-            for (iVar = 0; iVar < nVar; iVar++)
-              cout << "Psi[" << iVar << "]: " << Psi[iVar] << endl;
-            cout << "GPsi: " << endl;
-            for (iVar = 0; iVar < nVar; iVar++) {
-              for (iDim = 0; iDim < nDim; iDim++)
-                cout << GPsi[iVar][iDim] << "\t";
-              cout << endl;
-            }
-            cout << "nDim: " << nDim << endl;
-            cout << "Area: " << Area << endl;
-            cout << "B22: " << B22 << endl;
-            cout << "B31: " << B31 << endl;
-            cout << "B33: " << B33 << endl;
-            cout << "B34: " << B34 << endl;
-            cout << "CSens: " << CSensitivity[iMarker][iVertex] << endl;
-            cin.get();
-            
             /*--- If the sensitivity is from a sharp edge, neglect it ---*/
             if (config->GetSens_Remove_Sharp()) {
               eps = config->GetLimiterCoeff()*config->GetRefElemLength();
@@ -3261,7 +3261,6 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
             
             /*--- Add the sensitivity to the total geometric sensitivity ---*/
             Sens_Geo[iMarker] -= CSensitivity[iMarker][iVertex]*Area;
-            cout << "SenseGeo: " << Sens_Geo[iMarker] << endl;
           }
         }
         break;
