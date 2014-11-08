@@ -5507,13 +5507,17 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
                                  unsigned long Iteration) {
   
 	unsigned short iDim, iMarker, iSpecies;
+  unsigned short VEL_INDEX, RHO_INDEX, RHOS_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   unsigned long iEdge, iVertex, iPoint, jPoint;
 	double *Normal, Area, Vol;
   double Mean_SoundSpeed, Mean_ProjVel;
   double Lambda, Local_Delta_Time, Local_Delta_Time_Visc, Global_Delta_Time;
   double Mean_LaminarVisc, Mean_ThermalCond, Mean_ThermalCond_ve, Mean_Density, Mean_Tve;
-  double cv, cvve, Ru, *xi, *Ms;
+  double cp, cv, cvve, Ru, *xi, *Ms, Na, Mmix, Rmix;
   double Lambda_1, Lambda_2, K_v, Global_Delta_UnstTimeND;
+  double *V_i, *V_j, *X;
+  double UnitNormal[3];
+  double tmp;
   
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -5523,10 +5527,20 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
   Global_Delta_Time = 1E6;
   Min_Delta_Time    = 1.E6;
   Max_Delta_Time    = 0.0;
-  K_v    = 0.25;
+  K_v    = 0.5;
   iPoint = 0;
   jPoint = 0;
   Ru = UNIVERSAL_GAS_CONSTANT;
+  Na = AVOGAD_CONSTANT;
+  
+  A_INDEX = node_infty->GetAIndex();
+  VEL_INDEX  = node_infty->GetVelIndex();
+  RHO_INDEX  = node_infty->GetRhoIndex();
+  RHOS_INDEX = node_infty->GetRhosIndex();
+  RHOCVTR_INDEX = node_infty->GetRhoCvtrIndex();
+  RHOCVVE_INDEX = node_infty->GetRhoCvveIndex();
+  
+  X = new double[nSpecies];
   
   /*--- Get from config ---*/
   xi = config->GetRotationModes();
@@ -5541,7 +5555,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 	/*--- Loop interior edges ---*/
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
-		/*--- Point identification, Normal vector and area ---*/
+		/*--- Calculate geometric quantities ---*/
 		iPoint = geometry->edge[iEdge]->GetNode(0);
 		jPoint = geometry->edge[iEdge]->GetNode(1);
 		Normal = geometry->edge[iEdge]->GetNormal();
@@ -5549,17 +5563,61 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     for (iDim = 0; iDim < nDim; iDim++)
       Area += Normal[iDim]*Normal[iDim];
     Area = sqrt(Area);
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
     
-		/*--- Mean Values ---*/
-    Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) +
-                             node[jPoint]->GetProjVel(Normal)  );
-    Mean_SoundSpeed = 0.5 * (node[iPoint]->GetSoundSpeed() +
-                             node[jPoint]->GetSoundSpeed()  ) * Area;
+    /*--- Acquire the primitive variable information at each node ---*/
+    V_i = node[iPoint]->GetPrimVar();
+    V_j = node[jPoint]->GetPrimVar();
     
-		/*--- Inviscid contribution ---*/
-		Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed ;
-		if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Inv(Lambda);
-		if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
+    /*--- Calculate the required mean values ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_ProjVel      = 0.5*( V_i[VEL_INDEX+iDim]
+                               +V_j[VEL_INDEX+iDim] )*UnitNormal[iDim];
+    Mean_SoundSpeed     = 0.5*(V_i[A_INDEX]   + V_j[A_INDEX]);
+    Mean_Density        = 0.5*(V_i[RHO_INDEX] + V_j[RHO_INDEX]);
+    Mean_ThermalCond    = 0.5*(node[iPoint]->GetThermalConductivity() +
+                               node[jPoint]->GetThermalConductivity()  );
+    Mean_ThermalCond_ve = 0.5*(node[iPoint]->GetThermalConductivity_ve() +
+                               node[jPoint]->GetThermalConductivity_ve()  );
+    
+    /*--- Calculate the maximum spectral radius from convection ---*/
+    Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;
+		if (geometry->node[iPoint]->GetDomain())
+      node[iPoint]->AddMax_Lambda_Inv(Lambda);
+		if (geometry->node[jPoint]->GetDomain())
+      node[jPoint]->AddMax_Lambda_Inv(Lambda);
+    
+    /*--- Calculate mixture gas constant & specific heats ---*/
+//    tmp = 0.0;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      X[iSpecies] = 0.5*( V_i[RHOS_INDEX+iSpecies]
+//                         +V_j[RHOS_INDEX+iSpecies] ) * Na/Ms[iSpecies];
+//      tmp += X[iSpecies];
+//    }
+//    Mmix = 0.0;
+//    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//      X[iSpecies] = X[iSpecies]/tmp;
+//      Mmix += X[iSpecies]*Ms[iSpecies];
+//    }
+//    Rmix = Ru/Mmix;
+//    cv   = 0.5*( (V_i[RHOCVTR_INDEX]+V_i[RHOCVVE_INDEX])
+//                +(V_j[RHOCVTR_INDEX]+V_j[RHOCVVE_INDEX]) ) / Mean_Density;
+//    cp   = Rmix + cv;
+//  
+//    /*--- Calculate viscous spectral radius ---*/
+//    // Note: There is a division by volume that gets applied later ---*/
+//    Lambda = max(4.0/(3.0*Mean_Density), cp/(cv*Mean_Density))
+//           * ((Mean_ThermalCond+Mean_ThermalCond_ve)/cp)*Area*Area;
+//    
+//    /*--- Apply the viscous spectral radius to i and j ---*/
+//    Vol = geometry->node[iPoint]->GetVolume();
+//    if (geometry->node[iPoint]->GetDomain())
+//      node[iPoint]->AddMax_Lambda_Visc(Lambda/Vol);
+//    Vol = geometry->node[jPoint]->GetVolume();
+//    if (geometry->node[jPoint]->GetDomain())
+//      node[jPoint]->AddMax_Lambda_Visc(Lambda/Vol);
+    
     
 		/*--- Viscous contribution ---*/
     Mean_LaminarVisc    = 0.5*(node[iPoint]->GetLaminarViscosity() +
@@ -5573,14 +5631,12 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
     cv = 0.5*(node[iPoint]->GetRhoCv_tr() + node[iPoint]->GetRhoCv_ve() +
               node[jPoint]->GetRhoCv_tr() + node[jPoint]->GetRhoCv_ve()  )/ Mean_Density;
     
+    
+    
 		Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc);
 		Lambda_2 = (Mean_ThermalCond+Mean_ThermalCond_ve)/cv;
 		Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
     
-//    cout << "Lambda_1: " << Lambda_1 << endl;
-//    cout << "Lambda_2: " << Lambda_2 << endl;
-//    cout << "Lambda: " << Lambda << endl;
-//    cin.get();
     
 		if (geometry->node[iPoint]->GetDomain())
       node[iPoint]->AddMax_Lambda_Visc(Lambda);
@@ -5595,7 +5651,62 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
       
 			/*--- Point identification, Normal vector and area ---*/
 			iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+//      Area   = 0;
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Area += Normal[iDim]*Normal[iDim];
+//      Area = sqrt(Area);
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        UnitNormal[iDim] = Normal[iDim]/Area;
+//      
+//      /*--- Acquire the primitive variable information at each node ---*/
+//      V_i = node[iPoint]->GetPrimVar();
+//      
+//      /*--- Calculate the required mean values ---*/
+//      for (iDim = 0; iDim < nDim; iDim++)
+//        Mean_ProjVel      = V_i[VEL_INDEX+iDim]*UnitNormal[iDim];
+//      Mean_SoundSpeed     = V_i[A_INDEX];
+//      Mean_Density        = V_i[RHO_INDEX];
+//      Mean_ThermalCond    = node[iPoint]->GetThermalConductivity();
+//      Mean_ThermalCond_ve = node[iPoint]->GetThermalConductivity_ve();
+//      
+//      /*--- Calculate the maximum spectral radius from convection ---*/
+//      Lambda = (fabs(Mean_ProjVel) + Mean_SoundSpeed)*Area;
+//      if (geometry->node[iPoint]->GetDomain())
+//        node[iPoint]->AddMax_Lambda_Inv(Lambda);
+//      
+//      /*--- Calculate mixture gas constant & specific heats ---*/
+//      tmp = 0.0;
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        X[iSpecies] = V_i[RHOS_INDEX+iSpecies] * Na/Ms[iSpecies];
+//        tmp += X[iSpecies];
+//      }
+//      Mmix = 0.0;
+//      for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//        X[iSpecies] = X[iSpecies]/tmp;
+//        Mmix += X[iSpecies]*Ms[iSpecies];
+//      }
+//      Rmix = Ru/Mmix;
+//      cv   =  (V_i[RHOCVTR_INDEX]+V_i[RHOCVVE_INDEX]) / Mean_Density;
+//      cp   = Rmix + cv;
+//      
+//      /*--- Calculate viscous spectral radius ---*/
+//      // Note: There is a division by volume that gets applied later ---*/
+//      Lambda = max(4.0/(3.0*Mean_Density), cp/(cv*Mean_Density))
+//             * ((Mean_ThermalCond+Mean_ThermalCond_ve)/cp)*Area*Area;
+//      
+//      /*--- Apply the viscous spectral radius to i and j ---*/
+//      Vol = geometry->node[iPoint]->GetVolume();
+//      if (geometry->node[iPoint]->GetDomain())
+//        node[iPoint]->AddMax_Lambda_Visc(Lambda/Vol);
+      
+      
+      
+      
+      
+      
+      //////////
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 			Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
@@ -5632,11 +5743,17 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 		Vol = geometry->node[iPoint]->GetVolume();
     
+    
+//    Local_Delta_Time = config->GetCFL(iMesh)*Vol
+//                     / (node[iPoint]->GetMax_Lambda_Inv()
+//                        +4.0*node[iPoint]->GetMax_Lambda_Visc());
+    
+    
     /*--- Calculate local inv. and visc. dTs, take the minimum of the two ---*/
 		Local_Delta_Time      = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
 		Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
     
-//		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
+		Local_Delta_Time      = min(Local_Delta_Time, Local_Delta_Time_Visc);
 		Global_Delta_Time     = min(Global_Delta_Time, Local_Delta_Time);
     
     /*--- Store minimum and maximum dt's within the grid for printing ---*/
@@ -5706,7 +5823,7 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 				node[iPoint]->SetDelta_Time(Local_Delta_Time);
 			}
 		}
-  
+  delete [] X;
 }
 
 void CTNE2NSSolver::Viscous_Residual(CGeometry *geometry,

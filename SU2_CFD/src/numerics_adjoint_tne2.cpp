@@ -1014,7 +1014,8 @@ void CCentLax_AdjTNE2::ComputeResidual (double *val_resconv_i,
 	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
 	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
   
-	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j))/(double(Neighbor_i)*double(Neighbor_j));
+	sc2 = 3.0*(double(Neighbor_i)+double(Neighbor_j)) /
+            (double(Neighbor_i)*double(Neighbor_j));
 	Epsilon_0 = Param_Kappa_0*sc2*double(nDim)/3.0;
   
 	/*--- Artifical dissipation evaluation ---*/

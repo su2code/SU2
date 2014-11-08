@@ -1269,6 +1269,7 @@ void CAdjTNE2EulerSolver::Preprocessing(CGeometry *geometry,
   
   /*--- Artificial dissipation ---*/
   if (center) {
+    solver_container[TNE2_SOL]->SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
@@ -2679,57 +2680,21 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
     
 		/*--- Initialize the convective residual vector ---*/
 		LinSysRes.SetBlock_Zero(iPoint);
-    
 	}
   
-  
+  /*--- Compute gradients ---*/
   switch (config->GetKind_Gradient_Method()) {
     case GREEN_GAUSS:
       SetSolution_Gradient_GG(geometry, config);
       break;
-      
     case WEIGHTED_LEAST_SQUARES:
       SetSolution_Gradient_LS(geometry, config);
       break;
   }
-  
   Set_MPI_Solution_Gradient(geometry, config);
-  
-  
-  
-  
-//  /*--- Artificial dissipation for centered schemes ---*/
-//  if (center) {
-//    
-//    /*--- Compute gradients for upwind second-order reconstruction ---*/
-//    if ((second_order) && (iMesh == MESH_0)) {
-//      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-//        SetSolution_Gradient_GG(geometry, config);
-//      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-//        SetSolution_Gradient_LS(geometry, config);
-//    }
-//    
-//    if ((center_jst) && (iMesh == MESH_0)) {
-//      SetDissipation_Switch(geometry, config);
-//      SetUndivided_Laplacian(geometry, config);
-//      if (config->GetKind_Gradient_Method() == GREEN_GAUSS)
-//        SetSolution_Gradient_GG(geometry, config);
-//      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-//        SetSolution_Gradient_LS(geometry, config);
-//    }
-//  } else {
-//  
-//    /*--- Compute gradients for solution reconstruction and viscous term
-//     (be careful, if an upwind strategy is used, then we compute the gradient twice) ---*/
-//    switch (config->GetKind_Gradient_Method()) {
-//      case GREEN_GAUSS :
-//        SetSolution_Gradient_GG(geometry, config);
-//        break;
-//      case WEIGHTED_LEAST_SQUARES :
-//        SetSolution_Gradient_LS(geometry, config);
-//        break;
-//    }
-//  }
+  if (center) {
+    solver_container[TNE2_SOL]->SetMax_Eigenvalue(geometry, config);
+  }
   
   /*--- Limiter computation ---*/
   if (limiter) {
@@ -2750,7 +2715,6 @@ void CAdjTNE2NSSolver::Preprocessing(CGeometry *geometry,
 #endif
   if ((ErrorCounter != 0) && (rank == MASTER_NODE) && (iMesh == MESH_0))
     cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
-  
 }
 
 
@@ -3054,6 +3018,7 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   double *Normal, UnitNormal[3], Area;
   double *U, *V, **GV;
   double **GY, *sIk, **Js;
+  double *GsT, *GsTve;
   double *Ds, mu, ktr, kve;
   double *eves, *hs, rho, rhos, Ys;
   double qx;
@@ -3083,6 +3048,8 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
     GY[iSpecies] = new double[nDim];
     Js[iSpecies] = new double[nDim];
   }
+  GsT   = new double[nDim];
+  GsTve = new double[nDim];
   
   GsPsi = new double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -3099,9 +3066,15 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   rank = MASTER_NODE;
 #endif
   
-  /*--- Initialize total sensitivities ---*/
-  Total_Sens_Geo = 0.0;
+  /*--- Compute gradient of adjoint variables on the surface ---*/
+  SetSurface_Gradient(geometry, config);
   
+  /*--- Initialize total sensitivities ---*/
+  Total_Sens_Geo   = 0.0;
+  Total_Sens_Mach  = 0.0;
+  Total_Sens_AoA   = 0.0;
+  Total_Sens_Press = 0.0;
+  Total_Sens_Temp  = 0.0;
   
   /*--- Loop over markers to identify contributors to the sensitivity ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -3128,6 +3101,11 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
           CSensitivity[iMarker][iVertex] = 0.0;
         }
         break;
+        
+        /*-------------------------------------------*/
+        /*--- Adiabatic / Noncatalytic boundaries ---*/
+        /*-------------------------------------------*/
+        
       case HEAT_FLUX_NONCATALYTIC:
         
         /*--- Loop over all boundary nodes ---*/
@@ -3183,6 +3161,20 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
               }
             }
             
+            /*--- Calculate tangential derivatives of temperature ---*/
+            dnPsi_k = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              dnPsi_k += GV[T_INDEX][iDim]*UnitNormal[iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+              GsT[iDim] = GV[T_INDEX][iDim] - dnPsi_k*UnitNormal[iDim];
+            
+            /*--- Calculate tangential derivatives of vib.-el. temperature ---*/
+            dnPsi_k = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              dnPsi_k += GV[TVE_INDEX][iDim]*UnitNormal[iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+              GsTve[iDim] = GV[TVE_INDEX][iDim] - dnPsi_k*UnitNormal[iDim];
+            
             /*--- Calculate vibrational-electronic source term ---*/
             // Note: Source term is multiplied by volume as a default.
             //       Sensitivity does not include this volume, so need to 'undo'
@@ -3233,18 +3225,18 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
                 B31 += ( GsPsi[iSpecies][iDim]
                         +GsPsi[nSpecies+nDim][iDim]*hs[iSpecies]
                         +GsPsi[nSpecies+nDim+1][iDim]*eves[iSpecies] )
-                * Js[iSpecies][iDim];
+                     * Js[iSpecies][iDim];
             
             // -GsPsiE \cdot (kGT)
             B33 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              B33 += -GsPsi[nSpecies+nDim][iDim]*(ktr*GV[T_INDEX][iDim]);
+              B33 += -GsPsi[nSpecies+nDim][iDim]*(ktr*GsT[iDim]);
             
             //-(GsPsiE+GsPsiEve) \cdot (kveGTve)
             B34 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++)
-              B34 += -( GPsi[nSpecies+nDim][iDim]
-                       +GPsi[nSpecies+nDim+1][iDim]) * (kve*GV[TVE_INDEX][iDim])
+              B34 += -( GsPsi[nSpecies+nDim][iDim]
+                       +GsPsi[nSpecies+nDim+1][iDim]) * (kve*GsTve[iDim])
                    + qx*Psi[nSpecies+nDim+1];
             
             
@@ -3334,6 +3326,8 @@ void CAdjTNE2NSSolver::Viscous_Sensitivity(CGeometry *geometry,
   }
   delete [] GY;
   delete [] Js;
+  delete [] GsT;
+  delete [] GsTve;
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] GsPsi[iVar];
   delete [] GsPsi;
