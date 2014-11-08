@@ -4664,6 +4664,18 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CAdjNSSolver(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                              unsigned short iMesh, unsigned long Iteration);
+
     
 	/*!
 	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
