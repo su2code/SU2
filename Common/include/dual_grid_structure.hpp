@@ -903,7 +903,6 @@ public:
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_FaceElem_CG - Coordinates of the centre of gravity of the face of an element.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
 	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_FaceElem_CG, double *val_coord_Elem_CG);
@@ -912,7 +911,6 @@ public:
 	 * \overload
 	 * \param[in] val_coord_Edge_CG - Coordinates of the centre of gravity of the edge.
 	 * \param[in] val_coord_Elem_CG - Coordinates of the centre of gravity of the element.
-   * \param[in] config - Definition of the particular problem.
 	 * \return Compute the normal (dimensional) to the face that makes the vertex.
 	 */
 	void SetNodes_Coord(double *val_coord_Edge_CG, double *val_coord_Elem_CG);

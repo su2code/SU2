@@ -137,7 +137,6 @@ private:
   
   /*!
    * \brief writes residual convergence data for one iteration to a stream
-   * \param[in,out] os - ostream class object for output
    * \param[in] iter - current iteration
    * \param[in] res - the (absolute) residual norm value
    * \param[in] resinit - the initial residual norm
@@ -190,14 +189,12 @@ public:
                         unsigned long m, bool monitoring);
   
   /*!
-   * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
-   * \param[in] b - the right hand size vector
-   * \param[in,out] x - on entry the intial guess, on exit the solution
-   * \param[in] mat_vec - object that defines matrix-vector product
-   * \param[in] precond - object that defines preconditioner
-   * \param[in] tol - tolerance with which to solve the system
-   * \param[in] m - maximum size of the search subspace
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \brief Solve the linear system using a Krylov subspace method
+   * \param[in] Jacobian - Jacobian Matrix for the linear system
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in] LinSysSol - Linear system solution
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    */
   unsigned long Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
   

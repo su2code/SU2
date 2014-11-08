@@ -101,7 +101,7 @@ public:
 	 * \param[in] val_row_ptr - Pointers to the first element in each row.
 	 * \param[in] val_col_ind - Column index for each of the elements in val().
 	 * \param[in] val_nnz - Number of possible nonzero entries in the matrix.
-	 * \param[in] preconditioner - If <code>TRUE</code> then it use a preconditioner.
+	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDomain, unsigned short val_nVar, unsigned short val_nEq, unsigned long* val_row_ptr, unsigned long* val_col_ind, unsigned long val_nnz, CConfig *config);
   
@@ -196,20 +196,18 @@ public:
   void SetVal2Diag(unsigned long block_i, double val_matrix);
 
   /*!
-	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
-	 *        of the matrix-by-blocks structure.
-	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
-   * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+	 * \brief Calculates the matrix-vector product
+	 * \param[in] matrix
+	 * \param[in] vector
+	 * \param[out] product
 	 */
   void MatrixVectorProduct(double *matrix, double *vector, double *product);
   
 	/*!
-	 * \brief Adds the specified value to the diagonal of the (i,i) subblock
-	 *        of the matrix-by-blocks structure.
-	 * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
-	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
-   * \param[in] val_matrix - Value to add to the diagonal elements of A(i,i).
+	 * \brief Calculates the matrix-matrix product
+	 * \param[in] matrix_a
+	 * \param[in] matrix_b
+	 * \param[out] product
 	 */
   void MatrixMatrixProduct(double *matrix_a, double *matrix_b, double *product);
   
@@ -229,7 +227,7 @@ public:
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
-	 * \param[in] A - matrix-by-blocks structure.
+	 * \param[in] Block - matrix-by-blocks structure.
 	 * \param[in] rhs - Right-hand-side of the linear system.
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */

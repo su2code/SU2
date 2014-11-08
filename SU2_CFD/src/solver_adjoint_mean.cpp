@@ -328,6 +328,16 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
   
 }
 
+void CAdjEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iMesh, unsigned long Iteration) {
+
+  /*--- Use the flow solution to update the time step
+   *    The time step depends on the characteristic velocity, which is the same
+   *    for the adjoint and flow solutions, albeit in the opposite direction. ---*/
+  solver_container[FLOW_SOL]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
+}
+
+
 void CAdjEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
@@ -2288,7 +2298,6 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 }
 
 void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
-  
   unsigned long iVertex, iPoint, Neigh;
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
@@ -2691,7 +2700,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 #endif
   
   delete [] USens;
-  
 }
 
 void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -3842,7 +3850,6 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   double Area, UnitNormal[3];
@@ -3932,7 +3939,6 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 
   delete [] Normal;
   delete [] Psi_domain; delete [] Psi_inlet;
-
 }
 
 void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -4830,6 +4836,15 @@ CAdjNSSolver::~CAdjNSSolver(void) {
   
 }
 
+
+void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iMesh, unsigned long Iteration){
+
+  /*--- Use the flow solution to update the time step
+   *    The time step depends on the characteristic velocity, which is the same
+   *    for the adjoint and flow solutions, albeit in the opposite direction. ---*/
+  solver_container[FLOW_SOL]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
+}
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
