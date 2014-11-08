@@ -4083,20 +4083,17 @@ public:
     void SetCrossProduction(double val_crossproduction);
     
     /*!
-	 * \brief Residual for source term integration.
-	 * \param[in] val_production - Value of the Production.
+	 * \brief ______________.
 	 */
     double GetProduction(void);
     
     /*!
-	 * \brief Residual for source term integration.
-	 * \param[in] val_destruction - Value of the Destruction.
+	 * \brief  ______________.
 	 */
     double GetDestruction(void);
     
     /*!
-	 * \brief Residual for source term integration.
-	 * \param[in] val_crossproduction - Value of the CrossProduction.
+	 * \brief  ______________.
 	 */
     double GetCrossProduction(void);
 };
@@ -4365,8 +4362,8 @@ public:
     
 	/*!
 	 * \brief Set the value of the second blending function.
-	 * \param[in] val_F1_i - Value of the second blending function at point i.
-	 * \param[in] val_F1_j - Value of the second blending function at point j.
+	 * \param[in] val_F2_i - Value of the second blending function at point i.
+	 * \param[in] val_F2_j - Value of the second blending function at point j.
 	 */
 	void SetF2blending(double val_F2_i, double val_F2_j);
     

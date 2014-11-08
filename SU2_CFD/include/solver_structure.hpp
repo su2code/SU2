@@ -6505,7 +6505,7 @@ public:
   
   /*!
 	 * \brief Store the total heat load.
-	 * \param[in] val_Total_Heat - Value of the heat load.
+	 * \param[in] val_Total_HeatMax - Value of the heat load.
 	 */
 	void SetTotal_MaxHeatFlux(double val_Total_MaxHeat);
   

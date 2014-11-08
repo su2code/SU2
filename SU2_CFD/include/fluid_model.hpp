@@ -318,7 +318,7 @@ public:
 
 
 /*!
- * \derived class CVanDerWaalsGas
+ * derived class CVanDerWaalsGas
  * \brief Child class for defining the Van der Waals model.
  * \author: S.Vitale, M.Pini
  * \version 3.2.3 "eagle"
