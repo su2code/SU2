@@ -740,7 +740,7 @@ public:
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
+	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
 	 */
   void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
 	
@@ -748,7 +748,7 @@ public:
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] CoordCorners[8][3] - Index value for Node 1 of the current hexahedron.
+	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
 	 */
   void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, double **StiffMatrix_Elem, unsigned long PointCorners[8], double CoordCorners[8][3], unsigned short nNodes, double scale);
   
@@ -757,8 +757,8 @@ public:
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
-	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
+	 * \param[in] CoordCorners - Coordiantes of the corners.
+   * \param[in] DShapeFunction - Shape function information
 	 */
   double ShapeFunc_Hexa(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
@@ -767,8 +767,8 @@ public:
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
-	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
+	 * \param[in] CoordCorners - Coordiantes of the corners.
+   * \param[in] DShapeFunction - Shape function information
 	 */
   double ShapeFunc_Tetra(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
@@ -777,8 +777,8 @@ public:
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
-	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
+	 * \param[in] CoordCorners - Coordiantes of the corners.
+   * \param[in] DShapeFunction - Shape function information
 	 */
   double ShapeFunc_Pyram(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
@@ -787,8 +787,8 @@ public:
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
    * \param[in] Mu - Local coordinates.
-	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
+	 * \param[in] CoordCorners - Coordiantes of the corners.
+   * \param[in] DShapeFunction - Shape function information
 	 */
   double ShapeFunc_Wedge(double Xi, double Eta, double Mu, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
@@ -796,9 +796,8 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
+	 * \param[in] CoordCorners - Coordiantes of the corners.
+   * \param[in] DShapeFunction - Shape function information
 	 */
   double ShapeFunc_Triangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
@@ -806,45 +805,44 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-	 * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
+	 * \param[in] CoordCorners - Coordiantes of the corners.
+   * \param[in] DShapeFunction - Shape function information
 	 */
   double ShapeFunc_Rectangle(double Xi, double Eta, double CoordCorners[8][3], double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] HexaCorners[8][3] - coordinates of the cornes of the hexahedron.
+	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
   double GetHexa_Volume(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
   double GetTetra_Volume(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
   double GetWedge_Volume(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
   double GetPyram_Volume(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
   double GetTriangle_Area(double CoordCorners[8][3]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
-	 * \param[in] TetCorners[4][3] - coordinates of the cornes of the hexahedron.
+	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
   double GetRectangle_Area(double CoordCorners[8][3]);
     
@@ -852,10 +850,8 @@ public:
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] val_Point_0 - Index value for Node 0 of the current tetrahedron.
-   * \param[in] val_Point_1 - Index value for Node 1 of the current tetrahedron.
-   * \param[in] val_Point_2 - Index value for Node 2 of the current tetrahedron.
-   * \param[in] val_Point_3 - Index value for Node 3 of the current tetrahedron.
+   * \param[in] PointCorners
+   * \param[in] nNodes
 	 */
   void AddFEA_StiffMatrix(CGeometry *geometry, double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes);
   
@@ -932,7 +928,16 @@ public:
   
   /*!
 	 * \brief Compute the determinant of a 3 by 3 matrix.
-	 * \param[in] val_matrix 3 by 3 matrix.
+	 * 3 by 3 matrix elements
+	 * \param[in] A00
+	 * \param[in] A01
+	 * \param[in] A02
+	 * \param[in] A10
+	 * \param[in] A11
+	 * \param[in] A12
+	 * \param[in] A20
+	 * \param[in] A21
+	 * \param[in] A22
 	 * \result Determinant of the matrix
 	 */
 	double Determinant_3x3(double A00, double A01, double A02, double A10, double A11, double A12, double A20, double A21, double A22);
