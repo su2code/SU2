@@ -1003,6 +1003,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addDoubleListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
+   - FFD_RADIUS_2D ( FFDBox ID )
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
    - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
@@ -3318,6 +3319,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       switch (Design_Variable[iDV]) {
         case FFD_SETTING:           cout << "Setting the FFD box structure." ; break;
         case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
+        case FFD_RADIUS_2D:        cout << "FFD 2D (radious)"; break;
         case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
         case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
         case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
@@ -3354,6 +3356,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
         if (Design_Variable[iDV] == SURFACE_FILE) nParamDV = 0;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
+        if (Design_Variable[iDV] == FFD_RADIUS_2D) nParamDV = 1;
         if (Design_Variable[iDV] == FFD_CAMBER_2D) nParamDV = 2;
         if (Design_Variable[iDV] == FFD_THICKNESS_2D) nParamDV = 2;
         if (Design_Variable[iDV] == HICKS_HENNE) nParamDV = 2;
@@ -3384,7 +3387,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
-               (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
+               (Design_Variable[iDV] == FFD_RADIUS_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
                (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
                (Design_Variable[iDV] == FFD_TWIST_ANGLE) ||

@@ -937,11 +937,13 @@ enum ENUM_PARAM {
   FFD_CONTROL_POINT_2D = 25,	/*!< \brief Free form deformation for 2D design (change a control point). */
   FFD_CAMBER_2D = 26,		/*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS_2D = 27,		/*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_CONTROL_SURFACE = 28		/*!< \brief Free form deformation for 3D design (control surface). */
+  FFD_CONTROL_SURFACE = 28,		/*!< \brief Free form deformation for 3D design (control surface). */
+  FFD_RADIUS_2D = 29		/*!< \brief Free form deformation for 2D design (radious change). */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_RADIUS_2D", FFD_RADIUS_2D)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
@@ -1779,6 +1781,7 @@ public:
       switch (this->design_variable[iDV]) {
         case FFD_SETTING: nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
+        case FFD_RADIUS_2D: nParamDV = 1; break;
         case FFD_CAMBER_2D: nParamDV = 2; break;
         case FFD_THICKNESS_2D: nParamDV = 2; break;
         case HICKS_HENNE: nParamDV = 2; break;
@@ -1817,7 +1820,7 @@ public:
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
              (this->design_variable[iDV] == FFD_CAMBER_2D) ||
              (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
-             (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
+             (this->design_variable[iDV] == FFD_RADIUS_2D) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
              (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
              (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
