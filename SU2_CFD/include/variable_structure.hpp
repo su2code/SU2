@@ -3297,7 +3297,7 @@ public:
   /*!
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of conserved variables.
+	 * \param[in] val_nVar - Number of conserved variables.
 	 */
   CTNE2EulerVariable(unsigned short val_nDim, unsigned short val_nVar,
                      unsigned short val_nPrimVar,

@@ -1114,14 +1114,14 @@ public:
 	
   /*! 
 	 * \brief Set the collective pitch for a blade surface movement.
-	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
   void SetCollective_Pitch(CGeometry *geometry, CConfig *config);
   
   /*! 
 	 * \brief Set any surface deformationsbased on an input file.
-	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] iZone - Zone number in the mesh.
    * \param[in] iter - Current physical time iteration.
@@ -1166,6 +1166,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iFFDBox - _____________________.
 	 */		
 	void UpdateParametricCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
@@ -1173,7 +1174,8 @@ public:
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
 	 * \param[in] config - _____________________.
-	 * \param[in] FFDBox - _____________________.
+	 * \param[in] FFDBoxParent - _____________________.
+	 * \param[in] FFDBoxChild - _____________________.
 	 */	
 	void SetParametricCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
 	
@@ -1181,7 +1183,8 @@ public:
 	 * \brief _____________________.
 	 * \param[in] geometry - _____________________.
 	 * \param[in] config - _____________________.
-	 * \param[in] FFDBox - _____________________.
+	 * \param[in] FFDBoxParent - _____________________.
+   * \param[in] FFDBoxChild - _____________________.
 	 */	
 	void GetCartesianCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild);
 
@@ -1190,6 +1193,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+	 * \param[in] iFFDBox - _____________________.
 	 */		
 	void SetCartesianCoord(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox);
 	
@@ -1301,7 +1305,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid input file.
-   * \param[in] val_vertex - With vertex information.
+   * \param[in] val_fullmesh - ______________________.
 	 */		
 	void ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFormDefBox **FFDBox, string val_mesh_filename, bool val_fullmesh);
 	
@@ -1309,7 +1313,6 @@ public:
 	 * \brief Write the Free Form information in the SU2 file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
 	void WriteFFDInfo(CGeometry *geometry, CConfig *config, string val_mesh_filename);
