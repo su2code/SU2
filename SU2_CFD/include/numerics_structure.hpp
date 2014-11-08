@@ -853,8 +853,10 @@ public:
 	 * \param[in] val_primvar - Primitive variables.
 	 * \param[in] val_gradprimvar - Gradient of the primitive variables.
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-	 * \param[in] val_laminar_viscosity - Laminar viscosity.
-	 * \param[in] val_eddy_viscosity - Eddy viscosity.
+	 * \param[in] val_diffusioncoeff
+	 * \param[in] val_therm_conductivity
+	 * \param[in] val_therm_conductivity_ve
+	 * \param[in] config
 	 */
 	void GetViscousProjFlux(double *val_primvar,
                           double **val_gradprimvar,
@@ -987,7 +989,7 @@ public:
 	 * \brief TSL-Approximation of Viscous NS Jacobians.
 	 * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
 	 * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-	 * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+	 * \param[in] val_thermal_conductivity
 	 * \param[in] val_dist_ij - Distance between the points.
 	 * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
 	 * \param[in] val_dS - Area of the face between two nodes.
@@ -1559,8 +1561,7 @@ public:
   
 	/*!
 	 * \brief Compute the flow residual using a JST method.
-	 * \param[out] val_resconv - Pointer to the convective residual.
-	 * \param[out] val_resvisc - Pointer to the artificial viscosity residual.
+	 * \param[out] val_residual - Pointer to the residual.
 	 * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
@@ -5093,9 +5094,8 @@ public:
 	 * \brief Constructor of the class.
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nVar - Number of variables of the problem.
-	 * \param[in] val_nSpecies - Number of species in the problem.
-	 * \param[in] val_nDiatomics - Number of diatomic species in the problem.
-	 * \param[in] val_nMonatomics - Number of monatomic species in the problem.
+	 * \param[in] val_nPrimVar
+   * \param[in] val_nPrimVarGrad
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CUpwMSW_TNE2(unsigned short val_nDim, unsigned short val_nVar,
