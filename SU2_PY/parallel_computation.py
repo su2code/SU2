@@ -93,7 +93,6 @@ def parallel_computation( filename           ,
     # CFD Solution (direct or adjoint)
     info = SU2.run.CFD(config) 
     state.update(info)
-    #SU2.io.restart2solution(config,state)
 
     # Solution merging
     if config.MATH_PROBLEM == 'DIRECT':

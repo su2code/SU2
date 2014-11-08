@@ -131,7 +131,7 @@ const double FOUR3 = 4.0 / 3.0;			/*!< \brief Four divided by three. */
 const double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
-const int AUX_NODE = 1;			/*!< \brief Computational node that is used for IO stuff. */
+const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
 
 /** General output & CGNS defines **/
 const unsigned int N_ELEM_TYPES = 7;
