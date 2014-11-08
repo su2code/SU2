@@ -1976,7 +1976,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     		config->SetViscosity_FreeStream(Viscosity_FreeStream);
         
         
-    		Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds()); config->SetDensity_FreeStream(Density_FreeStream);
+    		Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
     		config->SetDensity_FreeStream(Density_FreeStream);
     		FluidModel->SetTDState_rhoT(Density_FreeStream, Temperature_FreeStream);
     		Pressure_FreeStream  = FluidModel->GetPressure();
