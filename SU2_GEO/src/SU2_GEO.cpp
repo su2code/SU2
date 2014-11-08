@@ -261,6 +261,7 @@ int main(int argc, char *argv[]) {
       /*--- Free Form deformation based ---*/
       
       if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+          (config->GetDesign_Variable(iDV) == FFD_RADIUS_2D) ||
           (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
           (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
           (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
@@ -304,6 +305,7 @@ int main(int argc, char *argv[]) {
           
           switch ( config->GetDesign_Variable(iDV) ) {
             case FFD_CONTROL_POINT_2D : surface_mov->SetFFDCPChange_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
+            case FFD_RADIUS_2D : surface_mov->SetFFDCPChange_2D_rad(boundary, config, FFDBox[iFFDBox], iDV, true); break;
             case FFD_CAMBER_2D :        surface_mov->SetFFDCamber_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
             case FFD_THICKNESS_2D :     surface_mov->SetFFDThickness_2D(boundary, config, FFDBox[iFFDBox], iDV, true); break;
             case FFD_CONTROL_POINT :    surface_mov->SetFFDCPChange(boundary, config, FFDBox[iFFDBox], iDV, true); break;
