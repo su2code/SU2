@@ -2,7 +2,7 @@
  * fluid_model_pig.cpp
  * \brief Source of the ideal gas model.
  * \author: S.Vitale, G.Gori, M.Pini, A.Guardone, P.Colonna
- * \version 3.2.3 "eagle"
+ * \version 3.2.4 "eagle"
  *
  * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
  *
