@@ -1845,11 +1845,11 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry,
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
         SetSolution_Gradient_GG(geometry, config);
-//        SetPrimVar_Gradient_GG(geometry, config);
+        SetPrimVar_Gradient_GG(geometry, config);
         break;
       case WEIGHTED_LEAST_SQUARES:
         SetSolution_Gradient_LS(geometry, config);
-//        SetPrimVar_Gradient_LS(geometry, config);
+        SetPrimVar_Gradient_LS(geometry, config);
         break;
     }
     
@@ -2106,12 +2106,12 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iEdge, iPoint, jPoint;
-  unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX;
-  unsigned short iDim, iVar, jVar;
+  unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
+  unsigned short iDim, iSpecies, iVar, jVar;
   bool implicit, second_order, limiter, chk_err_i, chk_err_j;
   double *U_i, *U_j, *V_i, *V_j;
   double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
-  double **GradV_i, **GradV_j;
+  double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
   double *Limiter_i, *Limiter_j;
   double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
@@ -2157,6 +2157,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   RHO_INDEX  = node[0]->GetRhoIndex();
   RHOS_INDEX = node[0]->GetRhosIndex();
   P_INDEX    = node[0]->GetPIndex();
+  TVE_INDEX  = node[0]->GetTveIndex();
   
   /*--- Loop over edges and calculate convective fluxes ---*/
 	for(iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -2227,6 +2228,42 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
       }
       
       /*--- Calculate corresponding primitive reconstructed variables ---*/
+//      for (iVar = 0; iVar < nPrimVar; iVar++) {
+//        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
+//        for (iDim = 0; iDim < nDim; iDim++) {
+//          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
+//          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
+//        }
+//        Primitive_i[iVar] = V_i[iVar] + lim_ij*ProjGradV_i;
+//        Primitive_j[iVar] = V_j[iVar] + lim_ij*ProjGradV_j;
+//        
+//        // Vib.-el. energy
+//        for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+//          Eve_i[iSpecies] = node[iPoint]->CalcEve(config, Primitive_i[TVE_INDEX], iSpecies);
+//          Eve_j[iSpecies] = node[jPoint]->CalcEve(config, Primitive_j[TVE_INDEX], iSpecies);
+//          Cvve_i[iSpecies] = node[iPoint]->CalcCvve(Primitive_i[TVE_INDEX], config, iSpecies);
+//          Cvve_j[iSpecies] = node[jPoint]->CalcCvve(Primitive_j[TVE_INDEX], config, iSpecies);
+//        }
+//        
+//        // Recalculate derivatives of pressure
+//        // NOTE: We need to pass the vib-el. energy, but it is only used when
+//        //       ionized species are present, so, for now, we just load it with
+//        //       the value at i or j, and come back later when ionized is ready.
+//        node[iPoint]->CalcdPdU(Primitive_i, Eve_i, config, dPdU_i);
+//        node[jPoint]->CalcdPdU(Primitive_j, Eve_j, config, dPdU_j);
+//        
+//        // Recalculate temperature derivatives
+//        node[iPoint]->CalcdTdU(Primitive_i, config, dTdU_i);
+//        node[jPoint]->CalcdTdU(Primitive_j, config, dTdU_j);
+//        
+//        // Recalculate Tve derivatives
+//        // Note: Species vib.-el. energies are required for species density
+//        //       terms.  For now, just pass the values at i and j and hope it works
+//        node[iPoint]->CalcdTvedU(Primitive_i, Eve_i, config, dTvedU_i);
+//        node[jPoint]->CalcdTvedU(Primitive_j, Eve_j, config, dTvedU_j);
+//      }
+      
+      
       chk_err_i = node[iPoint]->Cons2PrimVar(config, Conserved_i, Primitive_i,
                                              dPdU_i, dTdU_i, dTvedU_i, Eve_i, Cvve_i);
       chk_err_j = node[jPoint]->Cons2PrimVar(config, Conserved_j, Primitive_j,
@@ -2252,52 +2289,6 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
         numerics->SetEve   (Eve_i,    Eve_j   );
         numerics->SetCvve  (Cvve_i,   Cvve_j  );
       }
-      
-
-//      cout << "Solution" << endl;
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        cout << Conserved_i[iVar] << "\t" << U_i[iVar] << endl;
-//      }
-//      cin.get();
-//      
-//      cout << "Primitive: " << endl;
-//      for (iVar = 0; iVar < nPrimVar; iVar++) {
-//        cout << Primitive_i[iVar] << "\t" << V_i[iVar] << endl;
-//      }
-//      cin.get();
-//      
-      
-      /*---+++ Primitive variable reconstruction +++---*/
-      
-      /*--- Acquire primitive variable gradients ---*/
-      //Note: Mass fraction gradients, NOT species density gradients are stored!
-//      GradV_i = node[iPoint]->GetGradient_Primitive();
-//      GradV_j = node[jPoint]->GetGradient_Primitive();
-      
-      /*--- Retrieve primitive variable limiter values ---*/
-//      if (limiter) {
-//        Limiter_i = node[iPoint]->GetLimiter_Primitive();
-//        Limiter_j = node[jPoint]->GetLimiter_Primitive();
-//
-//      }
-      
-      /*--- Reconstruct ij interface values using the projected gradients ---*/
-      // Reconstruction for all other primitive variables
-//      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-//        ProjGradV_i = 0.0; ProjGradV_j = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++) {
-//          ProjGradV_i += Vector_i[iDim]*GradV_i[iVar][iDim];
-//          ProjGradV_j += Vector_j[iDim]*GradV_j[iVar][iDim];
-//        }
-//        if (limiter) {
-//          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*ProjGradV_i;
-//          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*ProjGradV_j;
-//        }
-//        else {
-//          Primitive_i[iVar] = V_i[iVar] + ProjGradV_i;
-//          Primitive_j[iVar] = V_j[iVar] + ProjGradV_j;
-//        }
-//      }
       
     } else {
       
@@ -5462,16 +5453,17 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
 	/*--- Compute gradient of the primitive variables ---*/
   switch (config->GetKind_Gradient_Method()) {
     case GREEN_GAUSS:
-//      SetPrimVar_Gradient_GG(geometry, config);
+      SetPrimVar_Gradient_GG(geometry, config);
       SetSolution_Gradient_GG(geometry, config);
       break;
     case WEIGHTED_LEAST_SQUARES:
-//      SetPrimVar_Gradient_LS(geometry, config);
+      SetPrimVar_Gradient_LS(geometry, config);
       SetSolution_Gradient_LS(geometry, config);
       break;
   }
   
   Set_MPI_Solution_Gradient(geometry, config);
+  Set_MPI_Primitive_Gradient(geometry, config);
   
   if ((second_order) && (iMesh == MESH_0) && limiter) {
     SetSolution_Limiter(geometry, config);
