@@ -1094,11 +1094,11 @@ bool CTNE2EulerVariable::SetPrimVar_Compressible(CConfig *config) {
   
   /*--- Convert conserved to primitive variables ---*/
   nonPhys = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
-  if (nonPhys) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
-    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
-  }
+//  if (nonPhys) {
+//    for (iVar = 0; iVar < nVar; iVar++)
+//      Solution[iVar] = Solution_Old[iVar];
+//    bkup = Cons2PrimVar(config, Solution, Primitive, dPdU, dTdU, dTvedU, eves, Cvves);
+//  }
   
   SetVelocity2();
   
@@ -1188,7 +1188,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, double *U, double *V,
   Tvemax = 8E4;
   
   /*--- Set temperature algorithm paramters ---*/
-  NRtol    = 1.0E-4;    // Tolerance for the Newton-Raphson method
+  NRtol    = 1.0E-6;    // Tolerance for the Newton-Raphson method
   Btol     = 1.0E-4;    // Tolerance for the Bisection method
   maxNIter = 18;        // Maximum Newton-Raphson iterations
   maxBIter = 32;        // Maximum Bisection method iterations
