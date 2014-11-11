@@ -3106,9 +3106,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Recompute the extrapolated quantities in a more
        thermodynamic consistent way  ---*/
-
+      if (compressible) {
       ComputeConsExtrapolation(config);
-
+      }
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
        first-order approximation, but this is typically only active
