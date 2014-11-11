@@ -2249,6 +2249,12 @@ public:
                          CConfig *config, unsigned short iMesh);
     
 	/*!
+	 * \brief Compute the extrapolated quantities, for MUSCL upwind 2nd reconstruction,
+	 * in a more thermodynamic consistent way
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ComputeConsExtrapolation(CConfig *config);
+	/*!
 	 * \brief Source term integration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
