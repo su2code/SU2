@@ -5498,7 +5498,7 @@ if test "${enable_parmetis+set}" = set; then :
  		    *)  as_fn_error $? "bad value ${enableval} for --enable-parmetis" "$LINENO" 5 ;;
 		 esac
 else
-  enableparmetis=yes
+  enableparmetis=$enablemetis
 fi
 
 
